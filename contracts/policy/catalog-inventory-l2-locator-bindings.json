@@ -14,13 +14,19 @@
     "STORE_SCOPE": {
       "testId": "operations-data-scope-trigger",
       "interaction": "scope",
-      "sourceFiles": ["apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"]
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx",
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts"
+      ]
     },
     "HEAD_COMPANY_SCOPE": {
       "testId": "operations-data-scope-trigger",
       "interaction": "scope",
       "scopeFieldTestId": "operations-data-scope-head-company",
-      "sourceFiles": ["apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"]
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx",
+        "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts"
+      ]
     },
     "CATALOG_STORE_ROUTE": {
       "testId": "catalog-store-workbench",
@@ -270,7 +276,10 @@
     },
     "CATALOG_DICTIONARY_DRAWER": {
       "alternatives": ["catalog-dictionary-drawer"],
-      "sourceFiles": ["apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx"]
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogConfigurationDrawerSurface.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
     },
     "CATALOG_DICTIONARY_CODE": {
       "testId": "catalog-dictionary-code",
@@ -296,28 +305,31 @@
     "CATALOG_CONFIG_SEARCH": {
       "testId": "catalog-config-search",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawerState.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogSimpleDictionaryLibrary.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
-      ]
+      ],
+      "ownerTestIdExpressions": ["testId(catalogTestIds.control.configSearch)"]
     },
     "CATALOG_CONFIG_STATUS": {
       "testId": "catalog-config-status",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawerState.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogSimpleDictionaryLibrary.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
-      ]
+      ],
+      "ownerTestIdExpressions": ["testId(catalogTestIds.control.configStatus)"]
     },
     "CATALOG_PRODUCTION_TAGS": {
       "alternatives": ["catalog-config-production-tags", "catalog-item-production-tags"],
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemProductionEditor.tsx",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogSimpleDictionaryLibrary.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
     "CATALOG_CONFIG_PRODUCTION_TAGS": {
       "testId": "catalog-config-production-tags",
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogSimpleDictionaryLibrary.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
@@ -346,7 +358,12 @@
       "alternatives": ["catalog-brand-copy-drawer", "catalog-local-copy-drawer"],
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/local-copy/LocalCatalogCopyView.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ],
+      "ownerTestIdExpressions": [
+        "testId(catalogTestIds.static.brandCopyDrawer)",
+        "testId(catalogTestIds.static.localCopyDrawer)"
       ]
     },
     "CATALOG_LOCAL_COPY_OPEN": {
@@ -359,50 +376,85 @@
     "CATALOG_COPY_SOURCE": {
       "alternatives": ["catalog-local-copy-source-keyword", "catalog-brand-copy-source-keyword"],
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/local-copy/LocalCatalogCopyView.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ],
+      "ownerTestIdExpressions": [
+        "testId(catalogTestIds.static.localCopySourceKeyword)",
+        "testId(catalogTestIds.static.brandCopySourceKeyword)"
       ]
     },
     "CATALOG_COPY_SELECTION": {
       "alternatives": ["catalog-local-copy-source-item-next", "catalog-brand-copy-selection-next"],
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/local-copy/LocalCatalogCopyView.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ],
+      "ownerTestIdExpressions": [
+        "testId(catalogTestIds.static.localCopySourceItemNext)",
+        "testId(catalogTestIds.static.brandCopySelectionNext)"
       ]
     },
     "CATALOG_COPY_PREFLIGHT": {
       "alternatives": ["catalog-local-copy-preflight", "catalog-copy-preflight"],
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/local-copy/LocalCatalogCopyView.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ],
+      "ownerTestIdExpressions": [
+        "testId(catalogTestIds.static.localCopyPreflight)",
+        "testId(catalogTestIds.static.copyPreflight)"
       ]
     },
     "CATALOG_COPY_EXECUTE": {
       "alternatives": ["catalog-local-copy-execute", "catalog-copy-execute"],
       "sourceFiles": [
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/local-copy/LocalCatalogCopyView.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ],
+      "ownerTestIdExpressions": [
+        "testId(catalogTestIds.static.localCopyExecute)",
+        "testId(catalogTestIds.static.copyExecute)"
       ]
     },
     "CATALOG_COPY_PROBLEM": {
       "alternatives": ["catalog-copy-problem", "catalog-local-copy-problem"],
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/local-copy/LocalCatalogCopyView.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ],
+      "ownerTestIdExpressions": [
+        "testId(catalogTestIds.static.copyProblem)",
+        "testId(catalogTestIds.static.localCopyProblem)"
       ]
     },
     "CATALOG_COPY_PREFLIGHT_PROBLEM": {
       "alternatives": ["catalog-copy-preflight-stale", "catalog-local-copy-stale"],
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/local-copy/LocalCatalogCopyView.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ],
+      "ownerTestIdExpressions": [
+        "testId(catalogTestIds.static.copyPreflightStale)",
+        "testId(catalogTestIds.static.localCopyStale)"
       ]
     },
     "CATALOG_COMPATIBILITY_FACTS": {
       "alternatives": ["catalog-inventory-copy-preflight", "catalog-local-copy-compatibility-results"],
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/local-copy/LocalCatalogCopyView.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ],
+      "ownerTestIdExpressions": [
+        "testId(catalogTestIds.static.inventoryCopyPreflight)",
+        "testId(catalogTestIds.static.localCopyCompatibilityResults)"
       ]
     },
     "CATALOG_ITEM_STATUS_ACTION": {
@@ -554,6 +606,7 @@
     },
     "INVENTORY_DIAGNOSTICS_ZONE": {
       "testId": "inventory-zone-diagnostics",
+      "presence": "ABSENT",
       "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryDetailDrawer.tsx"]
     },
     "INVENTORY_ACTION_COUNT": {
@@ -712,7 +765,12 @@
       "alternatives": ["catalog-copy-result", "catalog-local-copy-result"],
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx",
-        "apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx"
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/local-copy/LocalCatalogCopyView.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ],
+      "ownerTestIdExpressions": [
+        "testId(catalogTestIds.static.copyResult)",
+        "testId(catalogTestIds.static.localCopyResult)"
       ]
     }
   },

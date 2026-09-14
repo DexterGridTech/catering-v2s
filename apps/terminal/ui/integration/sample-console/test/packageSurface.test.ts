@@ -26,7 +26,7 @@ describe('sample-console package surface', () => {
           SECONDARY: {width: 960, height: 540},
         },
         portrait: {
-          PRIMARY: {width: 360, height: 800},
+          PRIMARY: {width: 360, height: 640},
         },
       },
     });

@@ -97,7 +97,7 @@ class DatabaseOperationTrackerTest {
                         "QUERY",
                         "EXECUTE_QUERY",
                         1_000_000L,
-                        "select * from item where id = ?",
+                        "select id from item where id = ?",
                         DatabaseOperationTracker.parameterHash(value),
                         1);
             }

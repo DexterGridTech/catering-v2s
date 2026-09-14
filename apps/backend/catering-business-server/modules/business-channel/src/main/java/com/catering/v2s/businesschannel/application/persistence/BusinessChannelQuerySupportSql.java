@@ -1,0 +1,53 @@
+package com.catering.v2s.businesschannel.application.persistence;
+
+/** SQL text owned by BusinessChannelQuerySupport; B3 relocates text without changing execution. */
+public final class BusinessChannelQuerySupportSql {
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_JOIN_BUSINESS_CHANNEL_TEMPLATE_JOIN_BUSINESS_CHANNEL_BUSINE = "JOIN business_channel.business_channel_template t ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_JOIN_CONDITION_TEMPLATE_REF_WORKSPACE_UUID = "ON t.template_ref=c.template_ref AND t.workspace_uuid=c.workspace_uuid ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_GROUP_WORKSPACE_KEY = "AND t.group_workspace_key=c.group_workspace_key ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_FROM_CLAUSE_BUSINESS_CHANNEL_FROM_BUSINESS_CHANNEL_BUSINE = "FROM business_channel.business_channel c ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_FROM_CLAUSE_INSERTED_FROM_INSERTED_C = "FROM inserted c ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_SELECT_CHANNEL_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF = "SELECT c.channel_ref, c.workspace_uuid, c.group_workspace_key, c.template_ref, ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_TARGET_NODE_TYPE_TARGET_NODE_REF_CHANNEL_CODE = "c.target_node_type, c.target_node_ref, c.channel_code, ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_CHANNEL_NAME = "c.channel_name, c.binding_ref, t.access_kind AS template_access_kind, c.status, c.version, ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_PROJECT_REF = "t.project_ref AS template_project_ref, t.template_name, t.template_code, ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_OPERATOR_KIND = "t.operator_kind AS template_operator_kind, t.order_kind AS template_order_kind, ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_DINE_IN_FORM = "t.dine_in_form AS template_dine_in_form, t.provider_code AS template_provider_code, ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_STATUS_TEMPLATE_STATUS_VERSION_TEMPLATE_VERSION = "t.status AS template_status, t.version AS template_version, ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_TEMPLATE_PROJECT_STATUS_TEMPLATE_PROJECT_STATUS = "template_project.status AS template_project_status, ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_TARGET_PROJECT_TARGET_PROJECT_REF = "target_project.id AS target_project_ref, ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CASE_TARGET_NODE_TYPE_PROJECT_TARGET_PROJECT_STATUS = "CASE WHEN c.target_node_type='PROJECT' THEN target_project.status ELSE target_store.status END ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_TARGET_NODE_STATUS = "AS target_node_status, target_store.project_id AS target_store_project_ref, ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_TARGET_STORE_PROJECT_STATUS_TARGET_STORE_PROJECT_STATUS = "target_store_project.status AS target_store_project_status, ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_TARGET_STORE_STATUS_TARGET_STORE_STATUS = "target_store.status AS target_store_status, ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_TARGET_TENANT = "target_tenant.id AS target_tenant_ref, target_tenant.status AS target_tenant_status, ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_TARGET_BRAND_TARGET_BRAND_REF_STATUS_TARGET_BRAND_STATUS = "target_brand.id AS target_brand_ref, target_brand.status AS target_brand_status, ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_BINDING_STATUS_BINDING_LIFECYCLE_STATUS_PROVIDER = "binding.status AS binding_lifecycle_status, provider.status AS provider_status ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_FROM_CLAUSE_BUSINESS_CHANNEL_FROM_BUSINESS_CHANNEL_BUSINE_ALTERNATE_A = "FROM business_channel.business_channel c ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_ORGANIZATION_NODE_TEMPLATE_PROJECT = "LEFT JOIN organization.organization_node template_project ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_JOIN_CONDITION_TEMPLATE_PROJECT_PROJECT_REF_WORKSPACE_UUID = "ON template_project.id=t.project_ref AND template_project.workspace_uuid=c.workspace_uuid ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_TEMPLATE_PROJECT_GROUP_WORKSPACE_KEY = "AND template_project.group_workspace_key=c.group_workspace_key ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_ORGANIZATION_NODE_TARGET_PROJECT = "LEFT JOIN organization.organization_node target_project ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_JOIN_CONDITION_TARGET_NODE_TYPE_PROJECT_TARGET_PROJECT_TEXT = "ON c.target_node_type='PROJECT' AND target_project.id::text=c.target_node_ref ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_TARGET_PROJECT_WORKSPACE_UUID = "AND target_project.workspace_uuid=c.workspace_uuid ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_TARGET_PROJECT_GROUP_WORKSPACE_KEY = "AND target_project.group_workspace_key=c.group_workspace_key ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_STORE_TARGET_STORE = "LEFT JOIN organization.store target_store ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_JOIN_CONDITION_TARGET_NODE_TYPE_STORE_TARGET_STORE_TEXT = "ON c.target_node_type='STORE' AND target_store.id::text=c.target_node_ref ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_TARGET_STORE_WORKSPACE_UUID = "AND target_store.workspace_uuid=c.workspace_uuid ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_TARGET_STORE_GROUP_WORKSPACE_KEY = "AND target_store.group_workspace_key=c.group_workspace_key ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_ORGANIZATION_NODE_TARGET_STORE_PROJECT = "LEFT JOIN organization.organization_node target_store_project ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_JOIN_CONDITION_TARGET_STORE_PROJECT_TARGET_STORE_PROJECT_ID = "ON target_store_project.id=target_store.project_id ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_TARGET_STORE_PROJECT_WORKSPACE_UUID = "AND target_store_project.workspace_uuid=c.workspace_uuid ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_TARGET_STORE_PROJECT_GROUP_WORKSPACE_KEY = "AND target_store_project.group_workspace_key=c.group_workspace_key ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_TENANT_TARGET_TENANT_TARGET_STORE_TENANT_ID = "LEFT JOIN organization.tenant target_tenant ON target_tenant.id=target_store.tenant_id ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_TARGET_TENANT_WORKSPACE_UUID = "AND target_tenant.workspace_uuid=c.workspace_uuid ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_TARGET_TENANT_GROUP_WORKSPACE_KEY = "AND target_tenant.group_workspace_key=c.group_workspace_key ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_BRAND_TARGET_BRAND_TARGET_STORE_BRAND_ID = "LEFT JOIN organization.brand target_brand ON target_brand.id=target_store.brand_id ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_TARGET_BRAND_WORKSPACE_UUID = "AND target_brand.workspace_uuid=c.workspace_uuid ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_TARGET_BRAND_GROUP_WORKSPACE_KEY = "AND target_brand.group_workspace_key=c.group_workspace_key ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_OWNER_BINDING_BINDING_BINDING_REF = "LEFT JOIN collaboration.owner_binding binding ON binding.binding_ref=c.binding_ref ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_BINDING_WORKSPACE_UUID_GROUP_WORKSPACE_KEY = "AND binding.workspace_uuid=c.workspace_uuid AND binding.group_workspace_key=c.group_workspace_key ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONTINUATION_PROVIDER_PROFILE_ENABLEMENT_PROVIDER = "LEFT JOIN collaboration.provider_profile_enablement provider ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_JOIN_CONDITION_PROVIDER_PROVIDER_CODE_WORKSPACE_UUID = "ON provider.provider_code=t.provider_code AND provider.workspace_uuid=c.workspace_uuid ";
+    public static final String BUSINESS_CHANNEL_QUERY_SUPPORT_CONDITION_PROVIDER_GROUP_WORKSPACE_KEY = "AND provider.group_workspace_key=c.group_workspace_key ";
+}

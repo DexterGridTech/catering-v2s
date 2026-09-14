@@ -35,7 +35,6 @@ describe('D group: descriptor validation', () => {
       plainStorage: (await import('./testSupport')).createFakeStorage(),
       protectedStorage: (await import('./testSupport')).createFakeStorage(),
       persistenceKey: 'terminal',
-      storageTimeouts: {readMs: 10, writeMs: 10, resetMs: 10},
       persistenceDebounceMs: 0,
     })).rejects.toThrow('duplicate slice name')
   })
@@ -102,7 +101,6 @@ describe('D group: descriptor validation', () => {
       plainStorage: support.createFakeStorage(),
       protectedStorage: support.createFakeStorage(),
       persistenceKey: 'terminal',
-      storageTimeouts: {readMs: 10, writeMs: 10, resetMs: 10},
       persistenceDebounceMs: 0,
     })).rejects.toThrow('unknown state runtime slice registration')
   })
@@ -119,7 +117,6 @@ describe('D group: descriptor validation', () => {
       plainStorage: support.createFakeStorage(),
       protectedStorage: support.createFakeStorage(),
       persistenceKey: 'terminal',
-      storageTimeouts: {readMs: 10, writeMs: 10, resetMs: 10},
       persistenceDebounceMs: 0,
     })).rejects.toThrow('at least one state runtime slice is required')
   })
@@ -137,7 +134,6 @@ describe('D group: descriptor validation', () => {
       plainStorage: sharedStorage,
       protectedStorage: sharedStorage,
       persistenceKey: 'terminal',
-      storageTimeouts: {readMs: 10, writeMs: 10, resetMs: 10},
       persistenceDebounceMs: 0,
     })).rejects.toThrow('distinct physical ports')
     expect(sharedStorage.calls.listKeys).toHaveLength(0)

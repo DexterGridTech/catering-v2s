@@ -71,6 +71,7 @@ The detailed design's §3 is the value source. The plan uses the same fixed rows
 | RTK read/loading | frontend standard §3-B | static no RTK; host readiness from snapshot/geometry | `N/A_WITH_REASON` no HTTP/RTK | host loading and local section pending only |
 | one address per fact | frontend standard §3-E; catalog foundation | static same catalog/source map; focused injection/index | match canonical catalog and SurfaceRoot context | dimensions, host/source, sections, device/debug, readiness |
 | visible unchanged failures | frontend standard §3-D; SurfaceHostController | focused distinct typed loading/password/descriptor/nav states | match existing fallback/diagnostic shape | all local failures |
+| host identity mismatch | `apps/terminal/ui/base/render/src/foundations/surfaceHost.ts#bindSurfaceHostIdentity` | focused primary/non-host fixture observes typed `surface.host-identity-rejected` while the canvas stays pending | preserve the distinction between ordinary not-ready and a contradictory physical host fact | host/source binding |
 | owner-to-HTTP error map | backend standard §1-D/§2-B | static no route/problem registration | `N/A_WITH_REASON` no backend operation | no HTTP |
 | idempotency/replay | frontend standard §3-G | static no mutation/idempotency key | `N/A_WITH_REASON` local non-business layer commands | all admin actions |
 | generated strings | frontend standard §2-D; existing exports | static no OpenAPI/URL string; test IDs from one module | match source-of-truth exports | keys, IDs, typed local error codes |
@@ -93,7 +94,7 @@ The UI is present in the design scope, but L2 execution is not authorized and no
 
 | action | real control | owning source | test-ID source | node requirement | focused/static gate | current result |
 | --- | --- | --- | --- | --- | --- | --- |
-| invoke | launcher `Pressable` | `apps/terminal/ui/base/admin-shell/src/components/AdminLauncher.tsx#AdminLauncher` | `apps/terminal/ui/base/admin-shell/src/foundations/adminTestIds.ts#adminTestIds.launcher` | ID on actual press node | gesture gate + launcher focused test | MATCHED: focused |
+| invoke | logical gesture observed on business-content ancestor | `apps/terminal/ui/base/admin-shell/src/components/AdminLauncher.tsx#AdminLauncher` | `apps/terminal/ui/base/admin-shell/src/foundations/adminTestIds.ts#adminTestIds.launcher` | stable plain `View` observes bubbled `onTouchEnd`; no own `Pressable`/responder negotiation/consuming handler | logical-coordinate gate + real descendant control + launcher focused test | MATCHED: focused |
 | enter digit | shared virtual-keyboard buttons | `apps/terminal/ui/base/input/src/components/VirtualKeyboard.tsx#VirtualKeyboard` | `ui.base.input:virtual-keyboard:text-<n>` | actual input-owner button | sample-console focused test | MATCHED: focused |
 | delete | shared virtual-keyboard backspace | `VirtualKeyboard` | `ui.base.input:virtual-keyboard:backspace` | actual input-owner button | input focused test | MATCHED: focused |
 | verify | verify button | `AdminLogin` | `adminTestIds.verify` | actual button | login focused test | MATCHED: focused |
@@ -126,6 +127,8 @@ Reopen:
 3. Replace display-mode-only creation at the integration/dev-host boundary with a capability-named input carrying the physical `displayIndex`. Preserve the index until the assembly selects the host source and derives `isHostPrimaryDisplay`.
 4. Keep canvas selection by `displayMode`. The physical source map and canvas map must be distinct values.
 5. Make Android app startup take explicit direction/form input rather than hard-code it. This is an input contract change only; no Android run occurs now.
+6. Add the Web dev-host's `laptop`/`mobile` view radio group when a portrait declaration exists. A changed selection is written to the `surfaceForm` URL parameter and reloads the Web page so the next assembly starts once with the selected form; the existing laptop-only `surfaceMode` is presented as one radio group with mutually exclusive single/dual options and remains an in-runtime SECONDARY mount selector. Render the width range, view radio, and surface-mode radio as one centered row below the title/status row.
+7. Add a Web-only `surface 宽度` range control in the existing host header. Clamp it to 30%–100% of the measured preview content width and feed that selected width into the existing uniform-ratio geometry calculation; do not change logical surface declarations, assembly state, input coordinates, or Android behavior.
 
 #### Gate
 
@@ -158,6 +161,7 @@ Reopen:
 5. Move the fixed system-keyboard suppression into `apps/terminal/ui/base/primitives/src/vendor/slots.tsx#RnrTextInput`; vendor owns the platform branch and fixed value. A caller-level `false` snapshot is not an acceptance substitute.
 6. Remove the complete render-side and Android IME contract set in the same atomic group: `SurfaceHostImeSnapshot`, `calculateSurfaceHostImeInset`, `SurfaceHostImeContext`, `SurfaceHostController` IME consumption, Android adapter `snapshot.ime` parsing, Kotlin `TerminalSurfaceHostSnapshot.imeVisible`/`imeBottomLogicalBeforeCanvasScale`, `TerminalImeInsetsCoordinator`, and IME event/module fields. Retain only virtual keyboard metrics, `InputScrollArea`, `viewportAlreadyShrunk`, and the capability-named focus/scroll inputs required by the non-IME path.
 7. Update `apps/terminal/ui/base/input`, `apps/terminal/ui/base/render`, and `apps/terminal/ui/base/primitives` structure snapshots, public exports, README/invariant surfaces, and focused truth-table fixtures together. No intermediate state may be accepted or used by a later step.
+8. Expose one shared `InputKeyboard` presenter with `keyboardPlacement: 'surface' | 'field'`. `surface` is mounted once by `InputSurfaceFrame`; `field` is mounted by the consuming card/field layout. Both placements must use the same provider, owner, controller, renderer, and value state; a placement mismatch renders nothing. Do not expose `VirtualKeyboard` as a feature-level alternative or require per-mode keyboard handlers, dimensions, focus logic, or value state.
 
 #### Focus pre-probe before admin shell
 
@@ -308,7 +312,7 @@ Reopen:
 
 1. Replace the pending empty View with a stable loading View/Spinner/label node. While snapshot/geometry is unavailable, children are not rendered. This state does not affect the host gate and is not a fail-open/fail-closed decision.
 2. Recompute the host geometry and canvas transform from the current frozen `SurfaceIdentity={surfaceKey, displayIndex, surfaceForm, displayMode}` and snapshot; do not cache a display-mode-only source at mount. The lifecycle trigger compares the values of exactly `surfaceKey`, `displayIndex`, `surfaceForm`, and `displayMode`, never the identity object's reference; a geometry-only or same-content snapshot with all four values unchanged is not an identity replacement and must not close or reset `AdminLayer`.
-3. On surface identity replacement, preserve the existing `SurfaceRoot` React identity and run only the generic render lifecycle: observe the new snapshot/geometry, blur the replaced surface's active field, update the context, and do not import admin-shell or copy an admin layer ID. Because `LayerStack` selects `selectLayers(snapshot.root, displayMode)`, a display-mode change can unmount the old `AdminLayer` before it observes the new context; the step-8 `admin-shell/AdminLayer` consumer therefore binds cleanup to the full identity effect and its unmount cleanup, using a ref-held previous `displayMode` and local `ADMIN_CONSOLE_LAYER_ID` to dispatch the existing `ui-state` owner command. `LayerStack` removes only that admin layer and its local auth/selection/scroll state; an ordinary-close cleanup is idempotent and must not touch business layers. Retain all business content and business layers in their owners. Do not call the current clear-all `clearLayers` operation or introduce an admin-specific overlay stack or whole-root remount.
+3. On surface identity replacement, preserve the existing `SurfaceRoot` React identity and run only the generic render lifecycle: observe the new snapshot/geometry, blur the replaced surface's active field, update the context, and do not import admin-shell or copy an admin layer ID. Because `LayerStack` selects `selectLayers(snapshot.root, displayMode)`, a display-mode change can unmount the old `AdminLayer` before it observes the new context; the step-8 `admin-shell/AdminLayer` consumer therefore binds cleanup to the full identity effect and its unmount cleanup, using the effect closure's old `displayMode` and local `ADMIN_CONSOLE_LAYER_ID` to dispatch the existing `ui-state` owner command. `LayerStack` removes only that admin layer and its local auth/selection/scroll state; an ordinary-close cleanup is idempotent and must not touch business layers. Retain all business content and business layers in their owners. Do not call the current clear-all `clearLayers` operation or introduce an admin-specific overlay stack or whole-root remount.
 4. Ensure focus restore/suspend remains surface-level and count-based. `notifyFocusBoundary` fires only on 0→1 and 1→0; `LayerStack` changes the active scope on 1→2/2→1 without another surface suspend/restore event. The full path will be tested with one business layer plus admin after step 8, using `ADMIN_CONSOLE_FOCUS_SCOPE_ID='admin.console'` and the exact native-less input contract.
 5. Keep current canvas selection by `displayMode` while source selection remains physical-index based; switching identity must independently observe geometry, admin presence, focus, and scroll.
 
@@ -349,12 +353,12 @@ Reopen:
    - `src/components/sections/RuntimeSection.tsx`;
    - `src/components/sections/DisplayContextSection.tsx`;
    - `src/foundations/adminTestIds.ts` (admin-owned nodes only; shared keypad IDs remain owned by `ui.base.input`).
-2. Define one layer-only `admin.console` part with `containerKeys=[]`; launcher appears only on `isHostPrimaryDisplay` and opens this part through the existing UI-state command. Freeze `ADMIN_CONSOLE_PART_KEY='admin.console'`, `ADMIN_CONSOLE_LAYER_ID='admin.console.layer'`, `ADMIN_CONSOLE_FOCUS_SCOPE_ID='admin.console'`, and `ADMIN_SECTION_CONTAINER_KEY='admin.sections'` once in `src/foundations/adminIdentity.ts`; open, focus, renderer lookup, ordinary close, and replacement cleanup use the matching local constant rather than assuming `partKey` is a `layerId`. `AdminLayer` binds cleanup to the full `SurfaceContext` identity, holds the previous `displayMode` in a ref, and dispatches the existing `closeLayer` owner command from effect cleanup both for in-place identity changes and for the old-mode unmount caused by `LayerStack`. An ordinary-close cleanup is idempotent. `SurfaceRoot` does not import admin-shell or contain a copied admin literal.
+2. Define one layer-only `admin.console` part with `containerKeys=[]`; launcher appears only on `isHostPrimaryDisplay` and opens this part through the existing UI-state command. Freeze `ADMIN_CONSOLE_PART_KEY='admin.console'`, `ADMIN_CONSOLE_LAYER_ID='admin.console.layer'`, `ADMIN_CONSOLE_FOCUS_SCOPE_ID='admin.console'`, and `ADMIN_SECTION_CONTAINER_KEY='admin.sections'` once in `src/foundations/adminIdentity.ts`; open, focus, renderer lookup, ordinary close, and replacement cleanup use the matching local constant rather than assuming `partKey` is a `layerId`. `AdminLayer` binds cleanup to the full `SurfaceContext` identity, captures the old `displayMode` in the effect closure, and dispatches the existing `closeLayer` owner command from effect cleanup both for in-place identity changes and for the old-mode unmount caused by `LayerStack`. An ordinary-close cleanup is idempotent. `SurfaceRoot` does not import admin-shell or contain a copied admin literal.
 3. Export one `adminShellAssembly` containing the console layer plus the three built-in section parts/renderers. Define section entries with the fixed `admin.sections` container key, required `surfaceForm`, and existing dimensions only; the shell discovers them from the same `UiCatalog.entries` projection in list order and resolves renderers by the same catalog entry. There is no owner/order metadata object.
 4. Keep login/auth/selected part/section scroll in the layer-local component state. Close unmounts it; reopen enters login. No persistence container receives these values.
 5. Give `AdminSectionRenderContext` read-only facts and a navigation-rejecting command boundary. `showScreen` and `openLayer` attempts return typed rejection and do not alter business content.
 6. Render the platform section from method-level descriptors, the runtime section from `stateSource` plus frozen runtime facts, and display section from `SurfaceContext`/host readiness. No hard-coded diagnostic values.
-7. Merge `adminShellAssembly` first in `sample-console`, then feature parts, then add the title-only `sample.console.admin-test` entry/renderer as a real production `definedParts` registration. It has one unique part identity, is included in the same catalog, and is the exact object used by injection/removal proof; no test-only list, hard-coded section array, or second registry may stand in for it.
+7. Merge `adminShellAssembly` first in `sample-console`, then feature parts, then add the title-only, mobile-only `sample.console.admin-test` entry/renderer as a real production `definedParts` registration. It has one unique part identity, is included in the same catalog, and is the exact object used by injection/removal proof; no test-only list, hard-coded section array, or second registry may stand in for it.
 8. Make the Web dev-host use the same capability-named input as integration: replace `createSurface(displayMode)` in `apps/terminal/ui/base/dev-host/src/components/testExpoApp.tsx#TestExpoAssembly` with `createSurface({displayIndex, displayMode, surfaceForm, ...})`, call it distinctly for index 0 and index 1, and pass the index through to the host/source chain. Web must not synthesize host status from `displayMode`.
 9. Verify the foundation edges introduced in step 6 and add the production-consumer edge `sample-console → admin-shell` now that `adminShellAssembly` is merged. Keep the existing `admin-shell → render` edge and the required `admin-shell → display-context/input` edges synchronized in `apps/terminal/skeleton-graph.ts`, the corresponding `package.json` files (`dependencies`/`plannedDependencies` as applicable), and the exact-edge/acyclicity inventory in `tools/terminal-skeleton/check-static.mjs`; do not add the reverse `render → admin-shell` edge. Admin-shell must not import `ui/feature`, and no graph-check bypass is permitted.
 
@@ -387,6 +391,8 @@ The planned API set is the smallest set with a named consumer. Before implementa
 | `selectAvailableParts` with form/null-layer semantics | UI state catalog | ScreenContainer, LayerStack, resolvePart guard, admin section projection, command-owner admission predicate |
 | shared availability predicate | UI state/render contract | screen/layer admission and fallback |
 | `SurfaceCreationInput` / index-based surface creation | sample integration/dev-host | sample assembly, test-expo, Android app entry |
+| `SurfaceModeRadio` / selected single-dual mode | dev-host | `surfaceMode` state and SECONDARY mount only; no assembly rebuild or logical-size consumer |
+| `SurfaceWidthControl` / selected preview-width input | dev-host | `SurfaceCanvas` geometry only; no assembly/runtime or logical-size consumer |
 | `SurfaceHostSnapshot.isHostPrimaryDisplay/surfaceIdentity` plus state-derived `SurfaceContext.surfaceForm/isHostPrimaryDisplay/surfaceIdentity` | render/integration | launcher, display section, render/catalog context, physical source chain, AdminLayer cleanup effect |
 | `ADMIN_CONSOLE_*` identity constants and replacement cleanup | admin-shell | `AdminLayer` compares `surfaceKey`, `displayIndex`, `surfaceForm`, and `displayMode` by value rather than by identity-object reference, retains the previous `displayMode`, and dispatches exact cleanup through the existing `ui-state` command for in-place replacement and old-mode child unmounts; a same-value geometry/snapshot update leaves admin state intact; no `render → admin-shell` import |
 | `RenderRuntimeFacts` | assembly/render context | runtime/port/display sections and non-admin diagnostic consumer |
@@ -394,6 +400,7 @@ The planned API set is the smallest set with a named consumer. Before implementa
 | `resolveDebugMode` | assembly/runtime fact resolver | startup assembly and runtime section |
 | public `PlatformPortCapabilitySnapshot` plus `describePlatformPortCapabilities(ports)` | platform-ports factory/adapters/defaults/Web binding | assembly and platform section in every build |
 | native-less input option/result | input | AdminLogin and input focused tests |
+| shared `InputKeyboard` presenter and `keyboardPlacement` | input | `InputSurfaceFrame` for `surface`; any local field/card consumer for `field`; same `InputProvider` owner/controller/renderer |
 | vendor slots | primitives/vendor | PrimitiveInput/list/spinner/SVG and all primitive consumers |
 | `adminTestIds` | admin-shell | real controls and future L2 bindings |
 | section projection/command boundary | admin-shell | AdminShell and all four section renderers |
@@ -406,6 +413,7 @@ The planned API set is the smallest set with a named consumer. Before implementa
 | fact | contract/source | backend/edge/migration | frontend model/surface/state | focused/static/HTTP/L2 | fixture/seed/executor | plan result |
 | --- | --- | --- | --- | --- | --- | --- |
 | form | surface parser + `UiCatalogEntry` | N/A no backend | SurfaceRoot/Context/catalog | static + focused | package fixture, no seed | sync |
+| Web preview width | `SurfaceWidthControl` 30%–100% + existing `calculateSurfacePreviewGeometry` | N/A | selected CSS preview width/scale only; logical surface and assembly state unchanged | static + focused control/geometry; Web visual later | no seed | synchronized |
 | physical index/host bool | `SurfaceCreationInput` + `SurfaceHostSnapshot.isHostPrimaryDisplay/surfaceIdentity` + assembly derivation | N/A | source map + SurfaceRoot/SurfaceContext fact | static + focused two-index | two-index fixture | synchronized source + consumer |
 | display mode/canvas | display derivation | N/A | SurfaceRoot/host | static + focused dynamic | no seed | sync |
 | layer-only semantics | catalog selector + `createOpenLayerActor` admission | N/A | LayerStack/resolvePart render defense | static + focused red/no-state-write | catalog fixture | synchronized |
@@ -413,11 +421,11 @@ The planned API set is the smallest set with a named consumer. Before implementa
 | loading | snapshot/geometry | N/A | host controller | static + focused | null/usable fixture | sync |
 | device ID | existing DeviceInfo + adapter/module | N/A | assembly fact/password | static + focused; Android later | fake IDs, no seed | sync |
 | debug | packaging/startup source | N/A | runtime fact/context | static + focused; release later | source matrix | sync |
-| keyboard | input/primitives/render contract | N/A | InputField/vendor/snapshot | static + focused; native later | native-less fixture | atomic sync |
+| keyboard | input/primitives/render contract, including shared `InputKeyboard` placement selection | N/A | InputField/InputKeyboard/vendor/snapshot | static + focused; native later | surface dock + field-local placement fixture | atomic sync; one presenter, two placement modes |
 | primitives/tokens | primitive exports/theme | N/A | admin/existing controls | static + focused; visual later | no seed | sync |
 | capability descriptors | public `PlatformPortCapabilitySnapshot` + `describePlatformPortCapabilities` | N/A | runtime fact/port section | static + focused non-DEV | descriptor fixture | synchronized |
 | auth/selection lifetime | layer-local state | N/A | AdminLayer/Shell | focused real controls | no seed | sync |
-| dynamic lifecycle | generic SurfaceRoot/SurfaceContext/LayerStack/InputController plus `admin-shell/AdminLayer` identity effect and frozen `SurfaceIdentity` | N/A | previous-mode exact admin close, same-value snapshot survival, business retention, focus-scope switch, geometry/scroll | focused; Web/Android later | surface transition fixture | synchronized; N-2 list bound is `FOCUSED_PASS` with no visual/headroom claim |
+| dynamic lifecycle | generic SurfaceRoot/SurfaceContext/LayerStack/InputController plus `admin-shell/AdminLayer` identity effect and frozen `SurfaceIdentity` | N/A | effect-closure previous-mode exact admin close, same-value snapshot survival, business retention, focus-scope switch, geometry/scroll | focused; Web/Android later | surface transition fixture | synchronized; N-2 list bound is `FOCUSED_PASS` with no visual/headroom claim |
 | navigation boundary | admin shell wrapper | N/A | section context | focused rejection | fake section only | sync |
 | test IDs | one `adminTestIds.ts` | N/A | real nodes | static + focused; L2 later | no seed | sync |
 
@@ -432,8 +440,9 @@ The following is an independently enumerated roster of the current requirement c
 | A-1 | `adminLauncher.test.tsx` | focused | launcher node exists for false gate |
 | A-2 | `sampleAssembly.test.tsx` + future device script | Android | gate forced true |
 | A-3 | `adminLauncher.test.ts` | focused | gesture defaults changed/ignored |
-| A-4 | `adminLauncher.test.ts` + future native coordinate proof | Android | window coordinates used |
+| A-4 | `sampleAssembly.test.tsx` + `adminLauncher.test.ts` + future Android action | Android (focused precursor) | raw window coordinates are compared directly to 96 instead of being converted to logical canvas coordinates; the local proof covers a non-equal host `2560×1200` over canvas `1280×800` (`scaleX=2`, `scaleY=1.5`) with an outside-y then inside point, plus reduced-host outside coverage, while Android still must repeat the real host-window action |
 | A-5 | `adminLauncher.test.tsx` | focused | existing layer blocks launcher |
+| A-5A | `sampleAssembly.test.tsx` | focused | invisible launcher `Pressable`/absolute overlay consumes a real business control, or five bubbled touches do not open admin |
 | A-6 | `adminPassword.test.tsx` | focused/static | six states/native inputs |
 | A-7 | `adminPassword.test.ts` | focused | arbitrary hour accepted |
 | A-8 | `adminPassword.test.tsx` | focused | clock and password share copy |
@@ -442,13 +451,13 @@ The following is an independently enumerated roster of the current requirement c
 | A-11 | `adminShell.test.tsx` | focused | shell direct members differ |
 | A-12 | `adminShell.test.tsx` + type check | static/focused | section navigation succeeds |
 | A-13 | `adminShell.test.tsx` + host geometry | Android/static | layer has container/guard mismatch |
-| A-14 | `adminShell.test.tsx` | focused | business command cannot resolve while open |
+| A-14 | `sampleAssembly.test.tsx` | focused | in-flight business command is cancelled or its business screen/layer is lost when admin opens |
 | A-15 | `adminFocus.test.tsx` | focused | admin outside focus suspension boundary |
-| A-16 | `adminShell.test.tsx` | focused | auth/section in persisted snapshot |
+| A-16 | `sampleAssembly.test.tsx` | focused | persisted storage contains `admin.console` or the selected admin section after real open/navigation |
 | A-17 | `admin-shell-static.test.mjs` | static | feature import |
-| A-18 | `sampleAssembly.test.tsx` | focused | production sample section is omitted from the same catalog, or a hard-coded list keeps it visible after the real entry is removed |
+| A-18 | `sampleAssembly.test.tsx` | focused | production sample section is not the same `definedParts` entry consumed by the catalog, or a hard-coded list keeps it visible after the real entry is removed |
 | A-19 | `catalog.test.ts` | static/focused | catalog entries are mutable, a second section list appears, or filtered section order differs from the single catalog list order; an independent owner/order field or module-level mutable binding appears |
-| A-20 | `catalog.test.tsx` / `sampleAssembly.test.tsx` | focused | mobile-only part renders on laptop |
+| A-20 | `sampleAssembly.test.tsx` | focused | mobile-only production section renders on laptop or is not observable on mobile through the real shell |
 | A-21 | section focused tests | focused | hard-coded/non-kernel section |
 | A-22 | `platformPorts.test.tsx` | focused | port-level aggregate or DEV-only source |
 | A-23 | section type/static test | static | section exposes write command |
@@ -502,7 +511,7 @@ anchors are recorded in `doc/evidence/platform/2026-09-12-v2s-terminal-admin-con
 | tier | planned proof | current status | fresh requirement |
 | --- | --- | --- | --- |
 | static | exact symbols/imports/exports, catalog/source-chain, no forbidden props/logs, README/invariants | PASS for executed static gates | fresh main-agent command processes; not independent review |
-| focused | real control actions, pure functions, catalog injection, loading, focus, dynamic switch | PASS for executed focused suites; per-criterion partial/not-run rows remain explicit | fresh main-agent test processes; no direct setters |
+| focused | real control actions, pure functions, catalog injection, loading, focus, dynamic switch, dev-host form selection fallback | PASS for executed focused suites; per-criterion partial/not-run rows remain explicit | fresh main-agent test processes; no direct setters |
 | Web | dev-host index 0/1 host bool and geometry/form surface | NOT_AUTHORIZED | separate Web session |
 | Android | dual-display source/host/IME/device ID/geometry | NOT_AUTHORIZED | separate Android session |
 | native | Kotlin module/adapter and render snapshot | NOT_AUTHORIZED | separate native session |

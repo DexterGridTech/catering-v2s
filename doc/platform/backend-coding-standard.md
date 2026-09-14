@@ -15,7 +15,7 @@
 
 | | |
 |---|---|
-| **规则来源** | 2026-08-14 的一轮后台全量评审,33 条实例(M-01~12 / S-01~20 / N-01)归纳成十类 |
+| **规则来源** | 2026-08-14 的一轮后台全量评审,33 条实例(M-01~12 / S-01~20 / N-01)归纳成十类;2026-09-14 的 owner 可读性实施复盘补充 `R-READ-09`、`R-READ-10` |
 | **实例登记册** | `doc/review/platform/2026-08-14-v2s-backend-code-review-findings-claude.md` |
 | **分流与批次** | `-backend-findings-triage-and-sequencing-claude.md` · `-part-one-coding-standards-batches-claude.md` · `-part-two-batches-claude.md` |
 | **门的清单** | `tools/verify-gates/verify.mjs`(⛔ **门存在 ≠ 门生效**,必须在 command 列表里) |
@@ -200,6 +200,30 @@ type=string  BusinessChannelTemplateView/properties/operatorKind
 **门**:`scripts/check/closed-set-enum-declared`(**待建**);红夹具 = 把任一已声明 enum 的响应字段改回裸 `string`,门必须红
 
 ## 2 · 只能靠 review 的九类
+
+### 2-0 · 后端四段目录词表
+
+**规则**:业务 module 的职责目录只使用 `api`、`application`、`domain`、`persistence` 四个业务段名；新增或移动业务类时，必须按其真实职责选择其中一段，不得用 `service`、`repository`、`helper`、`common` 或 Journey/流程名称另造第五段。该词表只约束业务 module 的 review 判定，不授权把技术支持类强行塞入业务段。
+
+**四段含义**:
+
+- `api`:跨模块可解析的命令、读模型、公开契约类型和稳定边界；不得放 JDBC、Spring 事务实现或某个页面专用的预渲染模型。
+- `application`:owner 业务规则、授权与 scope 复核、事务协议、跨 owner command 调用和权威 readback；不得把 persistence 执行器伪装成业务规则，也不得以 raw-SQL 参数把 SQL 事实透传给下层。
+- `domain`:不依赖 Spring、JDBC、HTTP 或传输框架的纯业务事实、值对象与规则；不得因为“看起来像业务”就把带基础设施依赖的服务移入此段。
+- `persistence`:同一 owner/module 的持久化查询与写入执行及其 SQL 常量；公开边界必须是具名、类型化的业务方法，不能暴露通用 raw-SQL executor。
+
+`infrastructure` 与 `adapter` 是既有技术接入/support 段，不属于上述四段的第五个业务聚合，也不得被改名为业务段来规避职责审查。platform library module（例如 `foundation`）和表达模块边界的 package-root boundary class 可以保留其既有技术/边界位置；它们不是业务段词表的新增例外，必须在 review 中写明事实理由。当前已确认的不适用 platform-library module 仅为 `foundation`、`execution-context`、`audit-model`、`audit-read` 四个既有 module；该列表是当前事实登记，不是面向未来的免检清单。任一 module 若新增业务 owner fact/command、业务事务入口、业务数据库执行或需要被某个业务 owner 直接修改的职责，即失去该不适用理由，新增或移动的类必须按 `api/application/domain/persistence` 的真实职责重新分类；package-root boundary class 也仅在继续表达模块边界且不承担业务执行时可保留。`api/application/domain/persistence` 的完整全集、跨段边界和新增目录判断依赖当前源码语义，不能用成员数量、文件名或 token 命中替代。
+
+**反例**:
+
+- 把带 `JdbcTemplate` 与 `@Transactional` 的 `CatalogItemService` 移进 `domain/`，因为它“承载商品规则”。
+- 在业务 module 新建 `common/` 放跨 owner JDBC helper，或把流程名建成 `sales-menu/` 目录，借此绕过 `persistence` 的 owner 边界。
+- 把 `infrastructure/` 的 JDBC adapter 仅改包名为 `persistence/`，却不改变公开 raw-SQL executor 边界与事实归属。
+- 因为某个类位于 module package root 就自动判为 `api`；package-root boundary class 只有在它确实表达模块边界且没有业务执行职责时才可维持原位置。
+
+**为什么只能靠 review**:目录名本身不能证明业务事实归属；同名类可能是 owner service、task-read、跨 owner coordinator 或技术支持类。当前仓库没有机器可读的聚合声明和完整目录语义来源，把这条规则接成关键词门会制造“门绿但职责错位”的假安全感。
+
+**门**:不建机器门。按 `R-READ-08`，候选全集、边界语义和无法解析的新增形态必须在详设/实施 review 中逐项记录；不能以一个静态目录清单冒充完整判定。
 
 ### 2-A · 同类路径一致性
 
@@ -421,6 +445,37 @@ review 规则,不能伪装成机器门;不得创建已退役的 hash-chain 或�
 
 **为什么**:错误分母会把不可能完成的门误报为实现缺陷,也会让假绿掩盖未扫描的同根命中。
 
+### `R-READ-09` · SQL 事实必须可读命名且保持单一归属
+
+**规则**:SQL holder 的类、字段和常量命名必须表达所属 owner 的业务事实或查询/写入用途;不得把序号、分段号或
+泛化标签当作最终语义命名,例如 `SQL_1`、`SQL_FRAGMENT_154`、`Part1`、`MiscSql`。每个 execution point 的 SQL
+事实必须有稳定且唯一的 owner/address;不能因为 SQL 文本相同就跨 owner 合并。仅移动 SQL 文本而保留无语义编号名,
+不算完成可读性整改。
+
+**反例**:调用点写成 `InventoryTargetServiceSql.SQL_FRAGMENT_030`,打开 holder 后仍无法知道它是库存目标的列表、详情、
+状态变更还是回执查询;三层已没有 SQL literal 也不能关闭这个缺口。
+
+**最小证明**:重命名只能改变标识符与引用,不得改变 initializer、effective SQL、参数槽位或执行顺序;以源码 diff 或
+有效 SQL 对齐证明值未变。数量扫描可以找出疑似编号名,但不能替代对 owner 事实与查询用途的 review。
+
+**门**:不建机器门。语义命名、owner 归属和跨 owner 是否应保持独立需要 review;不得用正则命中数冒充规则已闭合。
+
+### `R-READ-10` · 证明范围必须覆盖被声称的生产边界
+
+**规则**:证据必须明确它覆盖的是生产边界还是 test-only seam。test-only fake、legacy adapter、测试 repository 或
+mock 若绕过真实 persistence bean,只能证明调用方/业务服务在该替身上的行为,不能证明生产 persistence 的 SQL、事务、
+bean 注入、代理边界或 readback。凡声称生产边界已闭合,必须调用真实生产类并进行相应的源码/捕获/业务证明;无法覆盖的部分
+必须保留为 `UNVERIFIED_REQUIRES_EVIDENCE`,不得因测试文件通过而升级。
+
+**反例**:四个 owner-service 测试都经 test-only legacy persistence adapter 转到测试 repository,它们全部通过,但生产
+`SalesMenuPersistence` 从未被这些 fixture 执行;这只能关闭 service seam 证据,不能关闭生产 persistence 迁移。
+
+**最小证明**:保留既有测试替身时,在交付材料中单独标注其覆盖边界,并为生产 persistence 补真实类的 focused capture 或
+真实 backend acceptance;不得为让测试通过而放宽生产类的可继承性、raw-SQL 边界或注入形态。
+
+**门**:不新增机器门。测试替身与生产实现的边界、声明是否超出实际证据属于 review 判定;最终 acceptance 仍遵循
+`R-READ-07`,focused proof 仍不得冒充全量业务证据。
+
 ## 3 · 执行顺序(有依赖,不能乱排)
 
 ```
@@ -451,7 +506,7 @@ review 规则,不能伪装成机器门;不得创建已退役的 hash-chain 或�
 
 
 - **本文是唯一内容源。** 新增或修改规则只改本文。
-- **规则来源分两批**:1-C/1-D/1-H/1-I 与 2-A..2-G 来自 2026-08-14 的后台全量评审(33 条实例归纳);1-J..1-N 与 2-H/2-I 来自 2026-08-26 的 base-1 读模型与生命周期评审,实例见 `doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md` 第 1、2 章。**后一批的四个门尚未建成**,条目里已逐条标注「待建」;门存在 ≠ 门生效,建成后必须进 `tools/verify-gates/verify.mjs` 的 command 列表。
+- **规则来源分三批**:1-C/1-D/1-H/1-I 与 2-A..2-G 来自 2026-08-14 的后台全量评审(33 条实例归纳);1-J..1-N 与 2-H/2-I 来自 2026-08-26 的 base-1 读模型与生命周期评审,实例见 `doc/plans/platform/2026-08-27-v2s-base-1-requirements-claude.md` 第 1、2 章;`R-READ-09`、`R-READ-10` 来自 2026-09-14 owner 可读性实施复盘。**后一批的四个门尚未建成**,条目里已逐条标注「待建」;门存在 ≠ 门生效,建成后必须进 `tools/verify-gates/verify.mjs` 的 command 列表。
 - **别处只放指针**:`project-memory/`、skill、评审文档一律只写"见本文",不复述规则内容。
 - **新规则由实例产生**,写在修完之后 —— 没有实例的规则不进本文。
 - **每条规则必须自带反例**,否则它不是规范,是口号。

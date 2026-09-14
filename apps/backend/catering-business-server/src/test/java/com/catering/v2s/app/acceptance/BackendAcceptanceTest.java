@@ -616,7 +616,9 @@ class BackendAcceptanceTest {
     }
 
     /**
-     * Runs only when the managed CP-09 proof is explicitly requested. It is deliberately not an
+     * Runs only when the managed CP-09 proof is explicitly requested. The proof is disabled by default because
+     * V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF is absent or not true; explicit enablement requires setting that
+     * environment variable to true in the managed proof command. It is deliberately not an
      * {@link AcceptanceScenario}: connection-scope probes must not change the product-business scenario denominator or
      * be reported as a substitute for those scenarios.
      */

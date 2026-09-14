@@ -8,16 +8,16 @@ describe('sample-console Web StateStoragePort', () => {
     const port = createWebStateStoragePort(storage, 'plain:', 'persistKv')
     const other = createWebStateStoragePort(storage, 'protected:', 'persistSecure')
 
-    expect(await port.write({key: 'members', value: '{"members":[]} ', timeoutMs: 50})).toMatchObject({status: 'succeeded'})
-    expect(await port.read({key: 'members', timeoutMs: 50})).toMatchObject({
+    expect(await port.write({key: 'members', value: '{"members":[]} '})).toMatchObject({status: 'succeeded'})
+    expect(await port.read({key: 'members'})).toMatchObject({
       status: 'succeeded',
       value: {state: 'found', value: '{"members":[]} '},
     })
-    expect(await other.read({key: 'members', timeoutMs: 50})).toMatchObject({
+    expect(await other.read({key: 'members'})).toMatchObject({
       status: 'succeeded',
       value: {state: 'missing'},
     })
-    expect(await port.listKeys({timeoutMs: 50})).toMatchObject({
+    expect(await port.listKeys({})).toMatchObject({
       status: 'succeeded',
       value: ['members'],
     })
@@ -28,9 +28,9 @@ describe('sample-console Web StateStoragePort', () => {
     const storage = new FakeWebStorage()
     const plain = createWebStateStoragePort(storage, 'plain:', 'persistKv')
     const protectedPort = createWebStateStoragePort(storage, 'protected:', 'persistSecure')
-    await plain.write({key: 'a', value: '1', timeoutMs: 50})
-    await protectedPort.write({key: 'b', value: '2', timeoutMs: 50})
-    await plain.clear({timeoutMs: 50})
+    await plain.write({key: 'a', value: '1'})
+    await protectedPort.write({key: 'b', value: '2'})
+    await plain.clear({})
     expect(storage.getItem('plain:a')).toBeNull()
     expect(storage.getItem('protected:b')).toBe('2')
   })

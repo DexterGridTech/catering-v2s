@@ -1,5 +1,6 @@
 package com.catering.v2s.businesschannel.application;
 
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi.CreateChannelCommand;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi.CreateTemplateCommand;
@@ -33,7 +34,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class BusinessChannelOwnerService
         implements BusinessChannelOwnerApi, BusinessChannelCommandApi, BusinessChannelReadApi {
-    static final int BOUNDED_READ_LIMIT = BusinessChannelQuerySupport.BOUNDED_READ_LIMIT;
+    static final int BOUNDED_READ_LIMIT = BusinessChannelPersistence.BOUNDED_READ_LIMIT;
 
     private final BusinessChannelTemplateService templateService;
     private final BusinessChannelService channelService;
@@ -249,7 +250,4 @@ public class BusinessChannelOwnerService
         return channelService.detachChannelBinding(command, expectedVersion);
     }
 
-    static String channelCommandSelect(String suffix) {
-        return BusinessChannelQuerySupport.channelCommandSelect(suffix);
-    }
 }

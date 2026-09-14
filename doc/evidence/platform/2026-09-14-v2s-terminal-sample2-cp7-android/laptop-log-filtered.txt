@@ -1,0 +1,240 @@
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{687ef4c com.android.internal.emulation.pixel_7a/10022} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{3923b95 com.android.internal.emulation.pixel_8a/10025} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{da8f4aa com.google.android.overlay.googlewebview/10032} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{5a61db1 com.google.android.hotspot2.osulogin/10202} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{cacc296 com.android.simappdialog/10115} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{a27fc11 com.android.internal.display.cutout.emulation.hole/10006} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{7f9b176 com.android.internal.display.cutout.emulation.tall/10007} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{1cbcb2e com.anonymous.sampleterminal/10213} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{a6b377 com.android.internal.systemui.navbar.threebutton/10037} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{edcbe17 com.android.hotwordenrollment.xgoogle/10131} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{2b22204 com.android.camera2/10146} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{9c76f02 com.android.internal.ranchu.commonoverlay/10042} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{b491013 com.google.android.docksetup.auto_generated_rro_product__/10009} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{f4de3ed com.google.android.deskclock/10163} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{a851c49 com.android.internal.systemui.navbar.twobutton/10035} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{5ea7222 com.google.android.as/10130} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{be524b3 com.google.android.gm/10172} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{cd9b16a com.impos2.mixcretailrn84/10234} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{78bc37c com.android.systemui.emulation.pixel_3/10047} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{9fa3405 com.android.systemui.emulation.pixel_4/10052} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{c3fdc5a com.android.systemui.emulation.pixel_5/10054} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{3f06e8b com.android.systemui.emulation.pixel_6/10055} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{98f9b68 com.android.systemui.emulation.pixel_7/10062} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{def0b81 com.android.systemui.emulation.pixel_8/10061} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{7315a70 com.android.printspooler/10116} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{c31d1e9 com.android.hotwordenrollment.okgoogle/10129} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{b770614 com.google.android.connectivity.resources.goldfish.overlay/10080} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{2618e6e com.android.dreams.basic/10103} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{1fd9cb2 com.google.android.networkstack.tethering.emulator/10029} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{2662403 com.android.providers.settings.auto_generated_rro_product__/10045} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{403590f com.google.android.as.oss/10125} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{150a9b9 com.android.traceur.auto_generated_rro_product__/10073} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{b29ad9c com.google.android.devicelockcontroller/10192} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{d1cfd5f com.android.internal.emulation.pixel_3/10011} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{10503ac com.android.internal.emulation.pixel_4/10014} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{9492875 com.android.internal.emulation.pixel_5/10016} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{df8100a com.android.internal.emulation.pixel_6/10027} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{93e107b com.android.internal.emulation.pixel_7/10020} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{294ae98 com.android.internal.emulation.pixel_8/10023} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{64ca3a5 com.google.android.captiveportallogin/10107} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{f22d6 android.auto_generated_characteristics_rro/10077} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{f1c237a com.google.android.appsearch.apk/10190} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{c26772b com.android.musicfx/10096} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{5a7da33 com.google.android.apps.maps/10157} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{af20788 com.google.android.apps.kids.home/10136} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{288d521 com.google.android.markup/10154} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{da813f3 com.android.providers.settings.auto_generated_rro_vendor__/10078} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{db8fd46 com.google.android.apps.carrier.log/10120} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{f135b07 com.google.android.rkpdapp/10205} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{f641434 com.google.android.contacts/10149} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{225fc4f com.android.phone.auto_generated_characteristics_rro/10066} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{126afdc com.google.android.overlay.googleconfig/10030} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{ffca25d com.android.dialer/10127} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{8f7a7d2 com.google.android.apps.customization.pixel/10155} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{500a0a3 com.google.android.tag/10099} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{25cedc8 com.google.android.overlay.permissioncontroller/10031} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{3483fa0 com.google.android.partnersetup/10135} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{ee60759 com.google.android.apps.wallpaper.nexus/10153} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{6046f1e com.google.android.apps.wallpaper.pixel/10156} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{8f2a3ff com.google.android.apps.nexuslauncher/10180} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{3777f9d com.android.theme.font.notoserifsource/10028} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{381b5cc com.google.android.safetycenter.resources/10206} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{dfddfe3 com.android.internal.display.cutout.emulation.waterfall/10008} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{be1ade0 com.android.internal.systemui.navbar.transparent/10074} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{b66c015 com.google.android.connectivity.resources/10193} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{dc5275e com.android.providers.contacts.auto_generated_rro_product__/10001} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{e845f2a com.google.android.feedback/10175} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{7d7811b com.google.android.printservice.recommendation/10111} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{5fa62b8 com.google.android.apps.photos/10168} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{7971b97 com.google.android.calendar/10147} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{f385b6a com.google.android.overlay.titanconfig/10068} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{4d5685b com.android.systemui.emulation.pixel_3a_xl/10050} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{60b58f8 com.android.systemui.emulation.pixel_6_pro/10056} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{fc0a1d1 com.android.systemui.emulation.pixel_7_pro/10058} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{ef8c436 com.android.systemui.emulation.pixel_8_pro/10059} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{3782f37 com.android.devicediagnostics.auto_generated_rro_product__/10002} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{5d0f355 com.impos2.mixccateringassemblyrn84/10218} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{8004891 com.android.providers.partnerbookmarks/10112} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{f6143f6 com.android.wallpaper.livepicker/10095} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{56313f7 com.google.android.apps.youtube.kids/10167} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{34ef264 com.google.android.apps.safetyhub.hideapps/10162} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{3cfdccd com.android.imsserviceentitlement/10133} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{855a982 com.google.assistant.hubui/10139} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{5b3ae0c com.impos2.mixcretailrn84v2/10231} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{2aaf893 com.google.android.healthconnect.controller/10210} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{bcc553f com.impos2.adapter.dev/10230} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{c37ce2f com.android.internal.emulation.pixel_2_xl/10010} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{bef4c3c com.android.internal.emulation.pixel_3_xl/10012} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{85edc5 com.android.internal.emulation.pixel_4_xl/10015} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{2d6731a com.android.internal.emulation.pixel_fold/10026} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{f3ad0d0 com.android.bookmarkprovider/10101} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{982f028 com.google.android.overlay.pixelconfigcommon/10038} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{8dca141 com.android.systemui.emulation.pixel_3a/10049} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{858a6e6 com.android.systemui.emulation.pixel_4a/10053} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{c7d5427 com.android.systemui.emulation.pixel_6a/10057} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{e2ae6d4 com.android.systemui.emulation.pixel_7a/10060} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{691107d com.android.systemui.emulation.pixel_8a/10063} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{88a78c9 com.google.android.settings.intelligence/10138} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{838dbce com.google.android.apps.books/10159} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{79a3177 com.google.android.projection.gearhead/10123} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{2828aef com.google.android.apps.scone/10137} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{bc429fc com.google.android.uwb.resources/10196} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{c38d885 com.google.android.apps.chromecast.app/10140} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{c381e4 com.android.cts.ctsshim/10198} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{20ae6da com.google.android.wifi.resources/10201} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{796e70b com.google.android.wifi.dialog/10203} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{327e9e8 com.android.wallpaper/10184} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{2b37801 com.google.android.apps.wallpaper/10185} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{6c096a6 com.google.android.keep/10148} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{84ae8e7 com.google.android.odad/10134} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{f6f5cb1 com.android.settings.auto_generated_rro_product__/10043} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{28e9596 com.android.companiondevicemanager.auto_generated_characteristics_rro/10000} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{4d9517 com.android.internal.systemui.navbar.gestural/10040} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{485bc94 com.google.android.apps.youtube.music/10171} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{ade933d com.android.bluetoothmidiservice/10104} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{95c71f3 com.anonymous.posdesktop/10212} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{3967522 com.android.storagemanager.auto_generated_rro_product__/10046} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{fcf7732 com.google.android.cellbroadcastreceiver/10189} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{28c9570 android.auto_generated_rro_product__/10075} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{4532c83 com.google.android.inputmethod.latin/10158} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{24ac16e android.auto_generated_rro_vendor__/10081} BLOCKED
+09-10 23:54:25.229   571  3325 I AppsFilter: interaction: PackageSetting{b3795f7 com.catering.v2s.terminal.samplewallpaper/10214} -> PackageSetting{f4c0e00 com.google.android.apps.restore/10128} BLOCKED
+09-10 23:54:25.256 16492 16550 I cr_VariationsUtils: Failed reading seed file "/data/user/0/com.catering.v2s.terminal.samplewallpaper/app_webview/variations_seed_new"
+09-10 23:54:25.256 16492 16550 I cr_VariationsUtils: Failed reading seed file "/data/user/0/com.catering.v2s.terminal.samplewallpaper/app_webview/variations_seed"
+09-10 23:54:25.292 16492 16537 D nativeloader: Load /data/app/~~WD0xbjdC3c-0B1-WrCCgXA==/com.catering.v2s.terminal.samplewallpaper-hSaEnW0Bqi_tvk7Z1F5G_w==/base.apk!/lib/arm64-v8a/libworklets.so using ns clns-7 from class loader (caller=/data/app/~~WD0xbjdC3c-0B1-WrCCgXA==/com.catering.v2s.terminal.samplewallpaper-hSaEnW0Bqi_tvk7Z1F5G_w==/base.apk): ok
+09-10 23:54:25.294 16492 16537 D nativeloader: Load /data/app/~~WD0xbjdC3c-0B1-WrCCgXA==/com.catering.v2s.terminal.samplewallpaper-hSaEnW0Bqi_tvk7Z1F5G_w==/base.apk!/lib/arm64-v8a/libexpo-modules-core.so using ns clns-7 from class loader (caller=/data/app/~~WD0xbjdC3c-0B1-WrCCgXA==/com.catering.v2s.terminal.samplewallpaper-hSaEnW0Bqi_tvk7Z1F5G_w==/base.apk): ok
+09-10 23:54:25.601 16492 16537 I ReactNativeJS:      component: 'sample-wallpaper-console' },
+09-10 23:54:25.601 16492 16537 I ReactNativeJS:         'kernel.feature.sample-wallpaper',
+09-10 23:54:25.601 16492 16537 I ReactNativeJS:         'ui.feature.sample-wallpaper-picker',
+09-10 23:54:25.601 16492 16537 I ReactNativeJS:         'ui.integration.sample-wallpaper-console' ],
+09-10 23:54:25.601 16492 16537 I ReactNativeJS:         { moduleName: 'kernel.feature.sample-wallpaper', kind: 'owner' },
+09-10 23:54:25.601 16492 16537 I ReactNativeJS:         { moduleName: 'ui.feature.sample-wallpaper-picker',
+09-10 23:54:25.601 16492 16537 I ReactNativeJS:         { moduleName: 'ui.integration.sample-wallpaper-console',
+09-10 23:54:25.602 16492 16537 I ReactNativeJS:      component: 'sample-wallpaper-console' },
+09-10 23:54:25.602 16492 16537 I ReactNativeJS:         { moduleName: 'kernel.feature.sample-wallpaper',
+09-10 23:54:25.602 16492 16537 I ReactNativeJS:           sliceName: 'kernel.feature.sample-wallpaper.selection' } ],
+09-10 23:54:25.605 16492 16537 I ReactNativeJS:      component: 'sample-wallpaper-console' },
+09-10 23:54:25.605 16492 16537 I ReactNativeJS:         { moduleName: 'kernel.feature.sample-wallpaper',
+09-10 23:54:25.605 16492 16537 I ReactNativeJS:           commandName: 'kernel.feature.sample-wallpaper.select-wallpaper' },
+09-10 23:54:25.605 16492 16537 I ReactNativeJS:         { moduleName: 'kernel.feature.sample-wallpaper',
+09-10 23:54:25.605 16492 16537 I ReactNativeJS:           commandName: 'kernel.feature.sample-wallpaper.confirm-wallpaper' },
+09-10 23:54:25.605 16492 16537 I ReactNativeJS:         { moduleName: 'ui.feature.sample-wallpaper-picker',
+09-10 23:54:25.605 16492 16537 I ReactNativeJS:           commandName: 'ui.feature.sample-wallpaper-picker.wallpaper-option-selected' },
+09-10 23:54:25.605 16492 16537 I ReactNativeJS:         { moduleName: 'ui.feature.sample-wallpaper-picker',
+09-10 23:54:25.605 16492 16537 I ReactNativeJS:           commandName: 'ui.feature.sample-wallpaper-picker.wallpaper-confirm-requested' } ],
+09-10 23:54:25.605 16492 16537 I ReactNativeJS:      component: 'sample-wallpaper-console' },
+09-10 23:54:25.605 16492 16537 I ReactNativeJS:         'kernel.feature.sample-wallpaper.selection',
+09-10 23:54:25.605 16492 16537 I ReactNativeJS:         'ui.feature.sample-wallpaper-picker.wallpaper-picker',
+09-10 23:54:25.605 16492 16537 I ReactNativeJS:         'ui.integration.sample-wallpaper-console.placement' ],
+09-10 23:54:25.612 16492 16541 D nativeloader: Load /data/app/~~WD0xbjdC3c-0B1-WrCCgXA==/com.catering.v2s.terminal.samplewallpaper-hSaEnW0Bqi_tvk7Z1F5G_w==/base.apk!/lib/arm64-v8a/libmmkv.so using ns clns-7 from class loader (caller=/data/app/~~WD0xbjdC3c-0B1-WrCCgXA==/com.catering.v2s.terminal.samplewallpaper-hSaEnW0Bqi_tvk7Z1F5G_w==/base.apk!classes20.dex): ok
+09-10 23:54:25.612 16492 16541 I MMKV    : <MMKV.cpp:239::initializeMMKV> root dir: /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv
+09-10 23:54:25.612 16492 16541 I MMKV    : <MemoryFile.cpp:103::open> open fd[164], flag 0x7, /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android
+09-10 23:54:25.612 16492 16541 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x7afed6f000], oldPtr [0x0], [/data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android]
+09-10 23:54:25.612 16492 16541 I MMKV    : <MemoryFile.cpp:109::close> closing fd[164], /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android
+09-10 23:54:25.612 16492 16541 I MMKV    : <MemoryFile.cpp:103::open> open fd[164], flag 0x7, /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android.crc
+09-10 23:54:25.612 16492 16541 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x7afed6e000], oldPtr [0x0], [/data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android.crc]
+09-10 23:54:25.612 16492 16541 I MMKV    : <MemoryFile.cpp:103::open> open fd[165], flag 0x7, /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android
+09-10 23:54:25.612 16492 16541 I MMKV    : <MemoryFile.cpp:109::close> closing fd[165], /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android
+09-10 23:54:25.612 16492 16541 I MMKV    : <MMKV_IO.cpp:293::loadMetaInfoAndCheck> meta file [catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android] has flag [0]
+09-10 23:54:25.612 16492 16541 I MMKV    : <MMKV_IO.cpp:96::loadFromFile> loading [catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android] with 3997 actual size, file size 4096, InterProcess 0, meta info version:4
+09-10 23:54:25.612 16492 16541 I MMKV    : <MMKV_IO.cpp:101::loadFromFile> loading [catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android] with crc 3653979790 sequence 1 version 4
+09-10 23:54:25.612 16492 16541 I MMKV    : <MMKV_IO.cpp:151::loadFromFile> loaded [catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android] with 14 key-values
+09-10 23:54:25.618 16492 16541 I MMKV    : <MemoryFile.cpp:103::open> open fd[165], flag 0x7, /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android
+09-10 23:54:25.618 16492 16541 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x7afecb9000], oldPtr [0x0], [/data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android]
+09-10 23:54:25.618 16492 16541 I MMKV    : <MemoryFile.cpp:109::close> closing fd[165], /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android
+09-10 23:54:25.618 16492 16541 I MMKV    : <MemoryFile.cpp:103::open> open fd[165], flag 0x7, /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android.crc
+09-10 23:54:25.618 16492 16541 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x7afec7d000], oldPtr [0x0], [/data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android.crc]
+09-10 23:54:25.618 16492 16541 I MMKV    : <MemoryFile.cpp:103::open> open fd[169], flag 0x7, /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android
+09-10 23:54:25.618 16492 16541 I MMKV    : <MemoryFile.cpp:109::close> closing fd[169], /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android
+09-10 23:54:25.618 16492 16541 I MMKV    : <MMKV_IO.cpp:293::loadMetaInfoAndCheck> meta file [catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android] has flag [0]
+09-10 23:54:25.618 16492 16541 I MMKV    : <MMKV_IO.cpp:96::loadFromFile> loading [catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android] with 59 actual size, file size 4096, InterProcess 0, meta info version:4
+09-10 23:54:25.618 16492 16541 I MMKV    : <MMKV_IO.cpp:101::loadFromFile> loading [catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android] with crc 755960113 sequence 1 version 4
+09-10 23:54:25.618 16492 16541 I MMKV    : <MMKV_IO.cpp:151::loadFromFile> loaded [catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android] with 1 key-values
+09-10 23:54:25.633 16492 16537 W ReactNativeJS:   category: 'display-context.power-bridge',
+09-10 23:54:25.633 16492 16537 W ReactNativeJS:   event: 'power-bridge.subscription-unavailable',
+09-10 23:54:25.689 16492 16537 I ReactNativeJS:   event: 'sample-wallpaper-console.secondary-placement',
+09-10 23:54:25.689 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.placement-actor',
+09-10 23:54:25.689 16492 16537 I ReactNativeJS:      requestedPartKey: 'sample.wallpaper-console.welcome',
+09-10 23:54:25.700 16492 16537 I ReactNativeJS:   event: 'sample-wallpaper-console.surface-created',
+09-10 23:54:25.700 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.createSurface',
+09-10 23:54:25.719 16492 16537 I ReactNativeJS:   event: 'render.surface-host-layout',
+09-10 23:54:25.720 16492 16560 D nativeloader: Load /data/app/~~WD0xbjdC3c-0B1-WrCCgXA==/com.catering.v2s.terminal.samplewallpaper-hSaEnW0Bqi_tvk7Z1F5G_w==/base.apk!/lib/arm64-v8a/libimagepipeline.so using ns clns-7 from class loader (caller=/data/app/~~WD0xbjdC3c-0B1-WrCCgXA==/com.catering.v2s.terminal.samplewallpaper-hSaEnW0Bqi_tvk7Z1F5G_w==/base.apk): ok
+09-10 23:54:25.724 16492 16537 I ReactNativeJS:         { partKey: 'sample.wallpaper.picker',
+09-10 23:54:25.724 16492 16537 I ReactNativeJS:           rendererKey: 'sample.wallpaper.picker',
+09-10 23:54:25.724 16492 16537 I ReactNativeJS:         { partKey: 'sample.wallpaper-console.waiting',
+09-10 23:54:25.724 16492 16537 I ReactNativeJS:           rendererKey: 'sample.wallpaper-console.waiting',
+09-10 23:54:25.724 16492 16537 I ReactNativeJS:         { partKey: 'sample.wallpaper-console.welcome',
+09-10 23:54:25.724 16492 16537 I ReactNativeJS:           rendererKey: 'sample.wallpaper-console.welcome',
+09-10 23:54:25.725 16492 16537 I ReactNativeJS:   event: 'sample-wallpaper-console.surface-created',
+09-10 23:54:25.725 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.createSurface',
+09-10 23:54:25.733 16492 16537 I ReactNativeJS:   event: 'render.surface-host-layout',
+09-10 23:54:25.739 16492 16537 I ReactNativeJS:         { partKey: 'sample.wallpaper.picker',
+09-10 23:54:25.739 16492 16537 I ReactNativeJS:           rendererKey: 'sample.wallpaper.picker',
+09-10 23:54:25.739 16492 16537 I ReactNativeJS:         { partKey: 'sample.wallpaper-console.waiting',
+09-10 23:54:25.739 16492 16537 I ReactNativeJS:           rendererKey: 'sample.wallpaper-console.waiting',
+09-10 23:54:25.739 16492 16537 I ReactNativeJS:         { partKey: 'sample.wallpaper-console.welcome',
+09-10 23:54:25.739 16492 16537 I ReactNativeJS:           rendererKey: 'sample.wallpaper-console.welcome',
+09-10 23:54:25.754 16492 16537 I ReactNativeJS:   category: 'startup.surfaces',
+09-10 23:54:25.754 16492 16537 I ReactNativeJS:   event: 'startup.surfaces.declared',
+09-10 23:54:25.754 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.package.json',
+09-10 23:54:25.807 16492 16537 I ReactNativeJS:      screenPartKey: 'sample.wallpaper-console.welcome',
+09-10 23:54:25.809 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.SurfaceInputFrame',
+09-10 23:54:25.810 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.SurfaceInputFrame',
+09-10 23:54:25.811 16492 16537 I ReactNativeJS:   event: 'render.surface-host-layout',
+09-10 23:54:25.813 16492 16537 I ReactNativeJS:   category: 'startup.surfaces',
+09-10 23:54:25.813 16492 16537 I ReactNativeJS:   event: 'startup.surfaces.declared',
+09-10 23:54:25.813 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.package.json',
+09-10 23:54:25.829 16492 16562 D nativeloader: Load /data/app/~~WD0xbjdC3c-0B1-WrCCgXA==/com.catering.v2s.terminal.samplewallpaper-hSaEnW0Bqi_tvk7Z1F5G_w==/base.apk!/lib/arm64-v8a/libnative-imagetranscoder.so using ns clns-7 from class loader (caller=/data/app/~~WD0xbjdC3c-0B1-WrCCgXA==/com.catering.v2s.terminal.samplewallpaper-hSaEnW0Bqi_tvk7Z1F5G_w==/base.apk): ok
+09-10 23:54:25.908 16492 16537 I ReactNativeJS:      screenPartKey: 'sample.wallpaper.picker',
+09-10 23:54:25.937 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.SurfaceInputFrame',
+09-10 23:54:25.937 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.SurfaceInputFrame',
+09-10 23:54:25.938 16492 16537 I ReactNativeJS:   event: 'render.surface-host-layout',
+09-10 23:54:25.941 16492 16537 I ReactNativeJS:   event: 'input.surface-frame-layout',
+09-10 23:54:25.941 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.SurfaceInputFrame',
+09-10 23:54:25.942 16492 16537 I ReactNativeJS:   category: 'startup.surfaces',
+09-10 23:54:25.942 16492 16537 I ReactNativeJS:   event: 'startup.surfaces.measured',
+09-10 23:54:25.945 16492 16537 I ReactNativeJS:   event: 'input.content-layout',
+09-10 23:54:25.945 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.SurfaceInputFrame',
+09-10 23:54:25.946 16492 16537 I ReactNativeJS:   event: 'input.surface-frame-layout',
+09-10 23:54:25.946 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.SurfaceInputFrame',
+09-10 23:54:25.947 16492 16537 I ReactNativeJS:   category: 'startup.surfaces',
+09-10 23:54:25.947 16492 16537 I ReactNativeJS:   event: 'startup.surfaces.measured',
+09-10 23:54:25.949 16492 16537 I ReactNativeJS:   event: 'input.content-layout',
+09-10 23:54:25.949 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.SurfaceInputFrame',
+09-10 23:54:25.958 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.SurfaceInputFrame',
+09-10 23:54:25.960 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.SurfaceInputFrame',
+09-10 23:54:25.965 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.SurfaceInputFrame',
+09-10 23:54:25.968 16492 16537 I ReactNativeJS:    { source: 'sample-wallpaper-console.SurfaceInputFrame',
+09-10 23:54:25.987 16492 16492 W samplewallpaper: Accessing hidden field Landroid/widget/ScrollView;->mScroller:Landroid/widget/OverScroller; (unsupported, reflection, allowed)
+09-10 23:54:26.068 16492 16500 W samplewallpaper: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~j4BrjP0JsvTGmjdLkkfrgg==/com.google.android.webview-lp5hhYzxsBeFuV03zuxwaw==/WebViewGoogle.apk' with 2 weak references
+09-10 23:54:29.505 16492 16566 D ProfileInstaller: Installing profile for com.catering.v2s.terminal.samplewallpaper
+09-10 23:54:48.681 16567 16567 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+09-10 23:54:48.685 16567 16567 I AndroidRuntime: Using default boot image
+09-10 23:54:48.685 16567 16567 I AndroidRuntime: Leaving lock profiling enabled
+09-10 23:54:48.794 16567 16567 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+09-10 23:54:49.846 16567 16567 I AccessibilityNodeInfoDumper: Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@1d5d3; boundsInParent: Rect(0, 0 - 0, 43); boundsInScreen: Rect(106, 156 - 106, 199); boundsInWindow: Rect(106, 156 - 106, 199); packageName: com.catering.v2s.terminal.samplewallpaper; className: android.widget.TextView; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: true; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+09-10 23:54:49.849 16567 16567 I AccessibilityNodeInfoDumper: Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@1e898; boundsInParent: Rect(0, 0 - 0, 43); boundsInScreen: Rect(106, 360 - 106, 403); boundsInWindow: Rect(106, 360 - 106, 403); packageName: com.catering.v2s.terminal.samplewallpaper; className: android.widget.TextView; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: true; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+09-10 23:54:49.851 16567 16567 I AccessibilityNodeInfoDumper: Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@1ff1e; boundsInParent: Rect(0, 0 - 0, 43); boundsInScreen: Rect(106, 780 - 106, 823); boundsInWindow: Rect(106, 780 - 106, 823); packageName: com.catering.v2s.terminal.samplewallpaper; className: android.widget.TextView; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: true; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+09-10 23:54:49.855 16567 16567 I AccessibilityNodeInfoDumper: Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@224a8; boundsInParent: Rect(0, 0 - 64, 48); boundsInScreen: Rect(80, 1608 - 144, 1552); boundsInWindow: Rect(80, 1608 - 144, 1552); packageName: com.catering.v2s.terminal.samplewallpaper; className: android.widget.TextView; text: 确认; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; containerTitle: null; viewIdResName: null; uniqueId: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; granularScrollingSupported: false; importantForAccessibility: true; visible: false; actions: [AccessibilityAction: ACTION_SELECT - null, AccessibilityAction: ACTION_CLEAR_SELECTION - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_NEXT_AT_MOVEMENT_GRANULARITY - null, AccessibilityAction: ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY - null, AccessibilityAction: ACTION_SET_SELECTION - null, AccessibilityAction: ACTION_SHOW_ON_SCREEN - null]; isTextSelectable: false
+09-10 23:54:49.864 16567 16567 D AndroidRuntime: Shutting down VM

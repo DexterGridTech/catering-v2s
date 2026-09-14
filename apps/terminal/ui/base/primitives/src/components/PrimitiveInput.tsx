@@ -28,6 +28,7 @@ export const PrimitiveInput = ({
   onChangeText,
   onFocus,
   onPressIn,
+  onTouchEnd,
   onSelectionChange,
   selection,
   secureTextEntry,
@@ -65,6 +66,7 @@ export const PrimitiveInput = ({
       onChangeText={onChangeText}
       onFocus={onFocus === undefined ? undefined : () => onFocus()}
       onPressIn={onPressIn}
+      onTouchEnd={onTouchEnd}
       onSelectionChange={
         onSelectionChange === undefined
           ? undefined

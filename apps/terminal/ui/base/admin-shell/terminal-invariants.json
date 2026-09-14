@@ -17,7 +17,7 @@
     "ADMIN_SECTION_CONTAINER_KEY",
     "ADMIN_PASSWORD_FALLBACK",
     "AdminLayer",
-    "AdminLauncher",
+    "AdminLauncher", "AdminGestureCoordinateSpace",
     "AdminLogin",
     "AdminNavigationRejectedError",
     "AdminSectionComponent",
@@ -41,6 +41,6 @@
     "normalizeDeviceIdentity",
     "verifyAdminPassword"
     ,"selectAdminSections"
-    ,"trackAdminGesture"
+    ,"trackAdminGesture", "logicalPointFromWindow"
   ]
 }

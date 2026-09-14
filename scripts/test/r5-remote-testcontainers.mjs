@@ -969,7 +969,11 @@ const uploadSource = async remoteWorkspace => {
       '-',
       '.',
     ],
-    {cwd: root, stdio: ['ignore', 'pipe', 'pipe']},
+    {
+      cwd: root,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {...process.env, COPYFILE_DISABLE: '1'},
+    },
   );
   const upload = spawn(
     'ssh',
@@ -1022,7 +1026,12 @@ const uploadSource = async remoteWorkspace => {
   });
   source.stdout.pipe(upload.stdin);
   const [sourceStatus, uploadStatus] = await Promise.all([sourceExit, uploadExit]);
-  if (sourceStatus !== 0 || uploadStatus !== 0) throw new Error(`SOURCE_UPLOAD_FAILED:${compact(diagnostics)}`);
+  if (sourceStatus !== 0 || uploadStatus !== 0) {
+    throw new Error(
+      `SOURCE_UPLOAD_FAILED:sourceStatus=${sourceStatus}:uploadStatus=${uploadStatus}:` +
+        `${compact(diagnostics.slice(-240))}`,
+    );
+  }
 };
 
 const syncGradle = async ({directory, remoteRoot, distribution}) => {
@@ -1293,6 +1302,12 @@ export const runScript = ({
     'find "$workspace" -type f -path "*/build/test-results/test/*.xml" -print0 | while IFS= read -r -d "" file; do',
     '  relative="${file#"$workspace"/}"',
     '  target="$results/test-results/$relative"',
+    '  mkdir -p "$(dirname "$target")"',
+    '  cp "$file" "$target"',
+    'done',
+    'find "$workspace" -type f -name "*-effective-sql-capture-*.xml" -print0 | while IFS= read -r -d "" file; do',
+    '  relative="${file#"$workspace"/}"',
+    '  target="$results/sql-captures/$relative"',
     '  mkdir -p "$(dirname "$target")"',
     '  cp "$file" "$target"',
     'done',

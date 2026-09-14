@@ -60,3 +60,13 @@ Dexter 读到 `GO`,合理期待能用的页面。
 
 相关:[[pitfalls.claim-versus-behavior]] · [[pitfalls.invisible-dimension-drifts-at-implementation]] ·
 [[pitfalls.green-by-existence-check]]
+
+## TER 变体：生产装配、触摸关系和失败可观测性不能由单测形状代替（2026-09-12）
+
+本轮 admin console 暴露了三个同根反例：
+
+- 形态字段“存在”不等于生产入口会区分形态。`sample.console.admin-test` 只有在真实 `definedParts → UiCatalog → selectAvailableParts/openLayer` 路径上声明为 mobile-only，并对 laptop 观察到 typed no-write rejection，才是形态过滤证据。
+- 手势节点“存在”不等于业务控件仍可操作。独立的不可见 `Pressable` 即使有正确 testID，也可能消费其下方业务触摸。需要把观察器放在业务内容祖先上、关闭自己的 responder/press ownership，并在手势阈值以下实际按一个业务控件；同时用宿主窗口比例把 page 坐标换算为逻辑画布坐标，不能拿像素直接和逻辑阈值比较。
+- fail-closed 不等于失败可诊断。物理 host identity 矛盾若只返回 `null`，会与普通 host not-ready 合并成永久 loading；必须保留 typed rejection 和脱敏 logger 事件，同时仍不渲染 children。
+
+适用边界：这是实施与 focused proof 的通用检查，不要求为每个形态或每个观察器新增框架。最小闭环是：真实生产装配、一个相反形态/矛盾事实的红向量、一个用户可见或结构化可读的失败信号、以及正常业务后代动作的正向向量。focused 通过仍不能提升 Web、Android、native device、release 或 visual 档位。

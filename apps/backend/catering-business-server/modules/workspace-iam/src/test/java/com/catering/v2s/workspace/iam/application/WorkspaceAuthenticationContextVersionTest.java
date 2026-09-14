@@ -3,7 +3,9 @@ package com.catering.v2s.workspace.iam.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
+import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationVisibilityLookup;
 import com.catering.v2s.organization.application.BusinessEntityService;
@@ -181,6 +183,7 @@ class WorkspaceAuthenticationContextVersionTest {
         assertEquals(WorkspaceSessionEntryReadback.Outcome.SELECT_IDENTITY, entry.outcome());
         assertEquals(accountId, entry.accountId());
         assertEquals(assignmentId, entry.candidates().getFirst().roleAssignmentId());
+        assertEquals("Identity operator", entry.candidates().getFirst().roleName());
     }
 
     @Test
@@ -253,7 +256,13 @@ class WorkspaceAuthenticationContextVersionTest {
     private static WorkspaceAuthenticationService authentication(UUID visibleNodeId) {
         TimeProvider time = () -> NOW;
         BusinessEntityService entities = new BusinessEntityService(
-                jdbc, time, new ExtensionDefinitionService(jdbc, time, WORKSPACE_STATUSES), hierarchy);
+                jdbc,
+                time,
+                new ExtensionDefinitionService(
+                        new ExtensionDefinitionPersistence(jdbc, time),
+                        new ExtensionCommandReceiptService(jdbc, time),
+                        WORKSPACE_STATUSES),
+                hierarchy);
         CommercialGroupLookup groups = new CommercialGroupLookup() {
             @Override
             public UUID requireCommercialGroupRef(UUID workspaceUuid, String groupWorkspaceKey) {

@@ -40,7 +40,6 @@ import type {
   StateRuntimeSliceRegistration,
   StateRuntimeSyncDescriptor,
   StateRuntimeSyncRecordDescriptor,
-  StateStorageTimeoutPolicy,
   StateSyncSkipReason,
   StateSyncApplyResult,
   StateSyncPayloadResult,

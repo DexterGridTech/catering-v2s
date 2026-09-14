@@ -6,6 +6,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import ts from 'typescript';
+import {findJavaSelectStarViolations, findJavaSqlConstructionUnknowns} from './sql-shape.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const skip = new Set(['.git', 'node_modules', '.gradle', 'build', 'dist']);
@@ -38,6 +39,68 @@ function assertFile(relative, code, base = root) {
 }
 function assertNoMatch(files, pattern, code, base = root) {
   for (const file of files) if (pattern.test(read(file, base))) fail(code, file);
+}
+function maskJavaTrivia(source) {
+  const chars = source.split('');
+  const blank = (start, end) => {
+    for (let index = start; index < end; index += 1) {
+      if (chars[index] !== '\n' && chars[index] !== '\r') chars[index] = ' ';
+    }
+  };
+  let index = 0;
+  while (index < source.length) {
+    if (source.startsWith('//', index)) {
+      const newline = source.indexOf('\n', index + 2);
+      const end = newline === -1 ? source.length : newline;
+      blank(index, end);
+      index = end;
+      continue;
+    }
+    if (source.startsWith('/*', index)) {
+      const marker = source.indexOf('*/', index + 2);
+      const end = marker === -1 ? source.length : marker + 2;
+      blank(index, end);
+      index = end;
+      continue;
+    }
+    if (source.startsWith('"""', index)) {
+      const start = index;
+      index += 3;
+      while (index < source.length && !(source.startsWith('"""', index) && source[index - 1] !== '\\')) {
+        index += 1;
+      }
+      index += source.startsWith('"""', index) ? 3 : 0;
+      blank(start, index);
+      continue;
+    }
+    if (source[index] === '"' || source[index] === "'") {
+      const start = index;
+      const quote = source[index];
+      index += 1;
+      while (index < source.length) {
+        if (source[index] === '\\') {
+          index += 2;
+          continue;
+        }
+        if (source[index] === quote) {
+          index += 1;
+          break;
+        }
+        index += 1;
+      }
+      blank(start, index);
+      continue;
+    }
+    index += 1;
+  }
+  return chars.join('');
+}
+function assertNoJavaMatch(files, pattern, code, base = root) {
+  for (const file of files) {
+    const masked = maskJavaTrivia(read(file, base));
+    pattern.lastIndex = 0;
+    if (pattern.test(masked)) fail(code, file);
+  }
 }
 const frontendCapabilityLiteralPattern = /^(?:BC-[A-Z0-9-]+|EDIT_[A-Z0-9_]+)$/;
 function frontendScriptKind(file) {
@@ -922,39 +985,43 @@ function database(base = root) {
   process.stdout.write('R4_DATABASE_BOUNDARIES=PASS\n');
 }
 function budget(base = root) {
-  const files = sourceFiles('apps/backend/catering-business-server/modules', base)
-    .concat(sourceFiles(appRoot, base))
-    .filter(file => /\.java$/.test(file));
-  const compatibilitySelectStarPaths = new Set([
-    'apps/backend/catering-business-server/modules/foundation/src/test/java/com/catering/v2s/platform/foundation/persistence/DatabaseOperationTrackerTest.java',
-    'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationAuditHistoryService.java',
-    'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreCandidateTaskReadService.java',
-    'apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractAuditHistoryService.java',
-    'apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java',
-    'apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/PlatformWorkspaceAccountTaskReadService.java',
-    'apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/PlatformWorkspaceInvitationTaskReadService.java',
-    'apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceIamAuditHistoryService.java',
-    'apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java',
-  ]);
-  const actualSelectStarPaths = [...new Set(files.filter(file => /SELECT\s+\*/i.test(read(file, base))))].sort();
-  const expectedSelectStarPaths = [...compatibilitySelectStarPaths].sort();
-  if (actualSelectStarPaths.some(file => !compatibilitySelectStarPaths.has(file))) {
+  const files = [
+    ...new Set(
+      sourceFiles('apps/backend/catering-business-server/modules', base)
+        .concat(sourceFiles(appRoot, base))
+        .filter(file => /\.java$/.test(file)),
+    ),
+  ].map(file => ({file, source: read(file, base)}));
+  const selectStarViolations = findJavaSelectStarViolations(files);
+  if (selectStarViolations.length) {
     fail(
       'R4_DATABASE_SELECT_STAR',
-      actualSelectStarPaths.filter(file => !compatibilitySelectStarPaths.has(file)).join(','),
+      selectStarViolations
+        .map(entry => `${entry.file}:${entry.line}:${entry.projection} FROM ${entry.relation}`)
+        .join(','),
     );
   }
-  if (
-    actualSelectStarPaths.length !== expectedSelectStarPaths.length ||
-    actualSelectStarPaths.some((file, index) => file !== expectedSelectStarPaths[index])
-  ) {
-    fail('R4_DATABASE_SELECT_STAR_COMPATIBILITY_SET_DRIFT', actualSelectStarPaths.join(','));
-  }
-  assertNoMatch(files, /\.query\([^\n]*\)\s*;\s*(?:for|while)\s*\(/i, 'R4_DATABASE_LOOP_IO', base);
+  const unknowns = findJavaSqlConstructionUnknowns(files);
+  assertNoMatch(
+    files.map(entry => entry.file),
+    /\.query\([^\n]*\)\s*;\s*(?:for|while)\s*\(/i,
+    'R4_DATABASE_LOOP_IO',
+    base,
+  );
   process.stdout.write(
-    'R4_DATABASE_OPERATION_BUDGET=COMPATIBILITY_PASS\nR4_DATABASE_SELECT_STAR=EXPLICIT_HISTORICAL_RED_DISPOSITION\nR4_DATABASE_SELECT_STAR_COMPATIBILITY_COUNT=' +
-      actualSelectStarPaths.length +
-      '\nR4_DATABASE_SHAPE_OWNER=backend-performance-operation-database-shape\n',
+    'R4_DATABASE_QUERY_BOUNDARIES=PASS\n' +
+      'R4_DATABASE_OPERATION_BUDGET=PASS\n' +
+      'R4_DATABASE_SELECT_STAR=NO_PHYSICAL_TABLE_SELECT_STAR\n' +
+      'R4_DATABASE_SQL_CONSTRUCTION_UNKNOWN_COUNT=' +
+      unknowns.length +
+      '\n' +
+      'R4_DATABASE_SQL_CONSTRUCTION_STATUS=' +
+      (unknowns.length ? 'OPEN_UNTIL_CAPTURE_OR_REVIEW' : 'CLOSED') +
+      '\n' +
+      'R4_DATABASE_SQL_CONSTRUCTION_UNRESOLVED=' +
+      JSON.stringify(unknowns) +
+      '\n' +
+      'R4_DATABASE_SHAPE_OWNER=backend-performance-operation-database-shape\n',
   );
 }
 function backend(base = root) {
@@ -994,8 +1061,8 @@ function backend(base = root) {
     'R4_BACKEND_DOMAIN_TRANSPORT_DEPENDENCY',
     base,
   );
-  assertNoMatch(
-    moduleSources.filter(file => /\/(?:application|domain)\//.test(file)),
+  assertNoJavaMatch(
+    moduleSources.filter(file => /\/(?:application|domain|persistence|infrastructure|adapter)\//.test(file)),
     /Kafka|WebClient|RestTemplate|@EventListener|@TransactionalEventListener|outbox|@Scheduled/,
     'R4_BACKEND_WRITE_PATH_EXTERNAL_OR_EVENT_CHAIN',
     base,
@@ -1443,7 +1510,11 @@ function selfTest(action) {
   try {
     fs.cpSync(root, scratch, {
       recursive: true,
-      filter: source => !source.includes('/.git') && !source.includes('/build') && !source.includes('/node_modules'),
+      filter: source =>
+        !source.includes('/.git') &&
+        !source.includes('/.runtime') &&
+        !source.includes('/build') &&
+        !source.includes('/node_modules'),
     });
     prepareSelfTestClean(action, scratch);
     let frontendCatalogOriginal;
@@ -1969,11 +2040,311 @@ function selfTest(action) {
       const source = `${appRoot}/src/main/resources/db/migration/V20260725_170000_000__platform_workspace_and_commercial_group.sql`;
       write(source, read(source, scratch) + '\nALTER TABLE organization.commercial_group DEFERRABLE;\n');
     } else if (action === 'budget') {
+      const commentFixture =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/R4BudgetComment.java';
+      write(commentFixture, '// SELECT * FROM organization.commercial_group\nclass R4BudgetComment {}\n');
+      actions[action](scratch);
+      fs.rmSync(path.join(scratch, commentFixture));
+
+      const assertionFixture =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/R4BudgetAssertionText.java';
       write(
-        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/R4BudgetLeak.java',
-        '// SELECT * FROM organization.commercial_group\n',
+        assertionFixture,
+        'class R4BudgetAssertionText { void check(String actual) { assertEquals("SELECT * FROM organization.commercial_group", actual); } }\n',
       );
+      actions[action](scratch);
+      fs.rmSync(path.join(scratch, assertionFixture));
+
+      const allowedShapeFixture =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/R4BudgetAllowedShapes.java';
+      write(
+        allowedShapeFixture,
+        `class R4BudgetAllowedShapes {
+    String cte = "WITH filtered AS (SELECT id FROM organization.commercial_group) SELECT * FROM filtered";
+    String derived = "SELECT * FROM (SELECT id FROM organization.commercial_group) AS combined";
+    String derivedAlias = "SELECT combined.* FROM (SELECT id FROM organization.commercial_group) AS combined";
+}
+`,
+      );
+      actions[action](scratch);
+      fs.rmSync(path.join(scratch, allowedShapeFixture));
+
+      const persistenceCteFragmentFixture =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/persistence/R4BudgetPersistenceCteFragments.java';
+      write(
+        persistenceCteFragmentFixture,
+        `package com.catering.v2s.organization.persistence;
+final class R4BudgetPersistenceCteFragments {
+    static final String CTE = "WITH filtered AS (SELECT id FROM organization.commercial_group) ";
+    static final String PROJECTION = "SELECT filtered.* FROM ";
+    static final String RELATION = "filtered";
+}
+`,
+      );
+      actions[action](scratch);
+      fs.rmSync(path.join(scratch, persistenceCteFragmentFixture));
+
+      const holderScopeLeakFixture =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/persistence/R4BudgetHolderScopeLeakSql.java';
+      const holderScopeLeakSource = `package com.catering.v2s.organization.persistence;
+final class R4BudgetHolderScopeLeakSql {
+    static final String CTE = "WITH users AS (SELECT id FROM organization.commercial_group) ";
+    static final String INDEPENDENT = "SELECT * FROM users";
+    static final String SECOND_STATEMENT = "WITH filtered AS (SELECT id FROM organization.commercial_group) SELECT * FROM filtered; SELECT * FROM filtered";
+}
+`;
+      const holderScopeLeakEntries = [
+        {file: holderScopeLeakFixture, source: holderScopeLeakSource},
+      ];
+      const holderScopeLeakViolations = findJavaSelectStarViolations(holderScopeLeakEntries);
+      const holderScopeLeakUnknowns = findJavaSqlConstructionUnknowns(holderScopeLeakEntries);
+      if (
+        holderScopeLeakViolations.length !== 0 ||
+        holderScopeLeakUnknowns.filter(entry => entry.reason === 'unscoped-persistence-select-star').length < 2
+      )
+        fail('R4_DATABASE_SELECT_STAR_HOLDER_SCOPE_LEAK_SELF_TEST_NOT_DETECTED');
+
+      const reverseOrderHolderFixture =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/persistence/R4BudgetReverseOrderSql.java';
+      const reverseOrderCallerFixture =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/R4BudgetReverseOrderCaller.java';
+      const reverseOrderEntries = [
+        {
+          file: reverseOrderHolderFixture,
+          source: `package com.catering.v2s.organization.persistence;
+public final class R4BudgetReverseOrderSql {
+    public static final String CTE = "WITH users AS (SELECT id FROM organization.commercial_group) ";
+    public static final String PROJECTION = "SELECT * FROM users";
+}
+`,
+        },
+        {
+          file: reverseOrderCallerFixture,
+          source: `package com.catering.v2s.organization.application;
+import com.catering.v2s.organization.persistence.R4BudgetReverseOrderSql;
+final class R4BudgetReverseOrderCaller {
+    String query = R4BudgetReverseOrderSql.PROJECTION + R4BudgetReverseOrderSql.CTE;
+}
+`,
+        },
+      ];
+      const reverseOrderViolations = findJavaSelectStarViolations(reverseOrderEntries);
+      const reverseOrderUnknowns = findJavaSqlConstructionUnknowns(reverseOrderEntries);
+      if (
+        reverseOrderViolations.length !== 0 ||
+        !reverseOrderUnknowns.some(entry => entry.reason === 'unscoped-persistence-select-star')
+      )
+        fail('R4_DATABASE_SELECT_STAR_REVERSE_ORDER_SCOPE_SELF_TEST_NOT_DETECTED');
+
+      const nestedCteFixture =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/persistence/R4BudgetNestedCteSql.java';
+      const nestedCteUnknowns = findJavaSqlConstructionUnknowns([
+        {
+          file: nestedCteFixture,
+          source: `package com.catering.v2s.organization.persistence;
+final class R4BudgetNestedCteSql {
+    static final String SQL = "WITH outer_rows AS (WITH users AS (SELECT id FROM organization.commercial_group) SELECT * FROM users) SELECT * FROM users";
+}
+`,
+        },
+      ]);
+      if (!nestedCteUnknowns.some(entry => entry.reason === 'unscoped-persistence-select-star'))
+        fail('R4_DATABASE_SELECT_STAR_NESTED_CTE_SCOPE_SELF_TEST_NOT_DETECTED');
+
+      const incompleteFragmentUnknowns = findJavaSqlConstructionUnknowns([
+        {
+          file: 'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/persistence/R4BudgetIncompleteSelectStarSql.java',
+          source: `package com.catering.v2s.organization.persistence;
+final class R4BudgetIncompleteSelectStarSql {
+    static final String INCOMPLETE = "SELECT * FROM ";
+}
+`,
+        },
+      ]);
+      if (!incompleteFragmentUnknowns.some(entry => entry.reason === 'incomplete-select-star-fragment'))
+        fail('R4_DATABASE_SELECT_STAR_INCOMPLETE_FRAGMENT_SELF_TEST_NOT_REPORTED');
+
+      const expectPhysicalSelectStarRed = (label, relative, content) => {
+        const absolute = path.join(scratch, relative);
+        const original = fs.existsSync(absolute) ? read(relative, scratch) : undefined;
+        write(relative, `${original ?? ''}${content}`);
+        let detected = false;
+        try {
+          actions[action](scratch);
+        } catch (error) {
+          detected = String(error).includes('R4_DATABASE_SELECT_STAR');
+        }
+        if (original === undefined) fs.rmSync(absolute);
+        else write(relative, original);
+        if (!detected) fail(`R4_DATABASE_SELECT_STAR_${label}_SELF_TEST_NOT_DETECTED`);
+      };
+
+      const historicalMutationTargets = [
+        'apps/backend/catering-business-server/modules/foundation/src/test/java/com/catering/v2s/platform/foundation/persistence/DatabaseOperationTrackerTest.java',
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationAuditHistoryService.java',
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreCandidateTaskReadService.java',
+        'apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractAuditHistoryService.java',
+        'apps/backend/catering-business-server/modules/store-contract/src/main/java/com/catering/v2s/contract/application/ContractTaskReadService.java',
+        'apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/PlatformWorkspaceAccountTaskReadService.java',
+        'apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/PlatformWorkspaceInvitationTaskReadService.java',
+        'apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceIamAuditHistoryService.java',
+        'apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceRoleService.java',
+      ];
+      const physicalMutation =
+        '\nclass R4PhysicalSelectStarMutation { String sql = "SELECT * FROM organization.commercial_group"; }\n';
+      for (const [index, target] of historicalMutationTargets.entries())
+        expectPhysicalSelectStarRed(`HISTORICAL_${index + 1}`, target, physicalMutation);
+
+      const newPath =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/R4BudgetNewPath.java';
+      expectPhysicalSelectStarRed('NEW_PATH', newPath, physicalMutation);
+      expectPhysicalSelectStarRed(
+        'TEXT_BLOCK',
+        newPath,
+        '\nclass R4TextBlockSelectStarMutation { String sql = """\nSELECT * FROM organization.commercial_group\n"""; }\n',
+      );
+      expectPhysicalSelectStarRed(
+        'CONCATENATED_LITERAL',
+        newPath,
+        '\nclass R4ConcatenatedSelectStarMutation { String sql = "SELECT " + "* FROM organization.commercial_group"; }\n',
+      );
+      expectPhysicalSelectStarRed(
+        'PHYSICAL_TABLE_ALIAS',
+        newPath,
+        '\nclass R4PhysicalTableAliasMutation { String sql = "SELECT row.* FROM organization.commercial_group row"; }\n',
+      );
+      expectPhysicalSelectStarRed(
+        'DISTINCT_PHYSICAL_TABLE',
+        newPath,
+        '\nclass R4DistinctSelectStarMutation { String sql = "SELECT DISTINCT * FROM organization.commercial_group"; }\n',
+      );
+      expectPhysicalSelectStarRed(
+        'MIXED_PHYSICAL_TABLE',
+        newPath,
+        '\nclass R4MixedSelectStarMutation { String sql = "SELECT *, id FROM organization.commercial_group"; }\n',
+      );
+      expectPhysicalSelectStarRed(
+        'CTE_SCOPE',
+        newPath,
+        '\nclass R4CteScopeMutation { String sql = "WITH filtered AS (SELECT id FROM organization.commercial_group) SELECT * FROM filtered; SELECT * FROM filtered"; }\n',
+      );
+      const helperUnknownFixture =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/R4BudgetHelperUnknown.java';
+      write(
+        helperUnknownFixture,
+        'class R4BudgetHelperUnknown { String base = "SELECT id FROM organization.commercial_group"; String build() { return base + buildFragment(); } }\n',
+      );
+      const helperUnknowns = findJavaSqlConstructionUnknowns([
+        {file: helperUnknownFixture, source: read(helperUnknownFixture, scratch)},
+      ]);
+      fs.rmSync(path.join(scratch, helperUnknownFixture));
+      if (!helperUnknowns.some(entry => entry.reason === 'helper-return')) fail('R4_DATABASE_SQL_HELPER_UNKNOWN_NOT_REPORTED');
+      const directHelperFixture =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/R4BudgetDirectHelper.java';
+      write(
+        directHelperFixture,
+        'class R4BudgetDirectHelper { String query = "SELECT " + part(); String part() { return "* FROM organization.commercial_group"; } }\n',
+      );
+      const directHelperUnknowns = findJavaSqlConstructionUnknowns([
+        {file: directHelperFixture, source: read(directHelperFixture, scratch)},
+      ]);
+      fs.rmSync(path.join(scratch, directHelperFixture));
+      if (!directHelperUnknowns.some(entry => entry.reason === 'helper-return'))
+        fail('R4_DATABASE_SQL_DIRECT_HELPER_UNKNOWN_NOT_REPORTED');
+      const crossFileCaller =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/R4BudgetCrossFileCaller.java';
+      const crossFileConstants =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/R4BudgetCrossFileConstants.java';
+      write(crossFileCaller, 'class R4BudgetCrossFileCaller { String query = R4BudgetCrossFileConstants.PREFIX + R4BudgetCrossFileConstants.SUFFIX; }\n');
+      write(
+        crossFileConstants,
+        'final class R4BudgetCrossFileConstants { static final String PREFIX = "SELECT "; static final String SUFFIX = "* FROM organization.commercial_group"; }\n',
+      );
+      const crossFileUnknowns = findJavaSqlConstructionUnknowns([
+        {file: crossFileCaller, source: read(crossFileCaller, scratch)},
+        {file: crossFileConstants, source: read(crossFileConstants, scratch)},
+      ]);
+      fs.rmSync(path.join(scratch, crossFileCaller));
+      fs.rmSync(path.join(scratch, crossFileConstants));
+      if (!crossFileUnknowns.some(entry => entry.reason === 'cross-file-constant-reference'))
+        fail('R4_DATABASE_SQL_CROSS_FILE_UNKNOWN_NOT_REPORTED');
+      const persistenceCaller =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/R4BudgetPersistenceCaller.java';
+      const persistenceHolder =
+        'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/persistence/R4BudgetPersistenceSql.java';
+      write(
+        persistenceHolder,
+        'package com.catering.v2s.organization.persistence;\npublic final class R4BudgetPersistenceSql { public static final String SELECT = "SELECT id FROM organization.commercial_group"; }\n',
+      );
+      write(
+        persistenceCaller,
+        'package com.catering.v2s.organization.application;\nimport com.catering.v2s.organization.persistence.R4BudgetPersistenceSql;\nimport org.springframework.jdbc.core.JdbcTemplate;\nfinal class R4BudgetPersistenceCaller { void read(JdbcTemplate jdbc) { jdbc.query(R4BudgetPersistenceSql.SELECT, (row, index) -> row.getLong(1)); } }\n',
+      );
+      const persistenceUnknowns = findJavaSqlConstructionUnknowns([
+        {file: persistenceCaller, source: read(persistenceCaller, scratch)},
+        {file: persistenceHolder, source: read(persistenceHolder, scratch)},
+      ]);
+      fs.rmSync(path.join(scratch, persistenceCaller));
+      fs.rmSync(path.join(scratch, persistenceHolder));
+      if (persistenceUnknowns.some(entry => entry.reason === 'cross-file-constant-reference'))
+        fail('R4_DATABASE_SQL_PERSISTENCE_CONSTANT_FALSE_POSITIVE');
+      process.stdout.write(
+        'R4_DATABASE_SQL_DIRECT_HELPER_UNKNOWN=PASS\nR4_DATABASE_SQL_CROSS_FILE_UNKNOWN=PASS\n' +
+          'R4_DATABASE_SQL_PERSISTENCE_CONSTANT=PASS\n',
+      );
+      process.stdout.write(
+        'R4_DATABASE_SELECT_STAR_COMMENT_GREEN=PASS\nR4_DATABASE_SELECT_STAR_ASSERTION_GREEN=PASS\nR4_DATABASE_SELECT_STAR_CTE_DERIVED_GREEN=PASS\nR4_DATABASE_SELECT_STAR_HISTORICAL_9_PLUS_1_RED=PASS\nR4_DATABASE_SELECT_STAR_TEXT_BLOCK_RED=PASS\nR4_DATABASE_SELECT_STAR_CONCATENATED_LITERAL_RED=PASS\nR4_DATABASE_SELECT_STAR_PHYSICAL_ALIAS_RED=PASS\nR4_DATABASE_SELECT_STAR_DISTINCT_RED=PASS\nR4_DATABASE_SELECT_STAR_MIXED_RED=PASS\nR4_DATABASE_SELECT_STAR_CTE_SCOPE_RED=PASS\nR4_DATABASE_SELECT_STAR_HOLDER_SCOPE_LEAK_UNKNOWN=PASS\nR4_DATABASE_SELECT_STAR_REVERSE_ORDER_SCOPE_UNKNOWN=PASS\nR4_DATABASE_SELECT_STAR_NESTED_CTE_SCOPE_UNKNOWN=PASS\nR4_DATABASE_SELECT_STAR_INCOMPLETE_FRAGMENT_UNKNOWN=PASS\nR4_DATABASE_SQL_HELPER_UNKNOWN=PASS\nR4_DATABASE_QUERY_BOUNDARIES_SELF_TEST=PASS\n',
+      );
+      return;
     } else if (action === 'backend') {
+      const externalWriteFixtures = [
+        [
+          'PERSISTENCE',
+          'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/persistence/R4PersistenceExternalWriteMutation.java',
+          'package com.catering.v2s.organization.persistence;\nimport org.springframework.web.client.RestTemplate;\nfinal class R4PersistenceExternalWriteMutation { RestTemplate client; }\n',
+        ],
+        [
+          'INFRASTRUCTURE',
+          'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/infrastructure/R4InfrastructureExternalWriteMutation.java',
+          'package com.catering.v2s.organization.infrastructure;\nimport org.springframework.web.client.RestTemplate;\nfinal class R4InfrastructureExternalWriteMutation { RestTemplate client; }\n',
+        ],
+        [
+          'ADAPTER',
+          'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/adapter/R4AdapterExternalWriteMutation.java',
+          'package com.catering.v2s.organization.adapter;\nimport org.springframework.web.client.RestTemplate;\nfinal class R4AdapterExternalWriteMutation { RestTemplate client; }\n',
+        ],
+      ];
+      for (const [label, relative, content] of externalWriteFixtures) {
+        write(relative, content);
+        let detected = false;
+        try {
+          actions[action](scratch);
+        } catch (error) {
+          detected = String(error).includes('R4_BACKEND_WRITE_PATH_EXTERNAL_OR_EVENT_CHAIN');
+        }
+        fs.rmSync(path.join(scratch, relative));
+        if (!detected) fail('R4_BACKEND_WRITE_PATH_' + label + '_SELF_TEST_NOT_DETECTED');
+        const greenRelative = relative.replace('.java', 'Green.java');
+        write(
+          greenRelative,
+          'package com.catering.v2s.organization.' +
+            label.toLowerCase() +
+            ';\nfinal class R4' +
+            label +
+            'ExternalWriteGreenFixture { String description = "RestTemplate"; /* RestTemplate */ }\n',
+        );
+        try {
+          actions[action](scratch);
+        } catch (error) {
+          fs.rmSync(path.join(scratch, greenRelative));
+          fail('R4_BACKEND_WRITE_PATH_' + label + '_GREEN_FALSE_POSITIVE', String(error));
+        }
+        fs.rmSync(path.join(scratch, greenRelative));
+        process.stdout.write(
+          'R4_BACKEND_WRITE_PATH_' + label + '_RED=PASS\n' +
+            'R4_BACKEND_WRITE_PATH_' + label + '_GREEN=PASS\n',
+        );
+      }
       write(
         'apps/backend/catering-business-server/build.gradle.kts',
         'dependencies { implementation("org.projectlombok:lombok") }\n',

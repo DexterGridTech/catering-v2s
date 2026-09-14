@@ -133,7 +133,7 @@ assembly 若要等原生初始化，**在调用 factory 之前 await**，不要�
 ### 5.2 消费：五态必须分支，不能当成功值用
 
 ```ts
-const read = await ports.persistKv.read({key: 'lastOrderId', timeoutMs: 1000});
+const read = await ports.persistKv.read({key: 'lastOrderId'});
 
 switch (read.status) {
   case 'succeeded':
@@ -144,7 +144,6 @@ switch (read.status) {
     // read.reason: 'ADAPTER_NOT_INJECTED' | 'PLATFORM_UNSUPPORTED'
     break;
   case 'failed':      break;   // read.error.retryable 决定要不要重试
-  case 'timed-out':   break;   // read.timeoutMs 是原始预算
 }
 ```
 

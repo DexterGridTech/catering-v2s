@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react'
 import {closeLayerCommand} from '@catering-v2s/kernel-base-ui-state'
-import {useInputController} from '@catering-v2s/ui-base-input'
+import {BUSINESS_FOCUS_SCOPE_ID, useInputController} from '@catering-v2s/ui-base-input'
 import {
   dispatchWithRequestId,
   useDispatchCommand,
@@ -27,23 +27,20 @@ export const AdminLayer = () => {
   const displayIndex = identity?.displayIndex ?? null
   const surfaceForm = identity?.surfaceForm ?? surface.surfaceForm
   const identityDisplayMode = identity?.displayMode ?? surface.displayMode
-  const previousDisplayMode = useRef(identityDisplayMode)
 
   useEffect(() => {
-    const previous = previousDisplayMode.current
-    previousDisplayMode.current = identityDisplayMode
     return () => {
       void dispatchWithRequestId({
         dispatchCommand: dispatchRef.current,
         definition: closeLayerCommand,
-        payload: {displayMode: previous, layerId: ADMIN_CONSOLE_LAYER_ID},
+        payload: {displayMode: identityDisplayMode, layerId: ADMIN_CONSOLE_LAYER_ID},
       }).catch(() => undefined)
     }
-  }, [surfaceKey, displayIndex, surfaceForm, identityDisplayMode])
+  }, [displayIndex, identityDisplayMode, surfaceForm, surfaceKey])
 
   useLayoutEffect(() => {
     inputController.activateFocusScope(ADMIN_CONSOLE_FOCUS_SCOPE_ID)
-    return () => inputController.activateFocusScope('business')
+    return () => inputController.activateFocusScope(BUSINESS_FOCUS_SCOPE_ID)
   }, [inputController])
 
   const close = useCallback(() => {

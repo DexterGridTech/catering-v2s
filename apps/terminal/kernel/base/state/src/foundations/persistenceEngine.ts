@@ -5,7 +5,6 @@ import type {
   PersistenceHealthListener,
   PersistenceOperationResult,
   PersistenceStorageKind,
-  StateStorageTimeoutPolicy,
 } from '../types/persistence'
 import type {RegisteredStateRuntimeSlice} from '../types/slice'
 import type {StateRoot} from '../types/runtime'
@@ -36,7 +35,6 @@ export interface HydrateStateRuntimeInput {
   readonly persistenceKey: string
   readonly slices: readonly RegisteredStateRuntimeSlice[]
   readonly storagePorts: StoragePorts
-  readonly timeouts: StateStorageTimeoutPolicy
   readonly logger: LoggerPort
 }
 
@@ -76,7 +74,6 @@ export class PersistenceEngine {
   readonly #slices: readonly RegisteredStateRuntimeSlice[]
   readonly #entries: readonly PersistenceEntry[]
   readonly #storagePorts: StoragePorts
-  readonly #timeouts: StateStorageTimeoutPolicy
   readonly #logger: LoggerPort
   readonly #storageState: Map<PersistenceStorageKind, StorageState>
   readonly #migrations: MigrationEntry[]
@@ -99,7 +96,6 @@ export class PersistenceEngine {
     this.#slices = input.runtime.slices
     this.#entries = input.entries
     this.#storagePorts = input.runtime.storagePorts
-    this.#timeouts = input.runtime.timeouts
     this.#logger = input.runtime.logger
     this.#storageState = input.storageState
     this.#migrations = [...input.migrations]
@@ -446,9 +442,7 @@ export class PersistenceEngine {
     const removedKeys: string[] = []
     const failures: PersistenceFailure[] = []
     for (const storageKind of storageKinds) {
-      const listed = await this.#storagePorts[storageKind].listKeys({
-        timeoutMs: this.#timeouts.resetMs,
-      })
+      const listed = await this.#storagePorts[storageKind].listKeys({})
       if (!isSucceeded(listed)) {
         failures.push(portFailure({phase: 'reset', storageKind, operation: 'listKeys', result: listed}))
         continue
@@ -501,19 +495,14 @@ export class PersistenceEngine {
       ...state,
       rebaselineAttempted: true,
     })
-    const listed = await this.#storagePorts[storageKind].listKeys({
-      timeoutMs: this.#timeouts.readMs,
-    })
+    const listed = await this.#storagePorts[storageKind].listKeys({})
     if (!isSucceeded(listed)) {
       this.#updateHealth(portFailure({phase: 'hydrate', storageKind, operation: 'listKeys', result: listed}))
       return false
     }
     const entries = groupEntries(this.#entries, storageKind, true)
     const keys = keysForStorage(listed.value, entries)
-    const read = await this.#storagePorts[storageKind].readMany({
-      keys,
-      timeoutMs: this.#timeouts.readMs,
-    })
+    const read = await this.#storagePorts[storageKind].readMany({keys})
     if (!isSucceeded(read)) {
       this.#updateHealth(portFailure({phase: 'hydrate', storageKind, operation: 'readMany', result: read}))
       return false
@@ -564,7 +553,6 @@ export class PersistenceEngine {
     const result = await this.#storagePorts[input.storageKind].write({
       key: input.storageKey,
       value: input.encoded,
-      timeoutMs: this.#timeouts.writeMs,
     })
     if (isSucceeded(result)) {
       return undefined
@@ -583,10 +571,7 @@ export class PersistenceEngine {
     storageKind: PersistenceStorageKind,
     storageKey: string,
   ): Promise<PersistenceFailure | undefined> {
-    const result = await this.#storagePorts[storageKind].remove({
-      key: storageKey,
-      timeoutMs: phase === 'reset' ? this.#timeouts.resetMs : this.#timeouts.writeMs,
-    })
+    const result = await this.#storagePorts[storageKind].remove({key: storageKey})
     if (isSucceeded(result)) {
       return undefined
     }

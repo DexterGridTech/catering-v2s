@@ -10,6 +10,7 @@ const Path = 'Path'
 const ScrollView = 'ScrollView'
 const Pressable = 'Pressable'
 const ActivityIndicator = 'ActivityIndicator'
+const Image = 'Image'
 const VirtualizedList = 'VirtualizedList'
 const TextInput = Object.assign(
   (props: Readonly<Record<string, unknown>>) => createElement('TextInput', props),
@@ -41,5 +42,5 @@ const testGlobals = globalThis as typeof globalThis & {
 }
 testGlobals.__restoreReactNativeTestGlobals?.()
 
-export {ActivityIndicator, BackHandler, Keyboard, Path, Pressable, ScrollView, StyleSheet, Svg, Text, TextInput, VirtualizedList, useColorScheme, useWindowDimensions, View}
+export {ActivityIndicator, BackHandler, Image, Keyboard, Path, Pressable, ScrollView, StyleSheet, Svg, Text, TextInput, VirtualizedList, useColorScheme, useWindowDimensions, View}
 export default Svg

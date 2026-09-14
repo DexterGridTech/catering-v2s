@@ -1,5 +1,6 @@
 package com.catering.v2s.organization.application;
 
+import com.catering.v2s.organization.application.persistence.BusinessEntityCommandReceiptPersistence;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
@@ -7,6 +8,7 @@ import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -14,11 +16,17 @@ import org.springframework.stereotype.Service;
 @Service
 public final class BusinessEntityCommandReceiptService {
     private static final ObjectMapper JSON = new ObjectMapper();
-    private final JdbcTemplate jdbc;
+    private final BusinessEntityCommandReceiptPersistence persistence;
     private final TimeProvider time;
 
     public BusinessEntityCommandReceiptService(JdbcTemplate jdbc, TimeProvider time) {
-        this.jdbc = jdbc;
+        this(new BusinessEntityCommandReceiptPersistence(jdbc), time);
+    }
+
+    @Autowired
+    public BusinessEntityCommandReceiptService(
+            BusinessEntityCommandReceiptPersistence persistence, TimeProvider time) {
+        this.persistence = persistence;
         this.time = time;
     }
 
@@ -44,11 +52,8 @@ public final class BusinessEntityCommandReceiptService {
         if (existing != null) return BrandAuthorizationAcknowledgement.INSTANCE;
         try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             command.run();
-            jdbc.update(
-                    "UPDATE organization.organization_command_receipt SET entity_id=?, response_json=CAST(? AS JSONB), "
-                            + "state='SUCCEEDED' WHERE workspace_uuid=? AND idempotency_key=? AND state='IN_PROGRESS'",
+            persistence.markAuthorizationSucceeded(
                     headCompanyId,
-                    "{\"status\":204}",
                     workspaceUuid,
                     idempotencyKey);
             return BrandAuthorizationAcknowledgement.INSTANCE;
@@ -67,9 +72,7 @@ public final class BusinessEntityCommandReceiptService {
         if (existing != null) return deserializer.apply(existing.responseJson());
         try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             T result = command.get();
-            jdbc.update(
-                    "UPDATE organization.organization_command_receipt SET entity_id=?, response_json=?::jsonb, "
-                            + "state='SUCCEEDED' WHERE workspace_uuid=? AND idempotency_key=? AND state='IN_PROGRESS'",
+            persistence.markSucceeded(
                     entityId.apply(result),
                     serializer.apply(result),
                     workspaceUuid,
@@ -86,26 +89,14 @@ public final class BusinessEntityCommandReceiptService {
         if (workspaceUuid == null) throw new BusinessEntityService.OrganizationValidationException();
         String key = requiredKey(idempotencyKey);
         String requestHash = sha256(canonicalRequest);
-        int claimed = jdbc.update(
-                "INSERT INTO organization.organization_command_receipt (workspace_uuid, idempotency_key, request_hash, "
-                        + "response_json, state, created_at_epoch_millis) VALUES (?, ?, ?, '{}'::jsonb, 'IN_PROGRESS', "
-                        + "?) "
-                        + "ON CONFLICT (workspace_uuid, idempotency_key) DO NOTHING",
+        int claimed = persistence.claim(
                 workspaceUuid,
                 key,
                 requestHash,
                 time.currentEpochMillis());
         if (claimed == 1) return null;
-        Receipt existing = jdbc.query(
-                "SELECT request_hash, response_json::text, state FROM organization.organization_command_receipt WHERE "
-                        + "workspace_uuid=? AND idempotency_key=?",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, key);
-                },
-                result -> result.next()
-                        ? new Receipt(result.getString(1), result.getString(2), result.getString(3))
-                        : null);
+        BusinessEntityCommandReceiptPersistence.Receipt stored = persistence.read(workspaceUuid, key);
+        Receipt existing = stored == null ? null : new Receipt(stored.requestHash(), stored.responseJson(), stored.state());
         if (existing == null || !"SUCCEEDED".equals(existing.state()))
             throw new BusinessEntityReceiptCorruptException(
                     new IllegalStateException("organization command receipt is not terminal"));

@@ -31,11 +31,12 @@
 
 ## 用法
 
-库消费者只通过 `createSampleAssembly({platformPorts, persistenceKey?})` 取得已启动的
+库消费者只通过 `createSampleAssembly({platformPorts, surfaceForm, persistenceKey?})` 取得已启动的
 `SampleAssembly`。按物理屏挂载时使用
 `createSurfaceForDisplayIndex(assembly, displayIndex)`；该入口保证 displayMode 的推导回到
 `display-context` owner，不在 assembly consumer 内复制 `PRIMARY`/`SECONDARY` 映射。底层
-`assembly.createSurface(displayMode)` 仍是通用宿主按已确定模式挂载 surface 的闭包入口。
+`assembly.createSurface({displayIndex, displayMode, surfaceForm})` 仍是通用宿主按已确定模式挂载
+surface 的闭包入口。
 `persistenceKey` 仅用于测试隔离；生产端口由 assembly 的消费者注入。
 
 主题 token 由 `theme/global.css` 声明、由 `tailwind.config.cjs` 映射为语义 class；
@@ -44,9 +45,19 @@
 
 Expo Web 的入口是根 `index.js`，它注册 `test-expo/App`；通用宿主读取传入的 `terminalSurfaces`，
 不在第二处解析 `package.json`。surface 保持声明的固定逻辑尺寸；承载层负责把画布映射到
-实际 content rect，业务部件仍只使用 primitives 的相对布局。Web dev-host 的具体缩放
-policy 当前待 Dexter 裁决，本文不把 `scaleToFit` 或任何 contain/stretch 方式写成有效契约。
+实际 content rect，业务部件仍只使用 primitives 的相对布局。Web dev-host 提供 laptop/mobile
+视角 radio group：选择后通过 `surfaceForm` URL 参数重新加载页面，`test-expo/App` 仍只向同一个
+`createSampleAssembly` 显式传入一次选定形态；这不是第二套 assembly 或运行时热切换路径。
+`surfaceMode` 仍只负责 laptop 下的单屏／双屏挂载，宿主以一个「屏幕模式」radio group 提供互斥选择。
 Native 不读取这份 Web 预览配置。
+同一宿主头部的 `surface 宽度` range 控件将预览画布设置为当前 content rect 的 30%–100%，
+只改变 Web 预览缩放，不改变 `terminalSurfaces` 的逻辑尺寸或业务 assembly。
+宽度 range、视角 radio 与屏幕模式 radio 在标题/状态摘要下方的独立居中控制行中显示。
+
+直接打开 `http://localhost:8081/?surfaceForm=laptop` 或
+`http://localhost:8081/?surfaceForm=mobile` 也可以选择预览视角；mobile 使用
+`terminalSurfaces.orientations.portrait.PRIMARY`，不挂载 SECONDARY。该选择只属于 TER 的
+Expo Web 开发宿主，与后台 DEV 环境无关。
 
 ## 迭代指引
 

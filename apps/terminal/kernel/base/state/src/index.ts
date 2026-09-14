@@ -13,7 +13,6 @@ export type {
   PersistenceFlushMode,
   PersistenceStorageKind,
   PersistencePhase,
-  StateStorageTimeoutPolicy,
   StateRuntimePersistenceFieldDescriptor,
   StateRuntimePersistenceRecordDescriptor,
   StateRuntimePersistenceDescriptor,

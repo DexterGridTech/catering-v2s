@@ -1,0 +1,23 @@
+{
+  "name": "@catering-v2s/kernel-feature-sample-wallpaper",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
+  },
+  "dependencies": {
+    "@catering-v2s/kernel-base-contracts": "workspace:*",
+    "@catering-v2s/kernel-base-runtime": "workspace:*",
+    "@catering-v2s/kernel-base-state": "workspace:*",
+    "@reduxjs/toolkit": "2.12.0"
+  },
+  "devDependencies": {
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*",
+    "typescript": "~6.0.3",
+    "vitest": "4.1.10"
+  }
+}

@@ -20,6 +20,7 @@ import {
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 
 const call = {timeoutMs: 20};
+const storageCall = {};
 
 const expectUnavailable = <TValue>(result: PortResult<TValue> | PortAccepted<string>, port: string, capability: string): void => {
   expect(result.status).toBe('unavailable');
@@ -84,15 +85,15 @@ describe('D-1/D-2: usable defaults', () => {
 
   it('provides a usable process-memory string KV with explicit missing state', async () => {
     const storage = createProcessMemoryStateStoragePort();
-    expect(await storage.read({...call, key: 'missing'})).toEqual({
+    expect(await storage.read({key: 'missing'})).toEqual({
       status: 'succeeded',
       value: {state: 'missing'},
       completedAt: expect.any(Number),
     });
-    expect((await storage.write({...call, key: 'alpha', value: 'one'})).status).toBe('succeeded');
-    expect(await storage.read({...call, key: 'alpha'})).toMatchObject({status: 'succeeded', value: {state: 'found', value: 'one'}});
-    expect(await storage.writeMany({...call, entries: [{key: 'beta', value: 'two'}, {key: 'gamma', value: 'three'}]})).toMatchObject({status: 'succeeded'});
-    expect(await storage.readMany({...call, keys: ['alpha', 'missing', 'beta']})).toMatchObject({
+    expect((await storage.write({key: 'alpha', value: 'one'})).status).toBe('succeeded');
+    expect(await storage.read({key: 'alpha'})).toMatchObject({status: 'succeeded', value: {state: 'found', value: 'one'}});
+    expect(await storage.writeMany({entries: [{key: 'beta', value: 'two'}, {key: 'gamma', value: 'three'}]})).toMatchObject({status: 'succeeded'});
+    expect(await storage.readMany({keys: ['alpha', 'missing', 'beta']})).toMatchObject({
       status: 'succeeded',
       value: [
         {key: 'alpha', result: {state: 'found', value: 'one'}},
@@ -100,25 +101,25 @@ describe('D-1/D-2: usable defaults', () => {
         {key: 'beta', result: {state: 'found', value: 'two'}},
       ],
     });
-    expect(await storage.listKeys(call)).toMatchObject({status: 'succeeded', value: ['alpha', 'beta', 'gamma']});
-    expect((await storage.remove({...call, key: 'alpha'})).status).toBe('succeeded');
-    expect((await storage.removeMany({...call, keys: ['beta', 'gamma']})).status).toBe('succeeded');
-    expect((await storage.clear(call)).status).toBe('succeeded');
-    expect(await storage.listKeys(call)).toMatchObject({status: 'succeeded', value: []});
+    expect(await storage.listKeys(storageCall)).toMatchObject({status: 'succeeded', value: ['alpha', 'beta', 'gamma']});
+    expect((await storage.remove({key: 'alpha'})).status).toBe('succeeded');
+    expect((await storage.removeMany({keys: ['beta', 'gamma']})).status).toBe('succeeded');
+    expect((await storage.clear(storageCall)).status).toBe('succeeded');
+    expect(await storage.listKeys(storageCall)).toMatchObject({status: 'succeeded', value: []});
   });
 });
 
 describe('D-3/D-4/D-5/D-6/D-7/D-8/D-9/D-10: unavailable defaults', () => {
   it('returns a typed unavailable result for every secure-storage method', async () => {
-    const input = {...call, key: 'x'};
+    const input = {key: 'x'};
     expectUnavailable(await unavailablePersistSecurePort.read(input), 'persistSecure', 'read');
     expectUnavailable(await unavailablePersistSecurePort.write({...input, value: 'x'}), 'persistSecure', 'write');
     expectUnavailable(await unavailablePersistSecurePort.remove(input), 'persistSecure', 'remove');
-    expectUnavailable(await unavailablePersistSecurePort.readMany({...call, keys: ['x']}), 'persistSecure', 'readMany');
-    expectUnavailable(await unavailablePersistSecurePort.writeMany({...call, entries: [{key: 'x', value: 'x'}]}), 'persistSecure', 'writeMany');
-    expectUnavailable(await unavailablePersistSecurePort.removeMany({...call, keys: ['x']}), 'persistSecure', 'removeMany');
-    expectUnavailable(await unavailablePersistSecurePort.listKeys(call), 'persistSecure', 'listKeys');
-    expectUnavailable(await unavailablePersistSecurePort.clear(call), 'persistSecure', 'clear');
+    expectUnavailable(await unavailablePersistSecurePort.readMany({keys: ['x']}), 'persistSecure', 'readMany');
+    expectUnavailable(await unavailablePersistSecurePort.writeMany({entries: [{key: 'x', value: 'x'}]}), 'persistSecure', 'writeMany');
+    expectUnavailable(await unavailablePersistSecurePort.removeMany({keys: ['x']}), 'persistSecure', 'removeMany');
+    expectUnavailable(await unavailablePersistSecurePort.listKeys(storageCall), 'persistSecure', 'listKeys');
+    expectUnavailable(await unavailablePersistSecurePort.clear(storageCall), 'persistSecure', 'clear');
   });
 
   it('returns unavailable for every device method without invoking callbacks', async () => {

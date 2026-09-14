@@ -1,11 +1,11 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceAuditAuthorizationPersistence;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,12 +19,19 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class WorkspaceAuditAuthorizationService {
-    private final JdbcTemplate jdbc;
+    private final WorkspaceAuditAuthorizationPersistence persistence;
     private final OrganizationTaskPathLookup taskPaths;
 
-    public WorkspaceAuditAuthorizationService(JdbcTemplate jdbc, OrganizationTaskPathLookup taskPaths) {
-        this.jdbc = jdbc;
+    @org.springframework.beans.factory.annotation.Autowired
+    public WorkspaceAuditAuthorizationService(
+            WorkspaceAuditAuthorizationPersistence persistence, OrganizationTaskPathLookup taskPaths) {
+        this.persistence = persistence;
         this.taskPaths = taskPaths;
+    }
+
+    public WorkspaceAuditAuthorizationService(
+            org.springframework.jdbc.core.JdbcTemplate jdbc, OrganizationTaskPathLookup taskPaths) {
+        this(new WorkspaceAuditAuthorizationPersistence(jdbc), taskPaths);
     }
 
     @Transactional(readOnly = true)
@@ -43,31 +50,11 @@ public class WorkspaceAuditAuthorizationService {
     @Transactional(readOnly = true)
     public void requireWorkspaceSubject(WorkspaceSessionReadback session, String entityType, UUID subjectId) {
         Assignment actor = requireCurrentAssignment(session);
-        List<SubjectTarget> targets =
-                switch (entityType) {
-                    case "WORKSPACE_ACCOUNT" -> jdbc.query(
-                            "SELECT DISTINCT target.service_node_type, target.service_node_id FROM "
-                                    + "workspace_iam.role_assignment target "
-                                    + "WHERE target.account_id=? AND target.workspace_uuid=? AND "
-                                    + "target.group_workspace_key=? "
-                                    + "AND target.status='ACTIVE'",
-                            (row, index) -> new SubjectTarget(row.getString(1), row.getObject(2, UUID.class)),
-                            subjectId,
-                            session.workspaceUuid(),
-                            session.groupWorkspaceKey());
-                    case "WORKSPACE_INVITATION" -> jdbc.query(
-                            "SELECT target.service_node_type, target.service_node_id FROM workspace_iam.invitation "
-                                    + "invitation "
-                                    + "JOIN workspace_iam.invitation_assignment_intent target ON "
-                                    + "target.invitation_id=invitation.id "
-                                    + "WHERE invitation.id=? AND invitation.workspace_uuid=? AND "
-                                    + "invitation.group_workspace_key=?",
-                            (row, index) -> new SubjectTarget(row.getString(1), row.getObject(2, UUID.class)),
-                            subjectId,
-                            session.workspaceUuid(),
-                            session.groupWorkspaceKey());
-                    default -> throw new IllegalArgumentException("unsupported workspace audit subject");
-                };
+        List<WorkspaceAuditAuthorizationPersistence.SubjectTarget> rows = persistence.subjectTargets(
+                entityType, subjectId, session.workspaceUuid(), session.groupWorkspaceKey());
+        List<SubjectTarget> targets = rows.stream()
+                .map(row -> new SubjectTarget(row.targetType(), row.targetId()))
+                .toList();
         if (targets.isEmpty()) denyAccess();
         boolean allowed = "WORKSPACE_INVITATION".equals(entityType)
                 ? targets.stream().allMatch(target -> isScopeAllowed(session, actor, target))
@@ -78,20 +65,13 @@ public class WorkspaceAuditAuthorizationService {
     private Assignment requireCurrentAssignment(WorkspaceSessionReadback session) {
         if (session == null || session.currentAssignmentId() == null)
             throw new WorkspaceAuthenticationService.SessionInvalidException();
-        List<Assignment> assignments = jdbc.query(
-                "SELECT assignment.service_node_type, assignment.service_node_id "
-                        + "FROM workspace_iam.role_assignment assignment "
-                        + "JOIN workspace_iam.workspace_role role ON role.id=assignment.role_id "
-                        + "WHERE assignment.id=? AND assignment.account_id=? AND assignment.workspace_uuid=? "
-                        + "AND assignment.group_workspace_key=? AND assignment.status='ACTIVE' "
-                        + "AND role.status='ENABLED'",
-                (row, index) -> new Assignment(row.getString(1), row.getObject(2, UUID.class)),
+        WorkspaceAuditAuthorizationPersistence.Assignment assignment = persistence.assignment(
                 session.currentAssignmentId(),
                 session.accountId(),
                 session.workspaceUuid(),
                 session.groupWorkspaceKey());
-        if (assignments.size() != 1) throw new WorkspaceAuthenticationService.SessionInvalidException();
-        return assignments.getFirst();
+        if (assignment == null) throw new WorkspaceAuthenticationService.SessionInvalidException();
+        return new Assignment(assignment.nodeType(), assignment.nodeId());
     }
 
     private void requireScope(

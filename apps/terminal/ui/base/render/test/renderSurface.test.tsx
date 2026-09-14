@@ -23,6 +23,7 @@ import {
   type SurfaceHostMeasurementSource,
   type SurfaceHostSource,
   type RenderProviderProps,
+  type SurfaceHostIdentityRejection,
 } from '../src/index'
 import {createUiCatalog} from '@catering-v2s/kernel-base-ui-state'
 import {createRenderPartDiagnosticReporter} from '../src/foundations/diagnostics'
@@ -208,6 +209,31 @@ describe('render surface hosts', () => {
         displayMode: 'SECONDARY',
       },
     })
+  })
+
+  it('reports a typed diagnostic when a host measurement contradicts its physical display identity', () => {
+    const source: SurfaceHostMeasurementSource = {
+      getSnapshot: () => Object.freeze({
+        stableHostLogicalSize: Object.freeze({width: 960, height: 540}),
+        isHostPrimaryDisplay: false,
+      }),
+      subscribe: () => () => undefined,
+    }
+    const rejections: SurfaceHostIdentityRejection[] = []
+    const bound = bindSurfaceHostIdentity(source, {
+      surfaceKey: 'PRIMARY',
+      displayIndex: 0,
+      surfaceForm: 'laptop',
+      displayMode: 'PRIMARY',
+    }, rejection => { rejections.push(rejection) })
+
+    expect(bound.getSnapshot()).toBeNull()
+    expect(rejections).toEqual([{
+      reason: 'physical-host-flag-mismatch',
+      displayIndex: 0,
+      expectedIsHostPrimaryDisplay: true,
+      actualIsHostPrimaryDisplay: false,
+    }])
   })
 
   it('calculates independent scale axes from the stable host and canvas sizes', () => {

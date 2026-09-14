@@ -5,6 +5,7 @@ import android.app.Application
 import android.app.Presentation
 import android.content.Context
 import android.content.res.Configuration
+import android.content.pm.ActivityInfo
 import android.hardware.display.DisplayManager
 import android.os.Build
 import android.os.Bundle
@@ -30,6 +31,91 @@ import expo.modules.core.interfaces.ReactActivityHandler
 import java.util.concurrent.atomic.AtomicBoolean
 
 private const val LOG_TAG = "TerminalDualScreen"
+
+/**
+ * Calibrated from the two approved local Android VMs:
+ * mobile smallestScreenWidthDp=360 and laptop smallestScreenWidthDp=800.
+ * The threshold is deliberately owned by this classifier only.
+ */
+internal const val CALIBRATED_LAPTOP_THRESHOLD_DP = 581
+
+internal data class SurfaceFormDecision(
+  val surfaceForm: String,
+  val smallestScreenWidthDp: Int?,
+  val thresholdDp: Int,
+  val diagnostic: String?,
+)
+
+internal fun classifySurfaceForm(
+  smallestScreenWidthDp: Int?,
+  laptopThresholdDp: Int = CALIBRATED_LAPTOP_THRESHOLD_DP,
+): SurfaceFormDecision {
+  if (smallestScreenWidthDp == null || smallestScreenWidthDp <= 0) {
+    return SurfaceFormDecision(
+      surfaceForm = "laptop",
+      smallestScreenWidthDp = smallestScreenWidthDp,
+      thresholdDp = laptopThresholdDp,
+      diagnostic = "smallest-screen-width-unavailable",
+    )
+  }
+  return SurfaceFormDecision(
+    surfaceForm = if (smallestScreenWidthDp >= laptopThresholdDp) "laptop" else "mobile",
+    smallestScreenWidthDp = smallestScreenWidthDp,
+    thresholdDp = laptopThresholdDp,
+    diagnostic = null,
+  )
+}
+
+internal fun requestedOrientationForSurfaceForm(surfaceForm: String): Int = when (surfaceForm) {
+  "mobile" -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+  "laptop" -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+  else -> error("unsupported surface form: $surfaceForm")
+}
+
+internal data class SurfaceLaunchOptions(
+  val displayIndex: Int,
+  val displayCount: Int,
+  val surfaceForm: String,
+)
+
+internal fun createSurfaceLaunchOptions(
+  displayIndex: Int,
+  displayCount: Int,
+  surfaceForm: String,
+): SurfaceLaunchOptions = SurfaceLaunchOptions(displayIndex, displayCount, surfaceForm)
+
+private fun SurfaceLaunchOptions.toBundle(): Bundle = Bundle().apply {
+  putInt("displayIndex", displayIndex)
+  putInt("displayCount", displayCount)
+  putString("surfaceForm", surfaceForm)
+}
+
+internal sealed class DisplaySnapshotReadResult {
+  data class Ready(
+    val displayCount: Int,
+    val secondaryDisplayIndex: Int?,
+  ) : DisplaySnapshotReadResult()
+
+  data class Unavailable(val reason: String) : DisplaySnapshotReadResult()
+}
+
+internal fun readDisplaySnapshotSelection(
+  readDisplayIds: () -> List<Int>?,
+): DisplaySnapshotReadResult {
+  val displayIds = try {
+    readDisplayIds()
+  } catch (_error: Throwable) {
+    return DisplaySnapshotReadResult.Unavailable("display-snapshot-failed")
+  }
+  if (displayIds == null) return DisplaySnapshotReadResult.Unavailable("display-manager-unavailable")
+  val secondaryDisplayIndex = displayIds
+    .indexOfFirst { it != Display.DEFAULT_DISPLAY }
+    .takeIf { it >= 0 }
+  return DisplaySnapshotReadResult.Ready(
+    displayCount = displayIds.size,
+    secondaryDisplayIndex = secondaryDisplayIndex,
+  )
+}
 
 private fun logDisplayMetrics(event: String, display: Display, displayIndex: Int) {
   val appMetrics = DisplayMetrics()
@@ -402,6 +488,16 @@ internal class TerminalDualScreenActivityHandler :
     activity: ReactActivity,
     delegate: ReactActivityDelegate,
   ): ReactActivityDelegate? {
+    val surfaceFormDecision = readSurfaceFormDecision(activity)
+    activity.setRequestedOrientation(requestedOrientationForSurfaceForm(surfaceFormDecision.surfaceForm))
+    log(
+      "surface-form-decision",
+      "surfaceForm=${surfaceFormDecision.surfaceForm}",
+      "smallestScreenWidthDp=${surfaceFormDecision.smallestScreenWidthDp ?: "unavailable"}",
+      "thresholdDp=${surfaceFormDecision.thresholdDp}",
+      "source=configuration.smallestScreenWidthDp",
+      "diagnostic=${surfaceFormDecision.diagnostic ?: "none"}",
+    )
     val snapshot = readDisplaySnapshot(activity) ?: return null
     val host = delegate.reactHost ?: run {
       log("primary-host-unavailable")
@@ -433,7 +529,7 @@ internal class TerminalDualScreenActivityHandler :
     }
     applyImmersiveWindow(activity.window)
     if (snapshot.secondaryDisplay != null) {
-      ensureSecondarySurface(activity, host, mainComponentName, snapshot)
+      ensureSecondarySurface(activity, host, mainComponentName, snapshot, surfaceFormDecision.surfaceForm)
     }
 
     return PrimaryLaunchOptionsDelegate(
@@ -441,7 +537,14 @@ internal class TerminalDualScreenActivityHandler :
       mainComponentName = mainComponentName,
       host = host,
       displayCount = snapshot.displayCount,
+      surfaceForm = surfaceFormDecision.surfaceForm,
     )
+  }
+
+  private fun readSurfaceFormDecision(activity: ReactActivity): SurfaceFormDecision = try {
+    classifySurfaceForm(activity.resources.configuration.smallestScreenWidthDp)
+  } catch (_error: Throwable) {
+    classifySurfaceForm(null).copy(diagnostic = "smallest-screen-width-read-failed")
   }
 
   private fun readDisplaySnapshot(activity: ReactActivity): DisplaySnapshot? {
@@ -455,16 +558,24 @@ internal class TerminalDualScreenActivityHandler :
       displays.forEachIndexed { index, display ->
         logDisplayMetrics("display-snapshot-entry", display, index)
       }
-      val snapshot = DisplaySnapshot(
-        displayCount = displays.size,
-        secondaryDisplay = displays.firstOrNull { it.displayId != Display.DEFAULT_DISPLAY },
-      )
-      log(
-        "display-snapshot-read",
-        "displayCount=${snapshot.displayCount}",
-        "secondaryDisplayId=${snapshot.secondaryDisplay?.displayId ?: "none"}",
-      )
-      snapshot
+      when (val selection = readDisplaySnapshotSelection { displays.map { it.displayId } }) {
+        is DisplaySnapshotReadResult.Unavailable -> {
+          log(selection.reason)
+          null
+        }
+        is DisplaySnapshotReadResult.Ready -> {
+          val snapshot = DisplaySnapshot(
+            displayCount = selection.displayCount,
+            secondaryDisplay = selection.secondaryDisplayIndex?.let(displays::get),
+          )
+          log(
+            "display-snapshot-read",
+            "displayCount=${snapshot.displayCount}",
+            "secondaryDisplayId=${snapshot.secondaryDisplay?.displayId ?: "none"}",
+          )
+          snapshot
+        }
+      }
     } catch (_error: Throwable) {
       log("display-snapshot-failed")
       null
@@ -476,6 +587,7 @@ internal class TerminalDualScreenActivityHandler :
     host: ReactHost,
     mainComponentName: String,
     snapshot: DisplaySnapshot,
+    surfaceForm: String,
   ) {
     val targetDisplay = snapshot.secondaryDisplay ?: return
     logDisplayMetrics("secondary-target-display", targetDisplay, 1)
@@ -525,10 +637,11 @@ internal class TerminalDualScreenActivityHandler :
           renderMetrics.densityDpi,
         ),
         mainComponentName,
-        Bundle().apply {
-          putInt("displayIndex", 1)
-          putInt("displayCount", snapshot.displayCount)
-        },
+        createSurfaceLaunchOptions(
+          displayIndex = 1,
+          displayCount = snapshot.displayCount,
+          surfaceForm = surfaceForm,
+        ).toBundle(),
       )
       val view = surface.view ?: throw IllegalStateException("secondary ReactSurface view unavailable")
       view.addOnLayoutChangeListener { changedView, _, _, _, _, _, _, _, _ ->
@@ -764,13 +877,15 @@ private class PrimaryLaunchOptionsDelegate(
   mainComponentName: String,
   private val host: ReactHost,
   private val displayCount: Int,
+  private val surfaceForm: String,
 ) : DefaultReactActivityDelegate(activity, mainComponentName, fabricEnabled) {
   override fun getReactHost(): ReactHost = host
 
-  override fun getLaunchOptions(): Bundle = Bundle().apply {
-    putInt("displayIndex", 0)
-    putInt("displayCount", displayCount)
-  }
+  override fun getLaunchOptions(): Bundle = createSurfaceLaunchOptions(
+    displayIndex = 0,
+    displayCount = displayCount,
+    surfaceForm = surfaceForm,
+  ).toBundle()
 }
 
 private class TerminalPresentation(

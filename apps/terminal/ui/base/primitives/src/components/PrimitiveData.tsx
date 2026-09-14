@@ -58,6 +58,7 @@ export const PrimitiveList = <ItemT,>({
   return (
     <RnrVirtualizedList
       testID={assertTestID(testID)}
+      className={baseTokens.list}
       accessibilityRole="list"
       accessibilityLabel={accessibilityLabel}
       data={data}
@@ -72,11 +73,14 @@ export const PrimitiveList = <ItemT,>({
       onScroll={onScroll}
       scrollEventThrottle={16}
       renderItem={({item, index}) => {
-        if (index < renderWindow.start || index >= renderWindow.end) return null;
+        const isInRenderWindow = index >= renderWindow.start && index < renderWindow.end;
         const key = getItemKey(item, index);
         return (
-          <RnrView testID={`${assertTestID(testID)}:row:${key}`} style={{height: rowHeight}}>
-            {renderItem(item, index)}
+          <RnrView
+            testID={isInRenderWindow ? `${assertTestID(testID)}:row:${key}` : undefined}
+            style={{height: rowHeight}}
+          >
+            {isInRenderWindow ? renderItem(item, index) : null}
           </RnrView>
         );
       }}

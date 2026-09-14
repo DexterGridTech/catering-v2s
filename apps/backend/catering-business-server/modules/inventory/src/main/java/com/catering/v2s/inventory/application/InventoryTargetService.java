@@ -1,5 +1,6 @@
 package com.catering.v2s.inventory.application;
 
+import com.catering.v2s.inventory.application.persistence.InventoryTargetPersistence;
 import static com.catering.v2s.inventory.api.InventoryOwnerApi.*;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
@@ -30,7 +31,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,13 +47,6 @@ public class InventoryTargetService {
     private static final String SKU_BASE_UNIT_ARGS = "SKU 基础计量单位判断参数不完整";
     private static final String INCOMPLETE_CONSUMPTION_UNIT_SNAPSHOT = "单位快照不完整";
     private static final String SALES_MENU_STATE_UNKNOWN = "库存状态无法转换为销售菜单可用事实";
-    private static final String TARGET_SELECT_COLUMNS =
-            "target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::text,"
-                    + "version,updated_at_epoch_millis,consumption_unit_ref,consumption_unit_code,"
-                    + "consumption_unit_name,consumption_unit_dimension,consumption_unit_precision,"
-                    + "counting_unit_ref,counting_unit_code,counting_unit_name,counting_unit_dimension,"
-                    + "counting_unit_precision,counting_unit_conversion_factor,definition_status,inventory_mode,"
-                    + "component_eligible";
     /** Mapping types consumed by inventory copy; catalog may carry other owner mappings in the same plan. */
     private static final Set<String> INVENTORY_COPY_MAPPING_TYPES = Set.of(
             "CATALOG_ITEM",
@@ -64,13 +57,22 @@ public class InventoryTargetService {
             "STOCK_TARGET");
 
     private final JdbcTemplate jdbc;
+    private final InventoryTargetPersistence persistence;
     private final ObjectMapper mapper;
     private final TimeProvider time;
 
-    public InventoryTargetService(JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public InventoryTargetService(
+            InventoryTargetPersistence persistence, JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
+        this.persistence = persistence;
         this.jdbc = jdbc;
         this.mapper = mapper;
         this.time = time;
+    }
+
+    /** Compatibility constructor retained for direct owner tests. */
+    public InventoryTargetService(JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
+        this(new InventoryTargetPersistence(jdbc), jdbc, mapper, time);
     }
 
     public JsonNode readTargets(
@@ -265,25 +267,15 @@ public class InventoryTargetService {
                     requireConfiguration(command.configuration(), consumption.precision());
             JsonNode configurationNode = mapper.valueToTree(configuration);
             InventoryOwnerApi.UnitSnapshot countingSnapshot = configuration.countingUnitSnapshot();
-            int changed = jdbc.update(
-                    "UPDATE inventory.stock_target SET configuration=CAST(? AS JSONB),"
-                            + "counting_unit_ref=?,counting_unit_code=?,counting_unit_name=?,counting_unit_dimension=?,"
-                            + "counting_unit_precision=?,counting_unit_conversion_factor=?,version=version+1,update"
-                            + "d_at_epoch_millis=? WHERE data_node_ref=? AND "
-                            + "brand_ref=? "
-                            + "AND target_ref=? AND version=?",
-                    canonical(configurationNode),
-                    countingSnapshot == null ? null : countingSnapshot.unitRef(),
-                    countingSnapshot == null ? null : countingSnapshot.code(),
-                    countingSnapshot == null ? null : countingSnapshot.name(),
-                    countingSnapshot == null ? null : countingSnapshot.unitDimension(),
-                    countingSnapshot == null ? null : countingSnapshot.precision(),
-                    configuration.conversionFactor(),
-                    time.currentEpochMillis(),
+            int changed = persistence.updateConfiguration(
                     dataNodeRef,
                     scope.brandRef(),
                     command.targetRef(),
-                    command.expectedVersion());
+                    command.expectedVersion(),
+                    canonical(configurationNode),
+                    countingSnapshot,
+                    configuration.conversionFactor(),
+                    time.currentEpochMillis());
             if (changed != 1) {
                 throw new InventoryOwnerApi.Problem(("VERSION_CONFLICT"), (409), ("库存对象版本已变化"));
             }
@@ -393,61 +385,7 @@ public class InventoryTargetService {
     }
 
     private InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot(UUID targetRef) {
-        return jdbc
-                .query(
-                        "SELECT consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_d"
-                                + "imension,consumption_unit_precision "
-                                + "FROM inventory.stock_target WHERE target_ref=?",
-                        (result, row) -> unitSnapshot(result),
-                        targetRef)
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new InventoryOwnerApi.Problem(
-                        "CONSUMPTION_UNIT_SNAPSHOT_REQUIRED",
-                        422,
-                        /* format-wrap */
-                        "库存对象必须保存有效消耗单位快照"));
-    }
-
-    private InventoryOwnerApi.CountingUnitConfiguration countingUnitConfiguration(
-            UUID targetRef, InventoryOwnerApi.UnitSnapshot consumption) {
-        return jdbc
-                .query(
-                        "SELECT counting_unit_ref,counting_unit_code,counting_unit_name,counting_unit_dimension,cou"
-                                + "nting_unit_precision,counting_unit_conversion_factor "
-                                + "FROM inventory.stock_target WHERE target_ref=?",
-                        (result, row) -> {
-                            InventoryOwnerApi.UnitSnapshot snapshot = unitSnapshot(result, 1);
-                            return new InventoryOwnerApi.CountingUnitConfiguration(snapshot, result.getBigDecimal(6));
-                        },
-                        targetRef)
-                .stream()
-                .findFirst()
-                .orElse(new InventoryOwnerApi.CountingUnitConfiguration(consumption, BigDecimal.ONE));
-    }
-
-    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(java.sql.ResultSet result) throws java.sql.SQLException {
-        UUID ref = result.getObject(1, UUID.class);
-        if (ref == null || result.getString(2) == null || result.getString(3) == null || result.getString(4) == null)
-            throw new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, "单位快照不完整");
-        return new InventoryOwnerApi.UnitSnapshot(
-                ref, result.getString(2), result.getString(3), result.getString(4), result.getInt(5));
-    }
-
-    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(java.sql.ResultSet result, int firstColumn)
-            throws java.sql.SQLException {
-        String refValue = result.getString(firstColumn);
-        UUID ref;
-        try {
-            ref = refValue == null ? null : UUID.fromString(refValue);
-        } catch (IllegalArgumentException failure) {
-            return null;
-        }
-        String code = result.getString(firstColumn + 1);
-        String name = result.getString(firstColumn + 2);
-        String dimension = result.getString(firstColumn + 3);
-        if (ref == null || code == null || name == null || dimension == null) return null;
-        return new InventoryOwnerApi.UnitSnapshot(ref, code, name, dimension, result.getInt(firstColumn + 4));
+        return persistence.readConsumptionUnitSnapshot(targetRef);
     }
 
     private static BigDecimal truncateTowardZero(BigDecimal value, int precision) {
@@ -530,35 +468,10 @@ public class InventoryTargetService {
         UUID entryRef = UUID.randomUUID();
         long now = time.currentEpochMillis();
         InventoryOwnerApi.UnitSnapshot unit = consumptionUnitSnapshot(row.ref());
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.stock_ledger(entry_ref,target_ref,operation_id,delta,balance_before,balance_after,"
-                        + "reas"
-                        + "on_code,note,occurred_at_epoch_millis,consumption_unit_ref,consumption_unit_code,consump"
-                        + "tion_unit_name,consumption_unit_dimension,consumption_unit_precision) VALUES(?,?,?,?,?"
-                        + ",?,?,?,?,?,?,?,?,?)",
-                entryRef,
-                row.ref(),
-                operation,
-                delta,
-                row.balance(),
-                after,
-                reasonCode,
-                note,
-                now,
-                unit.unitRef(),
-                unit.code(),
-                unit.name(),
-                unit.unitDimension(),
-                unit.precision());
-        if (jdbc.update(
-                        "UPDATE inventory.stock_target SET balance=?,version=version+1,updated_at_epoch_millis=? WHERE "
-                                + "target_ref=? AND version=?",
-                        after,
-                        now,
-                        row.ref(),
-                        expectedVersion)
-                != 1) throw new InventoryOwnerApi.Problem("VERSION_CONFLICT", 409, "库存对象版本已变化");
+        persistence.insertLedgerEntry(
+                entryRef, row.ref(), operation, delta, row.balance(), after, reasonCode, note, now, unit);
+        if (persistence.updateBalance(row.ref(), expectedVersion, after, now) != 1)
+            throw new InventoryOwnerApi.Problem("VERSION_CONFLICT", 409, "库存对象版本已变化");
         return new InventoryMutationReadback(
                 row.ref(), row.balance(), delta, after, entryRef, state(after, config), row.version() + 1);
     }
@@ -653,30 +566,19 @@ public class InventoryTargetService {
 
     private InventoryChangePeriodReadback changePeriodReadback(UUID targetRef, String period) {
         long since = periodStart(period);
-        return jdbc.query(
-                "SELECT COALESCE(SUM(CASE WHEN delta>0 THEN delta ELSE 0 END),0), COALESCE(SUM(CASE WHEN delta<0 THEN "
-                        + "-delta ELSE 0 END),0), COUNT(*) FROM inventory.stock_ledger WHERE target_ref=? AND "
-                        + "occurred_at_epoch_millis>=?",
-                statement -> {
-                    statement.setObject(1, targetRef);
-                    statement.setLong(2, since);
-                },
-                result -> result.next()
-                        ? new InventoryChangePeriodReadback(
-                                result.getBigDecimal(1),
-                                result.getBigDecimal(2),
-                                result.getBigDecimal(1).subtract(result.getBigDecimal(2)),
-                                result.getLong(3))
-                        : new InventoryChangePeriodReadback(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0));
+        InventoryTargetPersistence.ChangePeriodRecord record = persistence.readChangePeriod(targetRef, since);
+        return new InventoryChangePeriodReadback(
+                record.increase(),
+                record.decrease(),
+                record.increase().subtract(record.decrease()),
+                record.entryCount());
     }
 
     private List<InventoryRecentChangeReadback> recentChangeReadbacks(UUID targetRef) {
-        return jdbc.query(
-                "SELECT operation_id,delta,occurred_at_epoch_millis FROM inventory.stock_ledger WHERE target_ref=? "
-                        + "ORDER BY occurred_at_epoch_millis DESC LIMIT 20",
-                statement -> statement.setObject(1, targetRef),
-                (result, rowNumber) -> new InventoryRecentChangeReadback(
-                        result.getLong(3), result.getString(1), result.getBigDecimal(2), result.getString(1)));
+        return persistence.readRecentChanges(targetRef).stream()
+                .map(record -> new InventoryRecentChangeReadback(
+                        record.occurredAt(), record.operationId(), record.delta(), record.operationId()))
+                .toList();
     }
 
     private Map<TargetIdentity, CatalogTargetDisplay> catalogTargetDisplays(
@@ -686,37 +588,18 @@ public class InventoryTargetService {
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         if (itemRefs.isEmpty()) return Map.of();
         Map<TargetIdentity, CatalogTargetDisplay> result = new LinkedHashMap<>();
-        UUID[] values = itemRefs.toArray(UUID[]::new);
-        jdbc.query(
-                "SELECT item.item_ref,item.code,item.name,sku.product_sku_ref,sku.sku_code,sku.sku_name "
-                        + "FROM catalog.catalog_item item LEFT JOIN catalog.catalog_sku sku "
-                        + "ON sku.item_ref=item.item_ref WHERE item.data_node_ref=? AND item.brand_ref=? "
-                        + "AND item.item_ref=ANY(?::uuid[])",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", values));
-                },
-                rows -> {
-                    while (rows.next()) {
-                        UUID itemRef = rows.getObject(1, UUID.class);
-                        String itemCode = rows.getString(2);
-                        String itemName = rows.getString(3);
-                        UUID skuRef = rows.getObject(4, UUID.class);
-                        requireCatalogBusinessName(itemName, "耗用对象缺少商品名称");
-                        // The item display is valid whether or not it has SKU rows.
-                        // A LEFT JOIN with existing SKUs has no null-SKU row, so add the
-                        // item identity independently before the optional SKU identity.
-                        result.putIfAbsent(
-                                new TargetIdentity(itemRef, null),
-                                new CatalogTargetDisplay(itemCode, itemName, null, null));
-                        if (skuRef != null)
-                            result.put(
-                                    new TargetIdentity(itemRef, skuRef),
-                                    new CatalogTargetDisplay(itemCode, itemName, rows.getString(5), rows.getString(6)));
-                    }
-                    return null;
-                });
+        for (InventoryTargetPersistence.CatalogTargetDisplay display
+                : persistence.readCatalogTargetDisplays(scope, brand, itemRefs)) {
+            requireCatalogBusinessName(display.itemName(), "耗用对象缺少商品名称");
+            result.putIfAbsent(
+                    new TargetIdentity(display.itemRef(), null),
+                    new CatalogTargetDisplay(display.itemCode(), display.itemName(), null, null));
+            if (display.productSkuRef() != null)
+                result.put(
+                        new TargetIdentity(display.itemRef(), display.productSkuRef()),
+                        new CatalogTargetDisplay(
+                                display.itemCode(), display.itemName(), display.skuCode(), display.skuName()));
+        }
         return Map.copyOf(result);
     }
 
@@ -739,54 +622,24 @@ public class InventoryTargetService {
         return display;
     }
 
-    private static TargetRow targetRow(java.sql.ResultSet row) throws java.sql.SQLException {
-        return targetRow(row, 1, null);
-    }
-
-    private static TargetRow targetRowWithConsumptionUnitSnapshot(java.sql.ResultSet row) throws java.sql.SQLException {
-        return targetRowWithConsumptionUnitSnapshot(row, 1);
-    }
-
-    private static TargetRow targetRowWithConsumptionUnitSnapshot(java.sql.ResultSet row, int firstColumn)
-            throws java.sql.SQLException {
-        return targetRow(row, firstColumn, requiredUnitSnapshot(row, firstColumn + 10));
-    }
-
-    private static TargetRow targetRow(java.sql.ResultSet row, InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot)
-            throws java.sql.SQLException {
-        return targetRow(row, 1, consumptionUnitSnapshot);
-    }
-
-    private static TargetRow targetRow(
-            java.sql.ResultSet row, int firstColumn, InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot)
-            throws java.sql.SQLException {
-        boolean hasUnitConfigurationColumns = row.getMetaData().getColumnCount() >= firstColumn + 22;
+    private static TargetRow targetRow(InventoryTargetPersistence.TargetRecord record) {
         return new TargetRow(
-                row.getObject(firstColumn, UUID.class),
-                row.getObject(firstColumn + 1, UUID.class),
-                row.getObject(firstColumn + 2, UUID.class),
-                row.getString(firstColumn + 3),
-                row.getString(firstColumn + 4),
-                row.getString(firstColumn + 5),
-                row.getBigDecimal(firstColumn + 6),
-                row.getString(firstColumn + 7),
-                row.getLong(firstColumn + 8),
-                row.getLong(firstColumn + 9),
-                consumptionUnitSnapshot,
-                hasUnitConfigurationColumns ? unitSnapshot(row, firstColumn + 15) : null,
-                hasUnitConfigurationColumns ? row.getBigDecimal(firstColumn + 20) : null,
-                hasUnitConfigurationColumns ? row.getString(firstColumn + 21) : "ENABLED",
-                hasUnitConfigurationColumns ? row.getString(firstColumn + 22) : null,
-                row.getMetaData().getColumnCount() >= firstColumn + 23 && row.getBoolean(firstColumn + 23));
-    }
-
-    private static InventoryOwnerApi.UnitSnapshot requiredUnitSnapshot(java.sql.ResultSet result, int firstColumn)
-            throws java.sql.SQLException {
-        InventoryOwnerApi.UnitSnapshot snapshot = unitSnapshot(result, firstColumn);
-        if (snapshot == null)
-            throw new InventoryOwnerApi.Problem(
-                    "CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, INCOMPLETE_CONSUMPTION_UNIT_SNAPSHOT);
-        return snapshot;
+                record.ref(),
+                record.itemRef(),
+                record.productSkuRef(),
+                record.itemCode(),
+                record.skuCode(),
+                record.measureMode(),
+                record.balance(),
+                record.configuration(),
+                record.version(),
+                record.updatedAt(),
+                record.consumptionUnitSnapshot(),
+                record.countingUnitSnapshot(),
+                record.countingUnitConversionFactor(),
+                record.definitionStatus(),
+                record.inventoryMode(),
+                record.componentEligible());
     }
 
     private ObjectNode targets(String scope, String brand, String requestId, ObjectNode request) {
@@ -802,114 +655,46 @@ public class InventoryTargetService {
         List<UUID> catalogItemRefs = uuidArray(request.path("catalogItemRefs"), "catalogItemRefs");
         if (request.has("catalogItemRefs") && catalogItemRefs.isEmpty())
             return emptyTargetPage(requestId, scope, brand);
-        String viewPredicate = stockView == null || stockView.isBlank() || "ALL".equals(stockView)
-                ? "TRUE"
-                : "NEEDS_ATTENTION".equals(stockView) ? "stock_state <> 'OK'" : "stock_state='" + stockView + "'";
-        StringBuilder sql = new StringBuilder("WITH RECURSIVE catalog_category_scope(category_ref) AS ("
-                + "SELECT c.category_ref FROM catalog.catalog_category c WHERE c.data_node_ref=? AND "
-                + "c.brand_ref=? AND c.category_ref::text=?::text AND c.status <> 'VOIDED' "
-                + "UNION ALL SELECT child.category_ref FROM catalog.catalog_category child JOIN "
-                + "catalog_category_scope parent ON child.parent_category_ref=parent.category_ref "
-                + "WHERE child.data_node_ref=? AND child.brand_ref=? AND ?::boolean = TRUE AND child.status <> "
-                + "'VOIDED'), "
-                + "base AS (SELECT st.target_ref, st.item_ref, st.product_sku_ref, st.item_code, st.sku_code, "
-                + "st.measure_mode, st.balance, st.configuration::text AS configuration, st.version, "
-                + "st.updated_at_epoch_millis, "
-                + "COALESCE(NULLIF(st.configuration->>'lowStockThreshold','')::numeric,0) AS threshold, "
-                + "st.configuration->>'unknown'='true' AS unknown_flag FROM inventory.stock_target st "
-                + "WHERE st.data_node_ref=? AND st.brand_ref=?");
-        List<Object> args = new ArrayList<>();
-        args.add(scope);
-        args.add(brand);
-        args.add(categoryRef);
-        args.add(scope);
-        args.add(brand);
-        args.add(includeSubCategories);
-        args.add(scope);
-        args.add(brand);
-        if ((keyword != null && !keyword.isBlank()) || (categoryRef != null && !categoryRef.isBlank())) {
-            sql.append(" AND EXISTS (SELECT 1 FROM catalog.catalog_item catalog_item WHERE "
-                    + "catalog_item.item_ref=st.item_ref "
-                    + "AND catalog_item.data_node_ref=? AND catalog_item.brand_ref=? AND catalog_item.status "
-                    + "<> 'VOIDED'");
-            args.add(scope);
-            args.add(brand);
-            if (keyword != null && !keyword.isBlank()) {
-                sql.append(" AND (catalog_item.name || chr(1) || COALESCE(catalog_item.short_name, '') || chr(1) || "
-                        + "catalog_item.code) ILIKE '%' || ? || '%'");
-                args.add(keyword);
-            }
-            if (categoryRef != null && !categoryRef.isBlank()) {
-                sql.append(
-                        " AND EXISTS (SELECT 1 FROM catalog.catalog_item_category relation JOIN catalog_category_scope "
-                                + "category ON category.category_ref=relation.category_ref WHERE "
-                                + "relation.item_ref=catalog_item.item_ref)");
-            }
-            sql.append(")");
-        }
-        if (!catalogItemRefs.isEmpty()) {
-            sql.append(" AND st.item_ref IN (")
-                    .append(String.join(",", java.util.Collections.nCopies(catalogItemRefs.size(), "?")))
-                    .append(")");
-            args.addAll(catalogItemRefs);
-        }
-        sql.append("), classified AS (SELECT target_ref, item_ref, product_sku_ref, item_code, sku_code, "
-                        + "measure_mode, balance, configuration, version, updated_at_epoch_millis, threshold, "
-                        + "unknown_flag, CASE WHEN unknown_flag THEN 'UNKNOWN' WHEN balance < 0 THEN 'NEGATIVE' "
-                        + "WHEN balance = 0 THEN 'OUT' WHEN threshold > 0 AND balance < threshold THEN 'LOW' ELSE "
-                        + "'OK' END AS stock_state FROM base), aggregate AS (SELECT COUNT(*) AS all_count, "
-                        + "COUNT(*) FILTER (WHERE stock_state <> 'OK') AS attention_count, COUNT(*) FILTER (WHERE "
-                        + "stock_state='LOW') AS low_count, COUNT(*) FILTER (WHERE stock_state='OUT') AS "
-                        + "out_count, COUNT(*) FILTER (WHERE stock_state='NEGATIVE') AS negative_count, COUNT(*) "
-                        + "FILTER (WHERE stock_state='UNKNOWN') AS unknown_count, COUNT(*) FILTER (WHERE ")
-                .append(viewPredicate)
-                .append(") AS view_count FROM classified), paged AS (SELECT target_ref, item_ref, product_sku_ref, "
-                        + "item_code, sku_code, measure_mode, balance, configuration, version, "
-                        + "updated_at_epoch_millis, stock_state FROM classified WHERE ")
-                .append(viewPredicate)
-                .append(" ORDER BY item_code, sku_code NULLS FIRST, target_ref OFFSET ? LIMIT ?) SELECT "
-                        + "p.target_ref,p.item_ref,p.product_sku_ref,p.item_code,p.sku_code,p.measure_mode,p.balanc"
-                        + "e,p.configuration,p.version,p.updated_at_epoch_millis,p.stock_state,a.all_count,a.attent"
-                        + "ion_count,a.low_count,a.out_count,a.negative_count,a.unknown_count,a.view_count FROM "
-                        + "aggregate a LEFT JOIN paged p ON TRUE ORDER BY p.item_code,p.sku_code NULLS "
-                        + "FIRST,p.target_ref");
-        args.add(offset);
-        args.add(pageSize + 1);
-        List<TargetPageRow> rows = jdbc.query(
-                sql.toString(),
-                (r, n) -> {
-                    UUID ref = r.getObject(1, UUID.class);
-                    TargetRow target = ref == null
-                            ? null
-                            : new TargetRow(
-                                    ref,
-                                    r.getObject(2, UUID.class),
-                                    r.getObject(3, UUID.class),
-                                    r.getString(4),
-                                    r.getString(5),
-                                    r.getString(6),
-                                    r.getBigDecimal(7),
-                                    r.getString(8),
-                                    r.getLong(9),
-                                    r.getLong(10),
-                                    null,
-                                    null,
-                                    null,
-                                    "ENABLED",
-                                    null,
-                                    false);
-                    return new TargetPageRow(
-                            target,
-                            r.getString(11),
-                            r.getLong(12),
-                            r.getLong(13),
-                            r.getLong(14),
-                            r.getLong(15),
-                            r.getLong(16),
-                            r.getLong(17),
-                            r.getLong(18));
-                },
-                args.toArray());
+        List<TargetPageRow> rows = persistence.readTargetPage(
+                        scope,
+                        brand,
+                        keyword,
+                        categoryRef,
+                        includeSubCategories,
+                        stockView,
+                        offset,
+                        pageSize,
+                        catalogItemRefs)
+                .stream()
+                .map(record -> new TargetPageRow(
+                        record.ref() == null
+                                ? null
+                                : new TargetRow(
+                                        record.ref(),
+                                        record.itemRef(),
+                                        record.productSkuRef(),
+                                        record.itemCode(),
+                                        record.skuCode(),
+                                        record.measureMode(),
+                                        record.balance(),
+                                        record.configuration(),
+                                        record.version(),
+                                        record.updatedAt(),
+                                        null,
+                                        null,
+                                        null,
+                                        "ENABLED",
+                                        null,
+                                        false),
+                        record.stockState(),
+                        record.allCount(),
+                        record.attentionCount(),
+                        record.lowCount(),
+                        record.outCount(),
+                        record.negativeCount(),
+                        record.unknownCount(),
+                        record.viewCount()))
+                .toList();
         long total = rows.isEmpty() ? 0 : rows.get(0).allCount();
         long viewTotal = rows.isEmpty() ? 0 : rows.get(0).viewCount();
         boolean hasNext = rows.stream().filter(row -> row.target() != null).count() > pageSize;
@@ -960,20 +745,7 @@ public class InventoryTargetService {
             data.put("total", 0).put("generation", generation(scope, brand));
             return envelope(requestId, data);
         }
-        String placeholders = String.join(",", Collections.nCopies(itemRefs.size(), "?"));
-        Map<UUID, Long> counts = new LinkedHashMap<>();
-        List<Object> args = new ArrayList<>();
-        args.add(scope);
-        args.add(brand);
-        args.addAll(itemRefs);
-        jdbc.query(
-                "SELECT item_ref,COUNT(*) FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? "
-                        + "AND item_ref IN (" + placeholders + ") GROUP BY item_ref",
-                args.toArray(),
-                result -> {
-                    while (result.next()) counts.put(result.getObject(1, UUID.class), result.getLong(2));
-                    return null;
-                });
+        Map<UUID, Long> counts = persistence.readTargetCounts(scope, brand, itemRefs);
         for (UUID itemRef : itemRefs)
             items.addObject().put("itemRef", itemRef.toString()).put("targetCount", counts.getOrDefault(itemRef, 0L));
         data.put("total", items.size()).put("generation", generation(scope, brand));
@@ -1110,59 +882,27 @@ public class InventoryTargetService {
         Map<String, ObjectNode> summaries = new LinkedHashMap<>();
         ArrayNode recentChanges = mapper.createArrayNode();
         long now = time.currentEpochMillis();
-        jdbc.query(
-                "WITH selected(target_ref) AS (VALUES (?::uuid)), periods(period,since,sort_order) AS (VALUES"
-                        + " ('TODAY',?,1),('7D',?,2),('30D',?,3)), summary AS (SELECT 'SUMMARY' AS"
-                        + " row_kind,p.period,p.sort_order,COALESCE(SUM(CASE WHEN ledger.delta>0"
-                        + " THEN ledger.delta ELSE 0"
-                        + " END),0) AS increase,COALESCE(SUM(CASE WHEN ledger.delta<0 THEN -ledger.delta ELSE 0 END),0)"
-                        + " AS"
-                        + " decrease,COUNT(ledger.entry_ref) AS entry_count,NULL::text AS operation_id,NULL::numeric AS"
-                        + " delta,NULL::bigint AS occurred_at FROM periods p CROSS JOIN selected s LEFT JOIN"
-                        + " inventory.stock_ledger ledger ON ledger.target_ref=s.target_ref AND"
-                        + " ledger.occurred_at_epoch_millis>=p.since GROUP BY p.period,p.sort_order), recent AS (SELECT"
-                        + " 'RECENT' AS row_kind,NULL::text AS period,100 AS sort_order,NULL::numeric AS"
-                        + " increase,NULL::numeric AS decrease,NULL::bigint AS"
-                        + " entry_count,ledger.operation_id,ledger.delta,ledger.occurred_at_epoch_millis AS occurred_at"
-                        + " FROM inventory.stock_ledger ledger JOIN selected s ON s.target_ref=ledger.target_ref"
-                        + " ORDER BY"
-                        + " ledger.occurred_at_epoch_millis DESC,ledger.entry_ref DESC LIMIT 20) SELECT"
-                        + " row_kind,period,sort_order,increase,decrease,entry_count,operation_id,delta,occurred_at"
-                        + " FROM"
-                        + " summary UNION ALL SELECT"
-                        + " row_kind,period,sort_order,increase,decrease,entry_count,operation_id,delta,occurred_at"
-                        + " FROM"
-                        + " recent ORDER BY sort_order",
-                statement -> {
-                    statement.setObject(1, UUID.fromString(targetRef));
-                    statement.setLong(2, now - periodDurationMillis("TODAY"));
-                    statement.setLong(3, now - periodDurationMillis("7D"));
-                    statement.setLong(4, now - periodDurationMillis("30D"));
-                },
-                result -> {
-                    while (result.next()) {
-                        if ("SUMMARY".equals(result.getString(1))) {
-                            String period = result.getString(2);
-                            BigDecimal increase = result.getBigDecimal(4);
-                            BigDecimal decrease = result.getBigDecimal(5);
-                            summaries.put(
-                                    period,
-                                    mapper.createObjectNode()
-                                            .put("increase", decimal(increase))
-                                            .put("decrease", decimal(decrease))
-                                            .put("netChange", decimal(increase.subtract(decrease)))
-                                            .put("entryCount", result.getLong(6)));
-                        } else {
-                            recentChanges
-                                    .addObject()
-                                    .put("occurredAt", result.getLong(9))
-                                    .put("changeType", result.getString(7))
-                                    .put("quantity", decimal(result.getBigDecimal(8)))
-                                    .put("source", result.getString(7));
-                        }
-                    }
-                    return null;
-                });
+        for (InventoryTargetPersistence.CurrentLedgerFactRecord record
+                : persistence.readCurrentLedgerFacts(UUID.fromString(targetRef), now)) {
+            if ("SUMMARY".equals(record.rowKind())) {
+                BigDecimal increase = record.increase();
+                BigDecimal decrease = record.decrease();
+                summaries.put(
+                        record.period(),
+                        mapper.createObjectNode()
+                                .put("increase", decimal(increase))
+                                .put("decrease", decimal(decrease))
+                                .put("netChange", decimal(increase.subtract(decrease)))
+                                .put("entryCount", record.entryCount()));
+            } else {
+                recentChanges
+                        .addObject()
+                        .put("occurredAt", record.occurredAt())
+                        .put("changeType", record.operationId())
+                        .put("quantity", decimal(record.delta()))
+                        .put("source", record.operationId());
+            }
+        }
         return new CurrentLedgerFacts(Map.copyOf(summaries), recentChanges);
     }
 
@@ -1184,25 +924,12 @@ public class InventoryTargetService {
                 .put("decrease", "0")
                 .put("netChange", "0")
                 .put("entryCount", 0);
-        jdbc.query(
-                "SELECT COALESCE(SUM(CASE WHEN delta>0 THEN delta ELSE 0 END),0), COALESCE(SUM(CASE WHEN delta<0 THEN "
-                        + "-delta ELSE 0 END),0), COUNT(*) FROM inventory.stock_ledger WHERE target_ref=? AND "
-                        + "occurred_at_epoch_millis>=?",
-                s -> {
-                    s.setObject(1, UUID.fromString(targetRef));
-                    s.setLong(2, since);
-                },
-                r -> {
-                    if (r.next()) {
-                        BigDecimal increase = r.getBigDecimal(1);
-                        BigDecimal decrease = r.getBigDecimal(2);
-                        data.put("increase", decimal(increase))
-                                .put("decrease", decimal(decrease))
-                                .put("netChange", decimal(increase.subtract(decrease)))
-                                .put("entryCount", r.getLong(3));
-                    }
-                    return null;
-                });
+        InventoryTargetPersistence.ChangeSummaryRecord record =
+                persistence.readChangeSummary(UUID.fromString(targetRef), since);
+        data.put("increase", decimal(record.increase()))
+                .put("decrease", decimal(record.decrease()))
+                .put("netChange", decimal(record.increase().subtract(record.decrease())))
+                .put("entryCount", record.entryCount());
         return data;
     }
 
@@ -1211,44 +938,26 @@ public class InventoryTargetService {
         long offset = parseCursor(request, "cursor");
         ObjectNode data = mapper.createObjectNode();
         ArrayNode entries = data.putArray("entries");
-        final long[] total = {0L};
-        jdbc.query(
-                "SELECT "
-                        + "entry_ref,operation_id,delta,balance_before,balance_after,reason_code,occurred_at_epoch_mill"
-                        + "is,consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dim"
-                        + "ension,"
-                        + "consumption_unit_precision,C"
-                        + "OUNT(*) OVER() "
-                        + "FROM inventory.stock_ledger WHERE target_ref=? AND operation_id IN ('COUNT','INCREASE') "
-                        + "ORDER BY occurred_at_epoch_millis DESC,entry_ref DESC LIMIT ? OFFSET ?",
-                statement -> {
-                    statement.setObject(1, UUID.fromString(targetRef));
-                    statement.setInt(2, pageSize + 1);
-                    statement.setLong(3, offset);
-                },
-                result -> {
-                    while (result.next()) {
-                        if (entries.size() <= pageSize) {
-                            ObjectNode entry = entries.addObject()
-                                    .put(
-                                            "entryRef",
-                                            result.getObject(1, UUID.class).toString())
-                                    .put("action", result.getString(2))
-                                    .put("quantity", decimal(result.getBigDecimal(3)))
-                                    .put("beforeQuantity", decimal(result.getBigDecimal(4)))
-                                    .put("afterQuantity", decimal(result.getBigDecimal(5)))
-                                    .put("occurredAt", result.getLong(7))
-                                    .put("source", result.getString(2))
-                                    .put("reasonCode", result.getString(6) == null ? "" : result.getString(6));
-                            setNullableSnapshot(entry, "consumptionUnitSnapshot", unitSnapshot(result, 8));
-                        }
-                        total[0] = result.getLong(13);
-                    }
-                    return null;
-                });
+        long total = 0L;
+        for (InventoryTargetPersistence.HistoryRecord record
+                : persistence.readHistory(UUID.fromString(targetRef), pageSize, offset)) {
+            if (entries.size() <= pageSize) {
+                ObjectNode entry = entries.addObject()
+                        .put("entryRef", record.entryRef().toString())
+                        .put("action", record.operationId())
+                        .put("quantity", decimal(record.delta()))
+                        .put("beforeQuantity", decimal(record.balanceBefore()))
+                        .put("afterQuantity", decimal(record.balanceAfter()))
+                        .put("occurredAt", record.occurredAt())
+                        .put("source", record.operationId())
+                        .put("reasonCode", record.reasonCode() == null ? "" : record.reasonCode());
+                setNullableSnapshot(entry, "consumptionUnitSnapshot", record.consumptionUnit());
+            }
+            total = record.total();
+        }
         boolean hasNext = entries.size() > pageSize;
         if (hasNext) entries.remove(entries.size() - 1);
-        data.put("total", total[0]);
+        data.put("total", total);
         if (hasNext) data.put("cursor", Long.toString(offset + pageSize));
         else data.putNull("cursor");
         return data;
@@ -1259,69 +968,29 @@ public class InventoryTargetService {
         long offset = parseCursor(request, "cursor");
         ObjectNode data = mapper.createObjectNode();
         ArrayNode entries = data.putArray("entries");
-        final long[] total = {0L};
         // The reference zone is independently pageable; do not materialize the
         // whole BOM graph just to slice one target's page in Java.
-        jdbc.query(
-                "WITH expanded AS ("
-                        + "SELECT sb.item_ref,sb.item_code,sb.sku_code,sb.option_value_code,entry->>'nodeType' AS "
-                        + "source_kind,"
-                        + "COALESCE(entry->>'quantity',entry->>'quantityPerUnit','0') AS quantity,"
-                        + "entry->'consumptionUnitSnapshot'->>'unitRef' AS consumption_unit_ref,"
-                        + "entry->'consumptionUnitSnapshot'->>'code' AS consumption_unit_code,"
-                        + "entry->'consumptionUnitSnapshot'->>'name' AS consumption_unit_name,"
-                        + "entry->'consumptionUnitSnapshot'->>'unitDimension' AS consumption_unit_dimension,"
-                        + "(entry->'consumptionUnitSnapshot'->>'precision')::integer AS consumption_unit_precision,"
-                        + "entry->>'timing' AS timing,ord,COUNT(*) OV"
-                        + "ER() AS total "
-                        + "FROM inventory.stock_bom sb "
-                        + "CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(sb.rows)='array' THEN "
-                        + "sb.rows ELSE '[]'::jsonb END) WITH ORDINALITY AS e(entry,ord) "
-                        + "WHERE sb.data_node_ref=? AND sb.brand_ref=? "
-                        + "AND sb.definition_status='ENABLED' "
-                        + "AND jsonb_path_exists(CASE WHEN jsonb_typeof(sb.rows)='array' THEN sb.rows "
-                        + "ELSE '[]'::jsonb END, "
-                        + "'$[*] ? (@.targetRef == $targetRef || @.componentTargetRef == $targetRef)', "
-                        + "jsonb_build_object('targetRef',to_jsonb(CAST(? AS text)))) "
-                        + "AND COALESCE(entry->>'targetRef',entry->>'componentTargetRef')=?"
-                        + ") SELECT "
-                        + "item_ref,item_code,sku_code,option_value_code,source_kind,quantity,consumption_unit_ref,"
-                        + "consumption_unit_code,consumption_unit_name,consumption_unit_dimension,consumption_unit_"
-                        + "precision,"
-                        + "timing,total "
-                        + "FROM expanded ORDER BY item_code,sku_code NULLS FIRST,ord LIMIT ? OFFSET ?",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setString(3, targetRef);
-                    statement.setString(4, targetRef);
-                    statement.setInt(5, pageSize + 1);
-                    statement.setLong(6, offset);
-                },
-                result -> {
-                    while (result.next()) {
-                        if (entries.size() <= pageSize) {
-                            ObjectNode entry = entries.addObject()
-                                    .put(
-                                            "sourceItemRef",
-                                            result.getObject(1, UUID.class).toString())
-                                    .put("sourceCode", result.getString(2))
-                                    .put("sourceKind", result.getString(5) == null ? "ITEM" : result.getString(5))
-                                    .put("quantity", result.getString(6) == null ? "0" : result.getString(6))
-                                    .put("timing", result.getString(12) == null ? "BOM" : result.getString(12));
-                            setNullableSnapshot(entry, "consumptionUnitSnapshot", unitSnapshot(result, 7));
-                            if (result.getString(4) == null) entry.putNull("sourceOptionValueCode");
-                            else entry.put("sourceOptionValueCode", result.getString(4));
-                            if (result.getString(3) == null) entry.putNull("sourceSkuCode");
-                            else entry.put("sourceSkuCode", result.getString(3));
-                        }
-                        total[0] = result.getLong(13);
-                    }
-                    return null;
-                });
+        long total = 0L;
+        for (InventoryTargetPersistence.ReferenceRecord record
+                : persistence.readReferences(scope, brand, targetRef, pageSize, offset)) {
+            if (entries.size() <= pageSize) {
+                ObjectNode entry = entries.addObject()
+                        .put("sourceItemRef", record.sourceItemRef().toString())
+                        .put("sourceCode", record.sourceCode())
+                        .put("sourceKind", record.sourceKind() == null ? "ITEM" : record.sourceKind())
+                        .put("quantity", record.quantity() == null ? "0" : record.quantity())
+                        .put("timing", record.timing() == null ? "BOM" : record.timing());
+                setNullableSnapshot(entry, "consumptionUnitSnapshot", record.consumptionUnit());
+                if (record.sourceOptionValueCode() == null) entry.putNull("sourceOptionValueCode");
+                else entry.put("sourceOptionValueCode", record.sourceOptionValueCode());
+                if (record.sourceSkuCode() == null) entry.putNull("sourceSkuCode");
+                else entry.put("sourceSkuCode", record.sourceSkuCode());
+            }
+            total = record.total();
+        }
         boolean hasNext = entries.size() > pageSize;
         if (hasNext) entries.remove(entries.size() - 1);
-        data.put("total", total[0]);
+        data.put("total", total);
         if (hasNext) data.put("cursor", Long.toString(offset + pageSize));
         else data.putNull("cursor");
         return data;
@@ -1332,43 +1001,25 @@ public class InventoryTargetService {
         long offset = parseCursor(request, "cursor");
         ObjectNode data = mapper.createObjectNode();
         ArrayNode entries = data.putArray("entries");
-        final long[] total = {0L};
-        jdbc.query(
-                "SELECT "
-                        + "entry_ref,operation_id,delta,balance_before,balance_after,reason_code,occurred_at_epoch_mill"
-                        + "is,consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dim"
-                        + "ension,"
-                        + "consumption_unit_precision,C"
-                        + "OUNT(*) OVER() "
-                        + "FROM inventory.stock_ledger WHERE target_ref=? "
-                        + "ORDER BY occurred_at_epoch_millis DESC,entry_ref DESC LIMIT ? OFFSET ?",
-                statement -> {
-                    statement.setObject(1, UUID.fromString(targetRef));
-                    statement.setInt(2, pageSize + 1);
-                    statement.setLong(3, offset);
-                },
-                result -> {
-                    while (result.next()) {
-                        if (entries.size() <= pageSize) {
-                            ObjectNode entry = entries.addObject()
-                                    .put(
-                                            "entryRef",
-                                            result.getObject(1, UUID.class).toString())
-                                    .put("source", result.getString(2))
-                                    .put("reasonCode", result.getString(6) == null ? "" : result.getString(6))
-                                    .put("beforeQuantity", decimal(result.getBigDecimal(4)))
-                                    .put("changeQuantity", decimal(result.getBigDecimal(3)))
-                                    .put("afterQuantity", decimal(result.getBigDecimal(5)))
-                                    .put("occurredAt", result.getLong(7));
-                            setNullableSnapshot(entry, "consumptionUnitSnapshot", unitSnapshot(result, 8));
-                        }
-                        total[0] = result.getLong(13);
-                    }
-                    return null;
-                });
+        long total = 0L;
+        for (InventoryTargetPersistence.LedgerRecord record
+                : persistence.readLedger(UUID.fromString(targetRef), pageSize, offset)) {
+            if (entries.size() <= pageSize) {
+                ObjectNode entry = entries.addObject()
+                        .put("entryRef", record.entryRef().toString())
+                        .put("source", record.operationId())
+                        .put("reasonCode", record.reasonCode() == null ? "" : record.reasonCode())
+                        .put("beforeQuantity", decimal(record.balanceBefore()))
+                        .put("changeQuantity", decimal(record.delta()))
+                        .put("afterQuantity", decimal(record.balanceAfter()))
+                        .put("occurredAt", record.occurredAt());
+                setNullableSnapshot(entry, "consumptionUnitSnapshot", record.consumptionUnit());
+            }
+            total = record.total();
+        }
         boolean hasNext = entries.size() > pageSize;
         if (hasNext) entries.remove(entries.size() - 1);
-        data.put("total", total[0]);
+        data.put("total", total);
         if (hasNext) data.put("cursor", Long.toString(offset + pageSize));
         else data.putNull("cursor");
         return data;
@@ -1412,13 +1063,7 @@ public class InventoryTargetService {
         UUID entryRef = UUID.randomUUID();
         long now = time.currentEpochMillis();
         InventoryOwnerApi.UnitSnapshot consumption = consumptionUnitSnapshot(row.ref());
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.stock_ledger(entry_ref,target_ref,operation_id,delta,balance_before,balance_after,"
-                        + "reas"
-                        + "on_code,note,occurred_at_epoch_millis,consumption_unit_ref,consumption_unit_code,"
-                        + "consumption_unit_name,consumption_unit_dimension,consumption_unit_precision) VALUES(?,?,"
-                        + "?,?,?,?,?,?,?,?,?,?,?,?)",
+        persistence.insertAdjustmentLedgerEntry(
                 entryRef,
                 row.ref(),
                 operation,
@@ -1428,19 +1073,9 @@ public class InventoryTargetService {
                 optional(request, "reasonCode"),
                 optional(request, "note"),
                 now,
-                consumption.unitRef(),
-                consumption.code(),
-                consumption.name(),
-                consumption.unitDimension(),
-                consumption.precision());
-        if (jdbc.update(
-                        "UPDATE inventory.stock_target SET balance=?,version=version+1,updated_at_epoch_millis=? WHERE "
-                                + "target_ref=? AND version=?",
-                        after,
-                        now,
-                        row.ref(),
-                        expected)
-                != 1) throw new InventoryOwnerApi.Problem("VERSION_CONFLICT", 409, "库存对象版本已变化");
+                consumption);
+        if (persistence.updateAdjustmentBalance(row.ref(), expected, after, now) != 1)
+            throw new InventoryOwnerApi.Problem("VERSION_CONFLICT", 409, "库存对象版本已变化");
         ObjectNode result = mapper.createObjectNode()
                 .put("targetRef", row.ref().toString())
                 .put("before", decimal(row.balance()))
@@ -1460,40 +1095,18 @@ public class InventoryTargetService {
             throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "configuration 必须为对象");
         TargetRow row = target(scope, brand, targetRef);
         ObjectNode normalized = normalizeConfiguration((ObjectNode) config, row);
-        if (jdbc.update(
-                        "UPDATE inventory.stock_target SET configuration=CAST(? AS JSONB),"
-                                + "counting_unit_ref=?,counting_unit_code=?,counting_unit_name=?,counting_unit_dime"
-                                + "nsion=?,"
-                                + "counting_unit_precision=?,counting_unit_conversion_factor=?,version=version+1,up"
-                                + "dated_at_epoch_millis=? WHERE data_node_ref=? AND "
-                                + "brand_ref=? AND target_ref=? AND version=?",
-                        canonical(normalized),
-                        normalized.hasNonNull("countingUnitSnapshot")
-                                ? requiredUnitSnapshot(normalized.path("countingUnitSnapshot"), "countingUnitSnapshot")
-                                        .unitRef()
-                                : null,
-                        normalized.hasNonNull("countingUnitSnapshot")
-                                ? requiredUnitSnapshot(normalized.path("countingUnitSnapshot"), "countingUnitSnapshot")
-                                        .code()
-                                : null,
-                        normalized.hasNonNull("countingUnitSnapshot")
-                                ? requiredUnitSnapshot(normalized.path("countingUnitSnapshot"), "countingUnitSnapshot")
-                                        .name()
-                                : null,
-                        normalized.hasNonNull("countingUnitSnapshot")
-                                ? requiredUnitSnapshot(normalized.path("countingUnitSnapshot"), "countingUnitSnapshot")
-                                        .unitDimension()
-                                : null,
-                        normalized.hasNonNull("countingUnitSnapshot")
-                                ? requiredUnitSnapshot(normalized.path("countingUnitSnapshot"), "countingUnitSnapshot")
-                                        .precision()
-                                : null,
-                        decimalNode(normalized, "conversionFactor"),
-                        time.currentEpochMillis(),
+        InventoryOwnerApi.UnitSnapshot countingSnapshot = normalized.hasNonNull("countingUnitSnapshot")
+                ? requiredUnitSnapshot(normalized.path("countingUnitSnapshot"), "countingUnitSnapshot")
+                : null;
+        if (persistence.updateConfigurationForCommand(
                         scope,
                         brand,
                         UUID.fromString(targetRef),
-                        expected)
+                        expected,
+                        canonical(normalized),
+                        countingSnapshot,
+                        decimalNode(normalized, "conversionFactor"),
+                        time.currentEpochMillis())
                 != 1) throw new InventoryOwnerApi.Problem("VERSION_CONFLICT", 409, "库存对象版本已变化");
         return current(scope, brand, requestId, targetRef);
     }
@@ -1594,15 +1207,7 @@ public class InventoryTargetService {
     private TargetRow target(String scope, String brand, String ref) {
         try {
             UUID id = UUID.fromString(ref);
-            return jdbc.queryForObject(
-                    "SELECT "
-                            + TARGET_SELECT_COLUMNS
-                            + " FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND target_ref=? "
-                            + "AND definition_status='ENABLED'",
-                    (r, n) -> targetRowWithConsumptionUnitSnapshot(r),
-                    scope,
-                    brand,
-                    id);
+            return targetRow(persistence.readTarget(scope, brand, id));
         } catch (EmptyResultDataAccessException | IllegalArgumentException ex) {
             throw new InventoryOwnerApi.Problem("NOT_FOUND", 404, "库存对象不存在", ex);
         }
@@ -1610,45 +1215,18 @@ public class InventoryTargetService {
 
     private java.util.Map<UUID, ChangeSnapshot> loadChangeSnapshots(List<TargetRow> targets) {
         if (targets == null || targets.isEmpty()) return java.util.Map.of();
-        String values = String.join(",", java.util.Collections.nCopies(targets.size(), "(?::uuid)"));
-        String sql = "WITH selected(target_ref) AS (VALUES " + values + "), bounds AS (SELECT ?::bigint AS now_epoch), "
-                + "aggregate AS (SELECT l.target_ref, "
-                + "COALESCE(SUM(l.delta) FILTER (WHERE l.occurred_at_epoch_millis >= b.now_epoch - 86400000),0) AS "
-                + "today_change, "
-                + "COALESCE(SUM(l.delta) FILTER (WHERE l.occurred_at_epoch_millis >= b.now_epoch - 604800000),0) AS "
-                + "seven_day_change, "
-                + "COALESCE(SUM(l.delta) FILTER (WHERE l.occurred_at_epoch_millis >= b.now_epoch - 2592000000),0) AS "
-                + "thirty_day_change "
-                + "FROM inventory.stock_ledger l JOIN selected s ON s.target_ref=l.target_ref CROSS JOIN bounds b "
-                + "GROUP BY l.target_ref), "
-                + "latest AS (SELECT l.target_ref,l.operation_id,l.occurred_at_epoch_millis,ROW_NUMBER() OVER "
-                + "(PARTITION BY l.target_ref ORDER BY l.occurred_at_epoch_millis DESC,l.entry_ref DESC) AS "
-                + "row_number "
-                + "FROM inventory.stock_ledger l JOIN selected s ON s.target_ref=l.target_ref) "
-                + "SELECT "
-                + "s.target_ref,a.today_change,a.seven_day_change,a.thirty_day_change,latest.operation_id,latest.oc"
-                + "curred_at_epoch_millis "
-                + "FROM selected s LEFT JOIN aggregate a ON a.target_ref=s.target_ref LEFT JOIN latest ON "
-                + "latest.target_ref=s.target_ref AND latest.row_number=1";
-        List<Object> args = new ArrayList<>();
-        for (TargetRow target : targets) args.add(target.ref());
-        args.add(time.currentEpochMillis());
-        java.util.Map<UUID, ChangeSnapshot> snapshots = new java.util.HashMap<>();
-        jdbc.query(sql, args.toArray(), result -> {
-            while (result.next()) {
-                UUID ref = result.getObject(1, UUID.class);
-                Long lastAt = result.getObject(6) == null ? null : result.getLong(6);
-                snapshots.put(
-                        ref,
-                        new ChangeSnapshot(
-                                result.getBigDecimal(2) == null ? BigDecimal.ZERO : result.getBigDecimal(2),
-                                result.getBigDecimal(3) == null ? BigDecimal.ZERO : result.getBigDecimal(3),
-                                result.getBigDecimal(4) == null ? BigDecimal.ZERO : result.getBigDecimal(4),
-                                result.getString(5),
-                                lastAt));
-            }
-            return null;
-        });
+        Map<UUID, ChangeSnapshot> snapshots = new LinkedHashMap<>();
+        Map<UUID, InventoryTargetPersistence.ChangeSnapshotRecord> records =
+                persistence.readChangeSnapshots(
+                        targets.stream().map(TargetRow::ref).toList(), time.currentEpochMillis());
+        records.forEach((ref, record) -> snapshots.put(
+                ref,
+                new ChangeSnapshot(
+                        record.today(),
+                        record.sevenDays(),
+                        record.thirtyDays(),
+                        record.lastSource(),
+                        record.lastAt())));
         return snapshots;
     }
 
@@ -1753,29 +1331,19 @@ public class InventoryTargetService {
 
     private ArrayNode recentChanges(String targetRef) {
         ArrayNode entries = mapper.createArrayNode();
-        jdbc.query(
-                "SELECT operation_id,delta,occurred_at_epoch_millis FROM inventory.stock_ledger WHERE target_ref=? "
-                        + "ORDER BY occurred_at_epoch_millis DESC LIMIT 20",
-                s -> s.setObject(1, UUID.fromString(targetRef)),
-                r -> {
-                    while (r.next())
-                        entries.addObject()
-                                .put("occurredAt", r.getLong(3))
-                                .put("changeType", r.getString(1))
-                                .put("quantity", decimal(r.getBigDecimal(2)))
-                                .put("source", r.getString(1));
-                    return null;
-                });
+        for (InventoryTargetPersistence.RecentChangeRecord record
+                : persistence.readRecentChangesForDetail(UUID.fromString(targetRef))) {
+            entries.addObject()
+                    .put("occurredAt", record.occurredAt())
+                    .put("changeType", record.operationId())
+                    .put("quantity", decimal(record.delta()))
+                    .put("source", record.operationId());
+        }
         return entries;
     }
 
     private long generation(String scope, String brand) {
-        Long value = jdbc.queryForObject(
-                "SELECT COALESCE(MAX(version),0) FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=?",
-                Long.class,
-                scope,
-                brand);
-        return value == null ? 0 : value;
+        return persistence.readGeneration(scope, brand);
     }
 
     private JsonNode receiptRequest(JsonNode request, String brandRef) {
@@ -1786,25 +1354,15 @@ public class InventoryTargetService {
 
     private JsonNode replay(String scope, String key, String operation, JsonNode request) {
         AdvisoryLock.acquire(jdbc, "inventory-receipt", scope, key);
-        List<Receipt> rows = jdbc.query(
-                "SELECT operation_id,request_hash,response::text FROM inventory.command_receipt WHERE data_node_ref=? "
-                        + "AND idempotency_key=?",
-                (r, n) -> new Receipt(r.getString(1), r.getString(2), json(r.getString(3))),
-                scope,
-                key);
-        if (rows.isEmpty()) return null;
-        Receipt row = rows.get(0);
-        if (!row.operation().equals(operation) || !row.requestHash().equals(hash(request)))
+        InventoryTargetPersistence.ReceiptRecord record = persistence.readReceipt(scope, key);
+        if (record == null) return null;
+        if (!record.operation().equals(operation) || !record.requestHash().equals(hash(request)))
             throw new InventoryOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他请求");
-        return row.response();
+        return json(record.response());
     }
 
     private void saveReceipt(String scope, String key, String operation, JsonNode request, JsonNode response) {
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_id,request_has"
-                        + "h,re"
-                        + "sponse,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)",
+        persistence.saveReceipt(
                 UUID.randomUUID(),
                 scope,
                 key,

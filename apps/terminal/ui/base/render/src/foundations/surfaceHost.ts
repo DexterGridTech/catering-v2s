@@ -13,6 +13,17 @@ export type SurfaceHostMeasurementSnapshot = Readonly<{
   readonly isHostPrimaryDisplay: boolean
 }>
 
+export type SurfaceHostIdentityRejection = Readonly<{
+  readonly reason: 'physical-host-flag-mismatch'
+  readonly displayIndex: 0 | 1
+  readonly expectedIsHostPrimaryDisplay: boolean
+  readonly actualIsHostPrimaryDisplay: boolean
+}>
+
+export type SurfaceHostIdentityRejectionHandler = (
+  rejection: SurfaceHostIdentityRejection,
+) => void
+
 export type SurfaceHostMeasurementSource = Readonly<{
   readonly getSnapshot: () => SurfaceHostMeasurementSnapshot | null
   readonly subscribe: (listener: (snapshot: SurfaceHostMeasurementSnapshot | null) => void) => () => void
@@ -43,6 +54,7 @@ export type SurfaceHostSource = Readonly<{
 export const bindSurfaceHostIdentity = (
   source: SurfaceHostMeasurementSource,
   identity: SurfaceIdentity,
+  onIdentityRejected?: SurfaceHostIdentityRejectionHandler,
 ): SurfaceHostSource => {
   const frozenIdentity = Object.freeze({...identity})
   let lastMeasurement: SurfaceHostMeasurementSnapshot | null | undefined
@@ -55,6 +67,12 @@ export const bindSurfaceHostIdentity = (
       return lastSnapshot
     }
     if (snapshot.isHostPrimaryDisplay !== (frozenIdentity.displayIndex === 0)) {
+      onIdentityRejected?.(Object.freeze({
+        reason: 'physical-host-flag-mismatch',
+        displayIndex: frozenIdentity.displayIndex,
+        expectedIsHostPrimaryDisplay: frozenIdentity.displayIndex === 0,
+        actualIsHostPrimaryDisplay: snapshot.isHostPrimaryDisplay,
+      }))
       lastSnapshot = null
       return lastSnapshot
     }

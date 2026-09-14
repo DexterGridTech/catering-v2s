@@ -7,6 +7,8 @@ import {
   LAYERING_RULE_NAMES,
   LAYERING_SUPPORT_CHECK_COUNT,
   repoRoot,
+  integrationPackages,
+  uiNativePackages,
   runLayeringChecks,
 } from './check-static.mjs'
 
@@ -69,6 +71,22 @@ try {
     "export const consoleProbe = 1\n",
     'index.tsx',
   )
+  const sampleWallpaperConsoleFile = packageFixture(
+    'apps/terminal/ui/integration/sample-wallpaper-console',
+    "export const wallpaperConsoleProbe = 1\n",
+    'index.tsx',
+  )
+
+  assert.equal(integrationPackages(fixtureRoot).length, 2)
+  assert.equal(uiNativePackages(fixtureRoot).filter(packageRoot => packageRoot.includes('/ui/integration/')).length, 2)
+  fs.rmSync(path.join(fixtureRoot, 'apps/terminal/ui/integration/sample-wallpaper-console'), {recursive: true, force: true})
+  assert.equal(integrationPackages(fixtureRoot).length, 1)
+  assert.equal(uiNativePackages(fixtureRoot).filter(packageRoot => packageRoot.includes('/ui/integration/')).length, 1)
+  const sampleWallpaperConsoleRoot = path.dirname(path.dirname(sampleWallpaperConsoleFile))
+  fs.mkdirSync(path.dirname(sampleWallpaperConsoleFile), {recursive: true})
+  fs.writeFileSync(path.join(sampleWallpaperConsoleRoot, 'package.json'), '{}\n')
+  fs.writeFileSync(sampleWallpaperConsoleFile, "export const wallpaperConsoleProbe = 1\n")
+  assert.equal(integrationPackages(fixtureRoot).length, 2)
 
   assert.deepEqual(LAYERING_RULE_NAMES, [
     'p-5a-direction',
@@ -127,6 +145,7 @@ try {
   const uiNativePackageMutations = [
     ['DEV_HOST', devHostFile],
     ['SAMPLE_CONSOLE', sampleConsoleFile],
+    ['SAMPLE_WALLPAPER_CONSOLE', sampleWallpaperConsoleFile],
   ]
   for (const [label, filePath] of uiNativePackageMutations) {
     withMutation(
@@ -333,6 +352,7 @@ try {
   fs.rmSync(path.join(fixtureRoot, 'apps/terminal/ui/feature/fixture-auth'), {recursive: true, force: true})
   fs.rmSync(path.join(fixtureRoot, 'apps/terminal/ui/base/dev-host'), {recursive: true, force: true})
   fs.rmSync(path.join(fixtureRoot, 'apps/terminal/ui/integration/sample-console'), {recursive: true, force: true})
+  fs.rmSync(path.join(fixtureRoot, 'apps/terminal/ui/integration/sample-wallpaper-console'), {recursive: true, force: true})
   fs.rmSync(emptyPackageRoot, {recursive: true, force: true})
   const emptyDenominatorReport = runLayeringChecks({root: fixtureRoot})
   assert.equal(rule(emptyDenominatorReport, 'p-5c-state-edge').status, 'FAIL')

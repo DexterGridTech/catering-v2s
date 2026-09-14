@@ -16,6 +16,7 @@ import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.collaboration.api.CollaborationCatalogSource;
 import com.catering.v2s.collaboration.api.CollaborationCommandApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
@@ -85,8 +86,7 @@ class CollaborationOwnerContractTest {
                         "LOCAL_ONLY",
                         "AVAILABLE"));
         CollaborationOwnerService service = new CollaborationOwnerService(
-                mock(JdbcTemplate.class),
-                mock(TimeProvider.class),
+                new CollaborationOwnerPersistence(mock(JdbcTemplate.class), mock(TimeProvider.class)),
                 source,
                 mock(PlatformGovernanceAuthorization.class),
                 receipts);
@@ -135,8 +135,7 @@ class CollaborationOwnerContractTest {
                     return rows;
                 });
         CollaborationOwnerService service = new CollaborationOwnerService(
-                jdbc,
-                mock(TimeProvider.class),
+                new CollaborationOwnerPersistence(jdbc, mock(TimeProvider.class)),
                 new CheckedInCollaborationCatalogSource(new com.fasterxml.jackson.databind.ObjectMapper()),
                 mock(PlatformGovernanceAuthorization.class),
                 mock(CollaborationCommandReceiptService.class));
@@ -170,8 +169,7 @@ class CollaborationOwnerContractTest {
                     return rows;
                 });
         CollaborationOwnerService service = new CollaborationOwnerService(
-                jdbc,
-                mock(TimeProvider.class),
+                new CollaborationOwnerPersistence(jdbc, mock(TimeProvider.class)),
                 mock(CollaborationCatalogSource.class),
                 mock(PlatformGovernanceAuthorization.class),
                 mock(CollaborationCommandReceiptService.class));

@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
+import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationAssignmentCandidateService;
 import com.catering.v2s.organization.application.OrganizationCommandService;
@@ -79,7 +81,10 @@ class WorkspaceInvitationPublicFlowTest {
                 String.class,
                 id,
                 key);
-        ExtensionDefinitionService definitions = new ExtensionDefinitionService(jdbc, time, workspaceStatuses);
+        ExtensionDefinitionService definitions = new ExtensionDefinitionService(
+                new ExtensionDefinitionPersistence(jdbc, time),
+                new ExtensionCommandReceiptService(jdbc, time),
+                workspaceStatuses);
         OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, time);
         BusinessEntityService entities = new BusinessEntityService(jdbc, time, definitions, hierarchy);
         WorkspaceRoleService roles = new WorkspaceRoleService(jdbc, time);
@@ -109,7 +114,11 @@ class WorkspaceInvitationPublicFlowTest {
         roleId = roles.create(workspaceId, "public-flow", "Region user", "REGION", null, Set.of(), Set.of())
                 .id();
         OrganizationTaskPathService taskPaths = new OrganizationTaskPathService(jdbc, groups);
-        WorkspaceUserService user = new WorkspaceUserService(jdbc, hierarchy, entities, roles);
+        OrganizationAssignmentCandidateService candidates =
+                new OrganizationAssignmentCandidateService(jdbc, groups, taskPaths);
+        WorkspaceAssignmentScopeService assignments = new WorkspaceAssignmentScopeService(jdbc);
+        WorkspaceUserService user = new WorkspaceUserService(
+                jdbc, hierarchy, entities, roles, groups, candidates, assignments, taskPaths);
         ObjectProvider<DevFixedOtpIssuer> fixedOtpIssuer = Mockito.mock(ObjectProvider.class);
         invitations = new WorkspaceInvitationService(
                 jdbc,
@@ -124,7 +133,7 @@ class WorkspaceInvitationPublicFlowTest {
                 new WorkspaceCommandAuthorizationService(jdbc),
                 user,
                 taskPaths,
-                new OrganizationAssignmentCandidateService(jdbc, groups, taskPaths),
+                candidates,
                 new OtpDebugExposurePolicy("", false),
                 fixedOtpIssuer);
         authentication = new WorkspaceAuthenticationService(jdbc, time, roles, hierarchy, entities, entities);

@@ -1,5 +1,10 @@
 package com.catering.v2s.businesschannel.application;
 
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence;
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence.ChannelProjection;
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTemplatePersistence;
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTemplatePersistence.TemplateCommandProjection;
+
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
@@ -18,13 +23,9 @@ import com.catering.v2s.organization.api.OrganizationOwnerApi;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +63,8 @@ public class BusinessChannelService {
     private static final AuditChangePolicy CHANNEL_DETACHED =
             new AuditChangePolicy("BUSINESS_CHANNEL", "BINDING_DETACHED", java.util.Set.of("bindingRef"));
 
-    private final JdbcTemplate jdbc;
+    private final BusinessChannelPersistence channelPersistence;
+    private final BusinessChannelTemplatePersistence templatePersistence;
     private final TimeProvider time;
     private final CollaborationCatalogReadApi collaborationCatalog;
     private final CollaborationBindingReadApi collaborationBindings;
@@ -72,14 +74,16 @@ public class BusinessChannelService {
 
     @Autowired
     public BusinessChannelService(
-            JdbcTemplate jdbc,
+            BusinessChannelPersistence channelPersistence,
+            BusinessChannelTemplatePersistence templatePersistence,
             TimeProvider time,
             CollaborationCatalogReadApi collaborationCatalog,
             CollaborationBindingReadApi collaborationBindings,
             WorkspaceStatusLookup workspaceStatuses,
             BusinessChannelCommandReceiptService receipts,
             BusinessChannelTemplateService templateService) {
-        this.jdbc = jdbc;
+        this.channelPersistence = channelPersistence;
+        this.templatePersistence = templatePersistence;
         this.time = time;
         this.collaborationCatalog = collaborationCatalog;
         this.collaborationBindings = collaborationBindings;
@@ -102,7 +106,8 @@ public class BusinessChannelService {
             OrganizationOwnerApi organizationOwner,
             OrganizationTaskPathLookup organizationTaskPaths) {
         this(
-                jdbc,
+                new BusinessChannelPersistence(jdbc),
+                new BusinessChannelTemplatePersistence(jdbc),
                 time,
                 collaborationCatalog,
                 collaborationBindings,
@@ -149,26 +154,16 @@ public class BusinessChannelService {
         if (normalizedSortKey == null && normalizedSortDirection != null) {
             throw problem("VALIDATION_ERROR", 422, "sortDirection requires sortKey");
         }
-        List<Object> arguments =
-                new ArrayList<>(List.of(workspaceUuid, groupWorkspaceKey, ownerNodeType, ownerNodeRef));
-        StringBuilder predicate = new StringBuilder(
-                " WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.target_node_type=? AND c.target_node_r"
-                        + "ef=?");
-        if (normalizedStatus != null) {
-            predicate.append(" AND c.status=?");
-            arguments.add(normalizedStatus);
-        }
-        List<ChannelProjection> projections = query(
-                BusinessChannelQuerySupport.channelProjection("LEFT JOIN business_channel.business_channel_template t "
-                                + "ON t.template_ref=c.template_ref AND t.workspace_uuid=c.workspace_uuid "
-                                + "AND t.group_workspace_key=c.group_workspace_key ")
-                        + predicate
-                        + " ORDER BY "
-                        + channelOrderBy(normalizedSortKey, normalizedSortDirection)
-                        + " LIMIT ?",
-                append(arguments, BusinessChannelQuerySupport.BOUNDED_READ_LIMIT + 1),
-                this::mapChannelProjection);
-        if (projections.size() > BusinessChannelQuerySupport.BOUNDED_READ_LIMIT) {
+        List<ChannelProjection> projections = channelPersistence.pageChannels(
+                workspaceUuid,
+                groupWorkspaceKey,
+                ownerNodeType,
+                ownerNodeRef,
+                normalizedStatus,
+                normalizedSortKey,
+                normalizedSortDirection,
+                BusinessChannelPersistence.BOUNDED_READ_LIMIT);
+        if (projections.size() > BusinessChannelPersistence.BOUNDED_READ_LIMIT) {
             throw problem(
                     "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
                     500,
@@ -195,32 +190,8 @@ public class BusinessChannelService {
             UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef) {
         requireScope(workspaceUuid, groupWorkspaceKey);
         if (channelRef == null) throw problem("VALIDATION_ERROR", 422, "channelRef is required");
-        return jdbc.query(
-                "SELECT c.channel_ref, c.template_ref, c.target_node_type, c.target_node_ref, c.channel_name, "
-                        + "c.binding_ref, c.version, t.access_kind, t.order_kind, t.provider_code "
-                        + "FROM business_channel.business_channel c "
-                        + "JOIN business_channel.business_channel_template t ON t.template_ref=c.template_ref "
-                        + "AND t.workspace_uuid=c.workspace_uuid AND t.group_workspace_key=c.group_workspace_key "
-                        + "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=?",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    statement.setObject(3, channelRef);
-                },
-                result -> {
-                    if (!result.next()) return notFound("channel");
-                    return new BusinessChannelReadback.ChannelCommandContext(
-                            result.getObject("channel_ref", UUID.class),
-                            result.getObject("template_ref", UUID.class),
-                            result.getString("target_node_type"),
-                            result.getString("target_node_ref"),
-                            result.getString("channel_name"),
-                            result.getObject("binding_ref", UUID.class),
-                            result.getLong("version"),
-                            result.getString("access_kind"),
-                            result.getString("order_kind"),
-                            result.getString("provider_code"));
-                });
+        return channelPersistence.readChannelCommandContext(workspaceUuid, groupWorkspaceKey, channelRef)
+                .orElseThrow(() -> problem("NOT_FOUND", 404, "channel was not found in the workspace"));
     }
 
 
@@ -396,16 +367,13 @@ public class BusinessChannelService {
                                 // still reject a non-effective existing binding.
                                 command.bindingReadback() == null);
                     }
-                    if (jdbc.update(
-                                    "UPDATE business_channel.business_channel SET channel_name=?, binding_ref=?, "
-                                            + "version=version+1, updated_at_epoch_millis=? WHERE channel_ref=? "
-                                            + "AND workspace_uuid=? AND group_workspace_key=? AND version=?",
-                                    command.channelName(),
-                                    command.bindingRef(),
-                                    time.currentEpochMillis(),
+                    if (channelPersistence.updateChannel(
                                     command.channelRef(),
                                     command.workspaceUuid(),
                                     command.groupWorkspaceKey(),
+                                    command.channelName(),
+                                    command.bindingRef(),
+                                    time.currentEpochMillis(),
                                     command.expectedVersion())
                             != 1) throw problem("VERSION_CONFLICT", 409, "channel version has changed");
                     audit(
@@ -493,15 +461,12 @@ public class BusinessChannelService {
                     ChannelRow result = current;
                     if (needsWrite) {
                         long now = time.currentEpochMillis();
-                        if (jdbc.update(
-                                        "UPDATE business_channel.business_channel SET status=?, "
-                                                + "version=version+1, updated_at_epoch_millis=? WHERE channel_ref=? "
-                                                + "AND workspace_uuid=? AND group_workspace_key=? AND version=?",
-                                        targetStatus,
-                                        now,
+                        if (channelPersistence.transitionChannel(
                                         command.channelRef(),
                                         command.workspaceUuid(),
                                         command.groupWorkspaceKey(),
+                                        targetStatus,
+                                        now,
                                         command.expectedVersion())
                                 != 1) throw problem("VERSION_CONFLICT", 409, "channel version has changed");
                         audit(
@@ -553,14 +518,11 @@ public class BusinessChannelService {
                     ChannelRow result = current;
                     if (current.bindingRef() != null) {
                         long now = time.currentEpochMillis();
-                        if (jdbc.update(
-                                        "UPDATE business_channel.business_channel SET binding_ref=null, "
-                                                + "version=version+1, updated_at_epoch_millis=? WHERE channel_ref=? "
-                                                + "AND workspace_uuid=? AND group_workspace_key=? AND version=?",
-                                        now,
+                        if (channelPersistence.detachChannel(
                                         command.channelRef(),
                                         command.workspaceUuid(),
                                         command.groupWorkspaceKey(),
+                                        now,
                                         expectedVersion)
                                 != 1) throw problem("VERSION_CONFLICT", 409, "channel version has changed");
                         audit(
@@ -747,29 +709,7 @@ public class BusinessChannelService {
             String initialStatus,
             long now) {
         try {
-            return jdbc.query(
-                    "WITH inserted AS (INSERT INTO business_channel.business_channel "
-                            + "(channel_ref, workspace_uuid, group_workspace_key, target_node_type, target_node_ref, "
-                            + "template_ref, channel_code, channel_name, binding_ref, status, version, "
-                            + "created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
-                            + "1, ?, ?) "
-                            + "RETURNING *) "
-                            + BusinessChannelQuerySupport.insertedChannelProjection(),
-                    statement -> {
-                        statement.setObject(1, channelRef);
-                        statement.setObject(2, command.workspaceUuid());
-                        statement.setString(3, command.groupWorkspaceKey());
-                        statement.setString(4, command.ownerNodeType());
-                        statement.setString(5, command.ownerNodeRef());
-                        statement.setObject(6, command.templateRef());
-                        statement.setString(7, channelCode);
-                        statement.setString(8, command.channelName());
-                        statement.setObject(9, command.bindingRef());
-                        statement.setString(10, initialStatus);
-                        statement.setLong(11, now);
-                        statement.setLong(12, now);
-                    },
-                    result -> result.next() ? mapChannelProjection(result) : notFound("channel"));
+            return channelPersistence.insertChannel(command, channelRef, channelCode, initialStatus, now);
         } catch (DuplicateKeyException failure) {
             throw problem("DUPLICATE_CODE", 409, "channelCode is already used in the group workspace", failure);
         }
@@ -780,96 +720,37 @@ public class BusinessChannelService {
     private TemplateCommandProjection readTemplateCommandProjection(
             UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef, String channelCode) {
         if (templateRef == null) throw problem("VALIDATION_ERROR", 422, "templateRef is required");
-        return jdbc.query(
-                "SELECT template.project_ref, template.access_kind, template.operator_kind, template.order_kind, "
-                        + "template.dine_in_form, template.provider_code, template.store_visibility_scope, "
-                        + "template.status, EXISTS (SELECT 1 "
-                        + "FROM business_channel.business_channel channel "
-                        + "WHERE channel.workspace_uuid=template.workspace_uuid "
-                        + "AND channel.group_workspace_key=template.group_workspace_key "
-                        + "AND channel.channel_code=? AND channel.status <> 'VOIDED') AS channel_code_in_use "
-                        + "FROM business_channel.business_channel_template template "
-                        + "WHERE template.workspace_uuid=? AND template.group_workspace_key=? "
-                        + "AND template.template_ref=? FOR UPDATE",
-                statement -> {
-                    statement.setString(1, channelCode);
-                    statement.setObject(2, workspaceUuid);
-                    statement.setString(3, groupWorkspaceKey);
-                    statement.setObject(4, templateRef);
-                },
-                result -> {
-                    if (!result.next()) return notFound("template");
-                    return new TemplateCommandProjection(
-                            result.getObject("project_ref", UUID.class),
-                            result.getString("access_kind"),
-                            result.getString("operator_kind"),
-                            result.getString("order_kind"),
-                            result.getString("dine_in_form"),
-                            result.getString("provider_code"),
-                            result.getString("store_visibility_scope"),
-                            result.getString("status"),
-                            result.getBoolean("channel_code_in_use"));
-                });
+        return templatePersistence.readTemplateCommandProjection(
+                        workspaceUuid, groupWorkspaceKey, templateRef, channelCode)
+                .orElseThrow(() -> problem("NOT_FOUND", 404, "template was not found in the workspace"));
     }
 
 
 
     private ChannelRow readChannelRow(UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef) {
         if (channelRef == null) throw problem("VALIDATION_ERROR", 422, "channelRef is required");
-        return jdbc.query(
-                BusinessChannelQuerySupport.channelSelect(
-                        "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=?"),
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    statement.setObject(3, channelRef);
-                },
-                result -> {
-                    if (!result.next()) return notFound("channel");
-                    ChannelProjection projection = mapChannelProjection(result);
-                    return channelRow(
-                            projection, statusFacts(workspaceUuid, groupWorkspaceKey, List.of(projection)));
-                });
+        ChannelProjection projection = channelPersistence.readChannel(workspaceUuid, groupWorkspaceKey, channelRef, false)
+                .orElseThrow(() -> problem("NOT_FOUND", 404, "channel was not found in the workspace"));
+        return channelRow(projection, statusFacts(workspaceUuid, groupWorkspaceKey, List.of(projection)));
     }
 
 
 
     private ChannelRow readChannelForUpdate(UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef) {
-        return jdbc.query(
-                BusinessChannelQuerySupport.channelSelect(
-                        "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=? FOR UPDATE OF c"),
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    statement.setObject(3, channelRef);
-                },
-                result -> {
-                    if (!result.next()) return notFound("channel");
-                    ChannelProjection projection = mapChannelProjection(result);
-                    return channelRow(
-                            projection, statusFacts(workspaceUuid, groupWorkspaceKey, List.of(projection)));
-                });
+        ChannelProjection projection = channelPersistence.readChannel(workspaceUuid, groupWorkspaceKey, channelRef, true)
+                .orElseThrow(() -> problem("NOT_FOUND", 404, "channel was not found in the workspace"));
+        return channelRow(projection, statusFacts(workspaceUuid, groupWorkspaceKey, List.of(projection)));
     }
 
 
 
     private CommandChannelRow readCommandChannelRow(
             UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef, boolean forUpdate) {
-        String suffix = "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=?"
-                + (forUpdate ? " FOR UPDATE OF c" : "");
-        return jdbc.query(
-                BusinessChannelQuerySupport.channelCommandSelect(suffix),
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    statement.setObject(3, channelRef);
-                },
-                result -> {
-                    if (!result.next()) return notFound("channel");
-                    ChannelProjection projection = mapChannelProjection(result);
-                    StatusFacts facts = statusFacts(workspaceUuid, groupWorkspaceKey, List.of(projection));
-                    return new CommandChannelRow(channelRow(projection, facts), joinedTemplateRow(projection, facts));
-                });
+        ChannelProjection projection = channelPersistence
+                .readCommandChannel(workspaceUuid, groupWorkspaceKey, channelRef, forUpdate)
+                .orElseThrow(() -> problem("NOT_FOUND", 404, "channel was not found in the workspace"));
+        StatusFacts facts = statusFacts(workspaceUuid, groupWorkspaceKey, List.of(projection));
+        return new CommandChannelRow(channelRow(projection, facts), joinedTemplateRow(projection, facts));
     }
 
 
@@ -923,51 +804,6 @@ public class BusinessChannelService {
 
     private static void addRef(Set<UUID> refs, UUID ref) {
         if (ref != null) refs.add(ref);
-    }
-
-
-
-    private ChannelProjection mapChannelProjection(ResultSet result, int rowNumber) throws SQLException {
-        return mapChannelProjection(result);
-    }
-
-
-
-    private ChannelProjection mapChannelProjection(ResultSet result) throws SQLException {
-        return new ChannelProjection(
-                result.getObject("workspace_uuid", UUID.class),
-                result.getString("group_workspace_key"),
-                result.getObject("channel_ref", UUID.class),
-                result.getObject("template_ref", UUID.class),
-                result.getString("target_node_type"),
-                result.getString("target_node_ref"),
-                result.getString("channel_code"),
-                result.getString("channel_name"),
-                result.getObject("binding_ref", UUID.class),
-                result.getString("template_access_kind"),
-                result.getString("status"),
-                result.getLong("version"),
-                result.getObject("template_project_ref", UUID.class),
-                result.getString("template_name"),
-                result.getString("template_code"),
-                result.getString("template_operator_kind"),
-                result.getString("template_order_kind"),
-                result.getString("template_dine_in_form"),
-                result.getString("template_provider_code"),
-                result.getString("template_status"),
-                result.getLong("template_version"),
-                result.getString("template_project_status"),
-                result.getObject("target_project_ref", UUID.class),
-                result.getString("target_node_status"),
-                result.getObject("target_store_project_ref", UUID.class),
-                result.getString("target_store_project_status"),
-                result.getString("target_store_status"),
-                result.getObject("target_tenant_ref", UUID.class),
-                result.getString("target_tenant_status"),
-                result.getObject("target_brand_ref", UUID.class),
-                result.getString("target_brand_status"),
-                result.getString("binding_lifecycle_status"),
-                result.getString("provider_status"));
     }
 
 
@@ -1036,43 +872,7 @@ public class BusinessChannelService {
 
     private Map<UUID, List<BusinessChannelReadback.StatusDimension>> readOrganizationAncestors(
             UUID workspaceUuid, String groupWorkspaceKey, Set<UUID> nodeRefs) {
-        if (workspaceUuid == null || groupWorkspaceKey == null || nodeRefs == null || nodeRefs.isEmpty()) {
-            return Map.of();
-        }
-        List<UUID> refs = new ArrayList<>(nodeRefs);
-        String placeholders = refs.stream().map(ignored -> "?").collect(Collectors.joining(", "));
-        List<Object> arguments = new ArrayList<>(refs);
-        arguments.add(workspaceUuid);
-        arguments.add(groupWorkspaceKey);
-        arguments.add(workspaceUuid);
-        arguments.add(groupWorkspaceKey);
-        Map<UUID, List<BusinessChannelReadback.StatusDimension>> ancestors = new LinkedHashMap<>();
-        jdbc.query(
-                "WITH RECURSIVE ancestry AS ("
-                        + "SELECT id AS source_ref, id, parent_id, node_type, status, 0 AS depth "
-                        + "FROM organization.organization_node "
-                        + "WHERE id IN ("
-                        + placeholders
-                        + ") AND workspace_uuid=? AND group_workspace_key=? "
-                        + "UNION ALL SELECT child.source_ref, parent.id, parent.parent_id, "
-                        + "parent.node_type, parent.status, child.depth+1 "
-                        + "FROM organization.organization_node parent JOIN ancestry child ON parent.id=child.parent_id "
-                        + "WHERE parent.workspace_uuid=? AND parent.group_workspace_key=? ) "
-                        + "SELECT source_ref, node_type, id, status FROM ancestry ORDER BY source_ref, depth DESC",
-                statement -> bind(statement, arguments),
-                result -> {
-                    while (result.next()) {
-                        UUID sourceRef = result.getObject("source_ref", UUID.class);
-                        ancestors
-                                .computeIfAbsent(sourceRef, ignored -> new ArrayList<>())
-                                .add(new BusinessChannelReadback.StatusDimension(
-                                        "ORGANIZATION_" + result.getString("node_type"),
-                                        result.getObject("id", UUID.class).toString(),
-                                        result.getString("status")));
-                    }
-                    return null;
-                });
-        return ancestors;
+        return channelPersistence.readOrganizationAncestors(workspaceUuid, groupWorkspaceKey, nodeRefs);
     }
 
 
@@ -1210,52 +1010,9 @@ public class BusinessChannelService {
             throw problem("DUPLICATE_CODE", 409, "channelCode is already used in the group workspace");
         }
     }
-    private <T> List<T> query(String sql, List<Object> arguments, org.springframework.jdbc.core.RowMapper<T> mapper) {
-        return jdbc.query(sql, statement -> bind(statement, arguments), mapper);
-    }
-
-
-
-    private static void bind(PreparedStatement statement, List<Object> arguments) throws SQLException {
-        for (int index = 0; index < arguments.size(); index++) statement.setObject(index + 1, arguments.get(index));
-    }
-
-
-
-    private static List<Object> append(List<Object> values, Object value) {
-        List<Object> result = new ArrayList<>(values);
-        result.add(value);
-        return result;
-    }
-
-
-
     private static String optionalEnum(String value, String name, String... allowed) {
         if (value == null) return null;
         return BusinessChannelPolicy.requireEnum(value, name, allowed);
-    }
-
-
-
-    private static String channelOrderBy(String sortKey, String sortDirection) {
-        if (sortKey == null) return "c.channel_ref";
-        String expression =
-                switch (sortKey) {
-                    case "CHANNEL_NAME" -> "c.channel_name";
-                    case "CHANNEL_CODE" -> "COALESCE(c.channel_code, '')";
-                    case "TEMPLATE_NAME" -> "COALESCE(t.template_name, '')";
-                    case "STATUS" -> "c.status";
-                    case "BINDING_STATUS" -> "CASE WHEN t.access_kind='INTERNAL' THEN 0 WHEN c.binding_ref IS NULL "
-                            + "THEN 1 ELSE 2 END";
-                    default -> throw problem("VALIDATION_ERROR", 422, "sortKey is not supported");
-                };
-        return expression + " " + direction(sortDirection) + ", c.channel_ref";
-    }
-
-
-
-    private static String direction(String sortDirection) {
-        return "DESC".equals(sortDirection) ? "DESC" : "ASC";
     }
 
 
@@ -1369,19 +1126,13 @@ public class BusinessChannelService {
             AuditActor actor,
             AuditChangePolicy policy,
             List<AuditChange> changes) {
-        jdbc.update(
-                "INSERT INTO business_channel.audit_event (event_ref, workspace_uuid, group_workspace_key, "
-                        + "actor_type, actor_id, actor_display_snapshot, entity_type, entity_ref, action, "
-                        + "changes_json, occurred_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?)",
-                UUID.randomUUID(),
+        channelPersistence.recordAudit(
                 workspaceUuid,
                 groupWorkspaceKey,
-                actor.actorType(),
-                actor.actorId(),
-                actor.displaySnapshot(),
-                policy.entityType(),
                 entityRef,
                 action,
+                actor,
+                policy.entityType(),
                 AuditChangeJson.write(policy.allow(changes)),
                 time.currentEpochMillis());
     }
@@ -1393,12 +1144,6 @@ public class BusinessChannelService {
                 + Arrays.stream(values)
                         .map(value -> Objects.toString(value, "<null>"))
                         .collect(Collectors.joining("\u001f"));
-    }
-
-
-
-    private static <T> T notFound(String resource) {
-        throw problem("NOT_FOUND", 404, resource + " was not found in the workspace");
     }
 
 
@@ -1430,52 +1175,6 @@ public class BusinessChannelService {
             return externalSystems.get(externalSystemCode);
         }
     }
-
-    private record TemplateCommandProjection(
-            UUID projectRef,
-            String accessKind,
-            String operatorKind,
-            String orderKind,
-            String dineInForm,
-            String providerCode,
-            String storeVisibilityScope,
-            String status,
-            boolean channelCodeInUse) {}
-
-    private record ChannelProjection(
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            UUID channelRef,
-            UUID templateRef,
-            String targetNodeType,
-            String targetNodeRef,
-            String channelCode,
-            String channelName,
-            UUID bindingRef,
-            String templateAccessKind,
-            String status,
-            long version,
-            UUID templateProjectRef,
-            String templateName,
-            String templateCode,
-            String templateOperatorKind,
-            String templateOrderKind,
-            String templateDineInForm,
-            String templateProviderCode,
-            String templateStatus,
-            long templateVersion,
-            String templateProjectStatus,
-            UUID targetProjectRef,
-            String targetNodeStatus,
-            UUID targetStoreProjectRef,
-            String targetStoreProjectStatus,
-            String targetStoreStatus,
-            UUID targetTenantRef,
-            String targetTenantStatus,
-            UUID targetBrandRef,
-            String targetBrandStatus,
-            String bindingLifecycleStatus,
-            String providerStatus) {}
 
     private record TemplateRow(
             UUID templateRef,

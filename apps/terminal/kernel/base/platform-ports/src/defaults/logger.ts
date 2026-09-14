@@ -3,7 +3,8 @@ import type {LoggerConsoleBinding} from '../types/platformPorts';
 const PORT_DESCRIPTOR_KEY = Symbol.for('catering-v2s.platform-ports.descriptor');
 const binding: LoggerConsoleBinding = {kind: 'console'};
 
-Object.defineProperty(binding, PORT_DESCRIPTOR_KEY, {
+if (__DEV__) {
+  Object.defineProperty(binding, PORT_DESCRIPTOR_KEY, {
     value: Object.freeze({
       port: 'logger',
       capabilities: Object.freeze([
@@ -13,6 +14,7 @@ Object.defineProperty(binding, PORT_DESCRIPTOR_KEY, {
     enumerable: false,
     writable: false,
     configurable: false,
-});
+  });
+}
 
 export const consoleLoggerBinding: LoggerConsoleBinding = Object.freeze(binding);

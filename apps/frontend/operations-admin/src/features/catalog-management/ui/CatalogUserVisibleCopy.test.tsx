@@ -17,7 +17,9 @@ const userVisibleSurfaceFiles = Object.freeze([
   'CatalogConfigurationLibraryNavigation.tsx',
   'CatalogDefinitionLibraries.tsx',
   'CatalogDescriptorPicker.tsx',
-  'CatalogDictionaryDrawerState.tsx',
+  'dictionary/CatalogDictionaryDrawerState.tsx',
+  'dictionary/CatalogDictionaryDrawerView.tsx',
+  'dictionary/catalogDictionaryDrawerModel.ts',
   'CatalogDictionaryAtomModals.tsx',
   'CatalogSimpleDictionaryLibrary.tsx',
   'CatalogSkuAttributeLibrary.tsx',
@@ -61,8 +63,11 @@ const userVisibleSurfaceFiles = Object.freeze([
   'controllers/useCatalogSkuRows.ts',
   'CatalogCategoryActionModal.tsx',
   'CatalogBatchActionModal.tsx',
-  'LocalCatalogCopyDrawer.tsx',
+  'local-copy/LocalCatalogCopyDrawer.tsx',
+  'local-copy/LocalCatalogCopyView.tsx',
+  'local-copy/localCatalogCopyModel.ts',
   '../model/catalogModel.ts',
+  '../model/catalog/catalogCopyModel.ts',
 ]);
 
 const visibleAttributeNames = new Set([

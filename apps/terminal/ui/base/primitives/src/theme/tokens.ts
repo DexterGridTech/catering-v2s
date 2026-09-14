@@ -2,7 +2,11 @@ export const baseTokens = Object.freeze({
   container: 'flex-1 bg-canvas p-6 gap-4',
   containerContent: 'w-full bg-canvas gap-3',
   containerCard: 'w-11/12 max-w-xl self-center rounded-xl border border-border bg-surface p-6 gap-4',
+  containerBoundedCard: 'min-h-0 overflow-hidden',
+  containerBoundedContent: 'flex-1 min-h-0',
   containerCentered: 'flex-1 items-center justify-center bg-canvas p-6 gap-4',
+  containerTransparent: 'flex-1 p-6 gap-4',
+  imageBackground: 'absolute inset-0 w-full h-full',
   // Keep explicit line boxes for all cross-platform text tokens. Android's
   // CJK glyph descent can exceed a size-only Text line box after a surface
   // transform, while the browser derives a different default line height.
@@ -24,6 +28,9 @@ export const baseTokens = Object.freeze({
   // spacing in PrimitiveScrollView's contentContainerStyle so native and web
   // lay out the same direct-child stack.
   scroll: 'w-full flex-1 bg-canvas',
+  // Explicit opt-in for composites whose parent owns the background, such as
+  // a wallpaper-backed picker. Existing consumers keep the opaque token above.
+  scrollTransparent: 'w-full flex-1',
   card: 'w-full rounded-xl border border-border bg-surface p-4 gap-3',
   divider: 'w-full h-px bg-border',
   stack: 'w-full gap-3',

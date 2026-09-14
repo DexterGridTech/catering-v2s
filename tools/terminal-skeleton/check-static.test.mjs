@@ -20,10 +20,11 @@ const spec = readSkeletonSpec(skeletonGraphPath);
 const batchOne = projectSkeletonGraph(spec, 1);
 const batchTwo = projectSkeletonGraph(spec, 2);
 
-assert.equal(Object.keys(spec.graph).length, 27, 'the literal skeleton specification has 27 nodes');
-assert.equal(Object.keys(batchOne).length, 15, 'batch one projects 15 nodes');
-assert.equal(Object.keys(batchTwo).length, 27, 'batch two projects 27 nodes');
+assert.equal(Object.keys(spec.graph).length, 31, 'the literal skeleton specification has 31 nodes');
+assert.equal(Object.keys(batchOne).length, 16, 'batch one projects 16 nodes');
+assert.equal(Object.keys(batchTwo).length, 31, 'batch two projects 31 nodes');
 assert.equal(moduleNameToPackageName('assembly.android.sample-terminal'), '@catering-v2s/assembly-android-sample-terminal');
+assert.equal(moduleNameToPackageName('assembly.android.sample-wallpaper-terminal'), '@catering-v2s/assembly-android-sample-wallpaper-terminal');
 assert.equal(moduleNameToRelativePath('kernel.base.contracts'), 'apps/terminal/kernel/base/contracts');
 
 const help = spawnSync(process.execPath, [checkStaticPath, '--help'], {cwd: repoRoot, encoding: 'utf8'});
@@ -32,7 +33,7 @@ assert.match(help.stdout, /six TER static rule gates/);
 
 const realStatic = spawnSync(process.execPath, [checkStaticPath], {cwd: repoRoot, encoding: 'utf8'});
 assert.equal(realStatic.status, 0, realStatic.stderr);
-assert.match(realStatic.stdout, /RULE_GATES=6/);
+  assert.match(realStatic.stdout, /RULE_GATES=6/);
 assert.match(realStatic.stdout, /SUPPORT_CHECKS=1/);
 for (const rule of [
   'GRAPH_COMPARISON',
@@ -171,7 +172,7 @@ try {
     result => result.name === 'graph-comparison',
   );
   assert.equal(missingAppPlatformPortsGate.status, 'FAIL');
-  assert.match(missingAppPlatformPortsGate.error, /assembly App\.tsx/);
+  assert.match(missingAppPlatformPortsGate.error, /App\.tsx must have a runtime import/);
   fs.writeFileSync(appPath, appSource);
 
   const uiDevHostPackagePath = path.join(
@@ -318,7 +319,7 @@ try {
   withJsonMutation(
     uiRenderPackagePath,
     packageJson => {
-      packageJson.dependencies['@catering-v2s/kernel-base-display-context'] = 'workspace:*';
+      packageJson.dependencies['@catering-v2s/kernel-base-transport'] = 'workspace:*';
     },
     report => {
       assertGateVector(report, ['graph-comparison']);

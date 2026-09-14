@@ -1,25 +1,29 @@
 package com.catering.v2s.workspace.iam.application;
 
-import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceIamCommandReceiptPersistence;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import java.util.function.Supplier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 /** Owner-local exact-readback receipt for workspace-IAM commands. */
 @Service
 public final class WorkspaceIamCommandReceiptService {
     private static final ObjectMapper JSON = new ObjectMapper().findAndRegisterModules();
-    private final JdbcTemplate jdbc;
+    private final WorkspaceIamCommandReceiptPersistence persistence;
     private final TimeProvider time;
 
-    public WorkspaceIamCommandReceiptService(JdbcTemplate jdbc, TimeProvider time) {
-        this.jdbc = jdbc;
+    @org.springframework.beans.factory.annotation.Autowired
+    public WorkspaceIamCommandReceiptService(WorkspaceIamCommandReceiptPersistence persistence, TimeProvider time) {
+        this.persistence = persistence;
         this.time = time;
+    }
+
+    public WorkspaceIamCommandReceiptService(org.springframework.jdbc.core.JdbcTemplate jdbc, TimeProvider time) {
+        this(new WorkspaceIamCommandReceiptPersistence(jdbc), time);
     }
 
     public <T> T execute(
@@ -29,15 +33,9 @@ public final class WorkspaceIamCommandReceiptService {
             throw new WorkspaceInvitationService.InvitationValidationException();
         }
         String requestHash = sha256(canonicalRequest);
-        AdvisoryLock.acquire(jdbc, "workspace-iam-receipt", workspaceUuid.toString(), key);
-        Receipt prior = jdbc.query(
-                "SELECT request_hash, response_json::text "
-                        + "FROM workspace_iam.workspace_command_receipt WHERE workspace_uuid=? AND idempotency_key=?",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, key);
-                },
-                result -> result.next() ? new Receipt(result.getString(1), result.getString(2)) : null);
+        persistence.acquireLock(workspaceUuid, key);
+        WorkspaceIamCommandReceiptPersistence.ReceiptRow stored = persistence.find(workspaceUuid, key);
+        Receipt prior = stored == null ? null : new Receipt(stored.requestHash(), stored.responseJson());
         if (prior != null) {
             if (!requestHash.equals(prior.requestHash())) {
                 throw new WorkspaceIamIdempotencyConflictException();
@@ -46,15 +44,7 @@ public final class WorkspaceIamCommandReceiptService {
         }
         try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             T result = command.get();
-            jdbc.update(
-                    "INSERT INTO workspace_iam.workspace_command_receipt "
-                            + "(workspace_uuid, idempotency_key, request_hash, response_json, created_at_epoch_millis) "
-                            + "VALUES (?, ?, ?, ?::jsonb, ?)",
-                    workspaceUuid,
-                    key,
-                    requestHash,
-                    write(result),
-                    time.currentEpochMillis());
+            persistence.insert(workspaceUuid, key, requestHash, write(result), time.currentEpochMillis());
             return result;
         }
     }

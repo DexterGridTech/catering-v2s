@@ -1,5 +1,6 @@
 package com.catering.v2s.salesmenu.application;
 
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
@@ -46,7 +47,6 @@ import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOptionValue;
 import com.catering.v2s.salesmenu.domain.SalesMenuTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionKind;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionQuery;
-import com.catering.v2s.salesmenu.infrastructure.SalesMenuRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
@@ -113,7 +113,7 @@ public class SalesMenuSectionService {
     private static final Set<String> REJECTED_OPERATION_TARGET_MAY_BE_MISSING =
                 Set.of("SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH");
 
-    private final SalesMenuRepository repository;
+    private final SalesMenuPersistence persistence;
     private final TimeProvider time;
     private final ObjectMapper json;
     private final CatalogOwnerApi catalog;
@@ -121,14 +121,14 @@ public class SalesMenuSectionService {
     private final BusinessChannelOwnerApi channels;
     private final OrganizationOwnerApi organization;
 
-    public SalesMenuSectionService(SalesMenuRepository repository, TimeProvider time, ObjectMapper json) {
-        this(repository, time, json, null, null, null, null);
+    public SalesMenuSectionService(SalesMenuPersistence persistence, TimeProvider time, ObjectMapper json) {
+        this(persistence, time, json, null, null, null, null);
     }
 
     @Autowired
 
     public SalesMenuSectionService(
-            SalesMenuRepository repository,
+            SalesMenuPersistence persistence,
             TimeProvider time,
             ObjectMapper json,
             CatalogOwnerApi catalog,
@@ -136,7 +136,7 @@ public class SalesMenuSectionService {
             BusinessChannelOwnerApi channels,
             OrganizationOwnerApi organization) {
 
-        this.repository = Objects.requireNonNull(repository, "repository");
+        this.persistence = Objects.requireNonNull(persistence, "persistence");
         this.time = Objects.requireNonNull(time, "time");
         this.json = Objects.requireNonNull(json, "json");
         this.catalog = catalog;
@@ -159,20 +159,9 @@ public class SalesMenuSectionService {
         UUID section = UUID.randomUUID();
         return mutate("createOperationsSalesMenuSection", command.context(), command, command.expectedVersion(), () -> {
             UUID version = draftVersion(command.context().salesMenuRef());
-            repository.update(
-                    "INSERT INTO sales_menu.sales_section(section_ref,collection_ref) VALUES(?,?)",
-                    section,
-                    command.context().salesMenuRef());
-            repository.update(
-                    "INSERT INTO sales_menu.sales_version_section(version_ref,section_ref,collection_ref,name,"
-                            + "display_order) "
-                            + "VALUES(?,?,?, ?,COALESCE((SELECT max(display_order)+1 "
-                            + "FROM sales_menu.sales_version_section WHERE version_ref=?),0))",
-                    version,
-                    section,
-                    command.context().salesMenuRef(),
-                    command.name(),
-                    version);
+            persistence.createSection(section, command.context().salesMenuRef());
+            persistence.createSectionVersion(
+                    version, section, command.context().salesMenuRef(), command.name(), version);
             advanceDraftRevision(version);
             return SalesMenuCommandReadbackStatus.APPLIED;
         });
@@ -183,11 +172,7 @@ public class SalesMenuSectionService {
         return mutate(
                 "renameOperationsSalesMenuSection", command.context(), command, command.expectedVersion(), locked -> {
                     UUID version = locked.draftVersion();
-                    repository.update(
-                            "UPDATE sales_menu.sales_version_section SET name=? WHERE version_ref=? AND section_ref=?",
-                            command.name(),
-                            version,
-                            command.salesSectionRef());
+                    persistence.renameSection(version, command.salesSectionRef(), command.name());
                     advanceDraftRevision(version);
                     return SalesMenuCommandReadbackStatus.APPLIED;
                 });
@@ -198,18 +183,9 @@ public class SalesMenuSectionService {
         return mutate(
                 "deleteOperationsSalesMenuSection", command.context(), command, command.expectedVersion(), locked -> {
                     UUID version = locked.draftVersion();
-                    if (!repository
-                            .query(
-                                    "SELECT 1 FROM sales_menu.sales_version_item "
-                                            + "WHERE version_ref=? AND section_ref=? LIMIT 1",
-                                    SalesMenuReadModels::existsRow,
-                                    version,
-                                    command.salesSectionRef())
-                            .isEmpty()) throw problem("SECTION_NOT_EMPTY", 409, "非空分组不可删除");
-                    repository.update(
-                            "DELETE FROM sales_menu.sales_version_section WHERE version_ref=? AND section_ref=?",
-                            version,
-                            command.salesSectionRef());
+                    if (persistence.sectionHasItems(version, command.salesSectionRef()))
+                        throw problem("SECTION_NOT_EMPTY", 409, "非空分组不可删除");
+                    persistence.deleteSection(version, command.salesSectionRef());
                     advanceDraftRevision(version);
                     return SalesMenuCommandReadbackStatus.APPLIED;
                 });
@@ -220,14 +196,7 @@ public class SalesMenuSectionService {
         return mutate(
                 "moveOperationsSalesMenuSection", command.context(), command, command.expectedVersion(), locked -> {
                     UUID version = locked.draftVersion();
-                    move(
-                            "sales_menu.sales_version_section",
-                            "section_ref",
-                            version,
-                            command.salesSectionRef(),
-                            command.direction(),
-                            null,
-                            locked.moveCurrent());
+                    move(version, command.salesSectionRef(), command.direction(), null, locked.moveCurrent());
                     advanceDraftRevision(version);
                     return SalesMenuCommandReadbackStatus.APPLIED;
                 });
@@ -325,28 +294,18 @@ public class SalesMenuSectionService {
             Function<L, P> preflight,
             Function<P, T> action) {
         String hash = hash(receiptRequest(request));
-        repository.lockCommandReceipt(context.scope().workspaceUuid(), operation, context.idempotencyKey());
+        persistence.lockCommandReceipt(context.scope().workspaceUuid(), operation, context.idempotencyKey());
         L locked = lock.get();
-        ReceiptRow existing = repository
-                .query(
-                        "SELECT request_hash,status,readback_json::text readback_json "
-                                + "FROM sales_menu.sales_command_receipt "
-                                + "WHERE workspace_uuid=? AND operation_id=? AND idempotency_key=?",
-                        SalesMenuReadModels::receiptRow,
-                        context.scope().workspaceUuid(),
-                        operation,
-                        context.idempotencyKey())
+        ReceiptRow existing = persistence
+                .readSectionCommandReceipt(
+                        context.scope().workspaceUuid(), operation, context.idempotencyKey())
                 .stream()
                 .findFirst()
                 .orElse(null);
         if (existing != null) return replay(operation, context, hash);
         P state = preflight.apply(locked);
         T result = action.apply(state);
-        int inserted = repository.update(
-                "INSERT INTO sales_menu.sales_command_receipt(receipt_ref,workspace_uuid,group_workspace_key,"
-                        + "operation_id,idempotency_key,request_hash,status,readback_json,created_at_epoch_millis) "
-                        + "VALUES(?,?,?,?,?,?,? ,?::jsonb,?) "
-                        + "ON CONFLICT (workspace_uuid,operation_id,idempotency_key) DO NOTHING",
+        int inserted = persistence.insertSectionCommandReceipt(
                 UUID.randomUUID(),
                 context.scope().workspaceUuid(),
                 context.scope().groupWorkspaceKey(),
@@ -366,15 +325,9 @@ public class SalesMenuSectionService {
     }
 
     private <T> T replay(String operation, SalesMenuOwnerApi.CommandContext context, String hash) {
-        var row = repository
-                .query(
-                        "SELECT request_hash,status,readback_json::text readback_json "
-                                + "FROM sales_menu.sales_command_receipt "
-                                + "WHERE workspace_uuid=? AND operation_id=? AND idempotency_key=?",
-                        SalesMenuReadModels::receiptRow,
-                        context.scope().workspaceUuid(),
-                        operation,
-                        context.idempotencyKey())
+        var row = persistence
+                .readSectionCommandReceiptForReplay(
+                        context.scope().workspaceUuid(), operation, context.idempotencyKey())
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> problem("RECEIPT_MISSING", 500, "命令回执缺失"));
@@ -394,69 +347,32 @@ public class SalesMenuSectionService {
     }
 
     private void move(
-            String table,
-            String refColumn,
             UUID version,
             UUID ref,
             SalesMenuMoveDirection direction,
             UUID section,
             MoveCurrentRow current) {
         long currentOrder = current.displayOrder();
-        boolean movingUp = direction == SalesMenuMoveDirection.UP;
-        String adjacencyPredicate = movingUp
-                ? " AND (display_order < ? OR (display_order = ? AND " + refColumn + " < ?))"
-                : " AND (display_order > ? OR (display_order = ? AND " + refColumn + " > ?))";
-        String adjacencyOrder = movingUp
-                ? " ORDER BY display_order DESC," + refColumn + " DESC LIMIT 1 FOR UPDATE"
-                : " ORDER BY display_order ASC," + refColumn + " ASC LIMIT 1 FOR UPDATE";
-        List<Object> adjacencyArguments = new ArrayList<>(List.of(version));
-        String sectionPredicate = "";
-        if (section != null) {
-            sectionPredicate = " AND section_ref=?";
-            adjacencyArguments.add(section);
-        }
-        adjacencyArguments.add(currentOrder);
-        adjacencyArguments.add(currentOrder);
-        adjacencyArguments.add(ref);
-        var other = repository
-                .query(
-                        "SELECT " + refColumn + ",display_order FROM " + table
-                                + " WHERE version_ref=?"
-                                + sectionPredicate
-                                + adjacencyPredicate
-                                + adjacencyOrder,
-                        SalesMenuSectionService::moveTargetRow,
-                        adjacencyArguments.toArray())
+        var other = persistence
+                .findAdjacent(
+                        SalesMenuPersistence.OrderingTable.SECTION,
+                        version,
+                        ref,
+                        direction,
+                        section,
+                        currentOrder)
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> problem("MOVE_NOT_ALLOWED", 409, "已到排序边界"));
-        List<Object> maxOrderArguments = new ArrayList<>(List.of(version));
-        if (section != null) maxOrderArguments.add(section);
-        long temp = repository
-                .query(
-                        "SELECT COALESCE(max(display_order),0)+1 AS value FROM " + table + " WHERE version_ref=?"
-                                + sectionPredicate,
-                        SalesMenuReadModels::longValueRow,
-                        maxOrderArguments.toArray())
-                .getFirst()
-                .value();
-        if (repository.update(
-                        "UPDATE " + table + " SET display_order=? WHERE version_ref=? AND " + refColumn + "=?",
-                        temp,
-                        version,
-                        ref)
+        long temp = persistence.maxDisplayOrder(
+                SalesMenuPersistence.OrderingTable.SECTION, version, section);
+        if (persistence.setDisplayOrder(SalesMenuPersistence.OrderingTable.SECTION, version, ref, temp) != 1)
+            throw problem("TARGET_NOT_FOUND", 404, "排序目标不存在");
+        if (persistence.setDisplayOrder(
+                        SalesMenuPersistence.OrderingTable.SECTION, version, other.ref(), currentOrder)
                 != 1) throw problem("TARGET_NOT_FOUND", 404, "排序目标不存在");
-        if (repository.update(
-                        "UPDATE " + table + " SET display_order=? WHERE version_ref=? AND " + refColumn + "=?",
-                        currentOrder,
-                        version,
-                        other.ref())
-                != 1) throw problem("TARGET_NOT_FOUND", 404, "排序目标不存在");
-        if (repository.update(
-                        "UPDATE " + table + " SET display_order=? WHERE version_ref=? AND " + refColumn + "=?",
-                        other.displayOrder(),
-                        version,
-                        ref)
+        if (persistence.setDisplayOrder(
+                        SalesMenuPersistence.OrderingTable.SECTION, version, ref, other.displayOrder())
                 != 1) throw problem("TARGET_NOT_FOUND", 404, "排序目标不存在");
     }
 
@@ -466,26 +382,7 @@ public class SalesMenuSectionService {
         UUID version = kind == SalesMenuVersionKind.DRAFT
                 ? draftVersion(target.salesMenuRef())
                 : publishedVersion(target.salesMenuRef());
-        return new SalesMenuReadback.SectionList(repository
-                .query(
-                        "SELECT s.section_ref,s.name,s.display_order,(SELECT count(*) "
-                                + "FROM sales_menu.sales_version_item i WHERE i.version_ref=? "
-                                + "AND i.section_ref=s.section_ref) item_count,"
-                                + "EXISTS (SELECT 1 FROM sales_menu.sales_version_section previous "
-                                + "WHERE previous.version_ref=s.version_ref AND "
-                                + "(previous.display_order < s.display_order OR "
-                                + "(previous.display_order=s.display_order AND "
-                                + "previous.section_ref < s.section_ref))) can_move_up,"
-                                + "EXISTS (SELECT 1 FROM sales_menu.sales_version_section next_section "
-                                + "WHERE next_section.version_ref=s.version_ref AND "
-                                + "(next_section.display_order > s.display_order OR "
-                                + "(next_section.display_order=s.display_order AND "
-                                + "next_section.section_ref > s.section_ref))) can_move_down "
-                                + "FROM sales_menu.sales_version_section s WHERE s.version_ref=? "
-                                + "ORDER BY s.display_order,s.section_ref",
-                        SalesMenuReadModels::sectionRow,
-                        version,
-                        version)
+        return new SalesMenuReadback.SectionList(persistence.readSections(version)
                 .stream()
                 .map(row -> new SalesMenuReadback.SectionView(
                         row.sectionRef(),
@@ -507,37 +404,22 @@ public class SalesMenuSectionService {
     }
 
     private UUID draftVersion(UUID menu) {
-        return repository
-                .query(
-                        "SELECT current_draft_version_ref FROM sales_menu.sales_collection " + "WHERE collection_ref=?",
-                        SalesMenuReadModels::uuidValueRow,
-                        menu)
+        return persistence.readSectionDraftVersion(menu)
                 .stream()
                 .findFirst()
-                .orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"))
-                .value();
+                .orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
     }
 
     private void advanceDraftRevision(UUID version) {
-        if (repository.update(
-                        "UPDATE sales_menu.sales_collection_version SET revision=revision+1 "
-                                + "WHERE version_ref=? AND kind='DRAFT'",
-                        version)
+        if (persistence.advanceSectionDraftRevision(version)
                 != 1) throw problem("SALES_MENU_DRAFT_NOT_FOUND", 404, "销售菜单草稿不存在");
     }
 
     private UUID publishedVersion(UUID menu) {
-        return repository
-                .query(
-                        "SELECT latest_published_version_ref FROM sales_menu.sales_collection "
-                                + "WHERE collection_ref=?",
-                        SalesMenuReadModels::uuidValueRow,
-                        menu)
+        return persistence.readSectionPublishedVersion(menu)
                 .stream()
-                .filter(row -> row.value() != null)
                 .findFirst()
-                .orElseThrow(() -> problem("PUBLICATION_NOT_FOUND", 404, "尚无发布版本"))
-                .value();
+                .orElseThrow(() -> problem("PUBLICATION_NOT_FOUND", 404, "尚无发布版本"));
     }
 
     private OrganizationOwnerApi.SalesMenuStoreJudgment requireOwnerCommand(
@@ -548,7 +430,7 @@ public class SalesMenuSectionService {
     }
 
     private void requireCas(SalesMenuTarget target, long expectedVersion) {
-        if (ownerApisConfigured() && !repository.compareAndSetVersion(target, expectedVersion)) {
+        if (ownerApisConfigured() && !persistence.compareAndSetVersion(target, expectedVersion)) {
             throw problem("SALES_MENU_VERSION_CONFLICT", 409, "销售菜单版本已变化");
         }
     }
@@ -602,33 +484,20 @@ public class SalesMenuSectionService {
     }
 
     private com.catering.v2s.salesmenu.domain.SalesMenuAggregate requireMenu(SalesMenuTarget target, boolean lock) {
-        return (lock ? repository.findForUpdate(target) : repository.find(target))
+        return (lock ? persistence.findForUpdate(target) : persistence.find(target))
                 .orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
     }
 
     private void requireSection(UUID menu, UUID version, UUID section) {
-        if (repository
-                .query(
-                        "SELECT 1 FROM sales_menu.sales_version_section "
-                                + "WHERE collection_ref=? AND version_ref=? AND section_ref=?",
-                        SalesMenuReadModels::existsRow,
-                        menu,
-                        version,
-                        section)
-                .isEmpty()) throw problem("SECTION_NOT_FOUND", 404, "分组不存在");
+        if (!persistence.sectionExists(menu, version, section))
+            throw problem("SECTION_NOT_FOUND", 404, "分组不存在");
     }
 
     private MoveCurrentRow requireSectionMoveCurrent(UUID menu, UUID version, UUID section) {
-        return repository
-                .query(
-                        "SELECT section_ref,display_order FROM sales_menu.sales_version_section "
-                                + "WHERE collection_ref=? AND version_ref=? AND section_ref=? FOR UPDATE",
-                        SalesMenuSectionService::moveCurrentRow,
-                        menu,
-                        version,
-                        section)
+        return persistence.readCurrentSection(menu, version, section)
                 .stream()
                 .findFirst()
+                .map(row -> new MoveCurrentRow(row.sectionRef(), row.displayOrder()))
                 .orElseThrow(() -> problem("SECTION_NOT_FOUND", 404, "分组不存在"));
     }
 
@@ -667,11 +536,7 @@ public class SalesMenuSectionService {
             UUID target,
             String targetKind,
             String targetDisplaySnapshot) {
-        repository.update(
-                "INSERT INTO sales_menu.sales_operation_record(record_ref,workspace_uuid,group_workspace_key,"
-                        + "store_ref,channel_ref,collection_ref,operation_kind,target_ref,target_kind,"
-                        + "target_display_snapshot,result,actor_type,actor_id,actor_display_snapshot,"
-                        + "occurred_at_epoch_millis,idempotency_key) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        persistence.recordSectionOperation(
                 UUID.randomUUID(),
                 context.scope().workspaceUuid(),
                 context.scope().groupWorkspaceKey(),
@@ -696,7 +561,7 @@ public class SalesMenuSectionService {
             UUID menu,
             UUID target,
             SalesMenuCommandReadbackStatus status) {
-        SalesMenuAggregate persisted = repository
+        SalesMenuAggregate persisted = persistence
                 .find(new SalesMenuTarget(context.scope(), menu))
                 .orElseThrow(() -> problem("SALES_MENU_RESULT_UNKNOWN", 503, "销售菜单命令结果无法读取"));
         return new SalesMenuReadback.Command(operation, persisted.salesMenuRef(), target, persisted.version(), status);

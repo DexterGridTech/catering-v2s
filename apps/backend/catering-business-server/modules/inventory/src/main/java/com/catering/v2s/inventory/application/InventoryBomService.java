@@ -1,5 +1,6 @@
 package com.catering.v2s.inventory.application;
 
+import com.catering.v2s.inventory.application.persistence.InventoryBomPersistence;
 import static com.catering.v2s.inventory.api.InventoryOwnerApi.*;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
@@ -29,8 +30,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,13 +48,6 @@ public class InventoryBomService {
     private static final String SKU_BASE_UNIT_ARGS = "SKU 基础计量单位判断参数不完整";
     private static final String INCOMPLETE_CONSUMPTION_UNIT_SNAPSHOT = "单位快照不完整";
     private static final String SALES_MENU_STATE_UNKNOWN = "库存状态无法转换为销售菜单可用事实";
-    private static final String TARGET_SELECT_COLUMNS =
-            "target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::text,"
-                    + "version,updated_at_epoch_millis,consumption_unit_ref,consumption_unit_code,"
-                    + "consumption_unit_name,consumption_unit_dimension,consumption_unit_precision,"
-                    + "counting_unit_ref,counting_unit_code,counting_unit_name,counting_unit_dimension,"
-                    + "counting_unit_precision,counting_unit_conversion_factor,definition_status,inventory_mode,"
-                    + "component_eligible";
     /** Mapping types consumed by inventory copy; catalog may carry other owner mappings in the same plan. */
     private static final Set<String> INVENTORY_COPY_MAPPING_TYPES = Set.of(
             "CATALOG_ITEM",
@@ -64,55 +58,39 @@ public class InventoryBomService {
             "STOCK_TARGET");
 
     private final JdbcTemplate jdbc;
+    private final InventoryBomPersistence persistence;
     private final ObjectMapper mapper;
     private final TimeProvider time;
 
-    public InventoryBomService(JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
+    @Autowired
+    public InventoryBomService(
+            InventoryBomPersistence persistence, JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
         this.jdbc = jdbc;
+        this.persistence = persistence;
         this.mapper = mapper;
         this.time = time;
     }
 
+    public InventoryBomService(JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
+        this(new InventoryBomPersistence(jdbc), jdbc, mapper, time);
+    }
+
+    private ResolvedBomTargets resolveBomTargets(String scope, String brand, List<UUID> targetRefs) {
+        Map<UUID, ResolvedBomTargets.TargetFact> facts = new LinkedHashMap<>();
+        persistence.resolveBomTargets(scope, brand, targetRefs).forEach((ref, fact) -> facts.put(
+                ref,
+                new ResolvedBomTargets.TargetFact(
+                        fact.definitionStatus(), fact.componentEligible(), fact.consumptionUnitRef())));
+        return ResolvedBomTargets.from(facts);
+    }
+
     private InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot(UUID targetRef) {
-        return jdbc
-                .query(
-                        "SELECT consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_d"
-                                + "imension,consumption_unit_precision "
-                                + "FROM inventory.stock_target WHERE target_ref=?",
-                        (result, row) -> unitSnapshot(result),
-                        targetRef)
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new InventoryOwnerApi.Problem(
-                        "CONSUMPTION_UNIT_SNAPSHOT_REQUIRED",
-                        422,
-                        /* format-wrap */
-                        "库存对象必须保存有效消耗单位快照"));
+        return persistence.readConsumptionUnitSnapshot(targetRef);
     }
 
     private InventoryOwnerApi.CountingUnitConfiguration countingUnitConfiguration(
             UUID targetRef, InventoryOwnerApi.UnitSnapshot consumption) {
-        return jdbc
-                .query(
-                        "SELECT counting_unit_ref,counting_unit_code,counting_unit_name,counting_unit_dimension,cou"
-                                + "nting_unit_precision,counting_unit_conversion_factor "
-                                + "FROM inventory.stock_target WHERE target_ref=?",
-                        (result, row) -> {
-                            InventoryOwnerApi.UnitSnapshot snapshot = unitSnapshot(result, 1);
-                            return new InventoryOwnerApi.CountingUnitConfiguration(snapshot, result.getBigDecimal(6));
-                        },
-                        targetRef)
-                .stream()
-                .findFirst()
-                .orElse(new InventoryOwnerApi.CountingUnitConfiguration(consumption, BigDecimal.ONE));
-    }
-
-    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(java.sql.ResultSet result) throws java.sql.SQLException {
-        UUID ref = result.getObject(1, UUID.class);
-        if (ref == null || result.getString(2) == null || result.getString(3) == null || result.getString(4) == null)
-            throw new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, "单位快照不完整");
-        return new InventoryOwnerApi.UnitSnapshot(
-                ref, result.getString(2), result.getString(3), result.getString(4), result.getInt(5));
+        return persistence.readCountingUnitConfiguration(targetRef, consumption);
     }
 
     private static InventoryOwnerApi.UnitSnapshot unitSnapshot(java.sql.ResultSet result, int firstColumn)
@@ -372,37 +350,12 @@ public class InventoryBomService {
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         if (itemRefs.isEmpty()) return Map.of();
         Map<TargetIdentity, CatalogTargetDisplay> result = new LinkedHashMap<>();
-        UUID[] values = itemRefs.toArray(UUID[]::new);
-        jdbc.query(
-                "SELECT item.item_ref,item.code,item.name,sku.product_sku_ref,sku.sku_code,sku.sku_name "
-                        + "FROM catalog.catalog_item item LEFT JOIN catalog.catalog_sku sku "
-                        + "ON sku.item_ref=item.item_ref WHERE item.data_node_ref=? AND item.brand_ref=? "
-                        + "AND item.item_ref=ANY(?::uuid[])",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", values));
-                },
-                rows -> {
-                    while (rows.next()) {
-                        UUID itemRef = rows.getObject(1, UUID.class);
-                        String itemCode = rows.getString(2);
-                        String itemName = rows.getString(3);
-                        UUID skuRef = rows.getObject(4, UUID.class);
-                        requireCatalogBusinessName(itemName, "耗用对象缺少商品名称");
-                        // The item display is valid whether or not it has SKU rows.
-                        // A LEFT JOIN with existing SKUs has no null-SKU row, so add the
-                        // item identity independently before the optional SKU identity.
-                        result.putIfAbsent(
-                                new TargetIdentity(itemRef, null),
-                                new CatalogTargetDisplay(itemCode, itemName, null, null));
-                        if (skuRef != null)
-                            result.put(
-                                    new TargetIdentity(itemRef, skuRef),
-                                    new CatalogTargetDisplay(itemCode, itemName, rows.getString(5), rows.getString(6)));
-                    }
-                    return null;
-                });
+        persistence.readCatalogTargetDisplays(scope, brand, itemRefs).forEach((identity, display) -> {
+            requireCatalogBusinessName(display.itemName(), "耗用对象缺少商品名称");
+            result.put(
+                    new TargetIdentity(identity.itemRef(), identity.productSkuRef()),
+                    new CatalogTargetDisplay(display.itemCode(), display.itemName(), display.skuCode(), display.skuName()));
+        });
         return Map.copyOf(result);
     }
 
@@ -535,20 +488,9 @@ public class InventoryBomService {
                         countingUnitConfiguration(configuration, consumption);
                 writeCountingConfiguration(configuration, counting);
                 InventoryOwnerApi.UnitSnapshot countingSnapshot = counting.countingUnitSnapshot();
-                if (jdbc.update(
-                                "UPDATE inventory.stock_target SET configuration=CAST(? AS JSONB),"
-                                        + "counting_unit_ref=?,counting_unit_code=?,counting_unit_name=?,"
-                                        + "counting_unit_dimension=?,counting_unit_precision=?,"
-                                        + "counting_unit_conversion_factor=?,version=version+1,updated_at_epoch_mil"
-                                        + "lis=? WHERE data_node_ref=? "
-                                        + "AND "
-                                        + "brand_ref=? AND target_ref=? AND version=?",
+                if (persistence.updateTargetConfiguration(
                                 canonical(configuration),
-                                countingSnapshot == null ? null : countingSnapshot.unitRef(),
-                                countingSnapshot == null ? null : countingSnapshot.code(),
-                                countingSnapshot == null ? null : countingSnapshot.name(),
-                                countingSnapshot == null ? null : countingSnapshot.unitDimension(),
-                                countingSnapshot == null ? null : countingSnapshot.precision(),
+                                countingSnapshot,
                                 counting.conversionFactor(),
                                 time.currentEpochMillis(),
                                 scope,
@@ -578,17 +520,7 @@ public class InventoryBomService {
         InventoryOwnerApi.CountingUnitConfiguration countingUnit =
                 countingUnitConfiguration(configuration, consumptionUnit);
         writeCountingConfiguration(configuration, countingUnit);
-        int inserted = jdbc.update(
-                "INSERT INTO "
-                        + "inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_code"
-                        + ",sku"
-                        + "_code,measure_mode,inventory_mode,consumption_unit_ref,consumption_unit_code,consumption"
-                        + "_unit_name,consumption_unit_dimension,consumption_unit_precision,"
-                        + "counting_unit_ref,counting_unit_code,counting_unit_name,counting_unit_dimension,"
-                        + "counting_unit_precision,counting_unit_conversion_factor,configuration,balance,version,"
-                        + "definition_status,created_at_epoch_millis,updated_at_epoch_millis)"
-                        + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CAST(? AS JSONB),0,1,'ENABLED',?,?)"
-                        + " ON CONFLICT DO NOTHING",
+        int inserted = persistence.insertTarget(
                 UUID.randomUUID(),
                 scope,
                 brand,
@@ -598,26 +530,8 @@ public class InventoryBomService {
                 skuCode,
                 measureMode,
                 mode,
-                consumptionUnit.unitRef(),
-                consumptionUnit.code(),
-                consumptionUnit.name(),
-                consumptionUnit.unitDimension(),
-                consumptionUnit.precision(),
-                countingUnit.countingUnitSnapshot() == null
-                        ? null
-                        : countingUnit.countingUnitSnapshot().unitRef(),
-                countingUnit.countingUnitSnapshot() == null
-                        ? null
-                        : countingUnit.countingUnitSnapshot().code(),
-                countingUnit.countingUnitSnapshot() == null
-                        ? null
-                        : countingUnit.countingUnitSnapshot().name(),
-                countingUnit.countingUnitSnapshot() == null
-                        ? null
-                        : countingUnit.countingUnitSnapshot().unitDimension(),
-                countingUnit.countingUnitSnapshot() == null
-                        ? null
-                        : countingUnit.countingUnitSnapshot().precision(),
+                consumptionUnit,
+                countingUnit.countingUnitSnapshot(),
                 countingUnit.conversionFactor(),
                 canonical(configuration),
                 time.currentEpochMillis(),
@@ -769,15 +683,8 @@ public class InventoryBomService {
                     "扣料原材料必须选择已有库存对象的商品");
         }
         lockCatalogItemRefs(List.of(materialItemRef));
-        List<UUID> targetRefs = jdbc.query(
-                "SELECT target_ref FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? "
-                        + "AND item_ref=? ORDER BY target_ref FOR UPDATE",
-                statement -> {
-                    statement.setString(1, scope.dataNodeId().toString());
-                    statement.setString(2, scope.brandRef());
-                    statement.setObject(3, materialItemRef);
-                },
-                (result, rowNumber) -> result.getObject(1, UUID.class));
+        List<UUID> targetRefs = persistence.findTargetRefsByItem(
+                scope.dataNodeId().toString(), scope.brandRef(), materialItemRef);
         if (targetRefs.isEmpty()) {
             throw new InventoryOwnerApi.Problem(
                     "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL",
@@ -814,28 +721,12 @@ public class InventoryBomService {
                     "扣料原材料必须选择已有库存对象的商品");
         String dataNodeRef = scope.dataNodeId().toString();
         lockCatalogItemRefs(refs);
-        String placeholders = String.join(",", Collections.nCopies(refs.size(), "?"));
         Map<UUID, List<CatalogMaterialTargetRow>> rowsByItem = new LinkedHashMap<>();
-        List<Object> args = new ArrayList<>();
-        args.add(dataNodeRef);
-        args.add(scope.brandRef());
-        args.addAll(refs);
-        jdbc.query(
-                        "SELECT"
-                                + " item_ref,target_ref,consumption_unit_ref,consumption_unit_code,"
-                                + " consumption_unit_name,"
-                                + "consumption_unit_dimension,consumption_unit_precision"
-                                + " FROM inventory.stock_target WHERE data_node_ref=? AND"
-                                + " brand_ref=? AND item_ref IN (" + placeholders + ") "
-                                + "ORDER BY item_ref,target_ref",
-                        (result, row) -> new CatalogMaterialTargetRow(
-                                result.getObject(1, UUID.class),
-                                result.getObject(2, UUID.class),
-                                requiredUnitSnapshot(result, 3)),
-                        args.toArray())
-                .forEach(row -> rowsByItem
-                        .computeIfAbsent(row.itemRef(), ignored -> new ArrayList<>())
-                        .add(row));
+        persistence.readTargetsByItemRefs(dataNodeRef, scope.brandRef(), refs)
+                .forEach((itemRef, rows) -> rows.forEach(row -> rowsByItem
+                        .computeIfAbsent(itemRef, ignored -> new ArrayList<>())
+                        .add(new CatalogMaterialTargetRow(
+                                row.itemRef(), row.targetRef(), row.consumptionUnitSnapshot()))));
         List<CatalogMaterialStockTargetReadback> result = new ArrayList<>();
         for (UUID ref : refs) {
             List<CatalogMaterialTargetRow> rows = rowsByItem.getOrDefault(ref, List.of());
@@ -872,15 +763,8 @@ public class InventoryBomService {
                         .toList();
         if (optionValueRefs.isEmpty()) return new OptionValueBomDeleteReadback(List.of(), 0L);
         lockCatalogOptionValueRefs(optionValueRefs);
-        String placeholders = String.join(",", java.util.Collections.nCopies(optionValueRefs.size(), "?"));
-        List<Object> arguments = new ArrayList<>();
-        arguments.add(scope.dataNodeId().toString());
-        arguments.add(scope.brandRef());
-        arguments.addAll(optionValueRefs);
-        int deleted = jdbc.update(
-                "DELETE FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND option_value_ref IN ("
-                        + placeholders + ")",
-                arguments.toArray());
+        int deleted = persistence.deleteOptionValueBoms(
+                scope.dataNodeId().toString(), scope.brandRef(), optionValueRefs);
         return new OptionValueBomDeleteReadback(optionValueRefs, deleted);
     }
 
@@ -923,49 +807,31 @@ public class InventoryBomService {
         if (replay != null) return replay;
         lockCatalogItemRefs(List.of(command.sourceItemRef(), command.targetItemRef()));
         lockCatalogOptionValueRefs(optionValueRefs);
-        String placeholders = String.join(",", java.util.Collections.nCopies(optionValueRefs.size(), "?"));
-        List<Object> arguments = new ArrayList<>();
-        arguments.add(scope.dataNodeId().toString());
-        arguments.add(scope.brandRef());
-        arguments.add(command.sourceItemRef());
-        arguments.addAll(optionValueRefs);
-        List<CatalogBomRow> sourceRows = jdbc.query(
-                "SELECT product_sku_ref,option_value_ref,sku_code,option_value_code,version,rows::text FROM "
-                        + "inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=? "
-                        + "AND product_sku_ref IS NULL AND option_value_ref IN (" + placeholders + ") "
-                        + "ORDER BY option_value_ref FOR UPDATE",
-                statement -> {
-                    for (int index = 0; index < arguments.size(); index++)
-                        statement.setObject(index + 1, arguments.get(index));
-                },
-                (result, rowNumber) -> new CatalogBomRow(
-                        result.getObject(1, UUID.class),
-                        result.getObject(2, UUID.class),
-                        result.getString(3),
-                        result.getString(4),
-                        result.getLong(5),
-                        result.getString(6)));
+        List<CatalogBomRow> sourceRows = persistence.readOptionValueBoms(
+                        scope.dataNodeId().toString(),
+                        scope.brandRef(),
+                        command.sourceItemRef(),
+                        optionValueRefs)
+                .stream()
+                .map(row -> new CatalogBomRow(
+                        row.productSkuRef(),
+                        row.optionValueRef(),
+                        row.skuCode(),
+                        row.optionValueCode(),
+                        row.version(),
+                        row.rows()))
+                .toList();
         for (CatalogBomRow source : sourceRows) {
-            int copied = jdbc.update(
-                    "INSERT INTO inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,optio"
-                            + "n_value_ref,"
-                            + "item_code,sku_code,option_value_code,version,rows,updated_at_epoch_millis) VALUES(?,"
-                            + "?,?,?,?,?,?,?,?,?,CAST(? AS JSONB),?) "
-                            + "ON CONFLICT (data_node_ref,brand_ref,item_ref,(COALESCE(product_sku_ref,'00000000-00"
-                            + "00-0000-0000-000000000000'::uuid)),"
-                            + "(COALESCE(option_value_ref,'00000000-0000-0000-0000-000000000000'::uuid))) "
-                            + "WHERE definition_status='ENABLED' DO NOTHING",
+            int copied = persistence.upsertCopiedOptionValueBom(
                     UUID.randomUUID(),
                     scope.dataNodeId().toString(),
                     scope.brandRef(),
                     command.targetItemRef(),
-                    null,
                     source.optionValueRef(),
                     command.targetItemCode(),
-                    null,
                     source.optionValueCode(),
-                    1L,
                     source.rows(),
+                    1L,
                     time.currentEpochMillis());
             if (copied != 1) {
                 throw new InventoryOwnerApi.Problem(
@@ -1035,7 +901,7 @@ public class InventoryBomService {
         List<RuleFact> boms = loadRuleBomFacts(scope, brand, itemRef);
         Map<UUID, TargetRow> bomComponentTargets = loadSubmittedBomComponentTargets(scope, brand, submitted);
         ResolvedBomTargets resolvedBomTargets =
-                ResolvedBomTargets.load(jdbc, scope, brand, submittedBomTargetRefs(submitted));
+                resolveBomTargets(scope, brand, submittedBomTargetRefs(submitted));
         Map<String, RuleFact> targetByIdentity = factsByIdentity(targets);
         Map<String, RuleFact> bomByIdentity = factsByIdentity(boms);
         LinkedHashSet<String> allKeys = new LinkedHashSet<>();
@@ -1366,24 +1232,10 @@ public class InventoryBomService {
         long ledger = 0L;
         long activeBomReference = 0L;
         if (currentTarget != null) {
-            long[] counts = jdbc.queryForObject(
-                    "SELECT "
-                            + "(SELECT COUNT(*) FROM inventory.stock_ledger ledger JOIN inventory.stock_target target "
-                            + "ON target.target_ref=ledger.target_ref WHERE ledger.target_ref=? "
-                            + "AND target.data_node_ref=? AND target.brand_ref=?), "
-                            + "(SELECT COUNT(*) FROM inventory.stock_bom bom CROSS JOIN LATERAL jsonb_array_elements("
-                            + "CASE WHEN jsonb_typeof(bom.rows)='array' THEN bom.rows ELSE '[]'::jsonb END) line "
-                            + "WHERE bom.data_node_ref=? AND bom.brand_ref=? AND bom.definition_status='ENABLED' "
-                            + "AND line->>'targetRef'=?)",
-                    (result, rowNumber) -> new long[] {result.getLong(1), result.getLong(2)},
-                    currentTarget.ref(),
-                    scope,
-                    brand,
-                    scope,
-                    brand,
-                    currentTarget.ref().toString());
-            ledger = counts[0];
-            activeBomReference = counts[1];
+            InventoryBomPersistence.ModeSwitchCounts counts =
+                    persistence.readModeSwitchCounts(currentTarget.ref(), scope, brand);
+            ledger = counts.ledgerCount();
+            activeBomReference = counts.activeBomReference();
         }
         long historical = 0L;
         for (RuleFact fact : allTargets) if (fact.owner().key().equals(owner.key()) && !fact.enabled()) historical++;
@@ -1430,23 +1282,11 @@ public class InventoryBomService {
                             .equals(configuration);
             if (unchanged) return;
             long next = current.version() + 1L;
-            InventoryOwnerApi.UnitSnapshot stored =
-                    current.consumptionUnit() == null ? consumption : current.consumptionUnit();
             InventoryOwnerApi.UnitSnapshot countingSnapshot = counting.countingUnitSnapshot();
-            jdbc.update(
-                    "UPDATE inventory.stock_target SET measure_mode=?,inventory_mode='DIRECT',"
-                            + "configuration=CAST(? AS JSONB),"
-                            + "counting_unit_ref=?,counting_unit_code=?,counting_unit_name=?,counting_unit_dimension=?,"
-                            + "counting_unit_precision=?,counting_unit_conversion_factor=?,component_eligible=?,"
-                            + "version=?,updated_at_epoch_millis=? "
-                            + "WHERE target_ref=? AND data_node_ref=? AND brand_ref=? AND definition_status='ENABLED'",
+            persistence.updateDirectDefinition(
                     measureMode,
                     canonical(configuration),
-                    countingSnapshot == null ? null : countingSnapshot.unitRef(),
-                    countingSnapshot == null ? null : countingSnapshot.code(),
-                    countingSnapshot == null ? null : countingSnapshot.name(),
-                    countingSnapshot == null ? null : countingSnapshot.unitDimension(),
-                    countingSnapshot == null ? null : countingSnapshot.precision(),
+                    countingSnapshot,
                     counting.conversionFactor(),
                     componentEligible,
                     next,
@@ -1457,16 +1297,7 @@ public class InventoryBomService {
             return;
         }
         InventoryOwnerApi.UnitSnapshot countingSnapshot = counting.countingUnitSnapshot();
-        jdbc.update(
-                "INSERT INTO inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,"
-                        + "item_code,sku_code,measure_mode,inventory_mode,consumption_unit_ref,consumption_unit_code,"
-                        + "consumption_unit_name,"
-                        + "consumption_unit_dimension,consumption_unit_precision,counting_unit_ref,counting_unit_code,"
-                        + "counting_unit_name,counting_unit_dimension,counting_unit_precision,"
-                        + "counting_unit_conversion_factor,"
-                        + "component_eligible,configuration,balance,version,definition_status,created_at_epoch_millis,"
-                        + "updated_at_epoch_millis) "
-                        + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CAST(? AS JSONB),0,1,'ENABLED',?,?)",
+        persistence.insertDirectDefinition(
                 UUID.randomUUID(),
                 scope,
                 brand,
@@ -1476,16 +1307,8 @@ public class InventoryBomService {
                 skuCode,
                 measureMode,
                 "DIRECT",
-                consumption.unitRef(),
-                consumption.code(),
-                consumption.name(),
-                consumption.unitDimension(),
-                consumption.precision(),
-                countingSnapshot == null ? null : countingSnapshot.unitRef(),
-                countingSnapshot == null ? null : countingSnapshot.code(),
-                countingSnapshot == null ? null : countingSnapshot.name(),
-                countingSnapshot == null ? null : countingSnapshot.unitDimension(),
-                countingSnapshot == null ? null : countingSnapshot.precision(),
+                consumption,
+                countingSnapshot,
                 counting.conversionFactor(),
                 componentEligible,
                 canonical(configuration),
@@ -1514,9 +1337,7 @@ public class InventoryBomService {
         String optionCode = owner.optionValueRef() == null ? null : owner.optionValueCode();
         if (current != null && current.enabled()) {
             if (current.rows() != null && current.rows().equals(normalized)) return;
-            jdbc.update(
-                    "UPDATE inventory.stock_bom SET rows=CAST(? AS JSONB),version=?,updated_at_epoch_millis=? "
-                            + "WHERE bom_ref=? AND data_node_ref=? AND brand_ref=? AND definition_status='ENABLED'",
+            persistence.updateBomDefinition(
                     canonical(normalized),
                     current.version() + 1L,
                     time.currentEpochMillis(),
@@ -1525,11 +1346,7 @@ public class InventoryBomService {
                     brand);
             return;
         }
-        jdbc.update(
-                "INSERT INTO inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,"
-                        + "option_value_ref,item_code,sku_code,option_value_code,version,rows,definition_status,"
-                        + "updated_at_epoch_millis) "
-                        + "VALUES(?,?,?,?,?,?,?,?,?,1,CAST(? AS JSONB),'ENABLED',?)",
+        persistence.insertBomDefinition(
                 UUID.randomUUID(),
                 scope,
                 brand,
@@ -1602,120 +1419,68 @@ public class InventoryBomService {
 
     private void disableTargetDefinitions(String scope, String brand, Collection<UUID> refs) {
         if (refs == null || refs.isEmpty()) return;
-        List<UUID> ordered = refs.stream()
-                .filter(java.util.Objects::nonNull)
-                .distinct()
-                .sorted()
-                .toList();
-        if (ordered.isEmpty()) return;
-        List<Object> arguments = new ArrayList<>();
-        arguments.add(time.currentEpochMillis());
-        arguments.addAll(ordered);
-        arguments.add(scope);
-        arguments.add(brand);
-        jdbc.update(
-                "UPDATE inventory.stock_target SET definition_status='DISABLED',version=version+1,"
-                        + "updated_at_epoch_millis=? "
-                        + "WHERE target_ref IN ("
-                        + String.join(",", Collections.nCopies(ordered.size(), "?"))
-                        + ") AND data_node_ref=? AND brand_ref=? AND definition_status='ENABLED'",
-                arguments.toArray());
+        persistence.disableTargetDefinitions(scope, brand, refs, time.currentEpochMillis());
     }
 
     private void disableBomDefinitions(String scope, String brand, Collection<UUID> refs) {
         if (refs == null || refs.isEmpty()) return;
-        List<UUID> ordered = refs.stream()
-                .filter(java.util.Objects::nonNull)
-                .distinct()
-                .sorted()
-                .toList();
-        if (ordered.isEmpty()) return;
-        List<Object> arguments = new ArrayList<>();
-        arguments.add(time.currentEpochMillis());
-        arguments.addAll(ordered);
-        arguments.add(scope);
-        arguments.add(brand);
-        jdbc.update(
-                "UPDATE inventory.stock_bom SET definition_status='DISABLED',version=version+1,"
-                        + "updated_at_epoch_millis=? "
-                        + "WHERE bom_ref IN ("
-                        + String.join(",", Collections.nCopies(ordered.size(), "?"))
-                        + ") AND data_node_ref=? AND brand_ref=? AND definition_status='ENABLED'",
-                arguments.toArray());
+        persistence.disableBomDefinitions(scope, brand, refs, time.currentEpochMillis());
     }
 
     private List<RuleFact> loadRuleTargetFacts(String scope, String brand, UUID itemRef) {
-        return jdbc.query(
-                "SELECT target_ref,item_ref,product_sku_ref,version,balance,configuration::text,definition_status,"
-                        + "consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dimension,"
-                        + "consumption_unit_precision,counting_unit_ref,counting_unit_code,counting_unit_name,"
-                        + "counting_unit_dimension,counting_unit_precision,counting_unit_conversion_factor,"
-                        + "measure_mode,component_eligible "
-                        + "FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND item_ref=? "
-                        + "ORDER BY product_sku_ref NULLS FIRST,target_ref FOR UPDATE",
-                (result, rowNumber) -> {
-                    OwnerIdentity owner = new OwnerIdentity(
-                            result.getObject(3, UUID.class) == null ? "ITEM" : "SKU",
-                            result.getObject(2, UUID.class),
-                            result.getObject(3, UUID.class),
-                            null,
-                            null,
-                            null,
-                            null);
-                    return new RuleFact(
-                            result.getObject(1, UUID.class),
-                            owner,
-                            result.getLong(4),
-                            result.getBigDecimal(5),
-                            result.getString(6),
-                            result.getString(7),
-                            unitSnapshot(result, 8),
-                            unitSnapshot(result, 13),
-                            result.getBigDecimal(18),
-                            null,
-                            false,
-                            result.getString(19),
-                            result.getBoolean(20));
-                },
-                scope,
-                brand,
-                itemRef);
+        return persistence.readRuleTargetFacts(scope, brand, itemRef).stream()
+                .map(fact -> new RuleFact(
+                        fact.ref(),
+                        new OwnerIdentity(
+                                fact.productSkuRef() == null ? "ITEM" : "SKU",
+                                fact.itemRef(),
+                                fact.productSkuRef(),
+                                null,
+                                null,
+                                null,
+                                null),
+                        fact.version(),
+                        fact.balance(),
+                        fact.configuration(),
+                        fact.definitionStatus(),
+                        fact.consumptionUnit(),
+                        fact.countingUnit(),
+                        fact.countingFactor(),
+                        null,
+                        false,
+                        fact.measureMode(),
+                        fact.componentEligible()))
+                .toList();
     }
 
     private List<RuleFact> loadRuleBomFacts(String scope, String brand, UUID itemRef) {
-        return jdbc.query(
-                "SELECT bom_ref,item_ref,product_sku_ref,option_value_ref,version,rows::text,definition_status "
-                        + "FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=? "
-                        + "ORDER BY product_sku_ref NULLS FIRST,option_value_ref NULLS FIRST,bom_ref FOR UPDATE",
-                (result, rowNumber) -> {
-                    UUID sku = result.getObject(3, UUID.class);
-                    UUID option = result.getObject(4, UUID.class);
-                    OwnerIdentity owner = new OwnerIdentity(
-                            option != null ? "OPTION_VALUE" : sku != null ? "SKU" : "ITEM",
-                            result.getObject(2, UUID.class),
-                            sku,
-                            option,
-                            null,
-                            null,
-                            null);
+        return persistence.readRuleBomFacts(scope, brand, itemRef).stream()
+                .map(fact -> {
+                    UUID sku = fact.productSkuRef();
+                    UUID option = fact.optionValueRef();
                     return new RuleFact(
-                            result.getObject(1, UUID.class),
-                            owner,
-                            result.getLong(5),
+                            fact.ref(),
+                            new OwnerIdentity(
+                                    option != null ? "OPTION_VALUE" : sku != null ? "SKU" : "ITEM",
+                                    fact.itemRef(),
+                                    sku,
+                                    option,
+                                    null,
+                                    null,
+                                    null),
+                            fact.version(),
                             null,
                             null,
-                            result.getString(7),
+                            fact.definitionStatus(),
                             null,
                             null,
                             null,
-                            json(result.getString(6)),
+                            json(fact.rows()),
                             true,
                             null,
                             false);
-                },
-                scope,
-                brand,
-                itemRef);
+                })
+                .toList();
     }
 
     private Map<String, RuleFact> factsByIdentity(List<RuleFact> facts) {
@@ -1823,38 +1588,17 @@ public class InventoryBomService {
                     || ("NEGATIVE".equals(lineSign) && quantity.signum() > 0))
                 throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, "BOM 行方向与数量符号不一致");
         });
-        String currentSql = optionValueRef != null
-                ? "SELECT version,rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? "
-                        + "AND item_ref=? AND "
-                        + "product_sku_ref IS NULL AND option_value_ref=?"
-                : (productSkuRef == null
-                        ? "SELECT version,rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? "
-                                + "AND "
-                                + "item_ref=? AND product_sku_ref IS NULL AND option_value_ref IS NULL"
-                        : "SELECT version,rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? "
-                                + "AND "
-                                + "item_ref=? AND product_sku_ref=? AND option_value_ref IS NULL");
-        currentSql += " AND definition_status='ENABLED' FOR UPDATE";
-        List<CurrentBomRow> current = jdbc.query(
-                currentSql,
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setObject(3, itemRef);
-                    if (optionValueRef != null) statement.setObject(4, optionValueRef);
-                    else if (productSkuRef != null) statement.setObject(4, productSkuRef);
-                },
-                result -> {
-                    List<CurrentBomRow> values = new ArrayList<>();
-                    while (result.next()) values.add(new CurrentBomRow(result.getLong(1), json(result.getString(2))));
-                    return values;
-                });
+        List<CurrentBomRow> current = persistence
+                .readCurrentBomRows(scope, brand, itemRef, productSkuRef, optionValueRef)
+                .stream()
+                .map(row -> new CurrentBomRow(row.version(), json(row.rows())))
+                .toList();
         CurrentBomRow existing = current.isEmpty() ? null : current.get(0);
         if ((existing == null ? 0L : existing.version()) != expected)
             throw new InventoryOwnerApi.Problem("VERSION_CONFLICT", 409, "商品 BOM 版本已变化");
         Map<UUID, TargetRow> componentTargets =
                 loadTargetsByRefs(scope, brand, new LinkedHashSet<>(targetRefs), false, false);
-        ResolvedBomTargets resolvedTargets = ResolvedBomTargets.load(jdbc, scope, brand, targetRefs);
+        ResolvedBomTargets resolvedTargets = resolveBomTargets(scope, brand, targetRefs);
         // The current BOM row is read under the same row lock as the version check.  Admission is then state-aware:
         // only target refs added or replaced by this submission must be enabled and component-eligible.
         validateBomLines(
@@ -1904,19 +1648,7 @@ public class InventoryBomService {
             else line.put("optionValueRef", optionValueRef.toString());
         });
         long next = expected + 1;
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,option_value_re"
-                        + "f,it"
-                        + "em_code,sku_code,option_value_code,version,rows,updated_at_epoch_millis) "
-                        + "VALUES(?,?,?,?,?,?,?,?,?,?,CAST(? AS JSONB),?) ON CONFLICT "
-                        + "(data_node_ref,brand_ref,item_ref,(COALESCE(product_sku_ref, "
-                        + "'00000000-0000-0000-0000-000000000000'::uuid)),(COALESCE(option_value_ref, "
-                        + "'00000000-0000-0000-0000-000000000000'::uuid))) WHERE definition_status='ENABLED' "
-                        + "DO UPDATE SET "
-                        + "version=EXCLUDED.version,rows=EXCLUDED.rows,updated_at_epoch_millis=EXCLUDED.updated_at_epoc"
-                        + "h_mi"
-                        + "llis",
+        persistence.upsertCatalogBomRows(
                 UUID.randomUUID(),
                 scope,
                 brand,
@@ -1936,17 +1668,9 @@ public class InventoryBomService {
     }
 
     private TargetRow targetByIdentity(String scope, String brand, UUID itemRef, UUID productSkuRef) {
-        List<TargetRow> rows = jdbc.query(
-                "SELECT "
-                        + TARGET_SELECT_COLUMNS
-                        + " FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? "
-                        + "AND definition_status='ENABLED' AND item_ref=? "
-                        + "AND product_sku_ref IS NOT DISTINCT FROM ?",
-                (r, n) -> targetRowWithConsumptionUnitSnapshot(r),
-                scope,
-                brand,
-                itemRef,
-                productSkuRef);
+        List<TargetRow> rows = persistence.readTargetByIdentity(scope, brand, itemRef, productSkuRef).stream()
+                .map(row -> targetRow(row))
+                .toList();
         if (rows.size() != 1) {
             throw new InventoryOwnerApi.Problem(("RESULT_UNKNOWN"), (500), ("库存对象创建后无法读取"));
         }
@@ -1968,33 +1692,14 @@ public class InventoryBomService {
             Set<UUID> targetRefs,
             boolean enabledOnly,
             boolean requireCompleteConsumptionUnit) {
-        if (targetRefs.isEmpty()) return Map.of();
-        UUID[] values = targetRefs.toArray(UUID[]::new);
-        String statusPredicate = enabledOnly ? "AND definition_status='ENABLED' " : "";
-        return jdbc.query(
-                "SELECT "
-                        + TARGET_SELECT_COLUMNS
-                        + " FROM inventory.stock_target WHERE data_node_ref=? AND "
-                        + "brand_ref=? "
-                        + statusPredicate
-                        + "AND target_ref = ANY(?::uuid[])",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", values));
-                },
-                result -> {
-                    Map<UUID, TargetRow> resolved = new LinkedHashMap<>();
-                    while (result.next()) {
-                        TargetRow row = requireCompleteConsumptionUnit
-                                ? targetRowWithConsumptionUnitSnapshot(result)
-                                : targetRow(result, unitSnapshot(result, 11));
-                        if (resolved.putIfAbsent(row.ref(), row) != null)
-                            throw new InventoryOwnerApi.Problem(
-                                    ("REFERENCE_MAPPING_UNRESOLVED"), (422), ("目标库存对象引用不唯一"));
-                    }
-                    return resolved;
-                });
+        return persistence.readTargetsByRefs(scope, brand, targetRefs, enabledOnly, requireCompleteConsumptionUnit).entrySet()
+                .stream()
+                .collect(
+                        java.util.stream.Collectors.toMap(
+                                Map.Entry::getKey,
+                                entry -> targetRow(entry.getValue()),
+                                (left, right) -> left,
+                                LinkedHashMap::new));
     }
 
     private CatalogDefinitionFacts loadCatalogDefinitionFacts(
@@ -2004,64 +1709,31 @@ public class InventoryBomService {
             boolean includeDirectTargets,
             Map<UUID, TargetRow> preloadedComponentTargets) {
         boolean includeComponentTargets = preloadedComponentTargets == null;
-        String targetPredicate = includeDirectTargets ? "target.item_ref=?" : "FALSE";
-        if (includeComponentTargets)
-            targetPredicate += (includeDirectTargets ? " OR " : "")
-                    + "target.target_ref::text IN (SELECT target_ref FROM component_target_refs)";
-        List<CatalogBomRow> bomOwners = new ArrayList<>();
-        List<TargetRow> directTargets = new ArrayList<>();
-        Map<UUID, TargetRow> componentTargets = new LinkedHashMap<>();
-        String sql = "WITH bom_rows AS ("
-                + "SELECT product_sku_ref,option_value_ref,sku_code,option_value_code,version,rows::text AS bom_rows "
-                + "FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? AND item_ref=? "
-                + "AND definition_status='ENABLED'"
-                + "), component_target_refs AS ("
-                + "SELECT DISTINCT COALESCE(line.value->>'targetRef',line.value->>'componentTargetRef') AS target_ref "
-                + "FROM bom_rows CROSS JOIN LATERAL jsonb_array_elements("
-                + "CASE WHEN jsonb_typeof(bom_rows.bom_rows::jsonb)='array' "
-                + "THEN bom_rows.bom_rows::jsonb ELSE '[]'::jsonb END) line"
-                + ") SELECT * FROM (SELECT 'TARGET' AS row_kind," + TARGET_SELECT_COLUMNS
-                + ",NULL::uuid,NULL::uuid,NULL::text,NULL::text,NULL::bigint,NULL::text "
-                + "FROM inventory.stock_target target WHERE target.data_node_ref=? AND target.brand_ref=? "
-                + "AND target.definition_status='ENABLED' AND (" + targetPredicate + ") "
-                + "UNION ALL SELECT 'BOM',NULL::uuid,NULL::uuid,NULL::uuid,NULL::text,NULL::text,NULL::text,"
-                + "NULL::numeric,NULL::text,NULL::bigint,NULL::bigint,NULL::uuid,NULL::text,NULL::text,NULL::text,"
-                + "NULL::integer,NULL::uuid,NULL::text,NULL::text,NULL::text,NULL::integer,NULL::numeric,NULL::text,"
-                + "NULL::text,NULL::boolean,bom_rows.product_sku_ref,bom_rows.option_value_ref,bom_rows.sku_code,"
-                + "bom_rows.option_value_code,bom_rows.version,bom_rows.bom_rows FROM bom_rows "
-                + ") AS combined ORDER BY (row_kind='TARGET') DESC,4 NULLS FIRST,28 NULLS FIRST,29 NULLS FIRST";
-        jdbc.query(
-                sql,
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setObject(3, catalogItemRef);
-                    statement.setString(4, scope);
-                    statement.setString(5, brand);
-                    if (includeDirectTargets) statement.setObject(6, catalogItemRef);
-                },
-                result -> {
-                    while (result.next()) {
-                        if ("TARGET".equals(result.getString(1))) {
-                            TargetRow row = targetRowWithConsumptionUnitSnapshot(result, 2);
-                            if (includeDirectTargets && catalogItemRef.equals(row.itemRef())) directTargets.add(row);
-                            if (includeComponentTargets) componentTargets.put(row.ref(), row);
-                        } else {
-                            bomOwners.add(new CatalogBomRow(
-                                    result.getObject(26, UUID.class),
-                                    result.getObject(27, UUID.class),
-                                    result.getString(28),
-                                    result.getString(29),
-                                    result.getLong(30),
-                                    result.getString(31)));
-                        }
-                    }
-                    return null;
-                });
+        InventoryBomPersistence.CatalogDefinitionRecords records = persistence.readCatalogDefinitionFacts(
+                scope, brand, catalogItemRef, includeDirectTargets, includeComponentTargets);
+        List<CatalogBomRow> bomOwners = records.bomOwners().stream()
+                .map(row -> new CatalogBomRow(
+                        row.productSkuRef(),
+                        row.optionValueRef(),
+                        row.skuCode(),
+                        row.optionValueCode(),
+                        row.version(),
+                        row.rows()))
+                .toList();
+        List<TargetRow> directTargets = records.directTargets().stream().map(row -> targetRow(row)).toList();
+        Map<UUID, TargetRow> componentTargets = preloadedComponentTargets == null
+                ? records.componentTargets().entrySet().stream()
+                        .collect(
+                                java.util.stream.Collectors.toMap(
+                                        Map.Entry::getKey,
+                                        entry -> targetRow(entry.getValue()),
+                                        (left, right) -> left,
+                                        LinkedHashMap::new))
+                : preloadedComponentTargets;
         return new CatalogDefinitionFacts(
                 List.copyOf(directTargets),
                 List.copyOf(bomOwners),
-                preloadedComponentTargets == null ? Map.copyOf(componentTargets) : preloadedComponentTargets);
+                Map.copyOf(componentTargets));
     }
 
     private UUID bomTargetRef(JsonNode row) {
@@ -2082,6 +1754,26 @@ public class InventoryBomService {
         setNullableSnapshot(result, "countingUnitSnapshot", configuration.countingUnitSnapshot());
         result.put("conversionFactor", decimal(configuration.conversionFactor()));
         return result;
+    }
+
+    private static TargetRow targetRow(InventoryBomPersistence.TargetRecord row) {
+        return new TargetRow(
+                row.ref(),
+                row.itemRef(),
+                row.productSkuRef(),
+                row.itemCode(),
+                row.skuCode(),
+                row.measureMode(),
+                row.balance(),
+                row.configuration(),
+                row.version(),
+                row.updatedAt(),
+                row.consumptionUnitSnapshot(),
+                row.countingUnitSnapshot(),
+                row.countingUnitConversionFactor(),
+                row.definitionStatus(),
+                row.inventoryMode(),
+                row.componentEligible());
     }
 
     private ObjectNode normalizedDirectConfiguration(JsonNode raw) {
@@ -2161,78 +1853,39 @@ public class InventoryBomService {
         String pattern = "%" + normalizedKeyword + "%";
         ObjectNode data = mapper.createObjectNode();
         ArrayNode items = data.putArray("items");
-        final long[] total = {0L};
-        jdbc.query(
-                "SELECT target.target_ref,target.item_ref,target.product_sku_ref,target.item_code,target.sku_code,"
-                        + "item.name,sku.sku_name,target.consumption_unit_ref,target.consumption_unit_code,"
-                        + "target.consumption_unit_name,target.consumption_unit_dimension,"
-                        + "target.consumption_unit_precision,"
-                        + "COUNT(*) OVER() FROM inventory.stock_target target "
-                        + "JOIN catalog.catalog_item item ON item.item_ref=target.item_ref "
-                        + "AND item.data_node_ref=target.data_node_ref AND item.brand_ref=target.brand_ref "
-                        + "LEFT JOIN catalog.catalog_sku sku ON sku.product_sku_ref=target.product_sku_ref "
-                        + "AND sku.item_ref=target.item_ref "
-                        + "WHERE target.data_node_ref=? AND target.brand_ref=? "
-                        + "AND target.definition_status='ENABLED' AND target.component_eligible=TRUE "
-                        + "AND target.consumption_unit_ref IS NOT NULL "
-                        + "AND (?='' OR item.name ILIKE ? OR COALESCE(item.short_name,'') ILIKE ? "
-                        + "OR target.item_code ILIKE ? OR COALESCE(sku.sku_name,'') ILIKE ? "
-                        + "OR COALESCE(target.sku_code,'') ILIKE ?) "
-                        + "ORDER BY item.name,sku.sku_name NULLS FIRST,target.target_ref LIMIT ? OFFSET ?",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setString(3, normalizedKeyword);
-                    statement.setString(4, pattern);
-                    statement.setString(5, pattern);
-                    statement.setString(6, pattern);
-                    statement.setString(7, pattern);
-                    statement.setString(8, pattern);
-                    statement.setInt(9, pageSize + 1);
-                    statement.setLong(10, offset);
-                },
-                result -> {
-                    while (result.next()) {
-                        if (items.size() <= pageSize) {
-                            String itemName = result.getString(6);
-                            requireCatalogBusinessName(itemName, "耗用对象缺少商品名称");
-                            ObjectNode item = items.addObject()
-                                    .put(
-                                            "targetRef",
-                                            result.getObject(1, UUID.class).toString())
-                                    .put(
-                                            "itemRef",
-                                            result.getObject(2, UUID.class).toString())
-                                    .put("itemCode", result.getString(4))
-                                    .put("itemName", itemName);
-                            UUID skuRef = result.getObject(3, UUID.class);
-                            if (skuRef == null) item.putNull("productSkuRef");
-                            else item.put("productSkuRef", skuRef.toString());
-                            String skuCode = result.getString(5);
-                            if (skuCode == null) {
-                                item.putNull("skuCode");
-                                item.putNull("skuName");
-                            } else {
-                                String skuName = result.getString(7);
-                                requireCatalogBusinessName(skuName, "耗用对象缺少规格名称");
-                                item.put("skuCode", skuCode).put("skuName", skuName);
-                            }
-                            item.putObject("consumptionUnitSnapshot")
-                                    .put(
-                                            "unitRef",
-                                            result.getObject(8, UUID.class).toString())
-                                    .put("code", result.getString(9))
-                                    .put("name", result.getString(10))
-                                    .put("unitDimension", result.getString(11))
-                                    .put("precision", result.getInt(12));
-                        }
-                        total[0] = result.getLong(13);
-                    }
-                    return null;
-                });
+        InventoryBomPersistence.ConsumptionTargetPage page = persistence.readConsumptionTargetCandidates(
+                scope, brand, normalizedKeyword, pattern, pageSize + 1, offset);
+        List<InventoryBomPersistence.ConsumptionTargetRecord> rows = page.rows();
+        for (int index = 0; index < rows.size() && index <= pageSize; index++) {
+            InventoryBomPersistence.ConsumptionTargetRecord row = rows.get(index);
+            String itemName = row.itemName();
+            requireCatalogBusinessName(itemName, "耗用对象缺少商品名称");
+            ObjectNode item = items.addObject()
+                    .put("targetRef", row.targetRef().toString())
+                    .put("itemRef", row.itemRef().toString())
+                    .put("itemCode", row.itemCode())
+                    .put("itemName", itemName);
+            UUID skuRef = row.productSkuRef();
+            if (skuRef == null) item.putNull("productSkuRef");
+            else item.put("productSkuRef", skuRef.toString());
+            if (row.skuCode() == null) {
+                item.putNull("skuCode");
+                item.putNull("skuName");
+            } else {
+                requireCatalogBusinessName(row.skuName(), "耗用对象缺少规格名称");
+                item.put("skuCode", row.skuCode()).put("skuName", row.skuName());
+            }
+            InventoryOwnerApi.UnitSnapshot snapshot = row.consumptionUnitSnapshot();
+            item.putObject("consumptionUnitSnapshot")
+                    .put("unitRef", snapshot.unitRef().toString())
+                    .put("code", snapshot.code())
+                    .put("name", snapshot.name())
+                    .put("unitDimension", snapshot.unitDimension())
+                    .put("precision", snapshot.precision());
+        }
         boolean hasNext = items.size() > pageSize;
         if (hasNext) items.remove(items.size() - 1);
-        data.put("total", total[0])
+        data.put("total", page.total())
                 .put(
                         "cursor",
                         request == null || request.path("cursor").isMissingNode()
@@ -2255,95 +1908,38 @@ public class InventoryBomService {
             data.put("total", 0).put("generation", generation(scope, brand));
             return envelope(requestId, data);
         }
-        UUID[] requestedItemRefs = itemRefs.toArray(UUID[]::new);
-        UUID[] requestedSkuRefs = productSkuRefs.toArray(UUID[]::new);
-        String sql = "SELECT 'DIRECT' AS fact_kind,item_ref,product_sku_ref,inventory_mode,"
-                + "consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_dimension,"
-                + "consumption_unit_precision,NULL::integer AS bom_line_count "
-                + "FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? "
-                + "AND definition_status='ENABLED' AND ((product_sku_ref IS NULL AND item_ref=ANY(?::uuid[])) "
-                + "OR (product_sku_ref IS NOT NULL AND product_sku_ref=ANY(?::uuid[]))) "
-                + "UNION ALL SELECT 'BOM' AS fact_kind,item_ref,product_sku_ref,NULL::text,NULL::uuid,NULL::text,"
-                + "NULL::text,NULL::text,NULL::integer,CASE WHEN jsonb_typeof(rows)='array' "
-                + "THEN jsonb_array_length(rows) ELSE -1 END AS bom_line_count "
-                + "FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? "
-                + "AND definition_status='ENABLED' AND option_value_ref IS NULL "
-                + "AND ((product_sku_ref IS NULL AND item_ref=ANY(?::uuid[])) "
-                + "OR (product_sku_ref IS NOT NULL AND product_sku_ref=ANY(?::uuid[]))) "
-                + "ORDER BY item_ref,product_sku_ref NULLS FIRST,fact_kind";
         Map<SummaryKey, InventorySummaryFacts> found = new LinkedHashMap<>();
-        jdbc.query(
-                sql,
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", requestedItemRefs));
-                    statement.setArray(4, statement.getConnection().createArrayOf("uuid", requestedSkuRefs));
-                    statement.setString(5, scope);
-                    statement.setString(6, brand);
-                    statement.setArray(7, statement.getConnection().createArrayOf("uuid", requestedItemRefs));
-                    statement.setArray(8, statement.getConnection().createArrayOf("uuid", requestedSkuRefs));
-                },
-                result -> {
-                    while (result.next()) {
-                        UUID summaryItemRef = result.getObject(2, UUID.class);
-                        UUID summarySkuRef = result.getObject(3, UUID.class);
-                        // A SKU is globally identified by product_sku_ref. The caller's SKU-summary request
-                        // intentionally has no itemRef, whereas the persistence row still carries its parent
-                        // itemRef. Normalize both sides to the same lookup identity; item-grain summaries retain
-                        // itemRef because they have no SKU identity.
-                        SummaryKey key = new SummaryKey(summarySkuRef == null ? summaryItemRef : null, summarySkuRef);
-                        if (found.containsKey(key))
-                            // spotless:off
-                            throw new InventoryOwnerApi.Problem(
-                                "RESULT_UNKNOWN",
-                                500,
-                                "同一商品或规格存在多个启用中的库存扣减定义"
-                            );
-                            // spotless:on
-                        String factKind = result.getString(1);
-                        if ("DIRECT".equals(factKind)) {
-                            if (!"DIRECT".equals(result.getString(4)))
-                                // spotless:off
-                                throw new InventoryOwnerApi.Problem(
-                                    "RESULT_UNKNOWN",
-                                    500,
-                                    "库存扣减方式与库存对象定义不一致"
-                                );
-                                // spotless:on
-                            InventoryOwnerApi.UnitSnapshot snapshot = unitSnapshot(result, 5);
-                            if (snapshot == null)
-                                // spotless:off
-                                throw new InventoryOwnerApi.Problem(
-                                    "RESULT_UNKNOWN",
-                                    500,
-                                    "直接扣减对象的消费单位快照缺失"
-                                );
-                                // spotless:on
-                            found.put(key, new InventorySummaryFacts("DIRECT", snapshot, null));
-                        } else if ("BOM".equals(factKind)) {
-                            int lineCount = result.getInt(10);
-                            if (lineCount < 1)
-                                // spotless:off
-                                throw new InventoryOwnerApi.Problem(
-                                    "RESULT_UNKNOWN",
-                                    500,
-                                    "启用中的用料扣减定义没有有效用料行"
-                                );
-                                // spotless:on
-                            found.put(key, new InventorySummaryFacts("BOM", null, lineCount));
-                        } else {
-                            // spotless:off
-                            throw new InventoryOwnerApi.Problem(
-                                "RESULT_UNKNOWN",
-                                500,
-                                "库存扣减事实类型无法识别"
-                            );
-                            // spotless:on
-                        }
-                    }
-                    return null;
-                });
+        for (InventoryBomPersistence.InventorySummaryRecord record : persistence.readInventoryDeductionSummaries(
+                scope, brand, itemRefs, productSkuRefs)) {
+            UUID summaryItemRef = record.itemRef();
+            UUID summarySkuRef = record.productSkuRef();
+            // A SKU is globally identified by product_sku_ref. The caller's SKU-summary request
+            // intentionally has no itemRef, whereas the persistence row still carries its parent
+            // itemRef. Normalize both sides to the same lookup identity; item-grain summaries retain
+            // itemRef because they have no SKU identity.
+            SummaryKey key = new SummaryKey(summarySkuRef == null ? summaryItemRef : null, summarySkuRef);
+            if (found.containsKey(key))
+                throw new InventoryOwnerApi.Problem(
+                        "RESULT_UNKNOWN", 500, "同一商品或规格存在多个启用中的库存扣减定义");
+            if ("DIRECT".equals(record.factKind())) {
+                if (!"DIRECT".equals(record.inventoryMode()))
+                    throw new InventoryOwnerApi.Problem(
+                            "RESULT_UNKNOWN", 500, "库存扣减方式与库存对象定义不一致");
+                InventoryOwnerApi.UnitSnapshot snapshot = record.consumptionUnitSnapshot();
+                if (snapshot == null)
+                    throw new InventoryOwnerApi.Problem(
+                            "RESULT_UNKNOWN", 500, "直接扣减对象的消费单位快照缺失");
+                found.put(key, new InventorySummaryFacts("DIRECT", snapshot, null));
+            } else if ("BOM".equals(record.factKind())) {
+                int lineCount = record.bomLineCount();
+                if (lineCount < 1)
+                    throw new InventoryOwnerApi.Problem(
+                            "RESULT_UNKNOWN", 500, "启用中的用料扣减定义没有有效用料行");
+                found.put(key, new InventorySummaryFacts("BOM", null, lineCount));
+            } else {
+                throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存扣减事实类型无法识别");
+            }
+        }
         LinkedHashSet<SummaryKey> requested = new LinkedHashSet<>();
         itemRefs.forEach(itemRef -> requested.add(new SummaryKey(itemRef, null)));
         productSkuRefs.forEach(skuRef -> requested.add(new SummaryKey(null, skuRef)));
@@ -2413,50 +2009,27 @@ public class InventoryBomService {
     private TargetRow target(String scope, String brand, String ref) {
         try {
             UUID id = UUID.fromString(ref);
-            return jdbc.queryForObject(
-                    "SELECT "
-                            + TARGET_SELECT_COLUMNS
-                            + " FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND target_ref=? "
-                            + "AND definition_status='ENABLED'",
-                    (r, n) -> targetRowWithConsumptionUnitSnapshot(r),
-                    scope,
-                    brand,
-                    id);
+            return targetRow(persistence.readTarget(scope, brand, id));
         } catch (EmptyResultDataAccessException | IllegalArgumentException ex) {
             throw new InventoryOwnerApi.Problem("NOT_FOUND", 404, "库存对象不存在", ex);
         }
     }
 
     private long generation(String scope, String brand) {
-        Long value = jdbc.queryForObject(
-                "SELECT COALESCE(MAX(version),0) FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=?",
-                Long.class,
-                scope,
-                brand);
-        return value == null ? 0 : value;
+        return persistence.readGeneration(scope, brand);
     }
 
     private JsonNode replay(String scope, String key, String operation, JsonNode request) {
         AdvisoryLock.acquire(jdbc, "inventory-receipt", scope, key);
-        List<Receipt> rows = jdbc.query(
-                "SELECT operation_id,request_hash,response::text FROM inventory.command_receipt WHERE data_node_ref=? "
-                        + "AND idempotency_key=?",
-                (r, n) -> new Receipt(r.getString(1), r.getString(2), json(r.getString(3))),
-                scope,
-                key);
-        if (rows.isEmpty()) return null;
-        Receipt row = rows.get(0);
+        InventoryBomPersistence.ReceiptRecord row = persistence.readReceipt(scope, key);
+        if (row == null) return null;
         if (!row.operation().equals(operation) || !row.requestHash().equals(hash(request)))
             throw new InventoryOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他请求");
-        return row.response();
+        return json(row.response());
     }
 
     private void saveReceipt(String scope, String key, String operation, JsonNode request, JsonNode response) {
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_id,request_has"
-                        + "h,re"
-                        + "sponse,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)",
+        persistence.saveReceipt(
                 UUID.randomUUID(),
                 scope,
                 key,

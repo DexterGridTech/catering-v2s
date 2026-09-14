@@ -146,10 +146,18 @@ const parameterCatalog = context.getState()?.[
 
 ---
 
-### `TR-04` · 声明了持久化，就必须有正反双断言的重启测试
+### `TR-04` · 声明了持久化，就必须有重启测试证明持久化边界的范围正确
 
 **规则**：任何声明 `persistIntent: 'owner-only'` 的 slice，必须有一条**真实重启**
-（独立进程 / 独立 runtime 实例）测试，**同时断言两侧**：该恢复的恢复了 · **不该恢复的确实没恢复**。
+（独立进程 / 独立 runtime 实例）测试，证明**持久化边界的范围正确**：该恢复的恢复了 · **不该恢复的确实没恢复**。
+
+⚠️ **反向断言的对象不必在同一个 slice 内**（Dexter 2026-09-13 裁定澄清）。它可以指向同一条重启用例里
+任何**本应不跨重启存活**的状态。理由：这条规则要证的是**边界的范围**，而边界本来就是跨 slice 的。
+
+⚠️ **当一个 slice 的全部字段都合法地持久化时**（例如它承载的每一项都要求恢复原状），
+本包内没有反向对象。此时**允许只写正向断言**，但必须在用例里注明"本 slice 全字段持久，无反向对象"。
+**不得为了凑出反向断言而给 slice 增加一个没有消费者的字段** —— 那与 `TR-09` 禁止的"造占位 slice"是同一种病。
+判据是：**去掉那个字段，功能还成不成立**。
 
 **反例**（POC 实测，数字最刺眼）：声明持久化的包 **12 个**，有重启恢复测试的 **5 个**；
 缺的 7 个里包括 **`ui-runtime-v2`** —— 它的整个 `test/` 目录（974 行）中
@@ -164,11 +172,15 @@ expect(selectTcpRuntimeState(second.runtime.getState())?.lastActivationRequestId
 
 —— **断言"不该恢复的确实没恢复"**。
 
-**门**：扫全部 slice descriptor，凡 `persistIntent: 'owner-only'`，本包 test 下必须存在
-标记为 restart-recovery 的用例覆盖该 slice name，且该用例**同时含正向与反向断言**。
-**红夹具**：给某个 slice 加 `persistIntent: 'owner-only'` 而不加测试 → 门必须红。
-**反例栏**：门只能判"有没有这条用例"，判不了"断言得对不对" ——
-一条只写 `expect(true).toBe(true)` 的用例能骗过它。靠 review 兜。
+**门**：⚠️ **该通用门今天不存在，这是已知欠账**（Dexter 2026-09-13 登记）。
+现有两处实现都是**包级硬编码且只判正向**：`tools/terminal-runtime/check-static.mjs:506-525`
+的 `runRestartPositive` 写死 `runtimeInstanceMode.ts`；
+`tools/terminal-display-context/check-static.mjs:183-187` 是对字符串
+`display-context-restart-positive` 的存在性扫描。
+**新建的持久化包会得到零 TR-04 门覆盖**，本条目前完全靠 review 兜。
+**在通用门建立之前，本规则是 review 判据，不得被当作"不这么写会红"来驱动设计。**
+**反例栏**：即便将来建了门，它也只能判"有没有这条用例"，判不了"断言得对不对" ——
+一条只写 `expect(true).toBe(true)` 的用例能骗过它。
 
 ---
 
@@ -285,9 +297,17 @@ expect(selectTcpRuntimeState(second.runtime.getState())?.lastActivationRequestId
 
 ### `TR-09` · 包必须声明自己是 owner 还是 toolkit；slice 名由 moduleName 派生
 
+⚠️ **2026-09-13 修订**：移除"owner 必须至少拥有一个 slice"（与 `P-5c` 矛盾，详见规则栏）。
+
 **规则**：
 - 每个包在 manifest 声明 `kind: 'owner' | 'toolkit'`；
-- `owner` 包**必须至少拥有一个 slice**，且是这些 slice 的**唯一写者**；
+- `owner` 包是它所拥有 slice 的**唯一写者**；
+  ⚠️ **不再要求"owner 必须至少拥有一个 slice"**（Dexter 2026-09-13 裁定移除）。原因是它与 `P-5c` 直接矛盾：
+  `tools/terminal-layering/check-static.mjs:42,55` 禁止 `ui/feature` 包 import `createSlice` 与
+  `defineStateRuntimeSlice`，分母是全部 `ui/feature`（`:181`）—— **该层结构上不可能拥有 slice**。
+  仓内 `ui.feature.sample-staff-auth` 与 `ui.feature.sample-member-desk` 今天就是
+  `moduleKind='owner'` + `slices: []`，且全门绿。
+  **`owner` 的判据改为"拥有 command / actor / slice 中至少一类,并对其负唯一写责"**；
 - `toolkit` 包**不得拥有 slice**；
 - 所有 slice 名**必须以本包 `moduleName` 为前缀**。
 
@@ -297,8 +317,9 @@ expect(selectTcpRuntimeState(second.runtime.getState())?.lastActivationRequestId
 **反例**（POC 实测）：切分轴错误的两端 —— 两个零消费者的包 + 一个五职责的巨包（6,903 行 / 19 actor / 7 slice），
 根因是"包"这个概念没有可判定的定义。
 
-**门**：slice 名前缀检查；`kind:'owner'` 却零 slice、或 `kind:'toolkit'` 却有 slice → 红；
-**零消费者的包报出来**。
+**门**：slice 名前缀检查；`kind:'toolkit'` 却有 slice → 红；**零消费者的包报出来**。
+⚠️ **"`kind:'owner'` 却零 slice → 红"这一条已随上述规则移除**，它从未被实现
+（`tools/terminal-skeleton/graph-model.mjs:132-138` 只强制"有真 slice ⇒ 必须 owner"这一半）。
 **反例栏**：一个包拥有 slice 但职责仍过宽，门抓不到 ——"一个 owner 该管多大"仍是 review 判断。
 
 #### 例外：`kernel.base.state` 的持久化与同步（Dexter 2026-08-31 裁定）
@@ -355,7 +376,8 @@ owner 自己在 reducer 里接"，只是把同一个外部写入拆成二十份�
 **骨架阶段的包一律不声明 `kind`，改用 `plannedKind`。**
 
 **为什么必须是例外而不是"占位 slice"**：骨架阶段明确不做任何能力实现，
-而 `owner` 按本规则必须真拥有 slice。两者不能同时成立 ——
+而 `owner` 按本规则必须真拥有 command / actor / slice 中的至少一类并对其负唯一写责
+（⚠️ 2026-09-13 修订前此处写的是"必须真拥有 slice"，已随规则栏同步更正）。两者不能同时成立 ——
 造一个占位 slice 去满足门，是**让包声称自己已经是 owner，而它不是**，
 恰恰是本规范全篇要防的"声称 ≠ 行为"。
 
@@ -365,9 +387,11 @@ owner 自己在 reducer 里接"，只是把同一个外部写入拆成二十份�
   那是 owner 包有了真实模块之后才有的东西，此时往包里塞一份 `plannedKind`
   就又制造了一处会漂移的陈述；
 - `kind` 门**只对声明了 `kind` 的包生效** —— 没有 `kind` 的包不进入该门的分母；
-- 包落下**第一个真实 slice** 时，在该包 manifest 写下 `kind`，
+- 包落下**第一个真实 owner capability**（`command` / `actor` / `slice` 任一）时，在该包 manifest 写下 `kind`，
   并从规格文件移除它的 `plannedKind`，从那一刻起受本门约束；
-- `plannedKind` 与最终 `kind` 不一致时，**以实际 slice 归属为准**，并说明为什么设计变了。
+  ⚠️ **2026-09-13 修订**：此处原写"第一个真实 slice"，与规则栏移除 owner-zero-slice 之后不一致 ——
+  `ui/feature` 层结构上不可能有 slice（`P-5c`），却可以有真实 actor，届时必须写 `kind`；
+- `plannedKind` 与最终 `kind` 不一致时，**以实际 capability 归属为准**，并说明为什么设计变了。
 
 ⚠️ `plannedKind` 是**设计意图**，不是已达成状态。任何报告不得把
 "22 个包的 `plannedKind` 都标好了"表述成"owner/toolkit 划分已生效"。
@@ -519,6 +543,41 @@ owner 自己在 reducer 里接"，只是把同一个外部写入拆成二十份�
 ⚠️ 「这个 kernel 是否真的能换一套 UI」属 `UNENFORCEABLE_BY_MACHINE`，由 review 判断。
 **不要求以「再配一套 UI」来证明** —— 1 : N 是这两层的设计前提，不是待证命题；
 门与 review 的职责是**防止耦合发生**，不是事后举证。
+
+---
+
+### `TR-13` · 每个 `ui/integration` 必须集成共享 admin console
+
+**规则**：`apps/terminal/ui/integration/*` 是可运行的终端组合层，不是只展示业务画面的
+测试夹具。每个 integration 包都必须把共享 `ui.base.admin-shell` 接进自己的生产 surface，
+并沿用同一套 catalog 与隐藏入口：
+
+1. 包的 `package.json` 与 `src/dependencies.ts` 必须声明 `ui.base.admin-shell`；
+2. assembly 的**唯一** `UiCatalog`/renderer catalog 必须包含
+   `...adminShellAssembly.parts`，不得复制 admin part 或另建 registry；
+3. 生产 surface 的 content frame 必须由 `AdminLauncher` 包住业务内容，使用该 surface 的
+   `canvas`，从而保留现有隐藏手势、主承载显示门禁和业务子树的正常触摸；
+4. integration 不得自行定义 `ADMIN_CONSOLE_*` 常量、第二个 `openLayer` 路径、覆盖层或
+   输入管线；admin 身份、layer renderer 与登录/关闭行为只能从 `ui.base.admin-shell` 的
+   根 public API 使用。
+
+这不是新增业务 Journey，也不是要求每个 integration 自己实现一套管理 UI；它是所有终端
+组合的基线设计不变量。`sample-console` 的 `createSampleDefinedParts` 与 `createSurface`
+是仓内实例；本规则的直接反例是一个 integration 只装业务 parts、没有 admin parts 或
+`AdminLauncher`，导致该终端无法完成既有 admin journey。
+
+**验证边界**：本条不新增独立 skeleton/layering 机器门，也不把包名硬编码进工具。现有依赖
+方向/声明完整性、typecheck、integration focused test 与 implementation review 必须按上述
+四个形态核对；机器通过不能代替检查 catalog 是否真的可渲染或入口是否真的可达。
+
+**为什么**：admin console 是 TER 终端的共同诊断/运行态入口。把它遗漏在某个 integration
+会让同一 Android 形态、端口与 runtime 的问题无法在该终端观察，也会诱使业务包另造入口。
+直接复用 `sample-console` 的单 catalog + 单 launcher 组合，是比在每个 integration 中复制
+admin parts、状态或入口更小且能保持 owner 边界的方案。
+
+**反例栏**：只在 README 或 test fixture 中声明 admin、只把 `ui.base.admin-shell` 写进
+`package.json` 而不接入 catalog、只渲染 launcher 但未把 admin parts 放进该 catalog，均不算
+集成；它们会分别表现为运行时找不到 part、入口打开后无法渲染或仍然只有纸面依赖。
 
 ---
 

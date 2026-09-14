@@ -10,6 +10,7 @@ import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.iam.api.PlatformDiagnosticBootstrap;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
+import com.catering.v2s.platform.iam.application.persistence.PlatformAuthenticationPersistence;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
@@ -47,7 +48,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
             new AuditChangePolicy("PLATFORM_ADMIN", "PLATFORM_ADMIN_PROFILE_UPDATED", Set.of("displayName"));
     private static final AuditChangePolicy ADMIN_CREDENTIAL_RESET =
             new AuditChangePolicy("PLATFORM_ADMIN", "PLATFORM_ADMIN_CREDENTIAL_RESET", Set.of());
-    private final JdbcTemplate jdbc;
+    private final PlatformAuthenticationPersistence persistence;
     private final TimeProvider timeProvider;
     private final PlatformCommandReceiptService receipts;
     private final byte[] rateLimitHmacSecret;
@@ -57,18 +58,33 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
 
     @org.springframework.beans.factory.annotation.Autowired
     public PlatformAuthenticationService(
-            JdbcTemplate jdbc,
+            PlatformAuthenticationPersistence persistence,
             TimeProvider timeProvider,
             PlatformCommandReceiptService receipts,
             @Value("${platform.iam.rate-limit-hmac-secret:}") String rateLimitHmacSecret,
             com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy otpDebugExposurePolicy) {
-        this.jdbc = jdbc;
+        this.persistence = persistence;
         this.timeProvider = timeProvider;
         this.receipts = receipts;
         if (rateLimitHmacSecret == null || rateLimitHmacSecret.isBlank())
             throw new IllegalStateException("platform.iam.rate-limit-hmac-secret must be configured");
         this.rateLimitHmacSecret = rateLimitHmacSecret.getBytes(StandardCharsets.UTF_8);
         this.debugCodeExposure = otpDebugExposurePolicy.enabled();
+    }
+
+    /** Test-only compatibility constructor; production injects the typed persistence boundary. */
+    public PlatformAuthenticationService(
+            JdbcTemplate jdbc,
+            TimeProvider timeProvider,
+            PlatformCommandReceiptService receipts,
+            String rateLimitHmacSecret,
+            com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy otpDebugExposurePolicy) {
+        this(
+                new PlatformAuthenticationPersistence(jdbc),
+                timeProvider,
+                receipts,
+                rateLimitHmacSecret,
+                otpDebugExposurePolicy);
     }
 
     /** Test-only compatibility constructor; production always supplies the configured HMAC secret. */
@@ -88,26 +104,12 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         String mobileFingerprint = hmac("MOBILE:" + normalizedMobile);
         OtpAttempt attempt = beginOtpAttempt("PLATFORM_LOGIN_SEND", mobileFingerprint, sourceAddress);
         long now = timeProvider.currentEpochMillis();
-        jdbc.update(
-                "UPDATE platform_iam.platform_otp_grant SET status='SUPERSEDED' WHERE purpose='PLATFORM_LOGIN' AND "
-                        + "mobile_fingerprint=? AND status='ACTIVE'",
-                mobileFingerprint);
-        UUID administratorId = jdbc.query(
-                "SELECT id FROM platform_iam.platform_admin WHERE mobile_normalized=? AND status='ENABLED'",
-                statement -> statement.setString(1, normalizedMobile),
-                result -> result.next() ? result.getObject(1, UUID.class) : null);
+        persistence.supersedeLoginOtp(mobileFingerprint);
+        UUID administratorId = persistence.findEnabledAdministratorByMobile(normalizedMobile);
         String code = newOtp();
         long expiresAt = Math.addExact(now, OTP_TTL_MILLIS);
-        jdbc.update(
-                "INSERT INTO platform_iam.platform_otp_grant (id, purpose, platform_admin_id, mobile_fingerprint, "
-                        + "token_hash, status, expires_at_epoch_millis, created_at_epoch_millis) VALUES (?, "
-                        + "'PLATFORM_LOGIN', ?, ?, ?, 'ACTIVE', ?, ?)",
-                UUID.randomUUID(),
-                administratorId,
-                mobileFingerprint,
-                hash(code),
-                expiresAt,
-                now);
+        persistence.insertLoginOtp(
+                UUID.randomUUID(), administratorId, mobileFingerprint, hash(code), expiresAt, now);
         recordOtpAttempt("PLATFORM_LOGIN_SEND", attempt, OTP_SEND_LIMIT);
         return new OtpDispatch(expiresAt, debugCodeExposure ? code : null);
     }
@@ -118,55 +120,21 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         String mobileFingerprint = hmac("MOBILE:" + normalizedMobile);
         OtpAttempt attempt = beginOtpAttempt("PLATFORM_LOGIN_VERIFY", mobileFingerprint, sourceAddress);
         long now = timeProvider.currentEpochMillis();
-        UUID administratorId = jdbc.query(
-                "SELECT platform_admin_id FROM platform_iam.platform_otp_grant WHERE purpose='PLATFORM_LOGIN' AND "
-                        + "mobile_fingerprint=? AND token_hash=? AND status='ACTIVE' AND expires_at_epoch_millis>? FOR "
-                        + "UPDATE",
-                statement -> {
-                    statement.setString(1, mobileFingerprint);
-                    statement.setString(2, hash(code == null ? "" : code));
-                    statement.setLong(3, now);
-                },
-                result -> result.next() ? result.getObject(1, UUID.class) : null);
-        if (administratorId == null
-                || jdbc.update(
-                                "UPDATE platform_iam.platform_otp_grant SET status='USED', used_at_epoch_millis=? "
-                                        + "WHERE purpose='PLATFORM_LOGIN' AND mobile_fingerprint=? AND token_hash=? "
-                                        + "AND "
-                                        + "status='ACTIVE'",
-                                now,
-                                mobileFingerprint,
-                                hash(code == null ? "" : code))
-                        != 1) {
-            jdbc.update(
-                    "UPDATE platform_iam.platform_otp_grant SET attempt_count=attempt_count+1 WHERE "
-                            + "purpose='PLATFORM_LOGIN' AND mobile_fingerprint=? AND status='ACTIVE'",
-                    mobileFingerprint);
+        String codeHash = hash(code == null ? "" : code);
+        UUID administratorId = persistence.findActiveLoginOtpAdministrator(mobileFingerprint, codeHash, now);
+        if (administratorId == null || persistence.consumeLoginOtp(now, mobileFingerprint, codeHash) != 1) {
+            persistence.incrementLoginOtpAttempts(mobileFingerprint);
             recordOtpAttempt("PLATFORM_LOGIN_VERIFY", attempt, OTP_VERIFY_LIMIT);
             throw new OtpInvalidException();
         }
-        CredentialRow credential = jdbc.query(
-                "SELECT a.id, a.display_name, a.status, c.password_hash, c.locked_until_epoch_millis FROM "
-                        + "platform_iam.platform_admin a JOIN platform_iam.platform_credential c ON "
-                        + "c.platform_admin_id=a.id WHERE a.id=? AND a.mobile_normalized=?",
-                statement -> {
-                    statement.setObject(1, administratorId);
-                    statement.setString(2, normalizedMobile);
-                },
-                result -> result.next()
-                        ? new CredentialRow(
-                                result.getObject("id", UUID.class),
-                                result.getString("display_name"),
-                                result.getString("status"),
-                                result.getString("password_hash"),
-                                result.getObject("locked_until_epoch_millis", Long.class))
-                        : null);
-        if (credential == null || !"ENABLED".equals(credential.status)) {
+        PlatformAuthenticationPersistence.CredentialRow credential =
+                persistence.findCredentialByAdministrator(administratorId, normalizedMobile);
+        if (credential == null || !"ENABLED".equals(credential.status())) {
             recordOtpAttempt("PLATFORM_LOGIN_VERIFY", attempt, OTP_VERIFY_LIMIT);
             throw new OtpInvalidException();
         }
         clearOtpAttempts("PLATFORM_LOGIN_VERIFY", attempt);
-        return createSession(credential.platformAdminId, credential.displayName, now);
+        return createSession(credential.platformAdminId(), credential.displayName(), now);
     }
 
     @Transactional(noRollbackFor = OtpRateLimitedException.class)
@@ -175,20 +143,9 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         String normalizedMobile = normalizedMobile(mobile);
         RecoveryStartAttempt attempt = beginRecoveryStartAttempt(normalizedLoginName, normalizedMobile, sourceAddress);
         long now = timeProvider.currentEpochMillis();
-        UUID administratorId = jdbc.query(
-                "SELECT id FROM platform_iam.platform_admin WHERE login_name_normalized=? AND mobile_normalized=? AND "
-                        + "status='ENABLED'",
-                statement -> {
-                    statement.setString(1, normalizedLoginName);
-                    statement.setString(2, normalizedMobile);
-                },
-                result -> result.next() ? result.getObject(1, UUID.class) : null);
+        UUID administratorId = persistence.findRecoveryAdministrator(normalizedLoginName, normalizedMobile);
         String token = newToken();
-        jdbc.update(
-                "INSERT INTO platform_iam.platform_password_recovery_flow (id, token_hash, login_name_normalized, "
-                        + "mobile_normalized, platform_admin_id, status, expires_at_epoch_millis, "
-                        + "created_at_epoch_millis, "
-                        + "version) VALUES (?, ?, ?, ?, ?, 'PENDING', ?, ?, 1)",
+        persistence.insertRecoveryFlow(
                 UUID.randomUUID(),
                 hash(token),
                 normalizedLoginName,
@@ -211,16 +168,10 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         String mobileFingerprint = hmac("MOBILE:" + flow.mobileNormalized());
         OtpAttempt attempt = beginOtpAttempt("PLATFORM_RECOVERY_SEND", mobileFingerprint, sourceAddress);
         long now = timeProvider.currentEpochMillis();
-        jdbc.update(
-                "UPDATE platform_iam.platform_otp_grant SET status='SUPERSEDED' WHERE "
-                        + "purpose='PLATFORM_PASSWORD_RECOVERY' AND recovery_flow_id=? AND status='ACTIVE'",
-                flow.id());
+        persistence.supersedeRecoveryOtp(flow.id());
         String code = newOtp();
         long expiresAt = Math.addExact(now, OTP_TTL_MILLIS);
-        jdbc.update(
-                "INSERT INTO platform_iam.platform_otp_grant (id, purpose, platform_admin_id, recovery_flow_id, "
-                        + "mobile_fingerprint, token_hash, status, expires_at_epoch_millis, created_at_epoch_millis) "
-                        + "VALUES (?, 'PLATFORM_PASSWORD_RECOVERY', ?, ?, ?, ?, 'ACTIVE', ?, ?)",
+        persistence.insertRecoveryOtp(
                 UUID.randomUUID(),
                 flow.platformAdminId(),
                 flow.id(),
@@ -244,28 +195,13 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         String mobileFingerprint = hmac("MOBILE:" + flow.mobileNormalized());
         OtpAttempt attempt = beginOtpAttempt("PLATFORM_RECOVERY_VERIFY", mobileFingerprint, sourceAddress);
         long now = timeProvider.currentEpochMillis();
-        int consumed = jdbc.update(
-                "UPDATE platform_iam.platform_otp_grant SET status='USED', used_at_epoch_millis=? WHERE "
-                        + "purpose='PLATFORM_PASSWORD_RECOVERY' AND recovery_flow_id=? AND token_hash=? AND "
-                        + "status='ACTIVE' AND expires_at_epoch_millis>?",
-                now,
-                flow.id(),
-                hash(code == null ? "" : code),
-                now);
+        int consumed = persistence.consumeRecoveryOtp(now, flow.id(), hash(code == null ? "" : code));
         if (consumed != 1 || !recoveryIdentityStillEligible(flow)) {
-            jdbc.update(
-                    "UPDATE platform_iam.platform_otp_grant SET attempt_count=attempt_count+1 WHERE "
-                            + "purpose='PLATFORM_PASSWORD_RECOVERY' AND recovery_flow_id=? AND status='ACTIVE'",
-                    flow.id());
+            persistence.incrementRecoveryOtpAttempts(flow.id());
             recordOtpAttempt("PLATFORM_RECOVERY_VERIFY", attempt, OTP_VERIFY_LIMIT);
             throw new OtpInvalidException();
         }
-        if (jdbc.update(
-                        "UPDATE platform_iam.platform_password_recovery_flow SET status='VERIFIED', "
-                                + "verified_at_epoch_millis=?, version=version+1 WHERE id=? AND status='PENDING'",
-                        now,
-                        flow.id())
-                != 1) throw new RecoveryFlowInvalidException();
+        if (persistence.markRecoveryVerified(now, flow.id()) != 1) throw new RecoveryFlowInvalidException();
         clearOtpAttempts("PLATFORM_RECOVERY_VERIFY", attempt);
         return new RecoveryVerification("PASSWORD_REQUIRED");
     }
@@ -278,24 +214,10 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         if (!recoveryIdentityStillEligible(flow) || flow.platformAdminId() == null)
             throw new RecoveryFlowInvalidException();
         long now = timeProvider.currentEpochMillis();
-        jdbc.update(
-                "UPDATE platform_iam.platform_credential SET password_hash=?, changed_at_epoch_millis=?, "
-                        + "failed_attempts=0, locked_until_epoch_millis=NULL, version=version+1 WHERE "
-                        + "platform_admin_id=?",
-                passwordEncoder.encode(new String(newPassword)),
-                now,
-                flow.platformAdminId());
-        jdbc.update(
-                "UPDATE platform_iam.platform_session SET status='REVOKED', revoked_at_epoch_millis=?, "
-                        + "version=version+1 WHERE platform_admin_id=? AND status='ACTIVE'",
-                now,
-                flow.platformAdminId());
-        if (jdbc.update(
-                        "UPDATE platform_iam.platform_password_recovery_flow SET status='COMPLETED', "
-                                + "completed_at_epoch_millis=?, version=version+1 WHERE id=? AND status='VERIFIED'",
-                        now,
-                        flow.id())
-                != 1) throw new RecoveryFlowInvalidException();
+        persistence.updateRecoveryCredential(
+                passwordEncoder.encode(new String(newPassword)), now, flow.platformAdminId());
+        persistence.revokeRecoverySessions(now, flow.platformAdminId());
+        if (persistence.markRecoveryCompleted(now, flow.id()) != 1) throw new RecoveryFlowInvalidException();
         return new PasswordChangeResult("COMPLETED", true, true);
     }
 
@@ -321,88 +243,45 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     public LoginResult login(String loginName, char[] password, String sourceAddress) {
         String normalized = normalize(loginName);
         LoginAttempt attempt = beginLoginAttempt(normalized, sourceAddress);
-        Optional<CredentialRow> row = jdbc.query(
-                "SELECT a.id, a.display_name, a.status, c.password_hash, c.locked_until_epoch_millis FROM "
-                        + "platform_iam.platform_admin a JOIN platform_iam.platform_credential c ON "
-                        + "c.platform_admin_id=a.id WHERE a.login_name_normalized=?",
-                statement -> statement.setString(1, normalized),
-                result -> result.next()
-                        ? Optional.of(new CredentialRow(
-                                result.getObject("id", UUID.class),
-                                result.getString("display_name"),
-                                result.getString("status"),
-                                result.getString("password_hash"),
-                                result.getObject("locked_until_epoch_millis", Long.class)))
-                        : Optional.empty());
+        Optional<PlatformAuthenticationPersistence.CredentialRow> row =
+                persistence.findCredentialByLoginName(normalized);
         if (row.isEmpty()) {
             recordInvalidLogin(attempt);
             throw new InvalidCredentialsException();
         }
-        CredentialRow credential = row.get();
+        PlatformAuthenticationPersistence.CredentialRow credential = row.get();
         long now = timeProvider.currentEpochMillis();
-        if (!"ENABLED".equals(credential.status)) {
+        if (!"ENABLED".equals(credential.status())) {
             recordSourceFailure(attempt);
             throw new AccountDisabledException();
         }
-        if (credential.lockedUntilEpochMillis != null && credential.lockedUntilEpochMillis > now)
+        if (credential.lockedUntilEpochMillis() != null && credential.lockedUntilEpochMillis() > now)
             throw new CredentialLockedException();
-        if (!passwordEncoder.matches(new String(password == null ? new char[0] : password), credential.passwordHash)) {
+        if (!passwordEncoder.matches(
+                new String(password == null ? new char[0] : password), credential.passwordHash())) {
             recordInvalidLogin(attempt);
-            jdbc.update(
-                    "UPDATE platform_iam.platform_credential SET failed_attempts=CASE WHEN locked_until_epoch_millis "
-                            + "IS NOT NULL AND locked_until_epoch_millis<=? THEN 1 ELSE failed_attempts+1 END, "
-                            + "locked_until_epoch_millis=CASE WHEN (CASE WHEN locked_until_epoch_millis IS NOT NULL "
-                            + "AND "
-                            + "locked_until_epoch_millis<=? THEN 1 ELSE failed_attempts+1 END)>=? THEN ? ELSE "
-                            + "locked_until_epoch_millis END, version=version+1 WHERE platform_admin_id=?",
-                    now,
-                    now,
-                    CREDENTIAL_FAILURE_LIMIT,
-                    now + CREDENTIAL_LOCK_MILLIS,
-                    credential.platformAdminId);
+            persistence.recordLoginFailure(
+                    now, CREDENTIAL_FAILURE_LIMIT, now + CREDENTIAL_LOCK_MILLIS, credential.platformAdminId());
             throw new InvalidCredentialsException();
         }
         clearAccountFailures(attempt);
-        jdbc.update(
-                "UPDATE platform_iam.platform_credential SET failed_attempts=0, locked_until_epoch_millis=NULL, "
-                        + "version=version+1 WHERE platform_admin_id=? AND (failed_attempts<>0 OR "
-                        + "locked_until_epoch_millis IS NOT NULL)",
-                credential.platformAdminId);
-        return createSession(credential.platformAdminId, credential.displayName, now);
+        persistence.clearCredentialFailures(credential.platformAdminId());
+        return createSession(credential.platformAdminId(), credential.displayName(), now);
     }
 
     @Transactional(readOnly = true)
     public PlatformSessionReadback requireActiveSession(String token) {
         long now = timeProvider.currentEpochMillis();
-        return jdbc.query(
-                "SELECT s.id, s.version, a.id AS admin_id, a.display_name, s.expires_at_epoch_millis FROM "
-                        + "platform_iam.platform_session s JOIN platform_iam.platform_admin a ON "
-                        + "a.id=s.platform_admin_id "
-                        + "WHERE s.token_hash=? AND s.status='ACTIVE' AND a.status='ENABLED' AND "
-                        + "s.expires_at_epoch_millis>?",
-                statement -> {
-                    statement.setString(1, hash(token));
-                    statement.setLong(2, now);
-                },
-                result -> {
-                    if (!result.next()) throw new SessionExpiredException();
-                    return new PlatformSessionReadback(
-                            result.getObject("id", UUID.class),
-                            result.getLong("version"),
-                            result.getObject("admin_id", UUID.class),
-                            result.getString("display_name"),
-                            result.getLong("expires_at_epoch_millis"));
-                });
+        PlatformAuthenticationPersistence.SessionRow session = persistence.findActiveSession(hash(token), now);
+        if (session == null) throw new SessionExpiredException();
+        return new PlatformSessionReadback(
+                session.id(), session.version(), session.adminId(), session.displayName(), session.expiresAtEpochMillis());
     }
 
     @Transactional
     public void logout(String token) {
         long now = timeProvider.currentEpochMillis();
-        jdbc.update(
-                "UPDATE platform_iam.platform_session SET status='REVOKED', revoked_at_epoch_millis=?, "
-                        + "version=version+1 WHERE token_hash=? AND status='ACTIVE'",
-                now,
-                hash(token));
+        persistence.revokeSession(hash(token), now);
     }
 
     /** Rotation revokes every session, including the caller, so a fresh login is mandatory. */
@@ -410,35 +289,16 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     public PasswordChangeResult changeCurrentPassword(
             String token, char[] currentPassword, char[] newPassword, long expectedSessionVersion) {
         if (newPassword == null || newPassword.length < 8) throw new InvalidAdministratorInputException();
-        SessionCredential session = jdbc.query(
-                "SELECT s.platform_admin_id, s.version, c.password_hash FROM platform_iam.platform_session s JOIN "
-                        + "platform_iam.platform_credential c ON c.platform_admin_id=s.platform_admin_id WHERE "
-                        + "s.token_hash=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?",
-                statement -> {
-                    statement.setString(1, hash(token));
-                    statement.setLong(2, timeProvider.currentEpochMillis());
-                },
-                result -> {
-                    if (!result.next()) throw new SessionExpiredException();
-                    return new SessionCredential(
-                            result.getObject(1, UUID.class), result.getLong(2), result.getString(3));
-                });
+        PlatformAuthenticationPersistence.SessionCredential session =
+                persistence.findSessionCredential(hash(token), timeProvider.currentEpochMillis());
+        if (session == null) throw new SessionExpiredException();
         if (session.version() != expectedSessionVersion) throw new PlatformAdminVersionConflictException();
         if (!passwordEncoder.matches(
                 new String(currentPassword == null ? new char[0] : currentPassword), session.passwordHash()))
             throw new InvalidCredentialsException();
         long now = timeProvider.currentEpochMillis();
-        jdbc.update(
-                "UPDATE platform_iam.platform_credential SET password_hash=?, changed_at_epoch_millis=?, "
-                        + "version=version+1 WHERE platform_admin_id=?",
-                passwordEncoder.encode(new String(newPassword)),
-                now,
-                session.adminId());
-        jdbc.update(
-                "UPDATE platform_iam.platform_session SET status='REVOKED', revoked_at_epoch_millis=?, "
-                        + "version=version+1 WHERE platform_admin_id=? AND status='ACTIVE'",
-                now,
-                session.adminId());
+        persistence.updatePasswordCredential(passwordEncoder.encode(new String(newPassword)), now, session.adminId());
+        persistence.revokePasswordSessions(now, session.adminId());
         return new PasswordChangeResult("COMPLETED", true, true);
     }
 
@@ -454,25 +314,10 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         requireEnabledPlatformAdministrator(actor);
         if (password == null || password.length < 8) throw new InvalidAdministratorInputException();
         long now = timeProvider.currentEpochMillis();
-        if (jdbc.update(
-                        "UPDATE platform_iam.platform_admin SET version=version+1, updated_at_epoch_millis=? WHERE "
-                                + "id=? AND version=?",
-                        now,
-                        adminId,
-                        expectedVersion)
-                != 1) throw new PlatformAdminVersionConflictException();
-        jdbc.update(
-                "UPDATE platform_iam.platform_credential SET password_hash=?, changed_at_epoch_millis=?, "
-                        + "version=version+1, failed_attempts=0, locked_until_epoch_millis=NULL WHERE "
-                        + "platform_admin_id=?",
-                passwordEncoder.encode(new String(password)),
-                now,
-                adminId);
-        jdbc.update(
-                "UPDATE platform_iam.platform_session SET status='REVOKED', revoked_at_epoch_millis=?, "
-                        + "version=version+1 WHERE platform_admin_id=? AND status='ACTIVE'",
-                now,
-                adminId);
+        if (persistence.updateAdministratorVersion(now, adminId, expectedVersion) != 1)
+            throw new PlatformAdminVersionConflictException();
+        persistence.updateResetCredential(passwordEncoder.encode(new String(password)), now, adminId);
+        persistence.revokeRecoverySessions(now, adminId);
         audit(adminId, "PLATFORM_ADMIN_CREDENTIAL_RESET", now, actor, ADMIN_CREDENTIAL_RESET.allow(List.of()));
         return requireAdministrator(adminId);
     }
@@ -540,41 +385,30 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
                 || !Set.of("USER_NAME", "LOGIN_NAME", "LAST_LOGIN_AT", "UPDATED_AT")
                         .contains(sortKey)
                 || !Set.of("ASC", "DESC").contains(sortDirection)) throw new InvalidAdministratorInputException();
-        String where =
-                " WHERE (CAST(? AS text) IS NULL OR a.display_name ILIKE '%' || CAST(? AS text) || '%') AND (CAST(? AS "
-                        + "text) IS NULL OR a.login_name ILIKE '%' || CAST(? AS text) || '%') AND (CAST(? AS text) IS "
-                        + "NULL "
-                        + "OR a.status=CAST(? AS text))";
-        Object[] values = new Object[] {userName, userName, loginName, loginName, status, status};
         Long total = ReadBudgetComponent.measure(
                 ReadBudgetComponent.Component.OPTIONAL_COUNT,
-                () -> jdbc.queryForObject(
-                        "SELECT COUNT(*) FROM platform_iam.platform_admin a" + where, Long.class, values));
+                () -> persistence.countAdministrators(userName, loginName, status));
         long offset;
         try {
             offset = Math.multiplyExact((long) page - 1, pageSize);
         } catch (ArithmeticException exception) {
             throw new InvalidAdministratorInputException(exception);
         }
-        List<Object> pageValues = new java.util.ArrayList<>(java.util.Arrays.asList(values));
-        pageValues.add((long) pageSize);
-        pageValues.add(offset);
         List<PlatformAdminReadback> items = ReadBudgetComponent.measure(
                 ReadBudgetComponent.Component.PRIMARY_QUERY,
-                () -> jdbc.query(
-                        readbackSql(where + " ORDER BY " + administratorOrderBy(sortKey, sortDirection)
-                                + " LIMIT ? OFFSET ?"),
-                        (result, rowNumber) -> mapReadback(result),
-                        pageValues.toArray()));
+                () -> persistence.readAdministratorsPage(
+                                userName, loginName, status, pageSize, offset, sortKey, sortDirection)
+                        .stream()
+                        .map(PlatformAuthenticationService::mapReadback)
+                        .toList());
         return new PlatformAdminPage(items, page, pageSize, total == null ? 0L : total, sortKey, sortDirection);
     }
 
     @Transactional(readOnly = true)
     public PlatformAdminReadback requireAdministrator(UUID id) {
-        return jdbc.query(readbackSql("WHERE a.id=?"), statement -> statement.setObject(1, id), result -> {
-            if (!result.next()) throw new PlatformAdminNotFoundException();
-            return mapReadback(result);
-        });
+        PlatformAuthenticationPersistence.AdministratorRow row = persistence.readAdministrator(id);
+        if (row == null) throw new PlatformAdminNotFoundException();
+        return mapReadback(row);
     }
 
     /** Platform task-read detail boundary; command readbacks continue to use {@link #requireAdministrator(UUID)}. */
@@ -596,20 +430,10 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
             throw new InvalidAdministratorStatusException();
         long now = timeProvider.currentEpochMillis();
         if ("DISABLED".equals(targetStatus)) requireDeactivationAllowed(id, actor);
-        int changed = jdbc.update(
-                "UPDATE platform_iam.platform_admin SET status=?, version=version+1, updated_at_epoch_millis=? WHERE "
-                        + "id=? AND version=?",
-                targetStatus,
-                now,
-                id,
-                expectedVersion);
+        int changed = persistence.updateAdministratorStatus(targetStatus, now, id, expectedVersion);
         if (changed == 0) throw new PlatformAdminVersionConflictException();
         if ("DISABLED".equals(targetStatus))
-            jdbc.update(
-                    "UPDATE platform_iam.platform_session SET status='REVOKED', revoked_at_epoch_millis=?, "
-                            + "version=version+1 WHERE platform_admin_id=? AND status='ACTIVE'",
-                    now,
-                    id);
+            persistence.revokeRecoverySessions(now, id);
         audit(
                 id,
                 "PLATFORM_ADMIN_STATUS_CHANGED",
@@ -649,8 +473,8 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     @Override
     public DiagnosticAdministrator bootstrapFirstAdministrator(
             String loginName, String displayName, char[] initialPassword) {
-        jdbc.execute("LOCK TABLE platform_iam.platform_admin IN EXCLUSIVE MODE");
-        Long existing = jdbc.queryForObject("SELECT COUNT(*) FROM platform_iam.platform_admin", Long.class);
+        persistence.lockBootstrapAdministratorTable();
+        Long existing = persistence.countBootstrapAdministrators();
         if (existing == null || existing != 0L) throw new DiagnosticBootstrapUnavailableException();
         PlatformAdminReadback created =
                 createAdministratorForDiagnosticBootstrap(loginName, displayName, initialPassword);
@@ -667,22 +491,8 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         UUID id = UUID.randomUUID();
         long now = timeProvider.currentEpochMillis();
         try {
-            jdbc.update(
-                    "INSERT INTO platform_iam.platform_admin (id, login_name, login_name_normalized, display_name, "
-                            + "status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, "
-                            + "'ENABLED', 1, ?, ?)",
-                    id,
-                    loginName.trim(),
-                    normalized,
-                    displayName.trim(),
-                    now,
-                    now);
-            jdbc.update(
-                    "INSERT INTO platform_iam.platform_credential (platform_admin_id, password_hash, algorithm, "
-                            + "changed_at_epoch_millis, version) VALUES (?, ?, 'bcrypt', ?, 1)",
-                    id,
-                    passwordEncoder.encode(new String(initialPassword)),
-                    now);
+            persistence.insertBootstrapAdministrator(id, loginName.trim(), normalized, displayName.trim(), now);
+            persistence.insertBootstrapCredential(id, passwordEncoder.encode(new String(initialPassword)), now);
         } catch (org.springframework.dao.DuplicateKeyException exception) {
             throw new LoginNameConflictException(exception);
         }
@@ -708,24 +518,16 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         long now = timeProvider.currentEpochMillis();
         try {
             String displayMobile = optionalMobile(mobile);
-            jdbc.update(
-                    "INSERT INTO platform_iam.platform_admin (id, login_name, login_name_normalized, display_name, "
-                            + "mobile_mask_source, mobile_normalized, status, version, created_at_epoch_millis, "
-                            + "updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, 'ENABLED', 1, ?, ?)",
+            persistence.insertAdministrator(
                     id,
                     loginName.trim(),
                     normalized,
                     displayName.trim(),
                     displayMobile,
                     displayMobile == null ? null : normalizedMobile(displayMobile),
-                    now,
                     now);
-            jdbc.update(
-                    "INSERT INTO platform_iam.platform_credential (platform_admin_id, password_hash, algorithm, "
-                            + "changed_at_epoch_millis, version) VALUES (?, ?, 'bcrypt', ?, 1)",
-                    id,
-                    passwordEncoder.encode(new String(initialPassword)),
-                    now);
+            persistence.insertAdministratorCredential(
+                    id, passwordEncoder.encode(new String(initialPassword)), now);
         } catch (org.springframework.dao.DuplicateKeyException exception) {
             throw new LoginNameConflictException(exception);
         }
@@ -783,9 +585,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         if (displayName == null || displayName.trim().isEmpty()) throw new InvalidAdministratorInputException();
         long now = timeProvider.currentEpochMillis();
         String displayMobile = optionalMobile(mobile);
-        int changed = jdbc.update(
-                "UPDATE platform_iam.platform_admin SET display_name=?, mobile_mask_source=?, mobile_normalized=?, "
-                        + "version=version+1, updated_at_epoch_millis=? WHERE id=? AND version=?",
+        int changed = persistence.updateAdministratorProfile(
                 displayName.trim(),
                 displayMobile,
                 displayMobile == null ? null : normalizedMobile(displayMobile),
@@ -823,14 +623,8 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     public PlatformAdminReadback updateAdministratorProfile(UUID id, String displayName, long expectedVersion) {
         if (displayName == null || displayName.trim().isEmpty()) throw new InvalidAdministratorInputException();
         long now = timeProvider.currentEpochMillis();
-        if (jdbc.update(
-                        "UPDATE platform_iam.platform_admin SET display_name=?, version=version+1, "
-                                + "updated_at_epoch_millis=? WHERE id=? AND version=?",
-                        displayName.trim(),
-                        now,
-                        id,
-                        expectedVersion)
-                != 1) throw new PlatformAdminVersionConflictException();
+        if (persistence.updateAdministratorDisplayName(displayName.trim(), now, id, expectedVersion) != 1)
+            throw new PlatformAdminVersionConflictException();
         audit(
                 id,
                 "PLATFORM_ADMIN_PROFILE_UPDATED",
@@ -851,26 +645,11 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         if (actor != null && "SYSTEM".equals(actor.actorType())) return;
         if (actor == null
                 || !"PLATFORM_ADMIN".equals(actor.actorType())
-                || !Boolean.TRUE.equals(jdbc.queryForObject(
-                        "SELECT EXISTS(SELECT 1 FROM platform_iam.platform_admin WHERE id=? AND status='ENABLED')",
-                        Boolean.class,
-                        actor.actorId()))) throw new AccountDisabledException();
+                || !persistence.isEnabledAdministrator(actor.actorId())) throw new AccountDisabledException();
     }
 
     private static boolean validFilter(String value, int maximumLength) {
         return value == null || value.length() <= maximumLength;
-    }
-
-    private static String administratorOrderBy(String sortKey, String sortDirection) {
-        String field =
-                switch (sortKey) {
-                    case "USER_NAME" -> "a.display_name";
-                    case "LOGIN_NAME" -> "a.login_name_normalized";
-                    case "LAST_LOGIN_AT" -> "last_login_at";
-                    case "UPDATED_AT" -> "a.updated_at_epoch_millis";
-                    default -> throw new InvalidAdministratorInputException();
-                };
-        return field + ' ' + sortDirection + ", a.id ASC";
     }
 
     private static String canonical(String operation, String... values) {
@@ -897,54 +676,24 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         UUID sessionId = UUID.randomUUID();
         String token = newToken();
         long expiresAt = Math.addExact(now, SESSION_TTL_MILLIS);
-        jdbc.update(
-                "INSERT INTO platform_iam.platform_session (id, platform_admin_id, token_hash, status, "
-                        + "expires_at_epoch_millis, created_at_epoch_millis, last_seen_at_epoch_millis, version) "
-                        + "VALUES "
-                        + "(?, ?, ?, 'ACTIVE', ?, ?, ?, 1)",
-                sessionId,
-                administratorId,
-                hash(token),
-                expiresAt,
-                now,
-                now);
+        persistence.insertSession(sessionId, administratorId, hash(token), expiresAt, now);
         return new LoginResult(
                 token, new PlatformSessionReadback(sessionId, 1L, administratorId, displayName, expiresAt));
     }
 
     private RecoveryFlow requireRecoveryFlow(String rawToken, String status) {
         long now = timeProvider.currentEpochMillis();
-        return jdbc.query(
-                "SELECT id, login_name_normalized, mobile_normalized, platform_admin_id, status, "
-                        + "expires_at_epoch_millis FROM platform_iam.platform_password_recovery_flow WHERE "
-                        + "token_hash=? "
-                        + "FOR UPDATE",
-                statement -> statement.setString(1, hash(rawToken == null ? "" : rawToken)),
-                result -> {
-                    if (!result.next()
-                            || !status.equals(result.getString("status"))
-                            || result.getLong("expires_at_epoch_millis") <= now)
-                        throw new RecoveryFlowInvalidException();
-                    return new RecoveryFlow(
-                            result.getObject("id", UUID.class),
-                            result.getString("login_name_normalized"),
-                            result.getString("mobile_normalized"),
-                            result.getObject("platform_admin_id", UUID.class));
-                });
+        PlatformAuthenticationPersistence.RecoveryFlow flow =
+                persistence.readRecoveryFlow(hash(rawToken == null ? "" : rawToken));
+        if (flow == null || !status.equals(flow.status()) || flow.expiresAtEpochMillis() <= now)
+            throw new RecoveryFlowInvalidException();
+        return new RecoveryFlow(flow.id(), flow.loginNameNormalized(), flow.mobileNormalized(), flow.platformAdminId());
     }
 
     private boolean recoveryIdentityStillEligible(RecoveryFlow flow) {
         if (flow.platformAdminId() == null) return false;
-        Boolean present = jdbc.query(
-                "SELECT TRUE FROM platform_iam.platform_admin WHERE id=? AND login_name_normalized=? AND "
-                        + "mobile_normalized=? AND status='ENABLED'",
-                statement -> {
-                    statement.setObject(1, flow.platformAdminId());
-                    statement.setString(2, flow.loginNameNormalized());
-                    statement.setString(3, flow.mobileNormalized());
-                },
-                result -> result.next() ? Boolean.TRUE : Boolean.FALSE);
-        return Boolean.TRUE.equals(present);
+        return persistence.isRecoveryIdentityEligible(
+                flow.platformAdminId(), flow.loginNameNormalized(), flow.mobileNormalized());
     }
 
     private OtpAttempt beginOtpAttempt(String purpose, String mobileFingerprint, String sourceAddress) {
@@ -975,15 +724,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     }
 
     private void requireOtpRateBucketOpen(String purpose, String dimension, String fingerprint, long now) {
-        Long lockedUntil = jdbc.query(
-                "SELECT locked_until_epoch_millis FROM platform_iam.platform_public_otp_rate_limit_bucket WHERE "
-                        + "purpose=? AND dimension=? AND fingerprint=?",
-                statement -> {
-                    statement.setString(1, purpose);
-                    statement.setString(2, dimension);
-                    statement.setString(3, fingerprint);
-                },
-                result -> result.next() ? result.getObject(1, Long.class) : null);
+        Long lockedUntil = persistence.findOtpRateLock(purpose, dimension, fingerprint);
         if (lockedUntil != null && lockedUntil > now) throw new OtpRateLimitedException();
     }
 
@@ -1005,18 +746,8 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     }
 
     private void clearOtpAttempts(String purpose, OtpAttempt attempt) {
-        jdbc.update(
-                "DELETE FROM platform_iam.platform_public_otp_rate_limit_bucket WHERE purpose=? AND dimension=? AND "
-                        + "fingerprint=?",
-                purpose,
-                "MOBILE",
-                attempt.mobileFingerprint());
-        jdbc.update(
-                "DELETE FROM platform_iam.platform_public_otp_rate_limit_bucket WHERE purpose=? AND dimension=? AND "
-                        + "fingerprint=?",
-                purpose,
-                "SOURCE",
-                attempt.sourceFingerprint());
+        persistence.clearOtpRateBucket(purpose, "MOBILE", attempt.mobileFingerprint());
+        persistence.clearOtpRateBucket(purpose, "SOURCE", attempt.sourceFingerprint());
     }
 
     private void recordRecoveryStartAttempt(RecoveryStartAttempt attempt) {
@@ -1046,36 +777,14 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     private void recordOtpRateFailure(
             String purpose, String dimension, String fingerprint, int threshold, long windowMillis, long lockMillis) {
         long now = timeProvider.currentEpochMillis();
-        RateBucket current = jdbc.query(
-                "SELECT window_started_at_epoch_millis, failed_attempts FROM "
-                        + "platform_iam.platform_public_otp_rate_limit_bucket WHERE purpose=? AND dimension=? AND "
-                        + "fingerprint=?",
-                statement -> {
-                    statement.setString(1, purpose);
-                    statement.setString(2, dimension);
-                    statement.setString(3, fingerprint);
-                },
-                result -> result.next() ? new RateBucket(result.getLong(1), result.getInt(2)) : null);
+        PlatformAuthenticationPersistence.RateBucket current =
+                persistence.readOtpRateFailure(purpose, dimension, fingerprint);
         boolean resetWindow = current == null || now - current.windowStartedAtEpochMillis() >= windowMillis;
         long startedAt = resetWindow ? now : current.windowStartedAtEpochMillis();
         int failures = resetWindow ? 1 : current.failedAttempts() + 1;
         Long lockedUntil = failures >= threshold ? now + lockMillis : null;
-        jdbc.update(
-                "INSERT INTO platform_iam.platform_public_otp_rate_limit_bucket (purpose, dimension, fingerprint, "
-                        + "window_started_at_epoch_millis, failed_attempts, locked_until_epoch_millis, "
-                        + "updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (purpose, dimension, "
-                        + "fingerprint) DO UPDATE SET "
-                        + "window_started_at_epoch_millis=EXCLUDED.window_started_at_epoch_millis, "
-                        + "failed_attempts=EXCLUDED.failed_attempts, "
-                        + "locked_until_epoch_millis=EXCLUDED.locked_until_epoch_millis, "
-                        + "updated_at_epoch_millis=EXCLUDED.updated_at_epoch_millis",
-                purpose,
-                dimension,
-                fingerprint,
-                startedAt,
-                failures,
-                lockedUntil,
-                now);
+        persistence.upsertOtpRateFailure(
+                purpose, dimension, fingerprint, startedAt, failures, lockedUntil, now);
     }
 
     private LoginAttempt beginLoginAttempt(String normalizedAccount, String sourceAddress) {
@@ -1091,18 +800,11 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     }
 
     private void lockRateBucket(String dimension, String fingerprint) {
-        jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtext(?))", dimension + ':' + fingerprint);
+        persistence.lockLoginRateBucket(dimension, fingerprint);
     }
 
     private void requireRateBucketOpen(String dimension, String fingerprint, long now) {
-        Long lockedUntil = jdbc.query(
-                "SELECT locked_until_epoch_millis FROM platform_iam.platform_login_rate_limit_bucket WHERE dimension=? "
-                        + "AND fingerprint=?",
-                statement -> {
-                    statement.setString(1, dimension);
-                    statement.setString(2, fingerprint);
-                },
-                result -> result.next() ? result.getObject(1, Long.class) : null);
+        Long lockedUntil = persistence.findLoginRateLock(dimension, fingerprint);
         if (lockedUntil != null && lockedUntil > now) throw new LoginRateLimitedException();
     }
 
@@ -1133,38 +835,18 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     private void recordRateFailure(
             String dimension, String fingerprint, int threshold, long windowMillis, long lockMillis) {
         long now = timeProvider.currentEpochMillis();
-        RateBucket current = jdbc.query(
-                "SELECT window_started_at_epoch_millis, failed_attempts FROM "
-                        + "platform_iam.platform_login_rate_limit_bucket WHERE dimension=? AND fingerprint=?",
-                statement -> {
-                    statement.setString(1, dimension);
-                    statement.setString(2, fingerprint);
-                },
-                result -> result.next() ? new RateBucket(result.getLong(1), result.getInt(2)) : null);
+        PlatformAuthenticationPersistence.RateBucket current =
+                persistence.readLoginRateFailure(dimension, fingerprint);
         boolean resetWindow = current == null || now - current.windowStartedAtEpochMillis() >= windowMillis;
         long startedAt = resetWindow ? now : current.windowStartedAtEpochMillis();
         int failures = resetWindow ? 1 : current.failedAttempts() + 1;
         Long lockedUntil = failures >= threshold ? now + lockMillis : null;
-        jdbc.update(
-                "INSERT INTO platform_iam.platform_login_rate_limit_bucket (dimension, fingerprint, "
-                        + "window_started_at_epoch_millis, failed_attempts, locked_until_epoch_millis, "
-                        + "updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (dimension, fingerprint) DO "
-                        + "UPDATE SET window_started_at_epoch_millis=EXCLUDED.window_started_at_epoch_millis, "
-                        + "failed_attempts=EXCLUDED.failed_attempts, "
-                        + "locked_until_epoch_millis=EXCLUDED.locked_until_epoch_millis, "
-                        + "updated_at_epoch_millis=EXCLUDED.updated_at_epoch_millis",
-                dimension,
-                fingerprint,
-                startedAt,
-                failures,
-                lockedUntil,
-                now);
+        persistence.upsertLoginRateFailure(
+                dimension, fingerprint, startedAt, failures, lockedUntil, now);
     }
 
     private void clearAccountFailures(LoginAttempt attempt) {
-        jdbc.update(
-                "DELETE FROM platform_iam.platform_login_rate_limit_bucket WHERE dimension='ACCOUNT' AND fingerprint=?",
-                attempt.accountFingerprint());
+        persistence.clearLoginAccountFailures(attempt.accountFingerprint());
     }
 
     private String hmac(String value) {
@@ -1180,27 +862,18 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     private void requireDeactivationAllowed(UUID id, AuditActor actor) {
         // The count predicate spans every platform administrator, so serialize it with a
         // single owner-local transaction advisory lock before inspecting the target.
-        jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtext(?))", "platform-iam:last-enabled-administrator");
-        AdminGuard guard = jdbc.query(
-                "SELECT is_builtin, status FROM platform_iam.platform_admin WHERE id=? FOR UPDATE",
-                statement -> statement.setObject(1, id),
-                result -> {
-                    if (!result.next()) throw new PlatformAdminNotFoundException();
-                    return new AdminGuard(result.getBoolean(1), result.getString(2));
-                });
+        persistence.lockAdministratorDeactivation();
+        PlatformAuthenticationPersistence.AdminGuard guard = persistence.readAdministratorDeactivationGuard(id);
+        if (guard == null) throw new PlatformAdminNotFoundException();
         if (guard.builtIn() || (actor != null && id.equals(actor.actorId())))
             throw new AdministratorDeactivationForbiddenException();
-        Long activeCount = jdbc.queryForObject(
-                "SELECT count(*) FROM platform_iam.platform_admin WHERE status='ENABLED'", Long.class);
+        Long activeCount = persistence.countEnabledAdministrators();
         if ("ENABLED".equals(guard.status()) && activeCount != null && activeCount <= 1)
             throw new AdministratorDeactivationForbiddenException();
     }
 
     private void audit(UUID subjectRef, String action, long now, AuditActor actor, List<AuditChange> changes) {
-        jdbc.update(
-                "INSERT INTO platform_iam.audit_event (id, entity_type, entity_ref_text, actor_type, actor_id, "
-                        + "actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?, "
-                        + "'PLATFORM_ADMIN', ?, ?, ?, ?, ?, ?, CAST(? AS JSONB))",
+        persistence.insertAudit(
                 UUID.randomUUID(),
                 subjectRef.toString(),
                 actor.actorType(),
@@ -1215,33 +888,19 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         return AuditChangeJson.write(changes);
     }
 
-    private static String readbackSql(String suffix) {
-        return """
-        SELECT a.id, a.login_name, a.display_name, a.mobile_mask_source, a.status, a.is_builtin, a.version, \
-        a.created_at_epoch_millis, a.updated_at_epoch_millis,
-               (SELECT max(coalesce(s.last_seen_at_epoch_millis, s.created_at_epoch_millis)) FROM \
-               platform_iam.platform_session s WHERE s.platform_admin_id=a.id) AS last_login_at,
-               coalesce((SELECT p.action FROM platform_iam.audit_event p WHERE p.entity_type='PLATFORM_ADMIN' AND \
-               p.entity_ref_text=a.id::text ORDER BY p.occurred_at_epoch_millis DESC, p.id DESC LIMIT 1), \
-               'NO_ADMIN_AUDIT_EVENT') AS audit_summary
-          FROM platform_iam.platform_admin a
-        """
-                + suffix;
-    }
-
-    private static PlatformAdminReadback mapReadback(java.sql.ResultSet result) throws java.sql.SQLException {
+    private static PlatformAdminReadback mapReadback(PlatformAuthenticationPersistence.AdministratorRow row) {
         return new PlatformAdminReadback(
-                result.getObject("id", UUID.class),
-                result.getString("login_name"),
-                result.getString("display_name"),
-                result.getString("mobile_mask_source"),
-                result.getString("status"),
-                result.getBoolean("is_builtin"),
-                result.getLong("version"),
-                result.getLong("created_at_epoch_millis"),
-                result.getLong("updated_at_epoch_millis"),
-                result.getObject("last_login_at", Long.class),
-                result.getString("audit_summary"));
+                row.id(),
+                row.loginName(),
+                row.displayName(),
+                row.mobile(),
+                row.status(),
+                row.builtIn(),
+                row.version(),
+                row.createdAtEpochMillis(),
+                row.updatedAtEpochMillis(),
+                row.lastLoginAtEpochMillis(),
+                row.auditSummary());
     }
 
     private String newToken() {
@@ -1262,20 +921,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         }
     }
 
-    private record CredentialRow(
-            UUID platformAdminId,
-            String displayName,
-            String status,
-            String passwordHash,
-            Long lockedUntilEpochMillis) {}
-
     private record LoginAttempt(String accountFingerprint, String sourceFingerprint) {}
-
-    private record RateBucket(long windowStartedAtEpochMillis, int failedAttempts) {}
-
-    private record AdminGuard(boolean builtIn, String status) {}
-
-    private record SessionCredential(UUID adminId, long version, String passwordHash) {}
 
     private record OtpAttempt(String mobileFingerprint, String sourceFingerprint) {}
 

@@ -3,7 +3,6 @@
     "name": "sample-terminal",
     "slug": "sample-terminal",
     "version": "1.0.0",
-    "orientation": "landscape",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {

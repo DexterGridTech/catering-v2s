@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.fulfillment.production.application.ProductionTagOwnerService;
+import com.catering.v2s.fulfillment.production.application.persistence.ProductionTagOwnerPersistence;
 import com.catering.v2s.inventory.application.InventoryOwnerService;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
 import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
@@ -60,7 +61,8 @@ class CatalogBatchStatusTransitionIntegrationTest {
         InventoryOwnerService inventory =
                 new InventoryOwnerService(jdbc, JSON, (TimeProvider) () -> 1_785_000_000_000L);
         ProductionTagOwnerService production =
-                new ProductionTagOwnerService(jdbc, JSON, (TimeProvider) () -> 1_785_000_000_000L);
+                new ProductionTagOwnerService(
+                        new ProductionTagOwnerPersistence(jdbc, (TimeProvider) () -> 1_785_000_000_000L), JSON);
         catalog = new CatalogOwnerService(
                 jdbc,
                 JSON,

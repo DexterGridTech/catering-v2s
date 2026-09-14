@@ -68,4 +68,17 @@ describe('catalog configuration library state', () => {
       selectedEntryRef: undefined,
     });
   });
+
+  it('restores the requested library before a new drawer context can query', () => {
+    const populated = {
+      currentLibrary: 'TAG' as const,
+      simpleLibraryFilter: {keywordInput: '旧筛选', appliedKeyword: '旧筛选', status: 'ENABLED' as const},
+      selectedEntryRef: 'old-entry',
+    };
+    expect(catalogConfigLibraryReducer(populated, {type: 'RESET_LIBRARY_CONTEXT', library: 'UNIT'})).toMatchObject({
+      currentLibrary: 'UNIT',
+      simpleLibraryFilter: initialCatalogSimpleLibraryFilter,
+      selectedEntryRef: undefined,
+    });
+  });
 });

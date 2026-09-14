@@ -1,4 +1,5 @@
 import {describe, expect, it} from 'vitest'
+import {createProcessMemoryStateStoragePort} from '@catering-v2s/kernel-base-platform-ports'
 import {resolveSecondarySurfaceAvailable, readDisplayInfo} from '@catering-v2s/kernel-base-display-context'
 import {createWebDevicePort, createWebPlatformPorts, type SurfaceMode} from '../src'
 
@@ -20,8 +21,22 @@ describe('ui.base.dev-host Web platform bindings', () => {
       removeItem: () => undefined,
       setItem: () => undefined,
     } satisfies Storage
-    await expect(createWebPlatformPorts(() => 'single', {storage}).persistSecure.read({key: 'secret', timeoutMs: 50})).resolves.toMatchObject({
+    await expect(createWebPlatformPorts(() => 'single', {storage}).persistSecure.read({key: 'secret'})).resolves.toMatchObject({
       status: 'unavailable',
     })
+  })
+
+  it('allows a preview app to provide an explicit process-memory protected seam', async () => {
+    const storage = {
+      length: 0,
+      clear: () => undefined,
+      getItem: () => null,
+      key: () => null,
+      removeItem: () => undefined,
+      setItem: () => undefined,
+    } satisfies Storage
+    const protectedStorage = createProcessMemoryStateStoragePort()
+    const result = await createWebPlatformPorts(() => 'single', {storage, protectedStorage}).persistSecure.read({key: 'secret'})
+    expect(result).toMatchObject({status: 'succeeded', value: {state: 'missing'}})
   })
 })

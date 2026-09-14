@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import {
   PrimitiveActions,
   PrimitiveButton,
@@ -8,8 +8,8 @@ import {
   PrimitiveStatus,
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
-import {useInputField, useInputKeyboardState} from '@catering-v2s/ui-base-input'
-import type {RuntimeDeviceIdentity} from '@catering-v2s/ui-base-render'
+import {InputKeyboard, useInputController, useInputField, useInputKeyboardState} from '@catering-v2s/ui-base-input'
+import {useRenderContext, type RuntimeDeviceIdentity} from '@catering-v2s/ui-base-render'
 import {ADMIN_CONSOLE_FOCUS_SCOPE_ID} from '../foundations/adminIdentity'
 import {adminTestIds} from '../foundations/adminTestIds'
 import {ADMIN_PASSWORD_FALLBACK, deriveAdminPassword, verifyAdminPassword} from '../foundations/adminPassword'
@@ -26,7 +26,10 @@ export type AdminLoginProps = Readonly<{
 }>
 
 export const AdminLogin = ({identity, debugMode, onAuthenticated, onClose, now}: AdminLoginProps) => {
+  const {logger} = useRenderContext()
+  const inputController = useInputController()
   const keyboardState = useInputKeyboardState()
+  const didAutoFocus = useRef(false)
   const field = useInputField({
     fieldId: PASSWORD_FIELD_ID,
     testID: adminTestIds.password,
@@ -35,15 +38,44 @@ export const AdminLogin = ({identity, debugMode, onAuthenticated, onClose, now}:
     layout: 'numeric',
     maxLength: 6,
     nativeLess: true,
+    keyboardPlacement: 'field',
     focusScopeId: ADMIN_CONSOLE_FOCUS_SCOPE_ID,
   })
   const password = field.inputProps.value ?? ''
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (keyboardState.capacity !== 'supported' || keyboardState.activeFieldId === PASSWORD_FIELD_ID) return
+    if (__DEV__) {
+      logger.info({
+        category: 'display-diagnostics',
+        event: 'admin.login-autofocus-attempt',
+        message: 'Admin login autofocus lifecycle observed',
+        data: {
+          activeFieldId: keyboardState.activeFieldId,
+          capacity: keyboardState.capacity,
+          didAutoFocus: didAutoFocus.current,
+          revision: keyboardState.revision,
+        },
+      })
+    }
+    if (keyboardState.activeFieldId === PASSWORD_FIELD_ID) {
+      didAutoFocus.current = true
+      return
+    }
+    if (didAutoFocus.current || keyboardState.capacity !== 'supported') return
+    inputController.activateFocusScope(ADMIN_CONSOLE_FOCUS_SCOPE_ID)
+    const focusAccepted = inputController.preflightFocusTarget(PASSWORD_FIELD_ID)
+    if (__DEV__) {
+      logger.info({
+        category: 'display-diagnostics',
+        event: 'admin.login-autofocus-preflight',
+        message: 'Admin login autofocus preflight observed',
+        data: {accepted: focusAccepted},
+      })
+    }
+    if (!focusAccepted) return
     field.focus()
-  }, [field, keyboardState.activeFieldId, keyboardState.capacity, keyboardState.revision])
+  }, [field, inputController, keyboardState.activeFieldId, keyboardState.capacity, keyboardState.revision, logger])
 
   const currentDate = now?.() ?? new Date()
   const clockUnavailable = Number.isNaN(currentDate.getTime())
@@ -107,6 +139,7 @@ export const AdminLogin = ({identity, debugMode, onAuthenticated, onClose, now}:
           关闭
         </PrimitiveButton>
       </PrimitiveActions>
+      <InputKeyboard placement="field" />
     </PrimitiveContainer>
   )
 }

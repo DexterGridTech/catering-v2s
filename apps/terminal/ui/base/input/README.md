@@ -18,7 +18,8 @@ command、store 或中文 IME 引擎；本轮所有输入统一走虚拟键盘�
 - `InputScrollArea` 是唯一的输入滚动祖先适配器，负责把 focus 后的字段滚入已收缩可见区；
 - `InputProvider` 与 `useInputField` 维护 tokenized field registry、focus owner 与同步快照；
 - `useInputSnapshot` 在提交动作边界同步读取不可变快照，不订阅编辑值；
-- `VirtualKeyboard` 只产生通用编辑 key，不派业务 command；
+- `InputKeyboard` 是业务唯一应使用的键盘呈现入口；它只根据 placement 决定挂在 surface dock 还是调用方的局部布局，状态、owner、按键处理和 `VirtualKeyboard` renderer 始终共用；
+- `VirtualKeyboard` 只产生通用编辑 key，不派业务 command，业务不得直接用它拼第二套键盘；
 - `InputFieldOptions` 固定使用 `keyboardKind: 'virtual'`，`KeyboardLayout` 描述输入呈现/承载能力；
   frame 尺寸由 `InputSurfaceFrame` 自己的 `onLayout` 读取，不通过公共 `surfaceSize` prop 传入。
 - `full`、`alpha`、`numeric`、`financial` 的行列、稳定 keyId 与 region/key `testID` 由
@@ -45,13 +46,13 @@ command、store 或中文 IME 引擎；本轮所有输入统一走虚拟键盘�
   layer suspend 或后续字段获焦才是清理 owner 的边界。
 - LayerStack 通过 render 提供的 `suspend`/`restore` 协议收起并恢复键盘，input 不反向 import render 以外的业务层；
 - surface content 的非输入点击会通过 input owner 主动清理当前 field 并收起键盘；虚拟键盘 dock 是 sibling，
-  不把业务按钮或文案变成 input 特例；
+  不把业务按钮或文案变成 input 特例；需要把键盘放进字段/卡片局部布局时仍使用同一个 `InputKeyboard`，不新增 input owner、状态或事件管线；
 - `PrimitiveButton` 在 primitives 内用自身的 `onPressIn`/`onPressOut` 保存局部 pressed 状态并
   提供反馈：普通键透明度变为 `0.78`、动作键变为 `0.72` 并轻微缩放到 `0.985`；它只影响
   当前按键，不触发表单字段或整个键盘的额外状态更新。
-- Web 上 `TextInput` 不会把 RN 的 `onPressIn` 接缝转成可阻断父级 `Pressable` 的事件，因此
-  `PrimitiveInput` 仅在存在 Web DOM 时把同一个边界处理器接到 `onClick`；Android/native 不传 Web 事件，
-  仍由 `onPressIn` 保持相同的父级收键盘边界；
+- `InputSurfaceFrame` 的表面收键盘是被动 touch/click 观察，不参与 responder 协商，因此不会抢
+  `ScrollView` 或业务后代的手势；真实输入节点阻断该观察事件。Web 上 `PrimitiveInput` 仍把同一个
+  输入边界处理器接到 `onClick`，Android/native 则由 `onPressIn` 与 touch-end 边界共同保持相同语义；
 - 所有 virtual field 使用 input edit model 的受控 selection；有原生控件时由 `TextInput` 提供测量与
   可访问挂点，无原生控件时 `inputRef` 为 null 但编辑快照与焦点状态仍由同一模型维护；
 - `PrimitiveInput` 的 focus/blur 与通用 `inputRef` 是真实控件接缝，不承载 `inputMode`、业务字段或屏数；
@@ -60,7 +61,20 @@ command、store 或中文 IME 引擎；本轮所有输入统一走虚拟键盘�
 - 虚拟键盘高度来自 surface root 自身 `onLayout` 的实际尺寸：上限 320、比例上限 0.5、内容下限 208；
   首帧未测量或按轴不可行时不挂不可操作的键盘，并提供可寻址的扩大窗口提示。
 
-## 消费方式
+## 键盘呈现方式
+
+业务只在字段配置中选择位置，并始终复用 `InputKeyboard`。`keyboardPlacement` 与呈现组件的
+`placement` 必须相同；不匹配时组件不渲染，避免 surface dock 与局部键盘同时出现。
+
+- `surface`（独立 dock）：省略 `keyboardPlacement` 即使用默认值。`InputSurfaceFrame` 会自动挂载
+  `<InputKeyboard placement="surface" />`，业务不再手动放置键盘。
+- `field`（局部/非独立 dock）：字段设置 `keyboardPlacement: 'field'`，再在希望出现键盘的
+  卡片或字段布局中挂载一次 `<InputKeyboard placement="field" />`。组件自动测量父级宽度并复用
+  同一个 provider/controller/renderer；业务不需要传尺寸、重写按键、处理焦点或维护第二份字符串。
+
+不要把 `VirtualKeyboard` 直接用于 feature，也不要使用已移除的 `constrainToParent` 类布局开关。
+
+独立 dock：
 
 ```tsx
 const field = useInputField({
@@ -72,6 +86,25 @@ const field = useInputField({
 });
 
 return <PrimitiveInput {...field.inputProps} />;
+```
+
+局部布局：
+
+```tsx
+const field = useInputField({
+  fieldId: 'generic-field',
+  testID: 'feature:field',
+  keyboardKind: 'virtual',
+  layout: 'numeric',
+  keyboardPlacement: 'field',
+});
+
+return (
+  <PrimitiveContainer>
+    <PrimitiveInput {...field.inputProps} />
+    <InputKeyboard placement="field" />
+  </PrimitiveContainer>
+);
 ```
 
 业务层只把 `field.inputProps` 交给既有 `PrimitiveInput`，并用 `InputScrollArea` 包住唯一的

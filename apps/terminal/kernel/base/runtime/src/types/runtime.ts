@@ -8,7 +8,6 @@ import type {
   SessionId,
 } from '@catering-v2s/kernel-base-contracts'
 import type {
-  StateStorageTimeoutPolicy,
   StateRoot,
   CreateStateRuntimeInput,
   StateRuntime,
@@ -46,7 +45,6 @@ export type RuntimeStateInput = Readonly<{
   runtimeName: string
   environmentMode: EnvironmentMode
   persistenceKey: string
-  storageTimeouts: StateStorageTimeoutPolicy
   persistenceDebounceMs: number
   storeEnhancers?: readonly RuntimeStoreEnhancer[]
 }>

@@ -12,6 +12,7 @@ import com.catering.v2s.salesmenu.api.SalesMenuAssetCommandApi;
 import com.catering.v2s.salesmenu.api.SalesMenuCommandApi;
 import com.catering.v2s.salesmenu.api.SalesMenuOwnerApi;
 import com.catering.v2s.salesmenu.api.SalesMenuReadback;
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence;
 import com.catering.v2s.salesmenu.domain.SalesMenuAssetTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuAssetTargetMode;
 import com.catering.v2s.salesmenu.domain.SalesMenuCandidateQuery;
@@ -26,7 +27,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import com.catering.v2s.salesmenu.infrastructure.SalesMenuRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -40,14 +40,14 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
     private final SalesMenuManualSaleService manualSaleService;
     private final SalesMenuOperationRecordService operationRecordService;
 
-    public SalesMenuOwnerService(SalesMenuRepository repository, TimeProvider time, ObjectMapper json) {
+    public SalesMenuOwnerService(SalesMenuPersistence persistence, TimeProvider time, ObjectMapper json) {
         this(
-                new SalesMenuDefinitionService(repository, time, json),
-                new SalesMenuSectionService(repository, time, json),
-                new SalesMenuItemService(repository, time, json),
-                new SalesMenuPublicationService(repository, time, json),
-                new SalesMenuManualSaleService(repository, time, json),
-                new SalesMenuOperationRecordService(repository, time, json));
+                new SalesMenuDefinitionService(persistence, time, json),
+                new SalesMenuSectionService(persistence, time, json),
+                new SalesMenuItemService(persistence, time, json),
+                new SalesMenuPublicationService(persistence, time, json),
+                new SalesMenuManualSaleService(persistence, time, json),
+                new SalesMenuOperationRecordService(persistence, time, json));
     }
 
     @Autowired
@@ -66,9 +66,9 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
         this.operationRecordService = Objects.requireNonNull(operationRecordService, "operationRecordService");
     }
 
-    /** Compatibility constructor retained for existing direct owner fixtures. */
+    /** Direct-owner fixture constructor using the same typed persistence boundary as Spring wiring. */
     public SalesMenuOwnerService(
-            SalesMenuRepository repository,
+            SalesMenuPersistence persistence,
             TimeProvider time,
             ObjectMapper json,
             CatalogOwnerApi catalog,
@@ -79,20 +79,20 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             SalesMenuAssetCommandApi assetCommands,
             CatalogAssetReferenceLock catalogAssetReferenceLock) {
         this(
-                new SalesMenuDefinitionService(repository, time, json, organization, channels),
-                new SalesMenuSectionService(repository, time, json, catalog, inventory, channels, organization),
+                new SalesMenuDefinitionService(persistence, time, json, organization, channels),
+                new SalesMenuSectionService(persistence, time, json, catalog, inventory, channels, organization),
                 new SalesMenuItemService(
-                        repository, time, json, catalog, inventory, channels, organization, assets, assetCommands),
+                        persistence, time, json, catalog, inventory, channels, organization, assets, assetCommands),
                 new SalesMenuPublicationService(
-                        repository, time, json, catalog, inventory, channels, organization, assets,
+                        persistence, time, json, catalog, inventory, channels, organization, assets,
                         catalogAssetReferenceLock),
-                new SalesMenuManualSaleService(repository, time, json, catalog, inventory, channels, organization),
-                new SalesMenuOperationRecordService(repository, time, json, channels, organization));
+                new SalesMenuManualSaleService(persistence, time, json, catalog, inventory, channels, organization),
+                new SalesMenuOperationRecordService(persistence, time, json, channels, organization));
     }
 
-    /** Compatibility constructor retained for existing direct owner fixtures. */
+    /** Direct-owner fixture constructor using the same typed persistence boundary as Spring wiring. */
     public SalesMenuOwnerService(
-            SalesMenuRepository repository,
+            SalesMenuPersistence persistence,
             TimeProvider time,
             ObjectMapper json,
             CatalogOwnerApi catalog,
@@ -100,7 +100,7 @@ public class SalesMenuOwnerService implements SalesMenuOwnerApi, SalesMenuComman
             BusinessChannelOwnerApi channels,
             OrganizationOwnerApi organization,
             SalesMenuAssetReadApi assets) {
-        this(repository, time, json, catalog, inventory, channels, organization, assets, null, null);
+        this(persistence, time, json, catalog, inventory, channels, organization, assets, null, null);
     }
 
     @Override

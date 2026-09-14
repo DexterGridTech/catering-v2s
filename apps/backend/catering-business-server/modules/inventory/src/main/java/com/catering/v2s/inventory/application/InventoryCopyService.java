@@ -1,5 +1,7 @@
 package com.catering.v2s.inventory.application;
 
+import com.catering.v2s.inventory.application.persistence.InventoryCopyPersistence;
+import com.catering.v2s.inventory.application.persistence.InventoryCopyServiceSql;
 import static com.catering.v2s.inventory.api.InventoryOwnerApi.*;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
@@ -29,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -47,13 +50,6 @@ public class InventoryCopyService {
     private static final String SKU_BASE_UNIT_ARGS = "SKU 基础计量单位判断参数不完整";
     private static final String INCOMPLETE_CONSUMPTION_UNIT_SNAPSHOT = "单位快照不完整";
     private static final String SALES_MENU_STATE_UNKNOWN = "库存状态无法转换为销售菜单可用事实";
-    private static final String TARGET_SELECT_COLUMNS =
-            "target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::text,"
-                    + "version,updated_at_epoch_millis,consumption_unit_ref,consumption_unit_code,"
-                    + "consumption_unit_name,consumption_unit_dimension,consumption_unit_precision,"
-                    + "counting_unit_ref,counting_unit_code,counting_unit_name,counting_unit_dimension,"
-                    + "counting_unit_precision,counting_unit_conversion_factor,definition_status,inventory_mode,"
-                    + "component_eligible";
     /** Mapping types consumed by inventory copy; catalog may carry other owner mappings in the same plan. */
     private static final Set<String> INVENTORY_COPY_MAPPING_TYPES = Set.of(
             "CATALOG_ITEM",
@@ -64,30 +60,25 @@ public class InventoryCopyService {
             "STOCK_TARGET");
 
     private final JdbcTemplate jdbc;
+    private final InventoryCopyPersistence persistence;
     private final ObjectMapper mapper;
     private final TimeProvider time;
 
-    public InventoryCopyService(JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
+    @Autowired
+    public InventoryCopyService(
+            InventoryCopyPersistence persistence, JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
         this.jdbc = jdbc;
+        this.persistence = persistence;
         this.mapper = mapper;
         this.time = time;
     }
 
+    public InventoryCopyService(JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
+        this(new InventoryCopyPersistence(jdbc), jdbc, mapper, time);
+    }
+
     private InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot(UUID targetRef) {
-        return jdbc
-                .query(
-                        "SELECT consumption_unit_ref,consumption_unit_code,consumption_unit_name,consumption_unit_d"
-                                + "imension,consumption_unit_precision "
-                                + "FROM inventory.stock_target WHERE target_ref=?",
-                        (result, row) -> unitSnapshot(result),
-                        targetRef)
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new InventoryOwnerApi.Problem(
-                        "CONSUMPTION_UNIT_SNAPSHOT_REQUIRED",
-                        422,
-                        /* format-wrap */
-                        "库存对象必须保存有效消耗单位快照"));
+        return persistence.readConsumptionUnitSnapshot(targetRef);
     }
 
     private static InventoryOwnerApi.UnitSnapshot unitSnapshot(java.sql.ResultSet result) throws java.sql.SQLException {
@@ -301,79 +292,9 @@ public class InventoryCopyService {
                     .filter(java.util.Objects::nonNull)
                     .map(ReferenceMapping::targetRef)
                     .toList());
-            int[] insertedTargets = jdbc.batchUpdate(
-                    "INSERT INTO "
-                            + "inventory.stock_target(target_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,item_"
-                            + "code"
-                            + ",sku_code,measure_mode,inventory_mode,consumption_unit_ref,consumption_unit_code,"
-                            + "consumption_unit_name,consumption_unit_dimension,consumption_unit_precision,"
-                            + "counting_unit_ref,counting_unit_code,counting_unit_name,counting_unit_dimension,"
-                            + "counting_unit_precision,counting_unit_conversion_factor,configuration,balance,version,"
-                            + "created_at_epoch_millis,updated_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,"
-                            + "?,?,?,?,?,?,CAST(? AS JSONB),0,1,?,?) ON CONFLICT DO NOTHING",
-                    new BatchPreparedStatementSetter() {
-                        @Override
-                        public void setValues(java.sql.PreparedStatement statement, int index)
-                                throws java.sql.SQLException {
-                            PlannedTarget target = plannedTargets.get(index);
-                            ReferenceMapping sku = target.skuMapping();
-                            statement.setObject(1, target.targetMapping().targetRef());
-                            statement.setString(2, targetDataNodeRef);
-                            statement.setString(3, brandRef);
-                            statement.setObject(4, target.itemMapping().targetRef());
-                            statement.setObject(5, sku == null ? null : sku.targetRef());
-                            statement.setString(
-                                    6, requiredLabel(target.itemMapping().targetCode(), "CATALOG_ITEM targetCode"));
-                            statement.setString(
-                                    7,
-                                    sku == null
-                                            ? null
-                                            : requiredLabel(sku.targetSkuCode(), "PRODUCT_SKU targetSkuCode"));
-                            InventoryOwnerApi.UnitSnapshot consumption =
-                                    mappedUnitSnapshot(target.source().consumptionUnitSnapshot(), mappings);
-                            InventoryConfiguration sourceConfiguration =
-                                    configurationReadback(json(target.source().configuration()));
-                            InventoryOwnerApi.UnitSnapshot counting =
-                                    mappedUnitSnapshot(sourceConfiguration.countingUnitSnapshot(), mappings);
-                            String inventoryMode = json(target.source().configuration())
-                                    .path("mode")
-                                    .asText("");
-                            if (inventoryMode.isBlank())
-                                throw new InventoryOwnerApi.Problem(
-                                        "RESULT_UNKNOWN",
-                                        500,
-                                        /* format-wrap */
-                                        "库存对象缺少 inventory mode");
-                            statement.setString(8, target.source().measureMode());
-                            statement.setString(9, inventoryMode);
-                            statement.setObject(10, consumption.unitRef());
-                            statement.setString(11, consumption.code());
-                            statement.setString(12, consumption.name());
-                            statement.setString(13, consumption.unitDimension());
-                            statement.setInt(14, consumption.precision());
-                            statement.setObject(15, counting == null ? null : counting.unitRef());
-                            statement.setString(16, counting == null ? null : counting.code());
-                            statement.setString(17, counting == null ? null : counting.name());
-                            statement.setString(18, counting == null ? null : counting.unitDimension());
-                            if (counting == null) statement.setObject(19, null);
-                            else statement.setInt(19, counting.precision());
-                            statement.setBigDecimal(20, sourceConfiguration.conversionFactor());
-                            statement.setString(
-                                    21,
-                                    mappedConfiguration(
-                                            target.source().configuration(),
-                                            inventoryMode,
-                                            counting,
-                                            sourceConfiguration.conversionFactor()));
-                            statement.setLong(22, time.currentEpochMillis());
-                            statement.setLong(23, time.currentEpochMillis());
-                        }
-
-                        @Override
-                        public int getBatchSize() {
-                            return plannedTargets.size();
-                        }
-                    });
+            int[] insertedTargets = persistence.copyCatalogItems(plannedTargets.stream()
+                    .map(target -> targetWrite(target, targetDataNodeRef, brandRef, mappings))
+                    .toList());
             copied += java.util.Arrays.stream(insertedTargets)
                     .map(value -> value > 0 ? value : 0)
                     .sum();
@@ -417,56 +338,9 @@ public class InventoryCopyService {
                     .filter(java.util.Objects::nonNull)
                     .map(ReferenceMapping::targetRef)
                     .toList());
-            int[] upsertedBoms = jdbc.batchUpdate(
-                    "INSERT INTO "
-                            + "inventory.stock_bom(bom_ref,data_node_ref,brand_ref,item_ref,product_sku_ref,option_valu"
-                            + "e_re"
-                            + "f,item_code,sku_code,option_value_code,version,rows,updated_at_epoch_millis) "
-                            + "VALUES(?,?,?,?,?,?,?,?,?,?,CAST(? AS JSONB),?) ON CONFLICT "
-                            + "(data_node_ref,brand_ref,item_ref,(COALESCE(product_sku_ref, "
-                            + "'00000000-0000-0000-0000-000000000000'::uuid)),(COALESCE(option_value_ref, "
-                            + "'00000000-0000-0000-0000-000000000000'::uuid))) WHERE definition_status='ENABLED' "
-                            + "DO UPDATE SET "
-                            + "version=EXCLUDED.version,rows=EXCLUDED.rows,updated_at_epoch_millis=EXCLUDED.updated_at_"
-                            + "epoc"
-                            + "h_millis",
-                    new BatchPreparedStatementSetter() {
-                        @Override
-                        public void setValues(java.sql.PreparedStatement statement, int index)
-                                throws java.sql.SQLException {
-                            PreparedBom bom = rewrittenBoms.get(index);
-                            statement.setObject(1, UUID.randomUUID());
-                            statement.setString(2, targetDataNodeRef);
-                            statement.setString(3, brandRef);
-                            statement.setObject(4, bom.item().targetRef());
-                            statement.setObject(
-                                    5, bom.sku() == null ? null : bom.sku().targetRef());
-                            statement.setObject(
-                                    6,
-                                    bom.option() == null ? null : bom.option().targetRef());
-                            statement.setString(7, requiredLabel(bom.item().targetCode(), "CATALOG_ITEM targetCode"));
-                            statement.setString(
-                                    8,
-                                    bom.sku() == null
-                                            ? null
-                                            : requiredLabel(bom.sku().targetSkuCode(), "PRODUCT_SKU targetSkuCode"));
-                            statement.setString(
-                                    9,
-                                    bom.option() == null
-                                            ? null
-                                            : requiredLabel(
-                                                    bom.option().targetOptionValueCode(),
-                                                    "CATALOG_ORDER_OPTION_DEFINITION_VALUE targetOptionValueCode"));
-                            statement.setLong(10, bom.version());
-                            statement.setString(11, bom.rows());
-                            statement.setLong(12, time.currentEpochMillis());
-                        }
-
-                        @Override
-                        public int getBatchSize() {
-                            return rewrittenBoms.size();
-                        }
-                    });
+            int[] upsertedBoms = persistence.copyCatalogSkus(rewrittenBoms.stream()
+                    .map(bom -> bomWrite(bom, targetDataNodeRef, brandRef))
+                    .toList());
             copied += java.util.Arrays.stream(upsertedBoms)
                     .map(value -> value > 0 ? value : 0)
                     .sum();
@@ -1084,37 +958,19 @@ public class InventoryCopyService {
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         if (itemRefs.isEmpty()) return Map.of();
         Map<TargetIdentity, CatalogTargetDisplay> result = new LinkedHashMap<>();
-        UUID[] values = itemRefs.toArray(UUID[]::new);
-        jdbc.query(
-                "SELECT item.item_ref,item.code,item.name,sku.product_sku_ref,sku.sku_code,sku.sku_name "
-                        + "FROM catalog.catalog_item item LEFT JOIN catalog.catalog_sku sku "
-                        + "ON sku.item_ref=item.item_ref WHERE item.data_node_ref=? AND item.brand_ref=? "
-                        + "AND item.item_ref=ANY(?::uuid[])",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", values));
-                },
-                rows -> {
-                    while (rows.next()) {
-                        UUID itemRef = rows.getObject(1, UUID.class);
-                        String itemCode = rows.getString(2);
-                        String itemName = rows.getString(3);
-                        UUID skuRef = rows.getObject(4, UUID.class);
-                        requireCatalogBusinessName(itemName, "耗用对象缺少商品名称");
-                        // The item display is valid whether or not it has SKU rows.
-                        // A LEFT JOIN with existing SKUs has no null-SKU row, so add the
-                        // item identity independently before the optional SKU identity.
-                        result.putIfAbsent(
-                                new TargetIdentity(itemRef, null),
-                                new CatalogTargetDisplay(itemCode, itemName, null, null));
-                        if (skuRef != null)
-                            result.put(
-                                    new TargetIdentity(itemRef, skuRef),
-                                    new CatalogTargetDisplay(itemCode, itemName, rows.getString(5), rows.getString(6)));
-                    }
-                    return null;
-                });
+        for (InventoryCopyPersistence.CatalogTargetDisplay row :
+                persistence.readCatalogTargetDisplays(scope, brand, itemRefs)) {
+            requireCatalogBusinessName(row.itemName(), "耗用对象缺少商品名称");
+            // The item display is valid whether or not it has SKU rows. A LEFT JOIN with
+            // existing SKUs has no null-SKU row, so add the item identity independently.
+            result.putIfAbsent(
+                    new TargetIdentity(row.itemRef(), null),
+                    new CatalogTargetDisplay(row.itemCode(), row.itemName(), null, null));
+            if (row.productSkuRef() != null)
+                result.put(
+                        new TargetIdentity(row.itemRef(), row.productSkuRef()),
+                        new CatalogTargetDisplay(row.itemCode(), row.itemName(), row.skuCode(), row.skuName()));
+        }
         return Map.copyOf(result);
     }
 
@@ -1153,52 +1009,20 @@ public class InventoryCopyService {
     private Map<TargetIdentity, TargetRow> targetRowsByIdentities(
             String scope, String brand, List<TargetIdentity> identities, boolean requireCompleteConsumptionUnit) {
         if (identities.isEmpty()) return Map.of();
-        String predicates = String.join(
-                " OR ",
-                java.util.Collections.nCopies(
-                        identities.size(), "(item_ref=? AND product_sku_ref IS NOT DISTINCT FROM ?)"));
-        List<Object> args = new ArrayList<>();
-        args.add(scope);
-        args.add(brand);
-        for (TargetIdentity identity : identities) {
-            args.add(identity.itemRef());
-            args.add(identity.productSkuRef());
+        List<InventoryCopyPersistence.TargetIdentity> persistenceIdentities = identities.stream()
+                .map(identity -> new InventoryCopyPersistence.TargetIdentity(
+                        identity.itemRef(), identity.productSkuRef()))
+                .toList();
+        Map<TargetIdentity, TargetRow> result = new LinkedHashMap<>();
+        for (InventoryCopyPersistence.TargetRecord record :
+                persistence.readTargetRowsByIdentities(scope, brand, persistenceIdentities, requireCompleteConsumptionUnit)
+                        .values()) {
+            TargetRow row = targetRow(record);
+            TargetIdentity identity = new TargetIdentity(row.itemRef(), row.productSkuRef());
+            if (result.putIfAbsent(identity, row) != null)
+                throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
         }
-        String sql = "SELECT "
-                + TARGET_SELECT_COLUMNS
-                + " FROM inventory.stock_target WHERE data_node_ref=? AND "
-                + "brand_ref=? AND definition_status='ENABLED' AND ("
-                + predicates + ")";
-        if (requireCompleteConsumptionUnit) {
-            Map<TargetIdentity, TargetRow> result = new LinkedHashMap<>();
-            for (TargetRow row :
-                    jdbc.query(sql, (row, number) -> targetRowWithConsumptionUnitSnapshot(row), args.toArray())) {
-                result.put(new TargetIdentity(row.itemRef(), row.productSkuRef()), row);
-            }
-            return result;
-        }
-        return jdbc.query(
-                sql,
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    int parameter = 3;
-                    for (TargetIdentity identity : identities) {
-                        statement.setObject(parameter++, identity.itemRef());
-                        statement.setObject(parameter++, identity.productSkuRef());
-                    }
-                },
-                resultSet -> {
-                    Map<TargetIdentity, TargetRow> result = new LinkedHashMap<>();
-                    while (resultSet.next()) {
-                        TargetRow row = targetRow(resultSet, unitSnapshot(resultSet, 11));
-                        TargetIdentity identity = new TargetIdentity(row.itemRef(), row.productSkuRef());
-                        if (result.putIfAbsent(identity, row) != null)
-                            throw new InventoryOwnerApi.Problem(
-                                    ("REFERENCE_MAPPING_UNRESOLVED"), (422), ("目标库存对象引用不唯一"));
-                    }
-                    return result;
-                });
+        return result;
     }
 
     private Map<TargetIdentity, TargetRow> postInsertTargetRows(
@@ -1246,23 +1070,65 @@ public class InventoryCopyService {
                 source.componentEligible());
     }
 
+    private InventoryCopyPersistence.TargetWrite targetWrite(
+            PlannedTarget target,
+            String targetDataNodeRef,
+            String brandRef,
+            Map<UUID, ReferenceMapping> mappings) {
+        ReferenceMapping sku = target.skuMapping();
+        InventoryOwnerApi.UnitSnapshot consumption = mappedUnitSnapshot(target.source().consumptionUnitSnapshot(), mappings);
+        InventoryConfiguration sourceConfiguration = configurationReadback(json(target.source().configuration()));
+        InventoryOwnerApi.UnitSnapshot counting =
+                mappedUnitSnapshot(sourceConfiguration.countingUnitSnapshot(), mappings);
+        String inventoryMode = json(target.source().configuration()).path("mode").asText("");
+        if (inventoryMode.isBlank())
+            throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存对象缺少 inventory mode");
+        return new InventoryCopyPersistence.TargetWrite(
+                target.targetMapping().targetRef(),
+                targetDataNodeRef,
+                brandRef,
+                target.itemMapping().targetRef(),
+                sku == null ? null : sku.targetRef(),
+                requiredLabel(target.itemMapping().targetCode(), "CATALOG_ITEM targetCode"),
+                sku == null ? null : requiredLabel(sku.targetSkuCode(), "PRODUCT_SKU targetSkuCode"),
+                target.source().measureMode(),
+                inventoryMode,
+                consumption,
+                counting,
+                sourceConfiguration.conversionFactor(),
+                mappedConfiguration(
+                        target.source().configuration(),
+                        inventoryMode,
+                        counting,
+                        sourceConfiguration.conversionFactor()),
+                time.currentEpochMillis(),
+                time.currentEpochMillis());
+    }
+
+    private InventoryCopyPersistence.BomWrite bomWrite(
+            PreparedBom bom, String targetDataNodeRef, String brandRef) {
+        return new InventoryCopyPersistence.BomWrite(
+                targetDataNodeRef,
+                brandRef,
+                bom.item().targetRef(),
+                bom.sku() == null ? null : bom.sku().targetRef(),
+                bom.option() == null ? null : bom.option().targetRef(),
+                requiredLabel(bom.item().targetCode(), "CATALOG_ITEM targetCode"),
+                bom.sku() == null ? null : requiredLabel(bom.sku().targetSkuCode(), "PRODUCT_SKU targetSkuCode"),
+                bom.option() == null
+                        ? null
+                        : requiredLabel(
+                                bom.option().targetOptionValueCode(),
+                                "CATALOG_ORDER_OPTION_DEFINITION_VALUE targetOptionValueCode"),
+                bom.version(),
+                bom.rows(),
+                time.currentEpochMillis());
+    }
+
     private List<TargetRow> loadTargetsByItemRefs(String scope, String brand, Collection<UUID> itemRefs) {
-        List<UUID> orderedRefs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
-        if (orderedRefs.isEmpty()) return List.of();
-        UUID[] values = orderedRefs.toArray(UUID[]::new);
-        return jdbc.query(
-                "SELECT "
-                        + TARGET_SELECT_COLUMNS
-                        + " FROM inventory.stock_target WHERE data_node_ref=? AND "
-                        + "brand_ref=? AND definition_status='ENABLED' AND item_ref = ANY(?::uuid[]) "
-                        + "ORDER BY item_ref,product_sku_ref "
-                        + "NULLS FIRST,target_ref",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", values));
-                },
-                (r, n) -> targetRowWithConsumptionUnitSnapshot(r));
+        return persistence.readTargetsByItemRefs(scope, brand, itemRefs).stream()
+                .map(record -> targetRow(record))
+                .toList();
     }
 
     private Map<UUID, TargetRow> loadTargetsByRefs(String scope, String brand, Set<UUID> targetRefs) {
@@ -1280,92 +1146,40 @@ public class InventoryCopyService {
             Set<UUID> targetRefs,
             boolean enabledOnly,
             boolean requireCompleteConsumptionUnit) {
-        if (targetRefs.isEmpty()) return Map.of();
-        UUID[] values = targetRefs.toArray(UUID[]::new);
-        String statusPredicate = enabledOnly ? "AND definition_status='ENABLED' " : "";
-        return jdbc.query(
-                "SELECT "
-                        + TARGET_SELECT_COLUMNS
-                        + " FROM inventory.stock_target WHERE data_node_ref=? AND "
-                        + "brand_ref=? "
-                        + statusPredicate
-                        + "AND target_ref = ANY(?::uuid[])",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", values));
-                },
-                result -> {
-                    Map<UUID, TargetRow> resolved = new LinkedHashMap<>();
-                    while (result.next()) {
-                        TargetRow row = requireCompleteConsumptionUnit
-                                ? targetRowWithConsumptionUnitSnapshot(result)
-                                : targetRow(result, unitSnapshot(result, 11));
-                        if (resolved.putIfAbsent(row.ref(), row) != null)
-                            throw new InventoryOwnerApi.Problem(
-                                    ("REFERENCE_MAPPING_UNRESOLVED"), (422), ("目标库存对象引用不唯一"));
-                    }
-                    return resolved;
-                });
+        Map<UUID, TargetRow> resolved = new LinkedHashMap<>();
+        for (InventoryCopyPersistence.TargetRecord record :
+                persistence.readTargetsByRefs(scope, brand, targetRefs, enabledOnly, requireCompleteConsumptionUnit)
+                        .values()) {
+            TargetRow row = targetRow(record);
+            if (resolved.putIfAbsent(row.ref(), row) != null)
+                throw new InventoryOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "目标库存对象引用不唯一");
+        }
+        return resolved;
     }
 
     private List<BomOwnerRow> loadBomOwnersByItemRefs(String scope, String brand, Collection<UUID> itemRefs) {
-        List<UUID> orderedRefs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
-        if (orderedRefs.isEmpty()) return List.of();
-        UUID[] values = orderedRefs.toArray(UUID[]::new);
-        return jdbc.query(
-                "SELECT "
-                        + "item_ref,product_sku_ref,option_value_ref,item_code,sku_code,option_value_code,"
-                        + "version,rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? "
-                        + "AND item_ref = ANY(?::uuid[]) "
-                        + "ORDER BY item_ref,product_sku_ref NULLS FIRST,option_value_ref NULLS FIRST",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", values));
-                },
-                (r, n) -> new BomOwnerRow(
-                        r.getObject(1, UUID.class),
-                        r.getObject(2, UUID.class),
-                        r.getObject(3, UUID.class),
-                        r.getString(4),
-                        r.getString(5),
-                        r.getString(6),
-                        r.getLong(7),
-                        r.getString(8)));
+        return persistence.readBomOwnersByItemRefs(scope, brand, itemRefs).stream()
+                .map(row -> new BomOwnerRow(
+                        row.itemRef(),
+                        row.productSkuRef(),
+                        row.optionValueRef(),
+                        row.itemCode(),
+                        row.skuCode(),
+                        row.optionValueCode(),
+                        row.version(),
+                        row.rows()))
+                .toList();
     }
 
     private List<TargetConfigurationRow> loadTargetConfigurationsByItemRefs(
             String scope, String brand, Collection<UUID> itemRefs) {
-        List<UUID> orderedRefs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
-        if (orderedRefs.isEmpty()) return List.of();
-        UUID[] values = orderedRefs.toArray(UUID[]::new);
-        return jdbc.query(
-                "SELECT item_ref,target_ref,configuration::text FROM inventory.stock_target WHERE data_node_ref=? AND "
-                        + "brand_ref=? AND item_ref = ANY(?::uuid[]) ORDER BY item_ref,target_ref",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", values));
-                },
-                (r, n) -> new TargetConfigurationRow(
-                        r.getObject(1, UUID.class), r.getObject(2, UUID.class), r.getString(3)));
+        return persistence.readTargetConfigurationsByItemRefs(scope, brand, itemRefs).stream()
+                .map(row -> new TargetConfigurationRow(row.itemRef(), row.targetRef(), row.configuration()))
+                .toList();
     }
 
     private List<String> loadBomRowsByItemRefs(String scope, String brand, Collection<UUID> itemRefs) {
-        List<UUID> orderedRefs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
-        if (orderedRefs.isEmpty()) return List.of();
-        UUID[] values = orderedRefs.toArray(UUID[]::new);
-        return jdbc.query(
-                "SELECT rows::text FROM inventory.stock_bom WHERE data_node_ref=? AND brand_ref=? "
-                        + "AND item_ref = ANY(?::uuid[]) "
-                        + "ORDER BY item_ref,product_sku_ref NULLS FIRST,option_value_ref NULLS FIRST",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", values));
-                },
-                (r, n) -> r.getString(1));
+        return persistence.readBomRowsByItemRefs(scope, brand, itemRefs);
     }
 
     private SourceCopyClosure sourceCopyClosure(
@@ -1562,6 +1376,26 @@ public class InventoryCopyService {
         return "ITEM_BOM";
     }
 
+    private static TargetRow targetRow(InventoryCopyPersistence.TargetRecord row) {
+        return new TargetRow(
+                row.ref(),
+                row.itemRef(),
+                row.productSkuRef(),
+                row.itemCode(),
+                row.skuCode(),
+                row.measureMode(),
+                row.balance(),
+                row.configuration(),
+                row.version(),
+                row.updatedAt(),
+                row.consumptionUnitSnapshot(),
+                row.countingUnitSnapshot(),
+                row.countingUnitConversionFactor(),
+                row.definitionStatus(),
+                row.inventoryMode(),
+                row.componentEligible());
+    }
+
     private static TargetRow targetRow(java.sql.ResultSet row) throws java.sql.SQLException {
         return targetRow(row, 1, null);
     }
@@ -1748,15 +1582,7 @@ public class InventoryCopyService {
     private TargetRow target(String scope, String brand, String ref) {
         try {
             UUID id = UUID.fromString(ref);
-            return jdbc.queryForObject(
-                    "SELECT "
-                            + TARGET_SELECT_COLUMNS
-                            + " FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=? AND target_ref=? "
-                            + "AND definition_status='ENABLED'",
-                    (r, n) -> targetRowWithConsumptionUnitSnapshot(r),
-                    scope,
-                    brand,
-                    id);
+            return targetRow(persistence.readTarget(scope, brand, id));
         } catch (EmptyResultDataAccessException | IllegalArgumentException ex) {
             throw new InventoryOwnerApi.Problem("NOT_FOUND", 404, "库存对象不存在", ex);
         }
@@ -1764,45 +1590,20 @@ public class InventoryCopyService {
 
     private java.util.Map<UUID, ChangeSnapshot> loadChangeSnapshots(List<TargetRow> targets) {
         if (targets == null || targets.isEmpty()) return java.util.Map.of();
-        String values = String.join(",", java.util.Collections.nCopies(targets.size(), "(?::uuid)"));
-        String sql = "WITH selected(target_ref) AS (VALUES " + values + "), bounds AS (SELECT ?::bigint AS now_epoch), "
-                + "aggregate AS (SELECT l.target_ref, "
-                + "COALESCE(SUM(l.delta) FILTER (WHERE l.occurred_at_epoch_millis >= b.now_epoch - 86400000),0) AS "
-                + "today_change, "
-                + "COALESCE(SUM(l.delta) FILTER (WHERE l.occurred_at_epoch_millis >= b.now_epoch - 604800000),0) AS "
-                + "seven_day_change, "
-                + "COALESCE(SUM(l.delta) FILTER (WHERE l.occurred_at_epoch_millis >= b.now_epoch - 2592000000),0) AS "
-                + "thirty_day_change "
-                + "FROM inventory.stock_ledger l JOIN selected s ON s.target_ref=l.target_ref CROSS JOIN bounds b "
-                + "GROUP BY l.target_ref), "
-                + "latest AS (SELECT l.target_ref,l.operation_id,l.occurred_at_epoch_millis,ROW_NUMBER() OVER "
-                + "(PARTITION BY l.target_ref ORDER BY l.occurred_at_epoch_millis DESC,l.entry_ref DESC) AS "
-                + "row_number "
-                + "FROM inventory.stock_ledger l JOIN selected s ON s.target_ref=l.target_ref) "
-                + "SELECT "
-                + "s.target_ref,a.today_change,a.seven_day_change,a.thirty_day_change,latest.operation_id,latest.oc"
-                + "curred_at_epoch_millis "
-                + "FROM selected s LEFT JOIN aggregate a ON a.target_ref=s.target_ref LEFT JOIN latest ON "
-                + "latest.target_ref=s.target_ref AND latest.row_number=1";
-        List<Object> args = new ArrayList<>();
-        for (TargetRow target : targets) args.add(target.ref());
-        args.add(time.currentEpochMillis());
+        List<UUID> targetRefs = targets.stream().map(TargetRow::ref).toList();
         java.util.Map<UUID, ChangeSnapshot> snapshots = new java.util.HashMap<>();
-        jdbc.query(sql, args.toArray(), result -> {
-            while (result.next()) {
-                UUID ref = result.getObject(1, UUID.class);
-                Long lastAt = result.getObject(6) == null ? null : result.getLong(6);
-                snapshots.put(
-                        ref,
-                        new ChangeSnapshot(
-                                result.getBigDecimal(2) == null ? BigDecimal.ZERO : result.getBigDecimal(2),
-                                result.getBigDecimal(3) == null ? BigDecimal.ZERO : result.getBigDecimal(3),
-                                result.getBigDecimal(4) == null ? BigDecimal.ZERO : result.getBigDecimal(4),
-                                result.getString(5),
-                                lastAt));
-            }
-            return null;
-        });
+        for (Map.Entry<UUID, InventoryCopyPersistence.ChangeSnapshotRecord> entry :
+                persistence.readChangeSnapshots(targetRefs, time.currentEpochMillis()).entrySet()) {
+            InventoryCopyPersistence.ChangeSnapshotRecord snapshot = entry.getValue();
+            snapshots.put(
+                    entry.getKey(),
+                    new ChangeSnapshot(
+                            snapshot.today(),
+                            snapshot.sevenDays(),
+                            snapshot.thirtyDays(),
+                            snapshot.lastSource(),
+                            snapshot.lastAt()));
+        }
         return snapshots;
     }
 
@@ -1882,12 +1683,7 @@ public class InventoryCopyService {
     }
 
     private long generation(String scope, String brand) {
-        Long value = jdbc.queryForObject(
-                "SELECT COALESCE(MAX(version),0) FROM inventory.stock_target WHERE data_node_ref=? AND brand_ref=?",
-                Long.class,
-                scope,
-                brand);
-        return value == null ? 0 : value;
+        return persistence.readGeneration(scope, brand);
     }
 
     private JsonNode receiptRequest(JsonNode request, String brandRef) {
@@ -1898,25 +1694,15 @@ public class InventoryCopyService {
 
     private JsonNode replay(String scope, String key, String operation, JsonNode request) {
         AdvisoryLock.acquire(jdbc, "inventory-receipt", scope, key);
-        List<Receipt> rows = jdbc.query(
-                "SELECT operation_id,request_hash,response::text FROM inventory.command_receipt WHERE data_node_ref=? "
-                        + "AND idempotency_key=?",
-                (r, n) -> new Receipt(r.getString(1), r.getString(2), json(r.getString(3))),
-                scope,
-                key);
-        if (rows.isEmpty()) return null;
-        Receipt row = rows.get(0);
-        if (!row.operation().equals(operation) || !row.requestHash().equals(hash(request)))
+        InventoryCopyPersistence.ReceiptRecord receipt = persistence.readReceipt(scope, key);
+        if (receipt == null) return null;
+        if (!receipt.operation().equals(operation) || !receipt.requestHash().equals(hash(request)))
             throw new InventoryOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他请求");
-        return row.response();
+        return json(receipt.response());
     }
 
     private void saveReceipt(String scope, String key, String operation, JsonNode request, JsonNode response) {
-        jdbc.update(
-                "INSERT INTO "
-                        + "inventory.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_id,request_has"
-                        + "h,re"
-                        + "sponse,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)",
+        persistence.saveReceipt(
                 UUID.randomUUID(),
                 scope,
                 key,

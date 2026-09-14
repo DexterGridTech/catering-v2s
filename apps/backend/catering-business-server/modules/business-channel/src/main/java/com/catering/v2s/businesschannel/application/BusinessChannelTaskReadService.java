@@ -1,5 +1,8 @@
 package com.catering.v2s.businesschannel.application;
 
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence.ChannelProjection;
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTaskReadPersistence;
+
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
@@ -7,13 +10,9 @@ import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,18 +34,26 @@ public class BusinessChannelTaskReadService {
     private static final String SALES_MENU_CHANNEL_INELIGIBLE_SUFFIX = "堂食/外带入口";
     private static final String SALES_MENU_CHANNEL_INELIGIBLE_MESSAGE =
             SALES_MENU_CHANNEL_INELIGIBLE_PREFIX + SALES_MENU_CHANNEL_INELIGIBLE_SUFFIX;
-    private final JdbcTemplate jdbc;
+    private final BusinessChannelTaskReadPersistence persistence;
     private final CollaborationCatalogReadApi collaborationCatalog;
     private final WorkspaceStatusLookup workspaceStatuses;
 
     @Autowired
     public BusinessChannelTaskReadService(
+            BusinessChannelTaskReadPersistence persistence,
+            CollaborationCatalogReadApi collaborationCatalog,
+            WorkspaceStatusLookup workspaceStatuses) {
+        this.persistence = persistence;
+        this.collaborationCatalog = collaborationCatalog;
+        this.workspaceStatuses = workspaceStatuses;
+    }
+
+    /** Compatibility constructor for focused tests and direct owner construction. */
+    public BusinessChannelTaskReadService(
             JdbcTemplate jdbc,
             CollaborationCatalogReadApi collaborationCatalog,
             WorkspaceStatusLookup workspaceStatuses) {
-        this.jdbc = jdbc;
-        this.collaborationCatalog = collaborationCatalog;
-        this.workspaceStatuses = workspaceStatuses;
+        this(new BusinessChannelTaskReadPersistence(jdbc), collaborationCatalog, workspaceStatuses);
     }
 
     @Transactional(readOnly = true)
@@ -85,24 +92,15 @@ public class BusinessChannelTaskReadService {
                 normalizedSortKey,
                 normalizedSortDirection);
         OpaqueCollectionCursor.Position position = decodeCursor(cursor, identity);
-        List<Object> arguments = new ArrayList<>(List.of(workspaceUuid, groupWorkspaceKey, normalizedStoreRef));
-        StringBuilder predicate = new StringBuilder(
-                " WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.target_node_type='STORE'"
-                        + " AND c.target_node_ref=? AND target_store.id IS NOT NULL"
-                        + " AND t.access_kind='INTERNAL' AND t.operator_kind='STORE'"
-                        + " AND t.order_kind IN ('DINE_IN','TAKEAWAY')");
-        appendSalesMenuChannelCursorPredicate(
-                predicate, arguments, position, normalizedSortKey, normalizedSortDirection);
-        List<ChannelProjection> projections = query(
-                BusinessChannelQuerySupport.channelProjection("JOIN business_channel.business_channel_template t "
-                                + "ON t.template_ref=c.template_ref AND t.workspace_uuid=c.workspace_uuid "
-                                + "AND t.group_workspace_key=c.group_workspace_key ")
-                        + predicate
-                        + " ORDER BY "
-                        + salesMenuChannelOrderBy(normalizedSortKey, normalizedSortDirection)
-                        + " LIMIT ?",
-                append(arguments, size + 1),
-                this::mapChannelProjection);
+        List<ChannelProjection> projections = persistence.listSalesMenuEligibleChannels(
+                workspaceUuid,
+                groupWorkspaceKey,
+                normalizedStoreRef,
+                position == null ? null : position.tieBreaker(),
+                position == null ? null : position.sortKey(),
+                size,
+                normalizedSortKey,
+                normalizedSortDirection);
         boolean hasNext = projections.size() > size;
         List<ChannelProjection> page = hasNext ? projections.subList(0, size) : projections;
         String nextCursor = hasNext
@@ -124,14 +122,8 @@ public class BusinessChannelTaskReadService {
         requireScope(workspaceUuid, groupWorkspaceKey);
         String normalizedStoreRef = BusinessChannelPolicy.required(storeRef, "storeRef", 240);
         if (channelRef == null) throw problem("VALIDATION_ERROR", 422, "channelRef is required");
-        List<ChannelProjection> projections = query(
-                BusinessChannelQuerySupport.channelSelect(
-                                "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=? "
-                        + "AND c.target_node_type='STORE' AND c.target_node_ref=? "
-                        + "AND target_store.id IS NOT NULL AND t.access_kind='INTERNAL' "
-                        + "AND t.operator_kind='STORE' AND t.order_kind IN ('DINE_IN','TAKEAWAY')"),
-                List.of(workspaceUuid, groupWorkspaceKey, channelRef, normalizedStoreRef),
-                this::mapChannelProjection);
+        List<ChannelProjection> projections = persistence.requireSalesMenuChannel(
+                workspaceUuid, groupWorkspaceKey, normalizedStoreRef, channelRef);
         if (projections.isEmpty()) throw salesMenuChannelIneligible();
         return salesMenuChannelJudgment(projections.get(0));
     }
@@ -142,14 +134,8 @@ public class BusinessChannelTaskReadService {
         requireScope(workspaceUuid, groupWorkspaceKey);
         String normalizedStoreRef = BusinessChannelPolicy.required(storeRef, "storeRef", 240);
         if (channelRef == null) throw problem("VALIDATION_ERROR", 422, "channelRef is required");
-        return !query(
-                        BusinessChannelQuerySupport.channelSelect(
-                                "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=? "
-                                        + "AND c.target_node_type='STORE' AND c.target_node_ref=? "
-                                        + "AND target_store.id IS NOT NULL"),
-                        List.of(workspaceUuid, groupWorkspaceKey, channelRef, normalizedStoreRef),
-                        this::mapChannelProjection)
-                .isEmpty();
+        return persistence.salesMenuChannelBelongsToStore(
+                workspaceUuid, groupWorkspaceKey, normalizedStoreRef, channelRef);
     }
 
     @Transactional(readOnly = true)
@@ -157,21 +143,12 @@ public class BusinessChannelTaskReadService {
             UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef) {
         requireScope(workspaceUuid, groupWorkspaceKey);
         if (channelRef == null) throw problem("VALIDATION_ERROR", 422, "channelRef is required");
-        return jdbc.query(
-                BusinessChannelQuerySupport.channelCommandSelect(
-                        "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.channel_ref=?"),
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    statement.setObject(3, channelRef);
-                },
-                result -> {
-                    if (!result.next()) throw problem("NOT_FOUND", 404, "channel was not found in the workspace");
-                    ChannelProjection projection = mapChannelProjection(result);
-                    StatusFacts facts = statusFacts(workspaceUuid, groupWorkspaceKey, List.of(projection));
-                    return new BusinessChannelReadback.ChannelWithTemplateProvider(
-                            channel(channelRow(projection, facts)), projection.templateProviderCode());
-                });
+        ChannelProjection projection = persistence
+                .readChannelWithTemplateProvider(workspaceUuid, groupWorkspaceKey, channelRef)
+                .orElseThrow(() -> problem("NOT_FOUND", 404, "channel was not found in the workspace"));
+        StatusFacts facts = statusFacts(workspaceUuid, groupWorkspaceKey, List.of(projection));
+        return new BusinessChannelReadback.ChannelWithTemplateProvider(
+                channel(channelRow(projection, facts)), projection.templateProviderCode());
     }
 
     @Transactional(readOnly = true)
@@ -179,12 +156,8 @@ public class BusinessChannelTaskReadService {
             UUID workspaceUuid, String groupWorkspaceKey, UUID bindingRef) {
         requireScope(workspaceUuid, groupWorkspaceKey);
         if (bindingRef == null) throw problem("VALIDATION_ERROR", 422, "bindingRef is required");
-        List<ChannelProjection> projections = query(
-                BusinessChannelQuerySupport.channelSelect(
-                        "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.binding_ref=?"
-                                + " ORDER BY channel_ref"),
-                List.of(workspaceUuid, groupWorkspaceKey, bindingRef),
-                this::mapChannelProjection);
+        List<ChannelProjection> projections = persistence.findChannelsForBinding(
+                workspaceUuid, groupWorkspaceKey, bindingRef);
         StatusFacts facts = statusFacts(workspaceUuid, groupWorkspaceKey, projections);
         return projections.stream()
                 .map(projection -> channel(channelRow(projection, facts)))
@@ -240,84 +213,7 @@ public class BusinessChannelTaskReadService {
 
     private Map<UUID, List<BusinessChannelReadback.StatusDimension>> readOrganizationAncestors(
             UUID workspaceUuid, String groupWorkspaceKey, Set<UUID> nodeRefs) {
-        if (workspaceUuid == null || groupWorkspaceKey == null || nodeRefs == null || nodeRefs.isEmpty()) {
-            return Map.of();
-        }
-        List<UUID> refs = new ArrayList<>(nodeRefs);
-        String placeholders = refs.stream().map(ignored -> "?").collect(Collectors.joining(", "));
-        List<Object> arguments = new ArrayList<>(refs);
-        arguments.add(workspaceUuid);
-        arguments.add(groupWorkspaceKey);
-        arguments.add(workspaceUuid);
-        arguments.add(groupWorkspaceKey);
-        Map<UUID, List<BusinessChannelReadback.StatusDimension>> ancestors = new LinkedHashMap<>();
-        jdbc.query(
-                "WITH RECURSIVE ancestry AS ("
-                        + "SELECT id AS source_ref, id, parent_id, node_type, status, 0 AS depth "
-                        + "FROM organization.organization_node "
-                        + "WHERE id IN ("
-                        + placeholders
-                        + ") AND workspace_uuid=? AND group_workspace_key=? "
-                        + "UNION ALL SELECT child.source_ref, parent.id, parent.parent_id, "
-                        + "parent.node_type, parent.status, child.depth+1 "
-                        + "FROM organization.organization_node parent JOIN ancestry child ON parent.id=child.parent_id "
-                        + "WHERE parent.workspace_uuid=? AND parent.group_workspace_key=? ) "
-                        + "SELECT source_ref, node_type, id, status FROM ancestry ORDER BY source_ref, depth DESC",
-                statement -> bind(statement, arguments),
-                result -> {
-                    while (result.next()) {
-                        UUID sourceRef = result.getObject("source_ref", UUID.class);
-                        ancestors
-                                .computeIfAbsent(sourceRef, ignored -> new ArrayList<>())
-                                .add(new BusinessChannelReadback.StatusDimension(
-                                        "ORGANIZATION_" + result.getString("node_type"),
-                                        result.getObject("id", UUID.class).toString(),
-                                        result.getString("status")));
-                    }
-                    return null;
-                });
-        return ancestors;
-    }
-
-    private ChannelProjection mapChannelProjection(ResultSet result, int rowNumber) throws SQLException {
-        return mapChannelProjection(result);
-    }
-
-    private ChannelProjection mapChannelProjection(ResultSet result) throws SQLException {
-        return new ChannelProjection(
-                result.getObject("workspace_uuid", UUID.class),
-                result.getString("group_workspace_key"),
-                result.getObject("channel_ref", UUID.class),
-                result.getObject("template_ref", UUID.class),
-                result.getString("target_node_type"),
-                result.getString("target_node_ref"),
-                result.getString("channel_code"),
-                result.getString("channel_name"),
-                result.getObject("binding_ref", UUID.class),
-                result.getString("template_access_kind"),
-                result.getString("status"),
-                result.getLong("version"),
-                result.getObject("template_project_ref", UUID.class),
-                result.getString("template_name"),
-                result.getString("template_code"),
-                result.getString("template_operator_kind"),
-                result.getString("template_order_kind"),
-                result.getString("template_dine_in_form"),
-                result.getString("template_provider_code"),
-                result.getString("template_status"),
-                result.getLong("template_version"),
-                result.getString("template_project_status"),
-                result.getObject("target_project_ref", UUID.class),
-                result.getString("target_node_status"),
-                result.getObject("target_store_project_ref", UUID.class),
-                result.getString("target_store_project_status"),
-                result.getString("target_store_status"),
-                result.getObject("target_tenant_ref", UUID.class),
-                result.getString("target_tenant_status"),
-                result.getObject("target_brand_ref", UUID.class),
-                result.getString("target_brand_status"),
-                result.getString("binding_lifecycle_status"),
-                result.getString("provider_status"));
+        return persistence.readOrganizationAncestors(workspaceUuid, groupWorkspaceKey, nodeRefs);
     }
 
     private ChannelRow channelRow(ChannelProjection projection, StatusFacts facts) {
@@ -449,20 +345,6 @@ public class BusinessChannelTaskReadService {
                 && !BusinessChannelPolicy.ENABLED.equals(dimension.status());
     }
 
-    private <T> List<T> query(String sql, List<Object> arguments, org.springframework.jdbc.core.RowMapper<T> mapper) {
-        return jdbc.query(sql, statement -> bind(statement, arguments), mapper);
-    }
-
-    private static void bind(PreparedStatement statement, List<Object> arguments) throws SQLException {
-        for (int index = 0; index < arguments.size(); index++) statement.setObject(index + 1, arguments.get(index));
-    }
-
-    private static List<Object> append(List<Object> values, Object value) {
-        List<Object> result = new ArrayList<>(values);
-        result.add(value);
-        return result;
-    }
-
     private static OpaqueCollectionCursor.Position decodeCursor(String cursor, String identity) {
         try {
             return OpaqueCollectionCursor.decode(cursor, identity);
@@ -482,53 +364,6 @@ public class BusinessChannelTaskReadService {
         return BusinessChannelPolicy.requireEnum(value, name, allowed);
     }
 
-    private static void appendSalesMenuChannelCursorPredicate(
-            StringBuilder predicate,
-            List<Object> arguments,
-            OpaqueCollectionCursor.Position position,
-            String sortKey,
-            String sortDirection) {
-        if (position == null) return;
-        if (sortKey == null) {
-            predicate.append(" AND c.channel_ref > ?");
-            arguments.add(position.tieBreaker());
-            return;
-        }
-        String expression = salesMenuChannelSortExpression(sortKey);
-        String comparison = "DESC".equals(sortDirection) ? "<" : ">";
-        predicate
-                .append(" AND (")
-                .append(expression)
-                .append(' ')
-                .append(comparison)
-                .append(" ? OR (")
-                .append(expression)
-                .append(" = ? AND c.channel_ref > ?))");
-        arguments.add(position.sortKey());
-        arguments.add(position.sortKey());
-        arguments.add(position.tieBreaker());
-    }
-
-    private static String salesMenuChannelOrderBy(String sortKey, String sortDirection) {
-        if (sortKey == null) return "c.channel_ref";
-        return salesMenuChannelSortExpression(sortKey) + " " + direction(sortDirection) + ", c.channel_ref";
-    }
-
-    private static String salesMenuChannelSortExpression(String sortKey) {
-        return switch (sortKey) {
-            case "CHANNEL_NAME" -> "COALESCE(c.channel_name, '')";
-            case "CHANNEL_CODE" -> "COALESCE(c.channel_code, '')";
-            case "TEMPLATE_NAME" -> "COALESCE(t.template_name, '')";
-            case "ACCESS_KIND" -> "t.access_kind";
-            case "OPERATOR_KIND" -> "t.operator_kind";
-            case "ORDER_KIND" -> "t.order_kind";
-            case "STATUS" -> "c.status";
-            case "BINDING_STATUS" -> "CAST(CASE WHEN t.access_kind='INTERNAL' THEN 0 WHEN c.binding_ref IS NULL "
-                    + "THEN 1 ELSE 2 END AS TEXT)";
-            default -> throw problem("VALIDATION_ERROR", 422, "sortKey is not supported");
-        };
-    }
-
     private static String salesMenuChannelSortValue(ChannelProjection row, String sortKey) {
         if (sortKey == null) return row.channelRef().toString();
         return switch (sortKey) {
@@ -546,10 +381,6 @@ public class BusinessChannelTaskReadService {
             };
             default -> throw problem("VALIDATION_ERROR", 422, "sortKey is not supported");
         };
-    }
-
-    private static String direction(String sortDirection) {
-        return "DESC".equals(sortDirection) ? "DESC" : "ASC";
     }
 
     private static void requireScope(UUID workspaceUuid, String groupWorkspaceKey) {
@@ -663,41 +494,6 @@ public class BusinessChannelTaskReadService {
             return externalSystems.get(externalSystemCode);
         }
     }
-
-    private record ChannelProjection(
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            UUID channelRef,
-            UUID templateRef,
-            String targetNodeType,
-            String targetNodeRef,
-            String channelCode,
-            String channelName,
-            UUID bindingRef,
-            String templateAccessKind,
-            String status,
-            long version,
-            UUID templateProjectRef,
-            String templateName,
-            String templateCode,
-            String templateOperatorKind,
-            String templateOrderKind,
-            String templateDineInForm,
-            String templateProviderCode,
-            String templateStatus,
-            long templateVersion,
-            String templateProjectStatus,
-            UUID targetProjectRef,
-            String targetNodeStatus,
-            UUID targetStoreProjectRef,
-            String targetStoreProjectStatus,
-            String targetStoreStatus,
-            UUID targetTenantRef,
-            String targetTenantStatus,
-            UUID targetBrandRef,
-            String targetBrandStatus,
-            String bindingLifecycleStatus,
-            String providerStatus) {}
 
     private record ChannelRow(
             UUID channelRef,

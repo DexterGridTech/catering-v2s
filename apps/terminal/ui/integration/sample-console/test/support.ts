@@ -15,6 +15,7 @@ import {
   type LogEvent,
   type PlatformPorts,
   type PortResult,
+  type StateStoragePort,
 } from '@catering-v2s/kernel-base-platform-ports'
 
 export class FakeWebStorage implements Storage {
@@ -38,11 +39,14 @@ export const createTestPlatformPorts = (input: Readonly<{
   readonly displayCount?: number
   readonly deviceInfo?: DeviceInfo
   readonly onGetDeviceInfo?: () => void
-  readonly storage?: Storage
+  readonly displayInfoGate?: Promise<void>
+  readonly displayInfoGateAfterCalls?: number
+  readonly plainStorage?: StateStoragePort
+  readonly protectedStorage?: StateStoragePort
   readonly events?: LogEvent[]
 }> = {}): PlatformPorts => {
   const events = input.events ?? []
-  const storage = input.storage ?? new FakeWebStorage()
+  let displayInfoCalls = 0
   const device: DevicePort = {
     ...unavailableDevicePort,
     getDeviceInfo: async ({timeoutMs}) => {
@@ -51,16 +55,21 @@ export const createTestPlatformPorts = (input: Readonly<{
         ? unavailableDevicePort.getDeviceInfo({timeoutMs})
         : success(input.deviceInfo)
     },
-    getDisplayInfo: async (): Promise<PortResult<DisplayInfo>> => success({
-      displayCount: input.displayCount ?? 1,
-    }),
+    getDisplayInfo: async (): Promise<PortResult<DisplayInfo>> => {
+      displayInfoCalls += 1
+      if (input.displayInfoGate !== undefined
+        && displayInfoCalls > (input.displayInfoGateAfterCalls ?? 0)) {
+        await input.displayInfoGate
+      }
+      return success({displayCount: input.displayCount ?? 1})
+    },
   }
   return createPlatformPorts({
     environmentMode: 'TEST',
     bindings: {
       logger: {kind: 'sink', write: (event: LogEvent) => { events.push(event) }},
-      persistKv: createProcessMemoryStateStoragePort(),
-      persistSecure: createProcessMemoryStateStoragePort(),
+      persistKv: input.plainStorage ?? createProcessMemoryStateStoragePort(),
+      persistSecure: input.protectedStorage ?? createProcessMemoryStateStoragePort(),
       device,
       appControl: unavailableAppControlPort,
       script: unavailableScriptPort,

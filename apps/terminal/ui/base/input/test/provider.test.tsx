@@ -3,6 +3,7 @@ import {PrimitiveButton, PrimitiveHeading, PrimitiveInput} from '@catering-v2s/u
 import {useSurfaceFocusBoundary, type SurfaceFocusBoundaryListener} from '@catering-v2s/ui-base-render'
 import {describe, expect, it, vi} from 'vitest'
 import {InputSurfaceFrame} from '../src/components/InputSurfaceFrame'
+import {InputKeyboard} from '../src/components/InputKeyboard'
 import {useInputField} from '../src/hooks/useInputField'
 import {useInputSnapshot} from '../src/hooks/useInputSnapshot'
 import {useInputKeyboardState} from '../src/contexts/context'
@@ -116,11 +117,13 @@ const Field = ({
   fieldId,
   testID,
   nativeLess = false,
+  keyboardPlacement,
   onReady,
 }: Readonly<{
   readonly fieldId: string
   readonly testID: string
   readonly nativeLess?: boolean
+  readonly keyboardPlacement?: 'surface' | 'field'
   readonly keyboardKind?: 'virtual'
   readonly onReady: (result: InputFieldResult) => void
 }>) => {
@@ -132,10 +135,30 @@ const Field = ({
       keyboardKind: 'virtual',
       layout: 'numeric',
       nativeLess,
+      keyboardPlacement,
     },
   )
   onReady(result)
   return <PrimitiveInput {...result.inputProps} />
+}
+
+const InlineKeyboardField = ({onReady}: Readonly<{readonly onReady: (result: InputFieldResult) => void}>) => {
+  const result = useInputField({
+    fieldId: 'inline-keyboard',
+    testID: 'sample:inline-keyboard',
+    accessibilityLabel: 'inline-keyboard',
+    keyboardKind: 'virtual',
+    layout: 'numeric',
+    nativeLess: true,
+    keyboardPlacement: 'field',
+  })
+  onReady(result)
+  return (
+    <>
+      <PrimitiveInput {...result.inputProps} />
+      <InputKeyboard placement="field" />
+    </>
+  )
 }
 
 const BoundaryProbe = ({onReady}: Readonly<{readonly onReady: (listener: SurfaceFocusBoundaryListener) => void}>) => {
@@ -246,6 +269,31 @@ describe('input provider', () => {
       fields: {age: {value: '1', selection: {start: 1, end: 1}}},
     })
     act(() => { renderer.unmount() })
+  })
+
+  it('uses the same InputKeyboard presenter for surface and field placement', () => {
+    let surfaceField: InputFieldResult | undefined
+    const surfaceRenderer = mount(
+      <InputSurfaceFrame>
+        <Field fieldId="surface-keyboard" testID="sample:surface-keyboard" nativeLess onReady={value => { surfaceField = value }} />
+      </InputSurfaceFrame>,
+    )
+    act(() => { surfaceField?.focus() })
+    expect(surfaceRenderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+    act(() => { surfaceRenderer.unmount() })
+
+    let fieldField: InputFieldResult | undefined
+    const fieldRenderer = mount(
+      <InputSurfaceFrame>
+        <InlineKeyboardField onReady={value => { fieldField = value }} />
+      </InputSurfaceFrame>,
+    )
+    act(() => { fieldField?.focus() })
+    expect(fieldRenderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+    const host = fieldRenderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard:host'})
+    act(() => { host.props.onLayout({nativeEvent: {layout: {width: 480}}}) })
+    expect(fieldRenderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'}).props.style.at(-1)).toMatchObject({width: 480})
+    act(() => { fieldRenderer.unmount() })
   })
 
   it('commits virtual keyboard state when a native-less field has no ref', () => {
@@ -427,11 +475,55 @@ describe('input provider', () => {
     act(() => { input.props.onFocus({nativeEvent: {}}) })
     expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'})).toBeDefined()
 
-    const content = renderer.root.findByProps({testID: 'ui.base.input:surface-content'}) as unknown as Readonly<{
-      readonly props: Readonly<{readonly onPress?: () => void}>
+    const keyboard = renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'}) as unknown as Readonly<{
+      readonly props: Readonly<{
+        readonly onTouchEnd?: (event: Readonly<{readonly stopPropagation: () => void}>) => void;
+      }>;
     }>
-    act(() => { content.props.onPress?.() })
+    const stopKeyboardPropagation = vi.fn()
+    keyboard.props.onTouchEnd?.({stopPropagation: stopKeyboardPropagation})
+    expect(stopKeyboardPropagation).toHaveBeenCalledTimes(1)
+    expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'})).toBeDefined()
+
+    const content = renderer.root.findByProps({testID: 'ui.base.input:surface-content'}) as unknown as Readonly<{
+      readonly props: Readonly<{
+        readonly onTouchStart?: (event: Readonly<{readonly nativeEvent: Readonly<{readonly pageX: number; readonly pageY: number}>}>) => void;
+        readonly onTouchEnd?: (event: Readonly<{readonly nativeEvent: Readonly<{readonly pageX: number; readonly pageY: number}>}>) => void;
+      }>
+    }>
+    const stopInputPropagation = vi.fn()
+    input.props.onTouchEnd?.({stopPropagation: stopInputPropagation})
+    expect(stopInputPropagation).toHaveBeenCalledTimes(1)
+    act(() => {
+      content.props.onTouchStart?.({nativeEvent: {pageX: 10, pageY: 20}})
+      content.props.onTouchEnd?.({nativeEvent: {pageX: 10, pageY: 20}})
+    })
     expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0)
+    act(() => { renderer.unmount() })
+  })
+
+  it('keeps the active keyboard during a surface swipe', () => {
+    const renderer = mount(
+      <InputSurfaceFrame>
+        <Field fieldId="surface-swipe" testID="sample:surface-swipe" keyboardKind="virtual" onReady={() => undefined} />
+        <PrimitiveHeading testID="sample:surface-swipe:title">标题</PrimitiveHeading>
+      </InputSurfaceFrame>,
+    )
+    const input = renderer.root.findAllByType(TextInput).find(node => node.props.testID === 'sample:surface-swipe')!
+    act(() => { input.props.onFocus({nativeEvent: {}}) })
+    expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'})).toBeDefined()
+
+    const content = renderer.root.findByProps({testID: 'ui.base.input:surface-content'}) as unknown as Readonly<{
+      readonly props: Readonly<{
+        readonly onTouchStart?: (event: Readonly<{readonly nativeEvent: Readonly<{readonly pageX: number; readonly pageY: number}>}>) => void;
+        readonly onTouchEnd?: (event: Readonly<{readonly nativeEvent: Readonly<{readonly pageX: number; readonly pageY: number}>}>) => void;
+      }>
+    }>
+    act(() => {
+      content.props.onTouchStart?.({nativeEvent: {pageX: 10, pageY: 20}})
+      content.props.onTouchEnd?.({nativeEvent: {pageX: 40, pageY: 20}})
+    })
+    expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'})).toBeDefined()
     act(() => { renderer.unmount() })
   })
 

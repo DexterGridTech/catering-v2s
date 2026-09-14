@@ -5,21 +5,21 @@ import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostic
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
+import com.catering.v2s.platform.workspace.application.persistence.WorkspaceCommandReceiptPersistence;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 /** Persists the exact terminal owner readback for a required-idempotency workspace command. */
 @Service
 public final class WorkspaceCommandReceiptService {
     private static final ObjectMapper JSON = new ObjectMapper().findAndRegisterModules();
-    private final JdbcTemplate jdbc;
+    private final WorkspaceCommandReceiptPersistence persistence;
     private final TimeProvider time;
 
-    public WorkspaceCommandReceiptService(JdbcTemplate jdbc, TimeProvider time) {
-        this.jdbc = jdbc;
+    public WorkspaceCommandReceiptService(WorkspaceCommandReceiptPersistence persistence, TimeProvider time) {
+        this.persistence = persistence;
         this.time = time;
     }
 
@@ -32,25 +32,13 @@ public final class WorkspaceCommandReceiptService {
             throw new WorkspaceAdministrationService.WorkspaceInputInvalidException();
         String key = requiredKey(idempotencyKey);
         String requestHash = sha256(canonicalRequest);
-        jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtext(? || ':' || ?))", groupWorkspaceKey, key);
-        Receipt existing = jdbc.query(
-                "SELECT request_hash, response_json::text FROM platform_workspace.workspace_command_receipt WHERE "
-                        + "group_workspace_key=? AND idempotency_key=?",
-                statement -> {
-                    statement.setString(1, groupWorkspaceKey);
-                    statement.setString(2, key);
-                },
-                result -> result.next() ? new Receipt(result.getString(1), result.getString(2)) : null);
+        persistence.lock(groupWorkspaceKey, key);
+        WorkspaceCommandReceiptPersistence.Receipt existing = persistence.find(groupWorkspaceKey, key).orElse(null);
         if (existing != null) {
             if (!requestHash.equals(existing.requestHash())) throw new WorkspaceIdempotencyConflictException();
             WorkspaceAdministrationReadback replay = deserialize(existing.responseJson());
             if (LegacyReceiptJson.looksLikeLegacy(JSON, existing.responseJson())) {
-                jdbc.update(
-                        "UPDATE platform_workspace.workspace_command_receipt SET response_json=?::jsonb WHERE "
-                                + "group_workspace_key=? AND idempotency_key=?",
-                        serialize(replay),
-                        groupWorkspaceKey,
-                        key);
+                persistence.upgradeLegacyResponse(groupWorkspaceKey, key, serialize(replay));
             }
             return replay;
         }
@@ -59,11 +47,7 @@ public final class WorkspaceCommandReceiptService {
             if (!groupWorkspaceKey.equals(result.groupWorkspaceKey()))
                 throw new WorkspaceReceiptCorruptException(
                         new IllegalStateException("receipt scope does not match command result"));
-            jdbc.update(
-                    "INSERT INTO platform_workspace.workspace_command_receipt (group_workspace_key, workspace_uuid, "
-                            + "idempotency_key, request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, "
-                            + "?, "
-                            + "?::jsonb, ?)",
+            persistence.insert(
                     groupWorkspaceKey,
                     result.workspaceUuid(),
                     key,
@@ -110,8 +94,6 @@ public final class WorkspaceCommandReceiptService {
             throw new IllegalStateException(exception);
         }
     }
-
-    private record Receipt(String requestHash, String responseJson) {}
 
     public static final class WorkspaceIdempotencyConflictException extends RuntimeException {}
 

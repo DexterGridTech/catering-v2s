@@ -1,0 +1,73 @@
+{
+  "name": "@catering-v2s/ui-integration-sample-wallpaper-console",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "react-native": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./theme/global.css": "./theme/global.css"
+  },
+  "terminalSurfaces": {
+    "orientations": {
+      "landscape": {
+        "PRIMARY": {
+          "width": 1280,
+          "height": 800
+        },
+        "SECONDARY": {
+          "width": 960,
+          "height": 540
+        }
+      },
+      "portrait": {
+        "PRIMARY": {
+          "width": 360,
+          "height": 640
+        }
+      }
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@catering-v2s/kernel-base-contracts": "workspace:*",
+    "@catering-v2s/kernel-base-display-context": "workspace:*",
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*",
+    "@catering-v2s/kernel-base-runtime": "workspace:*",
+    "@catering-v2s/kernel-base-ui-state": "workspace:*",
+    "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*",
+    "@catering-v2s/kernel-feature-sample-wallpaper": "workspace:*",
+    "@catering-v2s/ui-base-admin-shell": "workspace:*",
+    "@catering-v2s/ui-base-input": "workspace:*",
+    "@catering-v2s/ui-base-primitives": "workspace:*",
+    "@catering-v2s/ui-base-render": "workspace:*",
+    "@catering-v2s/ui-feature-sample-staff-auth": "workspace:*",
+    "@catering-v2s/ui-feature-sample-wallpaper-picker": "workspace:*",
+    "react-native-reanimated": "4.5.1",
+    "react-native-worklets": "0.10.1"
+  },
+  "peerDependencies": {
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "devDependencies": {
+    "@catering-v2s/ui-base-dev-host": "workspace:*",
+    "@types/react": "~19.2.2",
+    "babel-preset-expo": "~57.0.0",
+    "expo": "~57.0.18",
+    "expo-status-bar": "~57.0.1",
+    "nativewind": "4.2.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-web": "~0.21.0",
+    "react-test-renderer": "19.2.3",
+    "tailwindcss": "3.4.19",
+    "typescript": "~6.0.3",
+    "vitest": "4.1.10"
+  }
+}

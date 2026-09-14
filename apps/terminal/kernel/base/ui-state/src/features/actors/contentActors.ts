@@ -28,6 +28,7 @@ import {
   clearLayersCommand,
   closeLayerCommand,
   openLayerCommand,
+  pruneHydratedLayersCommand,
   showScreenCommand,
 } from '../commands'
 import {
@@ -283,5 +284,47 @@ export const createClearLayersActor = (): ActorDefinition => defineActor(moduleN
       context,
       contentActions.clearLayers(payload),
     ), 'content')
+  }),
+])
+
+export const createPruneHydratedLayersActor = (input: Readonly<{
+  readonly catalog: UiCatalog
+}>): ActorDefinition => defineActor(moduleName, 'prune-hydrated-layers', [
+  onCommand(pruneHydratedLayersCommand, async context => {
+    let changed = false
+    const workspaces: readonly WorkspaceKey[] = ['MAIN', 'BRANCH']
+    const displayModes: readonly DisplayMode[] = ['PRIMARY', 'SECONDARY']
+    for (const workspace of workspaces) {
+      const dispatch = createWorkspaceActionDispatcher({
+        routeContext: {workspace},
+        dispatch: context.dispatchAction,
+      })
+      for (const displayMode of displayModes) {
+        const before = readContentState(context.getState(), workspace)
+        const layers = before.contentSets[displayMode].layers
+        const unknownLayers = layers.filter(layer => input.catalog.byPartKey[layer.partKey] === undefined)
+        for (const layer of unknownLayers) {
+          context.platformPorts.logger.warn({
+            category: 'ui-state-hydration',
+            event: 'ui-state-hydration.layer.unknown-part',
+            message: 'Hydrated UI layer removed because its catalog part is unknown',
+            data: {
+              workspace,
+              displayMode,
+              layerId: layer.layerId,
+              partKey: layer.partKey,
+              reason: 'unknown-part',
+            },
+          })
+          dispatch(contentActions.closeLayer({displayMode, layerId: layer.layerId}))
+        }
+        const after = readContentState(context.getState(), workspace)
+        changed = changed || after !== before
+      }
+    }
+    return completeUiStateWrite(context, {
+      workspace: currentWorkspace(context),
+      changed,
+    }, 'content')
   }),
 ])

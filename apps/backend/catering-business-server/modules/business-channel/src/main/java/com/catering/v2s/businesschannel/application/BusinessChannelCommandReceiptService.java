@@ -1,13 +1,13 @@
 package com.catering.v2s.businesschannel.application;
 
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
+import com.catering.v2s.businesschannel.application.persistence.BusinessChannelCommandReceiptPersistence;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import java.util.function.Supplier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 /** Workspace-isolated idempotency receipt for business-channel owner commands. */
@@ -15,12 +15,19 @@ import org.springframework.stereotype.Service;
 public final class BusinessChannelCommandReceiptService {
     private static final ObjectMapper JSON = new ObjectMapper().findAndRegisterModules();
 
-    private final JdbcTemplate jdbc;
+    private final BusinessChannelCommandReceiptPersistence persistence;
     private final TimeProvider time;
 
-    public BusinessChannelCommandReceiptService(JdbcTemplate jdbc, TimeProvider time) {
-        this.jdbc = jdbc;
+    @org.springframework.beans.factory.annotation.Autowired
+    public BusinessChannelCommandReceiptService(
+            BusinessChannelCommandReceiptPersistence persistence, TimeProvider time) {
+        this.persistence = persistence;
         this.time = time;
+    }
+
+    /** Compatibility constructor for focused tests and direct owner construction. */
+    public BusinessChannelCommandReceiptService(org.springframework.jdbc.core.JdbcTemplate jdbc, TimeProvider time) {
+        this(new BusinessChannelCommandReceiptPersistence(jdbc), time);
     }
 
     public <T> T execute(
@@ -41,19 +48,10 @@ public final class BusinessChannelCommandReceiptService {
         if (canonicalRequest == null) throw new IllegalArgumentException("canonicalRequest is required");
 
         String requestHash = Sha256Hex.digest(canonicalRequest);
-        jdbc.queryForList(
-                "SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), hashtext(CAST(? AS text)))",
-                workspaceUuid.toString(),
-                groupWorkspaceKey + ":" + idempotencyKey);
-        Receipt prior = jdbc.query(
-                "SELECT request_hash, response_json::text FROM business_channel.command_receipt "
-                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND idempotency_key=?",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    statement.setString(3, idempotencyKey);
-                },
-                result -> result.next() ? new Receipt(result.getString(1), result.getString(2)) : null);
+        persistence.lock(workspaceUuid, groupWorkspaceKey, idempotencyKey);
+        BusinessChannelCommandReceiptPersistence.Receipt prior = persistence
+                .find(workspaceUuid, groupWorkspaceKey, idempotencyKey)
+                .orElse(null);
         if (prior != null) {
             if (!requestHash.equals(prior.requestHash()))
                 throw problem("IDEMPOTENCY_CONFLICT", 409, "idempotency key was used for another command");
@@ -64,11 +62,7 @@ public final class BusinessChannelCommandReceiptService {
         try (var commandScope = OwnerOperationDiagnostics.beginCommand()) {
             result = command.get();
         }
-        jdbc.update(
-                "INSERT INTO business_channel.command_receipt "
-                        + "(receipt_ref, workspace_uuid, group_workspace_key, idempotency_key, operation_id, "
-                        + "request_hash, response_json, created_at_epoch_millis) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?)",
+        persistence.insert(
                 UUID.randomUUID(),
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -103,6 +97,4 @@ public final class BusinessChannelCommandReceiptService {
     private static BusinessChannelCommandApi.Problem problem(String code, int status, String message, Throwable cause) {
         return new BusinessChannelCommandApi.Problem(code, status, message, cause);
     }
-
-    private record Receipt(String requestHash, String responseJson) {}
 }

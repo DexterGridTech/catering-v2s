@@ -97,6 +97,23 @@ screen/layer command 的 `displayMode` 是命令载荷必填字段，读取则�
 containerKey)` 与 `selectLayers(root, displayMode)`；两侧都不从 routeContext 推断 surface identity。写入完成后
 仍不得绕过 actor 直接 dispatch 内部 slice action。
 
+### 3.1 screen 与 layer 的持久化边界
+
+content slice 的 screen 与 layer 使用两个互不混用的 record descriptor：`containers` 保存
+`PRIMARY`/`SECONDARY` 下的 `ScreenPlacement`，`layers` 保存同两种 displayMode 下按原序排列的
+`LayerEntry[]`。新增 `layers` 不改变既有 `containers` 的 key 或值格式。
+
+旧存档没有 `layers` 键时，hydrate 后的 layer 列表为空，既有 containers 照常恢复，不记录错误。
+layer 还原会逐行校验非空 `layerId`/`partKey`、正的有限整数 `openedAt` 与 JSON-safe `props`；非法行
+丢弃并保留其他行，重复 `layerId` 保留先出现的一条。结构错误写入 `ui-state-hydration` 诊断，字段为
+`workspace`、`displayMode`、`layerId`、`partKey`、`reason`，在 module install 时交给 logger。
+
+install 期还会按 MAIN/BRANCH × PRIMARY/SECONDARY 四格检查 catalog membership：只清除已经不在
+catalog 的 part，并在发生清理时 flush；当前 `surfaceForm`、`displayMode`、`workspace` 或
+`instanceMode` 暂时不可用但仍在 catalog 的 layer 必须保留，由 renderer 的可见性过滤决定是否显示，
+不能因为一次不可用就永久删除。layer 的业务 props 所引用的数据是否仍存在，仍由拥有该业务 part 的
+feature 自行处理；本包不创建第二套恢复或业务校验机制。
+
 P2/P3 已公开的 command/selector 与 module factory 形态如下：
 
 ```ts

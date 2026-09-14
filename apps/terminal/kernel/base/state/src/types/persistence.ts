@@ -10,12 +10,6 @@ export type PersistencePhase = 'hydrate' | 'flush' | 'migration' | 'reset'
 
 export type PersistenceStorageKind = 'plain' | 'protected'
 
-export interface StateStorageTimeoutPolicy {
-  readonly readMs: number
-  readonly writeMs: number
-  readonly resetMs: number
-}
-
 export interface StateRuntimePersistenceFieldDescriptor<
   TState extends object,
   TKey extends keyof TState & string = keyof TState & string,

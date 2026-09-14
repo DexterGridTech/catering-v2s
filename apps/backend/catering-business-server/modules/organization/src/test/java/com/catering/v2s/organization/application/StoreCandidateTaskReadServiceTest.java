@@ -102,8 +102,9 @@ class StoreCandidateTaskReadServiceTest {
         stubCandidateRows(
                 jdbc,
                 List.of(
-                        new CandidateRow(firstId, "BR-01", "First", 2L, 1L, true),
-                        new CandidateRow(selectedId, "BR-02", "Selected", 2L, 2L, true)));
+                        // The SQL returns the selected summary on the current page row; it does not append the selected
+                        // candidate to a page that does not contain it.
+                        new CandidateRow(firstId, "BR-01", "First", 2L, 1L, true)));
         StoreCandidateTaskReadService service = new StoreCandidateTaskReadService(
                 jdbc, mock(WorkspaceAssignmentScopeLookup.class), mock(OrganizationTaskPathLookup.class));
 

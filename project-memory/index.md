@@ -86,3 +86,5 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 - [decisions.terminal-architecture-and-stack-rulings](../project-memory/decisions/terminal-architecture-and-stack-rulings.md)
 - [decisions.terminal-build-order-and-batches](../project-memory/decisions/terminal-build-order-and-batches.md)
 - [operations.terminal-android-display-screenshot-capture](../project-memory/operations/terminal-android-display-screenshot-capture.md)
+- [pitfalls.generated-output-and-static-gate-drift](../project-memory/pitfalls/generated-output-and-static-gate-drift.md)
+- [practices.detail-drawer-action-menu](../project-memory/practices/detail-drawer-action-menu.md)

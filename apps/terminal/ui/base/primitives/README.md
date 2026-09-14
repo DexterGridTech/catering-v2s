@@ -37,6 +37,10 @@ automation 后端仍按裁定押后。
 mode 或领域字段；它仍必须提供非空 `testID`。这种区分避免把 screen 的填充布局错误复用给
 内容卡片，同时不让 feature 直接接触 `className` 或 React Native 原生 View。
 
+`PrimitiveContainer` 的可选 `bounded` 仍是纯呈现约束：在 `card` 上通过跨平台原生 style 限制卡片
+不超过父级高度并隐藏外溢，在 `content` 上让内容承担父级剩余高度并允许其唯一的列表子项滚动。它不创建新的
+滚动祖先、不读取运行时或业务状态；只有需要在逻辑画布内承载可滚动 section 的 owner 才应使用它。
+
 为保持同一应用在 Web 与 Android 上的字号和布局基线，primitives 内部的 `Text` 与 `TextInput`
 统一强制 `allowFontScaling={false}`；字号与行高仍由控件自身的展示 token 明确提供。该约束只
 固定 TER sample 的视觉基线，不声称两个平台的字体栅格化、抗锯齿或字形 fallback 完全相同；若
@@ -45,11 +49,15 @@ mode 或领域字段；它仍必须提供非空 `testID`。这种区分避免把
 本包不保存业务状态、不读取 Runtime、不派发命令、不定义具体 partKey，也不导入 automation。
 `className` 只存在于 `src/vendor` 与 primitives 内部 recipe，不能出现在任何 ui/feature 生产源码；
 业务组件继续只消费带强制 `testID` 的语义控件。本轮已授权的公共面加法包括
-`PrimitiveContainer` 的可选 `layout` 呈现字段、受控 `PrimitiveScrollView`、`PrimitiveButton` 的
+`PrimitiveContainer` 的可选 `layout`/`bounded` 呈现字段、受控 `PrimitiveScrollView`、`PrimitiveButton` 的
 `default`/`key`/`key-action` 呈现 variant，以及 `PrimitiveInput` 的三个可选编辑/呈现 prop 与四个
 focus/measurement seam；它们都不增加业务语义、业务控件
 或自动化后端。
 `PrimitiveContainer` 默认 `fill` 保持既有 surface-filling 行为。
+组合式布局可通过 `PrimitiveContainer`、`PrimitiveButton`、`PrimitiveText`、`PrimitiveStatus`、
+`PrimitiveStack` 与 `PrimitiveGrid` 的可选 `style` 做局部原生布局约束；这些字段只用于呈现，
+不携带业务状态。`PrimitivePressOption` 的 `tab` variant 只提供紧凑导航 tab 外观，仍沿用同一
+press/selected 状态模型。
 当前 `dependencyModuleNames` 为空，因为它表示本包运行时模块实际 import 的 workspace 能力；包级
 `package.json` 的 `plannedDependencies` 与 skeleton graph 仍保留 `ui.base.automation` 的 planned
 workspace 边，供未来挂点接入使用，不能被误读成当前源码已经导入 automation；静态 graph gate 会将
@@ -77,7 +85,7 @@ planned edge 与实际 import/dependency 分开对账。
 `PrimitiveRadio`、`PrimitiveSwitch`、`PrimitiveSelect`、`PrimitiveTextarea`、`PrimitiveFormField`；反馈
 `PrimitiveSpinner`、`PrimitiveInlineAlert`、`PrimitiveEmptyState`、`PrimitiveProgress`、`PrimitiveSkeleton`；
 数据展示 `PrimitiveBadge`、`PrimitiveKeyValueRow`、`PrimitiveStatusRow`、`PrimitiveList`、
-`PrimitiveTable`、`PrimitiveTabs`、`PrimitiveSegmentedControl`，以及既有 `PrimitiveStatus`、
+`PrimitiveTable`、`PrimitiveTabs`、`PrimitiveSegmentedControl`、新增的 `PrimitiveImage`，以及既有 `PrimitiveStatus`、
 `PrimitiveActions`、`PrimitiveScrollView` 和 list bound 常量。带业务领域词汇的行组件不属于本包；由所属
 feature 自己组合 primitives。
 
@@ -112,12 +120,19 @@ export const ScrollArea = ({testID, children}: {testID: string; children: ReactN
 );
 ```
 
-`PrimitiveScrollView` 是受控的纵向 ScrollView wrapper：props 只接受强制 `testID`、children
-和通用的 `onScrollOffsetChange`；React ref 暴露 `PrimitiveScrollViewHandle` 的测量与 `scrollTo`，
+`PrimitiveScrollView` 是受控的纵向 ScrollView wrapper：props 接受强制 `testID`、children、
+通用的 `onScrollOffsetChange` 与 presentation-only 的 `layout`；React ref 暴露
+`PrimitiveScrollViewHandle` 的测量与 `scrollTo`，
 不把 `className`、业务字段、屏幕模式或键盘策略暴露给 feature。它使用真实 RN ScrollView，
-因此不会退化成只记录标签的 View；同一列表或表单只能有一个这样的滚动祖先。`PrimitiveInputHandle`
-也提供同形 `measureInWindow`，供 `ui/base/input` 在焦点切换后计算可见区；测量/滚动算法不在
-primitives 内实现。
+因此不会退化成只记录标签的 View；同一列表或表单只能有一个这样的滚动祖先。其
+`getContentNativeNode()` 返回 ScrollView 的真实 inner content component ref，供
+`PrimitiveInputHandle.measureLayout()` 使用 content-local 坐标；这里必须使用 RN 的
+`getInnerViewRef()`，不能把 `getInnerViewNode()` 返回的数字 node handle 传给 Fabric 的 ref
+测量 API。`PrimitiveInputHandle` 也提供同形 `measureInWindow`，供 `ui/base/input` 在焦点切换后
+计算可见区；测量/滚动算法不在 primitives 内实现。`layout="fill"`（默认）保留不透明的
+`bg-canvas`，已有消费者无需改变；父级自己提供背景的复合件（例如壁纸 picker）可以选择
+`layout="transparent"`，该选择只改变 viewport 背景，不改变测量、滚动观察或内容间距。
+业务组件不得借此传入平台专属样式、另建 ScrollView 或另建输入路径。
 
 示例使用的导出、必填 `testID` 与回调形态均来自本包当前源码；业务命令仍由业务包拥有，
 控件只接收回调，不替业务包定义命令。

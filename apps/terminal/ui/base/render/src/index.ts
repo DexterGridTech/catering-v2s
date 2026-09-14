@@ -25,6 +25,8 @@ export type {
   SurfaceHostGeometry,
   SurfaceHostMeasurementSnapshot,
   SurfaceHostMeasurementSource,
+  SurfaceHostIdentityRejection,
+  SurfaceHostIdentityRejectionHandler,
   SurfaceHostSize,
   SurfaceHostSnapshot,
   SurfaceHostSource,

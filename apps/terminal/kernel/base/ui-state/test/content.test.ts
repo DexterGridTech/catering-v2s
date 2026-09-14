@@ -26,6 +26,7 @@ import {
   selectLayers,
   selectScreen,
   showScreenCommand,
+  type UiCatalog,
 } from '../src/index'
 import {
   createDisplayPlatformPorts,
@@ -33,6 +34,7 @@ import {
 } from '../../display-context/test/testSupport'
 import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
 import {createFakeStorage} from '../../state/test/testSupport'
+import {parseLayerEntries} from '../src/foundations/workspaceSlices'
 
 const createDependencies = (): readonly RuntimeModule[] => [
   Object.freeze({moduleName: contractsModuleName, kind: 'toolkit' as const, dependencies: []}),
@@ -52,6 +54,7 @@ const createFixture = async (input: Readonly<{
   plainStorage?: StateStoragePort
   protectedStorage?: StateStoragePort
   persistenceKey?: string
+  catalog?: UiCatalog
 }> = {}): Promise<Readonly<{
   runtime: Runtime
   device: FakeDevicePort
@@ -66,7 +69,7 @@ const createFixture = async (input: Readonly<{
     modules: [
       ...createDependencies(),
       createDisplayContextModule(),
-      createUiStateModule({catalog: testLayerCatalog, variables: [], surfaceForm: 'laptop'}),
+      createUiStateModule({catalog: input.catalog ?? testLayerCatalog, variables: [], surfaceForm: 'laptop'}),
     ],
     platformPorts: createDisplayPlatformPorts({
       device,
@@ -78,7 +81,6 @@ const createFixture = async (input: Readonly<{
       runtimeName: `ui-state-content-${Math.random().toString(36).slice(2)}`,
       environmentMode: 'TEST',
       persistenceKey,
-      storageTimeouts: {readMs: 50, writeMs: 50, resetMs: 50},
       persistenceDebounceMs: 0,
     },
   })
@@ -88,13 +90,15 @@ const createFixture = async (input: Readonly<{
 
 const createEvents = () => [] as LogEvent[]
 
-const testLayerCatalog = createUiCatalog([
+const createTestLayerCatalog = (partKeys: readonly string[] = [
   'transient-layer',
   'payment-alert',
   'different-alert',
   'one',
   'two',
-].map(partKey => ({
+  'stale',
+  'unavailable',
+]): UiCatalog => createUiCatalog(partKeys.map(partKey => ({
   partKey,
   rendererKey: `${partKey}-renderer`,
   containerKeys: [],
@@ -105,6 +109,31 @@ const testLayerCatalog = createUiCatalog([
   title: partKey,
   description: partKey,
 })))
+
+const testLayerCatalog = createTestLayerCatalog()
+
+const layerStorageKey = (
+  persistenceKey: string,
+  workspace: 'MAIN' | 'BRANCH',
+  displayMode: 'PRIMARY' | 'SECONDARY',
+): string => [
+  'catering-v2s.terminal.state.v1',
+  encodeURIComponent(persistenceKey),
+  encodeURIComponent(`kernel.base.ui-state.content.${workspace}`),
+  'record',
+  'layers',
+  'entry',
+  encodeURIComponent(displayMode),
+].join('/')
+
+const rawLayerStorage = (
+  persistenceKey: string,
+  workspace: 'MAIN' | 'BRANCH',
+  displayMode: 'PRIMARY' | 'SECONDARY',
+  value: unknown,
+): Record<string, string> => ({
+  [layerStorageKey(persistenceKey, workspace, displayMode)]: JSON.stringify(value),
+})
 
 const dispatchOptions = (displayMode: 'PRIMARY' | 'SECONDARY' = 'PRIMARY') => ({
   requestId: createRequestId(),
@@ -216,7 +245,7 @@ describe('ui-state workspace content commands', () => {
     expect(selectScreen(fixture.runtime.getState(), 'SECONDARY', 'root')).toBeUndefined()
   })
 
-  it('restores containers but never restores layers across a runtime restart', async () => {
+  it('restores containers and layers with order, props, and openedAt across a runtime restart', async () => {
     const plainStorage = createFakeStorage()
     const protectedStorage = createFakeStorage()
     const first = await createFixture({
@@ -230,10 +259,11 @@ describe('ui-state workspace content commands', () => {
       displayMode: 'PRIMARY', containerKey: 'root', partKey: 'restored-screen',
     }, dispatchOptions('PRIMARY'))
     await first.runtime.dispatchCommand(openLayerCommand, {
-      displayMode: 'PRIMARY', layerId: 'transient', partKey: 'transient-layer',
+      displayMode: 'PRIMARY', layerId: 'transient', partKey: 'transient-layer', props: {source: 'restart'},
     }, dispatchOptions('PRIMARY'))
     expect(selectScreen(first.runtime.getState(), 'PRIMARY', 'root')?.partKey).toBe('restored-screen')
     expect(selectLayers(first.runtime.getState(), 'PRIMARY')).toHaveLength(1)
+    const expectedLayers = selectLayers(first.runtime.getState(), 'PRIMARY')
 
     releaseRuntimeForTest(first.runtime)
     const second = await createFixture({
@@ -244,7 +274,190 @@ describe('ui-state workspace content commands', () => {
     runtimes.push(second.runtime)
 
     expect(selectScreen(second.runtime.getState(), 'PRIMARY', 'root')?.partKey).toBe('restored-screen')
+    expect(selectLayers(second.runtime.getState(), 'PRIMARY')).toEqual(expectedLayers)
+    expect(Number.isInteger(expectedLayers[0]?.openedAt)).toBe(true)
+    expect(expectedLayers[0]?.openedAt).toBeGreaterThan(0)
+    expect(expectedLayers[0]?.props).toEqual({source: 'restart'})
+  })
+
+  it('restores layers independently in all four workspace/displayMode buckets', async () => {
+    const plainStorage = createFakeStorage()
+    const protectedStorage = createFakeStorage()
+    const persistenceKey = 'ui-state-content-four-buckets'
+    const first = await createFixture({plainStorage, protectedStorage, persistenceKey})
+    runtimes.push(first.runtime)
+
+    await first.runtime.dispatchCommand(openLayerCommand, {
+      displayMode: 'PRIMARY', layerId: 'main-primary', partKey: 'one', props: {bucket: 'main-primary'},
+    }, dispatchOptions('PRIMARY'))
+    await first.runtime.dispatchCommand(openLayerCommand, {
+      displayMode: 'SECONDARY', layerId: 'main-secondary', partKey: 'two', props: {bucket: 'main-secondary'},
+    }, dispatchOptions('SECONDARY'))
+    const expectedMainPrimary = selectLayers(first.runtime.getState(), 'PRIMARY')
+    const expectedMainSecondary = selectLayers(first.runtime.getState(), 'SECONDARY')
+
+    await first.runtime.dispatchCommand(switchInstanceModeCommand, {
+      instanceMode: 'SLAVE',
+    }, dispatchOptions('PRIMARY'))
+    await first.runtime.dispatchCommand(openLayerCommand, {
+      displayMode: 'PRIMARY', layerId: 'branch-primary', partKey: 'one', props: {bucket: 'branch-primary'},
+    }, dispatchOptions('PRIMARY'))
+    await first.runtime.dispatchCommand(openLayerCommand, {
+      displayMode: 'SECONDARY', layerId: 'branch-secondary', partKey: 'two', props: {bucket: 'branch-secondary'},
+    }, dispatchOptions('SECONDARY'))
+    const expectedBranchPrimary = selectLayers(first.runtime.getState(), 'PRIMARY')
+    const expectedBranchSecondary = selectLayers(first.runtime.getState(), 'SECONDARY')
+
+    releaseRuntimeForTest(first.runtime)
+    const second = await createFixture({plainStorage, protectedStorage, persistenceKey})
+    runtimes.push(second.runtime)
+    await second.runtime.dispatchCommand(switchInstanceModeCommand, {
+      instanceMode: 'MASTER',
+    }, dispatchOptions('PRIMARY'))
+    expect(selectLayers(second.runtime.getState(), 'PRIMARY')).toEqual(expectedMainPrimary)
+    expect(selectLayers(second.runtime.getState(), 'SECONDARY')).toEqual(expectedMainSecondary)
+
+    await second.runtime.dispatchCommand(switchInstanceModeCommand, {
+      instanceMode: 'SLAVE',
+    }, dispatchOptions('PRIMARY'))
+    expect(selectLayers(second.runtime.getState(), 'PRIMARY')).toEqual(expectedBranchPrimary)
+    expect(selectLayers(second.runtime.getState(), 'SECONDARY')).toEqual(expectedBranchSecondary)
+  })
+
+  it('treats an old archive without layers entries as an empty layer state', async () => {
+    const plainStorage = createFakeStorage()
+    const protectedStorage = createFakeStorage()
+    const persistenceKey = 'ui-state-content-old-archive'
+    const first = await createFixture({plainStorage, protectedStorage, persistenceKey})
+    runtimes.push(first.runtime)
+    await first.runtime.dispatchCommand(showScreenCommand, {
+      displayMode: 'PRIMARY', containerKey: 'root', partKey: 'restored-screen',
+    }, dispatchOptions('PRIMARY'))
+    releaseRuntimeForTest(first.runtime)
+
+    const second = await createFixture({plainStorage, protectedStorage, persistenceKey})
+    runtimes.push(second.runtime)
+    expect(selectScreen(second.runtime.getState(), 'PRIMARY', 'root')?.partKey).toBe('restored-screen')
     expect(selectLayers(second.runtime.getState(), 'PRIMARY')).toEqual([])
+    expect(selectLayers(second.runtime.getState(), 'SECONDARY')).toEqual([])
+  })
+
+  it('drops malformed and duplicate hydrated rows while retaining valid order and diagnostics', async () => {
+    const persistenceKey = 'ui-state-content-invalid-layer-rows'
+    const plainStorage = createFakeStorage(rawLayerStorage(persistenceKey, 'MAIN', 'PRIMARY', [
+      {layerId: 'first', partKey: 'one', openedAt: 101, props: {ok: true}},
+      {layerId: 'first', partKey: 'two', openedAt: 102},
+      {layerId: 'bad-time', partKey: 'one', openedAt: 0},
+      {layerId: 'missing-part', openedAt: 103},
+      'not-an-object',
+      {layerId: 'last', partKey: 'two', openedAt: 104},
+    ]))
+    const protectedStorage = createFakeStorage()
+    const fixture = await createFixture({plainStorage, protectedStorage, persistenceKey})
+    runtimes.push(fixture.runtime)
+
+    expect(selectLayers(fixture.runtime.getState(), 'PRIMARY').map(layer => layer.layerId)).toEqual(['first', 'last'])
+    expect(selectLayers(fixture.runtime.getState(), 'PRIMARY')[0]?.props).toEqual({ok: true})
+    expect(fixture.events).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        category: 'ui-state-hydration',
+        data: expect.objectContaining({workspace: 'MAIN', displayMode: 'PRIMARY', reason: 'duplicate-layer-id'}),
+      }),
+      expect.objectContaining({
+        category: 'ui-state-hydration',
+        data: expect.objectContaining({workspace: 'MAIN', displayMode: 'PRIMARY', reason: 'invalid-entry'}),
+      }),
+    ]))
+  })
+
+  it('drops a non-JSON props value in the layer hydration parser', () => {
+    const diagnostics: {readonly reason: string}[] = []
+    const parsed = parseLayerEntries([
+      {layerId: 'invalid-props', partKey: 'one', openedAt: 101, props: {value: Symbol('invalid')}},
+      {layerId: 'valid', partKey: 'two', openedAt: 102},
+    ], {
+      workspace: 'MAIN',
+      displayMode: 'PRIMARY',
+      onHydrationDiagnostic: diagnostic => { diagnostics.push(diagnostic) },
+    })
+
+    expect(parsed.map(layer => layer.layerId)).toEqual(['valid'])
+    expect(diagnostics).toHaveLength(1)
+    expect(diagnostics[0]?.reason).toBe('invalid-entry')
+  })
+
+  it('prunes unknown catalog members across all four buckets without pruning known layers', async () => {
+    const persistenceKey = 'ui-state-content-membership-prune'
+    const plainStorage = createFakeStorage()
+    const protectedStorage = createFakeStorage()
+    const first = await createFixture({plainStorage, protectedStorage, persistenceKey, catalog: testLayerCatalog})
+    runtimes.push(first.runtime)
+    await first.runtime.dispatchCommand(openLayerCommand, {
+      displayMode: 'PRIMARY', layerId: 'stale-main-primary', partKey: 'stale',
+    }, dispatchOptions('PRIMARY'))
+    await first.runtime.dispatchCommand(openLayerCommand, {
+      displayMode: 'SECONDARY', layerId: 'stale-main-secondary', partKey: 'stale',
+    }, dispatchOptions('SECONDARY'))
+    await first.runtime.dispatchCommand(openLayerCommand, {
+      displayMode: 'PRIMARY', layerId: 'kept-main', partKey: 'one',
+    }, dispatchOptions('PRIMARY'))
+    await first.runtime.dispatchCommand(switchInstanceModeCommand, {
+      instanceMode: 'SLAVE',
+    }, dispatchOptions('PRIMARY'))
+    await first.runtime.dispatchCommand(openLayerCommand, {
+      displayMode: 'PRIMARY', layerId: 'stale-branch-primary', partKey: 'stale',
+    }, dispatchOptions('PRIMARY'))
+    await first.runtime.dispatchCommand(openLayerCommand, {
+      displayMode: 'SECONDARY', layerId: 'stale-branch-secondary', partKey: 'stale',
+    }, dispatchOptions('SECONDARY'))
+    releaseRuntimeForTest(first.runtime)
+
+    const withoutStale = createTestLayerCatalog([
+      'transient-layer', 'payment-alert', 'different-alert', 'one', 'two', 'unavailable',
+    ])
+    const second = await createFixture({plainStorage, protectedStorage, persistenceKey, catalog: withoutStale})
+    runtimes.push(second.runtime)
+    await second.runtime.dispatchCommand(switchInstanceModeCommand, {
+      instanceMode: 'MASTER',
+    }, dispatchOptions('PRIMARY'))
+    expect(selectLayers(second.runtime.getState(), 'PRIMARY').map(layer => layer.layerId)).toEqual(['kept-main'])
+    expect(selectLayers(second.runtime.getState(), 'SECONDARY')).toEqual([])
+    expect([...plainStorage.values.values()].some(value => value.includes('stale'))).toBe(false)
+    expect(second.events.filter(event => event.category === 'ui-state-hydration' && event.data?.reason === 'unknown-part')).toHaveLength(4)
+
+    await second.runtime.dispatchCommand(switchInstanceModeCommand, {
+      instanceMode: 'SLAVE',
+    }, dispatchOptions('PRIMARY'))
+    expect(selectLayers(second.runtime.getState(), 'PRIMARY')).toEqual([])
+    expect(selectLayers(second.runtime.getState(), 'SECONDARY')).toEqual([])
+  })
+
+  it('keeps a catalog member when it is unavailable for the current surface', async () => {
+    const persistenceKey = 'ui-state-content-unavailable-member'
+    const plainStorage = createFakeStorage()
+    const protectedStorage = createFakeStorage()
+    const availableCatalog = createTestLayerCatalog(['unavailable'])
+    const first = await createFixture({plainStorage, protectedStorage, persistenceKey, catalog: availableCatalog})
+    runtimes.push(first.runtime)
+    await first.runtime.dispatchCommand(openLayerCommand, {
+      displayMode: 'PRIMARY', layerId: 'unavailable-layer', partKey: 'unavailable',
+    }, dispatchOptions('PRIMARY'))
+    const expected = selectLayers(first.runtime.getState(), 'PRIMARY')
+    releaseRuntimeForTest(first.runtime)
+
+    const mobileOnlyCatalog = createUiCatalog([{
+      ...availableCatalog.entries[0]!,
+      surfaceForm: ['mobile'] as const,
+    }])
+    const second = await createFixture({plainStorage, protectedStorage, persistenceKey, catalog: mobileOnlyCatalog})
+    runtimes.push(second.runtime)
+    expect(selectLayers(second.runtime.getState(), 'PRIMARY')).toEqual(expected)
+    const writesAfterSecondStart = plainStorage.calls.write.length + protectedStorage.calls.write.length
+    releaseRuntimeForTest(second.runtime)
+    const third = await createFixture({plainStorage, protectedStorage, persistenceKey, catalog: mobileOnlyCatalog})
+    runtimes.push(third.runtime)
+    expect(selectLayers(third.runtime.getState(), 'PRIMARY')).toEqual(expected)
+    expect(plainStorage.calls.write.length + protectedStorage.calls.write.length).toBe(writesAfterSecondStart)
   })
 
   it('rejects duplicate layer ids, leaves the stack unchanged, and records a safe diagnostic', async () => {

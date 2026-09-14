@@ -349,7 +349,8 @@ void environmentMode;
 void consumeResult;
 void consumeAction;
 
-const storageCall = {timeoutMs: 50};
+const storageCall = {};
+const deviceCall = {timeoutMs: 50};
 const surface = {timeoutMs: 50, containerKey: 'primary'};
 const requestCall = {timeoutMs: 50, requestId};
 const scriptInput = {
@@ -547,8 +548,8 @@ async function exercisePublicCalls(): Promise<void> {
   await storage.write({...storageCall, key: 'fixture', value: 'value'});
   const writeLog = logger.info(logInput);
   consumeResult(writeLog);
-  await device.getDeviceInfo(storageCall);
-  await device.getSystemStatus(storageCall);
+  await device.getDeviceInfo(deviceCall);
+  await device.getSystemStatus(deviceCall);
   const scriptResult = await script.execute({...scriptInput, native: namedBindings});
   if (scriptResult.status === 'succeeded') {
     const resultJson: string = scriptResult.value.resultJson;

@@ -1,5 +1,6 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceAuthenticationPersistence;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationEntityLookup;
 import com.catering.v2s.organization.api.OrganizationNodeLookup;
@@ -35,7 +36,7 @@ public class WorkspaceAuthenticationService {
     private static final long SESSION_TTL_MILLIS = 8 * 60 * 60 * 1000L;
     private static final long OTP_TTL_MILLIS = 5 * 60 * 1000L;
     private static final ObjectMapper JSON = new ObjectMapper();
-    private final JdbcTemplate jdbc;
+    private final WorkspaceAuthenticationPersistence persistence;
     private final TimeProvider time;
     private final WorkspaceRoleService roles;
     private final OrganizationNodeLookup nodes;
@@ -60,7 +61,7 @@ public class WorkspaceAuthenticationService {
             StoreAssignmentLookup stores,
             OrganizationEntityLookup entities) {
         this(
-                jdbc,
+                new WorkspaceAuthenticationPersistence(jdbc),
                 time,
                 roles,
                 nodes,
@@ -91,7 +92,7 @@ public class WorkspaceAuthenticationService {
             WorkspaceSessionRequestCache sessionCache,
             OrganizationTaskPathLookup taskPaths) {
         this(
-                jdbc,
+                new WorkspaceAuthenticationPersistence(jdbc),
                 time,
                 roles,
                 nodes,
@@ -109,7 +110,7 @@ public class WorkspaceAuthenticationService {
 
     @org.springframework.beans.factory.annotation.Autowired
     public WorkspaceAuthenticationService(
-            JdbcTemplate jdbc,
+            WorkspaceAuthenticationPersistence persistence,
             TimeProvider time,
             WorkspaceRoleService roles,
             OrganizationNodeLookup nodes,
@@ -123,7 +124,7 @@ public class WorkspaceAuthenticationService {
             WorkspaceSessionRequestCache sessionCache,
             OrganizationTaskPathLookup taskPaths,
             com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy otpDebugExposurePolicy) {
-        this.jdbc = jdbc;
+        this.persistence = persistence;
         this.time = time;
         this.roles = roles;
         this.nodes = nodes;
@@ -185,32 +186,8 @@ public class WorkspaceAuthenticationService {
     private Account authenticatePassword(
             String groupWorkspaceKey, String loginName, char[] password, String sourceAddress) {
         WorkspaceLoginRateLimitService.Attempt attempt = loginLimits.begin(groupWorkspaceKey, loginName, sourceAddress);
-        Account account = jdbc.query(
-                "SELECT a.id, a.workspace_uuid, a.group_workspace_key, a.status, c.password_hash, "
-                        + "c.locked_until_epoch_millis, c.password_change_required, a.display_name, gw.name, "
-                        + "gw.operations_title, gw.logo_asset_ref FROM workspace_iam.workspace_account a JOIN "
-                        + "workspace_iam.workspace_credential c ON c.account_id=a.id JOIN "
-                        + "platform_workspace.group_workspace gw ON gw.workspace_uuid=a.workspace_uuid AND "
-                        + "gw.group_workspace_key=a.group_workspace_key WHERE a.group_workspace_key=? AND "
-                        + "a.login_name_normalized=?",
-                statement -> {
-                    statement.setString(1, groupWorkspaceKey);
-                    statement.setString(2, loginName == null ? "" : loginName.toLowerCase());
-                },
-                result -> result.next()
-                        ? new Account(
-                                result.getObject(1, UUID.class),
-                                result.getObject(2, UUID.class),
-                                result.getString(3),
-                                result.getString(4),
-                                result.getString(5),
-                                result.getObject(6, Long.class),
-                                result.getBoolean(7),
-                                result.getString(8),
-                                result.getString(9),
-                                result.getString(10),
-                                result.getString(11))
-                        : null);
+        Account account = account(persistence.accountByLogin(
+                groupWorkspaceKey, loginName == null ? "" : loginName.toLowerCase()));
         if (account == null) {
             loginLimits.recordInvalid(groupWorkspaceKey, attempt);
             throw new InvalidCredentialsException();
@@ -227,12 +204,7 @@ public class WorkspaceAuthenticationService {
             throw new CredentialLockedException();
         if (!passwords.matches(new String(password == null ? new char[0] : password), account.passwordHash())) {
             loginLimits.recordInvalid(groupWorkspaceKey, attempt);
-            jdbc.update(
-                    "UPDATE workspace_iam.workspace_credential SET failed_attempts=failed_attempts+1, "
-                            + "locked_until_epoch_millis=CASE WHEN failed_attempts+1>=10 THEN ? ELSE "
-                            + "locked_until_epoch_millis END, version=version+1 WHERE account_id=?",
-                    time.currentEpochMillis() + 15 * 60 * 1000L,
-                    account.id());
+            persistence.recordPasswordFailure(account.id(), time.currentEpochMillis() + 15 * 60 * 1000L);
             throw new InvalidCredentialsException();
         }
         loginLimits.clearAccount(groupWorkspaceKey, attempt);
@@ -244,15 +216,9 @@ public class WorkspaceAuthenticationService {
         Account account = accountByMobile(groupWorkspaceKey, normalizedMobile(mobile));
         otpLimits.beforeSend(account.workspaceUuid(), account.key(), "WORKSPACE_LOGIN", account.id());
         long expires = time.currentEpochMillis() + OTP_TTL_MILLIS;
-        jdbc.update(
-                "UPDATE workspace_iam.otp_grant SET status='SUPERSEDED' WHERE subject_ref=? AND "
-                        + "purpose='WORKSPACE_LOGIN' AND status='ACTIVE'",
-                account.id());
+        persistence.supersedeLoginOtp(account.id());
         String otp = String.format("%06d", random.nextInt(1_000_000));
-        jdbc.update(
-                "INSERT INTO workspace_iam.otp_grant (id, workspace_uuid, group_workspace_key, purpose, token_hash, "
-                        + "subject_ref, status, expires_at_epoch_millis) VALUES (?, ?, ?, 'WORKSPACE_LOGIN', ?, ?, "
-                        + "'ACTIVE', ?)",
+        persistence.insertLoginOtp(
                 UUID.randomUUID(),
                 account.workspaceUuid(),
                 account.key(),
@@ -275,19 +241,10 @@ public class WorkspaceAuthenticationService {
     private Account verifyOtp(String groupWorkspaceKey, String mobile, String otp) {
         Account account = accountByMobile(groupWorkspaceKey, normalizedMobile(mobile));
         otpLimits.beforeVerify(account.workspaceUuid(), account.key(), "WORKSPACE_LOGIN", account.id());
-        int consumed = jdbc.update(
-                "UPDATE workspace_iam.otp_grant SET status='USED', used_at_epoch_millis=? WHERE subject_ref=? AND "
-                        + "purpose='WORKSPACE_LOGIN' AND token_hash=? AND status='ACTIVE' AND "
-                        + "expires_at_epoch_millis>?",
-                time.currentEpochMillis(),
-                account.id(),
-                sha256(otp),
-                time.currentEpochMillis());
+        int consumed = persistence.consumeLoginOtp(
+                time.currentEpochMillis(), account.id(), sha256(otp));
         if (consumed != 1) {
-            jdbc.update(
-                    "UPDATE workspace_iam.otp_grant SET attempt_count=attempt_count+1 WHERE subject_ref=? AND "
-                            + "purpose='WORKSPACE_LOGIN' AND status='ACTIVE'",
-                    account.id());
+            persistence.incrementLoginOtpAttempts(account.id());
             otpLimits.invalidVerify(account.workspaceUuid(), account.key(), "WORKSPACE_LOGIN", account.id());
             throw new OtpInvalidException();
         }
@@ -343,17 +300,13 @@ public class WorkspaceAuthenticationService {
                 current.selectedStoreId(),
                 current.selectedHeadCompanyId());
         ScopeSelection locked = lockedSelection(visibleFacts, assignment);
-        if (jdbc.update(
-                        "UPDATE workspace_iam.workspace_session SET current_assignment_id=?, selected_region_id=?, "
-                                + "selected_project_id=?, selected_store_id=?, selected_head_company_id=?, "
-                                + "context_version=context_version+1, authorization_revision=authorization_revision+1 "
-                                + "WHERE id=? AND context_version=?",
+        if (persistence.selectAssignment(
+                        current.id(),
                         assignmentId,
                         locked.regionId(),
                         locked.projectId(),
                         locked.storeId(),
                         locked.headCompanyId(),
-                        current.id(),
                         expectedContextVersion)
                 != 1) throw new SessionConflictException();
         sessionCache.evict(rawToken);
@@ -399,15 +352,12 @@ public class WorkspaceAuthenticationService {
                 .findFirst()
                 .orElseThrow(SessionInvalidException::new);
         ScopeSelection next = selectedScope(current, candidate);
-        if (jdbc.update(
-                        "UPDATE workspace_iam.workspace_session SET selected_region_id=?, selected_project_id=?, "
-                                + "selected_store_id=?, selected_head_company_id=?, context_version=context_version+1, "
-                                + "authorization_revision=authorization_revision+1 WHERE id=? AND context_version=?",
+        if (persistence.selectDataNode(
+                        current.id(),
                         next.regionId(),
                         next.projectId(),
                         next.storeId(),
                         next.headCompanyId(),
-                        current.id(),
                         expectedContextVersion)
                 != 1) throw new SessionConflictException();
         sessionCache.evict(rawToken);
@@ -449,7 +399,7 @@ public class WorkspaceAuthenticationService {
      */
     @Transactional(readOnly = true)
     public WorkspaceReadAuthorizationFacts readAuthorizationFacts(String rawToken) {
-        ReadAuthorizationRow row = activeAuthorizationRow(rawToken);
+        WorkspaceAuthenticationPersistence.ReadAuthorizationRow row = activeAuthorizationRow(rawToken);
         var visibleFacts = visibility.resolveSessionEntryFacts(
                 row.workspaceUuid(),
                 row.key(),
@@ -483,7 +433,7 @@ public class WorkspaceAuthenticationService {
      */
     @Transactional(readOnly = true)
     public WorkspaceCommandAuthorizationFacts commandAuthorizationFacts(String rawToken) {
-        ReadAuthorizationRow row = activeAuthorizationRow(rawToken);
+        WorkspaceAuthenticationPersistence.ReadAuthorizationRow row = activeAuthorizationRow(rawToken);
         WorkspaceSessionReadback session = new WorkspaceSessionReadback(
                 row.sessionId(),
                 row.workspaceUuid(),
@@ -502,53 +452,15 @@ public class WorkspaceAuthenticationService {
                 session, row.roleId(), row.assignmentNodeType(), row.assignmentNodeId());
     }
 
-    private ReadAuthorizationRow activeAuthorizationRow(String rawToken) {
-        return ReadBudgetComponent.measure(
-                ReadBudgetComponent.Component.CONTEXT_WORKSPACE_IAM,
-                () -> jdbc.query(
-                        "SELECT s.id, s.workspace_uuid, s.group_workspace_key, s.account_id, s.current_assignment_id, "
-                                + "s.selected_region_id, s.selected_project_id, s.selected_store_id, "
-                                + "s.selected_head_company_id, "
-                                + "s.context_version, s.authorization_revision, a.display_name, ra.role_id, "
-                                + "ra.service_node_type, "
-                                + "ra.service_node_id, r.page_access_keys, r.capability_keys "
-                                + "FROM workspace_iam.workspace_session s "
-                                + "JOIN workspace_iam.workspace_account a ON a.id=s.account_id "
-                                + "JOIN workspace_iam.role_assignment ra ON ra.id=s.current_assignment_id "
-                                + "AND ra.account_id=s.account_id AND ra.workspace_uuid=s.workspace_uuid "
-                                + "AND ra.group_workspace_key=s.group_workspace_key AND ra.status='ACTIVE' "
-                                + "JOIN workspace_iam.workspace_role r ON r.id=ra.role_id AND "
-                                + "r.workspace_uuid=s.workspace_uuid "
-                                + "AND r.group_workspace_key=s.group_workspace_key AND r.status='ENABLED' "
-                                + "WHERE s.token_hash=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?",
-                        statement -> {
-                            statement.setString(1, sha256(rawToken));
-                            statement.setLong(2, time.currentEpochMillis());
-                        },
-                        result -> {
-                            if (!result.next()) throw new SessionInvalidException();
-                            return new ReadAuthorizationRow(
-                                    result.getObject(1, UUID.class),
-                                    result.getObject(2, UUID.class),
-                                    result.getString(3),
-                                    result.getObject(4, UUID.class),
-                                    result.getObject(5, UUID.class),
-                                    result.getObject(6, UUID.class),
-                                    result.getObject(7, UUID.class),
-                                    result.getObject(8, UUID.class),
-                                    result.getObject(9, UUID.class),
-                                    result.getLong(10),
-                                    result.getLong(11),
-                                    result.getString(12),
-                                    result.getObject(13, UUID.class),
-                                    result.getString(14),
-                                    result.getObject(15, UUID.class),
-                                    result.getString(16),
-                                    result.getString(17));
-                        }));
+    private WorkspaceAuthenticationPersistence.ReadAuthorizationRow activeAuthorizationRow(String rawToken) {
+        WorkspaceAuthenticationPersistence.ReadAuthorizationRow row = persistence.activeAuthorizationRow(
+                sha256(rawToken), time.currentEpochMillis());
+        if (row == null) throw new SessionInvalidException();
+        return row;
     }
 
-    private static WorkspaceSessionEntryReadback.ScopeContext commandScopeContext(ReadAuthorizationRow row) {
+    private static WorkspaceSessionEntryReadback.ScopeContext commandScopeContext(
+            WorkspaceAuthenticationPersistence.ReadAuthorizationRow row) {
         return new WorkspaceSessionEntryReadback.ScopeContext(
                 commandScopeNode(ServiceNodeTypes.REGION, row.selectedRegionId()),
                 commandScopeNode(ServiceNodeTypes.PROJECT, row.selectedProjectId()),
@@ -596,10 +508,7 @@ public class WorkspaceAuthenticationService {
                     Set.of(),
                     Set.of(),
                     row.accountDisplayName());
-        UUID roleId = jdbc.queryForObject(
-                "SELECT role_id FROM workspace_iam.role_assignment WHERE id=? AND status='ACTIVE'",
-                UUID.class,
-                row.assignmentId());
+        UUID roleId = persistence.roleIdByAssignment(row.assignmentId());
         var role = roles.require(row.workspaceUuid(), row.key(), roleId);
         return new WorkspaceSessionReadback(
                 row.id(),
@@ -789,12 +698,7 @@ public class WorkspaceAuthenticationService {
 
     @Transactional
     public void logout(String rawToken) {
-        jdbc.update(
-                "UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=?, "
-                        + "selected_region_id=NULL, selected_project_id=NULL, selected_store_id=NULL, "
-                        + "selected_head_company_id=NULL WHERE token_hash=? AND status='ACTIVE'",
-                time.currentEpochMillis(),
-                sha256(rawToken));
+        persistence.logout(sha256(rawToken), time.currentEpochMillis());
         sessionCache.evict(rawToken);
     }
 
@@ -803,48 +707,22 @@ public class WorkspaceAuthenticationService {
     public PasswordChangeResult changeCurrentPassword(
             String rawToken, char[] currentPassword, char[] newPassword, long expectedSessionVersion) {
         if (newPassword == null || newPassword.length < 8) throw new InvalidCredentialsException();
-        SessionCredential current = jdbc.query(
-                "SELECT s.id, s.account_id, s.context_version, c.password_hash, c.version FROM "
-                        + "workspace_iam.workspace_session s JOIN workspace_iam.workspace_credential c ON "
-                        + "c.account_id=s.account_id WHERE s.token_hash=? AND s.status='ACTIVE' AND "
-                        + "s.expires_at_epoch_millis>?",
-                statement -> {
-                    statement.setString(1, sha256(rawToken));
-                    statement.setLong(2, time.currentEpochMillis());
-                },
-                result -> {
-                    if (!result.next()) throw new SessionInvalidException();
-                    return new SessionCredential(
-                            result.getObject(1, UUID.class),
-                            result.getObject(2, UUID.class),
-                            result.getLong(3),
-                            result.getString(4),
-                            result.getLong(5));
-                });
+        WorkspaceAuthenticationPersistence.SessionCredentialRow current = persistence.sessionCredential(
+                sha256(rawToken), time.currentEpochMillis());
+        if (current == null) throw new SessionInvalidException();
         if (current.contextVersion() != expectedSessionVersion) throw new SessionConflictException();
         if (!passwords.matches(
                 new String(currentPassword == null ? new char[0] : currentPassword), current.passwordHash()))
             throw new InvalidCredentialsException();
         long now = time.currentEpochMillis();
-        if (jdbc.update(
-                        "UPDATE workspace_iam.workspace_credential c SET password_hash=?, changed_at_epoch_millis=?, "
-                                + "failed_attempts=0, locked_until_epoch_millis=NULL, password_change_required=FALSE, "
-                                + "version=version+1 WHERE c.account_id=? AND c.version=? AND EXISTS (SELECT 1 FROM "
-                                + "workspace_iam.workspace_session s WHERE s.id=? AND s.status='ACTIVE' AND "
-                                + "s.expires_at_epoch_millis>?)",
+        if (persistence.updateCredential(
+                        current.accountId(),
                         passwords.encode(new String(newPassword)),
                         now,
-                        current.accountId(),
                         current.credentialVersion(),
-                        current.sessionId(),
-                        now)
+                        current.sessionId())
                 != 1) throw new SessionConflictException();
-        jdbc.update(
-                "UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=?, "
-                        + "selected_region_id=NULL, selected_project_id=NULL, selected_store_id=NULL, "
-                        + "selected_head_company_id=NULL WHERE account_id=? AND status='ACTIVE'",
-                now,
-                current.accountId());
+        persistence.revokeAccountSessions(current.accountId(), now);
         return new PasswordChangeResult("COMPLETED", true, true);
     }
 
@@ -895,18 +773,11 @@ public class WorkspaceAuthenticationService {
     }
 
     private CreatedSession createRawSession(Account account) {
-        List<Assignment> assignments = jdbc.query(
-                "SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM workspace_iam.role_assignment a "
-                        + "JOIN workspace_iam.workspace_role r ON r.id=a.role_id WHERE a.account_id=? AND "
-                        + "a.workspace_uuid=? AND a.group_workspace_key=? AND a.status='ACTIVE' AND r.status='ENABLED'",
-                (row, index) -> new Assignment(
-                        row.getObject(1, UUID.class),
-                        row.getObject(2, UUID.class),
-                        row.getString(3),
-                        row.getObject(4, UUID.class)),
-                account.id(),
-                account.workspaceUuid(),
-                account.key());
+        List<Assignment> assignments = persistence.activeAssignments(
+                        account.id(), account.workspaceUuid(), account.key())
+                .stream()
+                .map(value -> new Assignment(value.id(), value.roleId(), value.nodeType(), value.nodeId()))
+                .toList();
         List<Assignment> enterable = availableAssignments(account.workspaceUuid(), account.key(), assignments);
         Assignment selected = enterable.size() == 1 ? enterable.getFirst() : null;
         LockedSelection locked = selected == null
@@ -915,12 +786,7 @@ public class WorkspaceAuthenticationService {
         String raw = rawToken();
         UUID sessionId = UUID.randomUUID();
         long now = time.currentEpochMillis();
-        jdbc.update(
-                "INSERT INTO workspace_iam.workspace_session (id, workspace_uuid, group_workspace_key, account_id, "
-                        + "token_hash, current_assignment_id, selected_region_id, selected_project_id, "
-                        + "selected_store_id, "
-                        + "selected_head_company_id, context_version, authorization_revision, status, "
-                        + "expires_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, 'ACTIVE', ?)",
+        persistence.createSession(
                 sessionId,
                 account.workspaceUuid(),
                 account.key(),
@@ -932,47 +798,34 @@ public class WorkspaceAuthenticationService {
                 locked.selection().storeId(),
                 locked.selection().headCompanyId(),
                 now + SESSION_TTL_MILLIS);
-        jdbc.update(
-                "INSERT INTO workspace_iam.workspace_authentication_history (id, workspace_uuid, group_workspace_key, "
-                        + "account_id, authenticated_at_epoch_millis) VALUES (?, ?, ?, ?, ?)",
-                UUID.randomUUID(),
-                account.workspaceUuid(),
-                account.key(),
-                account.id(),
-                now);
+        persistence.recordAuthentication(
+                UUID.randomUUID(), account.workspaceUuid(), account.key(), account.id(), now);
         return new CreatedSession(raw, sessionId, selected, locked.visibleFacts(), enterable);
     }
 
     private Account accountByMobile(String groupWorkspaceKey, String mobile) {
-        Account account = jdbc.query(
-                "SELECT a.id, a.workspace_uuid, a.group_workspace_key, a.status, c.password_change_required, "
-                        + "a.display_name, gw.name, gw.operations_title, gw.logo_asset_ref FROM "
-                        + "workspace_iam.workspace_account a JOIN workspace_iam.workspace_credential c ON "
-                        + "c.account_id=a.id JOIN platform_workspace.group_workspace gw ON "
-                        + "gw.workspace_uuid=a.workspace_uuid AND gw.group_workspace_key=a.group_workspace_key WHERE "
-                        + "a.group_workspace_key=? AND a.mobile_normalized=?",
-                statement -> {
-                    statement.setString(1, groupWorkspaceKey);
-                    statement.setString(2, mobile);
-                },
-                result -> result.next()
-                        ? new Account(
-                                result.getObject(1, UUID.class),
-                                result.getObject(2, UUID.class),
-                                result.getString(3),
-                                result.getString(4),
-                                null,
-                                null,
-                                result.getBoolean(5),
-                                result.getString(6),
-                                result.getString(7),
-                                result.getString(8),
-                                result.getString(9))
-                        : null);
+        Account account = account(persistence.accountByMobile(groupWorkspaceKey, mobile));
         if (account == null) throw new InvalidCredentialsException();
         if (!"ENABLED".equals(account.status())) throw new AccountDisabledException();
         if (!workspaces.isEnabled(account.workspaceUuid(), account.key())) throw new WorkspaceDisabledException();
         return account;
+    }
+
+    private static Account account(WorkspaceAuthenticationPersistence.AccountRow row) {
+        return row == null
+                ? null
+                : new Account(
+                        row.id(),
+                        row.workspaceUuid(),
+                        row.key(),
+                        row.status(),
+                        row.passwordHash(),
+                        row.lockedUntilEpochMillis(),
+                        row.passwordChangeRequired(),
+                        row.displayName(),
+                        row.workspaceName(),
+                        row.operationsTitle(),
+                        row.logoAssetRef());
     }
     /** Fresh owner-local fact for canonical session-entry composition; this path never consults the request cache. */
     private SessionEntryAuthenticationFacts sessionEntryAuthenticationFacts(String rawToken) {
@@ -1001,41 +854,26 @@ public class WorkspaceAuthenticationService {
     }
 
     private SessionRow require(String raw) {
-        return jdbc.query(
-                "SELECT s.id, s.workspace_uuid, s.group_workspace_key, s.account_id, s.current_assignment_id, "
-                        + "s.selected_region_id, s.selected_project_id, s.selected_store_id, "
-                        + "s.selected_head_company_id, "
-                        + "s.context_version, s.authorization_revision, a.display_name, gw.name, gw.operations_title, "
-                        + "gw.logo_asset_ref, c.password_change_required FROM workspace_iam.workspace_session s JOIN "
-                        + "workspace_iam.workspace_account a ON a.id=s.account_id JOIN "
-                        + "workspace_iam.workspace_credential "
-                        + "c ON c.account_id=a.id JOIN platform_workspace.group_workspace gw ON "
-                        + "gw.workspace_uuid=s.workspace_uuid AND gw.group_workspace_key=s.group_workspace_key WHERE "
-                        + "s.token_hash=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?",
-                statement -> {
-                    statement.setString(1, sha256(raw));
-                    statement.setLong(2, time.currentEpochMillis());
-                },
-                result -> {
-                    if (!result.next()) throw new SessionInvalidException();
-                    return new SessionRow(
-                            result.getObject(1, UUID.class),
-                            result.getObject(2, UUID.class),
-                            result.getString(3),
-                            result.getObject(4, UUID.class),
-                            result.getObject(5, UUID.class),
-                            result.getObject(6, UUID.class),
-                            result.getObject(7, UUID.class),
-                            result.getObject(8, UUID.class),
-                            result.getObject(9, UUID.class),
-                            result.getLong(10),
-                            result.getLong(11),
-                            result.getString(12),
-                            result.getString(13),
-                            result.getString(14),
-                            result.getString(15),
-                            result.getBoolean(16));
-                });
+        WorkspaceAuthenticationPersistence.SessionRow row = persistence.session(
+                sha256(raw), time.currentEpochMillis());
+        if (row == null) throw new SessionInvalidException();
+        return new SessionRow(
+                row.id(),
+                row.workspaceUuid(),
+                row.key(),
+                row.accountId(),
+                row.assignmentId(),
+                row.selectedRegionId(),
+                row.selectedProjectId(),
+                row.selectedStoreId(),
+                row.selectedHeadCompanyId(),
+                row.contextVersion(),
+                row.authorizationRevision(),
+                row.accountDisplayName(),
+                row.workspaceName(),
+                row.operationsTitle(),
+                row.logoAssetRef(),
+                row.passwordChangeRequired());
     }
 
     private SessionRow requireNormal(String raw) {
@@ -1276,39 +1114,16 @@ public class WorkspaceAuthenticationService {
     }
 
     private Assignment requireAssignment(SessionRow current, UUID assignmentId) {
-        return jdbc.query(
-                "SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM workspace_iam.role_assignment a "
-                        + "JOIN workspace_iam.workspace_role r ON r.id=a.role_id WHERE a.id=? AND a.account_id=? AND "
-                        + "a.workspace_uuid=? AND a.group_workspace_key=? AND a.status='ACTIVE' AND r.status='ENABLED'",
-                statement -> {
-                    statement.setObject(1, assignmentId);
-                    statement.setObject(2, current.accountId());
-                    statement.setObject(3, current.workspaceUuid());
-                    statement.setString(4, current.key());
-                },
-                result -> {
-                    if (!result.next()) throw new SessionInvalidException();
-                    return new Assignment(
-                            result.getObject(1, UUID.class),
-                            result.getObject(2, UUID.class),
-                            result.getString(3),
-                            result.getObject(4, UUID.class));
-                });
+        WorkspaceAuthenticationPersistence.AssignmentRow row = persistence.assignment(
+                assignmentId, current.accountId(), current.workspaceUuid(), current.key());
+        if (row == null) throw new SessionInvalidException();
+        return new Assignment(row.id(), row.roleId(), row.nodeType(), row.nodeId());
     }
 
     private List<Assignment> activeAssignments(SessionRow current) {
-        return jdbc.query(
-                "SELECT a.id, a.role_id, a.service_node_type, a.service_node_id FROM workspace_iam.role_assignment a "
-                        + "JOIN workspace_iam.workspace_role r ON r.id=a.role_id WHERE a.account_id=? AND "
-                        + "a.workspace_uuid=? AND a.group_workspace_key=? AND a.status='ACTIVE' AND r.status='ENABLED'",
-                (row, index) -> new Assignment(
-                        row.getObject(1, UUID.class),
-                        row.getObject(2, UUID.class),
-                        row.getString(3),
-                        row.getObject(4, UUID.class)),
-                current.accountId(),
-                current.workspaceUuid(),
-                current.key());
+        return persistence.activeAssignments(current.accountId(), current.workspaceUuid(), current.key()).stream()
+                .map(row -> new Assignment(row.id(), row.roleId(), row.nodeType(), row.nodeId()))
+                .toList();
     }
 
     private List<Assignment> availableAssignments(SessionRow current, List<Assignment> assignments) {
@@ -1486,28 +1301,6 @@ public class WorkspaceAuthenticationService {
             List<Assignment> enterableAssignments) {}
 
     private record Assignment(UUID id, UUID roleId, String nodeType, UUID nodeId) {}
-
-    private record SessionCredential(
-            UUID sessionId, UUID accountId, long contextVersion, String passwordHash, long credentialVersion) {}
-
-    private record ReadAuthorizationRow(
-            UUID sessionId,
-            UUID workspaceUuid,
-            String key,
-            UUID accountId,
-            UUID assignmentId,
-            UUID selectedRegionId,
-            UUID selectedProjectId,
-            UUID selectedStoreId,
-            UUID selectedHeadCompanyId,
-            long contextVersion,
-            long authorizationRevision,
-            String accountDisplayName,
-            UUID roleId,
-            String assignmentNodeType,
-            UUID assignmentNodeId,
-            String pageAccessKeys,
-            String actionCapabilityKeys) {}
 
     private record ScopeSelection(UUID regionId, UUID projectId, UUID storeId, UUID headCompanyId) {
         static ScopeSelection empty() {

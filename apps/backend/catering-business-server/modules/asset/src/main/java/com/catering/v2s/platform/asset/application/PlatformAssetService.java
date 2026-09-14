@@ -1,5 +1,6 @@
 package com.catering.v2s.platform.asset.application;
 
+import com.catering.v2s.platform.asset.application.persistence.PlatformAssetPersistence;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.asset.api.CatalogAssetCommandApi;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
@@ -70,7 +71,7 @@ public class PlatformAssetService
 
     private static final String GLOBAL_RECEIPT_SCOPE = "global";
     private static final Object CATALOG_ASSET_LOCK_RESOURCE_KEY = new Object();
-    private final JdbcTemplate jdbc;
+    private final PlatformAssetPersistence persistence;
     private final TimeProvider time;
     private final AssetObjectStorage objects;
     private final PlatformTransactionManager transactions;
@@ -80,10 +81,18 @@ public class PlatformAssetService
         this(jdbc, time, objects, new DataSourceTransactionManager(jdbc.getDataSource()));
     }
 
-    @Autowired
     public PlatformAssetService(
             JdbcTemplate jdbc, TimeProvider time, AssetObjectStorage objects, PlatformTransactionManager transactions) {
-        this.jdbc = jdbc;
+        this(new PlatformAssetPersistence(jdbc), time, objects, transactions);
+    }
+
+    @Autowired
+    public PlatformAssetService(
+            PlatformAssetPersistence persistence,
+            TimeProvider time,
+            AssetObjectStorage objects,
+            PlatformTransactionManager transactions) {
+        this.persistence = persistence;
         this.time = time;
         this.objects = objects;
         this.transactions = transactions;
@@ -339,7 +348,7 @@ public class PlatformAssetService
         try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             if (idempotencyKey != null) {
                 lockReceipt(receiptScope, idempotencyKey);
-                Replay replay = findReceipt(receiptScope, idempotencyKey);
+                PlatformAssetPersistence.Receipt replay = findReceipt(receiptScope, idempotencyKey);
                 if (replay != null) {
                     // A released catalog stage is a completed lifecycle, not a different request. The UI uses a
                     // deterministic content key, so closing an editor and uploading the same file again legitimately
@@ -389,7 +398,7 @@ public class PlatformAssetService
             // their own workspace.
             // Workspace logos always receive a fresh asset ref and one-time bind grant.
             lockObjectReference(objectKey);
-            ExistingAsset existing =
+            PlatformAssetPersistence.ExistingAsset existing =
                     "CATALOG_ITEM_IMAGE".equals(usage) ? findCatalogByStorageKey(workspaceUuid, objectKey) : null;
             if (existing != null
                     && !sameCatalogContent(existing, usage, contentType, materialized.sizeBytes(), digest)) {
@@ -440,20 +449,13 @@ public class PlatformAssetService
                         existing.version());
             }
             try {
-                jdbc.update(
-                        "INSERT INTO platform_asset.staged_asset (asset_ref, usage, workspace_uuid, "
-                                + "group_workspace_key, storage_key, bucket_name, object_key, content_type, "
-                                + "size_bytes, "
-                                + "sha256, status, created_at_epoch_millis, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "
-                                + "?, ?, "
-                                + "'STAGED', ?, 1)",
+                persistence.insertStagedAsset(
                         assetRef,
                         usage,
                         workspaceUuid,
                         groupWorkspaceKey,
                         objectKey,
                         objects.bucketName(),
-                        objectKey,
                         contentType,
                         materialized.sizeBytes(),
                         digest,
@@ -463,7 +465,7 @@ public class PlatformAssetService
                 // duplicate-key failure is unrelated to object sharing and must not be
                 // reinterpreted as a reusable asset lifecycle.
                 if (!"CATALOG_ITEM_IMAGE".equals(usage)) throw race;
-                ExistingAsset winner = findCatalogByStorageKey(workspaceUuid, objectKey);
+                PlatformAssetPersistence.ExistingAsset winner = findCatalogByStorageKey(workspaceUuid, objectKey);
                 if (winner == null || !sameCatalogContent(winner, usage, contentType, materialized.sizeBytes(), digest))
                     throw race;
                 boolean restagedByThisCommand = "RELEASED".equals(winner.status());
@@ -525,7 +527,7 @@ public class PlatformAssetService
                 salesMenuReleaseRequestHash("RELEASE_STAGED", target, command.assetRef(), command.expectedVersion());
         String receiptScope = receiptScope(target.workspaceUuid());
         lockReceipt(receiptScope, command.idempotencyKey());
-        Replay replay = findReceipt(receiptScope, command.idempotencyKey());
+        PlatformAssetPersistence.Receipt replay = findReceipt(receiptScope, command.idempotencyKey());
         SalesMenuAssetRow current = lockSalesMenuAssetAndTargetForRelease(command.assetRef(), target);
         if (replay != null) {
             if (!requestHash.equals(replay.requestHash()) || !command.assetRef().equals(replay.assetRef())) {
@@ -542,13 +544,9 @@ public class PlatformAssetService
             throw new AssetClaimRejectedException();
         }
         long releasedAt = time.currentEpochMillis();
-        int changed = jdbc.update(
-                "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, "
-                        + "version=version+1 WHERE asset_ref=? AND usage=? AND status='STAGED' AND version=? "
-                        + "AND workspace_uuid=? AND group_workspace_key=?",
+        int changed = persistence.releaseStagedSalesMenuItemImage(
                 releasedAt,
                 command.assetRef(),
-                SALES_MENU_IMAGE_USAGE,
                 command.expectedVersion(),
                 target.workspaceUuid(),
                 target.groupWorkspaceKey());
@@ -586,19 +584,8 @@ public class PlatformAssetService
             SalesMenuAssetRow current = locked.get(binding.assetRef());
             if (!"STAGED".equals(current.status())) throw new AssetClaimRejectedException();
             String proof = sha256(binding.bindGrant().getBytes(StandardCharsets.UTF_8));
-            int consumed = jdbc.update(
-                    "UPDATE platform_asset.asset_bind_grant g SET consumed_at_epoch_millis=? FROM "
-                            + "platform_asset.staged_asset a WHERE g.asset_ref=? AND a.asset_ref=g.asset_ref "
-                            + "AND a.status='STAGED' AND a.usage=? AND a.workspace_uuid=? AND "
-                            + "a.group_workspace_key=? AND g.consumed_at_epoch_millis IS NULL "
-                            + "AND g.expires_at_epoch_millis>=? AND g.grant_hash=?",
-                    now,
-                    binding.assetRef(),
-                    SALES_MENU_IMAGE_USAGE,
-                    target.workspaceUuid(),
-                    target.groupWorkspaceKey(),
-                    now,
-                    proof);
+            int consumed = persistence.consumeSalesMenuBindGrant(
+                    now, binding.assetRef(), target.workspaceUuid(), target.groupWorkspaceKey(), proof);
             if (consumed != 1) throw new AssetClaimRejectedException();
             SalesMenuAssetCommandApi.AssetMetadata activated =
                     activateSalesMenuAsset(binding.assetRef(), target, current.version(), now);
@@ -617,26 +604,9 @@ public class PlatformAssetService
                 || bindGrant.isBlank()) throw new AssetClaimRejectedException();
         long now = time.currentEpochMillis();
         String proof = sha256(bindGrant.getBytes(StandardCharsets.UTF_8));
-        int consumed = jdbc.update(
-                "UPDATE platform_asset.asset_bind_grant g SET consumed_at_epoch_millis=? FROM "
-                        + "platform_asset.staged_asset a WHERE g.asset_ref=? AND a.asset_ref=g.asset_ref AND "
-                        + "a.status='STAGED' AND a.usage='GROUP_WORKSPACE_LOGO' AND g.consumed_at_epoch_millis IS NULL "
-                        + "AND "
-                        + "g.expires_at_epoch_millis>=? AND g.grant_hash=?",
-                now,
-                assetRef,
-                now,
-                proof);
+        int consumed = persistence.consumeWorkspaceLogoBindGrant(now, assetRef, proof);
         if (consumed != 1) throw new AssetClaimRejectedException();
-        int changed = jdbc.update(
-                "UPDATE platform_asset.staged_asset SET workspace_uuid=?, group_workspace_key=?, status='ACTIVE', "
-                        + "claimed_by_type='GROUP_WORKSPACE_LOGO', claimed_by_id=?, activated_at_epoch_millis=?, "
-                        + "version=version+1 WHERE asset_ref=? AND status='STAGED'",
-                workspaceUuid,
-                groupWorkspaceKey,
-                workspaceUuid,
-                now,
-                assetRef);
+        int changed = persistence.activateWorkspaceLogo(workspaceUuid, groupWorkspaceKey, now, assetRef);
         if (changed != 1) throw new AssetClaimRejectedException();
     }
 
@@ -676,53 +646,19 @@ public class PlatformAssetService
         if (bindGrant == null || bindGrant.isBlank()) throw new AssetClaimRejectedException();
         long now = time.currentEpochMillis();
         String proof = sha256(bindGrant.getBytes(StandardCharsets.UTF_8));
-        int consumed = jdbc.update(
-                "UPDATE platform_asset.asset_bind_grant g SET consumed_at_epoch_millis=? FROM "
-                        + "platform_asset.staged_asset a WHERE g.asset_ref=? AND a.asset_ref=g.asset_ref AND "
-                        + "a.usage='CATALOG_ITEM_IMAGE' AND a.status='STAGED' AND a.workspace_uuid=? AND "
-                        + "a.group_workspace_key=? AND g.consumed_at_epoch_millis IS NULL AND "
-                        + "g.expires_at_epoch_millis>=? "
-                        + "AND g.grant_hash=?",
-                now,
-                assetRef,
-                workspaceUuid,
-                groupWorkspaceKey,
-                now,
-                proof);
+        int consumed = persistence.consumeCatalogBindGrant(now, assetRef, workspaceUuid, groupWorkspaceKey, proof);
         if (consumed != 1) throw new AssetClaimRejectedException();
-        AssetReadback activated = jdbc.query(
-                "UPDATE platform_asset.staged_asset SET status='ACTIVE', claimed_by_type='CATALOG_ITEM_IMAGE', "
-                        + "claimed_by_id=?, activated_at_epoch_millis=?, version=version+1 WHERE asset_ref=? AND "
-                        + "usage='CATALOG_ITEM_IMAGE' AND status='STAGED' AND workspace_uuid=? AND "
-                        + "group_workspace_key=? RETURNING asset_ref, usage, status, version, size_bytes",
-                statement -> {
-                    statement.setObject(1, assetRef);
-                    statement.setLong(2, now);
-                    statement.setObject(3, assetRef);
-                    statement.setObject(4, workspaceUuid);
-                    statement.setString(5, groupWorkspaceKey);
-                },
-                result -> result.next()
-                        ? new AssetReadback(
-                                result.getObject("asset_ref", UUID.class),
-                                result.getString("usage"),
-                                result.getString("status"),
-                                result.getLong("version"),
-                                result.getLong("size_bytes"))
-                        : null);
+        PlatformAssetPersistence.AssetRow activated =
+                persistence.activateCatalogAsset(assetRef, now, workspaceUuid, groupWorkspaceKey);
         if (activated == null) throw new AssetClaimRejectedException();
-        return activated;
+        return new AssetReadback(
+                activated.assetRef(), activated.usage(), activated.status(), activated.version(), activated.sizeBytes());
     }
 
     @Override
     @Transactional
     public void release(UUID assetRef, UUID workspaceUuid) {
-        jdbc.update(
-                "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, "
-                        + "version=version+1 WHERE asset_ref=? AND claimed_by_id=? AND status='ACTIVE'",
-                time.currentEpochMillis(),
-                assetRef,
-                workspaceUuid);
+        persistence.releaseActiveAsset(time.currentEpochMillis(), assetRef, workspaceUuid);
     }
 
     /** Releases an unclaimed staging asset only when the one-time staging proof is presented. */
@@ -732,23 +668,9 @@ public class PlatformAssetService
         if (assetRef == null || bindGrant == null || bindGrant.isBlank()) throw new AssetClaimRejectedException();
         long now = time.currentEpochMillis();
         String proof = sha256(bindGrant.getBytes(StandardCharsets.UTF_8));
-        int released = jdbc.update(
-                "UPDATE platform_asset.staged_asset a SET status='RELEASED', released_at_epoch_millis=?, "
-                        + "version=version+1 WHERE a.asset_ref=? AND a.status='STAGED' AND EXISTS (SELECT 1 FROM "
-                        + "platform_asset.asset_bind_grant g WHERE g.asset_ref=a.asset_ref AND "
-                        + "g.consumed_at_epoch_millis "
-                        + "IS NULL AND g.expires_at_epoch_millis>=? AND g.grant_hash=?)",
-                now,
-                assetRef,
-                now,
-                proof);
+        int released = persistence.consumeStagedBindGrant(now, assetRef, proof);
         if (released != 1) throw new AssetClaimRejectedException();
-        jdbc.update(
-                "UPDATE platform_asset.asset_bind_grant SET consumed_at_epoch_millis=? WHERE asset_ref=? AND "
-                        + "consumed_at_epoch_millis IS NULL AND grant_hash=?",
-                now,
-                assetRef,
-                proof);
+        persistence.markStagedBindGrantConsumed(now, assetRef, proof);
     }
 
     /** Discards only an unclaimed catalog stage belonging to the authenticated workspace. */
@@ -756,15 +678,8 @@ public class PlatformAssetService
             UUID assetRef, long expectedVersion, UUID workspaceUuid, String groupWorkspaceKey) {
         if (assetRef == null || workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank())
             throw new AssetClaimRejectedException();
-        int changed = jdbc.update(
-                "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, "
-                        + "version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='STAGED' AND "
-                        + "version=? AND workspace_uuid=? AND group_workspace_key=?",
-                time.currentEpochMillis(),
-                assetRef,
-                expectedVersion,
-                workspaceUuid,
-                groupWorkspaceKey);
+        int changed = persistence.releaseStagedCatalogAsset(
+                time.currentEpochMillis(), assetRef, expectedVersion, workspaceUuid, groupWorkspaceKey);
         if (changed != 1) throw new AssetClaimRejectedException();
         return require(assetRef);
     }
@@ -793,7 +708,7 @@ public class PlatformAssetService
                 (assetRef + "|" + expectedVersion + "|CATALOG_ITEM_IMAGE_RELEASE").getBytes(StandardCharsets.UTF_8));
         String receiptScope = receiptScope(workspaceUuid);
         lockReceipt(receiptScope, idempotencyKey);
-        Replay replay = findReceipt(receiptScope, idempotencyKey);
+        PlatformAssetPersistence.Receipt replay = findReceipt(receiptScope, idempotencyKey);
         if (replay != null) {
             if (!requestHash.equals(replay.requestHash()) || !assetRef.equals(replay.assetRef()))
                 throw new AssetIdempotencyConflictException();
@@ -934,7 +849,7 @@ public class PlatformAssetService
         String requestHash = sha256(
                 (assetRef + "|CATALOG_ITEM_IMAGE_GLOBAL_RELEASE_OWNER_LOCAL_VERSION").getBytes(StandardCharsets.UTF_8));
         lockReceipt(GLOBAL_RECEIPT_SCOPE, idempotencyKey);
-        Replay replay = findReceipt(GLOBAL_RECEIPT_SCOPE, idempotencyKey);
+        PlatformAssetPersistence.Receipt replay = findReceipt(GLOBAL_RECEIPT_SCOPE, idempotencyKey);
         if (replay != null) {
             if (!requestHash.equals(replay.requestHash()) || !assetRef.equals(replay.assetRef()))
                 throw new AssetIdempotencyConflictException();
@@ -942,15 +857,8 @@ public class PlatformAssetService
         }
         AssetReadback current = requireCatalogAssetInWorkspace(assetRef, workspaceUuid);
         try (var command = OwnerOperationDiagnostics.beginCommand()) {
-            int changed = jdbc.update(
-                    "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, "
-                            + "version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='ACTIVE' "
-                            + "AND "
-                            + "version=? AND workspace_uuid=?",
-                    time.currentEpochMillis(),
-                    assetRef,
-                    current.version(),
-                    workspaceUuid);
+            int changed = persistence.releaseActiveCatalogAsset(
+                    time.currentEpochMillis(), assetRef, current.version(), workspaceUuid);
             if (changed != 1) throw new AssetClaimRejectedException();
             AssetReadback released = require(assetRef);
             recordReleaseReceipt(GLOBAL_RECEIPT_SCOPE, idempotencyKey, assetRef, requestHash, released);
@@ -965,22 +873,15 @@ public class PlatformAssetService
         String requestHash = sha256((assetRef + "|" + expectedVersion + "|CATALOG_ITEM_IMAGE_GLOBAL_RELEASE")
                 .getBytes(StandardCharsets.UTF_8));
         lockReceipt(GLOBAL_RECEIPT_SCOPE, idempotencyKey);
-        Replay replay = findReceipt(GLOBAL_RECEIPT_SCOPE, idempotencyKey);
+        PlatformAssetPersistence.Receipt replay = findReceipt(GLOBAL_RECEIPT_SCOPE, idempotencyKey);
         if (replay != null) {
             if (!requestHash.equals(replay.requestHash()) || !assetRef.equals(replay.assetRef()))
                 throw new AssetIdempotencyConflictException();
             return requireCatalogAssetInWorkspace(assetRef, workspaceUuid);
         }
         try (var command = OwnerOperationDiagnostics.beginCommand()) {
-            int changed = jdbc.update(
-                    "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, "
-                            + "version=version+1 WHERE asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='ACTIVE' "
-                            + "AND "
-                            + "version=? AND workspace_uuid=?",
-                    time.currentEpochMillis(),
-                    assetRef,
-                    expectedVersion,
-                    workspaceUuid);
+            int changed = persistence.releaseAuthorizedCatalogAsset(
+                    time.currentEpochMillis(), assetRef, expectedVersion, workspaceUuid);
             if (changed != 1) throw new AssetClaimRejectedException();
             AssetReadback released = require(assetRef);
             recordReleaseReceipt(GLOBAL_RECEIPT_SCOPE, idempotencyKey, assetRef, requestHash, released);
@@ -1015,13 +916,7 @@ public class PlatformAssetService
         LinkedHashSet<UUID> held = transactionCatalogAssetLocks();
         distinct.stream().sorted().forEach(assetRef -> {
             if (held != null && held.contains(assetRef)) return;
-            jdbc.query(
-                    "SELECT pg_advisory_xact_lock(?, ?)",
-                    statement -> {
-                        statement.setInt(1, (int) (assetRef.getMostSignificantBits() >>> 32));
-                        statement.setInt(2, (int) assetRef.getLeastSignificantBits());
-                    },
-                    result -> null);
+            persistence.lockCatalogReference(assetRef);
             if (held != null) held.add(assetRef);
         });
     }
@@ -1052,19 +947,9 @@ public class PlatformAssetService
 
     @Transactional(readOnly = true)
     public AssetReadback require(UUID assetRef) {
-        return jdbc.query(
-                "SELECT asset_ref, usage, status, version, size_bytes FROM platform_asset.staged_asset WHERE "
-                        + "asset_ref=?",
-                statement -> statement.setObject(1, assetRef),
-                result -> {
-                    if (!result.next()) throw new AssetNotFoundException();
-                    return new AssetReadback(
-                            result.getObject("asset_ref", UUID.class),
-                            result.getString("usage"),
-                            result.getString("status"),
-                            result.getLong("version"),
-                            result.getLong("size_bytes"));
-                });
+        PlatformAssetPersistence.AssetRow row = persistence.readAsset(assetRef);
+        if (row == null) throw new AssetNotFoundException();
+        return new AssetReadback(row.assetRef(), row.usage(), row.status(), row.version(), row.sizeBytes());
     }
 
     /**
@@ -1077,77 +962,38 @@ public class PlatformAssetService
         LinkedHashSet<UUID> distinct = new LinkedHashSet<>(assetRefs == null ? List.of() : assetRefs);
         if (distinct.isEmpty()) return Map.of();
         if (distinct.contains(null)) throw new AssetNotFoundException();
-        String placeholders = String.join(",", java.util.Collections.nCopies(distinct.size(), "?"));
         List<UUID> ids = List.copyOf(distinct);
-        Map<UUID, SalesMenuAssetReadApi.SalesMenuItemImage> images = jdbc.query(
-                "SELECT asset_ref, object_key, content_type, sha256, usage, status, version, size_bytes "
-                        + "FROM platform_asset.staged_asset WHERE usage='SALES_MENU_ITEM_IMAGE' AND status='ACTIVE' "
-                        + "AND asset_ref IN ("
-                        + placeholders
-                        + ")",
-                statement -> {
-                    for (int index = 0; index < ids.size(); index++) statement.setObject(index + 1, ids.get(index));
-                },
-                result -> {
-                    Map<UUID, SalesMenuAssetReadApi.SalesMenuItemImage> resultById = new LinkedHashMap<>();
-                    while (result.next()) {
-                        UUID assetRef = result.getObject("asset_ref", UUID.class);
-                        String usage = result.getString("usage");
-                        if (!SALES_MENU_IMAGE_USAGE.equals(usage)) {
-                            throw new AssetInvariantViolationException("owner.sales-menu-read-usage");
-                        }
-                        resultById.put(
-                                assetRef,
-                                new SalesMenuAssetReadApi.SalesMenuItemImage(
-                                        assetRef,
-                                        new SalesMenuAssetReadApi.PublicReference(
-                                                objects.publicUrl(result.getString("object_key")),
-                                                result.getString("content_type"),
-                                                result.getString("sha256")),
-                                        SalesMenuAssetUsage.SALES_MENU_ITEM_IMAGE,
-                                        result.getString("status"),
-                                        result.getLong("version"),
-                                        result.getLong("size_bytes")));
-                    }
-                    return resultById;
-                });
+        Map<UUID, SalesMenuAssetReadApi.SalesMenuItemImage> images = new LinkedHashMap<>();
+        for (PlatformAssetPersistence.SalesMenuAssetImage row : persistence.readSalesMenuItemImages(ids)) {
+            if (!SALES_MENU_IMAGE_USAGE.equals(row.usage())) {
+                throw new AssetInvariantViolationException("owner.sales-menu-read-usage");
+            }
+            images.put(
+                    row.assetRef(),
+                    new SalesMenuAssetReadApi.SalesMenuItemImage(
+                            row.assetRef(),
+                            new SalesMenuAssetReadApi.PublicReference(
+                                    objects.publicUrl(row.objectKey()), row.contentType(), row.sha256()),
+                            SalesMenuAssetUsage.SALES_MENU_ITEM_IMAGE,
+                            row.status(),
+                            row.version(),
+                            row.sizeBytes()));
+        }
         if (images.size() != ids.size()) throw new AssetNotFoundException();
         for (UUID id : ids) if (!images.containsKey(id)) throw new AssetNotFoundException();
         return Map.copyOf(images);
     }
 
     private AssetReadback requireCatalogAssetInWorkspace(UUID assetRef, UUID workspaceUuid) {
-        return jdbc.query(
-                "SELECT asset_ref, usage, status, version, size_bytes FROM platform_asset.staged_asset WHERE "
-                        + "asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND workspace_uuid=?",
-                statement -> {
-                    statement.setObject(1, assetRef);
-                    statement.setObject(2, workspaceUuid);
-                },
-                result -> {
-                    if (!result.next()) throw new AssetClaimRejectedException();
-                    return new AssetReadback(
-                            result.getObject("asset_ref", UUID.class),
-                            result.getString("usage"),
-                            result.getString("status"),
-                            result.getLong("version"),
-                            result.getLong("size_bytes"));
-                });
+        PlatformAssetPersistence.AssetRow row = persistence.readCatalogAssetInWorkspace(assetRef, workspaceUuid);
+        if (row == null) throw new AssetClaimRejectedException();
+        return new AssetReadback(row.assetRef(), row.usage(), row.status(), row.version(), row.sizeBytes());
     }
 
     @Transactional(readOnly = true)
     public PublicAssetReference requireActivePublicReference(UUID assetRef) {
-        ActiveAsset asset = jdbc.query(
-                "SELECT object_key, content_type, sha256 FROM platform_asset.staged_asset WHERE asset_ref=? AND "
-                        + "status='ACTIVE'",
-                statement -> statement.setObject(1, assetRef),
-                result -> {
-                    if (!result.next()) throw new AssetNotFoundException();
-                    return new ActiveAsset(
-                            result.getString("object_key"),
-                            result.getString("content_type"),
-                            result.getString("sha256"));
-                });
+        PlatformAssetPersistence.ActiveAsset asset = persistence.readActiveAsset(assetRef);
+        if (asset == null) throw new AssetNotFoundException();
         return new PublicAssetReference(objects.publicUrl(asset.objectKey()), asset.contentType(), asset.sha256());
     }
 
@@ -1157,30 +1003,12 @@ public class PlatformAssetService
         LinkedHashSet<UUID> distinct = new LinkedHashSet<>(assetRefs == null ? List.of() : assetRefs);
         if (distinct.isEmpty()) return Map.of();
         if (distinct.contains(null)) throw new AssetNotFoundException();
-        String placeholders = String.join(",", java.util.Collections.nCopies(distinct.size(), "?"));
         List<UUID> ids = List.copyOf(distinct);
-        Map<UUID, ActiveAsset> active = jdbc.query(
-                "SELECT asset_ref, object_key, content_type, sha256 FROM platform_asset.staged_asset WHERE "
-                        + "status='ACTIVE' AND asset_ref IN ("
-                        + placeholders + ")",
-                statement -> {
-                    for (int index = 0; index < ids.size(); index++) statement.setObject(index + 1, ids.get(index));
-                },
-                result -> {
-                    Map<UUID, ActiveAsset> resultById = new LinkedHashMap<>();
-                    while (result.next())
-                        resultById.put(
-                                result.getObject("asset_ref", UUID.class),
-                                new ActiveAsset(
-                                        result.getString("object_key"),
-                                        result.getString("content_type"),
-                                        result.getString("sha256")));
-                    return resultById;
-                });
+        Map<UUID, PlatformAssetPersistence.ActiveAsset> active = persistence.readActiveAssets(ids);
         if (active.size() != ids.size()) throw new AssetNotFoundException();
         Map<UUID, PublicAssetReference> references = new LinkedHashMap<>();
         for (UUID id : ids) {
-            ActiveAsset asset = active.get(id);
+            PlatformAssetPersistence.ActiveAsset asset = active.get(id);
             if (asset == null) throw new AssetNotFoundException();
             references.put(
                     id,
@@ -1363,14 +1191,7 @@ public class PlatformAssetService
 
     private void deleteUnreferencedObjectAfterRollback(String objectKey) {
         try {
-            Boolean stillReferenced = jdbc.query(
-                    "SELECT EXISTS(SELECT 1 FROM platform_asset.staged_asset WHERE bucket_name=? AND object_key=?)",
-                    statement -> {
-                        statement.setString(1, objects.bucketName());
-                        statement.setString(2, objectKey);
-                    },
-                    result -> result.next() && result.getBoolean(1));
-            if (!Boolean.TRUE.equals(stillReferenced)) objects.delete(objectKey);
+            if (!persistence.isObjectReferenced(objects.bucketName(), objectKey)) objects.delete(objectKey);
         } catch (RuntimeException failure) {
             log.atWarn()
                     .addKeyValue("event", "PLATFORM_ASSET_ROLLBACK_CLEANUP_FAILED")
@@ -1383,29 +1204,12 @@ public class PlatformAssetService
         }
     }
 
-    private ExistingAsset findCatalogByStorageKey(UUID workspaceUuid, String objectKey) {
-        return jdbc.query(
-                "SELECT asset_ref, usage, status, version, content_type, size_bytes, sha256 "
-                        + "FROM platform_asset.staged_asset "
-                        + "WHERE workspace_uuid=? AND storage_key=? AND usage='CATALOG_ITEM_IMAGE'",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, objectKey);
-                },
-                result -> result.next()
-                        ? new ExistingAsset(
-                                result.getObject("asset_ref", UUID.class),
-                                result.getString("usage"),
-                                result.getString("status"),
-                                result.getLong("version"),
-                                result.getString("content_type"),
-                                result.getLong("size_bytes"),
-                                result.getString("sha256"))
-                        : null);
+    private PlatformAssetPersistence.ExistingAsset findCatalogByStorageKey(UUID workspaceUuid, String objectKey) {
+        return persistence.findCatalogByStorageKey(workspaceUuid, objectKey);
     }
 
     private static boolean sameCatalogContent(
-            ExistingAsset existing, String usage, String contentType, long sizeBytes, String sha256) {
+            PlatformAssetPersistence.ExistingAsset existing, String usage, String contentType, long sizeBytes, String sha256) {
         // Catalog images are referenceable by multiple business records and do not use the
         // one-time workspace-logo bind proof. Logo staging remains one asset/one live grant;
         // reusing it here would invalidate a concurrent caller's plaintext grant.
@@ -1417,25 +1221,17 @@ public class PlatformAssetService
     }
 
     /** Restages this workspace's logical row only after its prior catalog lifecycle is fully released. */
-    private ExistingAsset restageReleasedCatalogContent(
-            ExistingAsset released,
+    private PlatformAssetPersistence.ExistingAsset restageReleasedCatalogContent(
+            PlatformAssetPersistence.ExistingAsset released,
             UUID workspaceUuid,
             String groupWorkspaceKey,
             String contentType,
             long sizeBytes,
             String sha256) {
-        int changed = jdbc.update(
-                "UPDATE platform_asset.staged_asset SET status='STAGED', claimed_by_type=NULL, claimed_by_id=NULL, "
-                        + "activated_at_epoch_millis=NULL, released_at_epoch_millis=NULL, version=version+1 WHERE "
-                        + "asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND status='RELEASED' AND workspace_uuid=? AND "
-                        + "content_type=? AND size_bytes=? AND sha256=?",
-                released.assetRef(),
-                workspaceUuid,
-                contentType,
-                sizeBytes,
-                sha256);
+        int changed = persistence.restageReleasedCatalogContent(
+                released.assetRef(), workspaceUuid, contentType, sizeBytes, sha256);
         if (changed == 1) {
-            return new ExistingAsset(
+            return new PlatformAssetPersistence.ExistingAsset(
                     released.assetRef(),
                     released.usage(),
                     "STAGED",
@@ -1444,7 +1240,7 @@ public class PlatformAssetService
                     released.sizeBytes(),
                     released.sha256());
         }
-        ExistingAsset current =
+        PlatformAssetPersistence.ExistingAsset current =
                 findCatalogByStorageKey(workspaceUuid, objects.objectKey("static/" + sha256 + suffix(contentType)));
         if (current == null
                 || !sameCatalogContent(current, "CATALOG_ITEM_IMAGE", contentType, sizeBytes, sha256)
@@ -1455,14 +1251,7 @@ public class PlatformAssetService
     }
 
     private void issueBindGrant(UUID assetRef, String grant, long expiresAt) {
-        jdbc.update(
-                "INSERT INTO platform_asset.asset_bind_grant (asset_ref, grant_hash, expires_at_epoch_millis, "
-                        + "consumed_at_epoch_millis) VALUES (?, ?, ?, NULL) ON CONFLICT (asset_ref) DO UPDATE SET "
-                        + "grant_hash=EXCLUDED.grant_hash, expires_at_epoch_millis=EXCLUDED.expires_at_epoch_millis, "
-                        + "consumed_at_epoch_millis=NULL",
-                assetRef,
-                sha256(grant.getBytes(StandardCharsets.UTF_8)),
-                expiresAt);
+        persistence.upsertBindGrant(assetRef, sha256(grant.getBytes(StandardCharsets.UTF_8)), expiresAt);
     }
 
     private static StageResult stageResult(
@@ -1508,17 +1297,13 @@ public class PlatformAssetService
 
     private void writeSalesMenuAssetTarget(UUID assetRef, SalesMenuAssetTarget target, long now) {
         requireSalesMenuTarget(target);
-        int inserted = jdbc.update(
-                "INSERT INTO platform_asset.sales_menu_asset_target (asset_ref, workspace_uuid, "
-                        + "group_workspace_key, store_ref, sales_menu_ref, sales_item_ref, usage, "
-                        + "expected_draft_version, created_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        int inserted = persistence.insertSalesMenuAssetTarget(
                 assetRef,
                 target.workspaceUuid(),
                 target.groupWorkspaceKey(),
                 target.storeRef(),
                 target.salesMenuRef(),
                 target.salesItemRef(),
-                SALES_MENU_IMAGE_USAGE,
                 target.expectedDraftVersion(),
                 now);
         if (inserted != 1) throw new AssetInvariantViolationException("owner.sales-menu-target-write");
@@ -1587,39 +1372,24 @@ public class PlatformAssetService
     }
 
     private SalesMenuAssetRow readLockedSalesMenuAssetAndTarget(UUID assetRef) {
-        SalesMenuAssetRow row = jdbc.query(
-                "SELECT a.asset_ref AS asset_ref, a.usage AS asset_usage, a.status AS asset_status, "
-                        + "a.version AS asset_version, a.workspace_uuid AS asset_workspace_uuid, "
-                        + "a.group_workspace_key AS asset_group_workspace_key, a.size_bytes AS asset_size_bytes, "
-                        + "a.released_at_epoch_millis AS asset_released_at, "
-                        + "t.workspace_uuid AS target_workspace_uuid, "
-                        + "t.group_workspace_key AS target_group_workspace_key, t.store_ref AS target_store_ref, "
-                        + "t.sales_menu_ref AS target_sales_menu_ref, t.sales_item_ref AS target_sales_item_ref, "
-                        + "t.usage AS target_usage, t.expected_draft_version AS target_expected_draft_version "
-                        + "FROM platform_asset.staged_asset a "
-                        + "JOIN platform_asset.sales_menu_asset_target t ON t.asset_ref=a.asset_ref "
-                        + "WHERE a.asset_ref=? FOR UPDATE OF a, t",
-                statement -> statement.setObject(1, assetRef),
-                result -> result.next()
-                        ? new SalesMenuAssetRow(
-                                result.getObject("asset_ref", UUID.class),
-                                result.getString("asset_usage"),
-                                result.getString("asset_status"),
-                                result.getLong("asset_version"),
-                                result.getObject("asset_workspace_uuid", UUID.class),
-                                result.getString("asset_group_workspace_key"),
-                                result.getLong("asset_size_bytes"),
-                                result.getObject("asset_released_at", Long.class),
-                                result.getObject("target_workspace_uuid", UUID.class),
-                                result.getString("target_group_workspace_key"),
-                                result.getObject("target_store_ref", UUID.class),
-                                result.getObject("target_sales_menu_ref", UUID.class),
-                                result.getObject("target_sales_item_ref", UUID.class),
-                                result.getString("target_usage"),
-                                result.getLong("target_expected_draft_version"))
-                        : null);
-        if (row == null) throw new AssetOwnerScopeForbiddenException();
-        return row;
+        PlatformAssetPersistence.SalesMenuAssetRow persisted = persistence.readSalesMenuAssetAndTarget(assetRef);
+        if (persisted == null) throw new AssetOwnerScopeForbiddenException();
+        return new SalesMenuAssetRow(
+                persisted.assetRef(),
+                persisted.usage(),
+                persisted.status(),
+                persisted.version(),
+                persisted.workspaceUuid(),
+                persisted.groupWorkspaceKey(),
+                persisted.sizeBytes(),
+                persisted.releasedAt(),
+                persisted.targetWorkspaceUuid(),
+                persisted.targetGroupWorkspaceKey(),
+                persisted.storeRef(),
+                persisted.salesMenuRef(),
+                persisted.salesItemRef(),
+                persisted.targetUsage(),
+                persisted.expectedDraftVersion());
     }
 
     private static SalesMenuAssetTarget storedSalesMenuTarget(SalesMenuAssetRow row) {
@@ -1635,29 +1405,8 @@ public class PlatformAssetService
 
     private SalesMenuAssetCommandApi.AssetMetadata activateSalesMenuAsset(
             UUID assetRef, SalesMenuAssetTarget target, long expectedVersion, long now) {
-        SalesMenuAssetCommandApi.AssetMetadata activated = jdbc.query(
-                "UPDATE platform_asset.staged_asset SET status='ACTIVE', claimed_by_type=?, claimed_by_id=?, "
-                        + "activated_at_epoch_millis=?, version=version+1 WHERE asset_ref=? AND usage=? "
-                        + "AND status='STAGED' AND version=? AND workspace_uuid=? AND group_workspace_key=? "
-                        + "RETURNING asset_ref, usage, status, version, size_bytes",
-                statement -> {
-                    statement.setString(1, SALES_MENU_IMAGE_USAGE);
-                    statement.setObject(2, target.salesItemRef());
-                    statement.setLong(3, now);
-                    statement.setObject(4, assetRef);
-                    statement.setString(5, SALES_MENU_IMAGE_USAGE);
-                    statement.setLong(6, expectedVersion);
-                    statement.setObject(7, target.workspaceUuid());
-                    statement.setString(8, target.groupWorkspaceKey());
-                },
-                result -> result.next()
-                        ? new SalesMenuAssetCommandApi.AssetMetadata(
-                                result.getObject("asset_ref", UUID.class),
-                                result.getString("usage"),
-                                result.getString("status"),
-                                result.getLong("version"),
-                                result.getLong("size_bytes"))
-                        : null);
+        SalesMenuAssetCommandApi.AssetMetadata activated = persistence.activateSalesMenuAsset(
+                assetRef, target.salesItemRef(), now, expectedVersion, target.workspaceUuid(), target.groupWorkspaceKey());
         if (activated == null) throw new AssetClaimRejectedException();
         return activated;
     }
@@ -1712,41 +1461,16 @@ public class PlatformAssetService
         return scope;
     }
 
-    private Replay findReceipt(String receiptScope, String idempotencyKey) {
-        return jdbc.query(
-                "SELECT receipt.request_hash, asset.asset_ref, asset.status, asset.version, asset.content_type, "
-                        + "asset.size_bytes, "
-                        + "asset.sha256 FROM platform_asset.asset_command_receipt receipt JOIN "
-                        + "platform_asset.staged_asset "
-                        + "asset ON asset.asset_ref=receipt.asset_ref WHERE receipt.idempotency_key=? AND "
-                        + "receipt.scope_key=? FOR UPDATE",
-                statement -> {
-                    statement.setString(1, idempotencyKey);
-                    statement.setString(2, receiptScope);
-                },
-                result -> result.next()
-                        ? new Replay(
-                                result.getString(1),
-                                result.getObject(2, UUID.class),
-                                result.getString(3),
-                                result.getLong(4),
-                                result.getString(5),
-                                result.getLong(6),
-                                result.getString(7))
-                        : null);
+    private PlatformAssetPersistence.Receipt findReceipt(String receiptScope, String idempotencyKey) {
+        return persistence.findReceipt(receiptScope, idempotencyKey);
     }
 
     private void lockReceipt(String receiptScope, String idempotencyKey) {
-        jdbc.queryForList(
-                "SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), hashtext(CAST(? AS text)))",
-                receiptScope,
-                idempotencyKey);
+        persistence.lockReceipt(receiptScope, idempotencyKey);
     }
 
     private void lockObjectReference(String objectKey) {
-        jdbc.queryForList(
-                "SELECT pg_advisory_xact_lock(hashtext('platform-asset-object'), hashtext(CAST(? AS text)))",
-                objectKey);
+        persistence.lockObjectReference(objectKey);
     }
 
     private static String receiptScope(UUID workspaceUuid) {
@@ -1763,15 +1487,7 @@ public class PlatformAssetService
             String digest,
             long now) {
         if (idempotencyKey == null) return;
-        int changed = jdbc.update(
-                "INSERT INTO platform_asset.asset_command_receipt (scope_key, idempotency_key, asset_ref, "
-                        + "request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, ?, CAST(? AS "
-                        + "JSONB), ?) ON CONFLICT (scope_key, idempotency_key) DO UPDATE SET asset_ref=EXCLUDED.ass"
-                        + "et_ref, "
-                        + "request_hash=EXCLUDED.request_hash, response_json=EXCLUDED.response_json, "
-                        + "created_at_epoch_millis=EXCLUDED.created_at_epoch_millis WHERE "
-                        + "platform_asset.asset_command_receipt.request_hash=EXCLUDED.request_hash AND "
-                        + "platform_asset.asset_command_receipt.asset_ref=EXCLUDED.asset_ref",
+        int changed = persistence.upsertStageReceipt(
                 receiptScope,
                 idempotencyKey,
                 assetRef,
@@ -1790,10 +1506,7 @@ public class PlatformAssetService
 
     private void recordReleaseReceipt(
             String receiptScope, String idempotencyKey, UUID assetRef, String requestHash, AssetReadback released) {
-        jdbc.update(
-                "INSERT INTO platform_asset.asset_command_receipt (scope_key, idempotency_key, asset_ref, "
-                        + "request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, ?, CAST(? AS "
-                        + "JSONB), ?)",
+        persistence.insertReleaseReceipt(
                 receiptScope,
                 idempotencyKey,
                 assetRef,
@@ -1833,27 +1546,7 @@ public class PlatformAssetService
 
     public record PublicAssetReference(String publicUrl, String contentType, String sha256) {}
 
-    private record ActiveAsset(String objectKey, String contentType, String sha256) {}
-
     private record MaterializedContent(Path path, long sizeBytes, String sha256) {}
-
-    private record ExistingAsset(
-            UUID assetRef,
-            String usage,
-            String status,
-            long version,
-            String contentType,
-            long sizeBytes,
-            String sha256) {}
-
-    private record Replay(
-            String requestHash,
-            UUID assetRef,
-            String status,
-            long version,
-            String contentType,
-            long sizeBytes,
-            String sha256) {}
 
     private record SalesMenuAssetRow(
             UUID assetRef,

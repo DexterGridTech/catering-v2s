@@ -44,6 +44,7 @@ Canonical cross-document rules:
 - `ADMIN_LAYER_CONTAINER_KEYS=[]` means layer-only; it is not an invalid empty screen placement.
 - `ADMIN_CONSOLE_PART_KEY=admin.console`, `ADMIN_CONSOLE_LAYER_ID=admin.console.layer`, and `ADMIN_CONSOLE_FOCUS_SCOPE_ID=admin.console` are single constants owned by `admin-shell`; `partKey` and `layerId` are different identities.
 - The assembly initializes `surfaceForm` once in the non-persisted `ui-state` slice. `selectSurfaceForm(root)` is the shared source for admission and render context; a separately passed React form prop is forbidden.
+- The TER Web dev-host exposes `laptop` and `mobile` view controls only when the terminal declaration has a portrait group. Selecting a different view writes `surfaceForm` to the Web URL and reloads the preview page; the next assembly initializes the selected form once. This is a host restart path, not an in-runtime `surfaceForm` setter or a second runtime.
 - A part is available only when its `containerKeys` match the requested placement semantics and its `surfaceForm`, `displayMode`, `workspace`, and `instanceMode` all match the context.
 - Physical display index remains at the integration/dev-host boundary. `SurfaceHostSnapshot` carries frozen `isHostPrimaryDisplay` and `surfaceIdentity`; source selection and host derivation both originate from physical `displayIndex`, while canvas selection remains `displayMode` based. UI context receives the frozen fact and does not index host sources.
 - A surface identity replacement recomputes geometry, retains all business content and business layers, blurs the replaced surface's active field, and closes only the targeted transient admin layer. The close uses the previous surface `displayMode` and exact `ADMIN_CONSOLE_LAYER_ID`; admin authentication, selected section, and local admin scroll are discarded. Whole-root remount and `clearLayers` are forbidden.
@@ -158,6 +159,29 @@ The navigation collection is a projection of the same `UiCatalog.entries`, filte
 - identity: one unique part key/renderer key; A-18 removal and A-20 availability target this exact entry;
 - no fixture shortcut: the focused test must discover the entry through catalog selection, not a hard-coded test array;
 - no action: placeholder content is intentionally empty.
+
+### 3.8 `dev-host-surface-form-control`
+
+- scope: TER Expo Web development host only; it is not an admin-console section or a second launch path;
+- position: in the existing host page header, below the title/status row; the width range, view radio, and
+  laptop-only surface-mode radio are siblings in one independent, horizontally centered control row;
+- visible controls: one `终端视角` radio group is present when the injected `terminalSurfaces` declares
+  `orientations.portrait`; it contains mutually exclusive `laptop` and `mobile` options;
+- selected state: the current form is exposed through each radio option's selected accessibility state and the
+  header status; laptop uses landscape PRIMARY/SECONDARY declarations, mobile uses portrait PRIMARY-only;
+- surface mode: laptop exposes one `屏幕模式` radio group with mutually exclusive `单屏模式` and `双屏模式`
+  options; the selected radio state is the only visible mode status and selecting an option mounts or unmounts
+  SECONDARY in the current runtime without rebuilding the assembly;
+- surface width: the same header area exposes a native Web range control labelled `surface 宽度`, from
+  30% through 100% of the measured preview content width, with the current percentage shown beside it;
+  it changes preview scale only and never changes the declared logical surface dimensions;
+- interaction: selecting the other form writes `surfaceForm=laptop|mobile` to the current Web URL and
+  reloads the preview page, so the next assembly starts once with that form; it does not set a runtime
+  form slice, create a second runtime in the same page, or hot-switch an existing assembly;
+- separation: the `surfaceMode` radio group remains laptop-only and only mounts/unmounts SECONDARY within the
+  current runtime; it is independent from the form selector;
+- fallback: an absent/unknown URL value uses the configured default form, and a mobile request without a
+  portrait declaration also falls back to that default.
 
 ## 4. Invisible IA and state contracts
 

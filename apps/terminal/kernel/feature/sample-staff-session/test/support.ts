@@ -107,7 +107,6 @@ export const createTestRuntime = (
     runtimeName,
     environmentMode: 'TEST',
     persistenceKey: 'sample-staff-session',
-    storageTimeouts: {readMs: 50, writeMs: 50, resetMs: 50},
     persistenceDebounceMs: 0,
   },
 })

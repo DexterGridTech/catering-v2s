@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
+import com.catering.v2s.platform.workspace.application.persistence.WorkspaceCommandReceiptPersistence;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.flywaydb.core.Flyway;
@@ -36,7 +37,8 @@ class WorkspaceCommandReceiptIntegrationTest {
                 .migrate();
         jdbc = new JdbcTemplate(
                 new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()));
-        receipts = new WorkspaceCommandReceiptService(jdbc, (TimeProvider) () -> 1_785_000_000_000L);
+        receipts = new WorkspaceCommandReceiptService(
+                new WorkspaceCommandReceiptPersistence(jdbc), (TimeProvider) () -> 1_785_000_000_000L);
     }
 
     @AfterAll

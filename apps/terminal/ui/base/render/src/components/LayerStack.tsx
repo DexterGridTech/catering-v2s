@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useRef} from 'react'
-import {BackHandler, Pressable, StyleSheet, TextInput, View} from 'react-native'
+import {BackHandler, Platform, Pressable, StyleSheet, TextInput, View} from 'react-native'
 import {closeLayerCommand, selectLayers} from '@catering-v2s/kernel-base-ui-state'
 import {useRenderContext} from '../contexts/RenderContext'
 import {useSurfaceContext} from '../contexts/SurfaceContext'
@@ -182,7 +182,7 @@ export const LayerStack = () => {
   }, [dispatchCommand, displayMode, topGuard, topLayer])
 
   useEffect(() => {
-    if (typeof BackHandler?.addEventListener !== 'function') return undefined
+    if (Platform?.OS === 'web' || typeof BackHandler?.addEventListener !== 'function') return undefined
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       if (topLayer === undefined) return false
       if (topGuard === 'dismissible') dismissTopLayer()

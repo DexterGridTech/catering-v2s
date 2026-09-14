@@ -1,5 +1,6 @@
 package com.catering.v2s.organization.application;
 
+import com.catering.v2s.organization.application.persistence.BusinessBrandPersistence;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditEntityTypes;
@@ -32,7 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BusinessBrandService {
     private static final Set<String> VALID_STATUS = Set.of("ENABLED", "DISABLED", "VOIDED");
-    private final JdbcTemplate jdbc;
+    private final BusinessBrandPersistence persistence;
     private final TimeProvider time;
     private final ExtensionDefinitionLookup definitions;
     private final BusinessEntityCommandReceiptService receipts;
@@ -40,12 +41,12 @@ public class BusinessBrandService {
 
     @Autowired
     public BusinessBrandService(
-            JdbcTemplate jdbc,
+            BusinessBrandPersistence persistence,
             TimeProvider time,
             ExtensionDefinitionLookup definitions,
             BusinessEntityCommandReceiptService receipts,
             BusinessEntityTaskReadService reads) {
-        this.jdbc = jdbc;
+        this.persistence = persistence;
         this.time = time;
         this.definitions = definitions;
         this.receipts = receipts;
@@ -58,7 +59,16 @@ public class BusinessBrandService {
             ExtensionDefinitionLookup definitions,
             BusinessEntityCommandReceiptService receipts,
             com.catering.v2s.organization.api.OrganizationNodeLookup nodes) {
-        this(jdbc, time, definitions, receipts, new BusinessEntityTaskReadService(jdbc, nodes));
+        this(new BusinessBrandPersistence(jdbc), time, definitions, receipts, new BusinessEntityTaskReadService(jdbc, nodes));
+    }
+
+    BusinessBrandService(
+            JdbcTemplate jdbc,
+            TimeProvider time,
+            ExtensionDefinitionLookup definitions,
+            BusinessEntityCommandReceiptService receipts,
+            BusinessEntityTaskReadService reads) {
+        this(new BusinessBrandPersistence(jdbc), time, definitions, receipts, reads);
     }
 
     @Transactional
@@ -295,10 +305,7 @@ public class BusinessBrandService {
         UUID id = UUID.randomUUID();
         long now = time.currentEpochMillis();
         try {
-            jdbc.update(
-                    "INSERT INTO organization.brand (id, workspace_uuid, group_workspace_key, code, name, alias, "
-                            + "remark, status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES "
-                            + "(?, ?, ?, ?, ?, ?, ?, 'ENABLED', 1, ?, ?)",
+            persistence.insert(
                     id,
                     workspaceUuid,
                     groupWorkspaceKey,
@@ -306,7 +313,6 @@ public class BusinessBrandService {
                     BusinessEntityValueSupport.text(name, 120),
                     BusinessEntityValueSupport.optional(alias, 120),
                     BusinessEntityValueSupport.optional(remark, 2000),
-                    now,
                     now);
         } catch (org.springframework.dao.DuplicateKeyException exception) {
             throw new BusinessEntityService.OrganizationDuplicateException(exception);
@@ -358,19 +364,15 @@ public class BusinessBrandService {
         OrganizationEntityReadback before = reads.requireEntity(BusinessEntityTypes.BRAND, workspaceUuid, groupWorkspaceKey, id);
         BusinessEntityValueSupport.requireMutable(before.status());
         ensureAvailable(workspaceUuid, groupWorkspaceKey, id, code, name);
-        String update =
-                "UPDATE organization.brand SET code=?, name=?, alias=?, remark=?, version=version+1, "
-                        + "updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND version=?";
-        if (jdbc.update(
-                        update,
+        if (persistence.update(
+                        id,
+                        workspaceUuid,
+                        groupWorkspaceKey,
                         BusinessEntityValueSupport.text(code, 64),
                         BusinessEntityValueSupport.text(name, 120),
                         BusinessEntityValueSupport.optional(alias, 120),
                         BusinessEntityValueSupport.optional(remark, 2000),
                         time.currentEpochMillis(),
-                        id,
-                        workspaceUuid,
-                        groupWorkspaceKey,
                         expectedVersion)
                 != 1) throw new BusinessEntityService.OrganizationConflictException();
         replaceValues(id, workspaceUuid, groupWorkspaceKey, before.extensionValues(), submission);
@@ -427,14 +429,12 @@ public class BusinessBrandService {
         OrganizationEntityReadback before = reads.requireEntity(BusinessEntityTypes.BRAND, workspaceUuid, groupWorkspaceKey, id);
         if (!VALID_STATUS.contains(status)
                 || "VOIDED".equals(before.status())
-                || jdbc.update(
-                                "UPDATE organization.brand SET status=?, version=version+1, updated_at_epoch_millis=? "
-                                        + "WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND version=?",
-                                status,
-                                time.currentEpochMillis(),
+                || persistence.transitionStatus(
                                 id,
                                 workspaceUuid,
                                 groupWorkspaceKey,
+                                status,
+                                time.currentEpochMillis(),
                                 expectedVersion)
                         != 1) throw new BusinessEntityService.OrganizationConflictException();
         OrganizationEntityReadback updated = OwnerOperationDiagnostics.readback(
@@ -451,41 +451,14 @@ public class BusinessBrandService {
     }
 
     private void ensureAvailable(UUID workspaceUuid, String groupWorkspaceKey, UUID currentId, String code, String name) {
-        String exclusion = currentId == null ? "" : " AND id<>?";
-        String sql = "SELECT EXISTS(SELECT 1 FROM organization.brand WHERE workspace_uuid=? AND group_workspace_key=? "
-                + "AND status <> 'VOIDED' AND code=?" + exclusion + ") AS code_conflict, EXISTS(SELECT 1 FROM "
-                + "organization.brand WHERE workspace_uuid=? AND group_workspace_key=? AND status <> 'VOIDED' AND "
-                + "lower(btrim(name))=?" + exclusion + ") AS name_conflict";
-        Object[] args = currentId == null
-                ? new Object[] {
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    BusinessEntityValueSupport.text(code, 64),
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    BusinessEntityValueSupport.text(name, 120).toLowerCase()
-                }
-                : new Object[] {
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    BusinessEntityValueSupport.text(code, 64),
-                    currentId,
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    BusinessEntityValueSupport.text(name, 120).toLowerCase(),
-                    currentId
-                };
-        Boolean[] conflicts = jdbc.query(
-                sql,
-                statement -> {
-                    for (int index = 0; index < args.length; index++) statement.setObject(index + 1, args[index]);
-                },
-                result -> {
-                    if (!result.next()) throw new BusinessEntityService.OrganizationConflictException();
-                    return new Boolean[] {result.getBoolean("code_conflict"), result.getBoolean("name_conflict")};
-                });
-        if (conflicts[0]) throw new BusinessEntityService.OrganizationCodeConflictException();
-        if (conflicts[1]) throw new BusinessEntityService.OrganizationNameConflictException();
+        BusinessBrandPersistence.ConflictFlags conflicts = persistence.findConflicts(
+                workspaceUuid,
+                groupWorkspaceKey,
+                currentId,
+                BusinessEntityValueSupport.text(code, 64),
+                BusinessEntityValueSupport.text(name, 120).toLowerCase());
+        if (conflicts.codeConflict()) throw new BusinessEntityService.OrganizationCodeConflictException();
+        if (conflicts.nameConflict()) throw new BusinessEntityService.OrganizationNameConflictException();
     }
 
     private void validateValues(UUID workspaceUuid, String groupWorkspaceKey, Map<String, String> values) {
@@ -522,11 +495,7 @@ public class BusinessBrandService {
         }
         try {
             String merged = ExtensionDefinitionService.mergeValues(definition, "{}", submission);
-            jdbc.update(
-                    "UPDATE organization.brand SET extension_values=CAST(? AS JSONB), extension_rule_revision=? WHERE id=?",
-                    merged,
-                    definition.version(),
-                    id);
+            persistence.replaceExtensionValues(id, merged, definition.version());
         } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
             throw new BusinessEntityService.OrganizationValidationException(invalid);
         }
@@ -545,20 +514,12 @@ public class BusinessBrandService {
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (submission != null && !submission.fields().isEmpty())
                 throw new BusinessEntityService.OrganizationValidationException(absent);
-            jdbc.update(
-                    "UPDATE organization.brand SET extension_values=CAST(? AS JSONB), extension_rule_revision=? WHERE id=?",
-                    current,
-                    0L,
-                    id);
+            persistence.replaceExtensionValuesWithoutDefinition(id, current);
             return;
         }
         try {
             String merged = ExtensionDefinitionService.mergeValues(definition, current, submission);
-            jdbc.update(
-                    "UPDATE organization.brand SET extension_values=CAST(? AS JSONB), extension_rule_revision=? WHERE id=?",
-                    merged,
-                    definition.version(),
-                    id);
+            persistence.replaceExtensionValues(id, merged, definition.version());
         } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
             throw new BusinessEntityService.OrganizationValidationException(invalid);
         }
@@ -589,10 +550,7 @@ public class BusinessBrandService {
             long now,
             AuditActor actor,
             List<AuditChange> changes) {
-        jdbc.update(
-                "INSERT INTO organization.audit_event (id, workspace_uuid, group_workspace_key, entity_type, "
-                        + "entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, "
-                        + "occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS JSONB))",
+        persistence.audit(
                 UUID.randomUUID(),
                 workspaceUuid,
                 groupWorkspaceKey,

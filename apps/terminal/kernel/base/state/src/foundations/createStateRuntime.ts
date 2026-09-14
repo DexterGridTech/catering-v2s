@@ -47,12 +47,6 @@ const persistenceDescriptorChanged = (
   return recordEntriesChanged(descriptor.getEntries(previous), descriptor.getEntries(next))
 }
 
-const requirePositiveFinite = (value: number, label: string): void => {
-  if (!Number.isFinite(value) || value <= 0) {
-    throw new Error(`[createStateRuntime] ${label} must be a positive finite number`)
-  }
-}
-
 const resolveSlices = (
   input: CreateStateRuntimeInput,
 ): readonly RegisteredStateRuntimeSlice[] => {
@@ -87,9 +81,6 @@ export const createStateRuntime = async (
 ): Promise<StateRuntime> => {
   assertNonEmptyString(input.runtimeName, 'createStateRuntime', 'runtimeName')
   assertNonEmptyString(input.persistenceKey, 'createStateRuntime', 'persistenceKey')
-  requirePositiveFinite(input.storageTimeouts.readMs, 'storageTimeouts.readMs')
-  requirePositiveFinite(input.storageTimeouts.writeMs, 'storageTimeouts.writeMs')
-  requirePositiveFinite(input.storageTimeouts.resetMs, 'storageTimeouts.resetMs')
   if (!Number.isFinite(input.persistenceDebounceMs) || input.persistenceDebounceMs < 0) {
     throw new Error('[createStateRuntime] persistenceDebounceMs must be a non-negative finite number')
   }
@@ -107,7 +98,6 @@ export const createStateRuntime = async (
       plain: input.plainStorage,
       protected: input.protectedStorage,
     },
-    timeouts: input.storageTimeouts,
     logger: input.logger.scope({
       moduleName: '@catering-v2s/kernel-base-state',
       layer: 'kernel',

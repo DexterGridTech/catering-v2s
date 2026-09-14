@@ -75,7 +75,7 @@ export const definePart = <TProps extends RenderComponentProps>(
     displayModes: Object.freeze([...input.displayModes]),
     workspaces: Object.freeze([...input.workspaces]),
     instanceModes: Object.freeze([...input.instanceModes]),
-    surfaceForm: input.surfaceForm,
+    surfaceForm: Object.freeze([...input.surfaceForm]),
     title: input.title,
     description: input.description,
   })

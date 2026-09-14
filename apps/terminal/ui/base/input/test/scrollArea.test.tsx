@@ -42,6 +42,7 @@ const mountWithNativeGeometry = (
 ): Readonly<{readonly renderer: ReactTestRenderer; readonly requestScroll: {readonly current: ScrollRequest | null}}> => {
   let renderer: ReactTestRenderer | undefined
   const requestScroll = {current: null as ScrollRequest | null}
+  const contentNativeNode = {}
   const onScrollReady = (request: ScrollRequest) => {
     requestScroll.current = request
   }
@@ -63,9 +64,12 @@ const mountWithNativeGeometry = (
             return {
               measureInWindow: () => { throw new Error('window coordinates must not drive scroll delta') },
               measureLayout: (
-                _relativeToNativeNode: unknown,
+                relativeToNativeNode: unknown,
                 callback: (x: number, y: number, width: number, height: number) => void,
-              ) => callback(0, 530, 100, 40),
+              ) => {
+                expect(relativeToNativeNode).toBe(contentNativeNode)
+                callback(0, 530, 100, 40)
+              },
               focus: () => undefined,
               blur: () => undefined,
             }
@@ -73,7 +77,8 @@ const mountWithNativeGeometry = (
           if (element.props.testID === 'sample:scroll-area' && element.type === ScrollView) {
             return {
               measureInWindow: () => { throw new Error('window coordinates must not drive scroll delta') },
-              getInnerViewNode: () => 1,
+              getInnerViewRef: () => contentNativeNode,
+              getInnerViewNode: () => { throw new Error('numeric content node must not be used') },
               scrollTo,
             }
           }

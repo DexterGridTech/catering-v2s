@@ -3,7 +3,9 @@ package com.catering.v2s.workspace.iam.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
+import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.WorkspaceAssignmentScopeLookup;
 import com.catering.v2s.organization.application.BusinessEntityService;
@@ -117,7 +119,10 @@ class WorkspaceUserTaskScopeTest {
                 new BusinessEntityService(
                         jdbc,
                         () -> NOW,
-                        new ExtensionDefinitionService(jdbc, () -> NOW, WORKSPACE_STATUSES),
+                        new ExtensionDefinitionService(
+                                new ExtensionDefinitionPersistence(jdbc, () -> NOW),
+                                new ExtensionCommandReceiptService(jdbc, () -> NOW),
+                                WORKSPACE_STATUSES),
                         hierarchy),
                 new WorkspaceRoleService(jdbc, () -> NOW),
                 groups,
@@ -586,7 +591,10 @@ class WorkspaceUserTaskScopeTest {
                 new BusinessEntityService(
                         jdbc,
                         () -> NOW,
-                        new ExtensionDefinitionService(jdbc, () -> NOW, WORKSPACE_STATUSES),
+                        new ExtensionDefinitionService(
+                                new ExtensionDefinitionPersistence(jdbc, () -> NOW),
+                                new ExtensionCommandReceiptService(jdbc, () -> NOW),
+                                WORKSPACE_STATUSES),
                         hierarchy),
                 new WorkspaceRoleService(jdbc, () -> NOW),
                 groups,

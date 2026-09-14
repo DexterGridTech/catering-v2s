@@ -1624,7 +1624,12 @@
       },
       "requiredAssertions": [
         "BACKEND_READABILITY_RULES_SOURCE",
-        "BACKEND_READABILITY_RECALL_ANCHOR"
+        "BACKEND_READABILITY_RECALL_ANCHOR",
+        "BACKEND_READABILITY_SEMANTIC_PERSISTENCE_BOUNDARY",
+        "BACKEND_READABILITY_SQL_SEMANTIC_NAMING",
+        "BACKEND_READABILITY_PROOF_SCOPE",
+        "BACKEND_READABILITY_CURRENT_BYTE_EVIDENCE",
+        "BACKEND_READABILITY_LAYOUT_BOUNDARY_DECISION"
       ],
       "assertionSources": [
         {
@@ -1636,6 +1641,31 @@
           "assertionKey": "BACKEND_READABILITY_RECALL_ANCHOR",
           "path": "project-memory/operations/backend-readability-refactor.md",
           "anchor": "# Backend owner 可读性整改：项目记忆召回锚点"
+        },
+        {
+          "assertionKey": "BACKEND_READABILITY_SEMANTIC_PERSISTENCE_BOUNDARY",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "### `R-READ-10` · 证明范围必须覆盖被声称的生产边界"
+        },
+        {
+          "assertionKey": "BACKEND_READABILITY_SQL_SEMANTIC_NAMING",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "### `R-READ-09` · SQL 事实必须可读命名且保持单一归属"
+        },
+        {
+          "assertionKey": "BACKEND_READABILITY_PROOF_SCOPE",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "### `R-READ-10` · 证明范围必须覆盖被声称的生产边界"
+        },
+        {
+          "assertionKey": "BACKEND_READABILITY_CURRENT_BYTE_EVIDENCE",
+          "path": "doc/platform/backend-coding-standard.md",
+          "anchor": "### `R-READ-08` · 测量必须可复核,未知不得伪装确定"
+        },
+        {
+          "assertionKey": "BACKEND_READABILITY_LAYOUT_BOUNDARY_DECISION",
+          "path": "project-memory/operations/backend-readability-refactor.md",
+          "anchor": "## 本批已接受的通用边界（2026-09-14）"
         }
       ],
       "sourceRefs": [
@@ -2077,9 +2107,12 @@
       "requiredAssertions": [
         "RUN_COUNT_NOT_RUN_COST_DOMINATES",
         "FAILURE_FAMILY_CLOSED_BEFORE_NEXT",
+        "AUTHORIZED_FAILURE_DRIVES_REPAIR_AND_CONTINUATION",
+        "GOAL_HAS_NO_TOKEN_BUDGET_OR_EARLY_STOP",
         "BROAD_RUN_IS_REGRESSION_NOT_DISCOVERY",
         "PASS_WITHOUT_REVIEWED_FIXTURE_DENOMINATOR_IS_NOT_COMPLETION",
-        "RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN"
+        "RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN",
+        "NATIVE_SEMANTIC_PROP_MUST_BE_PLATFORM_SUPPORTED"
       ],
       "assertionSources": [
         {
@@ -2091,6 +2124,16 @@
           "assertionKey": "FAILURE_FAMILY_CLOSED_BEFORE_NEXT",
           "path": "doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md",
           "anchor": "> **同一 failureCategory 第二次出现,立即停止业务推进,先把该族关闭到零复发。**"
+        },
+        {
+          "assertionKey": "AUTHORIZED_FAILURE_DRIVES_REPAIR_AND_CONTINUATION",
+          "path": "project-memory/operations/execution-economics-and-failure-family-closure.md",
+          "anchor": "- `AUTHORIZED_FAILURE_DRIVES_REPAIR_AND_CONTINUATION`:**在授权范围内，失败必须驱动修复与继续。**"
+        },
+        {
+          "assertionKey": "GOAL_HAS_NO_TOKEN_BUDGET_OR_EARLY_STOP",
+          "path": "project-memory/operations/execution-economics-and-failure-family-closure.md",
+          "anchor": "- `GOAL_HAS_NO_TOKEN_BUDGET_OR_EARLY_STOP`:**goal 不设置 token budget；未完成 goal 不得因预算、一次失败或阶段性报告而结束。**"
         },
         {
           "assertionKey": "BROAD_RUN_IS_REGRESSION_NOT_DISCOVERY",
@@ -2106,10 +2149,16 @@
           "assertionKey": "RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN",
           "path": "doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md",
           "anchor": "对阶段 0 与 1 的产物做证伪式对账,**在第一次动态运行之前**。"
+        },
+        {
+          "assertionKey": "NATIVE_SEMANTIC_PROP_MUST_BE_PLATFORM_SUPPORTED",
+          "path": "project-memory/operations/execution-economics-and-failure-family-closure.md",
+          "anchor": "- `NATIVE_SEMANTIC_PROP_MUST_BE_PLATFORM_SUPPORTED`:**跨平台 primitive 的原生语义属性必须以目标平台实际支持集为准。**"
         }
       ],
       "sourceRefs": [
-        "doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md"
+        "doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md",
+        "project-memory/operations/execution-economics-and-failure-family-closure.md"
       ]
     },
     {
@@ -2304,7 +2353,7 @@
         },
         {
           "assertionKey": "ROW_VERSION_IS_NOT_AGGREGATE_CAS_VERSION",
-          "path": "apps/backend/catering-business-server/modules/sales-menu/src/main/java/com/catering/v2s/salesmenu/infrastructure/JdbcSalesMenuRepository.java",
+          "path": "apps/backend/catering-business-server/modules/sales-menu/src/main/java/com/catering/v2s/salesmenu/application/persistence/SalesMenuPersistence.java",
           "anchor": "    public boolean compareAndSetVersion(SalesMenuTarget target, long expectedVersion) {"
         },
         {
@@ -2320,7 +2369,7 @@
       ],
       "sourceRefs": [
         "apps/backend/catering-business-server/modules/sales-menu/src/main/java/com/catering/v2s/salesmenu/application/SalesMenuOwnerService.java",
-        "apps/backend/catering-business-server/modules/sales-menu/src/main/java/com/catering/v2s/salesmenu/infrastructure/JdbcSalesMenuRepository.java",
+        "apps/backend/catering-business-server/modules/sales-menu/src/main/java/com/catering/v2s/salesmenu/application/persistence/SalesMenuPersistence.java",
         "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx",
         "project-memory/operations/owner-cas-version-source.md"
       ]
@@ -4994,6 +5043,127 @@
       "sourceRefs": [
         "doc/evidence/platform/terminal-input/runs/TERMINAL-INPUT-CP3-ANDROID-2026-09-06T05-00-00/README.md",
         "doc/review/platform/2026-09-08-ter-logical-canvas-stretch-implementation-evidence-codex.md"
+      ]
+    },
+    {
+      "id": "pitfalls.generated-output-and-static-gate-drift",
+      "path": "project-memory/pitfalls/generated-output-and-static-gate-drift.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "implementation",
+          "testing",
+          "review"
+        ],
+        "domains": [
+          "contract",
+          "backend",
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "backend",
+          "platform"
+        ],
+        "impacts": [
+          "contract",
+          "evidence",
+          "architecture"
+        ],
+        "triggers": [
+          "implementation",
+          "failure",
+          "review"
+        ]
+      },
+      "requiredAssertions": [
+        "GENERATED_OUTPUT_MUST_FOLLOW_OWNING_SOURCE",
+        "STATIC_TEXT_GATE_MUST_TRACK_REAL_SHAPE"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "GENERATED_OUTPUT_MUST_FOLLOW_OWNING_SOURCE",
+          "path": "project-memory/pitfalls/generated-output-and-static-gate-drift.md",
+          "anchor": "- **失败模式**：生成的 OpenAPI/Java/TypeScript 与当前 owner 语义不一致，或 materializer 已经把源文件判为 drift；直接编辑 generated 文件或给 consumer 加 fallback 会把问题藏在下一次生成之后。"
+        },
+        {
+          "assertionKey": "STATIC_TEXT_GATE_MUST_TRACK_REAL_SHAPE",
+          "path": "doc/plans/platform/2026-08-18-v2s-unified-list-pagination-implementation-design-codex.md",
+          "anchor": "## 5. 测试与 proof 设计"
+        },
+        {
+          "assertionKey": "GENERATED_OUTPUT_MUST_FOLLOW_OWNING_SOURCE",
+          "path": "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+          "anchor": "# HTTP CRUD efficiency design redlines"
+        }
+      ],
+      "sourceRefs": [
+        "doc/plans/platform/2026-08-18-v2s-unified-list-pagination-implementation-design-codex.md",
+        "project-memory/decisions/http-crud-efficiency-design-redlines.md",
+        "project-memory/pitfalls/generated-output-and-static-gate-drift.md"
+      ]
+    },
+    {
+      "id": "practices.detail-drawer-action-menu",
+      "path": "project-memory/practices/detail-drawer-action-menu.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "admin-ui",
+          "platform"
+        ],
+        "consumerFaces": [
+          "platform-admin",
+          "operations-admin"
+        ],
+        "owners": [
+          "frontend-platform"
+        ],
+        "impacts": [
+          "architecture",
+          "governance"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "DETAIL_DRAWER_USES_SINGLE_OPERATION_MENU",
+        "DETAIL_DRAWER_ACTIONS_REUSE_FOUNDATION",
+        "DETAIL_DRAWER_DENOMINATOR_HAS_EXPLICIT_EXCLUSIONS"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "DETAIL_DRAWER_USES_SINGLE_OPERATION_MENU",
+          "path": "libraries/frontend/admin-ui-foundation/src/overlay/detailActionMenu.tsx",
+          "anchor": " * Shared presentation for actions in an existing object-detail Drawer."
+        },
+        {
+          "assertionKey": "DETAIL_DRAWER_ACTIONS_REUSE_FOUNDATION",
+          "path": "doc/platform/frontend-coding-standard.md",
+          "anchor": "#### 3-K-10 · 详情抽屉动作入口"
+        },
+        {
+          "assertionKey": "DETAIL_DRAWER_DENOMINATOR_HAS_EXPLICIT_EXCLUSIONS",
+          "path": "project-memory/practices/detail-drawer-action-menu.md",
+          "anchor": "# 双后台详情抽屉统一使用操作 Popup Menu"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/frontend-coding-standard.md",
+        "libraries/frontend/admin-ui-foundation/src/overlay/detailActionMenu.tsx",
+        "project-memory/practices/detail-drawer-action-menu.md"
       ]
     }
   ]

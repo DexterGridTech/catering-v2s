@@ -142,10 +142,6 @@ export interface FakeStoragePort extends StateStoragePort {
     readonly readMany: readonly string[][]
     readonly write: StateStorageEntry[]
     readonly remove: string[]
-    readonly listKeysTimeouts: number[]
-    readonly readManyTimeouts: number[]
-    readonly writeTimeouts: number[]
-    readonly removeTimeouts: number[]
   }
   setOptions(options: FakeStorageOptions): void
 }
@@ -178,10 +174,6 @@ export const createFakeStorage = (
     readMany: [] as string[][],
     write: [] as StateStorageEntry[],
     remove: [] as string[],
-    listKeysTimeouts: [] as number[],
-    readManyTimeouts: [] as number[],
-    writeTimeouts: [] as number[],
-    removeTimeouts: [] as number[],
   }
   return {
     values,
@@ -191,27 +183,24 @@ export const createFakeStorage = (
     },
     read: async ({key}) =>
       succeeded(values.has(key) ? {state: 'found', value: values.get(key) ?? ''} : {state: 'missing'}),
-    write: async ({key, value, timeoutMs}) => {
+    write: async ({key, value}) => {
       calls.write.push({key, value})
-      calls.writeTimeouts.push(timeoutMs)
       if (options.failWrites?.includes(key)) {
         return failed('write')
       }
       values.set(key, value)
       return succeeded({completed: true})
     },
-    remove: async ({key, timeoutMs}) => {
+    remove: async ({key}) => {
       calls.remove.push(key)
-      calls.removeTimeouts.push(timeoutMs)
       if (options.failRemoves?.includes(key)) {
         return failed('remove')
       }
       values.delete(key)
       return succeeded({completed: true})
     },
-    readMany: async ({keys, timeoutMs}) => {
+    readMany: async ({keys}) => {
       calls.readMany.push([...keys])
-      calls.readManyTimeouts.push(timeoutMs)
       if (options.failReadMany) {
         return failed('readMany') as PortResult<readonly {readonly key: string; readonly result: {readonly state: 'missing'}}[]>
       }
@@ -234,9 +223,8 @@ export const createFakeStorage = (
       }
       return succeeded({completed: true})
     },
-    listKeys: async ({timeoutMs}) => {
+    listKeys: async () => {
       calls.listKeys.push('listKeys')
-      calls.listKeysTimeouts.push(timeoutMs)
       if (options.failList) {
         return failed('listKeys') as PortResult<readonly string[]>
       }

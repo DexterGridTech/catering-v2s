@@ -1,5 +1,6 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceCapabilityScopePersistence;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
@@ -24,19 +25,26 @@ public class WorkspaceCapabilityScopeResolver {
 
     private final WorkspaceAssignmentScopeLookup assignments;
     private final OrganizationTaskPathLookup taskPaths;
-    private final JdbcTemplate jdbc;
+    private final WorkspaceCapabilityScopePersistence persistence;
 
     public WorkspaceCapabilityScopeResolver(
             WorkspaceAssignmentScopeLookup assignments, OrganizationTaskPathLookup taskPaths) {
-        this(assignments, taskPaths, null);
+        this(assignments, taskPaths, (WorkspaceCapabilityScopePersistence) null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
     public WorkspaceCapabilityScopeResolver(
-            WorkspaceAssignmentScopeLookup assignments, OrganizationTaskPathLookup taskPaths, JdbcTemplate jdbc) {
+            WorkspaceAssignmentScopeLookup assignments,
+            OrganizationTaskPathLookup taskPaths,
+            WorkspaceCapabilityScopePersistence persistence) {
         this.assignments = assignments;
         this.taskPaths = taskPaths;
-        this.jdbc = jdbc;
+        this.persistence = persistence;
+    }
+
+    public WorkspaceCapabilityScopeResolver(
+            WorkspaceAssignmentScopeLookup assignments, OrganizationTaskPathLookup taskPaths, JdbcTemplate jdbc) {
+        this(assignments, taskPaths, jdbc == null ? null : new WorkspaceCapabilityScopePersistence(jdbc));
     }
 
     public ScopeResolution resolve(
@@ -390,7 +398,7 @@ public class WorkspaceCapabilityScopeResolver {
                 return new WorkspaceCommandAuthorizationFacts(new WorkspaceAssignmentScopeLookup.AssignmentScope(
                         session.assignmentNodeType(), session.assignmentNodeId()));
             }
-            if (jdbc == null) {
+            if (persistence == null) {
                 if (session.actionCapabilityKeys() == null
                         || !session.actionCapabilityKeys().contains(capability)) {
                     throw new WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException();
@@ -398,28 +406,15 @@ public class WorkspaceCapabilityScopeResolver {
                 return new WorkspaceCommandAuthorizationFacts(assignments.requireActiveScope(
                         session.workspaceUuid(), session.groupWorkspaceKey(), session.currentAssignmentId()));
             }
-            return jdbc.query(
-                    "SELECT assignment.service_node_type, assignment.service_node_id FROM "
-                            + "workspace_iam.role_assignment assignment "
-                            + "JOIN workspace_iam.workspace_role role ON role.id=assignment.role_id "
-                            + "WHERE assignment.id=? AND assignment.workspace_uuid=? "
-                            + "AND assignment.group_workspace_key=? AND assignment.status='ACTIVE' "
-                            + "AND role.workspace_uuid=assignment.workspace_uuid "
-                            + "AND role.group_workspace_key=assignment.group_workspace_key "
-                            + "AND role.status='ENABLED' AND jsonb_exists(role.capability_keys, ?)",
-                    statement -> {
-                        statement.setObject(1, session.currentAssignmentId());
-                        statement.setObject(2, session.workspaceUuid());
-                        statement.setString(3, session.groupWorkspaceKey());
-                        statement.setString(4, capability);
-                    },
-                    result -> {
-                        if (!result.next())
-                            throw new WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException();
-                        return new WorkspaceCommandAuthorizationFacts(
-                                new WorkspaceAssignmentScopeLookup.AssignmentScope(
-                                        result.getString(1), result.getObject(2, UUID.class)));
-                    });
+            try {
+                return new WorkspaceCommandAuthorizationFacts(persistence.requireActiveAssignmentCapability(
+                        session.currentAssignmentId(),
+                        session.workspaceUuid(),
+                        session.groupWorkspaceKey(),
+                        capability));
+            } catch (RuntimeException denied) {
+                throw new WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException();
+            }
         } finally {
             DatabaseOperationTracker.markPhase(DatabaseOperationTracker.Phase.AUTHORIZED);
         }

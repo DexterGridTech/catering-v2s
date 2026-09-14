@@ -115,7 +115,6 @@ export const createTestRuntimeInput = (input: Readonly<{
     runtimeName: input.runtimeName ?? 'runtime-test',
     environmentMode: 'TEST',
     persistenceKey: 'runtime-test',
-    storageTimeouts: {readMs: 50, writeMs: 50, resetMs: 50},
     persistenceDebounceMs: 0,
   },
 })

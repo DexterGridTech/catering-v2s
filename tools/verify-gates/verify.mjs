@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {resolveGradleCommand} from '../../scripts/lib/gradle-runtime.mjs';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const childOutputBudgetBytes = 32 * 1024 * 1024;
 
 // `scripts/verify --validate-only` deliberately names the real static checks it
 // runs. It has no derived denominator, dependency digest, persistent execution artifact, or hook
@@ -13,6 +14,7 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const staticCommands = Object.freeze([
   ['logging-boundaries', 'scripts/check/logging-boundaries', [], ['R4_LOGGING_BOUNDARIES=PASS']],
   ['database-boundaries', 'scripts/check/database-boundaries', [], ['R4_DATABASE_BOUNDARIES=PASS']],
+  ['query-boundaries', 'scripts/check/query-boundaries', [], ['R4_DATABASE_QUERY_BOUNDARIES=PASS']],
   ['backend-boundaries', 'scripts/check/backend-boundaries', [], ['R4_BACKEND_BOUNDARIES=PASS']],
   ['frontend-architecture', 'scripts/check/frontend-architecture', [], ['R5_FRONTEND_ARCHITECTURE=PASS']],
   ['frontend-format', 'yarn', ['format:check'], ['All matched files use Prettier code style!']],
@@ -189,6 +191,7 @@ function spawnAndForward({root, command, args, spawnSyncImpl, env = process.env}
     cwd: root,
     encoding: 'utf8',
     env: {...env},
+    maxBuffer: childOutputBudgetBytes,
   });
   process.stdout.write(result?.stdout || '');
   process.stderr.write(result?.stderr || '');

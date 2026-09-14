@@ -11,6 +11,7 @@ export {PrimitiveCheckbox, PrimitiveCodeInput, PrimitiveFormField, PrimitivePres
 export type {PrimitivePressOptionProps} from './components/PrimitiveForms';
 export {PrimitiveKeyValueRow, PrimitiveList, PrimitiveSegmentedControl, PrimitiveStatusRow, PrimitiveTable, PrimitiveTabs} from './components/PrimitiveData';
 export {PrimitiveContainer} from './components/PrimitiveContainer';
+export {PrimitiveImage} from './components/PrimitiveImage';
 export {PrimitiveHeading} from './components/PrimitiveHeading';
 export {PrimitiveInput} from './components/PrimitiveInput';
 export {PrimitiveLabel} from './components/PrimitiveLabel';
@@ -28,6 +29,7 @@ export type {
   PrimitiveFormControlProps,
   PrimitiveFormFieldProps,
   PrimitiveKeyValueRowProps,
+  PrimitiveGridProps,
   PrimitiveLayoutProps,
   PrimitiveListProps,
   PrimitiveListRenderItem,
@@ -45,6 +47,7 @@ export type {
   PrimitiveTextareaProps,
   PrimitiveTone,
   PrimitiveContainerProps,
+  PrimitiveImageProps,
   PrimitiveHeadingProps,
   PrimitiveInputProps,
   PrimitiveInputHandle,
@@ -55,6 +58,7 @@ export type {
   PrimitiveMeasureInWindowCallback,
   PrimitiveNativeNode,
   PrimitiveScrollViewProps,
+  PrimitiveScrollViewLayout,
   PrimitiveScrollViewHandle,
   PrimitiveStatusProps,
   PrimitiveTextProps,

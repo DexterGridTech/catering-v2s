@@ -130,10 +130,11 @@ describe('test-expo host shell', () => {
     expect(logicalStageStyle.height).toBe(800 + 0);
     expect(logicalStageStyle.transform?.[0]?.scale).toBe(1);
 
-    const toggle = renderer!.root.findByProps({testID: 'sample-console:test-expo:surface-toggle'});
-    expect(typeof toggle.props.onPress).toBe('function');
+    const dualModeRadio = renderer!.root.findByProps({testID: 'sample-console:test-expo:surface-mode:dual'});
+    expect(dualModeRadio.props.accessibilityRole).toBe('radio');
+    expect(dualModeRadio.props.accessibilityState).toEqual({selected: false});
     await act(async () => {
-      (toggle.props.onPress as () => void)();
+      (dualModeRadio.props.onPress as () => void)();
       await nextTurn();
     });
 
@@ -153,6 +154,12 @@ describe('test-expo host shell', () => {
     }
     assertFixedSurface('sample-console:test-expo:surface:PRIMARY', 1280, 800);
     assertFixedSurface('sample-console:test-expo:surface:SECONDARY', 960, 540);
+    expect(
+      renderer!.root.findByProps({testID: 'sample-console:test-expo:surface-mode:single'}).props.accessibilityState,
+    ).toEqual({selected: false});
+    expect(
+      renderer!.root.findByProps({testID: 'sample-console:test-expo:surface-mode:dual'}).props.accessibilityState,
+    ).toEqual({selected: true});
     expect(createAssembly).toHaveBeenCalledTimes(1);
   });
 });

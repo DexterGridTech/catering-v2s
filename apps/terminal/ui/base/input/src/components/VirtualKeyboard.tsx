@@ -24,6 +24,16 @@ export type VirtualKeyboardProps = Readonly<{
   readonly onDiagnostic?: InputDiagnosticReporter;
 }>;
 
+type SurfaceInteractionEvent = Readonly<{readonly stopPropagation: () => void}>;
+
+const stopSurfaceDismiss = (event: SurfaceInteractionEvent): void => {
+  event.stopPropagation();
+};
+
+const keyboardInteractionProps = typeof document === 'undefined'
+  ? {onTouchEnd: stopSurfaceDismiss}
+  : ({onClick: stopSurfaceDismiss} as Readonly<Record<string, unknown>>);
+
 const keyIdOf = (definition: KeyboardKeyDefinition): string => definition.keyId;
 
 const keyboardKeyOf = (definition: KeyboardKeyDefinition, hasNextField: boolean): KeyboardKey =>
@@ -178,6 +188,7 @@ export const VirtualKeyboard = memo(
       <View
         testID="ui.base.input:virtual-keyboard"
         style={[styles.dock, {height, width: frameWidth}]}
+        {...keyboardInteractionProps}
         onLayout={event => reportLayout('dock', event)}
       >
         <View

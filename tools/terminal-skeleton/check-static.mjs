@@ -169,29 +169,36 @@ function assertRuntimeImport(filePath, expectedSpecifier, label) {
 
 function runAssemblyEntryReachability(context) {
   const {projected, root} = context;
-  const assemblyModuleName = 'assembly.android.sample-terminal';
-  if (!projected[assemblyModuleName]) return;
-  const assemblyDirectory = moduleNameToPath(assemblyModuleName, root);
-  const entryPath = entryFile(assemblyDirectory, 'index.ts', 'index.ts');
-  const appPath = entryFile(assemblyDirectory, 'App.tsx', 'App.tsx');
-  const platformPortsPath = entryFile(assemblyDirectory, 'src/assembly/platformPorts.ts', 'assembly/platformPorts.ts');
+  const assemblyModuleNames = [
+    'assembly.android.sample-terminal',
+    'assembly.android.sample-wallpaper-terminal',
+  ].filter(moduleName => projected[moduleName]);
+  for (const assemblyModuleName of assemblyModuleNames) {
+    const assemblyDirectory = moduleNameToPath(assemblyModuleName, root);
+    const entryPath = entryFile(assemblyDirectory, 'index.ts', `${assemblyModuleName} index.ts`);
+    const appPath = entryFile(assemblyDirectory, 'App.tsx', `${assemblyModuleName} App.tsx`);
+    const platformPortsPath = entryFile(
+      assemblyDirectory,
+      'src/assembly/platformPorts.ts',
+      `${assemblyModuleName} assembly/platformPorts.ts`,
+    );
 
-  assertRuntimeImport(entryPath, './App', 'assembly index.ts');
-  assertRuntimeImport(appPath, './src/assembly/platformPorts', 'assembly App.tsx');
+    assertRuntimeImport(entryPath, './App', `${assemblyModuleName} index.ts`);
+    assertRuntimeImport(appPath, './src/assembly/platformPorts', `${assemblyModuleName} App.tsx`);
 
-  const appSource = fs.readFileSync(appPath, 'utf8');
-  if (/skeletonBootstrap|bootstrapSession|bootstrapRuntime/.test(appSource)) {
-    throw new Error('assembly App.tsx must not contain bootstrap wiring');
+    const appSource = fs.readFileSync(appPath, 'utf8');
+    if (/skeletonBootstrap|bootstrapSession|bootstrapRuntime/.test(appSource)) {
+      throw new Error(`${assemblyModuleName} App.tsx must not contain bootstrap wiring`);
+    }
+    if (/\b(?:require|import)\s*\(/.test(appSource)) {
+      throw new Error(`${assemblyModuleName} App.tsx must not use dynamic import or require`);
+    }
+
+    const platformPortsSource = fs.readFileSync(platformPortsPath, 'utf8');
+    if (/\b(?:require|import)\s*\(/.test(platformPortsSource)) {
+      throw new Error(`${assemblyModuleName} platformPorts.ts must not use dynamic import or require`);
+    }
   }
-  if (/\b(?:require|import)\s*\(/.test(appSource)) {
-    throw new Error('assembly App.tsx must not use dynamic import or require');
-  }
-
-  const platformPortsSource = fs.readFileSync(platformPortsPath, 'utf8');
-  if (/\b(?:require|import)\s*\(/.test(platformPortsSource)) {
-    throw new Error('assembly platformPorts.ts must not use dynamic import or require');
-  }
-
 }
 
 function runGraphComparison(context) {
@@ -275,8 +282,8 @@ function runTripleNaming(context) {
       throw new Error(`${moduleName} package.json must not carry plannedKind/kind`);
     }
   }
-  if (Object.keys(spec.graph).length !== 27)
-    throw new Error(`skeleton spec must contain 27 nodes, got ${Object.keys(spec.graph).length}`);
+  if (Object.keys(spec.graph).length !== 31)
+    throw new Error(`skeleton spec must contain 31 nodes, got ${Object.keys(spec.graph).length}`);
 }
 
 function layerFor(moduleName) {

@@ -127,7 +127,7 @@ describe('runtime role and route boundaries', () => {
       logger: createTestPlatformPorts().logger,
       plainStorage: createTestPlatformPorts().persistKv,
       protectedStorage: createTestPlatformPorts().persistSecure,
-      persistenceKey: 'runtime-isolated-role', storageTimeouts: {readMs: 50, writeMs: 50, resetMs: 50},
+      persistenceKey: 'runtime-isolated-role',
       persistenceDebounceMs: 0,
     })
     const result = runtime.applyAuthoritativeSync('kernel.base.runtime.instance-mode', {

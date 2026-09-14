@@ -46,10 +46,7 @@ test('red mutation that restores a data-node browser route is rejected', () => {
 });
 
 test('store business-channel pages read the current store profile before deriving its project scope', () => {
-  assert.match(
-    page,
-    /getOperationsStoreProfile\(\s*\{groupWorkspaceKey: readQueryContext\.groupWorkspaceKey\}/,
-  );
+  assert.match(page, /getOperationsStoreProfile\(\s*\{groupWorkspaceKey: readQueryContext\.groupWorkspaceKey\}/);
   assert.match(page, /expectedContextVersion: queryContext\.expectedContextVersion/);
   assert.match(
     page,

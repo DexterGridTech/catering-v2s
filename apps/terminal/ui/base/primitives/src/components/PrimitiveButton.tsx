@@ -26,6 +26,7 @@ export const PrimitiveButton = ({
   tone = 'neutral',
   onLayout,
   onPress,
+  style,
   variant = 'default',
 }: PrimitiveButtonProps) => {
   const [pressed, setPressed] = useState(false);
@@ -54,7 +55,7 @@ export const PrimitiveButton = ({
       }}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
-      style={pressedStyleOf(variant, pressed)}
+      style={style === undefined ? pressedStyleOf(variant, pressed) : [style, pressedStyleOf(variant, pressed)]}
     >
       {busy ? <RnrActivityIndicator testID={`${assertTestID(testID)}:busy-indicator`} accessibilityLabel="处理中" /> : null}
       <RnrText

@@ -79,9 +79,7 @@ export const hydrateStateRuntime = async (
       continue
     }
     const port = input.storagePorts[storageKind]
-    const listed = await port.listKeys({
-      timeoutMs: input.timeouts.readMs,
-    })
+    const listed = await port.listKeys({})
     if (!isSucceeded(listed)) {
       const failure = portFailure({phase: 'hydrate', storageKind, operation: 'listKeys', result: listed})
       failures.push(failure)
@@ -105,10 +103,7 @@ export const hydrateStateRuntime = async (
     }
 
     const keys = keysForStorage(listed.value, storageEntries)
-    const read = await port.readMany({
-      keys,
-      timeoutMs: input.timeouts.readMs,
-    })
+    const read = await port.readMany({keys})
     if (!isSucceeded(read)) {
       const failure = portFailure({phase: 'hydrate', storageKind, operation: 'readMany', result: read})
       failures.push(failure)

@@ -111,6 +111,22 @@ function sourceContainsBinding(source, binding) {
   });
 }
 
+function assertOwnerTestIdUsage(ownerSources, binding, controlKey) {
+  if (binding.ownerTestIdExpressions === undefined) return;
+  assert(
+    Array.isArray(binding.ownerTestIdExpressions) && binding.ownerTestIdExpressions.length > 0,
+    'L2_CONTROL_OWNER_TEST_ID_EXPRESSIONS_INVALID',
+    controlKey,
+  );
+  for (const expression of binding.ownerTestIdExpressions) {
+    assert(
+      typeof expression === 'string' && expression.length > 0 && ownerSources.some(source => source.includes(expression)),
+      'L2_CONTROL_OWNER_TEST_ID_USAGE_NOT_IN_SOURCE',
+      `${controlKey}:${expression}`,
+    );
+  }
+}
+
 function candidateDigest(candidate) {
   const copy = JSON.parse(JSON.stringify(candidate));
   delete copy.candidateDigest;
@@ -216,7 +232,13 @@ export function validatePolicy() {
       ...(binding.sourceFiles ?? []).map((relativeSource) => sourceCache.get(path.join(root, relativeSource)) ?? ''),
       ...(binding.sourceFiles ?? []).some((relativeSource) => relativeSource.includes('/catalog-management/')) ? [catalogTestIdsSource] : [],
     ].join('\n');
-    assert(sourceContainsBinding(sourceText, binding), 'L2_CONTROL_BINDING_NOT_IN_SOURCE', controlKey);
+    if (binding.presence !== 'ABSENT') {
+      assert(sourceContainsBinding(sourceText, binding), 'L2_CONTROL_BINDING_NOT_IN_SOURCE', controlKey);
+    }
+    const ownerSources = (binding.sourceFiles ?? [])
+      .filter(relativeSource => !relativeSource.endsWith('/catalogTestIds.ts'))
+      .map(relativeSource => sourceCache.get(path.join(root, relativeSource)) ?? '');
+    assertOwnerTestIdUsage(ownerSources, binding, controlKey);
   }
 
   const activeRows = validateExecutionProfile(executionProfile, rows, activationCandidate);
@@ -341,6 +363,24 @@ function syntheticFixture(rows) {
 
 function selfTest() {
   const contract = validatePolicy();
+  for (const [controlKey, binding] of Object.entries(contract.bindings.controls ?? {})) {
+    if (binding.ownerTestIdExpressions === undefined) continue;
+    const ownerSources = (binding.sourceFiles ?? [])
+      .filter(relativeSource => !relativeSource.endsWith('/catalogTestIds.ts'))
+      .map(relativeSource => fs.readFileSync(path.join(root, relativeSource), 'utf8'));
+    for (const expression of binding.ownerTestIdExpressions) {
+      const ownerIndex = ownerSources.findIndex(source => source.includes(expression));
+      assert(ownerIndex >= 0, 'L2_SELF_TEST_OWNER_TEST_ID_SOURCE_MISSING', `${controlKey}:${expression}`);
+      const redMutation = [...ownerSources];
+      redMutation[ownerIndex] = redMutation[ownerIndex].replace(expression, '');
+      try {
+        assertOwnerTestIdUsage(redMutation, binding, controlKey);
+        throw new L2FixtureFailure('L2_SELF_TEST_OWNER_TEST_ID_MUTATION_DID_NOT_FAIL', `${controlKey}:${expression}`);
+      } catch (error) {
+        if (!(error instanceof L2FixtureFailure) || error.code !== 'L2_CONTROL_OWNER_TEST_ID_USAGE_NOT_IN_SOURCE') throw error;
+      }
+    }
+  }
   validateOwnerFixture(syntheticFixture(contract.activeRows), contract, {allowSynthetic: true});
   const incrementalContract = {
     ...contract,

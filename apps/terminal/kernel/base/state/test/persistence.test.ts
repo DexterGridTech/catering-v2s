@@ -1,6 +1,6 @@
 import {describe, expect, it, vi} from 'vitest'
 import type {EnvironmentMode} from '@catering-v2s/kernel-base-platform-ports'
-import type {PersistenceHealth, StateStorageTimeoutPolicy} from '../src/index'
+import type {PersistenceHealth} from '../src/index'
 import {
   createStateRuntime,
   defineStateRuntimeSlice,
@@ -45,7 +45,6 @@ const createRuntime = async (options: {
   readonly debounceMs?: number
   readonly environmentMode?: EnvironmentMode
   readonly logger?: ReturnType<typeof createFakeLogger>
-  readonly timeouts?: StateStorageTimeoutPolicy
 } = {}) => {
   const plainStorage = options.plainStorage ?? createFakeStorage()
   const protectedStorage = options.protectedStorage ?? createFakeStorage()
@@ -57,7 +56,6 @@ const createRuntime = async (options: {
     plainStorage,
     protectedStorage,
     persistenceKey: 'terminal',
-    storageTimeouts: options.timeouts ?? {readMs: 10, writeMs: 10, resetMs: 10},
     persistenceDebounceMs: options.debounceMs ?? 0,
   })
   return {runtime, plainStorage, protectedStorage}
@@ -272,30 +270,6 @@ describe('P/R/F/H/C/M/X groups: persistence runtime', () => {
     if (result.status === 'failed') {
       expect(result.failures[0]?.kind).toBe('ENCODE_REJECTED')
     }
-  })
-
-  it('P-7 routes read, write, and reset calls to their named timeout budgets', async () => {
-    const plainStorage = createFakeStorage()
-    const protectedStorage = createFakeStorage()
-    const {runtime} = await createRuntime({
-      plainStorage,
-      protectedStorage,
-      timeouts: {readMs: 11, writeMs: 22, resetMs: 33},
-    })
-
-    expect(plainStorage.calls.listKeysTimeouts).toEqual([11])
-    expect(plainStorage.calls.readManyTimeouts).toEqual([11])
-    expect(protectedStorage.calls.listKeysTimeouts).toEqual([11])
-    expect(protectedStorage.calls.readManyTimeouts).toEqual([11])
-
-    runtime.getStore().dispatch({type: 'example/setEntry', key: 'timeout', value: 1})
-    await runtime.flushPersistence()
-    expect(plainStorage.calls.writeTimeouts).toContain(22)
-
-    await runtime.getResetActor().handleResetCommand()
-    expect(plainStorage.calls.listKeysTimeouts.at(-1)).toBe(33)
-    expect(protectedStorage.calls.listKeysTimeouts.at(-1)).toBe(33)
-    expect(plainStorage.calls.removeTimeouts).toContain(33)
   })
 
   it('R-1 survives restart when two runtime instances share the same storage', async () => {
@@ -755,7 +729,6 @@ describe('P/R/F/H/C/M/X groups: persistence runtime', () => {
       plainStorage: createFakeStorage(),
       protectedStorage: createFakeStorage(),
       persistenceKey: '   ',
-      storageTimeouts: {readMs: 10, writeMs: 10, resetMs: 10},
       persistenceDebounceMs: 0,
     })).rejects.toThrow('persistenceKey must be non-empty')
   })
@@ -838,20 +811,6 @@ describe('P/R/F/H/C/M/X groups: persistence runtime', () => {
     } finally {
       consoleError.mockRestore()
     }
-  })
-
-  it('X-8 rejects non-positive timeout policies', async () => {
-    await expect(createStateRuntime({
-      runtimeName: 'test',
-      environmentMode: 'TEST',
-      slices: [createExampleStateRegistration()],
-      logger: createFakeLogger(),
-      plainStorage: createFakeStorage(),
-      protectedStorage: createFakeStorage(),
-      persistenceKey: 'terminal',
-      storageTimeouts: {readMs: 0, writeMs: 10, resetMs: 10},
-      persistenceDebounceMs: 0,
-    })).rejects.toThrow('readMs')
   })
 
   it('X-9 skips unknown and undeclared sync slices with typed reasons', async () => {

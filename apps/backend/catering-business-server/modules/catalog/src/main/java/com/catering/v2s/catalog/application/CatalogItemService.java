@@ -1,5 +1,6 @@
 package com.catering.v2s.catalog.application;
 
+import com.catering.v2s.catalog.application.persistence.CatalogItemPersistence;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerTypes;
 import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
@@ -77,6 +78,7 @@ public class CatalogItemService {
             "VOIDED_RECORD_IMMUTABLE");
 
     private final JdbcTemplate jdbc;
+    private final CatalogItemPersistence persistence;
     private final ObjectMapper mapper;
     private final CopyLimitPolicy copyLimits;
     private final TimeProvider time;
@@ -103,6 +105,7 @@ public class CatalogItemService {
     private final PlatformTransactionManager transactions;
     @Autowired
     public CatalogItemService(
+            CatalogItemPersistence persistence,
             JdbcTemplate jdbc,
             ObjectMapper mapper,
             TimeProvider time,
@@ -111,6 +114,7 @@ public class CatalogItemService {
             InventoryOwnerApi inventory,
             PlatformTransactionManager transactions) {
         this.jdbc = jdbc;
+        this.persistence = persistence;
         this.mapper = mapper;
         this.copyLimits = CopyLimitPolicy.load(mapper);
         this.time = time;
@@ -130,6 +134,25 @@ public class CatalogItemService {
         this.itemMediaFacts = new CatalogItemMediaFacts(jdbc, mapper);
         this.skuMediaFacts = new CatalogSkuMediaFacts(jdbc, mapper);
         this.itemReferenceFacts = new CatalogItemReferenceFacts(jdbc, mapper);
+    }
+
+    public CatalogItemService(
+            JdbcTemplate jdbc,
+            ObjectMapper mapper,
+            TimeProvider time,
+            CatalogAssetReferenceLock assetReferenceLocks,
+            ProductionTagOwnerApi productionTags,
+            InventoryOwnerApi inventory,
+            PlatformTransactionManager transactions) {
+        this(
+                new CatalogItemPersistence(jdbc, mapper),
+                jdbc,
+                mapper,
+                time,
+                assetReferenceLocks,
+                productionTags,
+                inventory,
+                transactions);
     }
 
     JsonNode write(
@@ -475,17 +498,8 @@ private long transitionBatchVoidedItemState(
         }
         requireItemRetirementUnreferenced(context, current, preloaded, inventoryIdempotencyKey);
         lockCatalogAssetRefs(json(current.sectionsJson()));
-        List<Long> versions = jdbc.query(
-                "UPDATE catalog.catalog_item SET status=?,version=version+1,updated_at_epoch_millis=? "
-                        + "WHERE item_ref=? AND data_node_ref=? AND brand_ref=? AND version=? AND status <> 'VOIDED' "
-                        + "RETURNING version",
-                (result, rowNumber) -> result.getLong(1),
-                "VOIDED",
-                now(),
-                current.ref(),
-                dataNodeRef,
-                brandRef,
-                item.expectedVersion());
+        List<Long> versions = persistence.transitionBatchItem(
+                "VOIDED", now(), current.ref(), dataNodeRef, brandRef, item.expectedVersion());
         if (versions.size() != 1) {
             throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "商品版本已变化");
         }
@@ -591,36 +605,10 @@ private BatchStatusPreloadedFacts loadBatchStatusFacts(
 
 private List<BatchStatusCandidate> readBatchStatusCandidates(
             String dataNodeRef, String brandRef, List<UUID> itemRefs, boolean scopedOnly) {
-        String placeholders = String.join(",", Collections.nCopies(itemRefs.size(), "?"));
-        String scopePredicate = scopedOnly ? "data_node_ref=? AND brand_ref=? AND " : "";
-        List<Object> arguments = new ArrayList<>();
-        if (scopedOnly) {
-            arguments.add(dataNodeRef);
-            arguments.add(brandRef);
-        }
-        arguments.addAll(itemRefs);
-        return jdbc.query(
-                "SELECT item_ref,code,name,short_name,shape_key,status,sections::text,version,updated_at_epoch_millis,"
-                        + "source_scope_ref,data_node_ref,brand_ref FROM catalog.catalog_item WHERE "
-                        + scopePredicate
-                        + "item_ref IN ("
-                        + placeholders
-                        + ")",
-                (result, rowNumber) -> new BatchStatusCandidate(
-                        new ItemRow(
-                                result.getObject(1, UUID.class),
-                                result.getString(2),
-                                result.getString(3),
-                                result.getString(4),
-                                result.getString(5),
-                                result.getString(6),
-                                result.getString(7),
-                                result.getLong(8),
-                                result.getLong(9),
-                                result.getString(10)),
-                        result.getString(11),
-                        result.getString(12)),
-                arguments.toArray());
+        return persistence.readBatchStatusCandidates(dataNodeRef, brandRef, itemRefs, scopedOnly).stream()
+                .map(row -> new BatchStatusCandidate(
+                        itemRow(row.item()), row.dataNodeRef(), row.brandRef()))
+                .toList();
     }
 
 private ItemRow lockBatchStatusItem(
@@ -631,28 +619,9 @@ private ItemRow lockBatchStatusItem(
             BatchStatusPreloadedFacts preloaded) {
         List<ItemRow> rows;
         try (var ignored = DatabaseOperationTracker.pushSection(DatabaseOperationTracker.Section.CAS)) {
-            rows = jdbc.query(
-                    "SELECT"
-                            + " item_ref,code,name,short_name,shape_key,status,sections::text,version,"
-                            + "updated_at_epoch_millis,source_scope_ref"
-                            + " FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND item_ref=?"
-                            + " FOR UPDATE",
-                    (result, rowNumber) -> new ItemRow(
-                            result.getObject(1, UUID.class),
-                            result.getString(2),
-                            result.getString(3),
-                            result.getString(4),
-
-                            result.getString(5),
-
-                            result.getString(6),
-                            result.getString(7),
-                            result.getLong(8),
-                            result.getLong(9),
-                            result.getString(10)),
-                    dataNodeRef,
-                    brandRef,
-                    itemRef);
+            rows = persistence.lockBatchStatusItem(itemRef, dataNodeRef, brandRef).stream()
+                    .map(CatalogItemService::itemRow)
+                    .toList();
         }
         if (rows.isEmpty()) {
             if (preloaded.itemCodes().containsKey(itemRef)) {
@@ -1328,14 +1297,7 @@ private ArrayNode clonedSkuFacts(ArrayNode sourceSkus) {
 @Transactional(readOnly = true)
     public boolean itemExists(String dataNodeRef, String brandRef, String itemCode) {
         if (dataNodeRef == null || brandRef == null || itemCode == null) return false;
-        Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND code=? AND status "
-                        + "<> 'VOIDED'",
-                Integer.class,
-                dataNodeRef,
-                brandRef,
-                itemCode);
-        return count != null && count > 0;
+        return persistence.itemExists(dataNodeRef, brandRef, itemCode);
     }
 
 @Transactional(readOnly = true)
@@ -1389,44 +1351,7 @@ private ArrayNode clonedSkuFacts(ArrayNode sourceSkus) {
         // one set query.  The previous two-table implementation had already
         // removed the 2N EXISTS pattern; these owner unions preserve the
         // candidate-set semantics while protecting immutable published images.
-        String placeholders = String.join(",", Collections.nCopies(refs.size(), "?"));
-        List<Object> arguments = new ArrayList<>(refs);
-        arguments.addAll(refs);
-        arguments.addAll(refs);
-        // jsonb_array_elements_text returns text.  Bind the fourth owner set
-        // as text so PostgreSQL does not compare text with UUID parameters.
-        arguments.addAll(refs.stream().map(UUID::toString).toList());
-        java.util.Set<UUID> referencedRefs = new java.util.LinkedHashSet<>(jdbc.query(
-                "SELECT DISTINCT asset_ref FROM ("
-                        + "SELECT image.asset_ref FROM catalog.catalog_item_image image "
-                        + "JOIN catalog.catalog_item item ON item.item_ref=image.item_ref "
-                        + "WHERE image.asset_ref IN (" + placeholders + ") AND item.status <> 'VOIDED' "
-                        + "UNION "
-                        + "SELECT media.asset_ref FROM catalog.catalog_sku_media media "
-                        + "JOIN catalog.catalog_sku sku ON sku.product_sku_ref=media.product_sku_ref "
-                        + "JOIN catalog.catalog_item item ON item.item_ref=sku.item_ref "
-                        + "WHERE media.asset_ref IN (" + placeholders + ") AND item.status <> 'VOIDED'"
-                        + " UNION "
-                        + "SELECT published.published_primary_image_asset_ref "
-                        + "FROM sales_menu.sales_version_item published "
-                        + "JOIN sales_menu.sales_collection_version published_version "
-                        + "ON published_version.version_ref=published.version_ref "
-                        + "WHERE published.published_primary_image_asset_ref IN (" + placeholders + ") "
-                        + "AND published_version.kind='PUBLISHED'"
-                        + " UNION "
-                        + "SELECT CASE WHEN snapshot.asset_ref ~* "
-                        + "'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' "
-                        + "THEN snapshot.asset_ref::uuid END "
-                        + "FROM sales_menu.sales_version_item published "
-                        + "JOIN sales_menu.sales_collection_version published_version "
-                        + "ON published_version.version_ref=published.version_ref "
-                        + "CROSS JOIN LATERAL jsonb_array_elements_text("
-                        + "published.published_catalog_image_asset_refs) snapshot(asset_ref) "
-                        + "WHERE snapshot.asset_ref IN (" + placeholders + ") "
-                        + "AND published_version.kind='PUBLISHED'"
-                        + ") referenced_assets",
-                (result, row) -> UUID.fromString(result.getString(1)),
-                arguments.toArray()));
+        java.util.Set<UUID> referencedRefs = persistence.referencedAssetRefs(refs);
         java.util.Set<String> referenced = new java.util.LinkedHashSet<>();
         for (String candidate : candidates)
             try {
@@ -1441,26 +1366,7 @@ private ArrayNode clonedSkuFacts(ArrayNode sourceSkus) {
             String dataNodeRef, String brandRef, String itemCode) {
         requireScope(dataNodeRef, brandRef);
         if (itemCode == null || itemCode.isBlank()) return new CatalogOwnerApi.CatalogAssetReferenceReadback(List.of());
-        List<UUID> refs = jdbc.query(
-                "SELECT asset_ref FROM ("
-                        + "SELECT image.asset_ref FROM catalog.catalog_item_image image "
-                        + "JOIN catalog.catalog_item item ON item.item_ref=image.item_ref "
-                        + "WHERE item.data_node_ref=? AND item.brand_ref=? AND item.code=? "
-                        + "AND item.status <> 'VOIDED' "
-                        + "UNION "
-                        + "SELECT media.asset_ref FROM catalog.catalog_sku_media media "
-                        + "JOIN catalog.catalog_sku sku ON sku.product_sku_ref=media.product_sku_ref "
-                        + "JOIN catalog.catalog_item item ON item.item_ref=sku.item_ref "
-                        + "WHERE item.data_node_ref=? AND item.brand_ref=? AND item.code=? "
-                        + "AND item.status <> 'VOIDED'"
-                        + ") asset_refs ORDER BY asset_ref",
-                (rows, row) -> rows.getObject(1, UUID.class),
-                dataNodeRef,
-                brandRef,
-                itemCode,
-                dataNodeRef,
-                brandRef,
-                itemCode);
+        List<UUID> refs = persistence.readAssetReferences(dataNodeRef, brandRef, itemCode);
         return new CatalogOwnerApi.CatalogAssetReferenceReadback(List.copyOf(refs));
     }
 
@@ -1507,31 +1413,9 @@ public JsonNode skuNamesByItemCodes(String dataNodeRef, String brandRef, JsonNod
         if (itemCodes == null || !itemCodes.isArray() || itemCodes.isEmpty()) return mapper.createObjectNode();
         List<String> codes = stringValues(itemCodes);
         if (codes.isEmpty()) return mapper.createObjectNode();
-        String placeholders = String.join(",", Collections.nCopies(codes.size(), "?"));
-        List<Object> args = new ArrayList<>();
-        args.add(dataNodeRef);
-        args.add(brandRef);
-        args.addAll(codes);
         ObjectNode result = mapper.createObjectNode();
-        jdbc.query(
-                "SELECT item.code,sku.sku_code,sku.sku_name FROM catalog.catalog_item item JOIN catalog.catalog_sku "
-                        + "sku ON sku.item_ref=item.item_ref WHERE item.data_node_ref=? AND item.brand_ref=? AND "
-                        + "item.code "
-                        + "IN ("
-                        + placeholders
-                        + ") AND item.status <> 'VOIDED' AND sku.status <> 'VOIDED' ORDER BY "
-                        + "item.code,sku.display_order,sku.sku_code",
-                args.toArray(),
-                rows -> {
-                    while (rows.next()) {
-                        String itemCode = rows.getString(1);
-                        ObjectNode names = result.with(itemCode);
-                        String skuCode = rows.getString(2);
-                        String skuName = rows.getString(3);
-                        if (skuCode != null && skuName != null && !skuName.isBlank()) names.put(skuCode, skuName);
-                    }
-                    return null;
-                });
+        persistence.readSkuNamesByItemCodes(dataNodeRef, brandRef, codes)
+                .forEach((itemCode, names) -> result.set(itemCode, mapper.valueToTree(names)));
         return result;
     }
 
@@ -1542,8 +1426,6 @@ private ObjectNode itemSkus(
         String candidateUsage = optional(request, "candidateUsage");
         if (candidateUsage != null && !"COMPOSITE_COMPONENT".equals(candidateUsage))
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "candidateUsage is not supported");
-        String skuStatusPredicate =
-                "COMPOSITE_COMPONENT".equals(candidateUsage) ? "sku.status = 'ENABLED'" : "sku.status <> 'VOIDED'";
         int pageSize = parsePageSize(request, "pageSize", 20);
 
         String identity = cursorIdentity(
@@ -1564,68 +1446,27 @@ private ObjectNode itemSkus(
                 throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "cursor is invalid", failure);
             }
         }
-        StringBuilder sql = new StringBuilder("WITH item_scope AS (SELECT item_ref,preparation_profile FROM "
-                + "catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND code=? AND status <> 'VOIDED'), "
-                + "matching AS (SELECT sku.product_sku_ref,sku.sku_code,sku.sku_name,"
-                + "sku.standard_sale_price,"
-                + "sku.sales_unit_override_ref,sku.sales_unit_ref,sku.sales_unit_code,sku.sales_unit_name,"
-                + "sku.sales_unit_dimension,sku.sales_unit_precision,COALESCE(sales_unit.status,'ENABLED'),"
-                + "sku.base_measure_unit_override_ref,sku.base_measure_unit_ref,sku.base_measure_unit_code,"
-                + "sku.base_measure_unit_name,sku.base_measure_unit_dimension,sku.base_measure_unit_precision,"
-                + "COALESCE(base_unit.status,'ENABLED'),sku.is_default,sku.status,sku.updated_at_epoch_millis,"
-                + "primary_media.asset_ref,attributes.attribute_values,sku.display_order,"
-                + "item.preparation_profile::text,sku.preparation_override::text,production_tag.ref "
-                + "FROM catalog.catalog_sku sku JOIN item_scope item ON "
-                + "item.item_ref=sku.item_ref "
-                + "LEFT JOIN catalog.unit_definition sales_unit ON sales_unit.unit_ref=sku.sales_unit_ref "
-                + "LEFT JOIN catalog.unit_definition base_unit ON base_unit.unit_ref=sku.base_measure_unit_ref "
-                + "LEFT JOIN LATERAL (SELECT media.asset_ref FROM catalog.catalog_sku_media media "
-                + "WHERE media.product_sku_ref=sku.product_sku_ref ORDER BY media.display_order,"
-                + "media.asset_ref LIMIT 1) primary_media ON TRUE "
-                + "LEFT JOIN LATERAL (SELECT relation.ref FROM catalog.catalog_item_reference relation "
-                + "WHERE relation.item_ref=item.item_ref AND relation.kind='PRODUCTION_TAG') production_tag ON TRUE "
-                + "LEFT JOIN LATERAL (SELECT COALESCE(jsonb_agg(jsonb_build_object('attributeRef',"
-                + "attribute.entry_ref::text,"
-                + "'attributeCode',attribute.code,'attributeName',attribute.name,"
-                + "'attributeValueRef',value.entry_ref::text,"
-                + "'valueCode',value.code,'valueLabel',value.name,'displayOrder',"
-                + "COALESCE(axis_value.display_order,0),'status',value.status) "
-                + "ORDER BY COALESCE(axis_value.display_order,0),attribute.code,value.code), '[]':"
-                + ":jsonb) attribute_values "
-                + "FROM catalog.catalog_sku_attribute_value assignment JOIN "
-                + "catalog.dictionary_entry attribute ON attribute.entry_ref=assignment.attribute_ref "
-                + "JOIN catalog.dictionary_entry value ON "
-                + "value.entry_ref=assignment.attribute_value_ref LEFT JOIN "
-                + "catalog.catalog_sku_variant_axis axis "
-                + "ON axis.item_ref=sku.item_ref AND axis.attribute_ref=assignment.attribute_ref "
-                + "LEFT JOIN catalog.catalog_sku_variant_axis_value axis_value "
-                + "ON axis_value.sku_variant_axis_ref=axis.sku_variant_axis_ref AND "
-                + "axis_value.value_ref=assignment.attribute_value_ref "
-                + "WHERE assignment.product_sku_ref=sku.product_sku_ref) attributes ON TRUE WHERE "
-                + skuStatusPredicate + "), "
-                + "aggregate AS (SELECT COUNT(*) AS total FROM matching), paged AS (SELECT * FROM matching");
-        List<Object> args = new ArrayList<>(List.of(dataNodeRef, brandRef, itemCode));
-        if (cursor != null) {
-            sql.append(" WHERE (display_order>? OR (display_order=? AND sku_code>?) OR "
-                    + "(display_order=? AND sku_code=? AND product_sku_ref>?))");
-            args.add(cursorDisplayOrder);
-            args.add(cursorDisplayOrder);
-            args.add(cursorCode);
-            args.add(cursorDisplayOrder);
-            args.add(cursorCode);
-            args.add(cursorRef);
-        }
-        sql.append(" ORDER BY display_order,sku_code,product_sku_ref LIMIT ?) "
-                + "SELECT paged.*,aggregate.total,EXISTS(SELECT 1 FROM item_scope) AS item_exists "
-                + "FROM aggregate LEFT JOIN paged ON TRUE "
-                + "ORDER BY paged.display_order,paged.sku_code,paged.product_sku_ref");
-        args.add(pageSize + 1);
-        List<SkuCandidateRow> rows = jdbc.query(
-                sql.toString(),
-                statement -> {
-                    for (int index = 0; index < args.size(); index++) statement.setObject(index + 1, args.get(index));
-                },
-                (result, row) -> skuCandidateRow(result));
+        List<SkuCandidateRow> rows = persistence.readSkuCandidates(
+                        dataNodeRef,
+                        brandRef,
+                        itemCode,
+                        candidateUsage,
+                        pageSize,
+                        cursor == null ? null : cursorDisplayOrder,
+                        cursorCode,
+                        cursorRef)
+                .stream()
+                .map(row -> new SkuCandidateRow(
+                        row.value(),
+                        row.displayOrder(),
+                        row.skuCode(),
+                        row.productSkuRef(),
+                        row.total(),
+                        row.itemPreparationProfile(),
+                        row.skuPreparationOverride(),
+                        row.productionTagRef(),
+                        row.itemExists()))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         if (!rows.isEmpty() && !rows.getFirst().itemExists())
             throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "商品不存在");
         long total = rows.isEmpty() ? 0L : rows.getFirst().total();
@@ -1912,11 +1753,7 @@ private ObjectNode createItem(String dataNodeRef, String brandRef, String reques
         UUID itemRef = UUID.randomUUID();
         String shortName = removeShortName(sections);
         try {
-            jdbc.update(
-                    "INSERT INTO catalog.catalog_item (item_ref, data_node_ref, brand_ref, code, name, short_name, "
-                            + "shape_key, status, sections, version, created_at_epoch_millis, "
-                            + "updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, 'DISABLED', CAST(? AS JSONB), 1, "
-                            + "?, ?)",
+            persistence.insertItem(
                     itemRef,
                     dataNodeRef,
                     brandRef,
@@ -2083,46 +1920,22 @@ private SaveItemResult saveItem(
         String nextName = draft.has("name") ? required(draft, "name") : current.name();
         lockAndValidateCategoryRefs(dataNodeRef, brandRef, sections, currentSections, current.ref());
         lockCatalogAssetRefs(json(current.sectionsJson()), sections);
-        int changed = jdbc.update(
-                "UPDATE catalog.catalog_item SET name=?, short_name=?, sections=CAST(? AS JSONB), "
-                        + "sales_unit_ref=?,sales_unit_code=?,sales_unit_name=?,sales_unit_dimension=?,"
-                        + "sales_unit_precision=?,base_measure_unit_ref=?,base_measure_unit_code=?,"
-                        + "base_measure_unit_name=?,base_measure_unit_dimension=?,base_measure_unit_precision=?,"
-                        + "version=version+1, updated_at_epoch_millis=? WHERE data_node_ref=? AND brand_ref=? "
-                        + "AND code=? AND version=? AND status <> 'VOIDED'",
+        CatalogItemPersistence.UnitFactValues unitValues = new CatalogItemPersistence.UnitFactValues(
+            unitAssignments.itemSales() == null ? null : unitAssignments.itemSales().unitRef(),
+            unitAssignments.itemSales() == null ? null : unitAssignments.itemSales().code(),
+            unitAssignments.itemSales() == null ? null : unitAssignments.itemSales().name(),
+            unitAssignments.itemSales() == null ? null : unitAssignments.itemSales().unitDimension().name(),
+            unitAssignments.itemSales() == null ? null : unitAssignments.itemSales().precision(),
+            unitAssignments.itemBase() == null ? null : unitAssignments.itemBase().unitRef(),
+            unitAssignments.itemBase() == null ? null : unitAssignments.itemBase().code(),
+            unitAssignments.itemBase() == null ? null : unitAssignments.itemBase().name(),
+            unitAssignments.itemBase() == null ? null : unitAssignments.itemBase().unitDimension().name(),
+            unitAssignments.itemBase() == null ? null : unitAssignments.itemBase().precision());
+        int changed = persistence.updateItem(
                 nextName,
                 nextShortName,
                 sectionJson,
-                unitAssignments.itemSales() == null
-                        ? null
-                        : unitAssignments.itemSales().unitRef(),
-                unitAssignments.itemSales() == null
-                        ? null
-                        : unitAssignments.itemSales().code(),
-                unitAssignments.itemSales() == null
-                        ? null
-                        : unitAssignments.itemSales().name(),
-                unitAssignments.itemSales() == null
-                        ? null
-                        : unitAssignments.itemSales().unitDimension().name(),
-                unitAssignments.itemSales() == null
-                        ? null
-                        : unitAssignments.itemSales().precision(),
-                unitAssignments.itemBase() == null
-                        ? null
-                        : unitAssignments.itemBase().unitRef(),
-                unitAssignments.itemBase() == null
-                        ? null
-                        : unitAssignments.itemBase().code(),
-                unitAssignments.itemBase() == null
-                        ? null
-                        : unitAssignments.itemBase().name(),
-                unitAssignments.itemBase() == null
-                        ? null
-                        : unitAssignments.itemBase().unitDimension().name(),
-                unitAssignments.itemBase() == null
-                        ? null
-                        : unitAssignments.itemBase().precision(),
+                unitValues,
                 now(),
                 dataNodeRef,
                 brandRef,
@@ -2417,7 +2230,7 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(CatalogOwnerApi.UnitD
 
 private void replaceEffectiveUnitFacts(
             UUID itemRef, ObjectNode sections, ArrayNode skus, UnitAssignmentFacts unitAssignments) {
-        List<Object[]> skuRows = new ArrayList<>();
+        List<CatalogItemPersistence.SkuUnitFactRow> skuRows = new ArrayList<>();
         for (JsonNode sku : skus) {
             UUID skuRef = UUID.fromString(sku.path("productSkuRef").asText());
             SkuUnitAssignment assignment = unitAssignments.skus().get(skuRef);
@@ -2437,20 +2250,15 @@ private void writeItemUnitSnapshots(
         writeItemUnitSnapshotsBatch(Collections.singletonList(itemUnitFactRow(itemRef, sales, base)));
     }
 
-private void writeItemUnitSnapshotsBatch(List<Object[]> rows) {
+private void writeItemUnitSnapshotsBatch(List<CatalogItemPersistence.ItemUnitSnapshotRow> rows) {
         if (rows.isEmpty()) return;
-        jdbc.batchUpdate(
-                "UPDATE catalog.catalog_item SET sales_unit_ref=?,sales_unit_code=?,sales_unit_name=?,sales_unit_di"
-                        + "mension=?,sales_unit_precision=?,"
-                        + "base_measure_unit_ref=?,base_measure_unit_code=?,base_measure_unit_name=?,base_measure_u"
-                        + "nit_dimension=?,base_measure_unit_precision=? WHERE item_ref=?",
-                rows);
+        persistence.writeItemUnitSnapshots(rows);
     }
 
-private Object[] itemUnitFactRow(
+private CatalogItemPersistence.ItemUnitSnapshotRow itemUnitFactRow(
 
             UUID itemRef, CatalogOwnerApi.UnitDefinitionReadback sales, CatalogOwnerApi.UnitDefinitionReadback base) {
-        return new Object[] {
+        return new CatalogItemPersistence.ItemUnitSnapshotRow(
             sales == null ? null : sales.unitRef(),
             sales == null ? null : sales.code(),
             sales == null ? null : sales.name(),
@@ -2462,8 +2270,7 @@ private Object[] itemUnitFactRow(
             base == null ? null : base.name(),
             base == null ? null : base.unitDimension().name(),
             base == null ? null : base.precision(),
-            itemRef
-        };
+            itemRef);
     }
 
 private void writeSkuUnitFacts(
@@ -2472,31 +2279,23 @@ private void writeSkuUnitFacts(
             CatalogOwnerApi.UnitDefinitionReadback baseOverride,
             CatalogOwnerApi.UnitDefinitionReadback sales,
             CatalogOwnerApi.UnitDefinitionReadback base) {
-        List<Object[]> rows = new ArrayList<>();
+        List<CatalogItemPersistence.SkuUnitFactRow> rows = new ArrayList<>();
         rows.add(skuUnitFactRow(skuRef, salesOverride, baseOverride, sales, base));
         writeSkuUnitFactsBatch(rows);
     }
 
-private void writeSkuUnitFactsBatch(List<Object[]> rows) {
+private void writeSkuUnitFactsBatch(List<CatalogItemPersistence.SkuUnitFactRow> rows) {
         if (rows.isEmpty()) return;
-        jdbc.batchUpdate(
-                "UPDATE catalog.catalog_sku SET"
-                        + " sales_unit_ref=?,sales_unit_code=?,sales_unit_name=?,sales_unit_dimension=?,sales_unit_p"
-                        + "recision=?,"
-                        + "base_measure_unit_ref=?,base_measure_unit_code=?,base_measure_unit_name=?,"
-                        + "base_measure_unit_dimension=?,base_measure_unit_precision=?"
-                        + ",updated_at_epoch_millis=?"
-                        + " WHERE product_sku_ref=?",
-                rows);
+        persistence.writeSkuUnitFacts(rows);
     }
 
-private Object[] skuUnitFactRow(
+private CatalogItemPersistence.SkuUnitFactRow skuUnitFactRow(
             UUID skuRef,
             CatalogOwnerApi.UnitDefinitionReadback salesOverride,
             CatalogOwnerApi.UnitDefinitionReadback baseOverride,
             CatalogOwnerApi.UnitDefinitionReadback sales,
             CatalogOwnerApi.UnitDefinitionReadback base) {
-        return new Object[] {
+        return new CatalogItemPersistence.SkuUnitFactRow(
             sales == null ? null : sales.unitRef(),
             sales == null ? null : sales.code(),
             sales == null ? null : sales.name(),
@@ -2508,8 +2307,7 @@ private Object[] skuUnitFactRow(
             base == null ? null : base.unitDimension().name(),
             base == null ? null : base.precision(),
             now(),
-            skuRef
-        };
+            skuRef);
     }
 
 private void writeCopiedEffectiveUnitFacts(
@@ -2682,14 +2480,8 @@ private ObjectNode voidSkuTransitions(
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         requireSkuRetirementUnreferenced(commandContext, refs);
         lockCatalogItemForUpdate(dataNodeRef, brandRef, current.ref(), expectedCatalogVersion);
-        if (jdbc.update(
-                        "UPDATE catalog.catalog_item SET version=version+1,updated_at_epoch_millis=? WHERE item_ref=? "
-                                + "AND data_node_ref=? AND brand_ref=? AND version=? AND status <> 'VOIDED'",
-                        now(),
-                        current.ref(),
-                        dataNodeRef,
-                        brandRef,
-                        expectedCatalogVersion)
+        if (persistence.bumpItemVersion(
+                        current.ref(), dataNodeRef, brandRef, expectedCatalogVersion, now())
                 != 1) {
             throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "商品版本已变化");
         }
@@ -2710,18 +2502,9 @@ private ObjectNode voidSkuTransitions(
     }
 
 private UUID findSkuItemRef(String dataNodeRef, String brandRef, UUID skuRef) {
-        List<UUID> refs = jdbc.query(
-                "SELECT sku.item_ref FROM catalog.catalog_sku sku JOIN catalog.catalog_item item ON "
-                        + "item.item_ref=sku.item_ref WHERE item.data_node_ref=? AND item.brand_ref=? AND "
-                        + "sku.product_sku_ref=?",
-                (result, row) -> result.getObject(1, UUID.class),
-                dataNodeRef,
-                brandRef,
-                skuRef);
+        List<UUID> refs = persistence.findSkuItemRefs(dataNodeRef, brandRef, skuRef);
         if (refs.isEmpty()) {
-            Boolean exists = jdbc.queryForObject(
-                    "SELECT EXISTS (SELECT 1 FROM catalog.catalog_sku WHERE product_sku_ref=?)", Boolean.class, skuRef);
-            if (Boolean.TRUE.equals(exists))
+            if (persistence.skuExists(skuRef))
                 throw new CatalogOwnerApi.Problem(
                         "SCOPE_FORBIDDEN", 403, "SKU does not belong to the current data scope");
             throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "SKU 不存在");
@@ -2730,136 +2513,47 @@ private UUID findSkuItemRef(String dataNodeRef, String brandRef, UUID skuRef) {
     }
 
 private void lockCatalogItemForUpdate(String dataNodeRef, String brandRef, UUID itemRef, long expectedVersion) {
-        List<Long> versions = jdbc.query(
-                "SELECT version FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND item_ref=? FOR "
-                        + "UPDATE",
-                (result, row) -> result.getLong(1),
-                dataNodeRef,
-                brandRef,
-                itemRef);
+        List<Long> versions = persistence.lockCatalogItemVersions(dataNodeRef, brandRef, itemRef);
         if (versions.isEmpty() || versions.get(0) != expectedVersion)
             throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "商品版本已变化");
     }
 
 private DetailInboundFacts detailInboundFacts(
             String dataNodeRef, String brandRef, UUID itemRef, Collection<UUID> skuRefs) {
-        UUID[] orderedSkuRefs = new LinkedHashSet<>(skuRefs == null ? List.of() : skuRefs).toArray(UUID[]::new);
-        return jdbc.query(
-                "SELECT 'SKU' AS"
-                        + " kind,component.product_sku_ref,component.composite_component_ref,owner_item.item_ref,"
-                        + "owner_item.code,owner_item.name,NULL::bigint"
-                        + " FROM catalog.catalog_composite_component component JOIN catalog.catalog_composite_group"
-
-                        + " group_row ON group_row.composite_group_ref=component.composite_group_ref JOIN"
-                        + " catalog.catalog_item owner_item ON owner_item.item_ref=group_row.item_ref JOIN"
-                        + " catalog.catalog_sku target_sku ON target_sku.product_sku_ref=component.product_sku_ref"
-                        + " WHERE"
-                        + " owner_item.data_node_ref=? AND owner_item.brand_ref=? AND owner_item.status <> 'VOIDED' AND"
-                        + " component.product_sku_ref=ANY(?::uuid[]) AND"
-                        + " owner_item.item_ref <> target_sku.item_ref UNION ALL SELECT"
-                        + " 'ITEM',NULL::uuid,component.composite_component_ref,owner_item.item_ref,"
-
-                        + "owner_item.code,owner_item.name,NULL::bigint"
-                        + " FROM catalog.catalog_composite_component component JOIN catalog.catalog_composite_group"
-                        + " group_row ON group_row.composite_group_ref=component.composite_group_ref JOIN"
-                        + " catalog.catalog_item owner_item ON owner_item.item_ref=group_row.item_ref WHERE"
-                        + " owner_item.data_node_ref=? AND owner_item.brand_ref=? AND owner_item.status <> 'VOIDED' AND"
-                        + " component.component_item_ref=? UNION ALL SELECT"
-                        + " 'GENERATION',NULL::uuid,NULL::uuid,NULL::uuid,NULL::text,NULL::text,"
-                        + "COALESCE(MAX(version),0) FROM"
-                        + " catalog.catalog_item WHERE data_node_ref=? AND brand_ref=?",
-                statement -> {
-                    statement.setString(1, dataNodeRef);
-                    statement.setString(2, brandRef);
-                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", orderedSkuRefs));
-                    statement.setString(4, dataNodeRef);
-                    statement.setString(5, brandRef);
-                    statement.setObject(6, itemRef);
-                    statement.setString(7, dataNodeRef);
-                    statement.setString(8, brandRef);
-                },
-                result -> {
-                    Map<UUID, List<SkuInboundReference>> bySku = new LinkedHashMap<>();
-                    List<InboundItemReference> byItem = new ArrayList<>();
-                    long generation = 0;
-                    while (result.next()) {
-                        switch (result.getString(1)) {
-                            case "SKU" -> bySku.computeIfAbsent(
-                                            result.getObject(2, UUID.class), ignored -> new ArrayList<>())
-                                    .add(new SkuInboundReference(
-                                            result.getObject(3, UUID.class),
-                                            result.getObject(4, UUID.class),
-                                            result.getString(5),
-                                            result.getString(6)));
-                            case "ITEM" -> byItem.add(new InboundItemReference(
-                                    result.getObject(4, UUID.class), result.getString(5), result.getString(6)));
-                            case "GENERATION" -> generation = result.getLong(7);
-                            default -> {
-                                String problemMessage = "商品入向事实类型无法读取";
-                                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, problemMessage);
-                            }
-                        }
-                    }
-                    return new DetailInboundFacts(
-                            bySku.entrySet().stream()
-                                    .collect(java.util.stream.Collectors.toUnmodifiableMap(
-                                            Map.Entry::getKey, entry -> List.copyOf(entry.getValue()))),
-                            List.copyOf(byItem),
-                            generation);
-                });
+        CatalogItemPersistence.DetailInboundFactsRow row =
+                persistence.readDetailInboundFacts(dataNodeRef, brandRef, itemRef, skuRefs);
+        Map<UUID, List<SkuInboundReference>> bySku = new LinkedHashMap<>();
+        row.bySku().forEach((skuRef, references) -> bySku.put(
+                skuRef,
+                references.stream()
+                        .map(value -> new SkuInboundReference(
+                                value.componentRef(), value.ownerItemRef(), value.ownerCode(), value.ownerName()))
+                        .toList()));
+        List<InboundItemReference> byItem = row.byItem().stream()
+                .map(value -> new InboundItemReference(value.itemRef(), value.code(), value.name()))
+                .toList();
+        return new DetailInboundFacts(Map.copyOf(bySku), byItem, row.generation());
     }
 
 private Map<UUID, List<SkuInboundReference>> skuInboundReferencesByRefs(
             String dataNodeRef, String brandRef, Collection<UUID> skuRefs) {
-        List<UUID> orderedRefs = new ArrayList<>(new LinkedHashSet<>(skuRefs));
-        if (orderedRefs.isEmpty()) return Map.of();
-        UUID[] values = orderedRefs.toArray(UUID[]::new);
-        return jdbc.query(
-                "SELECT component.product_sku_ref,component.composite_component_ref,"
-                        + "owner_item.item_ref,owner_item.code,owner_item.name FROM "
-                        + "catalog.catalog_composite_component component JOIN catalog.catalog_composite_group "
-                        + "group_row ON "
-                        + "group_row.composite_group_ref=component.composite_group_ref JOIN catalog.catalog_item "
-                        + "owner_item ON owner_item.item_ref=group_row.item_ref JOIN catalog.catalog_sku target_sku ON "
-                        + "target_sku.product_sku_ref=component.product_sku_ref WHERE owner_item.data_node_ref=? AND "
-                        + "owner_item.brand_ref=? "
-                        + "AND "
-                        + "owner_item.status <> 'VOIDED' AND component.product_sku_ref = ANY(?::uuid[]) "
-                        + "AND owner_item.item_ref <> target_sku.item_ref ORDER BY "
-                        + "component.product_sku_ref,owner_item.code,component.composite_component_ref",
-                statement -> {
-                    statement.setString(1, dataNodeRef);
-                    statement.setString(2, brandRef);
-                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", values));
-                },
-                result -> {
-                    Map<UUID, List<SkuInboundReference>> referencesBySku = new LinkedHashMap<>();
-                    while (result.next()) {
-                        UUID skuRef = result.getObject(1, UUID.class);
-                        referencesBySku
-                                .computeIfAbsent(skuRef, ignored -> new ArrayList<>())
-                                .add(new SkuInboundReference(
-                                        result.getObject(2, UUID.class),
-                                        result.getObject(3, UUID.class),
-                                        result.getString(4),
-                                        result.getString(5)));
-                    }
-                    return referencesBySku;
-                });
+        Map<UUID, List<SkuInboundReference>> result = new LinkedHashMap<>();
+        persistence.readSkuInboundReferences(dataNodeRef, brandRef, skuRefs)
+                .forEach((skuRef, references) -> result.put(
+                        skuRef,
+                        references.stream()
+                                .map(value -> new SkuInboundReference(
+                                        value.componentRef(), value.ownerItemRef(), value.ownerCode(), value.ownerName()))
+                                .toList()));
+        return Map.copyOf(result);
     }
 
 private void lockProductSkuRefs(Collection<UUID> refs) {
-        if (refs == null || refs.isEmpty()) return;
-        refs.stream()
-                .filter(java.util.Objects::nonNull)
-                .distinct()
-                .sorted()
-                .forEach(ref -> AdvisoryLock.acquire(jdbc, 0x43534B55, ref));
+        persistence.lockProductSkuRefs(refs);
     }
 
 private void lockCatalogItemRefs(Collection<UUID> refs) {
-        if (refs == null || refs.isEmpty()) return;
-        AdvisoryLock.acquireAll(jdbc, 0x4349544D, refs);
+        persistence.lockCatalogItemRefs(refs);
     }
 
 private ArrayNode normalizeSkuFacts(ObjectNode sections) {
@@ -3196,16 +2890,7 @@ private long transitionItemState(
         if ("VOIDED".equals(target))
             requireItemRetirementUnreferenced(commandContext, current, batchFacts, inventoryIdempotencyKey);
         if ("VOIDED".equals(target)) lockCatalogAssetRefs(json(current.sectionsJson()));
-        if (jdbc.update(
-                        "UPDATE catalog.catalog_item SET status=?, version=version+1, updated_at_epoch_millis=? WHERE "
-                                + "item_ref=? AND data_node_ref=? AND brand_ref=? AND version=?",
-                        target,
-                        now(),
-                        current.ref(),
-                        dataNodeRef,
-                        brandRef,
-                        expected)
-                != 1) {
+        if (persistence.transitionItem(target, now(), current.ref(), dataNodeRef, brandRef, expected) != 1) {
             throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "商品版本已变化");
         }
         return expected + 1;
@@ -3269,15 +2954,7 @@ private void validateItemActivation(ItemRow row) {
     }
 
 private boolean formalCodeAvailable(String dataNodeRef, String brandRef, String code, UUID currentRef) {
-        Long count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND code=? AND "
-                        + "item_ref<>? AND status <> 'VOIDED'",
-                Long.class,
-                dataNodeRef,
-                brandRef,
-                code,
-                currentRef);
-        return count == null || count == 0;
+        return persistence.formalCodeAvailable(dataNodeRef, brandRef, code, currentRef);
     }
 
 private ArrayNode promotionChanges(
@@ -3529,12 +3206,7 @@ private PromotionExecution promotionExecuteWithProjection(
         ArrayNode promotedSkus = clonedSkuFacts((ArrayNode) promotedSections.path("skus"));
         if (formalCode.equals(code)) {
             removeRelationalSectionFacts(promotedSections);
-            if (jdbc.update(
-                            "UPDATE catalog.catalog_item SET "
-                                    + "name=?,short_name=?,shape_key=?,status='DISABLED',sections=CAST(? AS JSONB),"
-                                    + "version=version+1,updated_at_epoch_millis=? "
-                                    + "WHERE "
-                                    + "data_node_ref=? AND brand_ref=? AND code=? AND version=?",
+            if (persistence.updateTemporaryPromotionItem(
                             name,
                             promotedShortName,
                             shapeKey,
@@ -3561,12 +3233,7 @@ private PromotionExecution promotionExecuteWithProjection(
         lockCatalogAssetRefs(sourceFacts.sections(), promotedSections);
         removeRelationalSectionFacts(promotedSections);
         try {
-            jdbc.update(
-                    "INSERT INTO catalog.catalog_item "
-                            + "(item_ref,data_node_ref,brand_ref,code,name,short_name,shape_key,status,sections,"
-                            + "source_item_code,source_scope_ref,version,created_at_epoch_millis,updated_at_epoch_milli"
-                            + "s) "
-                            + "VALUES (?,?,?,?,?,?,?, 'DISABLED',CAST(? AS JSONB),?,?,1,?,?)",
+            persistence.insertTemporaryPromotionItem(
                     promotedItemRef,
                     dataNodeRef,
                     brandRef,
@@ -3602,15 +3269,8 @@ private PromotionExecution promotionExecuteWithProjection(
         if ((promotedProductionTagRef != null && !promotedProductionTagRef.isNull())
                 || hasArrayEntries(promotedTagRefs))
             itemReferenceFacts.replace(promotedItemRef, promotedProductionTagRef, promotedTagRefs);
-        if (jdbc.update(
-                        "UPDATE catalog.catalog_item SET status='VOIDED',version=version+1,updated_at_epoch_millis=? "
-                                + "WHERE data_node_ref=? AND brand_ref=? AND code=? AND version=?",
-                        now(),
-                        dataNodeRef,
-                        brandRef,
-                        code,
-                        expected)
-                != 1) throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "临时商品版本已变化");
+        if (persistence.voidTemporaryPromotionItem(now(), dataNodeRef, brandRef, code, expected) != 1)
+            throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "临时商品版本已变化");
         return new PromotionExecution(
                 itemCommand(requestId, promotedItemRef, "DISABLED", 1L),
                 temporaryPromotionProjection(
@@ -3624,27 +3284,10 @@ private PromotionExecution promotionExecuteWithProjection(
     }
 
 private List<CategoryRow> lockCategories(String scope, String brand, List<UUID> refs) {
-        if (refs.isEmpty()) return List.of();
         List<UUID> stable = refs.stream().distinct().sorted().toList();
-        String placeholders = String.join(",", Collections.nCopies(stable.size(), "?"));
-        List<Object> args = new ArrayList<>();
-        args.add(scope);
-        args.add(brand);
-        args.addAll(stable);
-        List<CategoryRow> rows = jdbc.query(
-                "SELECT category_ref,code,name,parent_code,parent_category_ref,status,version,display_order FROM "
-                        + "catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND category_ref IN ("
-                        + placeholders + ") AND status <> 'VOIDED' ORDER BY category_ref FOR UPDATE",
-                (result, row) -> new CategoryRow(
-                        result.getObject(1, UUID.class),
-                        result.getString(2),
-                        result.getString(3),
-                        result.getString(4),
-                        result.getObject(5, UUID.class),
-                        result.getString(6),
-                        result.getLong(7),
-                        result.getInt(8)),
-                args.toArray());
+        List<CategoryRow> rows = persistence.lockCategories(scope, brand, refs).stream()
+                .map(CatalogItemService::categoryRow)
+                .toList();
         if (rows.size() != stable.size()) {
             throw new CatalogOwnerApi.Problem(("NOT_FOUND"), (404), ("分类不存在或已删除"));
         }
@@ -3905,11 +3548,7 @@ private boolean hasItemDependencies(
             }
             hasIdentifiers = batchFacts.identifierPresence().get(row.ref());
         }
-        if (hasIdentifiers == null)
-            hasIdentifiers = jdbc.queryForObject(
-                    "SELECT EXISTS (SELECT 1 FROM catalog.product_identifier WHERE item_ref=?)",
-                    Boolean.class,
-                    row.ref());
+        if (hasIdentifiers == null) hasIdentifiers = persistence.hasIdentifiers(row.ref());
         return sections.path("skuCount").asInt(0) > 0
                 || Boolean.TRUE.equals(hasIdentifiers)
                 || sections.path("productionTagRef").isTextual()
@@ -3918,34 +3557,10 @@ private boolean hasItemDependencies(
 
 private TransitionItemPrecheck recheckTransitionItemReceipt(
             String scope, String brand, String itemCode, Long expectedVersion, String targetStatus) {
-        TransitionItemPrecheck precheck = jdbc.query(
-                "SELECT item.item_ref,item.code,item.name,item.short_name,item.shape_key,item.status,"
-                        + "item.sections::text,"
-                        + "item.version,item.updated_at_epoch_millis,item.source_scope_ref,"
-                        + "EXISTS (SELECT 1 FROM catalog.product_identifier identifier WHERE "
-                        + "identifier.item_ref=item.item_ref) "
-                        + "FROM catalog.catalog_item item WHERE item.data_node_ref=? AND item.brand_ref=? "
-                        + "AND item.code=?",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setString(3, itemCode);
-                },
-                result -> result.next()
-                        ? new TransitionItemPrecheck(
-                                new ItemRow(
-                                        result.getObject(1, UUID.class),
-                                        result.getString(2),
-                                        result.getString(3),
-                                        result.getString(4),
-                                        result.getString(5),
-                                        result.getString(6),
-                                        result.getString(7),
-                                        result.getLong(8),
-                                        result.getLong(9),
-                                        result.getString(10)),
-                                result.getBoolean(11))
-                        : null);
+        CatalogItemPersistence.TransitionItemPrecheckRow stored = persistence.readTransitionPrecheck(scope, brand, itemCode);
+        TransitionItemPrecheck precheck = stored == null
+                ? null
+                : new TransitionItemPrecheck(itemRow(stored.item()), stored.hasIdentifiers());
         if (precheck == null) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "商品不存在");
         ItemRow current = precheck.item();
         if (expectedVersion != null
@@ -4087,31 +3702,14 @@ private Map<UUID, List<InboundItemReference>> inboundItemReferencesByRefs(
             String scope, String brand, Collection<UUID> itemRefs) {
         List<UUID> orderedRefs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
         if (orderedRefs.isEmpty()) return Map.of();
-        UUID[] values = orderedRefs.toArray(UUID[]::new);
-        return jdbc.query(
-                "SELECT component.component_item_ref,owner_item.item_ref,owner_item.code,owner_item.name "
-                        + "FROM catalog.catalog_composite_component component JOIN "
-                        + "catalog.catalog_composite_group group_row ON "
-                        + "group_row.composite_group_ref=component.composite_group_ref JOIN catalog.catalog_item "
-                        + "owner_item ON owner_item.item_ref=group_row.item_ref WHERE owner_item.data_node_ref=? AND "
-                        + "owner_item.brand_ref=? AND owner_item.status <> 'VOIDED' "
-                        + "AND component.component_item_ref=ANY(?::uuid[]) ORDER BY component.component_item_ref, "
-                        + "owner_item.code, owner_item.item_ref",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setArray(3, statement.getConnection().createArrayOf("uuid", values));
-                },
-                result -> {
-                    Map<UUID, List<InboundItemReference>> referencesByItem = new LinkedHashMap<>();
-                    while (result.next())
-                        referencesByItem
-                                .computeIfAbsent(result.getObject(1, UUID.class), ignored -> new ArrayList<>())
-                                .add(new InboundItemReference(
-                                        result.getObject(2, UUID.class), result.getString(3), result.getString(4)));
-                    referencesByItem.replaceAll((ref, references) -> List.copyOf(references));
-                    return Map.copyOf(referencesByItem);
-                });
+        Map<UUID, List<InboundItemReference>> referencesByItem = new LinkedHashMap<>();
+        persistence.readInboundItemReferencesByRefs(scope, brand, orderedRefs)
+                .forEach((itemRef, references) -> referencesByItem.put(
+                        itemRef,
+                        references.stream()
+                                .map(value -> new InboundItemReference(value.itemRef(), value.code(), value.name()))
+                                .toList()));
+        return Map.copyOf(referencesByItem);
     }
 
 private Map<UUID, Boolean> itemIdentifierPresenceByRefs(Collection<UUID> itemRefs) {
@@ -4129,19 +3727,9 @@ private Map<UUID, Boolean> itemIdentifierPresenceByRefs(Collection<UUID> itemRef
     }
 
 private List<InboundItemReference> inboundItemReferences(String scope, String brand, UUID currentRef) {
-        return jdbc.query(
-                "SELECT owner_item.item_ref, owner_item.code, owner_item.name "
-                        + "FROM catalog.catalog_composite_component component JOIN "
-                        + "catalog.catalog_composite_group group_row ON "
-                        + "group_row.composite_group_ref=component.composite_group_ref JOIN catalog.catalog_item "
-                        + "owner_item ON owner_item.item_ref=group_row.item_ref WHERE owner_item.data_node_ref=? AND "
-                        + "owner_item.brand_ref=? AND owner_item.status <> 'VOIDED' AND component.component_item_ref=? "
-                        + "ORDER BY owner_item.code, owner_item.item_ref",
-                (result, index) -> new InboundItemReference(
-                        result.getObject(1, UUID.class), result.getString(2), result.getString(3)),
-                scope,
-                brand,
-                currentRef);
+        return persistence.readInboundItemReferences(scope, brand, currentRef).stream()
+                .map(value -> new InboundItemReference(value.itemRef(), value.code(), value.name()))
+                .toList();
     }
 
 private void lockAndValidateCategoryRefs(
@@ -4211,25 +3799,9 @@ private Set<UUID> categoryReferencesFromOwner(UUID itemRef) {
 private List<CategoryRow> lockCategoriesForReferenceValidation(String scope, String brand, List<UUID> refs) {
         if (refs.isEmpty()) return List.of();
         List<UUID> stable = refs.stream().distinct().sorted().toList();
-        String placeholders = String.join(",", Collections.nCopies(stable.size(), "?"));
-        List<Object> args = new ArrayList<>();
-        args.add(scope);
-        args.add(brand);
-        args.addAll(stable);
-        List<CategoryRow> rows = jdbc.query(
-                "SELECT category_ref,code,name,parent_code,parent_category_ref,status,version,display_order FROM "
-                        + "catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND category_ref IN ("
-                        + placeholders + ") ORDER BY category_ref FOR UPDATE",
-                (result, row) -> new CategoryRow(
-                        result.getObject(1, UUID.class),
-                        result.getString(2),
-                        result.getString(3),
-                        result.getString(4),
-                        result.getObject(5, UUID.class),
-                        result.getString(6),
-                        result.getLong(7),
-                        result.getInt(8)),
-                args.toArray());
+        List<CategoryRow> rows = persistence.lockCategoriesForReferenceValidation(scope, brand, stable).stream()
+                .map(CatalogItemService::categoryRow)
+                .toList();
         // spotless:off
         if (rows.size() != stable.size())
             throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在或已删除");
@@ -4365,34 +3937,7 @@ private Map<String, Set<UUID>> dictionaryReferencesFromOwner(
     }
 
 private Map<String, Set<UUID>> relationalSkuDictionaryReferencesForItem(String scope, String brand, UUID itemRef) {
-        Map<String, Set<UUID>> result = new LinkedHashMap<>();
-        result.put("SKU_ATTRIBUTE", new LinkedHashSet<>());
-        result.put("SKU_ATTRIBUTE_VALUE", new LinkedHashSet<>());
-        jdbc.query(
-                "SELECT 'SKU_ATTRIBUTE' AS dictionary_kind,relation.attribute_ref AS entry_ref FROM "
-                        + "catalog.catalog_sku_attribute_value relation JOIN catalog.catalog_sku sku ON "
-                        + "sku.product_sku_ref=relation.product_sku_ref JOIN catalog.catalog_item item ON "
-                        + "item.item_ref=sku.item_ref WHERE item.data_node_ref=? AND item.brand_ref=? "
-                        + "AND item.item_ref=? "
-                        + "UNION SELECT 'SKU_ATTRIBUTE_VALUE',relation.attribute_value_ref FROM "
-                        + "catalog.catalog_sku_attribute_value relation JOIN catalog.catalog_sku sku ON "
-                        + "sku.product_sku_ref=relation.product_sku_ref JOIN catalog.catalog_item item ON "
-                        + "item.item_ref=sku.item_ref WHERE item.data_node_ref=? AND item.brand_ref=? "
-                        + "AND item.item_ref=?",
-                (rows, row) -> {
-                    String kind = rows.getString(1);
-                    UUID ref = rows.getObject(2, UUID.class);
-                    if (ref != null) result.get(kind).add(ref);
-                    return null;
-                },
-                scope,
-                brand,
-                itemRef,
-                scope,
-                brand,
-                itemRef);
-        result.replaceAll((kind, refs) -> Set.copyOf(refs));
-        return Map.copyOf(result);
+        return persistence.readSkuDictionaryRefs(scope, brand, itemRef);
     }
 
 private Set<UUID> parseDictionaryRefs(List<String> refs, String kind) {
@@ -4502,45 +4047,27 @@ private void lockDictionaryRefsByKind(
             String brand,
             Map<String, List<String>> refsByKind,
             Map<String, Set<UUID>> existingRefsByKind) {
-        List<String> requestedKeys = new ArrayList<>();
-        List<Object> args = new ArrayList<>();
-        args.add(scope);
-        args.add(brand);
+        List<CatalogItemPersistence.DictionaryReference> requestedReferences = new ArrayList<>();
         for (Map.Entry<String, List<String>> entry : refsByKind.entrySet()) {
             entry.getValue().stream().distinct().map(UUID::fromString).sorted().forEach(ref -> {
-                requestedKeys.add(entry.getKey() + "\u0000" + ref);
-                args.add(entry.getKey());
-                args.add(ref);
+                requestedReferences.add(new CatalogItemPersistence.DictionaryReference(entry.getKey(), ref));
             });
         }
-        if (requestedKeys.isEmpty()) return;
-        String tuples = String.join(",", Collections.nCopies(requestedKeys.size(), "(?,?)"));
-        Map<String, String> statuses = new LinkedHashMap<>();
-        Set<String> foundKeys = new LinkedHashSet<>(jdbc.query(
-                "SELECT dictionary_kind,entry_ref,status FROM catalog.dictionary_entry "
-                        + "WHERE data_node_ref=? AND brand_ref=? "
-                        + "AND (dictionary_kind,entry_ref) IN ("
-                        + tuples
-                        + ") ORDER BY dictionary_kind,entry_ref FOR UPDATE",
-                (result, index) -> {
-                    String key = result.getString(1) + "\u0000" + result.getObject(2, UUID.class);
-                    statuses.put(key, result.getString(3));
-                    return key;
-                },
-                args.toArray()));
-        for (String requestedKey : requestedKeys) {
-            if (!foundKeys.contains(requestedKey)) {
-                String kind = requestedKey.substring(0, requestedKey.indexOf('\u0000'));
+        if (requestedReferences.isEmpty()) return;
+        Map<CatalogItemPersistence.DictionaryReference, String> statuses =
+                persistence.lockDictionaryRefs(scope, brand, requestedReferences);
+        for (CatalogItemPersistence.DictionaryReference requested : requestedReferences) {
+            if (!statuses.containsKey(requested)) {
+                String kind = requested.kind();
                 throw new CatalogOwnerApi.Problem(
                         "REFERENCE_MAPPING_UNRESOLVED", 422, kind + " reference is not available in this owner scope");
             }
-            int separator = requestedKey.indexOf('\u0000');
-            String kind = requestedKey.substring(0, separator);
-            UUID ref = UUID.fromString(requestedKey.substring(separator + 1));
+            String kind = requested.kind();
+            UUID ref = requested.ref();
             boolean alreadyAttached =
                     existingRefsByKind.getOrDefault(kind, Set.of()).contains(ref);
             // spotless:off
-            if (!alreadyAttached && !"ENABLED".equals(statuses.get(requestedKey)))
+            if (!alreadyAttached && !"ENABLED".equals(statuses.get(requested)))
                 throw new CatalogOwnerApi.Problem(
                         "REFERENCE_MAPPING_UNRESOLVED", 422, "新绑定的字典项必须处于启用状态");
             // spotless:on
@@ -4640,21 +4167,7 @@ private void validateCatalogRelationRefs(
             throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "套餐内容不能选择当前商品");
         if (!itemRefs.isEmpty()) {
             List<UUID> ids = itemRefs.stream().distinct().sorted().toList();
-            String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
-            List<Object> args = new ArrayList<>();
-            args.add(scope);
-            args.add(brand);
-            args.addAll(ids);
-            Map<UUID, String> itemStatuses = new LinkedHashMap<>();
-            jdbc.query(
-                    "SELECT item_ref,status FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? "
-                            + "AND item_ref IN ("
-                            + placeholders + ") ORDER BY item_ref FOR KEY SHARE",
-                    (result, index) -> {
-                        itemStatuses.put(result.getObject(1, UUID.class), result.getString(2));
-                        return null;
-                    },
-                    args.toArray());
+            Map<UUID, String> itemStatuses = persistence.readItemStatuses(scope, brand, ids);
             if (itemStatuses.size() != ids.size())
                 throw new CatalogOwnerApi.Problem(
                         "REFERENCE_MAPPING_UNRESOLVED", 422, "itemRef is not available in this owner scope");
@@ -4733,34 +4246,16 @@ private void requireSkuCodeForSkuReference(JsonNode entry) {
 private Map<UUID, SkuReferenceOwner> skuOwnerByRef(String scope, String brand, List<UUID> requestedSkuRefs) {
         List<UUID> refs = requestedSkuRefs.stream().distinct().sorted().toList();
         if (refs.isEmpty()) return Map.of();
-        String placeholders = String.join(",", Collections.nCopies(refs.size(), "?"));
         Map<UUID, SkuReferenceOwner> owners = new LinkedHashMap<>();
-        jdbc.query(
-                "SELECT sku.product_sku_ref,sku.item_ref,item.status,sku.status "
-                        + "FROM catalog.catalog_sku sku JOIN catalog.catalog_item item "
-                        + "ON item.item_ref=sku.item_ref WHERE item.data_node_ref=? AND item.brand_ref=? AND "
-                        + "sku.product_sku_ref IN ("
-                        + placeholders + ") ORDER BY sku.product_sku_ref FOR KEY SHARE OF sku,item",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    for (int index = 0; index < refs.size(); index++) statement.setObject(index + 3, refs.get(index));
-                },
-                result -> {
-                    while (result.next()) {
-                        UUID skuRef = result.getObject(1, UUID.class);
-                        UUID itemRef = result.getObject(2, UUID.class);
-                        SkuReferenceOwner owner =
-                                new SkuReferenceOwner(itemRef, result.getString(3), result.getString(4));
-                        SkuReferenceOwner previous = skuRef == null ? null : owners.putIfAbsent(skuRef, owner);
-                        if (previous != null && !previous.itemRef().equals(itemRef))
-                            throw new CatalogOwnerApi.Problem(
-                                    "REFERENCE_MAPPING_UNRESOLVED",
-                                    422,
-                                    "productSkuRef is duplicated across items in this owner scope");
-                    }
-                    return null;
-                });
+        persistence.readSkuOwners(refs, scope, brand).forEach((skuRef, value) -> {
+            SkuReferenceOwner owner = new SkuReferenceOwner(value.itemRef(), value.itemStatus(), value.skuStatus());
+            SkuReferenceOwner previous = owners.putIfAbsent(skuRef, owner);
+            if (previous != null && !previous.itemRef().equals(owner.itemRef()))
+                throw new CatalogOwnerApi.Problem(
+                        "REFERENCE_MAPPING_UNRESOLVED",
+                        422,
+                        "productSkuRef is duplicated across items in this owner scope");
+        });
         return owners;
     }
 
@@ -4787,69 +4282,33 @@ private void appendOutboundCompositeReferences(ArrayNode references, ArrayNode c
 
 private CategorySummaryFacts categorySummaryFactsForItems(String dataNodeRef, String brandRef, List<ItemRow> rows) {
         if (rows.isEmpty()) return CategorySummaryFacts.empty();
-        List<UUID> itemRefs = rows.stream().map(ItemRow::ref).toList();
-        String placeholders = String.join(",", Collections.nCopies(itemRefs.size(), "?"));
         Map<UUID, UUID> categoryRefByItem = new LinkedHashMap<>();
         Map<UUID, List<CategoryPathNode>> pathNodesByItem = new LinkedHashMap<>();
-        jdbc.query(
-                "WITH RECURSIVE selected(item_ref,category_ref) AS (SELECT relation.item_ref,relation.category_ref "
-                        + "FROM catalog.catalog_item_category relation JOIN catalog.catalog_category category "
-                        + "ON category.category_ref=relation.category_ref WHERE relation.item_ref IN ("
-                        + placeholders + ") AND category.data_node_ref=? AND category.brand_ref=? "
-                        + "AND category.status <> 'VOIDED'), "
-                        + "category_paths(leaf_ref,category_ref,parent_category_ref,path_nodes) AS ("
-                        + "SELECT category.category_ref,category.category_ref,category.parent_category_ref,"
-                        + "jsonb_build_array(jsonb_build_object('categoryRef',category.category_ref::text,"
-                        + "'code',category.code,'name',category.name)) "
-                        + "FROM selected JOIN catalog.catalog_category category "
-                        + "ON category.category_ref=selected.category_ref "
-                        + "UNION ALL SELECT paths.leaf_ref,parent.category_ref,parent.parent_category_ref,"
-                        + "jsonb_build_array(jsonb_build_object('categoryRef',parent.category_ref::text,"
-                        + "'code',parent.code,'name',parent.name)) || paths.path_nodes "
-                        + "FROM category_paths paths "
-                        + "JOIN catalog.catalog_category parent ON parent.data_node_ref=? AND parent.brand_ref=? "
-                        + "AND parent.category_ref=paths.parent_category_ref AND parent.status <> 'VOIDED') "
-                        + "SELECT selected.item_ref,selected.category_ref,paths.path_nodes FROM selected "
-                        + "LEFT JOIN category_paths paths ON paths.leaf_ref=selected.category_ref "
-                        + "AND paths.parent_category_ref IS NULL",
-                statement -> {
-                    for (int index = 0; index < itemRefs.size(); index++) {
-                        statement.setObject(index + 1, itemRefs.get(index));
-                    }
-                    statement.setString(itemRefs.size() + 1, dataNodeRef);
-                    statement.setString(itemRefs.size() + 2, brandRef);
-                    statement.setString(itemRefs.size() + 3, dataNodeRef);
-                    statement.setString(itemRefs.size() + 4, brandRef);
-                },
-                result -> {
-                    while (result.next()) {
-                        UUID itemRef = result.getObject(1, UUID.class);
-                        UUID categoryRef = result.getObject(2, UUID.class);
-                        if (itemRef == null || categoryRef == null) continue;
-                        categoryRefByItem.putIfAbsent(itemRef, categoryRef);
-                        String rawPath = result.getString(3);
-                        if (rawPath == null || rawPath.isBlank()) continue;
-                        JsonNode path = nullableJson(rawPath, "商品分类路径读取失败");
+        persistence.readCategorySummary(dataNodeRef, brandRef, rows.stream().map(ItemRow::ref).toList())
+                .forEach(value -> {
+                    UUID itemRef = value.itemRef();
+                    UUID categoryRef = value.categoryRef();
+                    if (itemRef == null || categoryRef == null) return;
+                    categoryRefByItem.putIfAbsent(itemRef, categoryRef);
+                    String rawPath = value.pathJson();
+                    if (rawPath == null || rawPath.isBlank()) return;
+                    JsonNode path = nullableJson(rawPath, "商品分类路径读取失败");
+                    // spotless:off
+                    if (!path.isArray())
+                        throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品分类路径读取失败");
+                    // spotless:on
+                    List<CategoryPathNode> nodes = new ArrayList<>();
+                    for (JsonNode node : path) {
+                        UUID nodeRef = nullableUuid(node, "categoryRef");
+                        String code = node.path("code").asText("");
+                        String name = node.path("name").asText("");
                         // spotless:off
-                        if (!path.isArray())
+                        if (nodeRef == null || code.isBlank() || name.isBlank())
                             throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品分类路径读取失败");
                         // spotless:on
-                        List<CategoryPathNode> nodes = new ArrayList<>();
-                        for (JsonNode node : path) {
-                            UUID nodeRef = nullableUuid(node, "categoryRef");
-                            String code = node.path("code").asText("");
-                            String name = node.path("name").asText("");
-                            // spotless:off
-                            if (nodeRef == null || code.isBlank() || name.isBlank())
-
-                                throw new CatalogOwnerApi.Problem(
-                                        "RESULT_UNKNOWN", 500, "商品分类路径读取失败");
-                            // spotless:on
-                            nodes.add(new CategoryPathNode(nodeRef, code, name));
-                        }
-                        if (!nodes.isEmpty()) pathNodesByItem.put(itemRef, List.copyOf(nodes));
+                        nodes.add(new CategoryPathNode(nodeRef, code, name));
                     }
-                    return null;
+                    if (!nodes.isEmpty()) pathNodesByItem.put(itemRef, List.copyOf(nodes));
                 });
         return new CategorySummaryFacts(Map.copyOf(categoryRefByItem), Map.copyOf(pathNodesByItem));
     }
@@ -5579,96 +5038,28 @@ private ItemRow requireItemIdentity(String dataNodeRef, String brandRef, String 
     }
 
 private List<ItemRow> loadItems(String dataNodeRef, String brandRef, List<String> codes) {
-        if (codes.isEmpty()) return List.of();
-        String placeholders = String.join(",", Collections.nCopies(codes.size(), "?"));
-        List<Object> args = new ArrayList<>();
-        args.add(dataNodeRef);
-        args.add(brandRef);
-        args.addAll(codes);
-        return hydrateItemFacts(jdbc.query(
-                "SELECT "
-                        + "item_ref,code,name,short_name,shape_key,status,sections::text,version,updat"
-                        + "ed_a"
-                        + "t_epoch_millis,source_scope_ref FROM catalog.catalog_item WHERE data_node_ref=? AND "
-                        + "brand_ref=? "
-                        + "AND code IN ("
-                        + placeholders + ") AND status <> 'VOIDED' ORDER BY code",
-                (r, n) -> new ItemRow(
-                        r.getObject(1, UUID.class),
-                        r.getString(2),
-                        r.getString(3),
-                        r.getString(4),
-                        r.getString(5),
-                        r.getString(6),
-                        r.getString(7),
-                        r.getLong(8),
-                        r.getLong(9),
-                        r.getString(10)),
-                args.toArray()));
+        return hydrateItemFacts(persistence.loadItemsByCodes(dataNodeRef, brandRef, codes).stream()
+                .map(CatalogItemService::itemRow)
+                .toList());
     }
 
 private List<ItemRow> loadItemIdentityRowsIncludingVoided(String dataNodeRef, String brandRef, List<String> codes) {
-        if (codes.isEmpty()) return List.of();
-        String placeholders = String.join(",", Collections.nCopies(codes.size(), "?"));
-        List<Object> args = new ArrayList<>();
-        args.add(dataNodeRef);
-        args.add(brandRef);
-        args.addAll(codes);
-        return jdbc.query(
-                "SELECT"
-                        + " item_ref,code,name,short_name,shape_key,status,sections::text,version,"
-                        + "updated_at_epoch_millis,source_scope_ref"
-                        + " FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND code IN ("
-                        + placeholders + ") ORDER BY code",
-                (r, n) -> new ItemRow(
-                        r.getObject(1, UUID.class),
-                        r.getString(2),
-                        r.getString(3),
-                        r.getString(4),
-                        r.getString(5),
-                        r.getString(6),
-                        r.getString(7),
-                        r.getLong(8),
-                        r.getLong(9),
-                        r.getString(10)),
-                args.toArray());
+        return persistence.loadItemIdentityRows(dataNodeRef, brandRef, codes).stream()
+                .map(CatalogItemService::itemRow)
+                .toList();
     }
 
 private CopyFactPresence copyFactPresence(Collection<UUID> itemRefs) {
-        List<UUID> refs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
-        String placeholders = String.join(",", Collections.nCopies(refs.size(), "?"));
-        String sql = "SELECT "
-                + "EXISTS (SELECT 1 FROM catalog.catalog_sku WHERE item_ref IN (" + placeholders
-                + ") AND status <> 'VOIDED'),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_item_category WHERE item_ref IN (" + placeholders + ")),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_composite_group WHERE item_ref IN (" + placeholders + ")),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_item_attribute_assignment WHERE item_ref IN (" + placeholders
-                + ")),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_item_order_option_config WHERE item_ref IN (" + placeholders
-                + ")),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_sku_variant_axis WHERE item_ref IN (" + placeholders + ")),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_item_image WHERE item_ref IN (" + placeholders + ")),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_item_reference WHERE item_ref IN (" + placeholders + "))";
-        List<Object> args = new ArrayList<>();
-        for (int index = 0; index < 8; index++) args.addAll(refs);
-        return jdbc.query(
-                sql,
-                statement -> {
-                    for (int index = 0; index < args.size(); index++) statement.setObject(index + 1, args.get(index));
-                },
-                result -> {
-                    if (!result.next())
-                        return new CopyFactPresence(false, false, false, false, false, false, false, false);
-                    return new CopyFactPresence(
-                            result.getBoolean(1),
-                            result.getBoolean(2),
-                            result.getBoolean(3),
-                            result.getBoolean(4),
-                            result.getBoolean(5),
-                            result.getBoolean(6),
-                            result.getBoolean(7),
-                            result.getBoolean(8));
-                });
+        CatalogItemPersistence.CopyFactPresenceRow value = persistence.readCopyFactPresence(itemRefs);
+        return new CopyFactPresence(
+                value.skus(),
+                value.categories(),
+                value.composites(),
+                value.attributes(),
+                value.orderOptions(),
+                value.axes(),
+                value.images(),
+                value.references());
     }
 
 private List<ItemRow> hydrateItemFacts(List<ItemRow> rows) {
@@ -6092,75 +5483,48 @@ private boolean hasSkuMedia(ArrayNode skus) {
     }
 
 private SaveFactPresence saveFactPresence(UUID itemRef) {
-        String sql = "SELECT "
-                + "EXISTS (SELECT 1 FROM catalog.product_identifier WHERE item_ref=?),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_item WHERE item_ref=? AND preparation_profile IS NOT NULL),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_sku WHERE item_ref=? AND preparation_override IS NOT NULL),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_sku_media media JOIN catalog.catalog_sku sku ON "
-                + "sku.product_sku_ref=media.product_sku_ref WHERE sku.item_ref=?),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_item_category WHERE item_ref=?),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_composite_group WHERE item_ref=?),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_item_attribute_assignment WHERE item_ref=?),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_item_order_option_config WHERE item_ref=?),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_item_order_option_value_override override JOIN "
-                + "catalog.catalog_item_order_option_config config ON "
-                + "config.item_order_option_config_ref=override.item_order_option_config_ref "
-                + "WHERE config.item_ref=? AND override.preparation_effect IS NOT NULL),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_sku_variant_axis WHERE item_ref=?),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_item_image WHERE item_ref=?),"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_item_reference WHERE item_ref=?)";
-        return jdbc.query(
-                sql,
-                statement -> {
-                    for (int index = 1; index <= 12; index++) statement.setObject(index, itemRef);
-                },
-                result -> {
-                    if (!result.next())
-                        return new SaveFactPresence(
-                                false, false, false, false, false, false, false, false, false, false, false, false);
-                    return new SaveFactPresence(
-                            result.getBoolean(1),
-                            result.getBoolean(2),
-                            result.getBoolean(3),
-                            result.getBoolean(4),
-                            result.getBoolean(5),
-                            result.getBoolean(6),
-                            result.getBoolean(7),
-                            result.getBoolean(8),
-                            result.getBoolean(9),
-                            result.getBoolean(10),
-                            result.getBoolean(11),
-                            result.getBoolean(12));
-                });
+        CatalogItemPersistence.SaveFactPresenceRow value = persistence.readSaveFactPresence(itemRef);
+        return new SaveFactPresence(
+                value.identifiers(),
+                value.itemProfile(),
+                value.skuOverrides(),
+                value.skuMedia(),
+                value.categories(),
+                value.composites(),
+                value.attributes(),
+                value.orderOptions(),
+                value.optionEffects(),
+                value.axes(),
+                value.images(),
+                value.references());
     }
 
 private Map<UUID, ItemUnitRefs> itemUnitRefsByItemRefs(Collection<UUID> itemRefs) {
         if (itemRefs == null || itemRefs.isEmpty()) return Map.of();
-        List<UUID> refs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
-        String placeholders = String.join(",", Collections.nCopies(refs.size(), "?"));
         Map<UUID, ItemUnitRefs> result = new LinkedHashMap<>();
-        jdbc.query(
-                "SELECT item_ref,sales_unit_ref,sales_unit_code,sales_unit_name,sales_unit_dimension,sales_unit_pre"
-                        + "cision,"
-                        + "base_measure_unit_ref,base_measure_unit_code,base_measure_unit_name,base_measure_unit_di"
-                        + "mension,base_measure_unit_precision "
-                        + "FROM catalog.catalog_item WHERE item_ref IN ("
-                        + placeholders + ")",
-                statement -> {
-                    for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
-                },
-                rows -> {
-                    while (rows.next())
-                        result.put(
-                                rows.getObject(1, UUID.class),
-                                new ItemUnitRefs(
-                                        rows.getObject(2, UUID.class),
-                                        unitSnapshot(rows, 2, 3, 4, 5, 6),
-                                        rows.getObject(7, UUID.class),
-                                        unitSnapshot(rows, 7, 8, 9, 10, 11)));
-                    return null;
-                });
+        persistence.readItemUnitRefs(itemRefs).forEach((itemRef, value) -> result.put(
+                itemRef,
+                new ItemUnitRefs(
+                        value.salesUnitRef(),
+                        unitSnapshot(
+                                value.salesUnitRef(),
+                                value.salesUnitCode(),
+                                value.salesUnitName(),
+                                value.salesUnitDimension(),
+                                value.salesUnitPrecision()),
+                        value.baseMeasureUnitRef(),
+                        unitSnapshot(
+                                value.baseMeasureUnitRef(),
+                                value.baseMeasureUnitCode(),
+                                value.baseMeasureUnitName(),
+                                value.baseMeasureUnitDimension(),
+                                value.baseMeasureUnitPrecision()))));
         return result;
+    }
+
+    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
+            UUID ref, String code, String name, String dimension, Integer precision) {
+        return ref == null ? null : new InventoryOwnerApi.UnitSnapshot(ref, code, name, dimension, precision == null ? 0 : precision);
     }
 
 private Set<UUID> unitReferences(JsonNode node) {
@@ -6171,23 +5535,7 @@ private Set<UUID> unitReferences(JsonNode node) {
 
 private Set<UUID> unitReferencesFromOwner(String scope, String brand, UUID itemRef) {
         if (itemRef == null) return Set.of();
-        return Set.copyOf(jdbc.query(
-                "SELECT sales_unit_ref FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND item_ref=? "
-                        + "AND sales_unit_ref IS NOT NULL UNION SELECT base_measure_unit_ref FROM catalog.catalog_item "
-                        + "WHERE data_node_ref=? AND brand_ref=? AND item_ref=? AND base_measure_unit_ref IS NOT NULL "
-                        + "UNION SELECT sku.sales_unit_override_ref FROM catalog.catalog_sku sku WHERE sku.item_ref=? "
-                        + "AND sku.sales_unit_override_ref IS NOT NULL UNION SELECT sku.base_measure_unit_override_ref "
-                        + "FROM catalog.catalog_sku sku WHERE sku.item_ref=? "
-                        + "AND sku.base_measure_unit_override_ref IS NOT NULL",
-                (result, row) -> result.getObject(1, UUID.class),
-                scope,
-                brand,
-                itemRef,
-                scope,
-                brand,
-                itemRef,
-                itemRef,
-                itemRef));
+        return Set.copyOf(persistence.unitReferences(scope, brand, itemRef));
     }
 
 private Set<UUID> mergeRefs(Set<UUID> first, Set<UUID> second) {
@@ -6269,12 +5617,9 @@ private ObjectNode receiptRequest(ObjectNode request, String brandRef) {
 
 private JsonNode replay(String dataNodeRef, String key, String operationId, ObjectNode request) {
         AdvisoryLock.acquire(jdbc, "catalog-receipt", dataNodeRef, key);
-        List<Receipt> rows = jdbc.query(
-                "SELECT operation_id,request_hash,response::text FROM catalog.command_receipt WHERE data_node_ref=? "
-                        + "AND idempotency_key=?",
-                (r, n) -> new Receipt(r.getString(1), r.getString(2), json(r.getString(3))),
-                dataNodeRef,
-                key);
+        List<Receipt> rows = persistence.readReceipt(dataNodeRef, key).stream()
+                .map(value -> new Receipt(value.operationId(), value.requestHash(), json(value.responseJson())))
+                .toList();
         if (rows.isEmpty()) return null;
         Receipt receipt = rows.get(0);
         if (!receipt.operationId().equals(operationId) || !receipt.requestHash().equals(hash(request)))
@@ -6283,27 +5628,11 @@ private JsonNode replay(String dataNodeRef, String key, String operationId, Obje
     }
 
 private void saveReceipt(String scope, String key, String op, ObjectNode request, JsonNode response) {
-        jdbc.update(
-                "INSERT INTO "
-                        + "catalog.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_id,request_hash,"
-                        + "resp"
-                        + "onse,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)",
-                UUID.randomUUID(),
-                scope,
-                key,
-                op,
-                hash(request),
-                canonicalJson(response),
-                now());
+        persistence.writeReceipt(scope, key, op, hash(request), canonicalJson(response), now());
     }
 
 private long generation(String dataNodeRef, String brandRef) {
-        Long value = jdbc.queryForObject(
-                "SELECT COALESCE(MAX(version),0) FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=?",
-                Long.class,
-                dataNodeRef,
-                brandRef);
-        return value == null ? 0 : value;
+        return persistence.generation(dataNodeRef, brandRef);
     }
 
 private static void requireScope(String dataNodeRef, String brandRef) {
@@ -6503,7 +5832,7 @@ private record DerivedSkuFacts(
             Long standardSalePriceMin,
             Long standardSalePriceMax) {}
 
-private record ItemRow(
+    private record ItemRow(
             UUID ref,
             String code,
             String name,
@@ -6518,6 +5847,32 @@ private record ItemRow(
         public String objectType() {
             return "CATALOG_ITEM";
         }
+    }
+
+    private static ItemRow itemRow(CatalogItemPersistence.ItemRow row) {
+        return new ItemRow(
+                row.ref(),
+                row.code(),
+                row.name(),
+                row.shortName(),
+                row.shapeKey(),
+                row.status(),
+                row.sectionsJson(),
+                row.version(),
+                row.updatedAt(),
+                row.sourceScopeRef());
+    }
+
+    private static CategoryRow categoryRow(CatalogItemPersistence.CategoryRow row) {
+        return new CategoryRow(
+                row.ref(),
+                row.code(),
+                row.name(),
+                row.parentCode(),
+                row.parentCategoryRef(),
+                row.status(),
+                row.version(),
+                row.displayOrder());
     }
 
 private record TransitionItemPrecheck(ItemRow item, Boolean hasIdentifiers) {}

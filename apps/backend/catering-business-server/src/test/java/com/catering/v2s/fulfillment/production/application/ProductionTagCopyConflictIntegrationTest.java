@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
+import com.catering.v2s.fulfillment.production.application.persistence.ProductionTagOwnerPersistence;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.foundation.persistence.CountingDataSource;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
@@ -49,7 +50,8 @@ class ProductionTagCopyConflictIntegrationTest {
                 .migrate();
         jdbc = new JdbcTemplate(new CountingDataSource(
                 new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())));
-        service = new ProductionTagOwnerService(jdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L);
+        service = new ProductionTagOwnerService(
+                new ProductionTagOwnerPersistence(jdbc, (TimeProvider) () -> 1_785_000_000_000L), MAPPER);
         insertTag(SOURCE_TAG, SOURCE_SCOPE, "TAG-A");
         insertTag(UUID.randomUUID(), TARGET_SCOPE, "TAG-A");
     }

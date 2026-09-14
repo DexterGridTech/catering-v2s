@@ -18,6 +18,7 @@ import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
 import com.catering.v2s.platform.iam.application.PlatformCommandReceiptService;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.platform.workspace.application.WorkspaceCommandReceiptService;
+import com.catering.v2s.platform.workspace.application.persistence.WorkspaceCommandReceiptPersistence;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.nio.charset.StandardCharsets;
@@ -137,7 +138,8 @@ class CommandReceiptJacksonTest {
         legacyField(legacy, "commercialGroupInitialized", String.valueOf(expected.commercialGroupInitialized()));
 
         JdbcTemplate jdbc = existingReceiptJdbc(legacy.toString());
-        WorkspaceAdministrationReadback actual = new WorkspaceCommandReceiptService(jdbc, TIME)
+        WorkspaceAdministrationReadback actual = new WorkspaceCommandReceiptService(
+                        new WorkspaceCommandReceiptPersistence(jdbc), TIME)
                 .execute("group-key", "workspace-receipt-0001", REQUEST, () -> {
                     throw new AssertionError("legacy receipt must replay");
                 });

@@ -9,32 +9,32 @@ import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationPage;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationPageRequest;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.platform.workspace.api.WorkspaceIamSummaryLookup;
+import com.catering.v2s.platform.workspace.application.persistence.WorkspaceAdministrationPersistence;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Workspace owner command surface; R3 bigint identity remains transitional only. */
 @Service
 public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
-    private final JdbcTemplate jdbc;
+    private final WorkspaceAdministrationPersistence persistence;
     private final TimeProvider time;
     private final WorkspaceLogoAssetCommand assets;
     private final WorkspaceCommandReceiptService receipts;
     private final WorkspaceIamSummaryLookup workspaceIam;
 
     public WorkspaceAdministrationService(
-            JdbcTemplate jdbc,
+            WorkspaceAdministrationPersistence persistence,
             TimeProvider time,
             WorkspaceLogoAssetCommand assets,
             WorkspaceCommandReceiptService receipts,
             WorkspaceIamSummaryLookup workspaceIam) {
-        this.jdbc = jdbc;
+        this.persistence = persistence;
         this.time = time;
         this.assets = assets;
         this.receipts = receipts;
@@ -84,12 +84,7 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
         long now = time.currentEpochMillis();
         UUID workspaceUuid = UUID.randomUUID();
         try {
-            jdbc.update(
-                    "INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, "
-                            + "name_normalized, operations_title, logo_asset_ref, notes, status, revision, version, "
-                            + "created_at_epoch_millis, updated_at_epoch_millis, status_changed_at_epoch_millis) "
-                            + "VALUES "
-                            + "(?, ?, ?, ?, ?, ?, ?, 'ENABLED', 1, 1, ?, ?, ?)",
+            persistence.create(
                     workspaceUuid,
                     normalizedKey,
                     name.trim(),
@@ -97,8 +92,6 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
                     requiredTitle(operationsTitle, name),
                     requiredLogo(logoAssetRef).toString(),
                     optionalNotes(notes),
-                    now,
-                    now,
                     now);
         } catch (DuplicateKeyException exception) {
             throw new WorkspaceConflictException(exception);
@@ -122,48 +115,14 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
 
     @Transactional(readOnly = true)
     public WorkspaceAdministrationPage list(WorkspaceAdministrationPageRequest request) {
-        String orderBy = orderBy(request.sortKey(), request.sortDirection());
-        List<PageRow> rows = jdbc.query(
-                "SELECT workspace_uuid, group_workspace_key, name, operations_title, logo_asset_ref, notes, status, "
-                        + "status_changed_at_epoch_millis, version, created_at_epoch_millis, updated_at_epoch_millis, "
-                        + "count(*) OVER() AS total_count FROM platform_workspace.group_workspace WHERE (CAST(? AS "
-                        + "text) "
-                        + "IS NULL OR name ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR group_workspace_key "
-                        + "= ?) "
-                        + "AND (CAST(? AS text) IS NULL OR operations_title ILIKE '%' || ? || '%') AND (CAST(? AS "
-                        + "text) IS "
-                        + "NULL OR status = ?) ORDER BY "
-                        + orderBy + " LIMIT ? OFFSET ?",
-                (result, row) -> new PageRow(map(result), result.getLong("total_count")),
-                request.name(),
-                request.name(),
-                request.groupWorkspaceKey(),
-                request.groupWorkspaceKey(),
-                request.operationsTitle(),
-                request.operationsTitle(),
-                request.status(),
-                request.status(),
-                request.pageSize(),
-                request.offset());
-        List<WorkspaceAdministrationReadback> items =
-                rows.stream().map(PageRow::workspace).toList();
-        long total = rows.isEmpty() ? 0L : rows.getFirst().total();
+        WorkspaceAdministrationPersistence.PageResult result = persistence.page(request);
         return new WorkspaceAdministrationPage(
-                items, request.page(), request.pageSize(), total, request.sortKey(), request.sortDirection());
+                result.items(), request.page(), request.pageSize(), result.total(), request.sortKey(), request.sortDirection());
     }
 
     @Transactional(readOnly = true)
     public WorkspaceAdministrationReadback require(String key) {
-        return jdbc.query(
-                "SELECT workspace_uuid, group_workspace_key, name, operations_title, logo_asset_ref, notes, status, "
-                        + "status_changed_at_epoch_millis, version, created_at_epoch_millis, updated_at_epoch_millis "
-                        + "FROM "
-                        + "platform_workspace.group_workspace WHERE group_workspace_key=?",
-                statement -> statement.setString(1, requiredKey(key)),
-                result -> {
-                    if (!result.next()) throw new WorkspaceNotFoundException();
-                    return map(result);
-                });
+        return persistence.findByKey(requiredKey(key)).orElseThrow(WorkspaceNotFoundException::new);
     }
 
     /** Owner-checked selected-workspace boundary for every dependent task. */
@@ -177,17 +136,7 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
     @Override
     @Transactional(readOnly = true)
     public String requireStatus(UUID workspaceUuid, String groupWorkspaceKey) {
-        return jdbc.query(
-                "SELECT status FROM platform_workspace.group_workspace WHERE workspace_uuid=? AND "
-                        + "group_workspace_key=?",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                },
-                result -> {
-                    if (!result.next()) throw new WorkspaceNotFoundException();
-                    return result.getString(1);
-                });
+        return persistence.findStatus(workspaceUuid, groupWorkspaceKey).orElseThrow(WorkspaceNotFoundException::new);
     }
 
     @Transactional
@@ -273,13 +222,7 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
         if ("REPLACE".equals(resolvedIntent))
             assets.claim(
                     targetLogo, current.workspaceUuid(), current.groupWorkspaceKey(), requiredGrant(logoBindGrant));
-        List<WorkspaceUpdateResult> updatedRows = jdbc.query(
-                "UPDATE platform_workspace.group_workspace SET name=?, name_normalized=?, operations_title=?, notes=?, "
-                        + "logo_asset_ref=?, version=version+1, updated_at_epoch_millis=? WHERE group_workspace_key=? "
-                        + "AND version=? RETURNING id, workspace_uuid, group_workspace_key, name, operations_title, "
-                        + "logo_asset_ref, notes, status, status_changed_at_epoch_millis, version, "
-                        + "created_at_epoch_millis, updated_at_epoch_millis",
-                (result, row) -> new WorkspaceUpdateResult(result.getLong("id"), map(result)),
+        WorkspaceAdministrationPersistence.UpdateResult updatedRow = persistence.updateDisplay(
                 name.trim(),
                 requiredName(name),
                 requiredTitle(operationsTitle, name),
@@ -287,9 +230,7 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
                 targetLogo == null ? null : targetLogo.toString(),
                 time.currentEpochMillis(),
                 requiredKey(key),
-                expectedVersion);
-        if (updatedRows.isEmpty()) throw new WorkspaceVersionConflictException();
-        WorkspaceUpdateResult updatedRow = updatedRows.getFirst();
+                expectedVersion).orElseThrow(WorkspaceVersionConflictException::new);
         if (previousLogoAssetRef != null && !previousLogoAssetRef.equals(targetLogo))
             assets.release(previousLogoAssetRef, current.workspaceUuid());
         WorkspaceAdministrationReadback updated = updatedRow.readback();
@@ -323,11 +264,8 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
             String key, String status, long expectedVersion, AuditActor actor) {
         if (!"ENABLED".equals(status) && !"DISABLED".equals(status)) throw new WorkspaceStatusInvalidException();
         long now = time.currentEpochMillis();
-        int changed = jdbc.update(
-                "UPDATE platform_workspace.group_workspace SET status=?, version=version+1, updated_at_epoch_millis=?, "
-                        + "status_changed_at_epoch_millis=? WHERE group_workspace_key=? AND version=?",
+        int changed = persistence.transitionStatus(
                 status,
-                now,
                 now,
                 requiredKey(key),
                 expectedVersion);
@@ -358,11 +296,7 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
             long occurredAt,
             AuditActor actor,
             String changesJson) {
-        Long legacyId = jdbc.queryForObject(
-                "SELECT id FROM platform_workspace.group_workspace WHERE workspace_uuid=? AND group_workspace_key=?",
-                Long.class,
-                workspace.workspaceUuid(),
-                workspace.groupWorkspaceKey());
+        Long legacyId = persistence.findLegacyId(workspace.workspaceUuid(), workspace.groupWorkspaceKey());
         audit(workspace, action, occurredAt, actor, legacyId, changesJson);
     }
 
@@ -373,20 +307,12 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
             AuditActor actor,
             long legacyId,
             String changesJson) {
-        jdbc.update(
-                "INSERT INTO platform_workspace.audit_event (id, workspace_uuid, group_workspace_key, entity_type, "
-                        + "entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, "
-                        + "occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'GROUP_WORKSPACE', ?, ?, ?, ?, ?, "
-                        + "?, "
-                        + "CAST(? AS JSONB))",
+        persistence.insertAudit(
                 UUID.randomUUID(),
-                workspace.workspaceUuid(),
-                workspace.groupWorkspaceKey(),
-                String.valueOf(legacyId),
-                actor.actorType(),
-                actor.actorId(),
-                actor.displaySnapshot(),
+                workspace,
+                legacyId,
                 action,
+                actor,
                 occurredAt,
                 AuditChangeJson.write(AuditChangeJson.read(changesJson)));
     }
@@ -421,42 +347,6 @@ public class WorkspaceAdministrationService implements WorkspaceStatusLookup {
                 .replace("\"", "\\\"")
                 .replace("\n", "\\n")
                 .replace("\r", "\\r");
-    }
-
-    private static WorkspaceAdministrationReadback map(java.sql.ResultSet result) throws java.sql.SQLException {
-        return map(result, false);
-    }
-
-    private static WorkspaceAdministrationReadback map(java.sql.ResultSet result, boolean commercialGroupInitialized)
-            throws java.sql.SQLException {
-        return new WorkspaceAdministrationReadback(
-                result.getObject("workspace_uuid", UUID.class),
-                result.getString("group_workspace_key"),
-                result.getString("name"),
-                result.getString("operations_title"),
-                result.getString("logo_asset_ref"),
-                result.getString("notes"),
-                result.getString("status"),
-                result.getLong("status_changed_at_epoch_millis"),
-                result.getLong("version"),
-                result.getLong("created_at_epoch_millis"),
-                result.getLong("updated_at_epoch_millis"),
-                commercialGroupInitialized);
-    }
-
-    private record PageRow(WorkspaceAdministrationReadback workspace, long total) {}
-
-    private record WorkspaceUpdateResult(long legacyId, WorkspaceAdministrationReadback readback) {}
-
-    private static String orderBy(String sortKey, String sortDirection) {
-        String column =
-                switch (sortKey) {
-                    case "NAME" -> "name_normalized";
-                    case "WORKSPACE_KEY" -> "group_workspace_key";
-                    case "UPDATED_AT" -> "updated_at_epoch_millis";
-                    default -> throw new WorkspaceInputInvalidException();
-                };
-        return column + " " + sortDirection + ", group_workspace_key ASC";
     }
 
     private static UUID keepOrRemoveLogo(UUID value, UUID stagedAssetRef, String bindGrant, boolean keep) {

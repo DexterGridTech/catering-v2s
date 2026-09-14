@@ -121,6 +121,18 @@ describe('renderer catalog boundaries', () => {
     expect(Object.isFrozen(defined.catalogEntry.instanceModes)).toBe(true)
   })
 
+  it('copies the surface-form declaration before freezing it', () => {
+    const surfaceForm: Array<'laptop' | 'mobile'> = ['laptop', 'mobile']
+    const defined = definePart({...partInput(), surfaceForm})
+
+    surfaceForm[0] = 'mobile'
+    surfaceForm.length = 0
+
+    expect(defined.catalogEntry.surfaceForm).toEqual(['laptop', 'mobile'])
+    expect(defined.catalogEntry.surfaceForm).not.toBe(surfaceForm)
+    expect(Object.isFrozen(defined.catalogEntry.surfaceForm)).toBe(true)
+  })
+
   it('retains the named generic boundary for heterogeneous renderer bindings', () => {
     const first = definePart(partInput())
     const second = definePart({

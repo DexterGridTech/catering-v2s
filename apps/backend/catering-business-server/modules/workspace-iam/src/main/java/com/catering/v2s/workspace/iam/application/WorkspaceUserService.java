@@ -1,5 +1,6 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceUserPersistence;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationAssignmentCandidateLookup;
 import com.catering.v2s.organization.api.OrganizationEntityLookup;
@@ -25,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 /** Explicit workspace-IAM task read for the five operations user pages. */
 @Service
 public class WorkspaceUserService {
-    private final JdbcTemplate jdbc;
+    private final WorkspaceUserPersistence persistence;
     private final OrganizationNodeLookup nodes;
     private final OrganizationEntityLookup entities;
     private final WorkspaceRoleService roles;
@@ -40,7 +41,7 @@ public class WorkspaceUserService {
             OrganizationEntityLookup entities,
             WorkspaceRoleService roles) {
         this(
-                jdbc,
+                new WorkspaceUserPersistence(jdbc),
                 nodes,
                 entities,
                 roles,
@@ -50,7 +51,7 @@ public class WorkspaceUserService {
                 null);
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
+    /** Compatibility constructor for focused owner tests; production injects the typed persistence boundary. */
     public WorkspaceUserService(
             JdbcTemplate jdbc,
             OrganizationNodeLookup nodes,
@@ -60,7 +61,20 @@ public class WorkspaceUserService {
             OrganizationAssignmentCandidateLookup candidates,
             WorkspaceAssignmentScopeLookup assignments,
             OrganizationTaskPathLookup taskPaths) {
-        this.jdbc = jdbc;
+        this(new WorkspaceUserPersistence(jdbc), nodes, entities, roles, groups, candidates, assignments, taskPaths);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private WorkspaceUserService(
+            WorkspaceUserPersistence persistence,
+            OrganizationNodeLookup nodes,
+            OrganizationEntityLookup entities,
+            WorkspaceRoleService roles,
+            CommercialGroupLookup groups,
+            OrganizationAssignmentCandidateLookup candidates,
+            WorkspaceAssignmentScopeLookup assignments,
+            OrganizationTaskPathLookup taskPaths) {
+        this.persistence = persistence;
         this.nodes = nodes;
         this.entities = entities;
         this.roles = roles;
@@ -337,19 +351,24 @@ public class WorkspaceUserService {
         if (safe == null) throw new WorkspaceAccountService.AccountNotFoundException();
         ResolvedAccountScope scope = resolveAccountScope(safe);
         PageOrder order = pageOrder(safe.sort(), safe.direction(), scope.operationsScoped());
-        AccountPagePredicate predicate = accountPagePredicate(safe, scope);
-        long total = jdbc.queryForObject(
-                "SELECT COUNT(*)" + predicate.joins() + predicate.where(),
-                Long.class,
-                predicate.values().toArray());
-        List<Object> pageValues = new ArrayList<>(predicate.values());
-        pageValues.add(safe.pageSize());
-        pageValues.add((safe.page() - 1) * safe.pageSize());
-        List<UUID> ids = jdbc.query(
-                "SELECT a.id" + predicate.joins() + predicate.where() + " ORDER BY " + order.column() + " "
-                        + order.direction() + ", a.id ASC LIMIT ? OFFSET ?",
-                (row, index) -> row.getObject(1, UUID.class),
-                pageValues.toArray());
+        String targetType = scope.operationsScoped() ? scope.targetType() : safe.targetType();
+        UUID organizationRef = scope.operationsScoped() ? scope.targetId() : safe.organizationRef();
+        WorkspaceUserPersistence.AccountPageRows rows = persistence.page(
+                safe.workspaceUuid(),
+                safe.groupWorkspaceKey(),
+                targetType,
+                organizationRef,
+                safe.userName(),
+                safe.mobile(),
+                safe.loginName(),
+                safe.roleId(),
+                safe.status(),
+                order.sort(),
+                order.direction(),
+                safe.page(),
+                safe.pageSize());
+        long total = rows.total();
+        List<UUID> ids = rows.accountIds();
         List<User> pageUsers = users(safe.workspaceUuid(), safe.groupWorkspaceKey(), ids, false);
         if (scope.operationsScoped()) pageUsers = usersAtExactTarget(scope.targetType(), scope.targetId(), pageUsers);
         return new AccountPage(
@@ -398,56 +417,6 @@ public class WorkspaceUserService {
                 scope.targetId().toString(),
                 scope.displayPath(),
                 query.operationsSession().contextVersion());
-    }
-
-    /** Every optional assignment condition is evaluated against one role-assignment row. */
-    private static AccountPagePredicate accountPagePredicate(AccountPageQuery query, ResolvedAccountScope scope) {
-        String serviceNodeType = scope.operationsScoped() ? scope.targetType() : query.targetType();
-        UUID organizationRef = scope.operationsScoped() ? scope.targetId() : query.organizationRef();
-        UUID roleId = query.roleId();
-        String joins = " FROM workspace_iam.workspace_account a LEFT JOIN (SELECT account_id, "
-                + "MAX(authenticated_at_epoch_millis) AS last_login_at FROM "
-                + "workspace_iam.workspace_authentication_history WHERE workspace_uuid=? AND group_workspace_key=? "
-                + "GROUP BY account_id) login ON login.account_id=a.id";
-        String where =
-                " WHERE a.workspace_uuid=? AND a.group_workspace_key=? AND (CAST(? AS text) IS NULL OR a.display_name "
-                        + "ILIKE '%' || ? || '%') AND (CAST(? AS text) IS NULL OR a.mobile_normalized ILIKE '%' || ? "
-                        + "|| "
-                        + "'%') AND (CAST(? AS text) IS NULL OR a.login_name_normalized ILIKE '%' || ? || '%') AND "
-                        + "(CAST(? "
-                        + "AS text) IS NULL OR a.status=?) AND ((CAST(? AS text) IS NULL AND CAST(? AS uuid) IS NULL "
-                        + "AND "
-                        + "CAST(? AS uuid) IS NULL) OR EXISTS (SELECT 1 FROM workspace_iam.role_assignment assignment "
-                        + "WHERE assignment.account_id=a.id AND assignment.workspace_uuid=a.workspace_uuid AND "
-                        + "assignment.group_workspace_key=a.group_workspace_key AND (CAST(? AS text) IS NULL OR "
-                        + "assignment.service_node_type=?) AND (CAST(? AS uuid) IS NULL OR "
-                        + "assignment.service_node_id=?) "
-                        + "AND (CAST(? AS uuid) IS NULL OR assignment.role_id=?)))";
-        return new AccountPagePredicate(
-                joins,
-                where,
-                java.util.Arrays.asList(
-                        query.workspaceUuid(),
-                        query.groupWorkspaceKey(),
-                        query.workspaceUuid(),
-                        query.groupWorkspaceKey(),
-                        query.userName(),
-                        query.userName(),
-                        query.mobile(),
-                        query.mobile(),
-                        query.loginName(),
-                        query.loginName(),
-                        query.status(),
-                        query.status(),
-                        serviceNodeType,
-                        organizationRef,
-                        roleId,
-                        serviceNodeType,
-                        serviceNodeType,
-                        organizationRef,
-                        organizationRef,
-                        roleId,
-                        roleId));
     }
 
     /** Loads the page's account bundle in fixed IAM reads; organization facts are one owner batch read. */
@@ -560,136 +529,84 @@ public class WorkspaceUserService {
     }
 
     private Map<UUID, Account> accounts(UUID workspaceUuid, String key, Set<UUID> ids) {
-        List<Account> values = jdbc.query(
-                "SELECT id, display_name, mobile_normalized, login_name_normalized, status, version, "
-                        + "created_at_epoch_millis, updated_at_epoch_millis FROM workspace_iam.workspace_account WHERE "
-                        + "workspace_uuid=? AND group_workspace_key=? AND id IN ("
-                        + placeholders(ids.size()) + ")",
-                (row, index) -> new Account(
-                        row.getObject(1, UUID.class),
-                        row.getString(2),
-                        row.getString(3),
-                        row.getString(4),
-                        row.getString(5),
-                        row.getLong(6),
-                        row.getLong(7),
-                        row.getLong(8)),
-                arguments(workspaceUuid, key, ids));
         Map<UUID, Account> result = new LinkedHashMap<>();
-        values.forEach(value -> result.put(value.id(), value));
+        persistence.accounts(workspaceUuid, key, ids).forEach(value -> result.put(
+                value.id(),
+                new Account(
+                        value.id(),
+                        value.displayName(),
+                        value.mobile(),
+                        value.loginName(),
+                        value.status(),
+                        value.version(),
+                        value.createdAt(),
+                        value.updatedAt())));
         return Map.copyOf(result);
     }
 
     private Map<UUID, List<RawAssignment>> assignments(UUID workspaceUuid, String key, Set<UUID> accountIds) {
-        List<RawAssignment> values = jdbc.query(
-                "SELECT r.id, r.account_id, r.role_id, role.name, r.service_node_type, r.service_node_id, r.status, "
-                        + "r.source_invitation_id, r.version, r.created_at_epoch_millis, r.updated_at_epoch_millis "
-                        + "FROM "
-                        + "workspace_iam.role_assignment r JOIN workspace_iam.workspace_role role ON role.id=r.role_id "
-                        + "WHERE r.workspace_uuid=? AND r.group_workspace_key=? AND r.account_id IN ("
-                        + placeholders(accountIds.size()) + ") ORDER BY r.created_at_epoch_millis",
-                (row, index) -> new RawAssignment(
-                        row.getObject(1, UUID.class),
-                        row.getObject(2, UUID.class),
-                        row.getObject(3, UUID.class),
-                        row.getString(4),
-                        row.getString(5),
-                        row.getObject(6, UUID.class),
-                        row.getString(7),
-                        row.getObject(8, UUID.class),
-                        row.getLong(9),
-                        row.getLong(10),
-                        row.getLong(11)),
-                arguments(workspaceUuid, key, accountIds));
         Map<UUID, List<RawAssignment>> result = new LinkedHashMap<>();
-        values.forEach(value -> result.computeIfAbsent(value.accountId(), ignored -> new ArrayList<>())
-                .add(value));
+        persistence.assignments(workspaceUuid, key, accountIds).forEach(value -> result.computeIfAbsent(
+                        value.accountId(), ignored -> new ArrayList<>())
+                .add(new RawAssignment(
+                        value.id(),
+                        value.accountId(),
+                        value.roleId(),
+                        value.roleName(),
+                        value.serviceNodeType(),
+                        value.serviceNodeId(),
+                        value.status(),
+                        value.sourceInvitationId(),
+                        value.revision(),
+                        value.createdAt(),
+                        value.updatedAt())));
         return result;
     }
 
     /** One owner aggregate for page projection; never derive last login from invitations or audit. */
     private Map<UUID, Long> latestAuthenticationByAccount(UUID workspaceUuid, String key, Set<UUID> accountIds) {
-        List<AuthenticationLatest> values = jdbc.query(
-                "SELECT account_id, MAX(authenticated_at_epoch_millis) FROM "
-                        + "workspace_iam.workspace_authentication_history WHERE workspace_uuid=? AND "
-                        + "group_workspace_key=? "
-                        + "AND account_id IN ("
-                        + placeholders(accountIds.size()) + ") GROUP BY account_id",
-                (row, index) -> new AuthenticationLatest(row.getObject(1, UUID.class), row.getLong(2)),
-                arguments(workspaceUuid, key, accountIds));
         Map<UUID, Long> result = new LinkedHashMap<>();
-        values.forEach(value -> result.put(value.accountId(), value.authenticatedAt()));
+        persistence.latestAuthentication(workspaceUuid, key, accountIds).forEach(value -> result.put(
+                value.accountId(), value.authenticatedAt()));
         return Map.copyOf(result);
     }
 
     /** Bounded latest-ten history for every requested account in one owner read. */
     private Map<UUID, List<AuthenticationHistory>> authenticationHistory(
             UUID workspaceUuid, String key, Set<UUID> accountIds) {
-        String sql = "SELECT account_id, id, authenticated_at_epoch_millis FROM (SELECT account_id, id, "
-                + "authenticated_at_epoch_millis, ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY "
-                + "authenticated_at_epoch_millis DESC, id DESC) AS row_number FROM "
-                + "workspace_iam.workspace_authentication_history WHERE workspace_uuid=? AND group_workspace_key=? "
-                + "AND account_id IN ("
-                + placeholders(accountIds.size())
-                + ")) ranked WHERE row_number<=10 ORDER BY account_id, authenticated_at_epoch_millis DESC, id "
-                + "DESC";
-        List<AuthenticationHistoryRow> values = jdbc.query(
-                sql,
-                (row, index) -> new AuthenticationHistoryRow(
-                        row.getObject(1, UUID.class),
-                        new AuthenticationHistory(row.getObject(2, UUID.class), row.getLong(3))),
-                arguments(workspaceUuid, key, accountIds));
         Map<UUID, List<AuthenticationHistory>> result = new LinkedHashMap<>();
-        for (AuthenticationHistoryRow value : values)
+        for (WorkspaceUserPersistence.AuthenticationHistoryRow value : persistence.authenticationHistory(
+                workspaceUuid, key, accountIds))
             result.computeIfAbsent(value.accountId(), ignored -> new ArrayList<>())
-                    .add(value.history());
+                    .add(new AuthenticationHistory(value.id(), value.authenticatedAt()));
         result.replaceAll((ignored, history) -> List.copyOf(history));
         return Map.copyOf(result);
     }
 
     private Map<String, List<Invitation>> invitations(UUID workspaceUuid, String key, Set<String> mobiles) {
         if (mobiles.isEmpty()) return Map.of();
-        List<MobileInvitation> values = jdbc.query(
-                "SELECT mobile_normalized, id, status, version, expires_at_epoch_millis FROM workspace_iam.invitation "
-                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND mobile_normalized IN ("
-                        + placeholders(mobiles.size()) + ") ORDER BY expires_at_epoch_millis DESC",
-                (row, index) -> new MobileInvitation(
-                        row.getString(1),
-                        new Invitation(
-                                row.getObject(2, UUID.class),
-                                invitationStatus(row.getString(3)),
-                                Math.toIntExact(row.getLong(4)),
-                                row.getLong(5))),
-                arguments(workspaceUuid, key, mobiles));
         Map<String, List<Invitation>> result = new LinkedHashMap<>();
-        values.forEach(value -> result.computeIfAbsent(value.mobile(), ignored -> new ArrayList<>())
-                .add(value.invitation()));
+        persistence.invitations(workspaceUuid, key, mobiles).forEach(value -> result.computeIfAbsent(
+                        value.mobile(), ignored -> new ArrayList<>())
+                .add(new Invitation(
+                        value.invitationId(),
+                        invitationStatus(value.status()),
+                        value.generation(),
+                        value.expiresAt())));
         return result;
     }
 
     private Set<UUID> pendingCredentialAccounts(Set<UUID> accountIds) {
-        return Set.copyOf(jdbc.query(
-                "SELECT account_id FROM workspace_iam.workspace_credential WHERE password_change_required=TRUE AND "
-                        + "account_id IN ("
-                        + placeholders(accountIds.size()) + ")",
-                (row, index) -> row.getObject(1, UUID.class),
-                accountIds.toArray()));
+        return persistence.pendingCredentialAccounts(accountIds);
     }
 
     private Map<UUID, List<AssignmentTarget>> invitationTargets(List<UUID> invitationIds) {
         LinkedHashSet<UUID> ids = new LinkedHashSet<>(invitationIds);
         if (ids.isEmpty()) return Map.of();
-        List<InvitationTarget> values = jdbc.query(
-                "SELECT invitation_id, service_node_type, service_node_id FROM "
-                        + "workspace_iam.invitation_assignment_intent WHERE invitation_id IN ("
-                        + placeholders(ids.size()) + ")",
-                (row, index) -> new InvitationTarget(
-                        row.getObject(1, UUID.class),
-                        new AssignmentTarget(row.getString(2), row.getObject(3, UUID.class))),
-                ids.toArray());
         Map<UUID, List<AssignmentTarget>> result = new LinkedHashMap<>();
-        values.forEach(value -> result.computeIfAbsent(value.invitationId(), ignored -> new ArrayList<>())
-                .add(value.target()));
+        persistence.invitationTargets(List.copyOf(ids)).forEach(value -> result.computeIfAbsent(
+                        value.invitationId(), ignored -> new ArrayList<>())
+                .add(new AssignmentTarget(value.serviceNodeType(), value.serviceNodeId())));
         return result;
     }
 
@@ -758,18 +675,6 @@ public class WorkspaceUserService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    private static String placeholders(int count) {
-        return String.join(",", java.util.Collections.nCopies(count, "?"));
-    }
-
-    private static Object[] arguments(UUID workspaceUuid, String key, Set<?> ids) {
-        List<Object> values = new ArrayList<>();
-        values.add(workspaceUuid);
-        values.add(key);
-        values.addAll(ids);
-        return values.toArray();
-    }
-
     private boolean isTargetWithinScope(
             UUID workspaceUuid,
             String key,
@@ -835,21 +740,10 @@ public class WorkspaceUserService {
 
     private static PageOrder pageOrder(String sort, String direction, boolean operationsScoped) {
         String safeSort = sort == null ? "LOGIN_NAME" : sort;
-        String column =
-                switch (safeSort) {
-                    case "DISPLAY_NAME" -> "a.display_name";
-                    case "LOGIN_NAME" -> "a.login_name_normalized";
-                    case "LAST_LOGIN_AT" -> {
-                        if (operationsScoped) throw new WorkspaceAccountService.AccountNotFoundException();
-                        yield "COALESCE(login.last_login_at, -1)";
-                    }
-                    case "UPDATED_AT" -> {
-                        if (operationsScoped) throw new WorkspaceAccountService.AccountNotFoundException();
-                        yield "a.updated_at_epoch_millis";
-                    }
-                    default -> throw new WorkspaceAccountService.AccountNotFoundException();
-                };
-        return new PageOrder(column, safeSort, sortDirection(direction));
+        if (!Set.of("DISPLAY_NAME", "LOGIN_NAME", "LAST_LOGIN_AT", "UPDATED_AT").contains(safeSort)
+                || (operationsScoped && Set.of("LAST_LOGIN_AT", "UPDATED_AT").contains(safeSort)))
+            throw new WorkspaceAccountService.AccountNotFoundException();
+        return new PageOrder(safeSort, sortDirection(direction));
     }
 
     private static String sortDirection(String direction) {
@@ -1031,7 +925,7 @@ public class WorkspaceUserService {
             String scopeName,
             Long contextVersion) {}
 
-    private record PageOrder(String column, String sort, String direction) {}
+    private record PageOrder(String sort, String direction) {}
 
     public record User(
             UUID accountId,
@@ -1187,13 +1081,6 @@ public class WorkspaceUserService {
 
     private record AuthenticationLatest(UUID accountId, long authenticatedAt) {}
 
-    private record AuthenticationHistoryRow(UUID accountId, AuthenticationHistory history) {}
-
-    private record MobileInvitation(String mobile, Invitation invitation) {}
-
-    private record InvitationTarget(UUID invitationId, AssignmentTarget target) {}
-
     private record AssignmentTarget(String serviceNodeType, UUID serviceNodeId) {}
 
-    private record AccountPagePredicate(String joins, String where, List<Object> values) {}
 }

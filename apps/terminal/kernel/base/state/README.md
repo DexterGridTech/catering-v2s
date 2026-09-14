@@ -119,7 +119,6 @@ const runtime = await createStateRuntime({
   plainStorage: ports.persistKv,
   protectedStorage: ports.persistSecure,
   persistenceKey: 'pos-01',
-  storageTimeouts: {readMs: 2000, writeMs: 2000, resetMs: 5000},
   persistenceDebounceMs: 300,
 });
 ```

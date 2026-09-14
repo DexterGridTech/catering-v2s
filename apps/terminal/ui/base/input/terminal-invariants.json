@@ -8,7 +8,7 @@
   },
   "publicExports": [
     "InputFieldOptions", "InputFieldResult", "InputProvider", "InputRegistrationToken", "InputSnapshot",
-    "InputScrollArea", "InputScrollAreaProps", "InputSurfaceFrame", "InputSurfaceFrameProps", "KeyboardLayout",
-    "VirtualKeyboard", "dependencyModuleNames", "devDependencyModuleNames", "moduleName", "useInputController", "useInputField", "useInputKeyboardState", "useInputSnapshot"
+    "InputScrollArea", "InputScrollAreaProps", "InputSurfaceFrame", "InputSurfaceFrameProps", "InputKeyboard", "InputKeyboardProps", "InputKeyboardPlacement", "KeyboardLayout",
+    "VirtualKeyboard", "BUSINESS_FOCUS_SCOPE_ID", "dependencyModuleNames", "devDependencyModuleNames", "moduleName", "useInputController", "useInputField", "useInputKeyboardState", "useInputSnapshot"
   ]
 }

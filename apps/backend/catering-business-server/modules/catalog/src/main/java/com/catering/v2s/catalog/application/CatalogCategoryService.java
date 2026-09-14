@@ -1,19 +1,18 @@
 package com.catering.v2s.catalog.application;
 
+import com.catering.v2s.catalog.application.persistence.CatalogCategoryPersistence;
+import com.catering.v2s.catalog.application.persistence.CatalogCategoryPersistence.CategoryMoveDepths;
+import com.catering.v2s.catalog.application.persistence.CatalogCategoryPersistence.CategoryRow;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerTypes;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
-import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.Set;
@@ -34,15 +33,19 @@ public class CatalogCategoryService {
     private static final String CATEGORY_MOVE_BOUNDARY_MESSAGE = "分类已位于当前层级边界";
     private static final String CATEGORY_MOVE_ACTION_MESSAGE = "分类移动方式不支持";
 
-    private final JdbcTemplate jdbc;
+    private final CatalogCategoryPersistence persistence;
     private final ObjectMapper mapper;
     private final TimeProvider time;
 
     @Autowired
-    public CatalogCategoryService(JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
-        this.jdbc = jdbc;
+    public CatalogCategoryService(CatalogCategoryPersistence persistence, ObjectMapper mapper, TimeProvider time) {
+        this.persistence = persistence;
         this.mapper = mapper;
         this.time = time;
+    }
+
+    CatalogCategoryService(JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
+        this(new CatalogCategoryPersistence(jdbc, mapper, time), mapper, time);
     }
 
     @Transactional
@@ -150,12 +153,7 @@ public class CatalogCategoryService {
         long expected = requiredLong(request, "expectedVersion", -1);
         CategoryRow current = lockCategory(dataNodeRef, brandRef, categoryRef);
         requireCategoryVersion(current, expected);
-        jdbc.update(
-                "UPDATE catalog.catalog_category SET name=?,version=version+1,updated_at_epoch_millis=? WHERE "
-                        + "category_ref=?",
-                required(request, "name"),
-                now(),
-                categoryRef);
+        persistence.updateName(categoryRef, required(request, "name"), now());
         return categoryCommand(requestId, category(dataNodeRef, brandRef, categoryRef));
     }
 
@@ -211,15 +209,7 @@ public class CatalogCategoryService {
                                 .max()
                                 .orElse(-1)
                         + 1;
-                jdbc.update(
-                        "UPDATE catalog.catalog_category SET "
-                                + "parent_category_ref=?,display_order=?,version=version+1,updated_at_epoch_millis=? "
-                                + "WHERE "
-                                + "category_ref=?",
-                        parentCategoryRef,
-                        nextDisplayOrder,
-                        now(),
-                        categoryRef);
+                persistence.reparent(categoryRef, parentCategoryRef, nextDisplayOrder, now());
                 updated = new CategoryRow(
                         current.ref(),
                         current.code(),
@@ -256,55 +246,11 @@ public class CatalogCategoryService {
 
     private CategoryMoveDepths categoryMoveDepths(
             String scope, String brand, UUID parentCategoryRef, UUID movingCategoryRef) {
-        return jdbc.query(
-                "WITH RECURSIVE ancestors(category_ref,parent_category_ref,depth) AS ("
-                        + "SELECT category_ref,parent_category_ref,1 FROM catalog.catalog_category "
-                        + "WHERE data_node_ref=? "
-                        + "AND brand_ref=? AND category_ref=? AND status <> 'VOIDED' UNION ALL "
-                        + "SELECT parent.category_ref,parent.parent_category_ref,ancestors.depth+1 "
-                        + "FROM catalog.catalog_category parent JOIN ancestors ON "
-                        + "parent.category_ref=ancestors.parent_category_ref WHERE parent.data_node_ref=? AND "
-                        + "parent.brand_ref=? AND parent.status <> 'VOIDED'), "
-                        + "subtree(category_ref,depth) AS (SELECT category_ref,1 FROM catalog.catalog_category WHERE "
-                        + "data_node_ref=? AND brand_ref=? AND category_ref=? AND status <> 'VOIDED' UNION ALL "
-                        + "SELECT child.category_ref,subtree.depth+1 FROM catalog.catalog_category child "
-                        + "JOIN subtree ON child.parent_category_ref=subtree.category_ref "
-                        + "WHERE child.data_node_ref=? AND child.brand_ref=? "
-                        + "AND child.status <> 'VOIDED') SELECT COALESCE((SELECT MAX(depth) FROM ancestors),0), "
-                        + "COALESCE((SELECT MAX(depth) FROM subtree),0)",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setObject(3, parentCategoryRef);
-                    statement.setString(4, scope);
-                    statement.setString(5, brand);
-                    statement.setString(6, scope);
-                    statement.setString(7, brand);
-                    statement.setObject(8, movingCategoryRef);
-                    statement.setString(9, scope);
-                    statement.setString(10, brand);
-                },
-                result -> {
-                    if (!result.next()) throw new IllegalStateException("category move depth query returned no row");
-                    return new CategoryMoveDepths(result.getInt(1), result.getInt(2));
-                });
+        return persistence.readMoveDepths(scope, brand, parentCategoryRef, movingCategoryRef);
     }
 
     private int categorySubtreeDepth(String scope, String brand, UUID rootCategoryRef) {
-        Integer depth = jdbc.queryForObject(
-                "WITH RECURSIVE subtree(category_ref,depth) AS (SELECT category_ref,1 FROM catalog.catalog_category "
-                        + "WHERE data_node_ref=? AND brand_ref=? AND category_ref=? AND status <> 'VOIDED' UNION ALL "
-                        + "SELECT child.category_ref,subtree.depth+1 FROM catalog.catalog_category child JOIN subtree "
-                        + "ON child.parent_category_ref=subtree.category_ref "
-                        + "WHERE child.data_node_ref=? AND child.brand_ref=? "
-                        + "AND child.status <> 'VOIDED') SELECT COALESCE(MAX(depth),0) FROM subtree",
-                Integer.class,
-                scope,
-                brand,
-                rootCategoryRef,
-                scope,
-                brand);
-        return depth == null ? 0 : depth;
+        return persistence.readSubtreeDepth(scope, brand, rootCategoryRef);
     }
 
     private CategoryRow moveCategoryAmongSiblings(String scope, String brand, CategoryRow current, String action) {
@@ -320,18 +266,8 @@ public class CatalogCategoryService {
             throw new CatalogOwnerApi.Problem("MOVE_BOUNDARY", 422, "分类已位于当前层级边界");
         CategoryRow neighbor = siblings.get(neighborIndex);
         long now = now();
-        jdbc.update(
-                "UPDATE catalog.catalog_category SET display_order=?,version=version+1,updated_at_epoch_millis=? WHERE "
-                        + "category_ref=?",
-                neighbor.displayOrder(),
-                now,
-                current.ref());
-        jdbc.update(
-                "UPDATE catalog.catalog_category SET display_order=?,version=version+1,updated_at_epoch_millis=? WHERE "
-                        + "category_ref=?",
-                current.displayOrder(),
-                now,
-                neighbor.ref());
+        persistence.updateSiblingOrder(current.ref(), neighbor.displayOrder(), now);
+        persistence.updateSiblingOrder(neighbor.ref(), current.displayOrder(), now);
         return new CategoryRow(
                 current.ref(),
                 current.code(),
@@ -345,68 +281,15 @@ public class CatalogCategoryService {
 
     private List<CategoryRow> lockCategories(String scope, String brand, List<UUID> refs) {
         if (refs.isEmpty()) return List.of();
-        List<UUID> stable = refs.stream().distinct().sorted().toList();
-        String placeholders = String.join(",", Collections.nCopies(stable.size(), "?"));
-        List<Object> args = new ArrayList<>();
-        args.add(scope);
-        args.add(brand);
-        args.addAll(stable);
-        List<CategoryRow> rows = jdbc.query(
-                "SELECT category_ref,code,name,parent_code,parent_category_ref,status,version,display_order FROM "
-                        + "catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND category_ref IN ("
-                        + placeholders + ") AND status <> 'VOIDED' ORDER BY category_ref FOR UPDATE",
-                (result, row) -> new CategoryRow(
-                        result.getObject(1, UUID.class),
-                        result.getString(2),
-                        result.getString(3),
-                        result.getString(4),
-                        result.getObject(5, UUID.class),
-                        result.getString(6),
-                        result.getLong(7),
-                        result.getInt(8)),
-                args.toArray());
-        if (rows.size() != stable.size()) {
-            throw new CatalogOwnerApi.Problem(("NOT_FOUND"), (404), ("分类不存在或已删除"));
-        }
-        return rows;
+        return persistence.lockCategories(scope, brand, refs);
     }
 
     private List<CategoryRow> lockCategorySiblings(String scope, String brand, UUID parentCategoryRef) {
-        return jdbc.query(
-                "SELECT category_ref,code,name,parent_code,parent_category_ref,status,version,display_order FROM "
-                        + "catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND parent_category_ref IS "
-                        + "NOT "
-                        + "DISTINCT FROM ? AND status <> 'VOIDED' ORDER BY category_ref FOR UPDATE",
-                (result, row) -> new CategoryRow(
-                        result.getObject(1, UUID.class),
-                        result.getString(2),
-                        result.getString(3),
-                        result.getString(4),
-                        result.getObject(5, UUID.class),
-                        result.getString(6),
-                        result.getLong(7),
-                        result.getInt(8)),
-                scope,
-                brand,
-                parentCategoryRef);
+        return persistence.lockSiblings(scope, brand, parentCategoryRef);
     }
 
     private List<UUID> categorySubtreeRefs(String scope, String brand, UUID rootCategoryRef) {
-        List<UUID> refs = jdbc.query(
-                "WITH RECURSIVE subtree(category_ref) AS (SELECT category_ref FROM catalog.catalog_category WHERE "
-                        + "data_node_ref=? AND brand_ref=? AND category_ref=? AND status <> 'VOIDED' UNION ALL SELECT "
-                        + "child.category_ref FROM catalog.catalog_category child JOIN subtree parent ON "
-                        + "child.parent_category_ref=parent.category_ref WHERE child.data_node_ref=? AND "
-                        + "child.brand_ref=? "
-                        + "AND child.status <> 'VOIDED') SELECT category_ref FROM subtree ORDER BY category_ref",
-                (result, row) -> result.getObject(1, UUID.class),
-                scope,
-                brand,
-                rootCategoryRef,
-                scope,
-                brand);
-        if (refs.isEmpty()) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在");
-        return refs;
+        return persistence.subtreeRefs(scope, brand, rootCategoryRef);
     }
 
     private JsonNode executeCategoryWrite(
@@ -473,11 +356,7 @@ public class CatalogCategoryService {
         }
         UUID categoryRef = UUID.randomUUID();
         try {
-            jdbc.update(
-                    "INSERT INTO catalog.catalog_category "
-                            + "(category_ref,data_node_ref,brand_ref,code,name,parent_category_ref,display_order,create"
-                            + "d_at"
-                            + "_epoch_millis,updated_at_epoch_millis) VALUES (?,?,?,?,?,?,?,?,?)",
+            persistence.insertCategory(
                     categoryRef,
                     dataNodeRef,
                     brandRef,
@@ -485,7 +364,6 @@ public class CatalogCategoryService {
                     name,
                     parentCategoryRef,
                     nextCategoryDisplayOrder(dataNodeRef, brandRef, parentCategoryRef),
-                    now(),
                     now());
         } catch (DuplicateKeyException ex) {
             throw new CatalogOwnerApi.Problem("DUPLICATE_CODE", 409, "分类编码已存在", ex);
@@ -507,81 +385,8 @@ public class CatalogCategoryService {
         String name = required(receiptRequest, "name");
         String operation = "updateOperationsCatalogCategory";
         String requestHash = hash(receiptRequest);
-        String sql = "WITH RECURSIVE receipt_lock AS MATERIALIZED (SELECT pg_advisory_xact_lock(hashtext(CAST(? AS "
-                + "text)),hashtext(CAST(? AS text)))), current_category AS MATERIALIZED (SELECT category_ref,"
-                + "status,version FROM catalog.catalog_category CROSS JOIN receipt_lock WHERE data_node_ref=? AND "
-                + "brand_ref=? AND category_ref=? AND status <> 'VOIDED' FOR UPDATE), prior_receipt AS MATERIALIZED "
-                + "(SELECT operation_id,request_hash,response::text AS response FROM catalog.command_receipt CROSS "
-                + "JOIN receipt_lock WHERE data_node_ref=? AND idempotency_key=?), updated_category AS (UPDATE "
-                + "catalog.catalog_category category SET name=?,version=category.version+1,updated_at_epoch_millis=? "
-                + "FROM current_category current WHERE category.category_ref=current.category_ref AND "
-                + "current.version=? AND NOT EXISTS (SELECT 1 FROM prior_receipt) RETURNING category.category_ref,"
-                + "category.code,category.name,category.status,category.parent_category_ref,category.version,"
-                + "category.display_order), "
-                + "category_subtree(category_ref) AS (SELECT category_ref FROM updated_category UNION ALL SELECT "
-                + "child.category_ref FROM catalog.catalog_category child JOIN category_subtree parent ON "
-                + "child.parent_category_ref=parent.category_ref WHERE child.data_node_ref=? AND child.brand_ref=? "
-                + "AND child.status <> 'VOIDED'), deletion_availability AS (SELECT "
-                + "COUNT(DISTINCT subtree.category_ref) AS subtree_size,"
-                + "COUNT(DISTINCT item.item_ref) AS blocking_reference_count,"
-                + "COALESCE((SELECT jsonb_agg(jsonb_build_object('referenceKind',"
-                + "'CATALOG_ITEM','referenceRef',refs.item_ref,'code',refs.code,'name',refs.name,'direction',"
-                + "'INBOUND') ORDER BY refs.code) FROM (SELECT DISTINCT item.item_ref,item.code,item.name FROM "
-                + "category_subtree subtree_refs JOIN catalog.catalog_item_category relation_refs ON "
-                + "relation_refs.category_ref=subtree_refs.category_ref JOIN catalog.catalog_item item ON "
-                + "item.item_ref=relation_refs.item_ref AND item.data_node_ref=? AND item.brand_ref=? AND "
-                + "item.status <> 'VOIDED') refs),'[]'::jsonb) AS blocking_reference_facts FROM category_subtree "
-                + "subtree LEFT JOIN catalog.catalog_item_category "
-                + "relation ON relation.category_ref=subtree.category_ref LEFT JOIN catalog.catalog_item item ON "
-                + "item.item_ref=relation.item_ref AND item.data_node_ref=? AND item.brand_ref=? AND item.status <> "
-                + "'VOIDED'), response AS (SELECT jsonb_build_object('categoryRef',category.category_ref,'code',"
-                + "category.code,'name',category.name,'status',category.status,'parentCategoryRef',"
-                + "category.parent_category_ref,'version',"
-                + "category.version,'displayOrder',category.display_order,'deletionAvailability',jsonb_build_object("
-                + "'canDelete',availability.blocking_reference_count=0,'subtreeSize',availability.subtree_size,"
-                + "'blockingReferenceCount',availability.blocking_reference_count,'blockingReferences',"
-                + "availability.blocking_reference_facts)) AS body "
-                + "FROM updated_category category CROSS JOIN "
-                + "deletion_availability availability), written_receipt AS (INSERT INTO catalog.command_receipt("
-                + "receipt_ref,data_node_ref,idempotency_key,operation_id,request_hash,response,"
-                + "created_at_epoch_millis) "
-                + "SELECT ?,?,?,?,?,body,? FROM response RETURNING response::text AS response) SELECT "
-                + "current_category.category_ref,current_category.version,prior_receipt.operation_id,"
-                + "prior_receipt.request_hash,prior_receipt.response AS replay_response,written_receipt.response AS "
-                + "written_response FROM receipt_lock LEFT JOIN current_category ON TRUE "
-                + "LEFT JOIN prior_receipt ON TRUE "
-                + "LEFT JOIN written_receipt ON TRUE";
-        TypedCategoryUpdateRow row = jdbc.queryForObject(
-                sql,
-                (result, ignored) -> new TypedCategoryUpdateRow(
-                        result.getObject("category_ref", UUID.class),
-                        result.getLong("version"),
-                        result.getString("operation_id"),
-                        result.getString("request_hash"),
-                        result.getString("replay_response"),
-                        result.getString("written_response")),
-                "catalog-category-receipt:" + scope,
-                key,
-                scope,
-                brand,
-                command.categoryRef(),
-                scope,
-                key,
-                name,
-                now(),
-                command.expectedVersion(),
-                scope,
-                brand,
-                scope,
-                brand,
-                scope,
-                brand,
-                UUID.randomUUID(),
-                scope,
-                key,
-                operation,
-                requestHash,
-                now());
+        CatalogCategoryPersistence.TypedCategoryUpdateRow row = persistence.executeTypedUpdate(
+                scope, brand, command, key, name, operation, requestHash);
         if (row.currentCategoryRef() == null) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在");
         if (row.currentVersion() != command.expectedVersion() && row.currentVersion() != command.expectedVersion() + 1L)
             throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "分类版本已变化");
@@ -612,142 +417,8 @@ public class CatalogCategoryService {
         String key = idempotencyKey == null ? "" : idempotencyKey.trim();
         String operation = "moveOperationsCatalogCategory";
         String requestHash = hash(receiptRequest);
-        long timestamp = now();
-        String sql = "WITH RECURSIVE receipt_lock AS MATERIALIZED (SELECT pg_advisory_xact_lock(hashtext(CAST(? AS "
-                + "text)),hashtext(CAST(? AS text)))), hierarchy_lock AS MATERIALIZED (SELECT "
-                + "pg_advisory_xact_lock(hashtext(CAST(? AS text)),hashtext(CAST(? AS text)))), "
-                + "locked_categories AS MATERIALIZED (SELECT category.category_ref,category.code,category.name,"
-                + "category.parent_category_ref,category.version,category.display_order FROM "
-                + "catalog.catalog_category category CROSS JOIN receipt_lock CROSS JOIN hierarchy_lock WHERE "
-                + "category.data_node_ref=? AND category.brand_ref=? AND category.status <> 'VOIDED' FOR UPDATE), "
-                + "move_input AS MATERIALIZED (SELECT ?::uuid AS category_ref,?::text AS action,"
-                + "?::uuid AS requested_parent_ref,?::bigint AS expected_version,?::bigint AS updated_at), "
-                + "current_category AS MATERIALIZED (SELECT category.* FROM locked_categories category "
-                + "JOIN move_input input ON input.category_ref=category.category_ref), prior_receipt AS MATERIALIZED "
-                + "(SELECT operation_id,request_hash,response::text AS response FROM catalog.command_receipt "
-                + "CROSS JOIN receipt_lock WHERE data_node_ref=? AND idempotency_key=?), requested_parent AS "
-                + "MATERIALIZED (SELECT category.* FROM locked_categories category JOIN move_input input ON "
-                + "input.requested_parent_ref=category.category_ref), subtree(category_ref,depth) AS "
-                + "(SELECT category_ref,1 FROM current_category UNION ALL SELECT child.category_ref,"
-                + "subtree.depth+1 FROM locked_categories child JOIN subtree ON "
-                + "child.parent_category_ref=subtree.category_ref), parent_ancestors(category_ref,parent_category_ref,"
-                + "depth) AS (SELECT category_ref,parent_category_ref,1 FROM requested_parent UNION ALL SELECT "
-                + "parent.category_ref,parent.parent_category_ref,parent_ancestors.depth+1 FROM "
-                + "locked_categories parent JOIN parent_ancestors ON "
-                + "parent.category_ref=parent_ancestors.parent_category_ref), siblings AS (SELECT "
-                + "sibling.category_ref,sibling.display_order,LAG(sibling.category_ref) OVER (ORDER BY "
-                + "sibling.display_order,sibling.code) AS previous_ref,LAG(sibling.display_order) OVER (ORDER BY "
-                + "sibling.display_order,sibling.code) AS previous_display_order,LEAD(sibling.category_ref) OVER "
-                + "(ORDER BY sibling.display_order,sibling.code) AS next_ref,LEAD(sibling.display_order) OVER "
-                + "(ORDER BY sibling.display_order,sibling.code) AS next_display_order FROM locked_categories sibling "
-                + "CROSS JOIN current_category current WHERE sibling.parent_category_ref IS NOT DISTINCT FROM "
-                + "current.parent_category_ref), current_sibling AS MATERIALIZED (SELECT sibling.* FROM siblings "
-                + "sibling JOIN current_category current ON sibling.category_ref=current.category_ref), move_plan AS "
-                + "MATERIALIZED (SELECT input.action,input.requested_parent_ref,input.expected_version,"
-                + "input.updated_at,"
-                + "current.category_ref AS current_category_ref,current.version AS current_version,"
-                + "current.display_order AS current_display_order,current_sibling.previous_ref,"
-                + "current_sibling.previous_display_order,current_sibling.next_ref,"
-                + "current_sibling.next_display_order,COALESCE((SELECT MAX(depth) FROM parent_ancestors),0) "
-                + "AS target_depth,COALESCE((SELECT MAX(depth) FROM subtree),0) AS subtree_depth,"
-                + "COALESCE((SELECT MAX(category.display_order) FROM locked_categories category WHERE "
-                + "category.parent_category_ref IS NOT DISTINCT FROM input.requested_parent_ref),-1)+1 "
-                + "AS reparent_display_order,CASE WHEN current.category_ref IS NULL THEN 'NOT_FOUND' WHEN "
-                + "current.version <> input.expected_version AND current.version <> input.expected_version+1 THEN "
-                + "'VERSION_CONFLICT' WHEN input.action NOT IN ('REPARENT','UP','DOWN') THEN 'VALIDATION_ERROR' "
-                + "WHEN input.action='REPARENT' AND input.requested_parent_ref IS NOT NULL AND "
-                + "requested_parent.category_ref IS NULL THEN 'NOT_FOUND' WHEN input.action='REPARENT' AND "
-                + "input.requested_parent_ref=current.category_ref THEN 'HIERARCHY_SELF' WHEN input.action='REPARENT' "
-                + "AND EXISTS (SELECT 1 FROM subtree WHERE category_ref=input.requested_parent_ref) THEN "
-                + "'HIERARCHY_CYCLE' WHEN input.action='REPARENT' AND "
-                + "COALESCE((SELECT MAX(depth) FROM parent_ancestors),0)+COALESCE((SELECT MAX(depth) FROM subtree),0)>"
-                + CATALOG_CATEGORY_MAX_DEPTH
-                + " THEN 'CATEGORY_DEPTH_EXCEEDED' WHEN input.action='UP' AND current_sibling.previous_ref IS NULL "
-                + "THEN 'MOVE_BOUNDARY' WHEN input.action='DOWN' AND current_sibling.next_ref IS NULL THEN "
-                + "'MOVE_BOUNDARY' END AS validation_code FROM move_input input LEFT JOIN current_category current ON "
-                + "TRUE LEFT JOIN requested_parent ON TRUE LEFT JOIN current_sibling ON TRUE), updated_categories AS "
-                + "(UPDATE catalog.catalog_category category SET parent_category_ref=CASE WHEN plan.action='REPARENT' "
-                + "AND category.category_ref=plan.current_category_ref THEN plan.requested_parent_ref ELSE "
-                + "category.parent_category_ref END,display_order=CASE WHEN plan.action='REPARENT' AND "
-                + "category.category_ref=plan.current_category_ref THEN plan.reparent_display_order WHEN "
-                + "plan.action='UP' AND category.category_ref=plan.current_category_ref THEN "
-                + "plan.previous_display_order WHEN plan.action='UP' AND category.category_ref=plan.previous_ref THEN "
-                + "plan.current_display_order WHEN plan.action='DOWN' AND "
-                + "category.category_ref=plan.current_category_ref "
-                + "THEN plan.next_display_order WHEN plan.action='DOWN' AND category.category_ref=plan.next_ref THEN "
-                + "plan.current_display_order ELSE category.display_order END,version=category.version+1,"
-                + "updated_at_epoch_millis=plan.updated_at FROM move_plan plan WHERE plan.validation_code IS NULL "
-                + "AND NOT EXISTS (SELECT 1 FROM prior_receipt) AND (category.category_ref=plan.current_category_ref "
-                + "OR category.category_ref=plan.previous_ref OR category.category_ref=plan.next_ref) RETURNING "
-                + "category.category_ref,category.code,category.name,category.status,category.parent_category_ref,"
-                + "category.version,category.display_order), updated_current AS MATERIALIZED (SELECT category.* FROM "
-                + "updated_categories "
-                + "category JOIN move_plan plan ON category.category_ref=plan.current_category_ref), "
-                + "readback_subtree(category_ref) AS (SELECT category_ref FROM updated_current UNION ALL SELECT "
-                + "child.category_ref FROM locked_categories child JOIN readback_subtree parent ON "
-                + "child.parent_category_ref=parent.category_ref), deletion_availability AS (SELECT "
-                + "COUNT(DISTINCT subtree.category_ref) AS subtree_size,COUNT(DISTINCT item.item_ref) AS "
-                + "blocking_reference_count,COALESCE((SELECT "
-                + "jsonb_agg(jsonb_build_object('referenceKind','CATALOG_ITEM','referenceRef',refs.item_ref,"
-                + "'code',refs.code,'name',refs.name,'direction','INBOUND') ORDER BY refs.code) FROM (SELECT DISTINCT "
-                + "item.item_ref,item.code,item.name FROM readback_subtree subtree_refs JOIN "
-                + "catalog.catalog_item_category relation_refs ON relation_refs.category_ref=subtree_refs.category_ref "
-                + "JOIN catalog.catalog_item item ON item.item_ref=relation_refs.item_ref AND item.data_node_ref=? "
-                + "AND item.brand_ref=? AND item.status <> 'VOIDED') refs),'[]'::jsonb) AS blocking_reference_facts "
-                + "FROM readback_subtree subtree "
-                + "LEFT JOIN catalog.catalog_item_category relation ON relation.category_ref=subtree.category_ref "
-                + "LEFT JOIN catalog.catalog_item item ON item.item_ref=relation.item_ref AND item.data_node_ref=? "
-                + "AND item.brand_ref=? AND item.status <> 'VOIDED'), response AS (SELECT jsonb_build_object("
-                + "'categoryRef',category.category_ref,'code',category.code,'name',category.name,'status',"
-                + "category.status,'parentCategoryRef',category.parent_category_ref,'version',category.version,"
-                + "'displayOrder',"
-                + "category.display_order,"
-                + "'deletionAvailability',jsonb_build_object('canDelete',availability.blocking_reference_count=0,"
-                + "'subtreeSize',availability.subtree_size,'blockingReferenceCount',"
-                + "availability.blocking_reference_count,'blockingReferences',"
-                + "availability.blocking_reference_facts)) AS body FROM updated_current "
-                + "category CROSS JOIN deletion_availability availability), written_receipt AS (INSERT INTO "
-                + "catalog.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_id,"
-                + "request_hash,response,created_at_epoch_millis) SELECT ?,?,?,?,?,body,? FROM response "
-                + "RETURNING response::text AS response) "
-                + "SELECT plan.validation_code,current_category.category_ref,current_category.version,"
-                + "prior_receipt.operation_id,prior_receipt.request_hash,prior_receipt.response AS replay_response,"
-                + "written_receipt.response AS written_response FROM receipt_lock LEFT JOIN move_plan plan ON TRUE "
-                + "LEFT JOIN current_category ON TRUE LEFT JOIN prior_receipt ON TRUE "
-                + "LEFT JOIN written_receipt ON TRUE";
-        TypedCategoryMoveRow row = jdbc.queryForObject(
-                sql,
-                (result, ignored) -> new TypedCategoryMoveRow(
-                        result.getString("validation_code"),
-                        result.getObject("category_ref", UUID.class),
-                        result.getLong("version"),
-                        result.getString("operation_id"),
-                        result.getString("request_hash"),
-                        result.getString("replay_response"),
-                        result.getString("written_response")),
-                "catalog-category-receipt:" + scope,
-                key,
-                "catalog-category-hierarchy:" + scope,
-                brand,
-                scope,
-                brand,
-                command.categoryRef(),
-                command.action().name(),
-                command.parentCategoryRef(),
-                command.expectedVersion(),
-                timestamp,
-                scope,
-                key,
-                scope,
-                brand,
-                scope,
-                brand,
-                UUID.randomUUID(),
-                scope,
-                key,
-                operation,
-                requestHash,
-                timestamp);
+        CatalogCategoryPersistence.TypedCategoryMoveRow row = persistence.executeTypedMove(
+                scope, brand, command, key, operation, requestHash);
         if (row.validationCode() != null) throw typedCategoryMoveProblem(row.validationCode());
         if (row.currentCategoryRef() == null) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在");
         if (row.currentVersion() != command.expectedVersion() && row.currentVersion() != command.expectedVersion() + 1L)
@@ -808,16 +479,8 @@ public class CatalogCategoryService {
                         "REFERENCE_BLOCKS_VOID", 422, "分类或其子分类仍被商品引用，不能作废");
                 // spotless:on
         }
-        if (jdbc.update(
-                        "UPDATE catalog.catalog_category SET status=?,version=version+1,updated_at_epoch_millis=? "
-                                + "WHERE data_node_ref=? AND brand_ref=? AND category_ref=? "
-                                + "AND version=? AND status <> 'VOIDED'",
-                        target,
-                        now(),
-                        dataNodeRef,
-                        brandRef,
-                        categoryRef,
-                        expected)
+        if (persistence.transitionStatus(
+                        dataNodeRef, brandRef, categoryRef, target, now(), expected)
                 != 1) throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "分类版本已变化");
         return categoryCommand(requestId, categoryIncludingVoided(dataNodeRef, brandRef, categoryRef));
     }
@@ -859,7 +522,7 @@ public class CatalogCategoryService {
     }
 
     private void lockCategoryHierarchy(String scope, String brand) {
-        AdvisoryLock.acquire(jdbc, "catalog-category-hierarchy", scope, brand);
+        persistence.lockHierarchy(scope, brand);
     }
 
     private void assertCategoryChildDepth(String scope, String brand, CategoryRow parent) {
@@ -869,183 +532,40 @@ public class CatalogCategoryService {
     }
 
     private int categoryDepth(String scope, String brand, UUID categoryRef) {
-        Integer depth = jdbc.queryForObject(
-                "WITH RECURSIVE ancestors(category_ref,parent_category_ref,depth) AS ("
-                        + "SELECT category_ref,parent_category_ref,1 FROM catalog.catalog_category "
-                        + "WHERE data_node_ref=? "
-                        + "AND brand_ref=? AND category_ref=? AND status <> 'VOIDED' UNION ALL "
-                        + "SELECT parent.category_ref,parent.parent_category_ref,ancestors.depth+1 "
-                        + "FROM catalog.catalog_category parent "
-                        + "JOIN ancestors ON parent.category_ref=ancestors.parent_category_ref "
-                        + "WHERE parent.data_node_ref=? AND parent.brand_ref=? AND parent.status <> 'VOIDED') "
-                        + "SELECT COALESCE(MAX(depth),0) FROM ancestors",
-                Integer.class,
-                scope,
-                brand,
-                categoryRef,
-                scope,
-                brand);
-        return depth == null ? 0 : depth;
+        return persistence.readDepth(scope, brand, categoryRef);
     }
 
     private CategoryRow category(String dataNodeRef, String brandRef, UUID categoryRef) {
-        return jdbc.query(
-                "SELECT category_ref,code,name,parent_code,parent_category_ref,status,version,display_order FROM "
-                        + "catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND category_ref=? AND "
-                        + "status <> 'VOIDED'",
-                statement -> {
-                    statement.setString(1, dataNodeRef);
-                    statement.setString(2, brandRef);
-                    statement.setObject(3, categoryRef);
-                },
-                result -> {
-                    if (!result.next()) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在");
-                    return categoryRow(result);
-                });
+        return persistence.read(dataNodeRef, brandRef, categoryRef);
     }
 
     private CategoryRow lockCategory(String dataNodeRef, String brandRef, UUID categoryRef) {
-        return jdbc.query(
-                "SELECT category_ref,code,name,parent_code,parent_category_ref,status,version,display_order FROM "
-                        + "catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND category_ref=? AND "
-                        + "status <> 'VOIDED' FOR UPDATE",
-                statement -> {
-                    statement.setString(1, dataNodeRef);
-                    statement.setString(2, brandRef);
-                    statement.setObject(3, categoryRef);
-                },
-                result -> {
-                    if (!result.next()) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在");
-                    return categoryRow(result);
-                });
+        return persistence.lock(dataNodeRef, brandRef, categoryRef);
     }
 
     private CategoryRow categoryIncludingVoided(String dataNodeRef, String brandRef, UUID categoryRef) {
-        return jdbc.query(
-                "SELECT category_ref,code,name,parent_code,parent_category_ref,status,version,display_order FROM "
-                        + "catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND category_ref=?",
-                statement -> {
-                    statement.setString(1, dataNodeRef);
-                    statement.setString(2, brandRef);
-                    statement.setObject(3, categoryRef);
-                },
-                result -> {
-                    if (!result.next()) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在");
-                    return categoryRow(result);
-                });
+        return persistence.readIncludingVoided(dataNodeRef, brandRef, categoryRef);
     }
 
     private CategoryRow lockCategoryIncludingVoided(String dataNodeRef, String brandRef, UUID categoryRef) {
-        return jdbc.query(
-                "SELECT category_ref,code,name,parent_code,parent_category_ref,status,version,display_order FROM "
-                        + "catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? "
-                        + "AND category_ref=? FOR UPDATE",
-                statement -> {
-                    statement.setString(1, dataNodeRef);
-                    statement.setString(2, brandRef);
-                    statement.setObject(3, categoryRef);
-                },
-                result -> {
-                    if (!result.next()) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在");
-                    return categoryRow(result);
-                });
+        return persistence.lockIncludingVoided(dataNodeRef, brandRef, categoryRef);
     }
 
     private List<UUID> categorySubtreeRefsIncludingVoided(String scope, String brand, UUID rootCategoryRef) {
-        List<UUID> refs = jdbc.query(
-                "WITH RECURSIVE subtree(category_ref) AS (SELECT category_ref FROM catalog.catalog_category WHERE "
-                        + "data_node_ref=? AND brand_ref=? AND category_ref=? UNION ALL SELECT child.category_ref "
-                        + "FROM catalog.catalog_category child JOIN subtree parent "
-                        + "ON child.parent_category_ref=parent.category_ref "
-                        + "WHERE child.data_node_ref=? AND child.brand_ref=?) "
-                        + "SELECT category_ref FROM subtree ORDER BY category_ref",
-                (result, row) -> result.getObject(1, UUID.class),
-                scope,
-                brand,
-                rootCategoryRef,
-                scope,
-                brand);
-        if (refs.isEmpty()) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在");
-        return refs;
+        return persistence.subtreeRefsIncludingVoided(scope, brand, rootCategoryRef);
     }
 
     private List<String> categoryReferencedItems(String scope, String brand, List<UUID> refs) {
-        if (refs.isEmpty()) return List.of();
-        String placeholders = String.join(",", Collections.nCopies(refs.size(), "?"));
-        List<Object> args = new ArrayList<>();
-        args.add(scope);
-        args.add(brand);
-        args.addAll(refs);
-        return jdbc.query(
-                "SELECT DISTINCT item.code FROM catalog.catalog_item_category relation "
-                        + "JOIN catalog.catalog_item item "
-                        + "ON item.item_ref=relation.item_ref WHERE item.data_node_ref=? AND item.brand_ref=? AND "
-                        + "item.status <> 'VOIDED' AND relation.category_ref IN ("
-                        + placeholders + ") ORDER BY item.code",
-                (rows, index) -> rows.getString(1),
-                args.toArray());
+        return persistence.referencedItems(scope, brand, refs);
     }
 
     private CatalogOwnerApi.CategoryDeletionAvailability categoryDeletionAvailability(
             String scope, String brand, UUID categoryRef) {
-        return jdbc.query(
-                "WITH RECURSIVE subtree(category_ref) AS (SELECT category_ref FROM catalog.catalog_category WHERE "
-                        + "data_node_ref=? AND brand_ref=? AND category_ref=? AND status <> 'VOIDED' UNION ALL SELECT "
-                        + "child.category_ref FROM catalog.catalog_category child JOIN subtree parent ON "
-                        + "child.parent_category_ref=parent.category_ref WHERE child.data_node_ref=? AND "
-                        + "child.brand_ref=? AND child.status <> 'VOIDED') "
-                        + "SELECT (SELECT COUNT(*) FROM subtree), item.item_ref, item.code, item.name "
-                        + "FROM (SELECT 1) anchor LEFT JOIN "
-                        + "catalog.catalog_item_category relation ON relation.category_ref IN "
-                        + "(SELECT category_ref FROM "
-                        + "subtree) LEFT JOIN catalog.catalog_item item ON item.item_ref=relation.item_ref AND "
-                        + "item.data_node_ref=? AND item.brand_ref=? AND item.status <> 'VOIDED' ORDER BY item.code",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setObject(3, categoryRef);
-                    statement.setString(4, scope);
-                    statement.setString(5, brand);
-                    statement.setString(6, scope);
-                    statement.setString(7, brand);
-                },
-                result -> {
-                    if (!result.next()) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在");
-                    long subtreeSize = result.getLong(1);
-                    if (subtreeSize == 0) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "分类不存在");
-                    LinkedHashSet<String> blocking = new LinkedHashSet<>();
-                    List<CatalogOwnerApi.CategoryBlockingReference> references = new ArrayList<>();
-                    UUID firstRef = result.getObject(2, UUID.class);
-                    String first = result.getString(3);
-                    String firstName = result.getString(4);
-                    if (first != null) {
-                        blocking.add(first);
-                        references.add(new CatalogOwnerApi.CategoryBlockingReference(
-                                "CATALOG_ITEM", firstRef, first, firstName, "INBOUND"));
-                    }
-                    while (result.next()) {
-                        UUID itemRef = result.getObject(2, UUID.class);
-                        String itemCode = result.getString(3);
-                        String itemName = result.getString(4);
-                        if (itemCode != null && blocking.add(itemCode)) {
-                            references.add(new CatalogOwnerApi.CategoryBlockingReference(
-                                    "CATALOG_ITEM", itemRef, itemCode, itemName, "INBOUND"));
-                        }
-                    }
-                    return new CatalogOwnerApi.CategoryDeletionAvailability(
-                            blocking.isEmpty(), subtreeSize, references.size(), List.copyOf(references));
-                });
+        return persistence.deletionAvailability(scope, brand, categoryRef);
     }
 
     private long nextCategoryDisplayOrder(String scope, String brand, UUID parentCategoryRef) {
-        Long next = jdbc.queryForObject(
-                "SELECT COALESCE(MAX(display_order), -1) + 1 FROM catalog.catalog_category WHERE data_node_ref=? AND "
-                        + "brand_ref=? AND parent_category_ref IS NOT DISTINCT FROM ? AND status <> 'VOIDED'",
-                Long.class,
-                scope,
-                brand,
-                parentCategoryRef);
-        return next == null ? 0L : next;
+        return persistence.nextDisplayOrder(scope, brand, parentCategoryRef);
     }
 
     private void requireCategoryVersion(CategoryRow row, long expectedVersion) {
@@ -1091,19 +611,6 @@ public class CatalogCategoryService {
         }
     }
 
-    private CategoryRow categoryRow(java.sql.ResultSet result) throws java.sql.SQLException {
-        return new CategoryRow(
-                result.getObject(1, UUID.class),
-                result.getString(2),
-                result.getString(3),
-                result.getString(4),
-                result.getObject(5, UUID.class),
-                result.getString(6),
-                result.getLong(7),
-                result.getInt(8));
-    }
-
-
     private ObjectNode receiptRequest(ObjectNode request, String brandRef) {
         ObjectNode scoped = request.deepCopy();
         scoped.put("receiptBrandRef", brandRef);
@@ -1111,32 +618,18 @@ public class CatalogCategoryService {
     }
 
     private JsonNode replay(String dataNodeRef, String key, String operationId, ObjectNode request) {
-        AdvisoryLock.acquire(jdbc, "catalog-receipt", dataNodeRef, key);
-        List<Receipt> rows = jdbc.query(
-                "SELECT operation_id,request_hash,response::text FROM catalog.command_receipt WHERE data_node_ref=? "
-                        + "AND idempotency_key=?",
-                (r, n) -> new Receipt(r.getString(1), r.getString(2), json(r.getString(3))),
-                dataNodeRef,
-                key);
+        persistence.lockReceipt(dataNodeRef, key);
+        List<CatalogCategoryPersistence.ReceiptRow> rows = persistence.readReceipt(dataNodeRef, key);
         if (rows.isEmpty()) return null;
-        Receipt receipt = rows.get(0);
+        CatalogCategoryPersistence.ReceiptRow receipt = rows.get(0);
         if (!receipt.operationId().equals(operationId) || !receipt.requestHash().equals(hash(request))) {
             throw new CatalogOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他请求");
         }
-        return receipt.response();
+        return json(receipt.responseJson());
     }
 
     private void saveReceipt(String scope, String key, String operationId, ObjectNode request, JsonNode response) {
-        jdbc.update(
-                "INSERT INTO catalog.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_id,request_hash,"
-                        + "response,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)",
-                UUID.randomUUID(),
-                scope,
-                key,
-                operationId,
-                hash(request),
-                canonicalJson(response),
-                now());
+        persistence.saveReceipt(scope, key, operationId, hash(request), canonicalJson(response), now());
     }
 
     private String canonicalJson(JsonNode value) {
@@ -1228,34 +721,4 @@ public class CatalogCategoryService {
         return time.currentEpochMillis();
     }
 
-    private record Receipt(String operationId, String requestHash, JsonNode response) {}
-
-    private record TypedCategoryUpdateRow(
-            UUID currentCategoryRef,
-            long currentVersion,
-            String receiptOperation,
-            String receiptHash,
-            String replayResponse,
-            String writtenResponse) {}
-
-    private record TypedCategoryMoveRow(
-            String validationCode,
-            UUID currentCategoryRef,
-            long currentVersion,
-            String receiptOperation,
-            String receiptHash,
-            String replayResponse,
-            String writtenResponse) {}
-
-    private record CategoryMoveDepths(int targetDepth, int movingSubtreeDepth) {}
-
-    private record CategoryRow(
-            UUID ref,
-            String code,
-            String name,
-            String parentCode,
-            UUID parentCategoryRef,
-            String status,
-            long version,
-            int displayOrder) {}
 }

@@ -1,12 +1,14 @@
 package com.catering.v2s.catalog.application;
 
+import com.catering.v2s.catalog.application.persistence.CatalogDictionaryPersistence;
+import com.catering.v2s.catalog.application.persistence.CatalogDictionaryPersistence.DictionaryListingRow;
+import com.catering.v2s.catalog.application.persistence.CatalogDictionaryPersistence.DictionaryRow;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerTypes;
 import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
-import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -15,7 +17,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -29,13 +30,18 @@ import org.springframework.transaction.annotation.Transactional;
 /** Owner of catalog dictionary facts, ordering, lifecycle, receipts, and authoritative readback. */
 @Service
 public class CatalogDictionaryService {
-    private final JdbcTemplate jdbc;
+    private final CatalogDictionaryPersistence persistence;
     private final ObjectMapper mapper;
     private final CopyLimitPolicy copyLimits;
     private final TimeProvider time;
     private final CatalogItemReferenceFacts itemReferenceFacts;
 
     @Autowired
+    public CatalogDictionaryService(
+            CatalogDictionaryPersistence persistence, JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
+        this(persistence, mapper, time, new CatalogItemReferenceFacts(jdbc, mapper));
+    }
+
     public CatalogDictionaryService(JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
         this(jdbc, mapper, time, new CatalogItemReferenceFacts(jdbc, mapper));
     }
@@ -45,7 +51,15 @@ public class CatalogDictionaryService {
             ObjectMapper mapper,
             TimeProvider time,
             CatalogItemReferenceFacts itemReferenceFacts) {
-        this.jdbc = jdbc;
+        this(new CatalogDictionaryPersistence(jdbc, time), mapper, time, itemReferenceFacts);
+    }
+
+    CatalogDictionaryService(
+            CatalogDictionaryPersistence persistence,
+            ObjectMapper mapper,
+            TimeProvider time,
+            CatalogItemReferenceFacts itemReferenceFacts) {
+        this.persistence = persistence;
         this.mapper = mapper;
         this.copyLimits = CopyLimitPolicy.load(mapper);
         this.time = time;
@@ -201,14 +215,7 @@ public class CatalogDictionaryService {
             case "updateOperationsCatalogDictionaryEntry", "transitionOperationsCatalogDictionaryEntryStatus" -> {
                 String kind = requiredDictionaryKind(request);
                 String code = required(request, "entryCode");
-                Long version = jdbc.queryForObject(
-                        "SELECT version FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? AND "
-                                + "dictionary_kind=? AND code=?",
-                        Long.class,
-                        scope,
-                        brand,
-                        kind,
-                        code);
+                Long version = persistence.readVersion(scope, brand, kind, code);
                 long expected = requiredLong(request, "expectedVersion", -1);
                 if (version == null || (expected >= 0 && version != expected && version != expected + 1L)) {
                     throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "字典版本已变化");
@@ -285,20 +292,8 @@ public class CatalogDictionaryService {
         int displayOrder = nextDictionaryDisplayOrder(dataNodeRef, brandRef, kind);
         UUID entryRef = UUID.randomUUID();
         try {
-            jdbc.update(
-                    "INSERT INTO catalog.dictionary_entry "
-                            + "(entry_ref,data_node_ref,brand_ref,dictionary_kind,code,name,parent_entry_ref,display_or"
-                            + "der,created_at_epoch_millis,updated_at_epoch_millis) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                    entryRef,
-                    dataNodeRef,
-                    brandRef,
-                    kind,
-                    code,
-                    name,
-                    parentEntryRef,
-                    displayOrder,
-                    now(),
-                    now());
+            persistence.insertEntry(
+                    entryRef, dataNodeRef, brandRef, kind, code, name, parentEntryRef, displayOrder, now());
         } catch (DuplicateKeyException ex) {
             throw new CatalogOwnerApi.Problem("DUPLICATE_CODE", 409, "字典编码已存在", ex);
         }
@@ -310,17 +305,7 @@ public class CatalogDictionaryService {
                 code = required(request, "entryCode"),
                 name = required(request, "name");
         long expected = requiredLong(request, "expectedVersion", 1);
-        if (jdbc.update(
-                        "UPDATE catalog.dictionary_entry SET name=?,version=version+1,updated_at_epoch_millis=? WHERE "
-                                + "data_node_ref=? AND brand_ref=? AND dictionary_kind=? AND code=? AND version=? AND "
-                                + "status <> 'VOIDED'",
-                        name,
-                        now(),
-                        dataNodeRef,
-                        brandRef,
-                        kind,
-                        code,
-                        expected)
+        if (persistence.updateEntry(dataNodeRef, brandRef, kind, code, name, expected, now())
                 != 1) throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "字典版本已变化");
         return dictionaryCommand(
                 requestId,
@@ -349,15 +334,8 @@ public class CatalogDictionaryService {
 
         long updatedAt = now();
         for (int index = 0; index < current.size(); index++) {
-            jdbc.update(
-                    "UPDATE catalog.dictionary_entry SET display_order=?,version=version+1,updated_at_epoch_millis=? "
-                            + "WHERE data_node_ref=? AND brand_ref=? AND dictionary_kind=? AND code=?",
-                    index,
-                    updatedAt,
-                    dataNodeRef,
-                    brandRef,
-                    kind,
-                    orderedCodes.get(index));
+            persistence.reorderEntry(
+                    dataNodeRef, brandRef, kind, orderedCodes.get(index), index, updatedAt);
         }
         return dictionary(dataNodeRef, brandRef, requestId, kind, request);
     }
@@ -380,17 +358,7 @@ public class CatalogDictionaryService {
             }
             requireInventoryDictionaryReferenceUnreferenced(commandContext, dataNodeRef, brandRef, kind, code);
         }
-        if (jdbc.update(
-                        "UPDATE catalog.dictionary_entry SET status=?,version=version+1,updated_at_epoch_millis=? "
-                                + "WHERE data_node_ref=? AND brand_ref=? AND dictionary_kind=? AND code=? AND "
-                                + "version=? AND status <> 'VOIDED'",
-                        status,
-                        now(),
-                        dataNodeRef,
-                        brandRef,
-                        kind,
-                        code,
-                        expected)
+        if (persistence.transitionStatus(dataNodeRef, brandRef, kind, code, status, expected, now())
                 != 1) throw new CatalogOwnerApi.Problem("VERSION_CONFLICT", 409, "字典版本已变化");
         return dictionaryCommand(
                 requestId,
@@ -421,60 +389,26 @@ public class CatalogDictionaryService {
             OpaqueCollectionCursor.Position cursor,
             int pageSize,
             String queryIdentity) {
-        String cursorPredicate =
-                cursor == null ? "" : " WHERE display_order > ? OR (display_order = ? AND entry_ref > ?)";
-        String sql = "WITH matching AS (SELECT entry_ref,code,name,status,parent_entry_ref,display_order,version,"
-                + "updated_at_epoch_millis FROM catalog.dictionary_entry WHERE data_node_ref=? "
-                + "AND brand_ref=? AND dictionary_kind=? AND "
-                + "(?::uuid IS NULL OR parent_entry_ref=?) "
-                + "AND (? = '' OR (code || chr(1) || name) ILIKE '%' || ? || '%') "
-                + "AND (?::text IS NULL OR status=?)), "
-                + "aggregate AS (SELECT COUNT(*) AS total, COALESCE(MAX(version),0) AS "
-                + "generation FROM matching), "
-                + "paged AS (SELECT entry_ref,code,name,status,parent_entry_ref,display_order,version,"
-                + "updated_at_epoch_millis FROM matching"
-                + cursorPredicate
-                + " ORDER BY display_order, entry_ref LIMIT ?) "
-                + "SELECT p.entry_ref,p.code,p.name,p.status,p.parent_entry_ref,p.display_order,p.version,"
-                + "p.updated_at_epoch_millis,"
-                + "a.total,a.generation FROM aggregate a LEFT JOIN paged p ON TRUE ORDER BY p.display_order NULLS LAST,"
-                + "p.entry_ref";
-        List<Object> arguments = new ArrayList<>();
-        arguments.add(scope);
-        arguments.add(brand);
-        arguments.add(kind);
-        arguments.add(parentEntryRef);
-        arguments.add(parentEntryRef);
-        arguments.add(query);
-        arguments.add(query);
-        arguments.add(status);
-        arguments.add(status);
+        Integer cursorDisplayOrder = null;
+        UUID cursorTieBreaker = null;
         if (cursor != null) {
-            int displayOrder;
             try {
-                displayOrder = Integer.parseInt(cursor.sortKey());
+                cursorDisplayOrder = Integer.parseInt(cursor.sortKey());
             } catch (NumberFormatException failure) {
                 throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "字典游标无效", failure);
             }
-            arguments.add(displayOrder);
-            arguments.add(displayOrder);
-            arguments.add(cursor.tieBreaker());
+            cursorTieBreaker = cursor.tieBreaker();
         }
-        arguments.add(pageSize + 1);
-        List<DictionaryListingRow> rows = jdbc.query(
-                sql,
-                (result, index) -> new DictionaryListingRow(
-                        result.getObject(1, UUID.class),
-                        result.getString(2),
-                        result.getString(3),
-                        result.getString(4),
-                        result.getObject(5, UUID.class),
-                        result.getInt(6),
-                        result.getLong(7),
-                        result.getLong(8),
-                        result.getLong(9),
-                        result.getLong(10)),
-                arguments.toArray());
+        List<DictionaryListingRow> rows = persistence.loadListing(
+                scope,
+                brand,
+                kind,
+                parentEntryRef,
+                query,
+                status,
+                cursorDisplayOrder,
+                cursorTieBreaker,
+                pageSize);
         long generation = rows.isEmpty() ? 0L : rows.get(0).generation();
         long total = rows.isEmpty() ? 0L : rows.get(0).total();
         List<DictionaryListingRow> presentRows = rows.stream().filter(row -> row.entryRef() != null).toList();
@@ -500,33 +434,11 @@ public class CatalogDictionaryService {
     }
 
     private List<DictionaryRow> lockDictionaryEntriesForReorder(String scope, String brand, String kind) {
-        return jdbc.query(
-                "SELECT entry_ref,dictionary_kind,code,name,status,parent_entry_ref,display_order,version FROM "
-                        + "catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? AND dictionary_kind=? ORDER "
-                        + "BY entry_ref FOR UPDATE",
-                (result, index) -> new DictionaryRow(
-                        result.getObject(1, UUID.class),
-                        result.getString(2),
-                        result.getString(3),
-                        result.getString(4),
-                        result.getString(5),
-                        result.getObject(6, UUID.class),
-                        result.getInt(7),
-                        result.getLong(8)),
-                scope,
-                brand,
-                kind);
+        return persistence.lockEntriesForReorder(scope, brand, kind);
     }
 
     private int nextDictionaryDisplayOrder(String scope, String brand, String kind) {
-        Integer value = jdbc.queryForObject(
-                "SELECT COALESCE(MAX(display_order), -1) + 1 FROM catalog.dictionary_entry WHERE data_node_ref=? AND "
-                        + "brand_ref=? AND dictionary_kind=?",
-                Integer.class,
-                scope,
-                brand,
-                kind);
-        return value == null ? 0 : value;
+        return persistence.nextDisplayOrder(scope, brand, kind);
     }
 
     private static List<String> dictionaryOrderCodes(JsonNode codes) {
@@ -558,26 +470,7 @@ public class CatalogDictionaryService {
     }
 
     private Set<UUID> relationalSkuDictionaryReferences(String scope, String brand, String kind, List<UUID> entryRefs) {
-        if (!Set.of("SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE").contains(kind) || entryRefs.isEmpty()) return Set.of();
-        String placeholders = String.join(",", Collections.nCopies(entryRefs.size(), "?"));
-        List<Object> args = new ArrayList<>();
-        args.add(scope);
-        args.add(brand);
-        args.addAll(entryRefs);
-        String column = "SKU_ATTRIBUTE".equals(kind) ? "relation.attribute_ref" : "relation.attribute_value_ref";
-        return Set.copyOf(jdbc.query(
-                "SELECT DISTINCT "
-                        + column
-                        + " FROM catalog.catalog_sku_attribute_value relation JOIN catalog.catalog_sku sku ON "
-                        + "sku.product_sku_ref=relation.product_sku_ref JOIN catalog.catalog_item item ON "
-                        + "item.item_ref=sku.item_ref WHERE item.data_node_ref=? AND item.brand_ref=? AND "
-                        + "item.status <> 'VOIDED' AND "
-                        + column
-                        + " IN ("
-                        + placeholders
-                        + ")",
-                (result, row) -> result.getObject(1, UUID.class),
-                args.toArray()));
+        return persistence.relationalSkuReferences(scope, brand, kind, entryRefs);
     }
 
     private boolean dictionaryReferenced(String scope, String brand, String kind, String entryCode) {
@@ -592,76 +485,24 @@ public class CatalogDictionaryService {
                     "VALIDATION_ERROR", 422, "SKU_ATTRIBUTE_VALUE 必须带 parentEntryRef，其他字典类型不得带父属性");
         }
         if (parentEntryRef == null) return;
-        Boolean valid = jdbc.queryForObject(
-                "SELECT EXISTS (SELECT 1 FROM catalog.dictionary_entry WHERE entry_ref=? AND data_node_ref=? AND "
-                        + "brand_ref=? AND dictionary_kind='SKU_ATTRIBUTE')",
-                Boolean.class,
-                parentEntryRef,
-                scope,
-                brand);
-        if (!Boolean.TRUE.equals(valid))
+        if (!persistence.validParent(parentEntryRef.toString(), scope, brand))
             throw new CatalogOwnerApi.Problem("REFERENCE_MAPPING_UNRESOLVED", 422, "parentEntryRef 必须是当前 scope 的 SKU_ATTRIBUTE");
     }
 
     private String dictionaryName(String scope, String brand, String kind, String code) {
-        return jdbc.query(
-                "SELECT name FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? AND dictionary_kind=? "
-                        + "AND code=?",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setString(3, kind);
-                    statement.setString(4, code);
-                },
-                result -> {
-                    if (!result.next()) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "字典条目不存在");
-                    return result.getString(1);
-                });
+        return persistence.readName(scope, brand, kind, code);
     }
 
     private String dictionaryStatus(String scope, String brand, String kind, String code) {
-        return jdbc.query(
-                "SELECT status FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? AND "
-                        + "dictionary_kind=? AND code=?",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setString(3, kind);
-                    statement.setString(4, code);
-                },
-                result -> {
-                    if (!result.next()) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "字典条目不存在");
-                    return result.getString(1);
-                });
+        return persistence.readStatus(scope, brand, kind, code);
     }
 
     private UUID dictionaryParentRef(String scope, String brand, String kind, String code) {
-        return jdbc.query(
-                "SELECT parent_entry_ref FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? AND "
-                        + "dictionary_kind=? AND code=?",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setString(3, kind);
-                    statement.setString(4, code);
-                },
-                result -> result.next() ? result.getObject(1, UUID.class) : null);
+        return persistence.readParentRef(scope, brand, kind, code);
     }
 
     private UUID dictionaryEntryRef(String scope, String brand, String kind, String code) {
-        return jdbc.query(
-                "SELECT entry_ref FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? AND "
-                        + "dictionary_kind=? AND code=?",
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    statement.setString(3, kind);
-                    statement.setString(4, code);
-                },
-                result -> {
-                    if (!result.next()) throw new CatalogOwnerApi.Problem("NOT_FOUND", 404, "字典条目不存在");
-                    return result.getObject(1, UUID.class);
-                });
+        return persistence.readEntryRef(scope, brand, kind, code);
     }
 
     private ObjectNode dictionaryCommand(
@@ -828,23 +669,11 @@ public class CatalogDictionaryService {
     }
 
     private long generation(String dataNodeRef, String brandRef) {
-        Long value = jdbc.queryForObject(
-                "SELECT COALESCE(MAX(version),0) FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=?",
-                Long.class,
-                dataNodeRef,
-                brandRef);
-        return value == null ? 0 : value;
+        return persistence.generation(dataNodeRef, brandRef);
     }
 
     private long dictionaryGeneration(String dataNodeRef, String brandRef, String kind) {
-        Long value = jdbc.queryForObject(
-                "SELECT COALESCE(MAX(version),0) FROM catalog.dictionary_entry WHERE data_node_ref=? AND brand_ref=? "
-                        + "AND dictionary_kind=?",
-                Long.class,
-                dataNodeRef,
-                brandRef,
-                kind);
-        return value == null ? 0 : value;
+        return persistence.generation(dataNodeRef, brandRef, kind);
     }
 
     private ObjectNode envelope(String requestId, JsonNode data) {
@@ -861,31 +690,17 @@ public class CatalogDictionaryService {
     }
 
     private JsonNode replay(String dataNodeRef, String key, String operationId, ObjectNode request) {
-        AdvisoryLock.acquire(jdbc, "catalog-receipt", dataNodeRef, key);
-        List<Receipt> rows = jdbc.query(
-                "SELECT operation_id,request_hash,response::text FROM catalog.command_receipt WHERE data_node_ref=? "
-                        + "AND idempotency_key=?",
-                (result, row) -> new Receipt(result.getString(1), result.getString(2), json(result.getString(3))),
-                dataNodeRef,
-                key);
+        persistence.lockReceipt(dataNodeRef, key);
+        List<CatalogDictionaryPersistence.ReceiptRow> rows = persistence.readReceipt(dataNodeRef, key);
         if (rows.isEmpty()) return null;
-        Receipt receipt = rows.get(0);
+        CatalogDictionaryPersistence.ReceiptRow receipt = rows.get(0);
         if (!receipt.operationId().equals(operationId) || !receipt.requestHash().equals(hash(request)))
             throw new CatalogOwnerApi.Problem("IDEMPOTENCY_MISMATCH", 409, "幂等键已绑定其他请求");
-        return receipt.response();
+        return json(receipt.responseJson());
     }
 
     private void saveReceipt(String scope, String key, String operationId, ObjectNode request, JsonNode response) {
-        jdbc.update(
-                "INSERT INTO catalog.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_id,request_hash,"
-                        + "response,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)",
-                UUID.randomUUID(),
-                scope,
-                key,
-                operationId,
-                hash(request),
-                canonicalJson(response),
-                now());
+        persistence.saveReceipt(scope, key, operationId, hash(request), canonicalJson(response), now());
     }
 
     private String hash(JsonNode value) {
@@ -923,18 +738,6 @@ public class CatalogDictionaryService {
         return time.currentEpochMillis();
     }
 
-    private record Receipt(String operationId, String requestHash, JsonNode response) {}
-
-    private record DictionaryRow(
-            UUID ref,
-            String dictionaryKind,
-            String code,
-            String name,
-            String status,
-            UUID parentEntryRef,
-            int displayOrder,
-            long version) {}
-
     private record DictionaryEntryRow(
             UUID entryRef,
             String code,
@@ -943,18 +746,6 @@ public class CatalogDictionaryService {
             UUID parentEntryRef,
             long version,
             long updatedAt) {}
-
-    private record DictionaryListingRow(
-            UUID entryRef,
-            String code,
-            String name,
-            String status,
-            UUID parentEntryRef,
-            int displayOrder,
-            long version,
-            long updatedAt,
-            long total,
-            long generation) {}
 
     private record DictionaryListing(List<DictionaryEntryRow> entries, long generation, long total, String cursor) {
         List<UUID> entryRefs() {

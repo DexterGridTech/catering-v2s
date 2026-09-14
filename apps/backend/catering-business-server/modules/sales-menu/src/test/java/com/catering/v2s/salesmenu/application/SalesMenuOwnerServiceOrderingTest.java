@@ -95,8 +95,8 @@ class SalesMenuOwnerServiceOrderingTest {
     private static Object target(SalesMenuRepository repository, String table) {
         TimeProvider time = () -> 1_788_000_000_000L;
         return SECTION_TABLE.equals(table)
-                ? new SalesMenuSectionService(repository, time, new ObjectMapper())
-                : new SalesMenuItemService(repository, time, new ObjectMapper());
+                ? new SalesMenuSectionService(new LegacySalesMenuPersistenceAdapter(repository), time, new ObjectMapper())
+                : new SalesMenuItemService(new LegacySalesMenuPersistenceAdapter(repository), time, new ObjectMapper());
     }
 
     private static void stubMoveRows(
@@ -137,26 +137,25 @@ class SalesMenuOwnerServiceOrderingTest {
         Class<?> targetType = service.getClass();
         Method move = null;
         for (Method candidate : targetType.getDeclaredMethods()) {
-            if (candidate.getName().equals("move") && candidate.getParameterCount() == 7) {
+            if (candidate.getName().equals("move")
+                    && (candidate.getParameterCount() == 5 || candidate.getParameterCount() == 7)) {
                 move = candidate;
                 break;
             }
         }
         if (move == null) throw new AssertionError("move helper not found on " + targetType.getName());
-        Class<?> currentType = move.getParameterTypes()[6];
+        int parameterCount = move.getParameterCount();
+        Class<?> currentType = move.getParameterTypes()[parameterCount - 1];
         Constructor<?> currentConstructor = currentType.getDeclaredConstructor(UUID.class, long.class);
         currentConstructor.setAccessible(true);
         move.setAccessible(true);
         try {
-            move.invoke(
-                    service,
-                    table,
-                    refColumn,
-                    VERSION,
-                    CURRENT,
-                    direction,
-                    section,
-                    currentConstructor.newInstance(CURRENT, 10L));
+            Object current = currentConstructor.newInstance(CURRENT, 10L);
+            if (parameterCount == 5) {
+                move.invoke(service, VERSION, CURRENT, direction, section, current);
+            } else {
+                move.invoke(service, table, refColumn, VERSION, CURRENT, direction, section, current);
+            }
         } catch (InvocationTargetException failure) {
             if (failure.getCause() instanceof RuntimeException runtimeFailure) throw runtimeFailure;
             throw failure;

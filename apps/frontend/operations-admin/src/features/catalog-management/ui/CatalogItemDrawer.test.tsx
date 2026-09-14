@@ -334,7 +334,10 @@ describe('catalog identification and preparation editor boundaries', () => {
   it('keeps the editor open when maintaining basic data and retires the transition-persistence path', () => {
     const workspace = readFileSync(new URL('./CatalogItemEditorWorkspace.tsx', import.meta.url), 'utf8');
     const state = readFileSync(new URL('./useCatalogItemEditorWorkspaceState.tsx', import.meta.url), 'utf8');
-    const dictionaryState = readFileSync(new URL('./CatalogDictionaryDrawerState.tsx', import.meta.url), 'utf8');
+    const dictionaryState = [
+      readFileSync(new URL('./dictionary/CatalogDictionaryDrawerState.tsx', import.meta.url), 'utf8'),
+      readFileSync(new URL('./dictionary/CatalogDictionaryDrawerView.tsx', import.meta.url), 'utf8'),
+    ].join('\n');
     const configurationSurface = readFileSync(
       new URL('./CatalogConfigurationDrawerSurface.tsx', import.meta.url),
       'utf8',

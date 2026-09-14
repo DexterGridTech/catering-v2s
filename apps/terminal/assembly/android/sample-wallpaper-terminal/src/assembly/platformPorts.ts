@@ -1,0 +1,47 @@
+import {
+  consoleLoggerBinding,
+  createPlatformPorts,
+  unavailableAppControlPort,
+  unavailableConnectorPort,
+  unavailableHotUpdatePort,
+  unavailableLogUploadPort,
+  unavailableScriptPort,
+  unavailableTopologyHostPort,
+} from '@catering-v2s/kernel-base-platform-ports'
+import {createAndroidDevicePort} from '@catering-v2s/adapter-android-device'
+import {createAndroidSurfaceHostSource} from '@catering-v2s/adapter-android-dual-screen'
+import {createAndroidPersistKvPort} from '@catering-v2s/adapter-android-persist-kv'
+import {
+  createSampleWallpaperConsoleAssembly,
+  type SurfaceForm,
+} from '@catering-v2s/ui-integration-sample-wallpaper-console'
+
+const persistenceKey = 'sample-wallpaper-terminal-android'
+
+const platformPorts = createPlatformPorts({
+  environmentMode: 'DEV',
+  bindings: {
+    logger: consoleLoggerBinding,
+    persistKv: createAndroidPersistKvPort(persistenceKey, 'plain'),
+    persistSecure: createAndroidPersistKvPort(persistenceKey, 'protected'),
+    device: createAndroidDevicePort(),
+    appControl: unavailableAppControlPort,
+    script: unavailableScriptPort,
+    connector: unavailableConnectorPort,
+    hotUpdate: unavailableHotUpdatePort,
+    logUpload: unavailableLogUploadPort,
+    topologyHost: unavailableTopologyHostPort,
+  },
+})
+
+export const createSampleWallpaperTerminalAssembly = (input: Readonly<{
+  readonly surfaceForm: SurfaceForm
+}>) => createSampleWallpaperConsoleAssembly({
+  platformPorts,
+  persistenceKey,
+  surfaceForm: input.surfaceForm,
+  surfaceHostSourcesByDisplayIndex: {
+    0: createAndroidSurfaceHostSource({surfaceKey: 'PRIMARY', displayIndex: 0}),
+    1: createAndroidSurfaceHostSource({surfaceKey: 'SECONDARY', displayIndex: 1}),
+  },
+})

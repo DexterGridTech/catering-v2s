@@ -8,8 +8,8 @@ consumerFaces: ["all"]
 owners: ["platform","backend","frontend-platform"]
 impacts: ["evidence","governance","runtime"]
 triggers: ["implementation","failure","review"]
-assertions: ["RUN_COUNT_NOT_RUN_COST_DOMINATES","FAILURE_FAMILY_CLOSED_BEFORE_NEXT","AUTHORIZED_FAILURE_DRIVES_REPAIR_AND_CONTINUATION","GOAL_HAS_NO_TOKEN_BUDGET_OR_EARLY_STOP","BROAD_RUN_IS_REGRESSION_NOT_DISCOVERY","PASS_WITHOUT_REVIEWED_FIXTURE_DENOMINATOR_IS_NOT_COMPLETION","RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN"]
-sourceRefs: ["doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md"]
+assertions: ["RUN_COUNT_NOT_RUN_COST_DOMINATES","FAILURE_FAMILY_CLOSED_BEFORE_NEXT","AUTHORIZED_FAILURE_DRIVES_REPAIR_AND_CONTINUATION","GOAL_HAS_NO_TOKEN_BUDGET_OR_EARLY_STOP","BROAD_RUN_IS_REGRESSION_NOT_DISCOVERY","PASS_WITHOUT_REVIEWED_FIXTURE_DENOMINATOR_IS_NOT_COMPLETION","RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN","NATIVE_SEMANTIC_PROP_MUST_BE_PLATFORM_SUPPORTED"]
+sourceRefs: ["doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md","project-memory/operations/execution-economics-and-failure-family-closure.md"]
 ---
 # 执行经济学与失败族关闭
 

@@ -1,5 +1,6 @@
 package com.catering.v2s.organization.application;
 
+import com.catering.v2s.organization.application.persistence.CommercialGroupCommandReceiptPersistence;
 import com.catering.v2s.organization.api.CommercialGroupReadback;
 import com.catering.v2s.platform.foundation.json.LegacyReceiptJson;
 import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +20,18 @@ import org.springframework.stereotype.Service;
 public final class CommercialGroupCommandReceiptService {
     private static final ObjectMapper JSON = new ObjectMapper().findAndRegisterModules();
     private final JdbcTemplate jdbc;
+    private final CommercialGroupCommandReceiptPersistence persistence;
     private final TimeProvider time;
 
     public CommercialGroupCommandReceiptService(JdbcTemplate jdbc, TimeProvider time) {
+        this(jdbc, new CommercialGroupCommandReceiptPersistence(jdbc), time);
+    }
+
+    @Autowired
+    public CommercialGroupCommandReceiptService(
+            JdbcTemplate jdbc, CommercialGroupCommandReceiptPersistence persistence, TimeProvider time) {
         this.jdbc = jdbc;
+        this.persistence = persistence;
         this.time = time;
     }
 
@@ -33,22 +43,14 @@ public final class CommercialGroupCommandReceiptService {
         String key = requiredKey(idempotencyKey);
         String requestHash = sha256(canonicalRequest);
         AdvisoryLock.acquire(jdbc, "commercial-group-receipt", workspaceUuid.toString(), key);
-        Receipt existing = jdbc.query(
-                "SELECT request_hash, response_json::text FROM organization.commercial_group_command_receipt WHERE "
-                        + "workspace_uuid=? AND idempotency_key=?",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, key);
-                },
-                result -> result.next() ? new Receipt(result.getString(1), result.getString(2)) : null);
+        CommercialGroupCommandReceiptPersistence.Receipt stored = persistence.read(workspaceUuid, key);
+        Receipt existing = stored == null ? null : new Receipt(stored.requestHash(), stored.responseJson());
         if (existing != null) {
             if (!requestHash.equals(existing.requestHash()))
                 throw new OrganizationHierarchyCommandReceiptService.OrganizationIdempotencyConflictException();
             CommercialGroupReadback replay = deserialize(existing.responseJson());
             if (LegacyReceiptJson.looksLikeLegacy(JSON, existing.responseJson())) {
-                jdbc.update(
-                        "UPDATE organization.commercial_group_command_receipt SET response_json=?::jsonb WHERE "
-                                + "workspace_uuid=? AND idempotency_key=?",
+                persistence.replaceResponse(
                         serialize(replay),
                         workspaceUuid,
                         key);
@@ -57,11 +59,7 @@ public final class CommercialGroupCommandReceiptService {
         }
         try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             CommercialGroupReadback result = command.get();
-            jdbc.update(
-                    "INSERT INTO organization.commercial_group_command_receipt (workspace_uuid, idempotency_key, "
-                            + "commercial_group_uuid, request_hash, response_json, state, created_at_epoch_millis) "
-                            + "VALUES "
-                            + "(?, ?, ?, ?, ?::jsonb, 'SUCCEEDED', ?)",
+            persistence.insertSucceeded(
                     workspaceUuid,
                     key,
                     result.id(),

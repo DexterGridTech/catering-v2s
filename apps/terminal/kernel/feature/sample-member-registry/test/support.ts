@@ -106,7 +106,6 @@ export const createTestRuntime = (
     runtimeName: 'sample-member-registry-test',
     environmentMode: 'TEST',
     persistenceKey: 'sample-member-registry',
-    storageTimeouts: {readMs: 50, writeMs: 50, resetMs: 50},
     persistenceDebounceMs: 0,
   },
 })

@@ -168,12 +168,23 @@ function featurePackages(root, layer, feature) {
     .sort()
 }
 
-function uiNativePackages(root) {
-  const packages = featurePackages(root, 'ui', 'feature')
-  for (const relativePath of ['ui/base/dev-host', 'ui/integration/sample-console']) {
-    const packageRoot = path.join(root, 'apps/terminal', relativePath)
-    if (fs.existsSync(path.join(packageRoot, 'package.json'))) packages.push(packageRoot)
-  }
+export function integrationPackages(root) {
+  const integrationRoot = path.join(root, 'apps/terminal/ui/integration')
+  if (!fs.existsSync(integrationRoot)) return []
+  return fs.readdirSync(integrationRoot, {withFileTypes: true})
+    .filter(entry => entry.isDirectory() && !['node_modules', '.turbo', '.expo'].includes(entry.name))
+    .map(entry => path.join(integrationRoot, entry.name))
+    .filter(directory => fs.existsSync(path.join(directory, 'package.json')))
+    .sort()
+}
+
+export function uiNativePackages(root) {
+  const packages = [
+    ...featurePackages(root, 'ui', 'feature'),
+    ...integrationPackages(root),
+  ]
+  const devHostRoot = path.join(root, 'apps/terminal/ui/base/dev-host')
+  if (fs.existsSync(path.join(devHostRoot, 'package.json'))) packages.push(devHostRoot)
   return [...new Set(packages)].sort()
 }
 

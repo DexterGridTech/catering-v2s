@@ -77,6 +77,7 @@ export const useInputFieldRegistry = ({
       readonly layout: InputFieldController['layout'];
       readonly maxLength?: number;
       readonly focusScopeId: string;
+      readonly keyboardPlacement: InputFieldController['keyboardPlacement'];
       }>,
     ): void => {
       const field = fieldsRef.current.get(token.fieldId);
@@ -85,6 +86,7 @@ export const useInputFieldRegistry = ({
       field.layout = config.layout;
       field.maxLength = config.maxLength;
       field.focusScopeId = config.focusScopeId;
+      field.keyboardPlacement = config.keyboardPlacement;
     },
     [],
   );

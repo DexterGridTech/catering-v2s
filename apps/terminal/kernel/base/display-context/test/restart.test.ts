@@ -86,7 +86,6 @@ describe('display-context restart and sync boundaries', () => {
       plainStorage: createDisplayPlatformPorts().persistKv,
       protectedStorage: createDisplayPlatformPorts().persistSecure,
       persistenceKey: 'display-context-sync-isolated',
-      storageTimeouts: {readMs: 50, writeMs: 50, resetMs: 50},
       persistenceDebounceMs: 0,
     })
     const result = runtime.applyAuthoritativeSync(displayRoleSliceName, {

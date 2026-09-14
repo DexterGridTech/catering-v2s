@@ -1,0 +1,11 @@
+{
+  "canvasRect": {"x": 0, "y": 0, "width": 2560, "height": 1600},
+  "roiRect": {"x": 0, "y": 0, "width": 2560, "height": 1600},
+  "maskRects": [
+    {"x": 48, "y": 196, "width": 2464, "height": 396},
+    {"x": 48, "y": 616, "width": 2464, "height": 396},
+    {"x": 48, "y": 1036, "width": 2464, "height": 396},
+    {"x": 48, "y": 1456, "width": 128, "height": 96}
+  ],
+  "minUnmaskedFraction": 0.25
+}

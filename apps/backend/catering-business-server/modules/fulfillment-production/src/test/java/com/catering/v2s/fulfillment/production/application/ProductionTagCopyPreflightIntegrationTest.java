@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
+import com.catering.v2s.fulfillment.production.application.persistence.ProductionTagOwnerPersistence;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,7 +46,8 @@ class ProductionTagCopyPreflightIntegrationTest {
                 .migrate();
         jdbc = new JdbcTemplate(
                 new DriverManagerDataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()));
-        service = new ProductionTagOwnerService(jdbc, MAPPER, () -> 1_785_000_000_000L);
+        service = new ProductionTagOwnerService(
+                new ProductionTagOwnerPersistence(jdbc, () -> 1_785_000_000_000L), MAPPER);
     }
 
     @AfterAll

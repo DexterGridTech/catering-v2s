@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
+import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
+import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationHierarchyService;
@@ -72,7 +74,10 @@ class ContractCommandServiceTest {
                 String.class,
                 id,
                 key);
-        ExtensionDefinitionService definitions = new ExtensionDefinitionService(jdbc, time, workspaceStatuses);
+        ExtensionDefinitionService definitions = new ExtensionDefinitionService(
+                new ExtensionDefinitionPersistence(jdbc, time),
+                new ExtensionCommandReceiptService(jdbc, time),
+                workspaceStatuses);
         OrganizationHierarchyService hierarchy = new OrganizationHierarchyService(jdbc, time);
         BusinessEntityService entities = new BusinessEntityService(jdbc, time, definitions, hierarchy);
         var region = hierarchy.create(workspaceId, "contract-test", "REGION", null, "region", "Region");

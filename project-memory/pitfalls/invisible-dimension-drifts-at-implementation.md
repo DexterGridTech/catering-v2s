@@ -72,6 +72,18 @@ IA 写 `bounded`、详设 §5.2 写 `Page` —— **两份设计文档在实施�
 **判别式**:我写下的这条约束,实施者**能做什么动作**来确认它成立?
 说不出那个动作 ⇒ 它就是一句属性描述,实施期一定走偏。
 
+## 2026-09-12 TER：逐轴几何推导必须穿过生产组件
+
+纯函数里的 `scaleX ≠ scaleY` 用例不能证明组件从 host/canvas 推导逐轴比例是正确的；
+如果组件 fixture 只使用等比宿主，交换或复制一条轴的公式也可能全绿。最低可执行约束是：
+
+- 在真实生产装配的组件级测试中使用宽高比不同的 host 与 canvas；
+- 选择靠近门槛、且一个轴在正确公式下越界而错误公式下落界内的点；
+- 暂时执行轴公式复制的坏变异，必须使该组件级断言真实变红，再恢复并复跑。
+
+这条是 `coordinateSpaceOf` 的已确认失败模式，适用于所有把测量值转换为业务坐标/阈值的
+组件入口；下游纯函数测试只能作为概念补充，不能替代生产推导点的反例。
+
 相关:[[practices.failure-condition-names-the-wrong-shape]] ·
 [[practices.collection-boundary-modes]] · [[pitfalls.claim-versus-behavior]] ·
 [[practices.cache-invalidation-granularity]]

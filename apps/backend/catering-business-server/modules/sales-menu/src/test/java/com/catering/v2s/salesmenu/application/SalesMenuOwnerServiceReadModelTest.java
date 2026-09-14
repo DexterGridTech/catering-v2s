@@ -260,7 +260,7 @@ class SalesMenuOwnerServiceReadModelTest {
 
     private static SalesMenuOwnerService service(SalesMenuRepository repository) {
         TimeProvider time = () -> 1_788_000_000_000L;
-        return new SalesMenuOwnerService(repository, time, new ObjectMapper());
+        return new SalesMenuOwnerService(new LegacySalesMenuPersistenceAdapter(repository), time, new ObjectMapper());
     }
 
     private static SalesMenuScope scope() {

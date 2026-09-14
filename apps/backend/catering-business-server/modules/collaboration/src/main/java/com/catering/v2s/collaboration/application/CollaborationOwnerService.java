@@ -1,5 +1,12 @@
 package com.catering.v2s.collaboration.application;
 
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence;
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.BindingPageRow;
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.BindingRow;
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.AuditRecord;
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.EnablementKind;
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.EnablementRow;
+import com.catering.v2s.collaboration.application.persistence.CollaborationOwnerPersistence.EnablementSnapshot;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
@@ -10,12 +17,9 @@ import com.catering.v2s.collaboration.api.CollaborationCatalogSource;
 import com.catering.v2s.collaboration.api.CollaborationCommandApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
-import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,20 +66,17 @@ public class CollaborationOwnerService
     private static final AuditChangePolicy REVOCATION_APPLIED = new AuditChangePolicy(
             "COLLABORATION_BINDING", "REVOCATION_APPLIED", java.util.Set.of("status", "externalRevokedAt"));
 
-    private final JdbcTemplate jdbc;
-    private final TimeProvider time;
+    private final CollaborationOwnerPersistence persistence;
     private final CollaborationCatalogSource catalog;
     private final PlatformGovernanceAuthorization platformAuthorization;
     private final CollaborationCommandReceiptService receipts;
 
     public CollaborationOwnerService(
-            JdbcTemplate jdbc,
-            TimeProvider time,
+            CollaborationOwnerPersistence persistence,
             CollaborationCatalogSource catalog,
             PlatformGovernanceAuthorization platformAuthorization,
             CollaborationCommandReceiptService receipts) {
-        this.jdbc = jdbc;
-        this.time = time;
+        this.persistence = persistence;
         this.catalog = catalog;
         this.platformAuthorization = platformAuthorization;
         this.receipts = receipts;
@@ -90,11 +90,8 @@ public class CollaborationOwnerService
         CollaborationCatalogSource.ExternalSystemDefinition definition = requireExternalSystem(externalSystemCode);
         return externalSystemReadback(
                 definition,
-                readEnablement(
-                        "collaboration.external_system_enablement",
-                        workspaceUuid,
-                        groupWorkspaceKey,
-                        externalSystemCode));
+                persistence.readEnablement(
+                        EnablementKind.EXTERNAL_SYSTEM, workspaceUuid, groupWorkspaceKey, externalSystemCode));
     }
 
     @Override
@@ -105,31 +102,15 @@ public class CollaborationOwnerService
         CollaborationCatalogSource.ProviderProfileDefinition definition = requireProviderProfile(providerCode);
         return providerReadback(
                 definition,
-                readEnablement(
-                        "collaboration.provider_profile_enablement", workspaceUuid, groupWorkspaceKey, providerCode));
+                persistence.readEnablement(
+                        EnablementKind.PROVIDER_PROFILE, workspaceUuid, groupWorkspaceKey, providerCode));
     }
 
     @Override
     @Transactional(readOnly = true)
     public CollaborationReadback.Tree readTree(UUID workspaceUuid, String groupWorkspaceKey) {
         requireScope(workspaceUuid, groupWorkspaceKey);
-        List<EnablementSnapshot> snapshots = jdbc.query(
-                "SELECT 'EXTERNAL_SYSTEM' AS enablement_kind, external_system_code AS code, status, version "
-                        + "FROM collaboration.external_system_enablement WHERE workspace_uuid=? "
-                        + "AND group_workspace_key=? UNION ALL SELECT 'PROVIDER_PROFILE' AS enablement_kind, "
-                        + "provider_code AS code, status, version "
-                        + "FROM collaboration.provider_profile_enablement "
-                        + "WHERE workspace_uuid=? AND group_workspace_key=?",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    statement.setObject(3, workspaceUuid);
-                    statement.setString(4, groupWorkspaceKey);
-                },
-                (result, rowNumber) -> new EnablementSnapshot(
-                        result.getString("enablement_kind"),
-                        result.getString("code"),
-                        new EnablementRow(result.getString("status"), result.getLong("version"))));
+        List<EnablementSnapshot> snapshots = persistence.readTree(workspaceUuid, groupWorkspaceKey);
         Map<String, EnablementRow> systems = snapshots.stream()
                 .filter(snapshot -> "EXTERNAL_SYSTEM".equals(snapshot.kind()))
                 .collect(Collectors.toUnmodifiableMap(EnablementSnapshot::code, EnablementSnapshot::enablement));
@@ -153,7 +134,7 @@ public class CollaborationOwnerService
         String normalizedCapability = CollaborationBindingPolicy.optional(capabilityClass);
         String normalizedNodeType = CollaborationBindingPolicy.optional(nodeType);
         Map<String, EnablementRow> providers =
-                readEnablements("collaboration.provider_profile_enablement", workspaceUuid, groupWorkspaceKey);
+                persistence.readEnablements(EnablementKind.PROVIDER_PROFILE, workspaceUuid, groupWorkspaceKey);
         return catalog.providerProfiles().stream()
                 .filter(definition -> ENABLED.equals(status(providers.get(definition.providerCode()))))
                 .filter(definition -> normalizedCapability == null
@@ -168,7 +149,6 @@ public class CollaborationOwnerService
     @Transactional(readOnly = true)
     public CollaborationReadback.OwnerBinding readBinding(
             UUID workspaceUuid, String groupWorkspaceKey, UUID bindingRef) {
-        requireScope(workspaceUuid, groupWorkspaceKey);
         return ownerBinding(readBindingRow(workspaceUuid, groupWorkspaceKey, bindingRef));
     }
 
@@ -197,132 +177,21 @@ public class CollaborationOwnerService
         if (normalizedPageSize < 1 || normalizedPageSize > MAX_PAGE_SIZE)
             throw problem("VALIDATION_ERROR", 422, "pageSize must be between 1 and 100");
         long offset = ((long) normalizedPage - 1L) * normalizedPageSize;
-        String sql = "WITH RECURSIVE owner_bindings AS ("
-                + "SELECT binding_ref, provider_code, capability_class, node_type, node_ref, "
-                + "binding_display_name, external_owner_id, status, version, created_at_epoch_millis, "
-                + "status_changed_at_epoch_millis FROM collaboration.owner_binding "
-                + "WHERE workspace_uuid=? AND group_workspace_key=? AND provider_code=?"
-                + "), requested_nodes AS ("
-                + "SELECT DISTINCT node_type, node_ref FROM owner_bindings"
-                + "), node_seeds(target_node_type, target_node_ref, id, parent_id, path_node_type, code, name) AS ("
-                + "SELECT requested.node_type, requested.node_ref, node.id, node.parent_id, node.node_type, "
-                + "node.code, node.name FROM requested_nodes requested JOIN organization.organization_node node "
-                + "ON requested.node_type IN ('REGION','PROJECT') AND requested.node_type=node.node_type "
-                + "AND requested.node_ref=node.id::text WHERE node.workspace_uuid=? "
-                + "AND node.group_workspace_key=? UNION ALL "
-                + "SELECT requested.node_type, requested.node_ref, project.id, project.parent_id, project.node_type, "
-                + "project.code, project.name FROM requested_nodes requested JOIN organization.store store "
-                + "ON requested.node_type='STORE' AND requested.node_ref=store.id::text "
-                + "JOIN organization.organization_node project ON project.id=store.project_id "
-                + "WHERE store.workspace_uuid=? AND store.group_workspace_key=? "
-                + "AND project.workspace_uuid=? AND project.group_workspace_key=?"
-                + "), ancestry(target_node_type, target_node_ref, id, parent_id, "
-                + "path_node_type, code, name, depth) AS ("
-                + "SELECT target_node_type, target_node_ref, id, parent_id, path_node_type, code, name, "
-                + "0 AS depth FROM node_seeds "
-                + "UNION ALL SELECT ancestry.target_node_type, ancestry.target_node_ref, parent.id, parent.parent_id, "
-                + "parent.node_type, parent.code, parent.name, ancestry.depth + 1 "
-                + "FROM organization.organization_node parent "
-                + "JOIN ancestry ON ancestry.parent_id=parent.id WHERE parent.workspace_uuid=? "
-                + "AND parent.group_workspace_key=?"
-                + "), node_paths AS ("
-                + "SELECT target_node_type, target_node_ref, jsonb_agg(jsonb_build_object('ref', id, 'code', code, "
-                + "'name', name, 'nodeType', path_node_type) ORDER BY depth DESC) AS node_path "
-                + "FROM ancestry GROUP BY target_node_type, target_node_ref"
-                + "), owner_node_path AS ("
-                + "SELECT 'COMMERCIAL_GROUP' AS node_type, commercial_group_uuid::text AS node_ref, "
-                + "jsonb_build_array(jsonb_build_object('ref', commercial_group_uuid, 'code', commercial_group_code, "
-                + "'name', commercial_group_name, 'nodeType', 'GROUP')) AS node_path "
-                + "FROM organization.commercial_group group_node JOIN requested_nodes requested "
-                + "ON requested.node_type='COMMERCIAL_GROUP' "
-                + "AND requested.node_ref=group_node.commercial_group_uuid::text "
-                + "WHERE group_node.group_workspace_key=? UNION ALL "
-                + "SELECT node.target_node_type, node.target_node_ref, node_paths.node_path FROM node_seeds node "
-                + "JOIN node_paths ON node_paths.target_node_type=node.target_node_type "
-                + "AND node_paths.target_node_ref=node.target_node_ref "
-                + "WHERE node.target_node_type IN ('REGION','PROJECT') "
-                + "UNION ALL SELECT 'HEAD_COMPANY', head_company.id::text, "
-                + "jsonb_build_array(jsonb_build_object('ref', head_company.id, 'code', head_company.code, "
-                + "'name', head_company.name, 'nodeType', 'HEAD_COMPANY')) AS node_path "
-                + "FROM organization.head_company head_company JOIN requested_nodes requested "
-                + "ON requested.node_type='HEAD_COMPANY' AND requested.node_ref=head_company.id::text "
-                + "WHERE head_company.workspace_uuid=? AND head_company.group_workspace_key=? UNION ALL "
-                + "SELECT 'STORE', store.id::text, node_paths.node_path || jsonb_build_array(jsonb_build_object("
-                + "'ref', store.id, 'code', store.code, 'name', store.name, 'nodeType', 'STORE')) AS node_path "
-                + "FROM organization.store store JOIN requested_nodes requested "
-                + "ON requested.node_type='STORE' AND requested.node_ref=store.id::text "
-                + "JOIN node_paths ON node_paths.target_node_type='STORE' "
-                + "AND node_paths.target_node_ref=store.id::text "
-                + "WHERE store.workspace_uuid=? AND store.group_workspace_key=?"
-                + ") SELECT binding.binding_ref, binding.provider_code, binding.capability_class, "
-                + "binding.node_type, binding.node_ref, binding.binding_display_name, "
-                + "binding.external_owner_id, binding.status, binding.version, "
-                + "binding.created_at_epoch_millis, binding.status_changed_at_epoch_millis, "
-                + "node_path.node_path::text AS node_path, COUNT(*) OVER() AS total "
-                + "FROM owner_bindings binding LEFT JOIN owner_node_path node_path "
-                + "ON node_path.node_type=binding.node_type AND node_path.node_ref=binding.node_ref "
-                + "WHERE (?::text IS NULL OR COALESCE(binding.binding_display_name, '') ILIKE ? ESCAPE E'\\\\') "
-                + "AND (?::text IS NULL OR CONCAT_WS(' ', binding.node_ref, "
-                + "COALESCE(node_path.node_path::text, '')) "
-                + "ILIKE ? ESCAPE E'\\\\') ORDER BY "
-                + bindingOrderBy(normalizedSortKey, normalizedSortDirection)
-                + " LIMIT ? OFFSET ?";
-        List<BindingPageRow> rows = jdbc.query(
-                sql,
-                statement -> {
-                    int index = 1;
-                    statement.setObject(index++, workspaceUuid);
-                    statement.setString(index++, groupWorkspaceKey);
-                    statement.setString(index++, normalizedProvider);
-                    statement.setObject(index++, workspaceUuid);
-                    statement.setString(index++, groupWorkspaceKey);
-                    statement.setObject(index++, workspaceUuid);
-                    statement.setString(index++, groupWorkspaceKey);
-                    statement.setObject(index++, workspaceUuid);
-                    statement.setString(index++, groupWorkspaceKey);
-                    statement.setObject(index++, workspaceUuid);
-                    statement.setString(index++, groupWorkspaceKey);
-                    statement.setString(index++, groupWorkspaceKey);
-                    statement.setObject(index++, workspaceUuid);
-                    statement.setString(index++, groupWorkspaceKey);
-                    statement.setObject(index++, workspaceUuid);
-                    statement.setString(index++, groupWorkspaceKey);
-                    statement.setString(index++, normalizedBindingName);
-                    statement.setString(
-                            index++, normalizedBindingName == null ? null : likePattern(normalizedBindingName));
-                    statement.setString(index++, normalizedNodeQueryText);
-                    statement.setString(
-                            index++, normalizedNodeQueryText == null ? null : likePattern(normalizedNodeQueryText));
-                    statement.setInt(index++, normalizedPageSize);
-                    statement.setLong(index, offset);
-                },
-                (result, rowNumber) -> new BindingPageRow(
-                        ownerBinding(
-                                new BindingRow(
-                                        result.getObject("binding_ref", UUID.class),
-                                        workspaceUuid,
-                                        groupWorkspaceKey,
-                                        null,
-                                        result.getString("provider_code"),
-                                        result.getString("capability_class"),
-                                        result.getString("node_type"),
-                                        result.getString("node_ref"),
-                                        result.getString("binding_display_name"),
-                                        result.getString("external_owner_id"),
-                                        null,
-                                        result.getString("status"),
-                                        null,
-                                        null,
-                                        null,
-                                        result.getLong("version"),
-                                        result.getLong("created_at_epoch_millis"),
-                                        result.getLong("status_changed_at_epoch_millis"),
-                                        0L),
-                                parseNodePath(result.getString("node_path"))),
-                        result.getLong("total")));
+        List<BindingPageRow> rows = persistence.pageBindings(
+                workspaceUuid,
+                groupWorkspaceKey,
+                normalizedProvider,
+                normalizedBindingName,
+                normalizedNodeQueryText,
+                normalizedSortKey,
+                normalizedSortDirection,
+                normalizedPageSize,
+                offset);
         long total = rows.isEmpty() ? 0L : rows.get(0).total();
         return new CollaborationReadback.OwnerBindingPage(
-                rows.stream().map(BindingPageRow::readback).toList(),
+                rows.stream()
+                        .map(row -> ownerBinding(row.binding(), parseNodePath(row.nodePathJson())))
+                        .toList(),
                 new CollaborationReadback.OwnerBindingPage.Metadata(
                         normalizedBindingName,
                         normalizedNodeQueryText,
@@ -341,24 +210,9 @@ public class CollaborationOwnerService
         String normalizedProvider = CollaborationBindingPolicy.required(providerCode, "providerCode");
         String normalizedNodeType = CollaborationBindingPolicy.required(nodeType, "nodeType");
         String normalizedNodeRef = CollaborationBindingPolicy.required(nodeRef, "nodeRef");
-        return jdbc
-                .query(
-                        "SELECT binding_ref, external_system_code, provider_code, capability_class, "
-                                + "node_type, node_ref, "
-                                + "binding_display_name, external_owner_id, authorization_ref, status, "
-                                + "unbind_requested_at_epoch_millis, external_revoked_at_epoch_millis, "
-                                + "deleted_at_epoch_millis, version, created_at_epoch_millis, "
-                                + "status_changed_at_epoch_millis, updated_at_epoch_millis "
-                                + "FROM collaboration.owner_binding WHERE workspace_uuid=? AND group_workspace_key=? "
-                                + "AND provider_code=? AND node_type=? AND node_ref=? ORDER BY binding_ref",
-                        statement -> {
-                            statement.setObject(1, workspaceUuid);
-                            statement.setString(2, groupWorkspaceKey);
-                            statement.setString(3, normalizedProvider);
-                            statement.setString(4, normalizedNodeType);
-                            statement.setString(5, normalizedNodeRef);
-                        },
-                        (result, rowNumber) -> mapBinding(result))
+        return persistence
+                .findBindingsForNode(
+                        workspaceUuid, groupWorkspaceKey, normalizedProvider, normalizedNodeType, normalizedNodeRef)
                 .stream()
                 .map(this::ownerBinding)
                 .toList();
@@ -389,14 +243,13 @@ public class CollaborationOwnerService
                 () -> externalSystemReadback(
                         definition,
                         transitionEnablement(
-                                "collaboration.external_system_enablement",
                                 command.workspaceUuid(),
                                 command.groupWorkspaceKey(),
                                 code,
                                 targetStatus,
                                 command.expectedVersion(),
                                 command.actor(),
-                                true)));
+                                EnablementKind.EXTERNAL_SYSTEM)));
     }
 
     @Override
@@ -424,14 +277,13 @@ public class CollaborationOwnerService
                 () -> providerReadback(
                         definition,
                         transitionEnablement(
-                                "collaboration.provider_profile_enablement",
                                 command.workspaceUuid(),
                                 command.groupWorkspaceKey(),
                                 code,
                                 targetStatus,
                                 command.expectedVersion(),
                                 command.actor(),
-                                false)));
+                                EnablementKind.PROVIDER_PROFILE)));
     }
 
     @Override
@@ -638,62 +490,33 @@ public class CollaborationOwnerService
     }
 
     private EnablementRow transitionEnablement(
-            String table,
             UUID workspaceUuid,
             String groupWorkspaceKey,
             String code,
             String targetStatus,
             long expectedVersion,
             AuditActor actor,
-            boolean externalSystem) {
-        lockEnablement(workspaceUuid, groupWorkspaceKey, table, code);
-        EnablementRow current = readEnablementForUpdate(table, workspaceUuid, groupWorkspaceKey, code);
+            EnablementKind kind) {
+        persistence.lockEnablement(kind, workspaceUuid, groupWorkspaceKey, code);
+        EnablementRow current = persistence.readEnablementForUpdate(kind, workspaceUuid, groupWorkspaceKey, code);
         long currentVersion = current == null ? 0L : current.version();
         if (currentVersion != expectedVersion) throw problem("VERSION_CONFLICT", 409, "enablement version has changed");
         if (current == null && DISABLED.equals(targetStatus)) return null;
-        long now = time.currentEpochMillis();
         if (current == null) {
-            jdbc.update(
-                    "INSERT INTO " + table
-                            + " (workspace_uuid, group_workspace_key, "
-                            + (externalSystem ? "external_system_code" : "provider_code")
-                            + ", status, version, created_at_epoch_millis, updated_at_epoch_millis) "
-                            + "VALUES (?, ?, ?, ?, 1, ?, ?)",
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    code,
-                    targetStatus,
-                    now,
-                    now);
-        } else if (jdbc.update(
-                        "UPDATE " + table + " SET status=?, version=version+1, updated_at_epoch_millis=? "
-                                + "WHERE workspace_uuid=? AND group_workspace_key=? AND "
-                                + (externalSystem ? "external_system_code" : "provider_code")
-                                + "=? AND version=?",
-                        targetStatus,
-                        now,
-                        workspaceUuid,
-                        groupWorkspaceKey,
-                        code,
-                        expectedVersion)
+            persistence.insertEnablement(kind, workspaceUuid, groupWorkspaceKey, code, targetStatus);
+        } else if (persistence.updateEnablement(
+                        kind, workspaceUuid, groupWorkspaceKey, code, targetStatus, expectedVersion)
                 != 1) throw problem("VERSION_CONFLICT", 409, "enablement version has changed");
         audit(
                 workspaceUuid,
                 groupWorkspaceKey,
                 code,
-                externalSystem ? "EXTERNAL_SYSTEM" : "PROVIDER_PROFILE",
+                kind == EnablementKind.EXTERNAL_SYSTEM ? "EXTERNAL_SYSTEM" : "PROVIDER_PROFILE",
                 "STATUS_CHANGED",
                 actor,
                 ENABLEMENT_CHANGED,
                 List.of(new AuditChange("status", current == null ? null : current.status(), targetStatus)));
-        return readEnablement(table, workspaceUuid, groupWorkspaceKey, code);
-    }
-
-    private void lockEnablement(UUID workspaceUuid, String groupWorkspaceKey, String table, String code) {
-        jdbc.queryForList(
-                "SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), hashtext(CAST(? AS text)))",
-                workspaceUuid.toString(),
-                groupWorkspaceKey + ":" + table + ":" + code);
+        return persistence.readEnablement(kind, workspaceUuid, groupWorkspaceKey, code);
     }
 
     private CollaborationReadback.OwnerBinding insertBinding(
@@ -703,36 +526,22 @@ public class CollaborationOwnerService
             CollaborationBindingPolicy.CreateShape shape,
             String bindingDisplayName,
             AuditActor actor) {
-        UUID bindingRef = UUID.randomUUID();
-        long now = time.currentEpochMillis();
-        BindingRow created = jdbc.query(
-                "INSERT INTO collaboration.owner_binding (binding_ref, workspace_uuid, group_workspace_key, "
-                        + "external_system_code, provider_code, capability_class, node_type, node_ref, "
-                        + "binding_display_name, external_owner_id, authorization_ref, status, version, "
-                        + "created_at_epoch_millis, status_changed_at_epoch_millis, updated_at_epoch_millis) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, 1, ?, ?, ?) RETURNING "
-                        + bindingColumns(),
-                statement -> {
-                    statement.setObject(1, bindingRef);
-                    statement.setObject(2, workspaceUuid);
-                    statement.setString(3, groupWorkspaceKey);
-                    statement.setString(4, provider.externalSystemCode());
-                    statement.setString(5, provider.providerCode());
-                    statement.setString(6, shape.capabilityClass());
-                    statement.setString(7, shape.nodeType());
-                    statement.setString(8, shape.nodeRef());
-                    statement.setString(9, CollaborationBindingPolicy.optional(bindingDisplayName));
-                    statement.setString(10, shape.externalOwnerId());
-                    statement.setString(11, shape.initialStatus());
-                    statement.setLong(12, now);
-                    statement.setLong(13, now);
-                    statement.setLong(14, now);
-                },
-                result -> result.next() ? mapBinding(result) : notFound("binding"));
+        BindingRow created = persistence.insertBinding(
+                workspaceUuid,
+                groupWorkspaceKey,
+                provider.externalSystemCode(),
+                provider.providerCode(),
+                shape.capabilityClass(),
+                shape.nodeType(),
+                shape.nodeRef(),
+                CollaborationBindingPolicy.optional(bindingDisplayName),
+                shape.externalOwnerId(),
+                shape.initialStatus());
+        if (created == null) throw problem("NOT_FOUND", 404, "binding was not created");
         audit(
                 workspaceUuid,
                 groupWorkspaceKey,
-                bindingRef.toString(),
+                created.bindingRef().toString(),
                 "OWNER_BINDING",
                 "BINDING_CREATED",
                 actor,
@@ -762,19 +571,13 @@ public class CollaborationOwnerService
         String ownerId = CollaborationBindingPolicy.validateUpdate(provider, externalOwnerId);
         if (current.version() != expectedVersion) throw problem("VERSION_CONFLICT", 409, "binding version has changed");
         String normalizedDisplayName = CollaborationBindingPolicy.optional(bindingDisplayName);
-        long now = time.currentEpochMillis();
-        if (jdbc.update(
-                        "UPDATE collaboration.owner_binding SET binding_display_name=?, external_owner_id=?, "
-                                + "version=version+1, updated_at_epoch_millis=? WHERE binding_ref=? "
-                                + "AND workspace_uuid=? AND group_workspace_key=? AND version=? AND status<>?",
-                        normalizedDisplayName,
-                        ownerId,
-                        now,
+        if (persistence.updateBinding(
                         current.bindingRef(),
                         current.workspaceUuid(),
                         current.groupWorkspaceKey(),
-                        expectedVersion,
-                        DELETED)
+                        normalizedDisplayName,
+                        ownerId,
+                        expectedVersion)
                 != 1) throw problem("VERSION_CONFLICT", 409, "binding version has changed");
         BindingRow updated = readBindingRow(current.workspaceUuid(), current.groupWorkspaceKey(), current.bindingRef());
         audit(
@@ -802,25 +605,8 @@ public class CollaborationOwnerService
         if (REQUIRES_ADAPTER_UNBIND.equals(provider.unbindKind()) && initial.externalRevokedAt() == null) {
             throw problem("ADAPTER_UNBIND_REQUIRED", 409, "adapter revocation is required before deletion");
         }
-        long now = time.currentEpochMillis();
-        BindingRow deleted = jdbc.query(
-                "UPDATE collaboration.owner_binding SET status=?, deleted_at_epoch_millis=?, "
-                        + "status_changed_at_epoch_millis=?, version=version+1, updated_at_epoch_millis=? "
-                        + "WHERE binding_ref=? "
-                        + "AND workspace_uuid=? AND group_workspace_key=? AND version=? AND status<>? RETURNING "
-                        + bindingColumns(),
-                statement -> {
-                    statement.setString(1, DELETED);
-                    statement.setLong(2, now);
-                    statement.setLong(3, now);
-                    statement.setLong(4, now);
-                    statement.setObject(5, initial.bindingRef());
-                    statement.setObject(6, initial.workspaceUuid());
-                    statement.setString(7, initial.groupWorkspaceKey());
-                    statement.setLong(8, expectedVersion);
-                    statement.setString(9, DELETED);
-                },
-                result -> result.next() ? mapBinding(result) : null);
+        BindingRow deleted = persistence.deleteBinding(
+                initial.bindingRef(), initial.workspaceUuid(), initial.groupWorkspaceKey(), expectedVersion);
         if (deleted == null) throw problem("VERSION_CONFLICT", 409, "binding version has changed");
         audit(
                 initial.workspaceUuid(),
@@ -832,7 +618,7 @@ public class CollaborationOwnerService
                 BINDING_DELETED,
                 List.of(
                         new AuditChange("status", initial.status(), DELETED),
-                        new AuditChange("deletedAt", null, Long.toString(now))));
+                        new AuditChange("deletedAt", null, Long.toString(deleted.deletedAt()))));
         return ownerBinding(deleted);
     }
 
@@ -856,18 +642,8 @@ public class CollaborationOwnerService
                 throw problem("EXTERNAL_OWNER_ID_MISMATCH", 422, "effective binding owner does not match callback");
             return ownerBinding(current);
         }
-        long now = time.currentEpochMillis();
-        if (jdbc.update(
-                        "UPDATE collaboration.owner_binding SET external_owner_id=?, authorization_ref=?, status=?, "
-                                + "status_changed_at_epoch_millis=?, version=version+1, updated_at_epoch_millis=? "
-                                + "WHERE binding_ref=? AND version=?",
-                        externalOwnerId,
-                        authorizationReference,
-                        CollaborationBindingPolicy.EFFECTIVE,
-                        now,
-                        now,
-                        current.bindingRef(),
-                        current.version())
+        if (persistence.applyAuthorization(
+                        current.bindingRef(), externalOwnerId, authorizationReference, current.version())
                 != 1) throw problem("VERSION_CONFLICT", 409, "binding version has changed");
         BindingRow updated = readBindingRow(current.workspaceUuid(), current.groupWorkspaceKey(), current.bindingRef());
         audit(
@@ -893,17 +669,7 @@ public class CollaborationOwnerService
         }
         if (DELETED.equals(current.status())) return ownerBinding(current);
         if (current.externalRevokedAt() != null && INVALID.equals(current.status())) return ownerBinding(current);
-        long now = time.currentEpochMillis();
-        if (jdbc.update(
-                        "UPDATE collaboration.owner_binding SET external_revoked_at_epoch_millis=?, status=?, "
-                                + "status_changed_at_epoch_millis=?, version=version+1, updated_at_epoch_millis=? "
-                                + "WHERE binding_ref=? AND version=?",
-                        now,
-                        INVALID,
-                        now,
-                        now,
-                        current.bindingRef(),
-                        current.version())
+        if (persistence.applyRevocation(current.bindingRef(), current.version())
                 != 1) throw problem("VERSION_CONFLICT", 409, "binding version has changed");
         BindingRow updated = readBindingRow(current.workspaceUuid(), current.groupWorkspaceKey(), current.bindingRef());
         audit(
@@ -916,7 +682,8 @@ public class CollaborationOwnerService
                 REVOCATION_APPLIED,
                 List.of(
                         new AuditChange("status", current.status(), INVALID),
-                        new AuditChange("externalRevokedAt", null, Long.toString(now))));
+                        new AuditChange(
+                                "externalRevokedAt", null, Objects.toString(updated.externalRevokedAt(), null))));
         return ownerBinding(updated);
     }
 
@@ -948,110 +715,17 @@ public class CollaborationOwnerService
     private BindingRow readBindingRow(UUID workspaceUuid, String groupWorkspaceKey, UUID bindingRef) {
         requireScope(workspaceUuid, groupWorkspaceKey);
         if (bindingRef == null) throw problem("VALIDATION_ERROR", 422, "bindingRef is required");
-        return jdbc.query(
-                bindingSelect("WHERE binding_ref=? AND workspace_uuid=? AND group_workspace_key=?"),
-                statement -> {
-                    statement.setObject(1, bindingRef);
-                    statement.setObject(2, workspaceUuid);
-                    statement.setString(3, groupWorkspaceKey);
-                },
-                result -> result.next() ? mapBinding(result) : notFound("binding"));
+        return requireBinding(persistence.readBinding(workspaceUuid, groupWorkspaceKey, bindingRef));
     }
 
     private BindingRow readBindingRowForUpdate(UUID workspaceUuid, String groupWorkspaceKey, UUID bindingRef) {
-        return jdbc.query(
-                bindingSelect("WHERE binding_ref=? AND workspace_uuid=? AND group_workspace_key=? FOR UPDATE"),
-                statement -> {
-                    statement.setObject(1, bindingRef);
-                    statement.setObject(2, workspaceUuid);
-                    statement.setString(3, groupWorkspaceKey);
-                },
-                result -> result.next() ? mapBinding(result) : notFound("binding"));
+        if (bindingRef == null) throw problem("VALIDATION_ERROR", 422, "bindingRef is required");
+        return requireBinding(persistence.readBindingForUpdate(workspaceUuid, groupWorkspaceKey, bindingRef));
     }
 
     private BindingRow readBindingByReference(UUID bindingRef) {
         if (bindingRef == null) throw problem("VALIDATION_ERROR", 422, "bindingRef is required");
-        return jdbc.query(
-                bindingSelect("WHERE binding_ref=?"),
-                statement -> statement.setObject(1, bindingRef),
-                result -> result.next() ? mapBinding(result) : notFound("binding"));
-    }
-
-    private static String bindingSelect(String predicate) {
-        return "SELECT " + bindingColumns() + " FROM collaboration.owner_binding " + predicate;
-    }
-
-    private static String bindingColumns() {
-        return "binding_ref, workspace_uuid, group_workspace_key, external_system_code, provider_code, "
-                + "capability_class, node_type, node_ref, binding_display_name, external_owner_id, authorization_ref, "
-                + "status, unbind_requested_at_epoch_millis, external_revoked_at_epoch_millis, "
-                + "deleted_at_epoch_millis, version, created_at_epoch_millis, status_changed_at_epoch_millis, "
-                + "updated_at_epoch_millis";
-    }
-
-    private BindingRow mapBinding(ResultSet result) throws SQLException {
-        return new BindingRow(
-                result.getObject("binding_ref", UUID.class),
-                result.getObject("workspace_uuid", UUID.class),
-                result.getString("group_workspace_key"),
-                result.getString("external_system_code"),
-                result.getString("provider_code"),
-                result.getString("capability_class"),
-                result.getString("node_type"),
-                result.getString("node_ref"),
-                result.getString("binding_display_name"),
-                result.getString("external_owner_id"),
-                result.getString("authorization_ref"),
-                result.getString("status"),
-                result.getObject("unbind_requested_at_epoch_millis", Long.class),
-                result.getObject("external_revoked_at_epoch_millis", Long.class),
-                result.getObject("deleted_at_epoch_millis", Long.class),
-                result.getLong("version"),
-                result.getLong("created_at_epoch_millis"),
-                result.getLong("status_changed_at_epoch_millis"),
-                result.getLong("updated_at_epoch_millis"));
-    }
-
-    private EnablementRow readEnablement(String table, UUID workspaceUuid, String groupWorkspaceKey, String code) {
-        return jdbc.query(
-                "SELECT status, version FROM " + table + " WHERE workspace_uuid=? AND group_workspace_key=? AND "
-                        + (table.contains("external_system") ? "external_system_code" : "provider_code") + "=?",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    statement.setString(3, code);
-                },
-                result -> result.next() ? new EnablementRow(result.getString(1), result.getLong(2)) : null);
-    }
-
-    private EnablementRow readEnablementForUpdate(
-            String table, UUID workspaceUuid, String groupWorkspaceKey, String code) {
-        return jdbc.query(
-                "SELECT status, version FROM " + table + " WHERE workspace_uuid=? AND group_workspace_key=? AND "
-                        + (table.contains("external_system") ? "external_system_code" : "provider_code")
-                        + "=? FOR UPDATE",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    statement.setString(3, code);
-                },
-                result -> result.next() ? new EnablementRow(result.getString(1), result.getLong(2)) : null);
-    }
-
-    private Map<String, EnablementRow> readEnablements(String table, UUID workspaceUuid, String groupWorkspaceKey) {
-        String codeColumn = table.contains("external_system") ? "external_system_code" : "provider_code";
-        return jdbc
-                .query(
-                        "SELECT " + codeColumn + ", status, version FROM " + table
-                                + " WHERE workspace_uuid=? AND group_workspace_key=?",
-                        statement -> {
-                            statement.setObject(1, workspaceUuid);
-                            statement.setString(2, groupWorkspaceKey);
-                        },
-                        (result, rowNumber) -> Map.entry(
-                                result.getString(1), new EnablementRow(result.getString(2), result.getLong(3))))
-                .stream()
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+        return requireBinding(persistence.readBindingByReference(bindingRef));
     }
 
     private CollaborationCatalogSource.ExternalSystemDefinition requireExternalSystem(String code) {
@@ -1071,8 +745,8 @@ public class CollaborationOwnerService
     }
 
     private void requireProviderEnabled(UUID workspaceUuid, String groupWorkspaceKey, String providerCode) {
-        EnablementRow enablement = readEnablement(
-                "collaboration.provider_profile_enablement", workspaceUuid, groupWorkspaceKey, providerCode);
+        EnablementRow enablement = persistence.readEnablement(
+                EnablementKind.PROVIDER_PROFILE, workspaceUuid, groupWorkspaceKey, providerCode);
         if (!ENABLED.equals(status(enablement))) {
             throw problem("PROVIDER_NOT_ENABLED", 422, "provider profile is not enabled for this workspace");
         }
@@ -1138,67 +812,7 @@ public class CollaborationOwnerService
     }
 
     private List<CollaborationReadback.OrganizationPathNode> readNodePath(BindingRow row) {
-        String path = jdbc.query(
-                "WITH RECURSIVE target AS ("
-                        + "SELECT ?::text AS target_type, ?::uuid AS target_id, ?::uuid AS workspace_uuid, "
-                        + "?::text AS group_workspace_key"
-                        + "), store_target AS ("
-                        + "SELECT target.target_type, target.target_id, store.id, store.code, store.name, "
-                        + "store.project_id FROM target JOIN organization.store store ON target.target_type='STORE' "
-                        + "AND store.id=target.target_id AND store.workspace_uuid=target.workspace_uuid "
-                        + "AND store.group_workspace_key=target.group_workspace_key"
-                        + "), node_seeds AS ("
-                        + "SELECT target.target_type, target.target_id, node.id, node.parent_id, node.node_type, "
-                        + "node.code, node.name, 0 AS depth FROM target JOIN organization.organization_node node "
-                        + "ON target.target_type IN ('REGION','PROJECT') AND node.id=target.target_id "
-                        + "AND node.workspace_uuid=target.workspace_uuid "
-                        + "AND node.group_workspace_key=target.group_workspace_key "
-                        + "UNION ALL SELECT store_target.target_type, store_target.target_id, project.id, "
-                        + "project.parent_id, project.node_type, project.code, project.name, 0 AS depth "
-                        + "FROM store_target JOIN target ON TRUE JOIN organization.organization_node project "
-                        + "ON project.id=store_target.project_id AND project.workspace_uuid=target.workspace_uuid "
-                        + "AND project.group_workspace_key=target.group_workspace_key"
-                        + "), ancestry AS ("
-                        + "SELECT target_type, target_id, id, parent_id, node_type, code, name, depth FROM node_seeds "
-                        + "UNION ALL SELECT ancestry.target_type, ancestry.target_id, parent.id, parent.parent_id, "
-                        + "parent.node_type, parent.code, parent.name, ancestry.depth+1 "
-                        + "FROM ancestry JOIN target ON TRUE "
-                        + "JOIN organization.organization_node parent ON parent.id=ancestry.parent_id "
-                        + "AND parent.workspace_uuid=target.workspace_uuid "
-                        + "AND parent.group_workspace_key=target.group_workspace_key"
-                        + "), node_path AS ("
-                        + "SELECT target_type, target_id, jsonb_agg(jsonb_build_object('ref', id, 'code', code, "
-                        + "'name', name, 'nodeType', node_type) ORDER BY depth DESC) AS path FROM ancestry "
-                        + "GROUP BY target_type, target_id"
-                        + ") SELECT CASE "
-                        + "WHEN target.target_type='COMMERCIAL_GROUP' THEN "
-                        + "(SELECT jsonb_build_array(jsonb_build_object("
-                        + "'ref', group_node.commercial_group_uuid, 'code', group_node.commercial_group_code, "
-                        + "'name', group_node.commercial_group_name, 'nodeType', 'GROUP')) "
-                        + "FROM organization.commercial_group "
-                        + "group_node WHERE group_node.commercial_group_uuid=target.target_id "
-                        + "AND group_node.group_workspace_key=target.group_workspace_key) "
-                        + "WHEN target.target_type='HEAD_COMPANY' THEN (SELECT jsonb_build_array(jsonb_build_object("
-                        + "'ref', head_company.id, 'code', head_company.code, 'name', head_company.name, "
-                        + "'nodeType', 'HEAD_COMPANY')) FROM organization.head_company head_company "
-                        + "WHERE head_company.id="
-                        + "target.target_id AND head_company.workspace_uuid=target.workspace_uuid "
-                        + "AND head_company.group_workspace_key=target.group_workspace_key) "
-                        + "WHEN target.target_type='STORE' THEN COALESCE(node_path.path, '[]'::jsonb) || "
-                        + "COALESCE((SELECT jsonb_build_array(jsonb_build_object('ref', store_target.id, 'code', "
-                        + "store_target.code, 'name', store_target.name, 'nodeType', 'STORE')) "
-                        + "FROM store_target), '[]'::jsonb) "
-                        + "ELSE COALESCE(node_path.path, '[]'::jsonb) END::text AS node_path FROM target "
-                        + "LEFT JOIN node_path ON node_path.target_type=target.target_type "
-                        + "AND node_path.target_id=target.target_id",
-                statement -> {
-                    statement.setString(1, row.nodeType());
-                    statement.setObject(2, UUID.fromString(row.nodeRef()));
-                    statement.setObject(3, row.workspaceUuid());
-                    statement.setString(4, row.groupWorkspaceKey());
-                },
-                result -> result.next() ? result.getString("node_path") : "[]");
-        return parseNodePath(path);
+        return parseNodePath(persistence.readNodePath(row));
     }
 
     private static List<CollaborationReadback.OrganizationPathNode> parseNodePath(String value) {
@@ -1283,22 +897,6 @@ public class CollaborationOwnerService
     }
 
     /** The caller supplies only the closed vocabulary above; raw query input never reaches SQL. */
-    private static String bindingOrderBy(String sortKey, String sortDirection) {
-        String expression =
-                switch (sortKey) {
-                    case "NODE" -> "COALESCE(node_path.node_path::text, binding.node_ref)";
-                    case "BUSINESS" -> "COALESCE(binding.capability_class, '')";
-                    case "EXTERNAL_OWNER_ID" -> "COALESCE(binding.external_owner_id, '')";
-                    case "STATUS" -> "binding.status";
-                    default -> "COALESCE(binding.binding_display_name, '')";
-                };
-        return expression + " " + sortDirection + " NULLS LAST, binding.binding_ref ASC";
-    }
-
-    private static String likePattern(String value) {
-        return "%" + value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
-    }
-
     private static String canonical(String operation, Object... values) {
         return operation + "\u001f"
                 + Arrays.stream(values)
@@ -1316,21 +914,21 @@ public class CollaborationOwnerService
             AuditChangePolicy policy,
             List<AuditChange> changes) {
         List<AuditChange> allowed = policy.allow(changes);
-        jdbc.update(
-                "INSERT INTO collaboration.audit_event (event_ref, workspace_uuid, group_workspace_key, "
-                        + "actor_type, actor_id, actor_display_snapshot, entity_type, entity_ref, action, "
-                        + "changes_json, occurred_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?)",
-                UUID.randomUUID(),
+        persistence.writeAudit(new AuditRecord(
                 workspaceUuid,
                 groupWorkspaceKey,
+                entityRef,
+                entityType,
+                action,
                 actor.actorType(),
                 actor.actorId(),
                 actor.displaySnapshot(),
-                entityType,
-                entityRef,
-                action,
-                AuditChangeJson.write(allowed),
-                time.currentEpochMillis());
+                AuditChangeJson.write(allowed)));
+    }
+
+    private static BindingRow requireBinding(BindingRow row) {
+        if (row == null) throw problem("NOT_FOUND", 404, "binding was not found in the workspace");
+        return row;
     }
 
     private static <T> T notFound(String resource) {
@@ -1345,30 +943,4 @@ public class CollaborationOwnerService
         return new CollaborationCommandApi.Problem(code, status, message, cause);
     }
 
-    private record EnablementRow(String status, long version) {}
-
-    private record EnablementSnapshot(String kind, String code, EnablementRow enablement) {}
-
-    private record BindingPageRow(CollaborationReadback.OwnerBinding readback, long total) {}
-
-    private record BindingRow(
-            UUID bindingRef,
-            UUID workspaceUuid,
-            String groupWorkspaceKey,
-            String externalSystemCode,
-            String providerCode,
-            String capabilityClass,
-            String nodeType,
-            String nodeRef,
-            String bindingDisplayName,
-            String externalOwnerId,
-            String authorizationRef,
-            String status,
-            Long unbindRequestedAt,
-            Long externalRevokedAt,
-            Long deletedAt,
-            long version,
-            long createdAt,
-            long statusChangedAt,
-            long updatedAt) {}
 }

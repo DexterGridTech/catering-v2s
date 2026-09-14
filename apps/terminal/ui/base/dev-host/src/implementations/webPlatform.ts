@@ -14,6 +14,7 @@ import {
   type DisplayInfo,
   type PlatformPorts,
   type PortResult,
+  type StateStoragePort,
 } from '@catering-v2s/kernel-base-platform-ports'
 import {createWebStateStoragePort} from './webStorage'
 
@@ -24,6 +25,13 @@ export type SurfaceMode = 'single' | 'dual'
 export type WebPlatformOptions = Readonly<{
   readonly storage?: Storage
   readonly storageNamespace?: string
+  /**
+   * Optional non-persistent protected seam for a Web preview.  The default
+   * remains unavailable so the host never presents Web Storage as secure
+   * storage; an integration may opt into process memory only to keep the
+   * state runtime's legacy-backend probe executable during a preview.
+   */
+  readonly protectedStorage?: StateStoragePort
 }>
 
 export const createWebDevicePort = (
@@ -37,7 +45,8 @@ export const createWebDevicePort = (
       completedAt: nowTimestampMs(),
     }),
   }
-  Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
+  if (__DEV__) {
+    Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
     value: Object.freeze({
       port: 'device',
       capabilities: Object.freeze([
@@ -52,7 +61,8 @@ export const createWebDevicePort = (
     enumerable: false,
     writable: false,
     configurable: false,
-  })
+    })
+  }
   return Object.freeze(port)
 }
 
@@ -69,7 +79,7 @@ export const createWebPlatformPorts = (
     bindings: {
       logger: consoleLoggerBinding,
       persistKv,
-      persistSecure: unavailablePersistSecurePort,
+      persistSecure: options.protectedStorage ?? unavailablePersistSecurePort,
       device: createWebDevicePort(readSurfaceMode),
       appControl: unavailableAppControlPort,
       script: unavailableScriptPort,

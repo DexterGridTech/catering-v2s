@@ -14,7 +14,8 @@ export const unavailablePersistSecurePort: StateStoragePort = {
   clear: async (_input: StateStorageCall): Promise<PortResult<NoOutput>> => createUnavailable('persistSecure', 'clear'),
 };
 
-Object.defineProperty(unavailablePersistSecurePort, PORT_DESCRIPTOR_KEY, {
+if (__DEV__) {
+  Object.defineProperty(unavailablePersistSecurePort, PORT_DESCRIPTOR_KEY, {
     value: Object.freeze({
       port: 'persistSecure',
       capabilities: Object.freeze([
@@ -24,4 +25,5 @@ Object.defineProperty(unavailablePersistSecurePort, PORT_DESCRIPTOR_KEY, {
     enumerable: false,
     writable: false,
     configurable: false,
-});
+  });
+}

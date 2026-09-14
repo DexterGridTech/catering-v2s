@@ -37,6 +37,7 @@ The following block is normative across the IA, detailed design, and implementat
 - A surface identity replacement recomputes geometry, retains all business content and business layers, blurs the replaced surface's active field, and closes only the targeted `ADMIN_CONSOLE_LAYER_ID` in the previous surface `displayMode`. Admin authentication, selected section, and local admin scroll are discarded. The existing React surface identity is preserved; whole-root remount and `clearLayers` are forbidden.
 - All admin actions are read-only. A section navigation command returns a typed rejection and cannot change business content.
 - Native-less virtual input uses the existing `InputController`: a nullable native ref is optional, `activateFocusScope(scopeId)` is the only scope API, and virtual focus/complete succeed without a native ref while native focus is attempted only when a ref exists.
+- Virtual keyboard presentation has one public `InputKeyboard` entry. `keyboardPlacement='surface'` uses the same component as the `InputSurfaceFrame` dock; `keyboardPlacement='field'` places the same component at the consumer's local card/field position. The field option and component placement must match, and both modes share the existing provider, owner, controller, key renderer, and string state; no business consumer may build a second keyboard path.
 
 ## 1.1 Per-screen implementation-facing declaration
 
@@ -80,7 +81,7 @@ Low-fidelity wireframe:
 ```text
 CONSUMER_FACE=public (terminal-local operator surface; not a web public page)
 UI_SURFACE=内容页（admin layer content; not a modal/Drawer）
-HOST_AND_ENTRY=AdminLauncher real Pressable on isHostPrimaryDisplay; fresh admin layer; reopen after close
+HOST_AND_ENTRY=AdminLauncher plain business-content ancestor observes a real bubbled touch completion on isHostPrimaryDisplay; fresh admin layer; reopen after close
 ACTOR=终端操作员
 BUSINESS_SCENARIO=操作员在 host display 通过隐藏手势进入本机只读诊断
 BUSINESS_GOAL=输入六位动态口令并进入诊断外壳，或明确知道为何不能进入
@@ -111,7 +112,7 @@ Low-fidelity wireframe:
 ```text
 CONSUMER_FACE=public (terminal-local operator surface; not a web public page)
 UI_SURFACE=内容页（authenticated admin layer）
-HOST_AND_ENTRY=AdminLogin successful real verify Pressable; shell mounts inside admin.console layer part
+HOST_AND_ENTRY=AdminLogin successful real verify button; shell mounts inside admin.console layer part
 ACTOR=终端操作员
 BUSINESS_SCENARIO=操作员已通过本次打开的本地动态口令
 BUSINESS_GOAL=在不离开业务画布的情况下查看只读诊断 section
@@ -277,11 +278,11 @@ capability-owned IDs in `ui.base.input`. No future script may use text/index/wra
 
 | screen | user action/case | actual control/node | testID constant | wrapper/native distinction | focused/static proof | current conclusion |
 | --- | --- | --- | --- | --- | --- | --- |
-| `admin-login` | invoke gesture | `AdminLauncher.tsx#AdminLauncher` Pressable | `adminTestIds.launcher` | actual Pressable | sample-console focused test | `MATCHED: focused` |
+| `admin-login` | invoke gesture | `AdminLauncher.tsx#AdminLauncher` business-content ancestor `View` | `adminTestIds.launcher` | observer node receives bubbled `onTouchEnd`; it is not a consuming `Pressable` and descendants remain the real business controls | sample-console focused test with descendant business press and scaled coordinates | `MATCHED: focused` |
 | `admin-login` | digit 0–9 | `VirtualKeyboard.tsx#VirtualKeyboard` shared key `PrimitiveButton` | `ui.base.input:virtual-keyboard:text-<n>` | actual shared input-owner button | sample-console focused test | `MATCHED: focused` |
 | `admin-login` | delete | `VirtualKeyboard.tsx#VirtualKeyboard` shared backspace `PrimitiveButton` | `ui.base.input:virtual-keyboard:backspace` | actual shared input-owner button | input focused test | `MATCHED: focused` |
-| `admin-login` | verify | `AdminLogin.tsx#AdminLogin` verify Pressable | `adminTestIds.verify` | actual button | sample-console focused test | `MATCHED: focused` |
-| `admin-login`/`admin-console` | close | `AdminLogin.tsx#AdminLogin` or `AdminShell.tsx#AdminShell` close Pressable | `adminTestIds.close` | actual button | sample-console focused test | `MATCHED: focused` |
+| `admin-login` | verify | `AdminLogin.tsx#AdminLogin` verify button | `adminTestIds.verify` | actual button | sample-console focused test | `MATCHED: focused` |
+| `admin-login`/`admin-console` | close | `AdminLogin.tsx#AdminLogin` or `AdminShell.tsx#AdminShell` close button | `adminTestIds.close` | actual button | sample-console focused test | `MATCHED: focused` |
 | `admin-console` | platform tab | `AdminSectionNavigation.tsx#AdminSectionNavigation` option anchor | `adminTestIds.sections.platformPorts` | actual `PrimitivePressOption` | implementation present; not separately exercised | `MATCHED: implementation` |
 | `admin-console` | runtime tab | same | `adminTestIds.sections.runtime` | actual `PrimitivePressOption` | sample-console focused test | `MATCHED: focused` |
 | `admin-console` | display tab | same | `adminTestIds.sections.displayContext` | actual `PrimitivePressOption` | implementation present; not separately exercised | `MATCHED: implementation` |
@@ -292,11 +293,11 @@ Implementation-facing minimum roster:
 
 | control key | testID | real action node | composite option exception |
 | --- | --- | --- | --- |
-| launcher | `terminal.admin:launcher` | `AdminLauncher` Pressable | no |
-| digit buttons | `ui.base.input:virtual-keyboard:text-<n>` | shared input-owner digit Pressable | no |
-| delete | `ui.base.input:virtual-keyboard:backspace` | shared input-owner backspace Pressable | no |
-| verify | `terminal.admin:verify` | verify Pressable | no |
-| close | `terminal.admin:close` | close Pressable | no |
+| launcher observer | `terminal.admin:launcher` | business-content ancestor `View` with bubbled `onTouchEnd`; logical conversion happens in `logicalPointFromWindow` | no |
+| digit buttons | `ui.base.input:virtual-keyboard:text-<n>` | shared input-owner digit button | no |
+| delete | `ui.base.input:virtual-keyboard:backspace` | shared input-owner backspace button | no |
+| verify | `terminal.admin:verify` | verify button | no |
+| close | `terminal.admin:close` | close button | no |
 | platform/runtime/display/sample section options | `adminTestIds.sections.*` | visible option anchor/button | only if SegmentedControl cannot expose option-level data; prove same click semantics |
 | loading observation | `ui-base-render:surface-host-loading-indicator` | host loading View/Spinner tree | no action |
 
@@ -377,7 +378,7 @@ Each screen has the ten required fields: entry, visible information, primary act
 7. `error state`: `口令不正确`, `无法读取设备时间`, or a generic `设备标识不可用` status. No password, raw device ID, token, or raw payload is shown/logged.
 8. `success state`: login content is replaced by the authenticated shell; the login field and keypad leave the tree.
 9. `focus/accessibility`: keypad buttons are real accessible buttons; masked display has a label describing digit count, not the value; system keyboard is structurally suppressed.
-10. `test observation`: use the launcher node, six or more actual keypad button nodes, actual verify button, actual close button; do not call a reducer/state setter directly.
+10. `test observation`: use the launcher observer in the business-content tree, six or more actual keypad button nodes, actual verify button, actual close button, and real business descendant controls; do not call a reducer/state setter directly. Convert window page coordinates to the declared logical canvas before applying the 96-unit gate.
 
 ### 2.3 Authenticated shell
 
@@ -462,7 +463,20 @@ Test IDs identify interaction surfaces, not Journey IDs. The exact strings are p
 | content frame | `terminal.admin:content` | observation only | content testID/text changes after section press |
 | loading host | `ui-base-render:surface-host-loading-indicator` | observation only | spinner visible and children absent |
 
-Gesture tracking is a real launcher action with logical coordinates. The tracker rejects a gesture outside 96×96, before 1800 ms, or with fewer than five repetitions. A successful gesture is still subject to the physical host boolean; it cannot override it.
+Gesture tracking is a real launcher observation with logical coordinates. The tracker rejects a gesture outside 96×96, before 1800 ms, or with fewer than five repetitions. `AdminLauncher` observes the business-content ancestor without owning a press responder, so a descendant business control under the threshold remains actionable. A successful gesture is still subject to the physical host boolean; it cannot override it. The logical point is derived from measured window origin and independent host/canvas scale axes; raw window pixels are never compared directly with 96 logical units.
+
+The A-4 focused precursor uses fixed, reproducible points; Android must repeat the same two-direction
+oracle against the real measured window origin and host bounds. With `origin=(100,200)` and
+`canvas=1280×800`:
+
+| host bounds | logical point | expected page point | required result | reason |
+| --- | --- | --- | --- | --- |
+| `2560×1200` (`scaleX=2`, `scaleY=1.5`) | `(95,100)` | `(290,350)` | five-touch sequence is rejected | the logical y point is outside 96×96; a width-copied `scaleY` would incorrectly normalize it to 75 and open |
+| `2560×1200` (`scaleX=2`, `scaleY=1.5`) | `(95,95)` | `(290,342.5)` | five-touch sequence is accepted | the logical point is inside 96×96 and proves the same component path still accepts a valid point |
+| `640×400` (`scaleX=scaleY=0.5`) | `(100,100)` | `(150,250)` | gesture tracker resets / does not open | the logical point is outside 96×96 although its raw window displacement is less than 96 |
+
+These coordinates are a geometry oracle only: they do not constitute Android or visual acceptance until
+the corresponding real-window action and evidence tier are run.
 
 ## 4. Interaction map
 
@@ -481,7 +495,7 @@ Gesture tracking is a real launcher action with logical coordinates. The tracker
 
 ### Launcher
 
-The host gesture is a Dexter-required Journey entry, not a historical shortcut inferred from the POCs. A stable real node is needed because the terminal has no ordinary admin menu entry in the current scope. The node is owned by `admin-shell`; the physical gate is supplied by render context; layer creation is delegated to the existing UI-state command API. A shorter path would be a global keyboard shortcut or a navigation menu, but each would add a second entry path, be unsuitable for the restricted host-display requirement, or conflict with the requirement's explicit gesture. No such alternative is introduced.
+The host gesture is a Dexter-required Journey entry, not a historical shortcut inferred from the POCs. A stable ancestor observer is needed because the terminal has no ordinary admin menu entry in the current scope, while an independent invisible `Pressable` would consume business touches. The observer is owned by `admin-shell`; the physical gate is supplied by render context; layer creation is delegated to the existing UI-state command API. A shorter path would be a global keyboard shortcut or a navigation menu, but each would add a second entry path, be unsuitable for the restricted host-display requirement, or conflict with the requirement's explicit gesture. No such alternative is introduced.
 
 ### Login
 

@@ -43,7 +43,7 @@ type ConfigLibraryAction =
   | {type: 'SET_SELECTED_ENTRY_REF'; entryRef?: string}
   | {type: 'OPEN_DEFINITION_EDITOR'; editor: CatalogDefinitionEditorState}
   | {type: 'CLOSE_DEFINITION_EDITOR'}
-  | {type: 'RESET_LIBRARY_CONTEXT'};
+  | {type: 'RESET_LIBRARY_CONTEXT'; library?: CatalogLibraryKind};
 
 export function catalogConfigLibraryReducer(
   state: ConfigLibraryState,
@@ -84,6 +84,7 @@ export function catalogConfigLibraryReducer(
     case 'RESET_LIBRARY_CONTEXT':
       return {
         ...state,
+        currentLibrary: action.library ?? state.currentLibrary,
         simpleLibraryFilter: initialCatalogSimpleLibraryFilter,
         selectedEntryRef: undefined,
         definitionEditor: undefined,
@@ -109,8 +110,8 @@ export function useCatalogConfigLibrary({
   const contextChanged = previousContextKey.current !== contextKey;
   if (contextChanged) previousContextKey.current = contextKey;
   useEffect(() => {
-    if (contextChanged) dispatch({type: 'RESET_LIBRARY_CONTEXT'});
-  }, [contextChanged, contextKey]);
+    if (contextChanged) dispatch({type: 'RESET_LIBRARY_CONTEXT', library: initialLibrary});
+  }, [contextChanged, contextKey, initialLibrary]);
   const selectLibrary = useCallback((library: CatalogLibraryKind) => dispatch({type: 'SELECT_LIBRARY', library}), []);
   const setSimpleLibraryKeywordInput = useCallback(
     (keywordInput: string) => dispatch({type: 'SET_FILTER_INPUT', keywordInput}),
@@ -136,6 +137,7 @@ export function useCatalogConfigLibrary({
     const effectiveState = contextChanged
       ? {
           ...state,
+          currentLibrary: initialLibrary,
           simpleLibraryFilter: initialCatalogSimpleLibraryFilter,
           selectedEntryRef: undefined,
           definitionEditor: undefined,
@@ -143,6 +145,7 @@ export function useCatalogConfigLibrary({
       : state;
     return {
       ...effectiveState,
+      contextChanged,
       selectLibrary,
       setSimpleLibraryKeywordInput,
       applySimpleLibraryKeyword,
@@ -164,6 +167,7 @@ export function useCatalogConfigLibrary({
     setSimpleLibraryKeywordInput,
     setSimpleLibraryStatus,
     contextChanged,
+    initialLibrary,
     state,
   ]);
 }

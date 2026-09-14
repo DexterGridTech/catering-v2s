@@ -1,4 +1,4 @@
-import type {InputFieldController} from '../types/types';
+import type {InputFieldController, InputKeyboardPlacement} from '../types/types';
 
 export type MutableRef<T> = {
   current: T;
@@ -9,11 +9,13 @@ export type MutableFieldController = InputFieldController & {
   layout: InputFieldController['layout'];
   maxLength?: number;
   focusScopeId: string;
+  keyboardPlacement: InputKeyboardPlacement;
 };
 
 export type KeyboardStateBase = Readonly<{
   readonly activeFieldId: string | null;
   readonly owner: 'none' | 'virtual';
+  readonly keyboardPlacement: InputKeyboardPlacement;
   readonly layout: InputFieldController['layout'];
   readonly revision: number;
 }>;
@@ -21,6 +23,7 @@ export type KeyboardStateBase = Readonly<{
 export type KeyboardStateCommit = Readonly<{
   readonly activeFieldId: string | null;
   readonly owner: 'none' | 'virtual';
+  readonly keyboardPlacement?: InputKeyboardPlacement;
   readonly layout: InputFieldController['layout'];
 }>;
 

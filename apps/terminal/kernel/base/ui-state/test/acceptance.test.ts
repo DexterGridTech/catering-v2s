@@ -88,7 +88,6 @@ const createFixture = async (input: Readonly<{
       runtimeName: `ui-state-acceptance-${Math.random().toString(36).slice(2)}`,
       environmentMode: 'TEST',
       persistenceKey: input.persistenceKey ?? `ui-state-acceptance-${Math.random().toString(36).slice(2)}`,
-      storageTimeouts: {readMs: 50, writeMs: 50, resetMs: 50},
       persistenceDebounceMs: 0,
     },
   })
@@ -288,7 +287,7 @@ describe('ui-state approved acceptance proofs', () => {
     expect(hasPersistedEntry([plainStorage, protectedStorage], persistedSibling.key)).toBe(true)
   })
 
-  it('U-7 restores containers but not layers after restart', async () => {
+  it('U-7 restores containers and layers after restart', async () => {
     const module = createModule()
     const plainStorage = createFakeStorage()
     const protectedStorage = createFakeStorage()
@@ -298,13 +297,14 @@ describe('ui-state approved acceptance proofs', () => {
       displayMode: 'PRIMARY', containerKey: 'root', partKey: 'restored',
     }, route())
     await first.runtime.dispatchCommand(openLayerCommand, {
-      displayMode: 'PRIMARY', layerId: 'transient', partKey: 'layer',
+      displayMode: 'PRIMARY', layerId: 'transient', partKey: 'layer', props: {source: 'u7'},
     }, route())
+    const expectedLayers = selectLayers(first.runtime.getState(), 'PRIMARY')
     releaseRuntimeForTest(first.runtime)
     const second = await createFixture({module, plainStorage, protectedStorage, persistenceKey: 'ui-state-u7'})
     runtimes.push(second.runtime)
     expect(selectScreen(second.runtime.getState(), 'PRIMARY', 'root')?.partKey).toBe('restored')
-    expect(selectLayers(second.runtime.getState(), 'PRIMARY')).toEqual([])
+    expect(selectLayers(second.runtime.getState(), 'PRIMARY')).toEqual(expectedLayers)
   })
 
   it('U-8 gives same local keys from different modules different full keys', () => {

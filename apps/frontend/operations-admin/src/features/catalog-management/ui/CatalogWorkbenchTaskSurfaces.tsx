@@ -8,7 +8,7 @@ import {CatalogCategoryActionModal} from './CatalogCategoryActionModal';
 import {CatalogDictionaryDrawer} from './CatalogDictionaryDrawer';
 import {CatalogItemCreateDrawer} from './CatalogItemCreateDrawer';
 import {CatalogItemDrawer} from './CatalogItemDrawer';
-import {LocalCatalogCopyDrawer} from './LocalCatalogCopyDrawer';
+import {LocalCatalogCopyDrawer} from './local-copy';
 
 type Props = {
   workspaceTask: CatalogWorkspaceTask;

@@ -9,6 +9,8 @@ import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditReadScope;
 import com.catering.v2s.audit.contract.AuditTarget;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
+import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
+import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.CommercialGroupReadback;
@@ -79,7 +81,10 @@ class OrganizationOwnerServiceTest {
                 String.class,
                 id,
                 key);
-        definitions = new ExtensionDefinitionService(jdbc, time, workspaceStatuses);
+        definitions = new ExtensionDefinitionService(
+                new ExtensionDefinitionPersistence(jdbc, time),
+                new ExtensionCommandReceiptService(jdbc, time),
+                workspaceStatuses);
         hierarchy = new OrganizationHierarchyService(jdbc, time, definitions);
         entities = new BusinessEntityService(jdbc, time, definitions, hierarchy);
         commercialGroups = new OrganizationCommandService(

@@ -14,6 +14,7 @@ import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerTypes;
 import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
 import com.catering.v2s.fulfillment.production.application.ProductionTagOwnerService;
+import com.catering.v2s.fulfillment.production.application.persistence.ProductionTagOwnerPersistence;
 import com.catering.v2s.inventory.application.InventoryOwnerService;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
@@ -78,7 +79,8 @@ class CatalogCategoryOwnerIntegrationTest {
         flyway.migrate();
         jdbc = jdbc(POSTGRES);
         inventory = new InventoryOwnerService(jdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L);
-        production = new ProductionTagOwnerService(jdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L);
+        production = new ProductionTagOwnerService(
+                new ProductionTagOwnerPersistence(jdbc, (TimeProvider) () -> 1_785_000_000_000L), MAPPER);
         service = new CatalogOwnerService(
                 jdbc,
                 MAPPER,
@@ -3286,7 +3288,10 @@ class CatalogCategoryOwnerIntegrationTest {
         InventoryOwnerService recordingInventory =
                 new InventoryOwnerService(recordingJdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L);
         ProductionTagOwnerService recordingProduction =
-                new ProductionTagOwnerService(recordingJdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L);
+                new ProductionTagOwnerService(
+                        new ProductionTagOwnerPersistence(
+                                recordingJdbc, (TimeProvider) () -> 1_785_000_000_000L),
+                        MAPPER);
         CatalogOwnerService recordingService = new CatalogOwnerService(
                 recordingJdbc,
                 MAPPER,
@@ -4892,7 +4897,8 @@ class CatalogCategoryOwnerIntegrationTest {
             InventoryOwnerService taskInventory =
                     new InventoryOwnerService(taskJdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L);
             ProductionTagOwnerService taskProduction =
-                    new ProductionTagOwnerService(taskJdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L);
+                new ProductionTagOwnerService(
+                        new ProductionTagOwnerPersistence(taskJdbc, (TimeProvider) () -> 1_785_000_000_000L), MAPPER);
             CatalogOwnerService taskCatalog = new CatalogOwnerService(
                     taskJdbc,
                     MAPPER,

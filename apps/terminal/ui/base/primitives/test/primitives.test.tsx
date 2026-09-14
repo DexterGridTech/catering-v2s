@@ -1,6 +1,6 @@
 import {createRef} from 'react';
 import {act, create, type TestInstance, type ReactTestRenderer} from 'react-test-renderer';
-import {Pressable, ScrollView, Text, TextInput, View, VirtualizedList} from 'react-native';
+import {Image, Pressable, ScrollView, Text, TextInput, View, VirtualizedList} from 'react-native';
 import Svg, {Path} from 'react-native-svg';
 import {describe, expect, it, vi} from 'vitest';
 import {
@@ -9,14 +9,17 @@ import {
   PrimitiveBadge,
   PrimitiveContainer,
   PrimitiveEmptyState,
+  PrimitiveGrid,
   PrimitiveInlineAlert,
   PrimitiveList,
   PrimitiveSegmentedControl,
   PrimitiveSpinner,
   PrimitiveHeading,
   PrimitiveInput,
+  PrimitiveImage,
   type PrimitiveInputHandle,
   PrimitiveLabel,
+  PrimitivePressOption,
   PrimitiveScrollView,
   type PrimitiveScrollViewHandle,
   PrimitiveStatus,
@@ -93,15 +96,61 @@ describe('ui primitives', () => {
   it('keeps surface, content, card, and centered layouts presentation-only', () => {
     const renderer = mount(
       <PrimitiveContainer testID="sample:layout-root" layout="centered">
-        <PrimitiveContainer testID="sample:layout-content" layout="content" />
-        <PrimitiveContainer testID="sample:layout-card" layout="card" />
+        <PrimitiveContainer testID="sample:layout-content" layout="content" bounded />
+        <PrimitiveContainer testID="sample:layout-card" layout="card" bounded />
       </PrimitiveContainer>,
     );
 
     const byTestID = (testID: string) => renderer.root.findAllByProps({testID}).find(node => node.type === View);
     expect(byTestID('sample:layout-root')?.props.className).toBe(baseTokens.containerCentered);
-    expect(byTestID('sample:layout-content')?.props.className).toBe(baseTokens.containerContent);
-    expect(byTestID('sample:layout-card')?.props.className).toBe(baseTokens.containerCard);
+    expect(byTestID('sample:layout-content')?.props.className).toBe(
+      `${baseTokens.containerContent} ${baseTokens.containerBoundedContent}`,
+    );
+    expect(byTestID('sample:layout-card')?.props.className).toBe(
+      `${baseTokens.containerCard} ${baseTokens.containerBoundedCard}`,
+    );
+    expect(byTestID('sample:layout-content')?.props.style).toEqual({flex: 1, minHeight: 0});
+    expect(byTestID('sample:layout-card')?.props.style).toEqual({
+      maxHeight: '100%',
+      minHeight: 0,
+      overflow: 'hidden',
+    });
+    act(() => {
+      renderer.unmount();
+    });
+  });
+
+  it('keeps the scroll viewport opaque by default and supports an explicit transparent variant', () => {
+    const renderer = mount(
+      <>
+        <PrimitiveScrollView testID="sample:scroll-opaque">内容</PrimitiveScrollView>
+        <PrimitiveScrollView testID="sample:scroll-transparent" layout="transparent">内容</PrimitiveScrollView>
+      </>,
+    );
+
+    const scrollView = (testID: string) => renderer.root
+      .findAllByType(ScrollView)
+      .find(node => node.props.testID === testID)!;
+    expect(scrollView('sample:scroll-opaque').props.className).toBe(baseTokens.scroll);
+    expect(scrollView('sample:scroll-transparent').props.className).toBe('w-full flex-1');
+    act(() => { renderer.unmount(); });
+  });
+
+  it('renders a background image through the shared image seam and keeps missing sources empty', () => {
+    const renderer = mount(
+      <PrimitiveContainer testID="sample:transparent" layout="transparent">
+        <PrimitiveImage testID="sample:background" layout="background" source={{uri: 'wallpaper.jpg'}} />
+        <PrimitiveImage testID="sample:missing" layout="background" />
+      </PrimitiveContainer>,
+    );
+
+    const transparent = renderer.root.findAllByType(View).find(node => node.props.testID === 'sample:transparent')!;
+    expect(transparent.props.className).toBe(baseTokens.containerTransparent);
+    const image = renderer.root.findAllByType(Image).find(node => node.props.testID === 'sample:background')!;
+    expect(image.props.className).toBe(baseTokens.imageBackground);
+    expect(image.props.resizeMode).toBe('cover');
+    expect(image.props.source).toEqual({uri: 'wallpaper.jpg'});
+    expect(renderer.root.findAllByType(Image).filter(node => node.props.testID === 'sample:missing')).toHaveLength(0);
     act(() => {
       renderer.unmount();
     });
@@ -203,7 +252,7 @@ describe('ui primitives', () => {
       );
     });
 
-    inputRef.current!.measureLayout(1, callback, onFail);
+    inputRef.current!.measureLayout({} as never, callback, onFail);
 
     expect(callback).not.toHaveBeenCalled();
     expect(onFail).toHaveBeenCalledTimes(1);
@@ -221,7 +270,7 @@ describe('ui primitives', () => {
       renderer = mount(<PrimitiveInput testID="sample:missing-native-input" inputRef={inputRef} />);
     });
 
-    inputRef.current!.measureLayout(1, vi.fn(), onFail);
+    inputRef.current!.measureLayout({} as never, vi.fn(), onFail);
 
     expect(onFail).toHaveBeenCalledTimes(1);
     act(() => {
@@ -329,6 +378,30 @@ describe('ui primitives', () => {
     act(() => { renderer.unmount(); });
   });
 
+  it('exposes tab semantics for bounded navigation primitives', () => {
+    const renderer = mount(
+      <PrimitiveGrid testID="sample:tablist" accessibilityLabel="分区" accessibilityRole="tablist">
+        <PrimitivePressOption
+          testID="sample:tab"
+          accessibilityLabel="第一节"
+          accessibilityRole="tab"
+          selected
+        >
+          第一节
+        </PrimitivePressOption>
+      </PrimitiveGrid>,
+    );
+
+    const tablist = renderer.root.findAllByType(View).find(node => node.props.testID === 'sample:tablist')!;
+    const tab = renderer.root.findAllByType(Pressable).find(node => node.props.testID === 'sample:tab')!;
+    expect(tablist.props.accessibilityRole).toBe('tablist');
+    expect(tablist.props.accessibilityLabel).toBe('分区');
+    expect(tab.props.accessibilityRole).toBe('tab');
+    expect(tab.props['aria-selected']).toBe(true);
+    expect(tab.props.accessibilityState).toMatchObject({selected: true});
+    act(() => { renderer.unmount(); });
+  });
+
   it('renders a non-empty SVG path from the primitives icon set', () => {
     const renderer = mount(
       <RnrSvgIcon
@@ -359,6 +432,7 @@ describe('ui primitives', () => {
     type VirtualizedListProbe = {
       readonly props: Readonly<{
         readonly testID?: string;
+        readonly className?: string;
         readonly getItemCount: (items: readonly string[]) => number;
         readonly onScroll: (event: {readonly nativeEvent: {readonly contentOffset: {readonly y: number}}}) => void;
         readonly renderItem: (input: {readonly item: string; readonly index: number}) => unknown;
@@ -368,6 +442,7 @@ describe('ui primitives', () => {
       .map(node => node as unknown as VirtualizedListProbe)
       .find(node => node.props.testID === 'sample:list')!;
     expect(list().props.getItemCount(data)).toBe(100);
+    expect(list().props.className).toBe(baseTokens.list);
 
     const observeWindow = (offsetY: number) => {
       act(() => {
@@ -376,7 +451,10 @@ describe('ui primitives', () => {
         });
       });
       const renderItem = list().props.renderItem as (input: {readonly item: string; readonly index: number}) => unknown;
-      const rendered = data.map((item, index) => renderItem({item, index})).filter(Boolean) as Array<{
+      const rendered = data.map((item, index) => renderItem({item, index})).filter(node => {
+        const testID = (node as {readonly props?: Readonly<Record<string, unknown>>} | null)?.props?.testID;
+        return typeof testID === 'string' && testID.startsWith('sample:list:row:');
+      }) as Array<{
         readonly props?: Readonly<Record<string, unknown>>
       }>;
       expect(rendered.length).toBeLessThanOrEqual(24);

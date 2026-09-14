@@ -12,7 +12,8 @@ export const unavailableDevicePort: DevicePort = {
   unsubscribePowerStatus: async (_input: PowerStatusUnsubscribeInput): Promise<PortResult<NoOutput>> => createUnavailable('device', 'unsubscribePowerStatus'),
 };
 
-Object.defineProperty(unavailableDevicePort, PORT_DESCRIPTOR_KEY, {
+if (__DEV__) {
+  Object.defineProperty(unavailableDevicePort, PORT_DESCRIPTOR_KEY, {
     value: Object.freeze({
       port: 'device',
       capabilities: Object.freeze([
@@ -23,4 +24,5 @@ Object.defineProperty(unavailableDevicePort, PORT_DESCRIPTOR_KEY, {
     enumerable: false,
     writable: false,
     configurable: false,
-});
+  });
+}

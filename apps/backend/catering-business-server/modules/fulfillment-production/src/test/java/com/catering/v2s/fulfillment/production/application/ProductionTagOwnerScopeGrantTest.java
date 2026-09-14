@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
+import com.catering.v2s.fulfillment.production.application.persistence.ProductionTagOwnerPersistence;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
@@ -36,7 +37,8 @@ class ProductionTagOwnerScopeGrantTest {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         UUID workspaceId = UUID.randomUUID();
         UUID targetId = UUID.randomUUID();
-        ProductionTagOwnerService service = new ProductionTagOwnerService(jdbc, mapper, () -> 1L);
+        ProductionTagOwnerService service = new ProductionTagOwnerService(
+                new ProductionTagOwnerPersistence(jdbc, () -> 1L), mapper);
 
         ProductionTagOwnerApi.Problem failure = assertThrows(
                 ProductionTagOwnerApi.Problem.class,
@@ -62,7 +64,8 @@ class ProductionTagOwnerScopeGrantTest {
         UUID workspaceId = UUID.randomUUID();
         UUID sourceId = UUID.randomUUID();
         UUID targetId = UUID.randomUUID();
-        ProductionTagOwnerService service = new ProductionTagOwnerService(jdbc, mapper, () -> 1L);
+        ProductionTagOwnerService service = new ProductionTagOwnerService(
+                new ProductionTagOwnerPersistence(jdbc, () -> 1L), mapper);
 
         ProductionTagOwnerApi.Problem failure = assertThrows(
                 ProductionTagOwnerApi.Problem.class,
@@ -85,7 +88,8 @@ class ProductionTagOwnerScopeGrantTest {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         UUID workspaceId = UUID.randomUUID();
         UUID targetId = UUID.randomUUID();
-        ProductionTagOwnerService service = new ProductionTagOwnerService(jdbc, mapper, () -> 1L);
+        ProductionTagOwnerService service = new ProductionTagOwnerService(
+                new ProductionTagOwnerPersistence(jdbc, () -> 1L), mapper);
 
         ProductionTagOwnerApi.Problem failure = assertThrows(
                 ProductionTagOwnerApi.Problem.class,
@@ -106,13 +110,14 @@ class ProductionTagOwnerScopeGrantTest {
     }
 
     @Test
-    void typedWriteRejectsOpaqueGrantBeforeProductionReceiptReplay() {
+    void typedWriteRejectsMismatchedGrantBeforeProductionReceiptReplay() {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         UUID targetId = UUID.randomUUID();
-        ProductionTagOwnerService service = new ProductionTagOwnerService(jdbc, mapper, () -> 1L);
+        ProductionTagOwnerService service = new ProductionTagOwnerService(
+                new ProductionTagOwnerPersistence(jdbc, () -> 1L), mapper);
         ProductionTagOwnerApi.Problem failure = assertThrows(
                 ProductionTagOwnerApi.Problem.class,
-                () -> service.write(typedContext(targetId), mapper.createObjectNode(), "receipt"));
+                () -> service.write(typedContextWithMismatchedGrant(targetId), validCreateRequest(), "receipt"));
 
         assertEquals("SCOPE_FORBIDDEN", failure.code());
         verifyNoInteractions(jdbc);
@@ -120,7 +125,8 @@ class ProductionTagOwnerScopeGrantTest {
 
     @Test
     void productionReceiptRequestBindsTheBrandBeforeReplayLookup() {
-        ProductionTagOwnerService service = new ProductionTagOwnerService(mock(JdbcTemplate.class), mapper, () -> 1L);
+        ProductionTagOwnerService service = new ProductionTagOwnerService(
+                new ProductionTagOwnerPersistence(mock(JdbcTemplate.class), () -> 1L), mapper);
         ObjectNode request =
                 mapper.createObjectNode().put("code", "TAG-RECEIPT").put("name", "receipt tag");
 
@@ -131,6 +137,10 @@ class ProductionTagOwnerScopeGrantTest {
         assertEquals("BRAND-B", brandB.path("receiptBrandRef").asText());
         assertEquals("TAG-RECEIPT", brandA.path("code").asText());
         assertEquals("TAG-RECEIPT", brandB.path("code").asText());
+    }
+
+    private ObjectNode validCreateRequest() {
+        return mapper.createObjectNode().put("code", "TAG-AUTH").put("name", "authorization tag");
     }
 
     private static ObjectNode receiptRequest(ProductionTagOwnerService service, ObjectNode request, String brand) {
@@ -147,7 +157,7 @@ class ProductionTagOwnerScopeGrantTest {
         }
     }
 
-    private static WorkspaceExecutionContext<CatalogAuthorizationScope> typedContext(UUID targetId) {
+    private static WorkspaceExecutionContext<CatalogAuthorizationScope> typedContextWithMismatchedGrant(UUID targetId) {
         UUID workspaceId = UUID.randomUUID();
         UUID accountId = UUID.randomUUID();
         UUID assignmentId = UUID.randomUUID();
@@ -191,7 +201,7 @@ class ProductionTagOwnerScopeGrantTest {
                                         workspaceId,
                                         "production-owner-test",
                                         "STORE",
-                                        targetId,
+                                        UUID.randomUUID(),
                                         "STORE",
                                         targetId,
                                         List.of(targetId))),

@@ -69,6 +69,11 @@ const calculateCellWidth = (frameWidth: number, columnCount: number, horizontalM
   return Math.floor(available / columnCount);
 };
 
+export const calculateVirtualKeyboardCellWidth = (frameWidth: number, layout: KeyboardLayout): number => {
+  const definition = getKeyboardLayout(layout);
+  return calculateCellWidth(frameWidth, definition.maxColumns, definition.horizontalMode);
+};
+
 const emptyMetrics = (layout: KeyboardLayout): VirtualKeyboardMetrics => {
   const definition = getKeyboardLayout(layout);
   return {
@@ -99,7 +104,7 @@ export const calculateVirtualKeyboardMetrics = (
   // same measured surface/content boundary for every supported frame.
   const height = Math.min(availableDockHeight, verticalRequired);
   const contentHeight = Math.max(0, frame.height - height);
-  const cellWidth = calculateCellWidth(frame.width, definition.maxColumns, definition.horizontalMode);
+  const cellWidth = calculateVirtualKeyboardCellWidth(frame.width, layout);
   const minimumCellWidth = definition.horizontalMode === 'dense' ? DENSE_KEY_MIN_WIDTH : KEY_CELL_HEIGHT;
   const horizontalFeasible = cellWidth >= minimumCellWidth;
   const verticalFeasible = availableDockHeight >= verticalRequired;

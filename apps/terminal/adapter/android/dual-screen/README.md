@@ -2,7 +2,8 @@
 
 本包是 Android 双屏 carrier。它把主 Activity 的既有 React host 复用于第二个
 `ReactSurface`，并以 `Presentation` 承载副屏 view。它不创建第二个 host、React instance、
-JS VM、store、进程或 React 实例，也不把业务 part、catalog、surface mode 或业务 state 带入 Kotlin。
+JS VM、store、进程或 React 实例，也不把业务 part、catalog 或业务 state 带入 Kotlin。它只在
+主 Activity delegate 创建时判定并传播终端的 `surfaceForm`，不承载业务 surface 的选择逻辑。
 
 ## 组装与初始属性
 
@@ -14,9 +15,18 @@ Expo SDK 57 的模块配置只注册 `TerminalDualScreenModule`；`TerminalDualS
 
 同一快照同时供两条入口使用：主屏返回一个以既有 `mainComponentName`、公开 `ReactHost` 和
 RN 当前 `fabricEnabled` 为基础、只覆盖 `getLaunchOptions()` 的 delegate，送入
-`displayIndex=0` 与 `displayCount`；副屏用同一 host、同一已注册组件和 Presentation context
-调用 `createSurface`，送入 `displayIndex=1` 与相同 `displayCount`。两个入口不重新读取、不共享
-后续缓存，也不要求 MainActivity 或 assembly 增加 bootstrap。
+`displayIndex=0`、`displayCount` 与冻结的 `surfaceForm`；副屏用同一 host、同一已注册组件和
+Presentation context 调用 `createSurface`，送入 `displayIndex=1`、相同 `displayCount` 与同一
+`surfaceForm`。两个入口不重新读取、不共享后续缓存，也不要求 MainActivity 或 assembly 增加
+bootstrap。
+
+形态判定在 `onDidCreateReactActivityDelegate` 读取
+`activity.resources.configuration.smallestScreenWidthDp`。当前已校准的本地目标 VM 为 mobile
+`360dp`、laptop `800dp`，adapter 唯一阈值为 `581dp`：大于等于阈值为 laptop，小于阈值为
+mobile；值缺失、非正或读取异常落到既有的 laptop 默认，并写 `display-diagnostics` 诊断。
+判定后立即锁定对应方向，并把值放入同一份 launch-options Bundle；后续仅有
+`onConfigurationChanged` 时不重算，只有 Activity/React delegate 真正重建才重新判定。该阈值是
+本批两台目标 VM 的实现校准，不是对其他硬件的通用尺寸保证。
 
 ## ReactSurface 的逻辑分辨率基线
 

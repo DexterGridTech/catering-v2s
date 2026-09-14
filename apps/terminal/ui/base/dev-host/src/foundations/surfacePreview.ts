@@ -1,5 +1,5 @@
 export type SurfacePreviewLayout = 'row' | 'column';
-export type SurfacePreviewPolicy = 'width-fill-preserve-ratio';
+export type SurfacePreviewPolicy = 'width-selective-preserve-ratio';
 
 export type SurfacePreviewSize = Readonly<{
   readonly width: number;
@@ -96,7 +96,7 @@ export const calculateSurfacePreviewGeometry = ({
     layout === 'column'
       ? primary.height + (showSecondary ? SURFACE_PREVIEW_CONSTANTS.surfaceGap + secondary.height : 0)
       : Math.max(primary.height, showSecondary ? secondary.height : 0);
-  // Web preview preserves the logical stage ratio and fills the measured content width.
+  // Web preview preserves the logical stage ratio and fills the selected content width.
   // The preview is allowed to upscale when the container is wider than the declaration.
   // A browser is a preview host, not a device surface. Width fills its
   // container; a single scale preserves the declared logical stage ratio and

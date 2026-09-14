@@ -42,7 +42,6 @@ const runtime = createRuntime({
     runtimeName: 'terminal',
     environmentMode: 'DEV',
     persistenceKey: 'terminal-main',
-    storageTimeouts: {readMs: 2000, writeMs: 2000, resetMs: 5000},
     persistenceDebounceMs: 300,
   },
 })

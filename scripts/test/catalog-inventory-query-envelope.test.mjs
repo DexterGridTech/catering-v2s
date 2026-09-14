@@ -1,11 +1,21 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readdirSync, readFileSync} from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import {readCatalogInventoryOpenApi} from '../lib/catalog-inventory-openapi.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const read = relative => readFileSync(path.join(root, relative), 'utf8');
+const catalogFeatureRoot = path.join(root, 'apps/frontend/operations-admin/src/features/catalog-management');
+const collectCatalogFeatureSourceFiles = directory => {
+  const files = [];
+  for (const entry of readdirSync(directory, {withFileTypes: true})) {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...collectCatalogFeatureSourceFiles(entryPath));
+    else if (/\.tsx?$/.test(entry.name) && !entry.name.endsWith('.d.ts')) files.push(entryPath);
+  }
+  return files;
+};
 const contract = JSON.parse(
   readFileSync(path.join(root, 'contracts/catalog/catalog-inventory-edge-contract.json'), 'utf8'),
 );
@@ -417,7 +427,7 @@ test('every catalog-management GET consumer preserves its generated strict respo
       ['contextQuery.currentData as', 'navigationQuery.currentData as', 'itemsQuery.currentData as', 'query.data as'],
     ],
     [
-      'ui/LocalCatalogCopyDrawer.tsx',
+      'ui/local-copy/LocalCatalogCopyDrawer.tsx',
       [
         'decodeLocalCopyCandidatePage(candidatesQuery.currentData)',
         'decodeLocalCopyPreflight(response)',
@@ -434,7 +444,7 @@ test('every catalog-management GET consumer preserves its generated strict respo
       ['candidatesQuery.data as'],
     ],
     [
-      'ui/CatalogDictionaryDrawerState.tsx',
+      'ui/dictionary/CatalogDictionaryDrawerState.tsx',
       ['dictionaryQuery.currentData?.data', 'productionQuery.currentData?.data', 'const readback = response.result;'],
       [
         'dictionaryQuery.currentData?.data.data',
@@ -464,8 +474,66 @@ test('every catalog-management GET consumer preserves its generated strict respo
       ],
       ['detailQuery.data as', 'manifestQuery.currentData?.data as', 'as CatalogInventoryEnvelope'],
     ],
+    [
+      'ui/CatalogDefinitionLibraries.tsx',
+      [
+        'attributeQuery.currentData?.data.definitions',
+        'orderOptionQuery.currentData?.data.definitions',
+        'inventoryQuery.currentData?.data',
+      ],
+      ['attributeQuery.data as', 'orderOptionQuery.data as', 'inventoryQuery.data as', 'as CatalogInventoryEnvelope'],
+    ],
+    [
+      'ui/CatalogItemAttributesEditor.tsx',
+      ['query.currentData?.data.definitions', 'candidateQuery.currentData?.data.definitions'],
+      ['query.data as', 'candidateQuery.data as', 'as CatalogInventoryEnvelope'],
+    ],
+    [
+      'ui/CatalogItemCompositeEditor.tsx',
+      ['decodeItems(query.currentData)', 'query.currentData'],
+      ['query.data as', 'as CatalogInventoryEnvelope'],
+    ],
+    [
+      'ui/CatalogItemEditorSectionAssembler.tsx',
+      ['unitQuery.currentData?.data.units'],
+      ['unitQuery.data as', 'as CatalogInventoryEnvelope'],
+    ],
+    [
+      'ui/CatalogItemOrderOptionsEditor.tsx',
+      ['candidateQuery.currentData?.data.definitions'],
+      ['query.data as', 'candidateQuery.data as', 'as CatalogInventoryEnvelope'],
+    ],
+    [
+      'ui/CatalogItemProductionEditor.tsx',
+      ['tagQuery.currentData?.data'],
+      ['tagQuery.data as', 'as CatalogInventoryEnvelope'],
+    ],
+    [
+      'ui/controllers/useCatalogSkuRows.ts',
+      ['useLazyGetOperationsCatalogItemSkusQuery', 'decodeSkuListPage(response)'],
+      ['response as CatalogInventoryEnvelope'],
+    ],
+    [
+      'ui/useCatalogCategoryCandidates.tsx',
+      ['useLazyGetOperationsCatalogCategoryCandidatesQuery', 'searchQuery.currentData?.data'],
+      ['searchQuery.data as', 'as CatalogInventoryEnvelope'],
+    ],
+    [
+      'ui/useInventoryConsumptionTargetCandidates.ts',
+      ['query.currentData?.data'],
+      ['query.data as', 'as CatalogInventoryEnvelope'],
+    ],
   ];
-  assert.equal(queryConsumers.length, 7);
+  const discoveredQueryConsumers = collectCatalogFeatureSourceFiles(catalogFeatureRoot)
+    .filter(file => /\boperationsRtk\.use(?:Lazy)?[A-Za-z0-9]+Query\s*\(/.test(readFileSync(file, 'utf8')))
+    .map(file => path.relative(catalogFeatureRoot, file).replaceAll(path.sep, '/'))
+    .sort();
+  assert.deepEqual(
+    queryConsumers.map(([file]) => file).sort(),
+    discoveredQueryConsumers,
+    'the strict response-type roster must cover every current direct operationsRtk GET consumer',
+  );
+  assert.equal(queryConsumers.length, discoveredQueryConsumers.length);
   for (const [file, required, forbidden] of queryConsumers) {
     const source = read(`apps/frontend/operations-admin/src/features/catalog-management/${file}`);
     const normalizedSource = source.replace(/\s+/g, ' ');
@@ -474,7 +542,10 @@ test('every catalog-management GET consumer preserves its generated strict respo
     for (const expression of forbidden)
       assert.equal(normalizedSource.includes(expression.replace(/\s+/g, ' ')), false, `${file} must not widen ${expression}`);
   }
-  const model = read('apps/frontend/operations-admin/src/features/catalog-management/model/catalogModel.ts');
+  const model = [
+    read('apps/frontend/operations-admin/src/features/catalog-management/model/catalogModel.ts'),
+    read('apps/frontend/operations-admin/src/features/catalog-management/model/catalog/catalogItemModel.ts'),
+  ].join('\n');
   assert.match(
     model,
     /export function selectCatalogDetailForItem\([\s\S]*?for \(const envelope of \[currentData, data\]\)[\s\S]*?detail\?\.item\.code === itemCode/,
@@ -482,7 +553,9 @@ test('every catalog-management GET consumer preserves its generated strict respo
 });
 
 test('catalog dictionary delete copy keeps history without starting a rebuild', () => {
-  const drawer = read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawerState.tsx');
+  const drawer = read(
+    'apps/frontend/operations-admin/src/features/catalog-management/ui/dictionary/CatalogDictionaryDrawerState.tsx',
+  );
   const modal = read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryAtomModals.tsx');
   assert.match(drawer, /删除后会保留历史记录/);
   assert.match(drawer, /不会自动创建新记录/);
@@ -500,17 +573,28 @@ test('unit list declares its owner limit problem in the source and materialized 
 });
 
 test('Local Copy consumes each model-owned response directly', () => {
-  const model = read('apps/frontend/operations-admin/src/features/catalog-management/model/catalogModel.ts');
+  const model = read(
+    'apps/frontend/operations-admin/src/features/catalog-management/ui/local-copy/localCatalogCopyModel.ts',
+  );
+  const drawer = read(
+    'apps/frontend/operations-admin/src/features/catalog-management/ui/local-copy/LocalCatalogCopyDrawer.tsx',
+  );
 
   for (const modelName of ['LocalCopyCandidatePage', 'LocalCopyPreflight', 'LocalCopyReadback']) {
-    assert.match(model, new RegExp(`response: ${modelName} \\| undefined`));
+    assert.match(model, new RegExp(`export type ${modelName}Data = ${modelName}\\['data'\\];`));
   }
+  assert.match(model, /decodeLocalCopyCandidatePage\([\s\S]*?response: LocalCopyCandidatePage \| undefined/);
+  assert.match(model, /decodeLocalCopyPreflight\([\s\S]*?response: LocalCopyPreflight \| undefined/);
+  assert.match(model, /decodeLocalCopyReadback\([\s\S]*?response: LocalCopyReadback \| undefined/);
+  assert.match(drawer, /decodeLocalCopyCandidatePage\(candidatesQuery\.currentData\)/);
+  assert.match(drawer, /decodeLocalCopyPreflight\(response\)/);
+  assert.match(drawer, /decodeLocalCopyReadback\(response\)/);
   assert.doesNotMatch(model, /localCopyPayload/);
-  assert.doesNotMatch(model, /CatalogInventoryEnvelope<LocalCopy/);
+  assert.doesNotMatch(drawer, /CatalogInventoryEnvelope<LocalCopy/);
 });
 
 test('catalog model accepts only the declared data envelope', () => {
-  const model = read('apps/frontend/operations-admin/src/features/catalog-management/model/catalogModel.ts');
+  const model = read('apps/frontend/operations-admin/src/features/catalog-management/model/catalog/catalogValidation.ts');
 
   assert.match(model, /return asRecord\(envelope\?\.data\);/);
   assert.doesNotMatch(model, /asRecord\(envelope\?\.result\) \?\? asRecord\(envelope\)/);

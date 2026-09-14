@@ -41,6 +41,13 @@ export type DrawerFormLifecycleResult = {
   readonly submitting: boolean;
   setSubmitting: (submitting: boolean) => void;
   reset: () => void;
+  /**
+   * Clears the current draft/operation state while keeping the Drawer open
+   * observation intact. Controllers use this for in-drawer context changes;
+   * the visual-close callback remains the only place that performs a full
+   * lifecycle reset.
+   */
+  resetPreservingOpen: () => void;
   requestClose: () => void;
   handleOpenChange: (open: boolean) => void;
   closeAfterSuccess: () => void;
@@ -155,15 +162,22 @@ export function useDrawerFormLifecycle({
     if (latestOptions.current.idempotencyEnabled) idempotencyKey.current = undefined;
   }, []);
 
-  const reset = useCallback(() => {
+  const resetState = useCallback((preserveOpen: boolean) => {
+    // A context reset can happen while the dirty confirmation is still open.
+    // Destroy that confirmation before clearing lifecycle state so an old
+    // modal callback cannot close a newly mounted context.
+    dirtyGuardRef.current?.destroy();
+    dirtyGuardRef.current = undefined;
     setDirty(false);
     setSubmitting(false);
     idempotencyKey.current = undefined;
     bypassClose.current = false;
     dirtyGuardOpen.current = false;
     pendingSuccess.current = false;
-    observedOpen.current = false;
+    if (!preserveOpen) observedOpen.current = false;
   }, []);
+  const reset = useCallback(() => resetState(false), [resetState]);
+  const resetPreservingOpen = useCallback(() => resetState(true), [resetState]);
 
   const requestClose = useCallback(() => {
     if (submittingRef.current) return;
@@ -189,7 +203,7 @@ export function useDrawerFormLifecycle({
         dirtyGuardRef.current = undefined;
         dirtyGuardOpen.current = false;
         bypassClose.current = true;
-        reset();
+        resetPreservingOpen();
         diagnostic('CLOSE_REQUESTED', 'CLOSE_REQUESTED');
         latestOptions.current.onOpenChange(false);
       },
@@ -199,7 +213,7 @@ export function useDrawerFormLifecycle({
       },
     });
     dirtyGuardRef.current = confirmation;
-  }, [diagnostic, modal, reset]);
+  }, [diagnostic, modal, resetPreservingOpen]);
 
   const closeAfterSuccess = useCallback(() => {
     pendingSuccess.current = true;
@@ -263,6 +277,7 @@ export function useDrawerFormLifecycle({
       },
       setSubmitting,
       reset,
+      resetPreservingOpen,
       requestClose,
       handleOpenChange,
       closeAfterSuccess,
@@ -281,6 +296,7 @@ export function useDrawerFormLifecycle({
       markBusinessIntentChanged,
       requestClose,
       reset,
+      resetPreservingOpen,
     ],
   );
 }

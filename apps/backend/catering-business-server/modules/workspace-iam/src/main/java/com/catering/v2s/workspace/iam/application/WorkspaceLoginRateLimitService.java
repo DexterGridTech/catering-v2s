@@ -1,11 +1,11 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceLoginRateLimitPersistence;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import java.nio.charset.StandardCharsets;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 /**
@@ -17,22 +17,29 @@ public final class WorkspaceLoginRateLimitService {
     private static final int SOURCE_LIMIT = 30;
     private static final long ACCOUNT_WINDOW = 15 * 60 * 1000L;
     private static final long SOURCE_WINDOW = 5 * 60 * 1000L;
-    private final JdbcTemplate jdbc;
+    private final WorkspaceLoginRateLimitPersistence persistence;
     private final TimeProvider time;
     private final byte[] hmacSecret;
 
     @org.springframework.beans.factory.annotation.Autowired
     public WorkspaceLoginRateLimitService(
-            JdbcTemplate jdbc, TimeProvider time, @Value("${workspace-iam.rate-limit-hmac-secret:}") String secret) {
-        this.jdbc = jdbc;
+            WorkspaceLoginRateLimitPersistence persistence,
+            TimeProvider time,
+            @Value("${workspace-iam.rate-limit-hmac-secret:}") String secret) {
+        this.persistence = persistence;
         this.time = time;
         if (secret == null || secret.isBlank())
             throw new IllegalStateException("workspace-iam.rate-limit-hmac-secret must be configured");
         this.hmacSecret = secret.getBytes(StandardCharsets.UTF_8);
     }
     /** Test-only compatibility constructor; the Spring constructor remains the production configuration path. */
-    WorkspaceLoginRateLimitService(JdbcTemplate jdbc, TimeProvider time) {
-        this.jdbc = jdbc;
+    WorkspaceLoginRateLimitService(
+            org.springframework.jdbc.core.JdbcTemplate jdbc, TimeProvider time) {
+        this(new WorkspaceLoginRateLimitPersistence(jdbc), time);
+    }
+
+    private WorkspaceLoginRateLimitService(WorkspaceLoginRateLimitPersistence persistence, TimeProvider time) {
+        this.persistence = persistence;
         this.time = time;
         this.hmacSecret = java.util.UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8);
     }
@@ -74,56 +81,27 @@ public final class WorkspaceLoginRateLimitService {
     }
 
     public void clearAccount(String key, Attempt attempt) {
-        jdbc.update(
-                "DELETE FROM workspace_iam.workspace_login_rate_limit_bucket WHERE group_workspace_key=? AND "
-                        + "dimension='ACCOUNT' AND fingerprint=?",
-                key,
-                attempt.accountFingerprint());
+        persistence.clearAccount(key, attempt.accountFingerprint());
     }
 
     private void lock(String key, String dimension, String fingerprint) {
-        jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtext(?))", key + ':' + dimension + ':' + fingerprint);
+        persistence.lock(key, dimension, fingerprint);
     }
 
     private void requireOpen(String key, String dimension, String fingerprint, long now) {
-        Long until = jdbc.query(
-                "SELECT locked_until_epoch_millis FROM workspace_iam.workspace_login_rate_limit_bucket WHERE "
-                        + "group_workspace_key=? AND dimension=? AND fingerprint=?",
-                statement -> {
-                    statement.setString(1, key);
-                    statement.setString(2, dimension);
-                    statement.setString(3, fingerprint);
-                },
-                result -> result.next() ? result.getObject(1, Long.class) : null);
+        Long until = persistence.lockedUntil(key, dimension, fingerprint);
         if (until != null && until > now) throw new WorkspaceAuthenticationService.LoginRateLimitedException();
     }
 
     private void failure(String key, String dimension, String fingerprint, int limit, long window, long lock) {
         long now = time.currentEpochMillis();
-        Bucket current = jdbc.query(
-                "SELECT window_started_at_epoch_millis, failed_attempts FROM "
-                        + "workspace_iam.workspace_login_rate_limit_bucket WHERE group_workspace_key=? AND dimension=? "
-                        + "AND "
-                        + "fingerprint=?",
-                statement -> {
-                    statement.setString(1, key);
-                    statement.setString(2, dimension);
-                    statement.setString(3, fingerprint);
-                },
-                result -> result.next() ? new Bucket(result.getLong(1), result.getInt(2)) : null);
+        WorkspaceLoginRateLimitPersistence.BucketRow row = persistence.bucket(key, dimension, fingerprint);
+        Bucket current = row == null ? null : new Bucket(row.windowStartedAt(), row.failedAttempts());
         boolean resetWindow = current == null || now - current.windowStartedAt() >= window;
         long started = resetWindow ? now : current.windowStartedAt();
         int attempts = resetWindow ? 1 : current.failedAttempts() + 1;
         Long until = attempts >= limit ? now + lock : null;
-        jdbc.update(
-                "INSERT INTO workspace_iam.workspace_login_rate_limit_bucket (group_workspace_key, dimension, "
-                        + "fingerprint, window_started_at_epoch_millis, failed_attempts, locked_until_epoch_millis, "
-                        + "updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (group_workspace_key, "
-                        + "dimension, fingerprint) DO UPDATE SET "
-                        + "window_started_at_epoch_millis=EXCLUDED.window_started_at_epoch_millis, "
-                        + "failed_attempts=EXCLUDED.failed_attempts, "
-                        + "locked_until_epoch_millis=EXCLUDED.locked_until_epoch_millis, "
-                        + "updated_at_epoch_millis=EXCLUDED.updated_at_epoch_millis",
+        persistence.upsertBucket(
                 key,
                 dimension,
                 fingerprint,

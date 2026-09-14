@@ -1,9 +1,9 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {Pressable, StyleSheet, View, type LayoutChangeEvent} from 'react-native';
+import {StyleSheet, View, type GestureResponderEvent, type LayoutChangeEvent} from 'react-native';
 import {PrimitiveStatus} from '@catering-v2s/ui-base-primitives';
 import {useInputController, useInputKeyboardState} from '../contexts/context';
 import {InputProvider} from './InputProvider';
-import {VirtualKeyboard} from './VirtualKeyboard';
+import {InputKeyboard} from './InputKeyboard';
 import type {KeyboardCapacity, LocalFrameMetrics} from '../foundations/keyboardHeight';
 import type {InputDiagnostic, InputSurfaceFrameProps} from '../types/types';
 
@@ -105,6 +105,7 @@ const InputSurfaceFrameContents = ({
     hasNextField: state.hasNextField,
   });
   const previousStateSignature = useRef<string | null>(null);
+  const touchStartRef = useRef<Readonly<{readonly pageX: number; readonly pageY: number}> | null>(null);
 
   useEffect(() => {
     if (!__DEV__ || onDiagnostic === undefined || previousStateSignature.current === stateSignature) return;
@@ -135,13 +136,81 @@ const InputSurfaceFrameContents = ({
     });
   }, [frameMetrics, onDiagnostic, state, stateSignature]);
 
+  const rememberSurfaceTouchStart = useCallback((event: GestureResponderEvent) => {
+    const {pageX, pageY} = event.nativeEvent;
+    touchStartRef.current = Number.isFinite(pageX) && Number.isFinite(pageY) ? {pageX, pageY} : null;
+    if (__DEV__ && onDiagnostic !== undefined) {
+      onDiagnostic({
+        event: 'input.surface-touch-start',
+        data: {
+          source: 'ui-base-input.InputSurfaceFrameContents.onTouchStart',
+          pageX: Number.isFinite(pageX) ? pageX : null,
+          pageY: Number.isFinite(pageY) ? pageY : null,
+        },
+      });
+    }
+  }, [onDiagnostic]);
+
+  const dismissFromSurfaceTouchEnd = useCallback((event: GestureResponderEvent) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    const {pageX, pageY} = event.nativeEvent;
+    const distance = start === null || !Number.isFinite(pageX) || !Number.isFinite(pageY)
+      ? null
+      : Math.hypot(pageX - start.pageX, pageY - start.pageY);
+    const shouldDismiss = distance !== null && distance <= 8;
+    if (__DEV__ && onDiagnostic !== undefined) {
+      onDiagnostic({
+        event: 'input.surface-touch-end',
+        data: {
+          source: 'ui-base-input.InputSurfaceFrameContents.onTouchEnd',
+          pageX: Number.isFinite(pageX) ? pageX : null,
+          pageY: Number.isFinite(pageY) ? pageY : null,
+          distance,
+          shouldDismiss,
+        },
+      });
+    }
+    if (shouldDismiss) controller.dismissActiveField();
+  }, [controller, onDiagnostic]);
+
+  const observeSurfaceTouchEndCapture = useCallback((event: GestureResponderEvent) => {
+    if (__DEV__ && onDiagnostic !== undefined) {
+      const {pageX, pageY} = event.nativeEvent;
+      onDiagnostic({
+        event: 'input.surface-touch-end-capture',
+        data: {
+          source: 'ui-base-input.InputSurfaceFrameContents.onTouchEndCapture',
+          pageX: Number.isFinite(pageX) ? pageX : null,
+          pageY: Number.isFinite(pageY) ? pageY : null,
+        },
+      });
+    }
+  }, [onDiagnostic]);
+
+  const dismissFromSurfaceClick = useCallback(() => {
+    controller.dismissActiveField();
+  }, [controller]);
+
+  const surfaceInteractionProps = typeof document === 'undefined'
+      ? {
+        onTouchStart: rememberSurfaceTouchStart,
+        onTouchEnd: dismissFromSurfaceTouchEnd,
+        onTouchEndCapture: observeSurfaceTouchEndCapture,
+      }
+    : {
+        onClick: dismissFromSurfaceClick,
+      };
+
   return (
     <>
-      <Pressable
+      {/* Passive touch/click observation keeps ScrollView and business descendants' responder negotiation intact. */}
+      <View
         testID="ui.base.input:surface-content"
         style={[
           styles.content,
         ]}
+        {...surfaceInteractionProps}
         onLayout={event => {
           const {x, y, width, height} = event.nativeEvent.layout;
           if (__DEV__ && onDiagnostic !== undefined) {
@@ -159,7 +228,6 @@ const InputSurfaceFrameContents = ({
             });
           }
         }}
-        onPress={controller.dismissActiveField}
       >
         {children}
         {showUnsupportedNotice ? (
@@ -167,20 +235,8 @@ const InputSurfaceFrameContents = ({
             {unsupportedMessageOf(state.blockedCapacity)}
           </PrimitiveStatus>
         ) : null}
-      </Pressable>
-      {state.visible && frameMetrics?.ready === true ? (
-        <VirtualKeyboard
-          layout={state.layout}
-          height={state.height}
-          frameWidth={state.frameWidth}
-          cellWidth={state.cellWidth}
-          shift={state.shift}
-          capsLock={state.capsLock}
-          hasNextField={state.hasNextField}
-          onKey={controller.handleKeyboardKey}
-          onDiagnostic={onDiagnostic}
-        />
-      ) : null}
+      </View>
+      {state.keyboardPlacement === 'surface' && frameMetrics?.ready === true ? <InputKeyboard placement="surface" /> : null}
     </>
   );
 };

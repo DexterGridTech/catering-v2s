@@ -10,9 +10,12 @@ export {
   ADMIN_GESTURE_REPETITIONS,
   ADMIN_GESTURE_SIZE,
   ADMIN_GESTURE_WINDOW_MS,
+  adminLauncherPointFromEvent,
   createInitialAdminGestureState,
+  logicalPointFromWindow,
   trackAdminGesture,
 } from './foundations/adminLauncher';
+export type {AdminGestureCoordinateSpace} from './foundations/adminLauncher';
 export {AdminNavigationRejectedError, createAdminSectionCommandBoundary, selectAdminSections} from './foundations/adminSectionSelection';
 export {adminTestIds} from './foundations/adminTestIds';
 export {AdminLayer} from './components/AdminLayer';

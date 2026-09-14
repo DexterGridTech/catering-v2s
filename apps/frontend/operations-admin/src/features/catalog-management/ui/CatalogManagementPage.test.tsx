@@ -10,7 +10,7 @@ import type {
 import {wireUuid} from '../../../app/api/wireUuid';
 import {requireOperationsScopeRef} from '../../../app/routing/model';
 import {CATALOG_TAB_LABELS, catalogEditorTabIsAllowed, catalogViewTabLabel} from '../model/catalogTabLabels';
-import {copyScopeTabKey} from './LocalCatalogCopyDrawer';
+import {copyScopeTabKey} from './local-copy/localCatalogCopyModel';
 import {
   buildCatalogBatchSaveRequest,
   buildCatalogBatchStatusRequest,

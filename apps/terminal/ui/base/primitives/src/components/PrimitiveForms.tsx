@@ -143,6 +143,9 @@ export type PrimitivePressOptionProps = Readonly<{
   readonly disabled?: boolean;
   readonly busy?: boolean;
   readonly onPress?: () => void;
+  readonly accessibilityRole?: 'button' | 'tab';
+  /** Presentation-only compact tab treatment for bounded navigation collections. */
+  readonly variant?: 'option' | 'tab';
   readonly children?: string;
 }>;
 
@@ -153,6 +156,8 @@ export const PrimitivePressOption = ({
   disabled,
   busy,
   onPress,
+  accessibilityRole = 'button',
+  variant = 'option',
   children,
 }: PrimitivePressOptionProps) => {
   const [pressed, setPressed] = useState(false);
@@ -160,8 +165,9 @@ export const PrimitivePressOption = ({
   return (
     <RnrPressable
       testID={assertTestID(testID)}
-      accessibilityRole="button"
+      accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
+      aria-selected={accessibilityRole === 'tab' ? selected : undefined}
       accessibilityState={{selected, disabled: isDisabled, busy: busy === true}}
       disabled={isDisabled}
       onPressIn={() => setPressed(true)}
@@ -170,7 +176,14 @@ export const PrimitivePressOption = ({
         if (!isDisabled) onPress?.();
       }}
     >
-      <RnrText style={pressed ? {opacity: 0.86} : undefined} className={selected ? baseTokens.optionSelected : baseTokens.option}>{children}</RnrText>
+      <RnrText
+        style={pressed ? {opacity: 0.86} : undefined}
+        className={variant === 'tab'
+          ? selected ? baseTokens.tabSelected : baseTokens.tab
+          : selected ? baseTokens.optionSelected : baseTokens.option}
+      >
+        {children}
+      </RnrText>
     </RnrPressable>
   );
 };

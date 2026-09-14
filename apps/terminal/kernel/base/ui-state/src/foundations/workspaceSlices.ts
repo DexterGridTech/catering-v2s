@@ -24,6 +24,27 @@ import type {
 const contentBaseName = `${moduleName}.content`
 const displayModes: readonly DisplayMode[] = ['PRIMARY', 'SECONDARY']
 
+export type ContentHydrationDiagnosticReason =
+  | 'unknown-part'
+  | 'duplicate-layer-id'
+  | 'invalid-entry'
+
+export type ContentHydrationDiagnostic = Readonly<{
+  readonly workspace: WorkspaceKey
+  readonly displayMode: DisplayMode | null
+  readonly layerId: string | null
+  readonly partKey: string | null
+  readonly reason: ContentHydrationDiagnosticReason
+}>
+
+export type ContentHydrationDiagnosticSink = (diagnostic: ContentHydrationDiagnostic) => void
+
+export const isValidOpenedAt = (value: unknown): value is number =>
+  typeof value === 'number'
+  && Number.isFinite(value)
+  && Number.isInteger(value)
+  && value > 0
+
 export const contentStateKeys = createWorkspaceStateKeys(contentBaseName)
 
 const isDisplayMode = (value: unknown): value is DisplayMode =>
@@ -96,8 +117,7 @@ const readOpenLayerPayload = (value: unknown): Readonly<{
     || !isDisplayMode(record.displayMode)
     || !isNonEmptyString(record.layerId)
     || !isNonEmptyString(record.partKey)
-    || typeof record.openedAt !== 'number'
-    || !Number.isFinite(record.openedAt)
+    || !isValidOpenedAt(record.openedAt)
     || hasInvalidOptionalProps(record)) {
     return undefined
   }
@@ -221,6 +241,43 @@ const serializeContentEntries = (
   SECONDARY: serializeContainers(state.contentSets.SECONDARY.containers),
 })
 
+const serializeLayer = (layer: LayerEntry): StateJsonObject | undefined => {
+  if (!isNonEmptyString(layer.layerId)
+    || !isNonEmptyString(layer.partKey)
+    || !isValidOpenedAt(layer.openedAt)) {
+    return undefined
+  }
+  if (layer.props !== undefined) {
+    try {
+      assertStateJsonValue(layer.props, 'content.layer.props')
+    } catch (_error) {
+      return undefined
+    }
+  }
+  return {
+    layerId: layer.layerId,
+    partKey: layer.partKey,
+    ...(layer.props === undefined ? {} : {props: layer.props}),
+    openedAt: layer.openedAt,
+  }
+}
+
+const serializeLayers = (layers: readonly LayerEntry[]): StateJsonValue[] => {
+  const result: StateJsonValue[] = []
+  for (const layer of layers) {
+    const serialized = serializeLayer(layer)
+    if (serialized !== undefined) result.push(serialized)
+  }
+  return result
+}
+
+const serializeLayerEntries = (
+  state: Readonly<UiContentState>,
+): Readonly<Partial<Record<string, StateJsonValue>>> => ({
+  PRIMARY: serializeLayers(state.contentSets.PRIMARY.layers),
+  SECONDARY: serializeLayers(state.contentSets.SECONDARY.layers),
+})
+
 const parsePlacement = (value: StateJsonValue): ScreenPlacement | undefined => {
   const record = readObject(value)
   if (record === undefined || !isNonEmptyString(record.partKey)) return undefined
@@ -251,6 +308,87 @@ const parseContainers = (value: StateJsonValue): Readonly<Record<string, ScreenP
   return Object.freeze(containers)
 }
 
+const diagnosticIdentity = (record: Record<string, unknown>): Readonly<{
+  readonly layerId: string | null
+  readonly partKey: string | null
+}> => Object.freeze({
+  layerId: isNonEmptyString(record.layerId) ? record.layerId : null,
+  partKey: isNonEmptyString(record.partKey) ? record.partKey : null,
+})
+
+const parseLayerEntry = (
+  value: unknown,
+  input: Readonly<{
+    readonly workspace: WorkspaceKey
+    readonly displayMode: DisplayMode
+    readonly onHydrationDiagnostic: ContentHydrationDiagnosticSink
+  }>,
+): LayerEntry | undefined => {
+  const record = readObject(value)
+  const identity = record === undefined
+    ? Object.freeze({layerId: null, partKey: null})
+    : diagnosticIdentity(record)
+  if (record === undefined
+    || !isNonEmptyString(record.layerId)
+    || !isNonEmptyString(record.partKey)
+    || !isValidOpenedAt(record.openedAt)
+    || hasInvalidOptionalProps(record)) {
+    input.onHydrationDiagnostic(Object.freeze({
+      workspace: input.workspace,
+      displayMode: input.displayMode,
+      ...identity,
+      reason: 'invalid-entry' as const,
+    }))
+    return undefined
+  }
+  const props = readOptionalProps(record)
+  return Object.freeze({
+    layerId: record.layerId,
+    partKey: record.partKey,
+    ...(props === undefined ? {} : {props}),
+    openedAt: record.openedAt,
+  })
+}
+
+export const parseLayerEntries = (
+  value: unknown,
+  input: Readonly<{
+    readonly workspace: WorkspaceKey
+    readonly displayMode: DisplayMode
+    readonly onHydrationDiagnostic: ContentHydrationDiagnosticSink
+  }>,
+): readonly LayerEntry[] => {
+  if (!Array.isArray(value)) {
+    input.onHydrationDiagnostic(Object.freeze({
+      workspace: input.workspace,
+      displayMode: input.displayMode,
+      layerId: null,
+      partKey: null,
+      reason: 'invalid-entry' as const,
+    }))
+    return Object.freeze([])
+  }
+  const seenLayerIds = new Set<string>()
+  const layers: LayerEntry[] = []
+  for (const raw of value) {
+    const layer = parseLayerEntry(raw, input)
+    if (layer === undefined) continue
+    if (seenLayerIds.has(layer.layerId)) {
+      input.onHydrationDiagnostic(Object.freeze({
+        workspace: input.workspace,
+        displayMode: input.displayMode,
+        layerId: layer.layerId,
+        partKey: layer.partKey,
+        reason: 'duplicate-layer-id' as const,
+      }))
+      continue
+    }
+    seenLayerIds.add(layer.layerId)
+    layers.push(layer)
+  }
+  return Object.freeze(layers)
+}
+
 const applyPersistedContentEntries = (
   state: Readonly<UiContentState>,
   entries: Readonly<Partial<Record<string, StateJsonValue>>>,
@@ -267,11 +405,33 @@ const applyPersistedContentEntries = (
   return Object.freeze({...state, contentSets: Object.freeze(contentSets)})
 }
 
-const createContentDescriptor = (
-  _workspace: WorkspaceKey,
-  sliceName: string,
-  reducer: StateRuntimeSliceDescriptor<UiContentState>['reducer'],
-): StateRuntimeSliceDescriptor<UiContentState> => ({
+const applyPersistedLayerEntries = (input: Readonly<{
+  readonly state: Readonly<UiContentState>
+  readonly entries: Readonly<Partial<Record<string, StateJsonValue>>>
+  readonly workspace: WorkspaceKey
+  readonly onHydrationDiagnostic: ContentHydrationDiagnosticSink
+}>): UiContentState => {
+  const {state, entries, workspace, onHydrationDiagnostic} = input
+  const contentSets = {...state.contentSets}
+  for (const displayMode of displayModes) {
+    const raw = entries[displayMode]
+    if (raw === undefined) continue
+    contentSets[displayMode] = Object.freeze({
+      ...contentSets[displayMode],
+      layers: parseLayerEntries(raw, {workspace, displayMode, onHydrationDiagnostic}),
+    })
+  }
+  return Object.freeze({...state, contentSets: Object.freeze(contentSets)})
+}
+
+const createContentDescriptor = (input: Readonly<{
+  readonly workspace: WorkspaceKey
+  readonly sliceName: string
+  readonly reducer: StateRuntimeSliceDescriptor<UiContentState>['reducer']
+  readonly onHydrationDiagnostic: ContentHydrationDiagnosticSink
+}>): StateRuntimeSliceDescriptor<UiContentState> => {
+  const {workspace, sliceName, reducer, onHydrationDiagnostic} = input
+  return {
   name: sliceName,
   reducer,
   persistIntent: 'owner-only',
@@ -282,18 +442,36 @@ const createContentDescriptor = (
       getEntries: serializeContentEntries,
       applyEntries: applyPersistedContentEntries,
     },
+    {
+      kind: 'record',
+      storageKeyPrefix: 'layers',
+      getEntries: serializeLayerEntries,
+      applyEntries: (state, entries) => applyPersistedLayerEntries({
+        state,
+        entries,
+        workspace,
+        onHydrationDiagnostic,
+      }),
+    },
   ],
   syncIntent: 'isolated',
-})
+  }
+}
 
-export const contentStateRegistrations: readonly StateRuntimeSliceRegistration[] =
-  toWorkspaceStateDescriptors<UiContentState>({
+export const createContentStateRegistrations = (
+  onHydrationDiagnostic: ContentHydrationDiagnosticSink = () => undefined,
+): readonly StateRuntimeSliceRegistration[] => toWorkspaceStateDescriptors<UiContentState>({
     baseName: contentBaseName,
     reducers: {
       MAIN: mainContentSlice.reducer,
       BRANCH: branchContentSlice.reducer,
     },
-    createDescriptor: createContentDescriptor,
+    createDescriptor: (workspace, sliceName, reducer) => createContentDescriptor({
+      workspace,
+      sliceName,
+      reducer,
+      onHydrationDiagnostic,
+    }),
   })
 
 export const readContentState = (

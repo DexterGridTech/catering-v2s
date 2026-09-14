@@ -11,7 +11,7 @@ owners: ["frontend-platform"]
 impacts: ["architecture","governance"]
 triggers: ["task-start","implementation","review","failure"]
 assertions: ["DETAIL_DRAWER_USES_SINGLE_OPERATION_MENU","DETAIL_DRAWER_ACTIONS_REUSE_FOUNDATION","DETAIL_DRAWER_DENOMINATOR_HAS_EXPLICIT_EXCLUSIONS"]
-sourceRefs: ["doc/platform/frontend-coding-standard.md","libraries/frontend/admin-ui-foundation/src/overlay/detailActionMenu.tsx"]
+sourceRefs: ["doc/platform/frontend-coding-standard.md","libraries/frontend/admin-ui-foundation/src/overlay/detailActionMenu.tsx","project-memory/practices/detail-drawer-action-menu.md"]
 ---
 
 # 双后台详情抽屉统一使用操作 Popup Menu

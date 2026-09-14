@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
+import com.catering.v2s.platform.workspace.application.persistence.WorkspaceAdministrationPersistence;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -41,7 +42,8 @@ class WorkspaceAdministrationPageRequestTest {
     @Test
     void ownerPerformsTheFilteredWindowCountAndBoundedSortedReadWithoutOrganizationLookup() {
         var jdbc = new RecordingJdbcTemplate();
-        var service = new WorkspaceAdministrationService(jdbc, null, null, null, null);
+        var service = new WorkspaceAdministrationService(
+                new WorkspaceAdministrationPersistence(jdbc), null, null, null, null);
 
         var page = service.list(new WorkspaceAdministrationPageRequest(
                 "North", "north-1", "Operations", "ENABLED", 3, 20, "UPDATED_AT", "DESC"));

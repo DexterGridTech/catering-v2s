@@ -257,7 +257,6 @@ describe('runtime request ledger selectors', () => {
       plainStorage: ports.persistKv,
       protectedStorage: ports.persistSecure,
       persistenceKey: 'runtime-request-ledger-actions',
-      storageTimeouts: {readMs: 50, writeMs: 50, resetMs: 50},
       persistenceDebounceMs: 0,
     })
 
@@ -294,7 +293,6 @@ describe('runtime request ledger selectors', () => {
       plainStorage: ports.persistKv,
       protectedStorage: ports.persistSecure,
       persistenceKey: 'runtime-request-ledger-sync',
-      storageTimeouts: {readMs: 50, writeMs: 50, resetMs: 50},
       persistenceDebounceMs: 0,
     })
     runtime.getStore().dispatch(requestLedgerActionsForMode('SLAVE').upsert({

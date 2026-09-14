@@ -180,9 +180,8 @@ const mutations = Object.freeze([
     testNamePattern: 'U-7 restores',
     apply: (sandbox) => replaceOnce(
       path.join(sandbox.uiStateRoot, 'src/foundations/workspaceSlices.ts'),
-      '      containers: parseContainers(raw),',
-      `      containers: parseContainers(raw),
-      layers: [{layerId: 'persisted-layer', partKey: 'persisted-layer', openedAt: 0}],`,
+      '      layers: parseLayerEntries(raw, {workspace, displayMode, onHydrationDiagnostic}),',
+      '      layers: [],',
     ),
   },
   {

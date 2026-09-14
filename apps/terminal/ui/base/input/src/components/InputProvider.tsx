@@ -31,6 +31,7 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
   const keyboardStateRef = useRef<KeyboardStateBase>({
     activeFieldId: null,
     owner: 'none',
+    keyboardPlacement: 'surface',
     layout: 'numeric',
     revision: 0,
   });
@@ -43,11 +44,13 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
       next: Readonly<{
         readonly activeFieldId: string | null;
         readonly owner: 'none' | 'virtual';
+        readonly keyboardPlacement?: KeyboardStateBase['keyboardPlacement'];
         readonly layout: InputFieldController['layout'];
       }>,
     ) => {
       keyboardStateRef.current = {
         ...next,
+        keyboardPlacement: next.keyboardPlacement ?? keyboardStateRef.current.keyboardPlacement,
         revision: keyboardStateRef.current.revision + 1,
       };
       forceKeyboardUpdate(value => value + 1);
@@ -161,6 +164,7 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
   const keyboardState: InputKeyboardState = {
     activeFieldId,
     owner: keyboardStateRef.current.owner,
+    keyboardPlacement: keyboardStateRef.current.keyboardPlacement,
     layout: keyboardStateRef.current.layout,
     capacity: surfaceMetrics.capacity,
     blockedFieldId: blockedFieldIdRef.current,

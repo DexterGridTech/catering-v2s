@@ -10,6 +10,7 @@ import type {InputRegistrationToken} from '../foundations/snapshot'
 import {useInputController, useInputFieldKeyboardState, useInputScrollAncestor} from '../contexts/context'
 import type {InputFieldOptions, InputFieldResult} from '../types/types'
 import type {PrimitiveInputHandle} from '@catering-v2s/ui-base-primitives'
+import {BUSINESS_FOCUS_SCOPE_ID} from '../foundations/focusScope'
 
 type InputPressEvent = Readonly<{
   readonly stopPropagation: () => void
@@ -60,7 +61,8 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
       keyboardKind: options.keyboardKind,
       layout: options.layout ?? 'full',
       maxLength: options.maxLength,
-      focusScopeId: options.focusScopeId ?? 'business',
+      focusScopeId: options.focusScopeId ?? BUSINESS_FOCUS_SCOPE_ID,
+      keyboardPlacement: options.keyboardPlacement ?? 'surface',
       inputRef,
       applyKey: applyKeyProxy,
       getEditState,
@@ -70,7 +72,7 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
       controller.unregisterField(token)
       if (tokenRef.current === token) tokenRef.current = null
     }
-  }, [applyKeyProxy, controller, getEditState, inputRef, options.fieldId, options.focusScopeId, options.keyboardKind, options.layout, options.maxLength])
+  }, [applyKeyProxy, controller, getEditState, inputRef, options.fieldId, options.focusScopeId, options.keyboardKind, options.keyboardPlacement, options.layout, options.maxLength])
 
   useLayoutEffect(() => {
     const token = tokenRef.current
@@ -79,9 +81,10 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
       keyboardKind: options.keyboardKind,
       layout: options.layout ?? 'full',
       maxLength: options.maxLength,
-      focusScopeId: options.focusScopeId ?? 'business',
+      focusScopeId: options.focusScopeId ?? BUSINESS_FOCUS_SCOPE_ID,
+      keyboardPlacement: options.keyboardPlacement ?? 'surface',
     })
-  }, [controller, options.focusScopeId, options.keyboardKind, options.layout, options.maxLength])
+  }, [controller, options.focusScopeId, options.keyboardKind, options.keyboardPlacement, options.layout, options.maxLength])
 
   useLayoutEffect(() => {
     const keyboardVisible = keyboardState.owner === 'virtual' && keyboardState.visible
@@ -134,6 +137,9 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
     event.stopPropagation()
     controller.preflightFocusTarget(options.fieldId)
   }, [controller, options.fieldId])
+  const onTouchEnd = useCallback((event: InputPressEvent) => {
+    event.stopPropagation()
+  }, [])
   const focus = useCallback(() => controller.focusField(options.fieldId), [controller, options.fieldId])
   const blur = useCallback(() => controller.blurField(options.fieldId), [controller, options.fieldId])
   const complete = useCallback(() => controller.completeField(options.fieldId), [controller, options.fieldId])
@@ -148,6 +154,7 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
     onChangeText,
     onFocus,
     onPressIn,
+    onTouchEnd,
     onSelectionChange,
     selection: editState.selection,
     secureTextEntry: options.secureTextEntry,
@@ -159,6 +166,7 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
     onChangeText,
     onFocus,
     onPressIn,
+    onTouchEnd,
     onSelectionChange,
     options.accessibilityLabel,
     options.editable,

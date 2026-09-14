@@ -24,26 +24,26 @@ describe('ui.base.dev-host Web StateStoragePort', () => {
     const port = createWebStateStoragePort(storage, 'plain:', 'persistKv')
     const other = createWebStateStoragePort(storage, 'protected:', 'persistSecure')
 
-    expect(await port.write({key: 'members', value: '{"members":[]} ', timeoutMs: 50})).toMatchObject({status: 'succeeded'})
-    expect(await port.read({key: 'members', timeoutMs: 50})).toMatchObject({
+    expect(await port.write({key: 'members', value: '{"members":[]} '})).toMatchObject({status: 'succeeded'})
+    expect(await port.read({key: 'members'})).toMatchObject({
       status: 'succeeded',
       value: {state: 'found', value: '{"members":[]} '},
     })
-    expect(await other.read({key: 'members', timeoutMs: 50})).toMatchObject({status: 'succeeded', value: {state: 'missing'}})
+    expect(await other.read({key: 'members'})).toMatchObject({status: 'succeeded', value: {state: 'missing'}})
     expect(storage.getItem('plain:members')).toBe('{"members":[]} ')
   })
 
   it('returns the caught storage reason for every failure operation', async () => {
     const port = createWebStateStoragePort(new ThrowingWebStorage(), 'plain:', 'persistKv')
     const results = await Promise.all([
-      port.read({key: 'key', timeoutMs: 50}),
-      port.write({key: 'key', value: 'value', timeoutMs: 50}),
-      port.remove({key: 'key', timeoutMs: 50}),
-      port.readMany({keys: ['key'], timeoutMs: 50}),
-      port.writeMany({entries: [{key: 'key', value: 'value'}], timeoutMs: 50}),
-      port.removeMany({keys: ['key'], timeoutMs: 50}),
-      port.listKeys({timeoutMs: 50}),
-      port.clear({timeoutMs: 50}),
+      port.read({key: 'key'}),
+      port.write({key: 'key', value: 'value'}),
+      port.remove({key: 'key'}),
+      port.readMany({keys: ['key']}),
+      port.writeMany({entries: [{key: 'key', value: 'value'}]}),
+      port.removeMany({keys: ['key']}),
+      port.listKeys({}),
+      port.clear({}),
     ])
 
     for (const result of results) {

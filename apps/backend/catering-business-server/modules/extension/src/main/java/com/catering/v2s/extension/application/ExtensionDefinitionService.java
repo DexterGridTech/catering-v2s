@@ -8,8 +8,10 @@ import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.api.ExtensionHostTypes;
 import com.catering.v2s.extension.api.ExtensionSubmission;
+import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence;
+import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence.DefinitionRow;
+import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence.PreStateRow;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
-import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,7 +24,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,52 +43,34 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
     private static final Set<String> HOST_TYPES = Set.copyOf(MANAGEMENT_HOST_TYPES);
     private static final Set<String> AUDIT_FIELDS = Set.of("fieldDefinitions", "revision");
     private static final ObjectMapper JSON = new ObjectMapper();
-    private final JdbcTemplate jdbc;
-    private final TimeProvider time;
+    private final ExtensionDefinitionPersistence persistence;
     private final ExtensionCommandReceiptService receipts;
     private final PlatformGovernanceAuthorization platformAuthorization;
     private final WorkspaceStatusLookup workspaceStatuses;
-    /**
-     * Convenience construction is retained for internal readers only. It must never make the edge-facing draft command
-     * authorization-optional outside the Spring owner graph.
-     */
-    public ExtensionDefinitionService(JdbcTemplate jdbc, TimeProvider time) {
-        this(
-                jdbc,
-                time,
-                new ExtensionCommandReceiptService(jdbc, time),
-                actor -> {
-                    throw new IllegalStateException("platform authorization is required");
-                },
-                (workspaceUuid, groupWorkspaceKey) -> {
-                    throw new IllegalStateException("workspace status lookup is required");
-                });
+    @Autowired
+    public ExtensionDefinitionService(
+            ExtensionDefinitionPersistence persistence,
+            ExtensionCommandReceiptService receipts,
+            PlatformGovernanceAuthorization platformAuthorization,
+            WorkspaceStatusLookup workspaceStatuses) {
+        this.persistence = persistence;
+        this.receipts = receipts;
+        this.platformAuthorization = platformAuthorization;
+        this.workspaceStatuses = Objects.requireNonNull(workspaceStatuses, "workspaceStatuses");
     }
 
-    /** Explicit test/internal construction when the shared workspace-status owner is available. */
-    public ExtensionDefinitionService(JdbcTemplate jdbc, TimeProvider time, WorkspaceStatusLookup workspaceStatuses) {
+    /** Internal owner readers do not have platform-admin authorization and must not expose draft commands. */
+    public ExtensionDefinitionService(
+            ExtensionDefinitionPersistence persistence,
+            ExtensionCommandReceiptService receipts,
+            WorkspaceStatusLookup workspaceStatuses) {
         this(
-                jdbc,
-                time,
-                new ExtensionCommandReceiptService(jdbc, time),
+                persistence,
+                receipts,
                 actor -> {
                     throw new IllegalStateException("platform authorization is required");
                 },
                 workspaceStatuses);
-    }
-
-    @org.springframework.beans.factory.annotation.Autowired
-    public ExtensionDefinitionService(
-            JdbcTemplate jdbc,
-            TimeProvider time,
-            ExtensionCommandReceiptService receipts,
-            PlatformGovernanceAuthorization platformAuthorization,
-            WorkspaceStatusLookup workspaceStatuses) {
-        this.jdbc = jdbc;
-        this.time = time;
-        this.receipts = receipts;
-        this.platformAuthorization = platformAuthorization;
-        this.workspaceStatuses = Objects.requireNonNull(workspaceStatuses, "workspaceStatuses");
     }
 
     @Override
@@ -99,25 +84,9 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
 
     private ExtensionDefinitionReadback requireDefinition(
             UUID workspaceUuid, String groupWorkspaceKey, String hostType, String workspaceStatus) {
-        return jdbc.query(
-                "SELECT definitions::text, revision, updated_at_epoch_millis FROM extension.extension_definition WHERE "
-                        + "workspace_uuid=? AND group_workspace_key=? AND entity_type=?",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    statement.setString(3, hostType);
-                },
-                result -> {
-                    if (!result.next()) throw new DefinitionNotFoundException();
-                    return new ExtensionDefinitionReadback(
-                            groupWorkspaceKey,
-                            hostType,
-                            result.getLong(2),
-                            result.getLong(3),
-                            readFields(result.getString(1)),
-                            workspaceStatus,
-                            blockers(workspaceStatus));
-                });
+        DefinitionRow row = persistence.findDefinition(workspaceUuid, groupWorkspaceKey, hostType);
+        if (row == null) throw new DefinitionNotFoundException();
+        return readback(groupWorkspaceKey, row, workspaceStatus);
     }
 
     @Transactional(readOnly = true)
@@ -127,20 +96,21 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
 
     private List<ExtensionDefinitionReadback> listDefinitions(
             UUID workspaceUuid, String groupWorkspaceKey, String workspaceStatus) {
-        return jdbc.query(
-                "SELECT entity_type, definitions::text, revision, updated_at_epoch_millis FROM "
-                        + "extension.extension_definition WHERE workspace_uuid=? AND group_workspace_key=? ORDER BY "
-                        + "entity_type",
-                (row, index) -> new ExtensionDefinitionReadback(
-                        groupWorkspaceKey,
-                        row.getString(1),
-                        row.getLong(3),
-                        row.getLong(4),
-                        readFields(row.getString(2)),
-                        workspaceStatus,
-                        blockers(workspaceStatus)),
-                workspaceUuid,
-                groupWorkspaceKey);
+        return persistence.findDefinitions(workspaceUuid, groupWorkspaceKey).stream()
+                .map(row -> readback(groupWorkspaceKey, row, workspaceStatus))
+                .toList();
+    }
+
+    private static ExtensionDefinitionReadback readback(
+            String groupWorkspaceKey, DefinitionRow row, String workspaceStatus) {
+        return new ExtensionDefinitionReadback(
+                groupWorkspaceKey,
+                row.hostType(),
+                row.revision(),
+                row.updatedAtEpochMillis(),
+                readFields(row.definitionsJson()),
+                workspaceStatus,
+                blockers(workspaceStatus));
     }
 
     /**
@@ -249,19 +219,18 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
         Long existing = before == null ? null : before.revision();
         List<ExtensionDefinitionReadback.Field> beforeFields = before == null ? List.of() : before.fields();
         long nextVersion;
-        long now = time.currentEpochMillis();
         if (existing == null) {
             if (expectedVersion != 0) throw new DefinitionVersionConflictException();
             nextVersion = 1;
-            jdbc.update(
-                    "INSERT INTO extension.extension_definition (workspace_uuid, group_workspace_key, entity_type, "
-                            + "definitions, revision, updated_at_epoch_millis) VALUES (?, ?, ?, CAST(? AS JSONB), 1, "
-                            + "?)",
-                    workspaceUuid,
-                    groupWorkspaceKey,
-                    hostType,
-                    json(normalized),
-                    now);
+            try {
+                persistence.insertDefinition(
+                        workspaceUuid,
+                        groupWorkspaceKey,
+                        hostType,
+                        json(normalized));
+            } catch (DuplicateKeyException conflict) {
+                throw new DefinitionVersionConflictException();
+            }
         } else {
             if (existing != expectedVersion) throw new DefinitionVersionConflictException();
             java.util.Map<String, String> existingTypes = before.fields().stream()
@@ -272,16 +241,14 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                             && !existingTypes.get(field.fieldKey()).equals(field.fieldType())))
                 throw new DefinitionInvalidException();
             nextVersion = expectedVersion + 1;
-            jdbc.update(
-                    "UPDATE extension.extension_definition SET definitions=CAST(? AS JSONB), revision=?, "
-                            + "updated_at_epoch_millis=? WHERE workspace_uuid=? AND group_workspace_key=? AND "
-                            + "entity_type=?",
-                    json(normalized),
-                    nextVersion,
-                    now,
+            int updated = persistence.updateDefinition(
                     workspaceUuid,
                     groupWorkspaceKey,
-                    hostType);
+                    hostType,
+                    json(normalized),
+                    nextVersion,
+                    expectedVersion);
+            if (updated != 1) throw new DefinitionVersionConflictException();
         }
         audit(workspaceUuid, groupWorkspaceKey, hostType, existing, nextVersion, beforeFields, normalized, actor);
         return requireDefinition(workspaceUuid, groupWorkspaceKey, hostType);
@@ -293,17 +260,8 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
      */
     private ExtensionDefinitionPreState loadExtensionDefinitionPreState(
             UUID workspaceUuid, String groupWorkspaceKey, String hostType) {
-        return jdbc.query(
-                "SELECT definitions::text, revision FROM extension.extension_definition WHERE workspace_uuid=? AND "
-                        + "group_workspace_key=? AND entity_type=?",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    statement.setString(3, hostType);
-                },
-                result -> result.next()
-                        ? new ExtensionDefinitionPreState(result.getLong(2), readFields(result.getString(1)))
-                        : null);
+        PreStateRow row = persistence.findPreState(workspaceUuid, groupWorkspaceKey, hostType);
+        return row == null ? null : new ExtensionDefinitionPreState(row.revision(), readFields(row.definitionsJson()));
     }
 
     @Transactional
@@ -427,20 +385,12 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                 .stream()
                 .filter(change -> !Objects.equals(change.beforeValue(), change.afterValue()))
                 .toList();
-        jdbc.update(
-                "INSERT INTO extension.audit_event (id, workspace_uuid, group_workspace_key, entity_type, "
-                        + "entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, "
-                        + "occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'EXTENSION_DEFINITION', ?, ?, ?, "
-                        + "?, "
-                        + "'EXTENSION_DEFINITION_REPLACED', ?, CAST(? AS JSONB))",
-                UUID.randomUUID(),
+        persistence.writeAudit(
                 workspaceUuid,
                 groupWorkspaceKey,
                 hostType,
-                actor.actorType(),
-                actor.actorId(),
-                actor.displaySnapshot(),
-                time.currentEpochMillis(),
+                hostType,
+                actor,
                 auditJson(policy.allow(changes)));
     }
 

@@ -11,7 +11,6 @@ import type {
   PersistenceHealth,
   PersistenceHealthListener,
   PersistenceOperationResult,
-  StateStorageTimeoutPolicy,
 } from './persistence'
 import type {StateRuntimeSliceRegistration} from './slice'
 import type {SyncStateDiff} from './sync'
@@ -54,7 +53,6 @@ export interface CreateStateRuntimeInput {
   readonly plainStorage: StateStoragePort
   readonly protectedStorage: StateStoragePort
   readonly persistenceKey: string
-  readonly storageTimeouts: StateStorageTimeoutPolicy
   readonly persistenceDebounceMs: number
   readonly storeEnhancers?: readonly StoreEnhancer[]
 }

@@ -742,7 +742,7 @@ class SalesMenuOwnerServiceOwnerApiTest {
                 });
 
         var result = new SalesMenuOwnerService(
-                        repository,
+                        new LegacySalesMenuPersistenceAdapter(repository),
                         () -> 1_788_000_000_000L,
                         new ObjectMapper().findAndRegisterModules(),
                         catalog,
@@ -838,7 +838,7 @@ class SalesMenuOwnerServiceOwnerApiTest {
             OrganizationOwnerApi organization,
             SalesMenuAssetReadApi assets) {
         return new SalesMenuOwnerService(
-                repository,
+                new LegacySalesMenuPersistenceAdapter(repository),
                 () -> 1_788_000_000_000L,
                 new ObjectMapper().findAndRegisterModules(),
                 catalog,

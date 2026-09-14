@@ -41,9 +41,12 @@ registerRootComponent(App)
 ```
 
 `App` 的真实公开入口是默认导出的 React 组件；Expo 会传入可选的 `displayIndex`（`0 | 1`），
-组件再调用内部的 `createSampleTerminalAssembly()` 和
+组件再调用内部的 `createSampleTerminalAssembly({surfaceForm})` 和
 `createSurfaceForDisplayIndex()` 完成对应 surface 的呈现。库消费者不应绕过 `App` 自己创建
 第二个 React host、runtime 或 store。
+
+`App` 是唯一保留 `surfaceForm='laptop'` 默认值的外层入口；它把解析后的形态显式传给
+`createSampleTerminalAssembly`，Android wrapper 与 sample-console assembly 不再各自兜底。
 
 ## 在这个包上迭代时
 

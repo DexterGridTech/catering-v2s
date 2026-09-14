@@ -1,5 +1,6 @@
 import {useCallback, useRef} from 'react';
 import {calculateVirtualKeyboardMetrics, type KeyboardCapacity, type LocalFrameMetrics} from '../foundations/keyboardHeight';
+import {BUSINESS_FOCUS_SCOPE_ID} from '../foundations/focusScope';
 import type {InputFieldController} from '../types/types';
 import type {
   CommitKeyboardState,
@@ -26,7 +27,7 @@ export const useInputFocusController = ({
   markBlockedField,
 }: InputFocusControllerOptions) => {
   const focusSuspendedRef = useRef(false);
-  const activeScopeIdRef = useRef('business');
+  const activeScopeIdRef = useRef<string>(BUSINESS_FOCUS_SCOPE_ID);
 
   const activateFocusScope = useCallback((scopeId: string): void => {
     if (scopeId === activeScopeIdRef.current) return;
@@ -44,7 +45,7 @@ export const useInputFocusController = ({
     (fieldId: string): boolean => {
       const target = fieldsRef.current.get(fieldId);
       if (target === undefined || target.focusScopeId !== activeScopeIdRef.current) return false;
-      if (focusSuspendedRef.current && activeScopeIdRef.current === 'business') return false;
+      if (focusSuspendedRef.current && activeScopeIdRef.current === BUSINESS_FOCUS_SCOPE_ID) return false;
       if (target.keyboardKind === 'virtual') {
         const metrics = calculateVirtualKeyboardMetrics(frameMetricsRef.current, target.layout);
         if (metrics.capacity !== 'supported') {
@@ -69,7 +70,7 @@ export const useInputFocusController = ({
     (fieldId: string): void => {
       const field = fieldsRef.current.get(fieldId);
       if (field === undefined || field.focusScopeId !== activeScopeIdRef.current) return;
-      if (focusSuspendedRef.current && activeScopeIdRef.current === 'business') return;
+      if (focusSuspendedRef.current && activeScopeIdRef.current === BUSINESS_FOCUS_SCOPE_ID) return;
       if (field.keyboardKind === 'virtual') {
         const metrics = calculateVirtualKeyboardMetrics(frameMetricsRef.current, field.layout);
         if (metrics.capacity !== 'supported') {
@@ -85,6 +86,7 @@ export const useInputFocusController = ({
       commitKeyboardState({
         activeFieldId: fieldId,
         owner: field.keyboardKind,
+        keyboardPlacement: field.keyboardPlacement,
         layout: field.layout,
       });
     },

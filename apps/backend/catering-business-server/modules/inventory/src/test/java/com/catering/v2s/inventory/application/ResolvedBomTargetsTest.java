@@ -2,12 +2,6 @@ package com.catering.v2s.inventory.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import java.util.ArrayList;
@@ -16,15 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementSetter;
-import org.springframework.jdbc.core.ResultSetExtractor;
 
 class ResolvedBomTargetsTest {
     @Test
-    @SuppressWarnings("unchecked")
-    void tenBomRowsUseOneBoundedLookupAndKeepTheFirstMissingDiagnostic() {
-        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+    void tenBomRowsKeepTheFirstMissingDiagnostic() {
         List<UUID> submitted = new ArrayList<>();
         for (int index = 0; index < 10; index++) submitted.add(UUID.randomUUID());
         UUID missing = submitted.get(7);
@@ -33,22 +22,11 @@ class ResolvedBomTargetsTest {
                 .filter(ref -> !ref.equals(missing))
                 .forEach(ref ->
                         resolved.put(ref, new ResolvedBomTargets.TargetFact("ENABLED", true, UUID.randomUUID())));
-        when(jdbc.query(
-                        eq(ResolvedBomTargets.STATEMENT_TEMPLATE),
-                        any(PreparedStatementSetter.class),
-                        any(ResultSetExtractor.class)))
-                .thenReturn(resolved);
-
-        ResolvedBomTargets targets = ResolvedBomTargets.load(jdbc, "scope", "brand", submitted);
+        ResolvedBomTargets targets = ResolvedBomTargets.from(resolved);
 
         for (int index = 0; index < 7; index++) targets.requireResolved(submitted.get(index));
         InventoryOwnerApi.Problem failure =
-                assertThrows(InventoryOwnerApi.Problem.class, () -> targets.requireResolved(missing));
+        assertThrows(InventoryOwnerApi.Problem.class, () -> targets.requireResolved(missing));
         assertEquals("REFERENCE_MAPPING_UNRESOLVED", failure.code());
-        verify(jdbc, times(1))
-                .query(
-                        eq(ResolvedBomTargets.STATEMENT_TEMPLATE),
-                        any(PreparedStatementSetter.class),
-                        any(ResultSetExtractor.class));
     }
 }

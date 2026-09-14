@@ -1,5 +1,6 @@
 package com.catering.v2s.catalog.application;
 
+import com.catering.v2s.catalog.application.persistence.CatalogWorkbenchReadPersistence;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerTypes;
 import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
@@ -76,7 +77,7 @@ public class CatalogWorkbenchReadService {
             "VERSION_CONFLICT",
             "VOIDED_RECORD_IMMUTABLE");
 
-    private final JdbcTemplate jdbc;
+    private final CatalogWorkbenchReadPersistence persistence;
     private final ObjectMapper mapper;
     private final CopyLimitPolicy copyLimits;
     private final TimeProvider time;
@@ -103,6 +104,7 @@ public class CatalogWorkbenchReadService {
     private final PlatformTransactionManager transactions;
     @Autowired
     public CatalogWorkbenchReadService(
+            CatalogWorkbenchReadPersistence persistence,
             JdbcTemplate jdbc,
             ObjectMapper mapper,
             TimeProvider time,
@@ -110,7 +112,7 @@ public class CatalogWorkbenchReadService {
             ProductionTagOwnerApi productionTags,
             InventoryOwnerApi inventory,
             PlatformTransactionManager transactions) {
-        this.jdbc = jdbc;
+        this.persistence = persistence;
         this.mapper = mapper;
         this.copyLimits = CopyLimitPolicy.load(mapper);
         this.time = time;
@@ -130,6 +132,25 @@ public class CatalogWorkbenchReadService {
         this.itemMediaFacts = new CatalogItemMediaFacts(jdbc, mapper);
         this.skuMediaFacts = new CatalogSkuMediaFacts(jdbc, mapper);
         this.itemReferenceFacts = new CatalogItemReferenceFacts(jdbc, mapper);
+    }
+
+    public CatalogWorkbenchReadService(
+            JdbcTemplate jdbc,
+            ObjectMapper mapper,
+            TimeProvider time,
+            CatalogAssetReferenceLock assetReferenceLocks,
+            ProductionTagOwnerApi productionTags,
+            InventoryOwnerApi inventory,
+            PlatformTransactionManager transactions) {
+        this(
+                new CatalogWorkbenchReadPersistence(jdbc),
+                jdbc,
+                mapper,
+                time,
+                assetReferenceLocks,
+                productionTags,
+                inventory,
+                transactions);
     }
 
 public JsonNode readWorkbenchContext(String dataNodeRef, String brandRef, String requestId) {
@@ -157,41 +178,16 @@ public List<CatalogOwnerApi.InventoryDisplayFact> readInventoryDisplayFacts(
         requireScope(dataNodeRef, brandRef);
         if (orderedItemRefs == null || orderedItemRefs.isEmpty()) return List.of();
 
-        List<UUID> distinctItemRefs = new ArrayList<>(new LinkedHashSet<>(orderedItemRefs));
-        String placeholders = String.join(",", Collections.nCopies(distinctItemRefs.size(), "?"));
-        List<Object> args = new ArrayList<>();
-        args.add(dataNodeRef);
-        args.add(brandRef);
-        args.addAll(distinctItemRefs);
-        List<CatalogOwnerApi.InventoryDisplayFact> projectedFacts = jdbc.query(
-                "SELECT item.item_ref,item.name,sku.sku_name,item.sections->>'materialRole',category.name "
-                        + "FROM catalog.catalog_item item "
-                        + "LEFT JOIN LATERAL (SELECT catalog_sku.sku_name "
-                        + "FROM catalog.catalog_sku "
-                        + "WHERE catalog_sku.item_ref=item.item_ref AND catalog_sku.status <> 'VOIDED' "
-                        + "ORDER BY catalog_sku.is_default DESC,catalog_sku.display_order,catalog_sku.sku_code "
-                        + "LIMIT 1) sku ON TRUE "
-                        + "LEFT JOIN LATERAL (SELECT catalog_category.name "
-                        + "FROM catalog.catalog_item_category relation "
-                        + "JOIN catalog.catalog_category "
-                        + "ON catalog_category.category_ref=relation.category_ref "
-                        + "WHERE relation.item_ref=item.item_ref "
-                        + "AND catalog_category.data_node_ref=item.data_node_ref "
-                        + "AND catalog_category.brand_ref=item.brand_ref "
-                        + "AND catalog_category.status <> 'VOIDED' "
-                        + "ORDER BY relation.category_ref "
-                        + "LIMIT 1) category ON TRUE "
-                        + "WHERE item.data_node_ref=? AND item.brand_ref=? "
-                        + "AND item.item_ref IN ("
-                        + placeholders
-                        + ") AND item.status <> 'VOIDED'",
-                (rows, row) -> new CatalogOwnerApi.InventoryDisplayFact(
-                        rows.getObject(1, UUID.class),
-                        rows.getString(2),
-                        rows.getString(3),
-                        rows.getString(4),
-                        rows.getString(5)),
-                args.toArray());
+        List<CatalogOwnerApi.InventoryDisplayFact> projectedFacts = persistence
+                .readInventoryDisplayFacts(dataNodeRef, brandRef, orderedItemRefs)
+                .stream()
+                .map(value -> new CatalogOwnerApi.InventoryDisplayFact(
+                        value.itemRef(),
+                        value.inventoryStatus(),
+                        value.inventoryMode(),
+                        value.consumptionUnitJson(),
+                        value.bomLineCount()))
+                .toList();
         Map<UUID, CatalogOwnerApi.InventoryDisplayFact> factsByItemRef = new LinkedHashMap<>();
         projectedFacts.forEach(fact -> factsByItemRef.put(fact.itemRef(), fact));
         return orderedItemRefs.stream()
@@ -204,25 +200,15 @@ public CatalogOwnerApi.InventoryTargetDisplayFact readInventoryTargetDisplayFact
             String dataNodeRef, String brandRef, UUID itemRef, UUID productSkuRef) {
         requireScope(dataNodeRef, brandRef);
         if (itemRef == null) return CatalogOwnerApi.InventoryTargetDisplayFact.absent(null);
-        List<CatalogOwnerApi.InventoryTargetDisplayFact> rows = jdbc.query(
-                "SELECT item.item_ref,item.name,item.shape_key,sku.sku_name FROM catalog.catalog_item item "
-                        + "LEFT JOIN LATERAL (SELECT catalog_sku.sku_name FROM catalog.catalog_sku WHERE "
-                        + "catalog_sku.item_ref=item.item_ref AND catalog_sku.status <> 'VOIDED' AND "
-                        + "?::uuid IS NOT NULL AND catalog_sku.product_sku_ref=? ORDER BY catalog_sku.product_sku_ref "
-                        + "LIMIT 1) sku ON TRUE WHERE item.data_node_ref=? AND item.brand_ref=? AND item.item_ref=? "
-                        + "AND item.status <> 'VOIDED'",
-                statement -> {
-                    statement.setObject(1, productSkuRef);
-                    statement.setObject(2, productSkuRef);
-                    statement.setString(3, dataNodeRef);
-                    statement.setString(4, brandRef);
-                    statement.setObject(5, itemRef);
-                },
-                (result, row) -> new CatalogOwnerApi.InventoryTargetDisplayFact(
-                        result.getObject(1, UUID.class),
-                        result.getString(2),
-                        result.getString(3),
-                        result.getString(4)));
+        List<CatalogOwnerApi.InventoryTargetDisplayFact> rows = persistence
+                .readInventoryTargetDisplayFact(dataNodeRef, brandRef, itemRef, productSkuRef)
+                .stream()
+                .map(value -> new CatalogOwnerApi.InventoryTargetDisplayFact(
+                        value.itemRef(),
+                        value.inventoryStatus(),
+                        value.inventoryMode(),
+                        value.consumptionUnitJson()))
+                .toList();
         return rows.isEmpty() ? CatalogOwnerApi.InventoryTargetDisplayFact.absent(itemRef) : rows.getFirst();
     }
 
@@ -239,44 +225,22 @@ public CatalogOwnerApi.SalesMenuCandidatePage readSalesMenuCandidatePage(
                 Integer.toString(query.pageSize()));
         OpaqueCollectionCursor.Position cursor = decodeSalesMenuCursor(query.cursor(), queryIdentity);
 
-        StringBuilder sql = new StringBuilder("SELECT i.item_ref,i.code,i.name,i.shape_key,i.status,"
-                + "NULLIF(i.sections->>'standardSalePrice','')::bigint AS default_price,i.version "
-                + "FROM catalog.catalog_item i WHERE i.data_node_ref=? AND i.brand_ref=? "
-                + "AND i.status <> 'VOIDED'");
-        List<Object> arguments = new ArrayList<>(List.of(query.dataNodeRef(), query.brandRef()));
-        if (!query.filter().isBlank()) {
-            sql.append(" AND (i.code ILIKE ? OR i.name ILIKE ?)");
-            String filter = "%" + query.filter() + "%";
-            arguments.add(filter);
-            arguments.add(filter);
-        }
-        if (query.categoryRef() != null) {
-            sql.append(" AND EXISTS (SELECT 1 FROM catalog.catalog_item_category relation "
-                    + "JOIN catalog.catalog_category category ON category.category_ref=relation.category_ref "
-                    + "WHERE relation.item_ref=i.item_ref AND relation.category_ref=? "
-                    + "AND category.data_node_ref=i.data_node_ref AND category.brand_ref=i.brand_ref "
-                    + "AND category.status <> 'VOIDED')");
-            arguments.add(query.categoryRef());
-        }
-        if (cursor != null) {
-            sql.append(" AND (i.code > ? OR (i.code = ? AND i.item_ref > ?))");
-            arguments.add(cursor.sortKey());
-            arguments.add(cursor.sortKey());
-            arguments.add(cursor.tieBreaker());
-        }
-        sql.append(" ORDER BY i.code,i.item_ref LIMIT ?");
-        arguments.add(SALES_MENU_CANDIDATE_PAGE_SIZE + 1);
-        List<SalesMenuItemRow> rows = jdbc.query(
-                sql.toString(),
-                (result, ignored) -> new SalesMenuItemRow(
-                        result.getObject(1, UUID.class),
-                        result.getString(2),
-                        result.getString(3),
-                        result.getString(4),
-                        result.getString(5),
-                        result.getObject(6, Long.class),
-                        result.getLong(7)),
-                arguments.toArray());
+        List<SalesMenuItemRow> rows = persistence
+                .readSalesMenuCandidateRows(
+                        query,
+                        cursor == null ? null : cursor.sortKey(),
+                        cursor == null ? null : cursor.tieBreaker(),
+                        SALES_MENU_CANDIDATE_PAGE_SIZE)
+                .stream()
+                .map(value -> new SalesMenuItemRow(
+                        value.itemRef(),
+                        value.itemCode(),
+                        value.itemName(),
+                        value.shapeKey(),
+                        value.status(),
+                        value.defaultPriceCents(),
+                        value.version()))
+                .toList();
         boolean hasNext = rows.size() > SALES_MENU_CANDIDATE_PAGE_SIZE;
         List<SalesMenuItemRow> pageRows =
                 hasNext ? new ArrayList<>(rows.subList(0, SALES_MENU_CANDIDATE_PAGE_SIZE)) : rows;
@@ -336,26 +300,16 @@ private List<SalesMenuItemRow> readSalesMenuItemRows(String dataNodeRef, String 
             if (itemRef == null)
                 throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "itemRefs must contain UUID values");
 
-        List<UUID> requestedRefs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
-        String placeholders = String.join(",", Collections.nCopies(requestedRefs.size(), "?"));
-        List<Object> arguments = new ArrayList<>(List.of(dataNodeRef, brandRef));
-        arguments.addAll(requestedRefs);
-        return jdbc.query(
-                "SELECT i.item_ref,i.code,i.name,i.shape_key,i.status,"
-                        + "NULLIF(i.sections->>'standardSalePrice','')::bigint AS default_price,i.version "
-                        + "FROM catalog.catalog_item i WHERE i.data_node_ref=? AND i.brand_ref=? "
-                        + "AND i.item_ref IN ("
-                        + placeholders
-                        + ") AND i.status <> 'VOIDED' ORDER BY i.item_ref",
-                (result, ignored) -> new SalesMenuItemRow(
-                        result.getObject(1, UUID.class),
-                        result.getString(2),
-                        result.getString(3),
-                        result.getString(4),
-                        result.getString(5),
-                        result.getObject(6, Long.class),
-                        result.getLong(7)),
-                arguments.toArray());
+        return persistence.readSalesMenuItemRows(dataNodeRef, brandRef, itemRefs).stream()
+                .map(value -> new SalesMenuItemRow(
+                        value.itemRef(),
+                        value.itemCode(),
+                        value.itemName(),
+                        value.shapeKey(),
+                        value.status(),
+                        value.defaultPriceCents(),
+                        value.version()))
+                .toList();
     }
 
 private CatalogOwnerApi.SalesMenuCandidate salesMenuCandidate(SalesMenuItemRow row, SalesMenuFactSnapshot facts) {
@@ -658,19 +612,6 @@ private static void putNullableUuid(ObjectNode target, String field, UUID value)
         else target.put(field, value.toString());
     }
 
-private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
-            java.sql.ResultSet rows, int refIndex, int codeIndex, int nameIndex, int dimensionIndex, int precisionIndex)
-            throws java.sql.SQLException {
-        UUID ref = rows.getObject(refIndex, UUID.class);
-        if (ref == null) return null;
-        return new InventoryOwnerApi.UnitSnapshot(
-                ref,
-                rows.getString(codeIndex),
-                rows.getString(nameIndex),
-                rows.getString(dimensionIndex),
-                rows.getInt(precisionIndex));
-    }
-
 private ObjectNode workbenchContext(String dataNodeRef, String brandRef, String requestId) {
         ObjectNode data = mapper.createObjectNode();
         data.put("ownerType", "DATA_NODE").put("ownerRef", dataNodeRef).put("brandRef", brandRef);
@@ -690,132 +631,49 @@ private ObjectNode workbenchContext(String dataNodeRef, String brandRef, String 
 private ObjectNode navigation(String dataNodeRef, String brandRef, String requestId, ObjectNode request) {
         ObjectNode data = mapper.createObjectNode();
         ArrayNode tree = data.putArray("tree");
-        jdbc.query(
-                "WITH RECURSIVE visible_categories AS MATERIALIZED (SELECT category_ref,code,name,"
-                        + "parent_category_ref,version,display_order FROM catalog.catalog_category WHERE "
-                        + "data_node_ref=? AND brand_ref=? AND status <> 'VOIDED'), category_order(category_ref,"
-                        + "order_path) AS (SELECT category.category_ref,ARRAY[LPAD(category.display_order::text,"
-                        + "10,'0') || ':' || category.code]::text[] FROM visible_categories category WHERE "
-                        + "category.parent_category_ref IS NULL OR NOT EXISTS (SELECT 1 FROM visible_categories "
-                        + "parent WHERE parent.category_ref=category.parent_category_ref) UNION ALL SELECT "
-                        + "child.category_ref,array_append(parent.order_path,LPAD(child.display_order::text,10,'0') "
-                        + "|| ':' || child.code) FROM category_order parent JOIN visible_categories child ON "
-                        + "child.parent_category_ref=parent.category_ref), category_subtree(root_category_ref,"
-                        + "category_ref) AS (SELECT category_ref,category_ref FROM visible_categories UNION SELECT "
-                        + "subtree.root_category_ref,child.category_ref FROM category_subtree subtree JOIN "
-                        + "visible_categories child ON child.parent_category_ref=subtree.category_ref), direct_counts "
-                        + "AS (SELECT relation.category_ref,"
-                        + "COUNT(DISTINCT item.item_ref) AS direct_count "
-                        + "FROM catalog.catalog_item_category relation JOIN catalog.catalog_item item ON "
-                        + "item.item_ref=relation.item_ref "
-                        + "WHERE item.data_node_ref=? AND item.brand_ref=? AND item.status <> 'VOIDED' "
-                        + "GROUP BY relation.category_ref), "
-                        + "blocking_items AS (SELECT DISTINCT subtree.root_category_ref,item.item_ref,item.code,"
-                        + "item.name "
-                        + "FROM category_subtree subtree JOIN catalog.catalog_item_category relation "
-                        + "ON relation.category_ref=subtree.category_ref JOIN catalog.catalog_item item "
-                        + "ON item.item_ref=relation.item_ref AND item.data_node_ref=? AND item.brand_ref=? "
-                        + "AND item.status <> 'VOIDED'), subtree_sizes AS (SELECT root_category_ref,"
-                        + "COUNT(DISTINCT category_ref) AS subtree_size FROM category_subtree "
-                        + "GROUP BY root_category_ref), subtree_counts AS (SELECT root_category_ref,"
-                        + "COUNT(DISTINCT item_ref) AS subtree_count FROM blocking_items GROUP BY root_category_ref), "
-                        + "blocking_stats AS (SELECT root_category_ref,"
-                        + "COUNT(DISTINCT item_ref) AS blocking_reference_count,"
-                        + "COALESCE(jsonb_agg(jsonb_build_object('referenceKind','CATALOG_ITEM','referenceRef',"
-                        + "item_ref,'code',code,'name',name,'direction','INBOUND') ORDER BY code),"
-                        + "'[]'::jsonb) AS blocking_reference_facts FROM blocking_items "
-                        + "GROUP BY root_category_ref) "
-                        + "SELECT c.category_ref,c.code,c.name,c.parent_category_ref,c.version,c.display_order,"
-                        + "COALESCE(direct_counts.direct_count,0),COALESCE(subtree_counts.subtree_count,0),"
-                        + "COALESCE(subtree_sizes.subtree_size,1),"
-                        + "COALESCE(blocking_stats.blocking_reference_count,0),"
-                        + "COALESCE(blocking_stats.blocking_reference_facts,'[]'::jsonb) "
-                        + "FROM visible_categories c LEFT JOIN category_order ordered ON "
-                        + "ordered.category_ref=c.category_ref LEFT JOIN direct_counts ON "
-                        + "direct_counts.category_ref=c.category_ref "
-                        + "LEFT JOIN subtree_counts ON subtree_counts.root_category_ref=c.category_ref "
-                        + "LEFT JOIN subtree_sizes ON subtree_sizes.root_category_ref=c.category_ref "
-                        + "LEFT JOIN blocking_stats ON blocking_stats.root_category_ref=c.category_ref "
-                        + "ORDER BY ordered.order_path NULLS LAST,c.parent_category_ref NULLS FIRST,"
-                        + "c.display_order,c.code",
-                statement -> {
-                    statement.setString(1, dataNodeRef);
-                    statement.setString(2, brandRef);
-                    statement.setString(3, dataNodeRef);
-                    statement.setString(4, brandRef);
-                    statement.setString(5, dataNodeRef);
-                    statement.setString(6, brandRef);
-                },
-                result -> {
-                    while (result.next()) {
-                        String categoryRef = result.getObject(1, UUID.class).toString();
-                        long directCount = result.getLong(7);
-                        long count = result.getLong(8);
-                        long subtreeSize = result.getLong(9);
-                        long blockingCount = result.getLong(10);
-                        ObjectNode node = tree.addObject()
-                                .put("categoryRef", categoryRef)
-                                .put("code", result.getString(2))
-                                .put("name", result.getString(3))
-                                .put("version", result.getLong(5))
-                                .put("displayOrder", result.getInt(6));
-                        if (result.getObject(4) == null) node.putNull("parentCategoryRef");
-                        else
-                            node.put(
-                                    "parentCategoryRef",
-                                    result.getObject(4, UUID.class).toString());
-                        node.put("count", count)
-                                .put("directCount", directCount)
-                                .put("countSemantics", "SELF_AND_DESCENDANTS");
-                        ObjectNode deletion = node.putObject("deletionAvailability");
-                        deletion.put("canDelete", blockingCount == 0)
-                                .put("subtreeSize", subtreeSize)
-                                .put("blockingReferenceCount", blockingCount);
-                        try {
-                            JsonNode blockingReferenceFacts = mapper.readTree(result.getString(11));
-                            deletion.putObject("blockingReferences")
-                                    .put("count", blockingCount)
-                                    .set(
-                                            "references",
-                                            blockingReferenceFacts == null || !blockingReferenceFacts.isArray()
-                                                    ? mapper.createArrayNode()
-                                                    : blockingReferenceFacts);
-                        } catch (Exception failure) {
-                            // spotless:off
-                            throw new CatalogOwnerApi.Problem(
-                                    "RESULT_UNKNOWN", 500, "分类阻断引用读取失败", failure);
-                            // spotless:on
-                        }
-                    }
-                    return null;
-                });
+        for (CatalogWorkbenchReadPersistence.NavigationCategoryRow row
+                : persistence.readNavigationCategories(dataNodeRef, brandRef)) {
+            long directCount = row.directCount();
+            long count = row.count();
+            long blockingCount = row.blockingReferenceCount();
+            ObjectNode node = tree.addObject()
+                    .put("categoryRef", row.categoryRef().toString())
+                    .put("code", row.code())
+                    .put("name", row.name())
+                    .put("version", row.version())
+                    .put("displayOrder", row.displayOrder());
+            if (row.parentCategoryRef() == null) node.putNull("parentCategoryRef");
+            else node.put("parentCategoryRef", row.parentCategoryRef().toString());
+            node.put("count", count)
+                    .put("directCount", directCount)
+                    .put("countSemantics", "SELF_AND_DESCENDANTS");
+            ObjectNode deletion = node.putObject("deletionAvailability");
+            deletion.put("canDelete", blockingCount == 0)
+                    .put("subtreeSize", row.subtreeSize())
+                    .put("blockingReferenceCount", blockingCount);
+            try {
+                JsonNode blockingReferenceFacts = mapper.readTree(row.blockingReferenceFactsJson());
+                deletion.putObject("blockingReferences")
+                        .put("count", blockingCount)
+                        .set(
+                                "references",
+                                blockingReferenceFacts == null || !blockingReferenceFacts.isArray()
+                                        ? mapper.createArrayNode()
+                                        : blockingReferenceFacts);
+            } catch (Exception failure) {
+                // spotless:off
+                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "分类阻断引用读取失败", failure);
+                // spotless:on
+            }
+        }
         ArrayNode tags = data.putArray("tags");
-        jdbc.query(
-                "SELECT entry.entry_ref, entry.code, entry.name, COUNT(DISTINCT item.item_ref) "
-                        + "FROM catalog.dictionary_entry entry "
-                        + "LEFT JOIN catalog.catalog_item_reference relation ON relation.ref=entry.entry_ref "
-                        + "AND relation.kind=? "
-                        + "LEFT JOIN catalog.catalog_item item ON item.item_ref=relation.item_ref "
-                        + "AND item.data_node_ref=entry.data_node_ref AND item.brand_ref=entry.brand_ref "
-                        + "AND item.status <> 'VOIDED' "
-                        + "WHERE entry.data_node_ref=? AND entry.brand_ref=? AND entry.dictionary_kind='TAG' "
-                        + "AND entry.status='ENABLED' "
-                        + "GROUP BY entry.entry_ref, entry.code, entry.name, entry.display_order "
-                        + "ORDER BY entry.display_order, entry.code, entry.name",
-                statement -> {
-                    statement.setString(1, CatalogItemReferenceFacts.CATALOG_TAG);
-                    statement.setString(2, dataNodeRef);
-                    statement.setString(3, brandRef);
-                },
-                result -> {
-                    while (result.next())
-                        tags.addObject()
-                                .put("tagRef", result.getObject(1, UUID.class).toString())
-                                .put("code", result.getString(2))
-                                .put("name", result.getString(3))
-                                .put("count", result.getLong(4));
-                    return null;
-                });
+        for (CatalogWorkbenchReadPersistence.NavigationTagRow row
+                : persistence.readNavigationTags(dataNodeRef, brandRef))
+            tags.addObject()
+                    .put("tagRef", row.tagRef().toString())
+                    .put("code", row.code())
+                    .put("name", row.name())
+                    .put("count", row.count());
         ArrayNode productionTagNodes = data.putArray("productionTags");
         List<ProductionTagOwnerApi.ProductionTagNavigationReadback> productionTagDefinitions = productionTags == null
                 ? List.of()
@@ -842,40 +700,20 @@ private ObjectNode navigation(String dataNodeRef, String brandRef, String reques
         Map<String, Long> smartCounts = new LinkedHashMap<>();
         ArrayNode counts = data.putArray("shapeCounts");
         Map<String, Long> shapeCounts = new LinkedHashMap<>();
-        long[] generation = {0L};
-        long[] allCount = {0L};
-        long[] uncategorizedCount = {0L};
-        jdbc.query(
-                "SELECT shape_key, COUNT(*), COALESCE(MAX(version),0), "
-                        + "COUNT(*) FILTER (WHERE "
-                        + "COALESCE(sections->>'source',sections->>'sourceType',sections->>'ownershipSource')='EXTE"
-                        + "RNAL_ORDER_TEMPORARY'), "
-                        + "COUNT(*) FILTER (WHERE status='DISABLED'), "
-                        + "COUNT(*) FILTER (WHERE updated_at_epoch_millis >= ?), "
-                        + "COUNT(*) FILTER (WHERE "
-                        + "COALESCE(sections->>'source',sections->>'sourceType',sections->>'ownershipSource')='AUTO"
-                        + "_SYNC'), COUNT(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM "
-                        + "catalog.catalog_item_category relation WHERE relation.item_ref=catalog_item.item_ref)) "
-                        + "FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=? AND status <> 'VOIDED' "
-                        + "GROUP BY shape_key",
-                statement -> {
-                    statement.setLong(1, now() - 7L * 24L * 60L * 60L * 1000L);
-                    statement.setString(2, dataNodeRef);
-                    statement.setString(3, brandRef);
-                },
-                result -> {
-                    while (result.next()) {
-                        shapeCounts.put(result.getString(1), result.getLong(2));
-                        generation[0] = Math.max(generation[0], result.getLong(3));
-                        allCount[0] += result.getLong(2);
-                        smartCounts.merge("EXTERNAL_ORDER_TEMP", result.getLong(4), Long::sum);
-                        smartCounts.merge("INACTIVE", result.getLong(5), Long::sum);
-                        smartCounts.merge("RECENTLY_UPDATED", result.getLong(6), Long::sum);
-                        smartCounts.merge("AUTO_SYNC", result.getLong(7), Long::sum);
-                        uncategorizedCount[0] += result.getLong(8);
-                    }
-                    return null;
-                });
+        long generation = 0L;
+        long allCount = 0L;
+        long uncategorizedCount = 0L;
+        for (CatalogWorkbenchReadPersistence.NavigationShapeRow row
+                : persistence.readNavigationShapes(now() - 7L * 24L * 60L * 60L * 1000L, dataNodeRef, brandRef)) {
+            shapeCounts.put(row.shapeKey(), row.count());
+            generation = Math.max(generation, row.generation());
+            allCount += row.count();
+            smartCounts.merge("EXTERNAL_ORDER_TEMP", row.externalOrderTemporaryCount(), Long::sum);
+            smartCounts.merge("INACTIVE", row.inactiveCount(), Long::sum);
+            smartCounts.merge("RECENTLY_UPDATED", row.recentlyUpdatedCount(), Long::sum);
+            smartCounts.merge("AUTO_SYNC", row.autoSyncCount(), Long::sum);
+            uncategorizedCount += row.uncategorizedCount();
+        }
         for (CatalogInventoryShapeManifest.SmartViewRule view : CatalogInventoryShapeManifest.SMART_VIEWS) {
             views.addObject()
                     .put("viewKey", view.viewKey())
@@ -884,35 +722,18 @@ private ObjectNode navigation(String dataNodeRef, String brandRef, String reques
         }
         for (String shape : CatalogOwnerTypes.SHAPES)
             counts.addObject().put("shapeKey", shape).put("count", shapeCounts.getOrDefault(shape, 0L));
-        data.put("allCount", allCount[0]);
-        data.put("uncategorizedCount", uncategorizedCount[0]);
-        data.put("generation", generation[0]);
+        data.put("allCount", allCount);
+        data.put("uncategorizedCount", uncategorizedCount);
+        data.put("generation", generation);
         return envelope(requestId, data);
     }
 
 private Map<UUID, Long> productionTagReferenceCounts(
             String dataNodeRef, String brandRef, List<UUID> productionTagDefinitionRefs) {
         if (productionTagDefinitionRefs == null || productionTagDefinitionRefs.isEmpty()) return Map.of();
-        List<UUID> refs = new ArrayList<>(new LinkedHashSet<>(productionTagDefinitionRefs));
-        String placeholders = String.join(",", Collections.nCopies(refs.size(), "?"));
-        List<Object> arguments = new ArrayList<>();
-        arguments.add(CatalogItemReferenceFacts.PRODUCTION_TAG);
-        arguments.add(dataNodeRef);
-        arguments.add(brandRef);
-        arguments.addAll(refs);
         Map<UUID, Long> counts = new LinkedHashMap<>();
-        jdbc.query(
-                "SELECT relation.ref, COUNT(DISTINCT relation.item_ref) "
-                        + "FROM catalog.catalog_item_reference relation "
-                        + "JOIN catalog.catalog_item item ON item.item_ref=relation.item_ref "
-                        + "WHERE relation.kind=? AND item.data_node_ref=? AND item.brand_ref=? "
-                        + "AND item.status <> 'VOIDED' AND relation.ref IN (" + placeholders + ") "
-                        + "GROUP BY relation.ref",
-                (result, row) -> {
-                    counts.put(result.getObject(1, UUID.class), result.getLong(2));
-                    return null;
-                },
-                arguments.toArray());
+        persistence.readProductionTagReferenceCounts(dataNodeRef, brandRef, productionTagDefinitionRefs)
+                .forEach(value -> counts.put(value.tagRef(), value.count()));
         return Map.copyOf(counts);
     }
 
@@ -955,109 +776,32 @@ private ObjectNode categoryCandidates(String dataNodeRef, String brandRef, Strin
                 throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "cursor is invalid", failure);
             }
         }
-        String cte = "WITH RECURSIVE category_tree AS ("
-                + "SELECT c.category_ref,c.code,c.name,c.parent_category_ref,c.display_order,"
-                + "ARRAY[c.category_ref]::uuid[] AS path_refs,"
-                + "jsonb_build_array(jsonb_build_object('categoryRef',c.category_ref::text,'code',c.code,"
-                + "'name',c.name)) AS path_json "
-                + "FROM catalog.catalog_category c WHERE c.data_node_ref=? AND c.brand_ref=? "
-                + "AND c.status = 'ENABLED' AND c.parent_category_ref IS NULL "
-                + "UNION ALL "
-                + "SELECT child.category_ref,child.code,child.name,child.parent_category_ref,child.display_order,"
-                + "parent.path_refs || child.category_ref,"
-                + "parent.path_json || jsonb_build_array(jsonb_build_object('categoryRef',"
-                + "child.category_ref::text,'code',child.code,'name',child.name)) "
-                + "FROM catalog.catalog_category child JOIN category_tree parent ON "
-                + "parent.category_ref=child.parent_category_ref "
-                + "WHERE child.data_node_ref=? AND child.brand_ref=? AND child.status = 'ENABLED'"
-                + ") ";
-        StringBuilder matchingVisibility = new StringBuilder();
-        List<Object> matchingVisibilityArgs = new ArrayList<>();
-        if (keyword == null) {
-            if (parentCategoryRef == null) matchingVisibility.append("category_tree.parent_category_ref IS NULL");
-            else {
-                matchingVisibility.append("category_tree.parent_category_ref=?");
-                matchingVisibilityArgs.add(parentCategoryRef);
-            }
-        } else {
-            matchingVisibility.append("EXISTS (SELECT 1 FROM category_tree matched WHERE category_tree.category_ref = "
-                    + "ANY(matched.path_refs) "
-                    + "AND (LOWER(matched.code) LIKE ? OR LOWER(matched.name) LIKE ?))");
-            String pattern = "%" + keyword.toLowerCase(Locale.ROOT) + "%";
-            matchingVisibilityArgs.add(pattern);
-            matchingVisibilityArgs.add(pattern);
-        }
-        StringBuilder cursorPredicate = new StringBuilder();
-        List<Object> cursorArgs = new ArrayList<>();
-        if (cursor != null) {
-            cursorPredicate.append(" WHERE (display_order>? OR (display_order=? AND name>?) "
-                    + "OR (display_order=? AND name=? AND code>?) "
-                    + "OR (display_order=? AND name=? AND code=? AND category_ref>?))");
-            cursorArgs.add(cursorDisplayOrder);
-            cursorArgs.add(cursorDisplayOrder);
-            cursorArgs.add(cursorName);
-            cursorArgs.add(cursorDisplayOrder);
-            cursorArgs.add(cursorName);
-            cursorArgs.add(cursorCode);
-            cursorArgs.add(cursorDisplayOrder);
-            cursorArgs.add(cursorName);
-            cursorArgs.add(cursorCode);
-            cursorArgs.add(cursorRef);
-        }
-        String cycleBlocked = currentCategoryRef == null ? "false" : "(?::uuid = ANY(category_tree.path_refs))";
-        String categoryDepthLimit = Integer.toString(CATALOG_CATEGORY_MAX_DEPTH);
-        String createDepthBlocked = "(array_length(category_tree.path_refs, 1) >= " + categoryDepthLimit + ")";
-        String relativeDescendantDepth = "array_length(descendant.path_refs, 1) - " + categoryDescendantPositionSql();
-        String depthBlocked =
-                switch (usage) {
-                    case "CATEGORY_CREATE" -> createDepthBlocked;
-                    case "CATEGORY_REPARENT" -> "(array_length(category_tree.path_refs, 1) + (SELECT COALESCE(MAX("
-                            + relativeDescendantDepth
-                            + "), 1) "
-                            + "FROM category_tree descendant WHERE ?::uuid = ANY(descendant.path_refs)) > "
-                            + CATALOG_CATEGORY_MAX_DEPTH + ")";
-                    default -> "false";
-                };
-        String sql = cte + ", matching AS (SELECT category_tree.category_ref,category_tree.code,category_tree.name,"
-                + "category_tree.parent_category_ref,category_tree.display_order,"
-                + "EXISTS (SELECT 1 FROM catalog.catalog_category child WHERE child.data_node_ref=? AND "
-                + "child.brand_ref=? "
-                + "AND child.parent_category_ref=category_tree.category_ref AND child.status = 'ENABLED'),"
-                + "category_tree.path_json," + cycleBlocked + " AS cycle_blocked," + depthBlocked
-                + " AS depth_blocked FROM category_tree WHERE " + matchingVisibility
-                + "), aggregate AS (SELECT COUNT(*) AS total FROM matching), paged AS (SELECT * FROM matching"
-                + cursorPredicate + " ORDER BY display_order,name,code,category_ref LIMIT ?) "
-                + "SELECT paged.*,aggregate.total FROM aggregate LEFT JOIN paged ON TRUE "
-                + "ORDER BY paged.display_order,paged.name,paged.code,paged.category_ref";
-        // The child-existence projection and optional reparent guard bind before
-        // matching and cursor predicates.
-        List<Object> args = new ArrayList<>(List.of(dataNodeRef, brandRef, dataNodeRef, brandRef));
-        args.add(dataNodeRef);
-        args.add(brandRef);
-        if (currentCategoryRef != null) args.add(currentCategoryRef);
-        if ("CATEGORY_REPARENT".equals(usage)) {
-            args.add(currentCategoryRef);
-            args.add(currentCategoryRef);
-        }
-        args.addAll(matchingVisibilityArgs);
-        args.addAll(cursorArgs);
-        args.add(pageSize + 1);
-        List<CategoryCandidateRow> rows = jdbc.query(
-                sql,
-                statement -> {
-                    for (int index = 0; index < args.size(); index++) statement.setObject(index + 1, args.get(index));
-                },
-                (result, row) -> new CategoryCandidateRow(
-                        result.getObject(1, UUID.class),
-                        result.getString(2),
-                        result.getString(3),
-                        result.getObject(4, UUID.class),
-                        result.getInt(5),
-                        result.getBoolean(6),
-                        result.getString(7),
-                        result.getBoolean(8),
-                        result.getBoolean(9),
-                        result.getLong(10)));
+        List<CategoryCandidateRow> rows = new ArrayList<>(persistence
+                .readCategoryCandidates(new CatalogWorkbenchReadPersistence.CategoryCandidateQuery(
+                        dataNodeRef,
+                        brandRef,
+                        usage,
+                        currentCategoryRef,
+                        parentCategoryRef,
+                        keyword,
+                        pageSize,
+                        cursorDisplayOrder,
+                        cursorName,
+                        cursorCode,
+                        cursorRef))
+                .stream()
+                .map(value -> new CategoryCandidateRow(
+                        value.categoryRef(),
+                        value.code(),
+                        value.name(),
+                        value.parentCategoryRef(),
+                        value.displayOrder(),
+                        value.hasChildren(),
+                        value.pathJson(),
+                        value.cycleBlocked(),
+                        value.depthBlocked(),
+                        value.total()))
+                .toList());
         long total = rows.isEmpty() ? 0L : rows.getFirst().total();
         rows.removeIf(row -> row.categoryRef() == null);
         boolean hasNext = rows.size() > pageSize;
@@ -1107,10 +851,6 @@ private static String categoryCandidateSortKey(int displayOrder, String name, St
                 displayOrder,
                 Base64.getUrlEncoder().withoutPadding().encodeToString(name.getBytes(StandardCharsets.UTF_8)),
                 code);
-    }
-
-private static String categoryDescendantPositionSql() {
-        return "array_position(descendant.path_refs, ?::uuid) + 1";
     }
 
 private static String categoryDepthDisabledReason(String usage) {
@@ -1167,154 +907,47 @@ private ObjectNode items(String dataNodeRef, String brandRef, String requestId, 
             return envelope(requestId, empty);
         }
 
-        StringBuilder sql = new StringBuilder("WITH RECURSIVE category_scope(category_ref) AS ("
-                + "SELECT c.category_ref FROM catalog.catalog_category c WHERE c.data_node_ref=? AND c.brand_ref=? AND "
-                + "c.category_ref::text=? AND c.status <> 'VOIDED' "
-                + "UNION ALL SELECT child.category_ref FROM catalog.catalog_category child JOIN category_scope parent "
-                + "ON child.parent_category_ref=parent.category_ref "
-                + "WHERE child.data_node_ref=? AND child.brand_ref=? AND ? = TRUE AND child.status <> 'VOIDED') "
-                + ", filtered AS (SELECT i.item_ref, i.code, i.name, i.short_name, i.shape_key, i.status, "
-                + "i.sections::text AS sections, i.preparation_profile, i.version, "
-                + "i.updated_at_epoch_millis, i.source_scope_ref, "
-                + "i.sales_unit_ref, i.sales_unit_code, i.sales_unit_name, i.sales_unit_dimension, "
-                + "i.sales_unit_precision, i.base_measure_unit_ref, i.base_measure_unit_code, "
-                + "i.base_measure_unit_name, i.base_measure_unit_dimension, i.base_measure_unit_precision "
-                + "FROM catalog.catalog_item i WHERE i.data_node_ref=? AND i.brand_ref=?");
-        List<Object> args = new ArrayList<>();
-        args.add(dataNodeRef);
-        args.add(brandRef);
-        args.add(categoryRef);
-        args.add(dataNodeRef);
-        args.add(brandRef);
-        args.add(includeSubCategories);
-        args.add(dataNodeRef);
-        args.add(brandRef);
-        if (!itemCodes.isEmpty()) {
-            sql.append(" AND i.code IN (")
-                    .append(String.join(",", Collections.nCopies(itemCodes.size(), "?")))
-                    .append(")");
-            args.addAll(itemCodes);
-        }
-        if (!itemRefs.isEmpty()) {
-            sql.append(" AND i.item_ref IN (")
-                    .append(String.join(",", Collections.nCopies(itemRefs.size(), "?")))
-                    .append(")");
-            args.addAll(itemRefs);
-        }
-        if (keyword == null || keyword.isBlank()) sql.append(" AND (?::text IS NULL)");
-        else
-            sql.append(
-                    " AND (i.name || chr(1) || COALESCE(i.short_name, '') || chr(1) || i.code) ILIKE '%' || ? || '%'");
-        if (keyword == null || keyword.isBlank()) args.add(null);
-        else args.add(keyword);
-        // VOIDED is never a public business-read state.  An explicit status
-        // filter may narrow the visible set, but cannot reintroduce it.
-        sql.append(" AND i.status <> 'VOIDED'");
-        if (status != null && !status.isBlank()) {
-            sql.append(" AND i.status=?");
-            args.add(status);
-        }
-        if (shapeKey != null && !shapeKey.isBlank()) {
-            sql.append(" AND i.shape_key=?");
-            args.add(shapeKey);
-        }
-        if (categoryRef == null || categoryRef.isBlank()) sql.append(" AND (?::text IS NULL)");
-        else
-            sql.append(" AND EXISTS (SELECT 1 FROM catalog.catalog_item_category relation JOIN category_scope c ON "
-                    + "c.category_ref=relation.category_ref WHERE relation.item_ref=i.item_ref)");
-        if (categoryRef == null || categoryRef.isBlank()) args.add(null);
-        if (tagRef != null) {
-            sql.append(" AND EXISTS (SELECT 1 FROM catalog.catalog_item_reference relation "
-                    + "WHERE relation.item_ref=i.item_ref AND relation.kind=? AND relation.ref=?)");
-            args.add(CatalogItemReferenceFacts.CATALOG_TAG);
-            args.add(tagRef);
-        }
-        if (productionTagRef != null) {
-            sql.append(" AND EXISTS (SELECT 1 FROM catalog.catalog_item_reference relation "
-                    + "WHERE relation.item_ref=i.item_ref AND relation.kind=? AND relation.ref=?)");
-            args.add(CatalogItemReferenceFacts.PRODUCTION_TAG);
-            args.add(productionTagRef);
-        }
-        if (uncategorized)
-            sql.append(" AND NOT EXISTS (SELECT 1 FROM catalog.catalog_item_category relation WHERE "
-                    + "relation.item_ref=i.item_ref)");
-        if (smartViewKey != null && !smartViewKey.isBlank()) {
-            switch (smartViewKey) {
-                case "ALL" -> {}
-                case "EXTERNAL_ORDER_TEMP" -> sql.append(" AND "
-                        + "COALESCE(i.sections->>'source',i.sections->>'sourceType',i.sections->>'ownershipSource')"
-                        + "='EXTERNAL_ORDER_TEMPORARY'");
-                case "INACTIVE" -> sql.append(" AND i.status='DISABLED'");
-                case "RECENTLY_UPDATED" -> sql.append(" AND i.updated_at_epoch_millis >= ?")
-                        .append(" ");
-                case "AUTO_SYNC" -> sql.append(" AND "
-                        + "COALESCE(i.sections->>'source',i.sections->>'sourceType',i.sections->>'ownershipSource')"
-                        + "='AUTO_SYNC'");
-                default -> throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "smartViewKey is not supported");
-            }
-            if ("RECENTLY_UPDATED".equals(smartViewKey)) args.add(now() - 7L * 24L * 60L * 60L * 1000L);
-        }
-        if (source != null && !source.isBlank()) {
-            switch (source) {
-                case "SELF_MANAGED" -> sql.append(" AND i.source_scope_ref IS NULL");
-                case "COPIED" -> sql.append(" AND i.source_scope_ref IS NOT NULL");
-                case "AUTO_SYNC" -> sql.append(" AND "
-                        + "COALESCE(i.sections->>'source',i.sections->>'sourceType',i.sections->>'ownershipSource')"
-                        + "='AUTO_SYNC'");
-                case "TEMPORARY" -> sql.append(
-                        " AND COALESCE(i.sections->>'source',i.sections->>'sourceType',i.sections->>'ownershipSource') "
-                                + "IN ('TEMPORARY','EXTERNAL_ORDER_TEMPORARY')");
-                default -> throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "source is not supported");
-            }
-        }
-        if ("COMPOSITE_COMPONENT".equals(candidateUsage)) {
-            // The owner, not the editor, defines this candidate boundary. A new
-            // package relation may target only an enabled item; a disabled item
-            // that is already attached remains visible through the detail readback.
-            sql.append(" AND i.status='ENABLED' AND i.code <> ?");
-            args.add(excludeItemCode);
-        }
-        sql.append("), aggregate AS (SELECT COUNT(*) AS total FROM filtered), paged AS (SELECT item_ref, code, name, "
-                + "short_name, shape_key, status, sections, preparation_profile, version, updated_at_epoch_millis, "
-                + "source_scope_ref, sales_unit_ref, sales_unit_code, sales_unit_name, sales_unit_dimension, "
-                + "sales_unit_precision, base_measure_unit_ref, base_measure_unit_code, base_measure_unit_name, "
-                + "base_measure_unit_dimension, base_measure_unit_precision FROM filtered "
-                + "ORDER BY code OFFSET ? LIMIT ?) SELECT p.item_ref, p.code, "
-                + "p.name, p.short_name, p.shape_key, p.status, "
-                + "(COALESCE(p.sections::jsonb,'{}'::jsonb) || jsonb_build_object("
-                + "'preparationProfile',p.preparation_profile,"
-                + "'salesUnitRef',p.sales_unit_ref,"
-                + "'salesUnitSnapshot',CASE WHEN p.sales_unit_ref IS NULL THEN NULL ELSE jsonb_build_object("
-                + "'unitRef',p.sales_unit_ref,'code',p.sales_unit_code,'name',p.sales_unit_name,"
-                + "'unitDimension',p.sales_unit_dimension,'precision',p.sales_unit_precision) END,"
-                + "'baseMeasureUnitRef',p.base_measure_unit_ref,"
-                + "'baseMeasureUnitSnapshot',CASE WHEN p.base_measure_unit_ref IS NULL THEN NULL "
-                + "ELSE jsonb_build_object("
-                + "'unitRef',p.base_measure_unit_ref,'code',p.base_measure_unit_code,'name',p.base_measure_unit_name,"
-                + "'unitDimension',p.base_measure_unit_dimension,'precision',p.base_measure_unit_precision) "
-                + "END))::text, p.version, "
-                + "p.updated_at_epoch_millis, p.source_scope_ref, a.total FROM aggregate a LEFT JOIN paged p ON "
-                + "TRUE ORDER BY p.code");
-        args.add(offset);
-        args.add(pageSize + 1);
-        List<PageItemRow> rows = jdbc.query(
-                sql.toString(),
-                (result, row) -> new PageItemRow(
-                        result.getObject(1, UUID.class) == null
+        long recentlyUpdatedSince = "RECENTLY_UPDATED".equals(smartViewKey)
+                ? now() - 7L * 24L * 60L * 60L * 1000L
+                : 0L;
+        List<PageItemRow> rows = persistence
+                .readItemPage(new CatalogWorkbenchReadPersistence.ItemPageQuery(
+                        dataNodeRef,
+                        brandRef,
+                        keyword,
+                        smartViewKey,
+                        shapeKey,
+                        categoryRef,
+                        tagRef,
+                        productionTagRef,
+                        uncategorized,
+                        includeSubCategories,
+                        status,
+                        source,
+                        candidateUsage,
+                        excludeItemCode,
+                        offset,
+                        pageSize,
+                        itemCodes,
+                        itemRefs,
+                        recentlyUpdatedSince))
+                .stream()
+                .map(value -> new PageItemRow(
+                        value.item() == null
                                 ? null
                                 : new ItemRow(
-                                        result.getObject(1, UUID.class),
-                                        result.getString(2),
-                                        result.getString(3),
-                                        result.getString(4),
-                                        result.getString(5),
-                                        result.getString(6),
-                                        result.getString(7),
-                                        result.getLong(8),
-                                        result.getLong(9),
-                                        result.getString(10)),
-                        result.getLong(11)),
-                args.toArray());
+                                        value.item().ref(),
+                                        value.item().code(),
+                                        value.item().name(),
+                                        value.item().shortName(),
+                                        value.item().shapeKey(),
+                                        value.item().status(),
+                                        value.item().sectionsJson(),
+                                        value.item().version(),
+                                        value.item().updatedAt(),
+                                        value.item().sourceScopeRef()),
+                        value.total()))
+                .toList();
         Map<UUID, ItemRow> hydratedByRef = new LinkedHashMap<>();
         hydrateItemSummaryFacts(rows.stream()
                         .map(PageItemRow::item)
@@ -1391,6 +1024,14 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(CatalogOwnerApi.UnitD
                         unit.precision());
     }
 
+private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
+            UUID unitRef, String code, String name, String dimension, Integer precision) {
+        return unitRef == null
+                ? null
+                : new InventoryOwnerApi.UnitSnapshot(
+                        unitRef, code, name, dimension, precision == null ? 0 : precision);
+    }
+
 /** The shape manifest is the only authority for fields derived from shapeKey. */
     private CatalogInventoryShapeManifest.ShapeRule shapeRule(String shapeKey) {
         try {
@@ -1412,70 +1053,35 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(CatalogOwnerApi.UnitD
     private CategorySummaryFacts categorySummaryFactsForItems(String dataNodeRef, String brandRef, List<ItemRow> rows) {
         if (rows.isEmpty()) return CategorySummaryFacts.empty();
         List<UUID> itemRefs = rows.stream().map(ItemRow::ref).toList();
-        String placeholders = String.join(",", Collections.nCopies(itemRefs.size(), "?"));
         Map<UUID, UUID> categoryRefByItem = new LinkedHashMap<>();
         Map<UUID, List<CategoryPathNode>> pathNodesByItem = new LinkedHashMap<>();
-        jdbc.query(
-                "WITH RECURSIVE selected(item_ref,category_ref) AS (SELECT relation.item_ref,relation.category_ref "
-                        + "FROM catalog.catalog_item_category relation JOIN catalog.catalog_category category "
-                        + "ON category.category_ref=relation.category_ref WHERE relation.item_ref IN ("
-                        + placeholders + ") AND category.data_node_ref=? AND category.brand_ref=? "
-                        + "AND category.status <> 'VOIDED'), "
-                        + "category_paths(leaf_ref,category_ref,parent_category_ref,path_nodes) AS ("
-                        + "SELECT category.category_ref,category.category_ref,category.parent_category_ref,"
-                        + "jsonb_build_array(jsonb_build_object('categoryRef',category.category_ref::text,"
-                        + "'code',category.code,'name',category.name)) "
-                        + "FROM selected JOIN catalog.catalog_category category "
-                        + "ON category.category_ref=selected.category_ref "
-                        + "UNION ALL SELECT paths.leaf_ref,parent.category_ref,parent.parent_category_ref,"
-
-                        + "jsonb_build_array(jsonb_build_object('categoryRef',parent.category_ref::text,"
-                        + "'code',parent.code,'name',parent.name)) || paths.path_nodes "
-                        + "FROM category_paths paths "
-
-                        + "JOIN catalog.catalog_category parent ON parent.data_node_ref=? AND parent.brand_ref=? "
-                        + "AND parent.category_ref=paths.parent_category_ref AND parent.status <> 'VOIDED') "
-                        + "SELECT selected.item_ref,selected.category_ref,paths.path_nodes FROM selected "
-                        + "LEFT JOIN category_paths paths ON paths.leaf_ref=selected.category_ref "
-                        + "AND paths.parent_category_ref IS NULL",
-                statement -> {
-                    for (int index = 0; index < itemRefs.size(); index++) {
-                        statement.setObject(index + 1, itemRefs.get(index));
-                    }
-                    statement.setString(itemRefs.size() + 1, dataNodeRef);
-                    statement.setString(itemRefs.size() + 2, brandRef);
-                    statement.setString(itemRefs.size() + 3, dataNodeRef);
-                    statement.setString(itemRefs.size() + 4, brandRef);
-                },
-                result -> {
-                    while (result.next()) {
-                        UUID itemRef = result.getObject(1, UUID.class);
-                        UUID categoryRef = result.getObject(2, UUID.class);
-                        if (itemRef == null || categoryRef == null) continue;
-                        categoryRefByItem.putIfAbsent(itemRef, categoryRef);
-                        String rawPath = result.getString(3);
-                        if (rawPath == null || rawPath.isBlank()) continue;
-                        JsonNode path = nullableJson(rawPath, "商品分类路径读取失败");
-                        // spotless:off
-                        if (!path.isArray())
-                            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品分类路径读取失败");
-                        // spotless:on
-                        List<CategoryPathNode> nodes = new ArrayList<>();
-                        for (JsonNode node : path) {
-                            UUID nodeRef = nullableUuid(node, "categoryRef");
-                            String code = node.path("code").asText("");
-                            String name = node.path("name").asText("");
-                            // spotless:off
-                            if (nodeRef == null || code.isBlank() || name.isBlank())
-                                throw new CatalogOwnerApi.Problem(
-                                        "RESULT_UNKNOWN", 500, "商品分类路径读取失败");
-                            // spotless:on
-                            nodes.add(new CategoryPathNode(nodeRef, code, name));
-                        }
-                        if (!nodes.isEmpty()) pathNodesByItem.put(itemRef, List.copyOf(nodes));
-                    }
-                    return null;
-                });
+        for (CatalogWorkbenchReadPersistence.CategorySummaryRow row
+                : persistence.readCategorySummary(dataNodeRef, brandRef, itemRefs)) {
+            UUID itemRef = row.itemRef();
+            UUID categoryRef = row.categoryRef();
+            if (itemRef == null || categoryRef == null) continue;
+            categoryRefByItem.putIfAbsent(itemRef, categoryRef);
+            String rawPath = row.pathJson();
+            if (rawPath == null || rawPath.isBlank()) continue;
+            JsonNode path = nullableJson(rawPath, "商品分类路径读取失败");
+            // spotless:off
+            if (!path.isArray())
+                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品分类路径读取失败");
+            // spotless:on
+            List<CategoryPathNode> nodes = new ArrayList<>();
+            for (JsonNode node : path) {
+                UUID nodeRef = nullableUuid(node, "categoryRef");
+                String code = node.path("code").asText("");
+                String name = node.path("name").asText("");
+                // spotless:off
+                if (nodeRef == null || code.isBlank() || name.isBlank())
+                    throw new CatalogOwnerApi.Problem(
+                            "RESULT_UNKNOWN", 500, "商品分类路径读取失败");
+                // spotless:on
+                nodes.add(new CategoryPathNode(nodeRef, code, name));
+            }
+            if (!nodes.isEmpty()) pathNodesByItem.put(itemRef, List.copyOf(nodes));
+        }
         return new CategorySummaryFacts(Map.copyOf(categoryRefByItem), Map.copyOf(pathNodesByItem));
     }
 
@@ -1488,43 +1094,24 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(CatalogOwnerApi.UnitD
             String dataNodeRef, String brandRef, List<ItemRow> rows) {
         if (rows.isEmpty()) return Map.of();
         List<UUID> itemRefs = rows.stream().map(ItemRow::ref).toList();
-        String placeholders = String.join(",", Collections.nCopies(itemRefs.size(), "?"));
         Map<UUID, List<CatalogTagFact>> factsByItem = new LinkedHashMap<>();
-        jdbc.query(
-                "SELECT relation.item_ref,entry.entry_ref,entry.code,entry.name "
-                        + "FROM catalog.catalog_item_reference relation "
-                        + "LEFT JOIN catalog.dictionary_entry entry ON entry.entry_ref=relation.ref "
-                        + "AND entry.data_node_ref=? AND entry.brand_ref=? AND entry.dictionary_kind='TAG' "
-                        + "WHERE relation.kind=? AND relation.item_ref IN ("
-                        + placeholders
-                        + ") ORDER BY relation.item_ref,entry.display_order NULLS LAST,entry.code NULLS "
-                        + "LAST,relation.ref",
-                statement -> {
-                    statement.setString(1, dataNodeRef);
-                    statement.setString(2, brandRef);
-                    statement.setString(3, CatalogItemReferenceFacts.CATALOG_TAG);
-                    for (int index = 0; index < itemRefs.size(); index++)
-                        statement.setObject(index + 4, itemRefs.get(index));
-                },
-                result -> {
-                    while (result.next()) {
-                        UUID itemRef = result.getObject(1, UUID.class);
-                        UUID tagRef = result.getObject(2, UUID.class);
-                        String tagCode = result.getString(3);
-                        String tagName = result.getString(4);
-                        if (itemRef == null
-                                || tagRef == null
-                                || tagCode == null
-                                || tagCode.isBlank()
-                                || tagName == null
-                                || tagName.isBlank())
-                            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品标签摘要读取失败");
-                        factsByItem
-                                .computeIfAbsent(itemRef, ignored -> new ArrayList<>())
-                                .add(new CatalogTagFact(tagRef, tagCode, tagName));
-                    }
-                    return null;
-                });
+        for (CatalogWorkbenchReadPersistence.CatalogTagFactRow row
+                : persistence.readCatalogTagFacts(dataNodeRef, brandRef, itemRefs)) {
+            UUID itemRef = row.itemRef();
+            UUID tagRef = row.tagRef();
+            String tagCode = row.code();
+            String tagName = row.name();
+            if (itemRef == null
+                    || tagRef == null
+                    || tagCode == null
+                    || tagCode.isBlank()
+                    || tagName == null
+                    || tagName.isBlank())
+                throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "商品标签摘要读取失败");
+            factsByItem
+                    .computeIfAbsent(itemRef, ignored -> new ArrayList<>())
+                    .add(new CatalogTagFact(tagRef, tagCode, tagName));
+        }
         Map<UUID, List<CatalogTagFact>> result = new LinkedHashMap<>();
         factsByItem.forEach((itemRef, facts) -> result.put(itemRef, List.copyOf(facts)));
         return Map.copyOf(result);
@@ -2068,30 +1655,24 @@ private void setNullableJson(ObjectNode target, String field, JsonNode value) {
 
 private Map<UUID, ItemUnitRefs> itemUnitRefsByItemRefs(Collection<UUID> itemRefs) {
         if (itemRefs == null || itemRefs.isEmpty()) return Map.of();
-        List<UUID> refs = new ArrayList<>(new LinkedHashSet<>(itemRefs));
-        String placeholders = String.join(",", Collections.nCopies(refs.size(), "?"));
         Map<UUID, ItemUnitRefs> result = new LinkedHashMap<>();
-        jdbc.query(
-                "SELECT item_ref,sales_unit_ref,sales_unit_code,sales_unit_name,sales_unit_dimension,sales_unit_pre"
-                        + "cision,"
-                        + "base_measure_unit_ref,base_measure_unit_code,base_measure_unit_name,base_measure_unit_di"
-                        + "mension,base_measure_unit_precision "
-                        + "FROM catalog.catalog_item WHERE item_ref IN ("
-                        + placeholders + ")",
-                statement -> {
-                    for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
-                },
-                rows -> {
-                    while (rows.next())
-                        result.put(
-                                rows.getObject(1, UUID.class),
-                                new ItemUnitRefs(
-                                        rows.getObject(2, UUID.class),
-                                        unitSnapshot(rows, 2, 3, 4, 5, 6),
-                                        rows.getObject(7, UUID.class),
-                                        unitSnapshot(rows, 7, 8, 9, 10, 11)));
-                    return null;
-                });
+        persistence.readItemUnitRefs(itemRefs).values().forEach(row -> result.put(
+                row.itemRef(),
+                new ItemUnitRefs(
+                        row.salesUnitRef(),
+                        unitSnapshot(
+                                row.salesUnitRef(),
+                                row.salesUnitCode(),
+                                row.salesUnitName(),
+                                row.salesUnitDimension(),
+                                row.salesUnitPrecision()),
+                        row.baseMeasureUnitRef(),
+                        unitSnapshot(
+                                row.baseMeasureUnitRef(),
+                                row.baseMeasureUnitCode(),
+                                row.baseMeasureUnitName(),
+                                row.baseMeasureUnitDimension(),
+                                row.baseMeasureUnitPrecision()))));
         return result;
     }
 
@@ -2181,12 +1762,7 @@ private static List<UUID> uuidArray(JsonNode value, String field) {
     }
 
 private long generation(String dataNodeRef, String brandRef) {
-        Long value = jdbc.queryForObject(
-                "SELECT COALESCE(MAX(version),0) FROM catalog.catalog_item WHERE data_node_ref=? AND brand_ref=?",
-                Long.class,
-                dataNodeRef,
-                brandRef);
-        return value == null ? 0 : value;
+        return persistence.generation(dataNodeRef, brandRef);
     }
 
 private static void requireScope(String dataNodeRef, String brandRef) {

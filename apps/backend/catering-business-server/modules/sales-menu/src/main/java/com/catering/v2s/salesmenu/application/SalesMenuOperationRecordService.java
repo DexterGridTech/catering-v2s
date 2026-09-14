@@ -1,5 +1,6 @@
 package com.catering.v2s.salesmenu.application;
 
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
@@ -46,7 +47,6 @@ import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOptionValue;
 import com.catering.v2s.salesmenu.domain.SalesMenuTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionKind;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionQuery;
-import com.catering.v2s.salesmenu.infrastructure.SalesMenuRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
@@ -83,26 +83,26 @@ public class SalesMenuOperationRecordService {
     private static final Set<String> REJECTED_OPERATION_TARGET_MAY_BE_MISSING =
             Set.of("SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH");
 
-    private final SalesMenuRepository repository;
+    private final SalesMenuPersistence persistence;
     private final TimeProvider time;
     private final ObjectMapper json;
     private final BusinessChannelOwnerApi channels;
     private final OrganizationOwnerApi organization;
 
-    public SalesMenuOperationRecordService(SalesMenuRepository repository, TimeProvider time, ObjectMapper json) {
-        this(repository, time, json, null, null);
+    public SalesMenuOperationRecordService(SalesMenuPersistence persistence, TimeProvider time, ObjectMapper json) {
+        this(persistence, time, json, null, null);
     }
 
     @Autowired
 
     public SalesMenuOperationRecordService(
-            SalesMenuRepository repository,
+            SalesMenuPersistence persistence,
             TimeProvider time,
             ObjectMapper json,
             BusinessChannelOwnerApi channels,
             OrganizationOwnerApi organization) {
 
-        this.repository = Objects.requireNonNull(repository, "repository");
+        this.persistence = Objects.requireNonNull(persistence, "persistence");
         this.time = Objects.requireNonNull(time, "time");
         this.json = Objects.requireNonNull(json, "json");
         this.channels = channels;
@@ -123,34 +123,7 @@ public class SalesMenuOperationRecordService {
                 null,
                 query.page().pageSize());
         OpaqueCollectionCursor.Position position = decodeCursor(query.page().cursor(), identity);
-        List<Object> arguments = new ArrayList<>(List.of(
-                query.menu().scope().workspaceUuid(),
-                query.menu().scope().groupWorkspaceKey(),
-                query.menu().scope().storeRef(),
-                query.menu().salesMenuRef(),
-                query.channelRef()));
-        StringBuilder frontier = new StringBuilder();
-        if (position != null) {
-            long occurredAt = parseLongCursor(position, "occurredAt");
-            frontier.append(
-                    " AND (occurred_at_epoch_millis < ? OR " + "(occurred_at_epoch_millis = ? AND record_ref < ?))");
-            arguments.add(occurredAt);
-            arguments.add(occurredAt);
-            arguments.add(position.tieBreaker());
-        }
-        arguments.add(query.page().pageSize() + 1);
-        List<SalesMenuReadback.OperationRecord> records = repository
-                .query(
-                        "SELECT record_ref,occurred_at_epoch_millis,operation_kind,collection_ref,target_ref,"
-                                + "target_kind,"
-                                + "target_display_snapshot,result,failure_code,actor_display_snapshot "
-                                + "FROM sales_menu.sales_operation_record "
-                                + "WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? "
-                                + "AND collection_ref=? AND (channel_ref IS NULL OR channel_ref=?)"
-                                + frontier
-                                + " ORDER BY occurred_at_epoch_millis DESC,record_ref DESC LIMIT ?",
-                        SalesMenuReadModels::operationRecordRow,
-                        arguments.toArray())
+        List<SalesMenuReadback.OperationRecord> records = persistence.readOperationRecordRows(query, position)
                 .stream()
                 .map(row -> new SalesMenuReadback.OperationRecord(
                         row.recordRef(),
@@ -204,13 +177,7 @@ public class SalesMenuOperationRecordService {
         }
         UUID record = UUID.randomUUID();
         long now = time.currentEpochMillis();
-        repository.update(
-                "INSERT INTO sales_menu.sales_operation_record(record_ref,workspace_uuid,group_workspace_key,"
-                        + "store_ref,channel_ref,collection_ref,operation_kind,target_ref,target_kind,"
-                        + "target_display_snapshot,result,failure_code,"
-                        + "actor_type,"
-                        + "actor_id,actor_display_snapshot,occurred_at_epoch_millis,idempotency_key) "
-                        + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        persistence.insertRejectedOperation(
                 record,
                 command.context().scope().workspaceUuid(),
                 command.context().scope().groupWorkspaceKey(),
@@ -282,7 +249,7 @@ public class SalesMenuOperationRecordService {
     }
 
     private com.catering.v2s.salesmenu.domain.SalesMenuAggregate requireMenu(SalesMenuTarget target, boolean lock) {
-        return (lock ? repository.findForUpdate(target) : repository.find(target))
+        return (lock ? persistence.findForUpdate(target) : persistence.find(target))
                 .orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
     }
 

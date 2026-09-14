@@ -10,11 +10,11 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
-/** Package-private persistence projections shared by the split SalesMenu targets. */
-final class SalesMenuReadModels {
+/** Typed persistence projections shared by the split SalesMenu targets. */
+public final class SalesMenuReadModels {
     private SalesMenuReadModels() {}
 
-    record MenuListRow(
+    public record MenuListRow(
             UUID collectionRef,
             UUID storeRef,
             String name,
@@ -30,13 +30,13 @@ final class SalesMenuReadModels {
             String activationStatus,
             Long activationVersion) {}
 
-    record ItemPage(List<ItemRow> rows, boolean hasNext, SalesMenuCursorIdentity identity) {}
+    public record ItemPage(List<ItemRow> rows, boolean hasNext, SalesMenuCursorIdentity identity) {}
 
-    record ActivationRow(UUID channelRef, String status, long version) {}
+    public record ActivationRow(UUID channelRef, String status, long version) {}
 
-    record PublicationItemRow(UUID salesItemRef, String resolvedItemName, String resolvedItemCode) {}
+    public record PublicationItemRow(UUID salesItemRef, String resolvedItemName, String resolvedItemCode) {}
 
-    record OperationRecordRow(
+    public record OperationRecordRow(
             UUID recordRef,
             long occurredAtEpochMillis,
             String operationKind,
@@ -48,11 +48,11 @@ final class SalesMenuReadModels {
             String failureCode,
             String actorDisplaySnapshot) {}
 
-    record ReceiptRow(String requestHash, String status, String readbackJson) {}
+    public record ReceiptRow(String requestHash, String status, String readbackJson) {}
 
-    record SectionOrderRow(UUID sectionRef, String name, long displayOrder) {}
+    public record SectionOrderRow(UUID sectionRef, String name, long displayOrder) {}
 
-    record ItemRow(
+    public record ItemRow(
             UUID versionRef,
             UUID salesItemRef,
             UUID catalogItemRef,
@@ -76,7 +76,7 @@ final class SalesMenuReadModels {
             boolean canMoveUp,
             boolean canMoveDown) {}
 
-    record SkuRow(
+    public record SkuRow(
             UUID salesItemRef,
             UUID skuRef,
             long listedPriceCents,
@@ -85,18 +85,18 @@ final class SalesMenuReadModels {
             long defaultPriceCents,
             long displayOrder) {}
 
-    record MediaItemRow(UUID salesItemRef, UUID assetRef, long displayOrder) {}
+    public record MediaItemRow(UUID salesItemRef, UUID assetRef, long displayOrder) {}
 
-    record MediaRow(UUID assetRef, long displayOrder) {}
+    public record MediaRow(UUID assetRef, long displayOrder) {}
 
-    record LongValueRow(long value) {}
+    public record LongValueRow(long value) {}
 
-    record CountByItemRow(UUID itemRef, long count) {}
+    public record CountByItemRow(UUID itemRef, long count) {}
 
-    record SectionRow(
+    public record SectionRow(
             UUID sectionRef, String name, long displayOrder, long itemCount, boolean canMoveUp, boolean canMoveDown) {}
 
-    record ManualSaleStatusRow(
+    public record ManualSaleStatusRow(
             UUID salesItemRef,
             SalesMenuManualSaleTargetKind targetKind,
             UUID targetRef,
@@ -105,7 +105,7 @@ final class SalesMenuReadModels {
             Long changedAtEpochMillis,
             String actorDisplaySnapshot) {}
 
-    record OrderOptionGroupRow(
+    public record OrderOptionGroupRow(
             UUID salesItemRef,
             UUID definitionRef,
             String name,
@@ -115,7 +115,7 @@ final class SalesMenuReadModels {
             Integer maxSelectionCount,
             long displayOrder) {}
 
-    record OrderOptionValueRow(
+    public record OrderOptionValueRow(
             UUID salesItemRef,
             UUID definitionRef,
             UUID definitionValueRef,
@@ -124,9 +124,15 @@ final class SalesMenuReadModels {
             boolean defaultValue,
             Long extraPrice) {}
 
-    record UuidValueRow(UUID value) {}
+    public record UuidValueRow(UUID value) {}
 
-    static MenuListRow menuListRow(ResultSet result, int ignored) throws SQLException {
+    public record OrderingTargetRow(UUID ref, long displayOrder) {}
+
+    public record SectionCurrentRow(UUID sectionRef, long displayOrder) {}
+
+    public record ItemCurrentRow(UUID sectionRef, long displayOrder) {}
+
+    public static MenuListRow menuListRow(ResultSet result, int ignored) throws SQLException {
         return new MenuListRow(
                 result.getObject("collection_ref", UUID.class),
                 result.getObject("store_ref", UUID.class),
@@ -144,23 +150,23 @@ final class SalesMenuReadModels {
                 result.getObject("activation_version", Long.class));
     }
 
-    static ActivationRow activationRow(ResultSet result, int ignored) throws SQLException {
+    public static ActivationRow activationRow(ResultSet result, int ignored) throws SQLException {
         return new ActivationRow(
                 result.getObject("channel_ref", UUID.class), result.getString("status"), result.getLong("version"));
     }
 
-    static PublicationItemRow publicationItemRow(ResultSet result, int ignored) throws SQLException {
+    public static PublicationItemRow publicationItemRow(ResultSet result, int ignored) throws SQLException {
         return new PublicationItemRow(
                 result.getObject("sales_item_ref", UUID.class),
                 result.getString("resolved_item_name"),
                 result.getString("resolved_item_code"));
     }
 
-    static Boolean existsRow(ResultSet result, int ignored) throws SQLException {
+    public static Boolean existsRow(ResultSet result, int ignored) throws SQLException {
         return result.getBoolean(1);
     }
 
-    static OperationRecordRow operationRecordRow(ResultSet result, int ignored) throws SQLException {
+    public static OperationRecordRow operationRecordRow(ResultSet result, int ignored) throws SQLException {
         return new OperationRecordRow(
                 result.getObject("record_ref", UUID.class),
                 result.getLong("occurred_at_epoch_millis"),
@@ -174,17 +180,17 @@ final class SalesMenuReadModels {
                 result.getString("actor_display_snapshot"));
     }
 
-    static ReceiptRow receiptRow(ResultSet result, int ignored) throws SQLException {
+    public static ReceiptRow receiptRow(ResultSet result, int ignored) throws SQLException {
         return new ReceiptRow(
                 result.getString("request_hash"), result.getString("status"), result.getString("readback_json"));
     }
 
-    static SectionOrderRow sectionOrderRow(ResultSet result, int ignored) throws SQLException {
+    public static SectionOrderRow sectionOrderRow(ResultSet result, int ignored) throws SQLException {
         return new SectionOrderRow(
                 result.getObject("section_ref", UUID.class), result.getString("name"), result.getLong("display_order"));
     }
 
-    static ItemRow itemRow(ResultSet result, int ignored) throws SQLException {
+    public static ItemRow itemRow(ResultSet result, int ignored) throws SQLException {
         return new ItemRow(
                 result.getObject("version_ref", UUID.class),
                 result.getObject("sales_item_ref", UUID.class),
@@ -210,7 +216,7 @@ final class SalesMenuReadModels {
                 result.getBoolean("can_move_down"));
     }
 
-    static SkuRow skuRow(ResultSet result, int ignored) throws SQLException {
+    public static SkuRow skuRow(ResultSet result, int ignored) throws SQLException {
         return new SkuRow(
                 result.getObject("sales_item_ref", UUID.class),
                 result.getObject("sku_ref", UUID.class),
@@ -221,26 +227,26 @@ final class SalesMenuReadModels {
                 result.getLong("display_order"));
     }
 
-    static MediaItemRow mediaItemRow(ResultSet result, int ignored) throws SQLException {
+    public static MediaItemRow mediaItemRow(ResultSet result, int ignored) throws SQLException {
         return new MediaItemRow(
                 result.getObject("sales_item_ref", UUID.class),
                 result.getObject("asset_ref", UUID.class),
                 result.getLong("display_order"));
     }
 
-    static MediaRow mediaRow(ResultSet result, int ignored) throws SQLException {
+    public static MediaRow mediaRow(ResultSet result, int ignored) throws SQLException {
         return new MediaRow(result.getObject("asset_ref", UUID.class), result.getLong("display_order"));
     }
 
-    static LongValueRow longValueRow(ResultSet result, int ignored) throws SQLException {
+    public static LongValueRow longValueRow(ResultSet result, int ignored) throws SQLException {
         return new LongValueRow(result.getLong(1));
     }
 
-    static CountByItemRow countByItemRow(ResultSet result, int ignored) throws SQLException {
+    public static CountByItemRow countByItemRow(ResultSet result, int ignored) throws SQLException {
         return new CountByItemRow(result.getObject("catalog_item_ref", UUID.class), result.getLong("item_count"));
     }
 
-    static SectionRow sectionRow(ResultSet result, int ignored) throws SQLException {
+    public static SectionRow sectionRow(ResultSet result, int ignored) throws SQLException {
         return new SectionRow(
                 result.getObject("section_ref", UUID.class),
                 result.getString("name"),
@@ -250,7 +256,7 @@ final class SalesMenuReadModels {
                 result.getBoolean("can_move_down"));
     }
 
-    static ManualSaleStatusRow manualSaleStatusRow(ResultSet result, int ignored) throws SQLException {
+    public static ManualSaleStatusRow manualSaleStatusRow(ResultSet result, int ignored) throws SQLException {
         return new ManualSaleStatusRow(
                 result.getObject("sales_item_ref", UUID.class),
                 SalesMenuManualSaleTargetKind.valueOf(result.getString("target_kind")),
@@ -261,7 +267,7 @@ final class SalesMenuReadModels {
                 result.getString("actor_display_snapshot"));
     }
 
-    static OrderOptionGroupRow orderOptionGroupRow(ResultSet result, int ignored) throws SQLException {
+    public static OrderOptionGroupRow orderOptionGroupRow(ResultSet result, int ignored) throws SQLException {
         return new OrderOptionGroupRow(
                 result.getObject("sales_item_ref", UUID.class),
                 result.getObject("definition_ref", UUID.class),
@@ -273,7 +279,7 @@ final class SalesMenuReadModels {
                 result.getLong("display_order"));
     }
 
-    static OrderOptionValueRow orderOptionValueRow(ResultSet result, int ignored) throws SQLException {
+    public static OrderOptionValueRow orderOptionValueRow(ResultSet result, int ignored) throws SQLException {
         return new OrderOptionValueRow(
                 result.getObject("sales_item_ref", UUID.class),
                 result.getObject("definition_ref", UUID.class),
@@ -284,8 +290,20 @@ final class SalesMenuReadModels {
                 result.getObject("extra_price", Long.class));
     }
 
-    static UuidValueRow uuidValueRow(ResultSet result, int ignored) throws SQLException {
+    public static UuidValueRow uuidValueRow(ResultSet result, int ignored) throws SQLException {
         return new UuidValueRow(result.getObject(1, UUID.class));
+    }
+
+    public static OrderingTargetRow orderingTargetRow(ResultSet result, int ignored) throws SQLException {
+        return new OrderingTargetRow(result.getObject(1, UUID.class), result.getLong(2));
+    }
+
+    public static SectionCurrentRow sectionCurrentRow(ResultSet result, int ignored) throws SQLException {
+        return new SectionCurrentRow(result.getObject("section_ref", UUID.class), result.getLong("display_order"));
+    }
+
+    public static ItemCurrentRow itemCurrentRow(ResultSet result, int ignored) throws SQLException {
+        return new ItemCurrentRow(result.getObject("section_ref", UUID.class), result.getLong("display_order"));
     }
 
     private static LocalTime localTime(Time value) {

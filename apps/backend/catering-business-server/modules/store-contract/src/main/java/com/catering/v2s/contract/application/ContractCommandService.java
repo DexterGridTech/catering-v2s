@@ -1,5 +1,7 @@
 package com.catering.v2s.contract.application;
 
+import com.catering.v2s.contract.application.persistence.ContractCommandPersistence;
+import com.catering.v2s.contract.application.persistence.ContractDerivedStoreStatusPersistence;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
@@ -39,7 +41,8 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             new AuditChangePolicy("STORE_CONTRACT", "CONTRACT_UPDATED", CONTRACT_FIELDS);
     private static final AuditChangePolicy CONTRACT_INVALIDATED =
             new AuditChangePolicy("STORE_CONTRACT", "CONTRACT_INVALIDATED", Set.of("status"));
-    private final JdbcTemplate jdbc;
+    private final ContractCommandPersistence persistence;
+    private final ContractDerivedStoreStatusPersistence derivedStatusPersistence;
     private final TimeProvider time;
     private final BusinessDateProvider businessDate;
     private final StoreContractLookup stores;
@@ -55,7 +58,6 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
         this(jdbc, time, businessDate, stores, definitions, new ContractCommandReceiptService(jdbc, time));
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
     public ContractCommandService(
             JdbcTemplate jdbc,
             TimeProvider time,
@@ -63,12 +65,32 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             StoreContractLookup stores,
             ExtensionDefinitionLookup definitions,
             ContractCommandReceiptService receipts) {
-        this.jdbc = jdbc;
+        this(
+                new ContractCommandPersistence(jdbc),
+                time,
+                businessDate,
+                stores,
+                definitions,
+                receipts,
+                new ContractDerivedStoreStatusPersistence(jdbc));
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ContractCommandService(
+            ContractCommandPersistence persistence,
+            TimeProvider time,
+            BusinessDateProvider businessDate,
+            StoreContractLookup stores,
+            ExtensionDefinitionLookup definitions,
+            ContractCommandReceiptService receipts,
+            ContractDerivedStoreStatusPersistence derivedStatusPersistence) {
+        this.persistence = persistence;
         this.time = time;
         this.businessDate = businessDate;
         this.stores = stores;
         this.definitions = definitions;
         this.receipts = receipts;
+        this.derivedStatusPersistence = derivedStatusPersistence;
     }
 
     @Override
@@ -159,13 +181,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
         UUID id = UUID.randomUUID();
         long now = time.currentEpochMillis();
         try {
-            jdbc.update(
-                    "INSERT INTO contract.store_contract (id, workspace_uuid, group_workspace_key, contract_no, "
-                            + "store_id, tenant_id, effective_from, effective_to, phase_name_snapshot, notes, "
-                            + "items_json, extension_values, extension_rule_revision, "
-                            + "status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, "
-                            + "?, "
-                            + "?, ?, ?, ?, ?, CAST(? AS JSONB), CAST(? AS JSONB), ?, 'ACTIVE', 1, ?, ?)",
+            persistence.insertWithExtensions(
                     id,
                     command.workspaceUuid(),
                     command.groupWorkspaceKey(),
@@ -223,11 +239,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                 context.projectPhaseNames(),
                 items);
         long now = time.currentEpochMillis();
-        if (jdbc.update(
-                        "UPDATE contract.store_contract SET effective_from=?, effective_to=?, phase_name_snapshot=?, "
-                                + "notes=?, items_json=CAST(? AS JSONB), version=version+1, updated_at_epoch_millis=? "
-                                + "WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND status='ACTIVE' AND "
-                                + "version=?",
+        if (persistence.updateFromCommand(
                         command.effectiveFrom(),
                         command.effectiveTo(),
                         optional(command.phaseName(), 120),
@@ -378,13 +390,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
         UUID id = UUID.randomUUID();
         long now = time.currentEpochMillis();
         try {
-            jdbc.update(
-                    "INSERT INTO contract.store_contract (id, workspace_uuid, group_workspace_key, contract_no, "
-                            + "store_id, tenant_id, effective_from, effective_to, phase_name_snapshot, notes, "
-                            + "items_json, "
-                            + "status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, "
-                            + "?, "
-                            + "?, ?, ?, ?, ?, CAST(? AS JSONB), 'ACTIVE', 1, ?, ?)",
+            persistence.insertWithoutExtensions(
                     id,
                     workspaceUuid,
                     key,
@@ -634,11 +640,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
         validateContract(from, to, phaseName, context.projectPhaseNames(), items);
         validateValues(workspaceUuid, key, extensionValues);
         long now = time.currentEpochMillis();
-        if (jdbc.update(
-                        "UPDATE contract.store_contract SET effective_from=?, effective_to=?, phase_name_snapshot=?, "
-                                + "notes=?, items_json=CAST(? AS JSONB), version=version+1, updated_at_epoch_millis=? "
-                                + "WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND status='ACTIVE' AND "
-                                + "version=?",
+        if (persistence.updateFromLegacyCommand(
                         from,
                         to,
                         optional(phaseName, 120),
@@ -803,12 +805,9 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             UUID contractId,
             long expectedVersion,
             AuditActor actor,
-            StoreContractReadback existing) {
+        StoreContractReadback existing) {
         long now = time.currentEpochMillis();
-        if (jdbc.update(
-                        "UPDATE contract.store_contract SET status='INVALID', invalidated_at_epoch_millis=?, "
-                                + "version=version+1, updated_at_epoch_millis=? WHERE id=? AND workspace_uuid=? AND "
-                                + "group_workspace_key=? AND status='ACTIVE' AND version=?",
+        if (persistence.invalidate(
                         now,
                         now,
                         contractId,
@@ -886,54 +885,23 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
 
     @Transactional(readOnly = true)
     public StoreContractReadback require(UUID workspaceUuid, String key, UUID contractId) {
-        return jdbc.query(
-                "SELECT id, workspace_uuid, group_workspace_key, contract_no, store_id, tenant_id, effective_from, "
-                        + "effective_to, phase_name_snapshot, notes, status, version, items_json::text FROM "
-                        + "contract.store_contract WHERE id=? AND workspace_uuid=? AND group_workspace_key=?",
-                statement -> {
-                    statement.setObject(1, contractId);
-                    statement.setObject(2, workspaceUuid);
-                    statement.setString(3, key);
-                },
-                result -> {
-                    if (!result.next()) throw new ContractNotFoundException();
-                    return readback(result);
-                });
+        return persistence.require(workspaceUuid, key, contractId);
     }
 
     /** One owner read supplies both the command state and extension JSON needed by an update/replay path. */
     private ContractState requireState(UUID workspaceUuid, String key, UUID contractId) {
-        return jdbc.query(
-                "SELECT id, workspace_uuid, group_workspace_key, contract_no, store_id, tenant_id, effective_from, "
-                        + "effective_to, phase_name_snapshot, notes, status, version, items_json::text, "
-                        + "extension_values::text FROM contract.store_contract WHERE id=? AND workspace_uuid=? AND "
-                        + "group_workspace_key=?",
-                statement -> {
-                    statement.setObject(1, contractId);
-                    statement.setObject(2, workspaceUuid);
-                    statement.setString(3, key);
-                },
-                result -> {
-                    if (!result.next()) throw new ContractNotFoundException();
-                    return new ContractState(readback(result), result.getString(14));
-                });
+        ContractCommandPersistence.ContractState state = persistence.requireState(workspaceUuid, key, contractId);
+        return new ContractState(state.readback(), state.extensionValuesJson());
     }
 
     @Transactional(readOnly = true)
     public List<StoreContractReadback> list(UUID workspaceUuid, String key) {
-        return jdbc.query(
-                "SELECT id, workspace_uuid, group_workspace_key, contract_no, store_id, tenant_id, effective_from, "
-                        + "effective_to, phase_name_snapshot, notes, status, version, items_json::text FROM "
-                        + "contract.store_contract WHERE workspace_uuid=? AND group_workspace_key=? ORDER BY "
-                        + "contract_no",
-                (row, index) -> readback(row),
-                workspaceUuid,
-                key);
+        return persistence.list(workspaceUuid, key);
     }
 
     @Transactional(readOnly = true)
     public String derivedStoreStatus(UUID workspaceUuid, String key, UUID storeId) {
-        return DerivedStoreStatusFacts.load(jdbc, workspaceUuid, key, List.of(storeId), businessDate.today())
+        return derivedStatusPersistence.read(workspaceUuid, key, List.of(storeId), businessDate.today())
                 .statusOf(storeId);
     }
 
@@ -970,24 +938,6 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
         if (ownerScopeGrant == null
                 || !ownerScopeGrant.matches(workspaceUuid, key, ServiceNodeTypes.PROJECT, projectId))
             throw new ContractAuthorizationException();
-    }
-
-    private static StoreContractReadback readback(java.sql.ResultSet result) throws java.sql.SQLException {
-        List<StoreContractReadback.Item> items = readItems(result.getString(13));
-        return new StoreContractReadback(
-                result.getObject(1, UUID.class),
-                result.getObject(2, UUID.class),
-                result.getString(3),
-                result.getString(4),
-                result.getObject(5, UUID.class),
-                result.getObject(6, UUID.class),
-                result.getObject(7, LocalDate.class),
-                result.getObject(8, LocalDate.class),
-                result.getString(9),
-                result.getString(10),
-                result.getString(11),
-                result.getLong(12),
-                items);
     }
 
     private static String canonical(String operation, Object... values) {
@@ -1068,25 +1018,14 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
     }
 
     private void replaceValues(UUID id, UUID workspaceUuid, String key, Map<String, String> values) {
-        String current = jdbc.query(
-                "SELECT extension_values::text FROM contract.store_contract WHERE id=?",
-                statement -> statement.setObject(1, id),
-                result -> {
-                    if (!result.next()) throw new ContractNotFoundException();
-                    return result.getString(1);
-                });
+        String current = persistence.readExtensionValues(id);
         ExtensionDefinitionReadback definition;
         try {
             definition = definitions.requireDefinition(workspaceUuid, key, ExtensionHostTypes.CONTRACT);
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (values != null && !values.isEmpty()) throw new ContractValidationException(absent);
             validateExistingExtensionValues(current);
-            jdbc.update(
-                    "UPDATE contract.store_contract SET extension_values=CAST(? AS JSONB), extension_rule_revision=? "
-                            + "WHERE id=?",
-                    current,
-                    0L,
-                    id);
+            persistence.clearExtensionValues(id, current, 0L);
             return;
         }
         final String merged;
@@ -1095,12 +1034,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
         } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
             throw new ContractValidationException(invalid);
         }
-        jdbc.update(
-                "UPDATE contract.store_contract SET extension_values=CAST(? AS JSONB), extension_rule_revision=? WHERE "
-                        + "id=?",
-                merged.toString(),
-                definition.version(),
-                id);
+        persistence.updateExtensionValues(id, merged.toString(), definition.version());
     }
 
     private static void validateExistingExtensionValues(String current) {
@@ -1112,13 +1046,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
     }
 
     private void replaceValues(UUID id, UUID workspaceUuid, String key, ExtensionSubmission submission) {
-        String current = jdbc.query(
-                "SELECT extension_values::text FROM contract.store_contract WHERE id=?",
-                statement -> statement.setObject(1, id),
-                result -> {
-                    if (!result.next()) throw new ContractNotFoundException();
-                    return result.getString(1);
-                });
+        String current = persistence.readExtensionValuesForSubmission(id);
         replaceValues(id, workspaceUuid, key, current, submission);
     }
 
@@ -1129,12 +1057,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             definition = definitions.requireDefinition(workspaceUuid, key, ExtensionHostTypes.CONTRACT);
         } catch (ExtensionDefinitionService.DefinitionNotFoundException absent) {
             if (submission != null && !submission.fields().isEmpty()) throw new ContractValidationException(absent);
-            jdbc.update(
-                    "UPDATE contract.store_contract SET extension_values=CAST(? AS JSONB), extension_rule_revision=? "
-                            + "WHERE id=?",
-                    current,
-                    0L,
-                    id);
+            persistence.clearSubmittedExtensionValues(id, current);
             return;
         }
         String merged;
@@ -1143,12 +1066,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
         } catch (ExtensionDefinitionService.DefinitionInvalidException invalid) {
             throw new ContractValidationException(invalid);
         }
-        jdbc.update(
-                "UPDATE contract.store_contract SET extension_values=CAST(? AS JSONB), extension_rule_revision=? WHERE "
-                        + "id=?",
-                merged,
-                definition.version(),
-                id);
+        persistence.updateSubmittedExtensionValues(id, merged, definition.version());
     }
 
     private void audit(
@@ -1160,12 +1078,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             AuditActor actor,
             AuditChangePolicy policy,
             List<AuditChange> changes) {
-        jdbc.update(
-                "INSERT INTO contract.audit_event (id, workspace_uuid, group_workspace_key, entity_type, "
-                        + "entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, "
-                        + "occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'STORE_CONTRACT', ?, ?, ?, ?, ?, "
-                        + "?, "
-                        + "CAST(? AS JSONB))",
+        persistence.insertAuditEvent(
                 UUID.randomUUID(),
                 workspaceUuid,
                 key,

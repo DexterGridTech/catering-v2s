@@ -1,5 +1,6 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceCommandAuthorizationPersistence;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.organization.api.WorkspaceAssignmentScopeLookup;
 import com.catering.v2s.workspace.iam.api.WorkspaceAuthorizationCatalog;
@@ -12,18 +13,25 @@ import org.springframework.transaction.annotation.Transactional;
 /** Owner-side action authorization. Page entry remains independent and is never inferred here. */
 @Service
 public class WorkspaceCommandAuthorizationService {
-    private final JdbcTemplate jdbc;
+    private final WorkspaceCommandAuthorizationPersistence persistence;
     private final WorkspaceAssignmentScopeLookup assignments;
     private final OrganizationTaskPathLookup taskPaths;
 
     public WorkspaceCommandAuthorizationService(JdbcTemplate jdbc) {
-        this(jdbc, null, null);
+        this(new WorkspaceCommandAuthorizationPersistence(jdbc), null, null);
+    }
+
+    public WorkspaceCommandAuthorizationService(
+            JdbcTemplate jdbc, WorkspaceAssignmentScopeLookup assignments, OrganizationTaskPathLookup taskPaths) {
+        this(new WorkspaceCommandAuthorizationPersistence(jdbc), assignments, taskPaths);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
     public WorkspaceCommandAuthorizationService(
-            JdbcTemplate jdbc, WorkspaceAssignmentScopeLookup assignments, OrganizationTaskPathLookup taskPaths) {
-        this.jdbc = jdbc;
+            WorkspaceCommandAuthorizationPersistence persistence,
+            WorkspaceAssignmentScopeLookup assignments,
+            OrganizationTaskPathLookup taskPaths) {
+        this.persistence = persistence;
         this.assignments = assignments;
         this.taskPaths = taskPaths;
     }
@@ -141,22 +149,7 @@ public class WorkspaceCommandAuthorizationService {
         String capability = WorkspaceAuthorizationCatalog.requiredUserManagementCapabilityForTarget(
                         capabilityTargetType, action)
                 .orElseThrow(AuthorizationDeniedException::new);
-        Boolean allowed = jdbc.query(
-                "SELECT EXISTS(SELECT 1 FROM workspace_iam.role_assignment assignment "
-                        + "JOIN workspace_iam.workspace_role role ON role.id=assignment.role_id "
-                        + "WHERE assignment.id=? AND assignment.workspace_uuid=? "
-                        + "AND assignment.group_workspace_key=? AND assignment.status='ACTIVE' "
-                        + "AND role.workspace_uuid=assignment.workspace_uuid "
-                        + "AND role.group_workspace_key=assignment.group_workspace_key "
-                        + "AND role.status='ENABLED' AND jsonb_exists(role.capability_keys, ?))",
-                statement -> {
-                    statement.setObject(1, actorAssignmentId);
-                    statement.setObject(2, workspaceUuid);
-                    statement.setString(3, groupWorkspaceKey);
-                    statement.setString(4, capability);
-                },
-                result -> result.next() && result.getBoolean(1));
-        if (!Boolean.TRUE.equals(allowed)) {
+        if (!persistence.hasCapability(workspaceUuid, groupWorkspaceKey, actorAssignmentId, capability)) {
             throw new AuthorizationDeniedException();
         }
     }

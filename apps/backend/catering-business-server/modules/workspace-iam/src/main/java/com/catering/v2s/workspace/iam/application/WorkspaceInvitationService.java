@@ -1,5 +1,6 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceInvitationPersistence;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
@@ -20,7 +21,6 @@ import com.catering.v2s.workspace.iam.api.WorkspaceInvitationReadback;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,7 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class WorkspaceInvitationService {
     private static final Set<String> INVITATION_FIELDS = Set.of("status", "lifecycleEvent");
     private static final long MANAGEMENT_INVITATION_TTL_MILLIS = 7 * 24 * 60 * 60 * 1000L;
-    private final JdbcTemplate jdbc;
+    private final WorkspaceInvitationPersistence persistence;
     private final TimeProvider time;
     private final WorkspaceRoleService roles;
     private final OrganizationNodeLookup nodes;
@@ -57,6 +57,41 @@ public class WorkspaceInvitationService {
 
     @org.springframework.beans.factory.annotation.Autowired
     public WorkspaceInvitationService(
+            WorkspaceInvitationPersistence persistence,
+            TimeProvider time,
+            WorkspaceRoleService roles,
+            OrganizationNodeLookup nodes,
+            StoreAssignmentLookup stores,
+            OrganizationEntityLookup entities,
+            CommercialGroupLookup groups,
+            WorkspaceOtpRateLimitService otpLimits,
+            WorkspaceIamCommandReceiptService receipts,
+            WorkspaceCommandAuthorizationService commandAuthorization,
+            WorkspaceUserService user,
+            OrganizationTaskPathLookup taskPaths,
+            OrganizationAssignmentCandidateLookup candidates,
+            com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy otpDebugExposurePolicy,
+            ObjectProvider<DevFixedOtpIssuer> fixedOtpIssuer) {
+        this(
+                persistence,
+                time,
+                roles,
+                nodes,
+                stores,
+                entities,
+                groups,
+                otpLimits,
+                receipts,
+                commandAuthorization,
+                user,
+                taskPaths,
+                candidates,
+                otpDebugExposurePolicy.enabled(),
+                fixedOtpIssuer.getIfAvailable());
+    }
+
+    /** Compatibility constructor retained for focused owner tests; production wiring uses the typed boundary above. */
+    public WorkspaceInvitationService(
             JdbcTemplate jdbc,
             TimeProvider time,
             WorkspaceRoleService roles,
@@ -73,7 +108,7 @@ public class WorkspaceInvitationService {
             com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy otpDebugExposurePolicy,
             ObjectProvider<DevFixedOtpIssuer> fixedOtpIssuer) {
         this(
-                jdbc,
+                new WorkspaceInvitationPersistence(jdbc),
                 time,
                 roles,
                 nodes,
@@ -91,7 +126,7 @@ public class WorkspaceInvitationService {
     }
 
     private WorkspaceInvitationService(
-            JdbcTemplate jdbc,
+            WorkspaceInvitationPersistence persistence,
             TimeProvider time,
             WorkspaceRoleService roles,
             OrganizationNodeLookup nodes,
@@ -106,7 +141,7 @@ public class WorkspaceInvitationService {
             OrganizationAssignmentCandidateLookup candidates,
             boolean debugCodeExposure,
             DevFixedOtpIssuer fixedOtpIssuer) {
-        this.jdbc = jdbc;
+        this.persistence = persistence;
         this.time = time;
         this.roles = roles;
         this.nodes = nodes;
@@ -247,11 +282,7 @@ public class WorkspaceInvitationService {
         // A create command admits exactly one service-node target. Its enterability is a command fact, not a
         // per-role fact; validating it once preserves the same guard without multiplying organization reads.
         requireEnterable(pending, intents.getFirst());
-        jdbc.update(
-                "INSERT INTO workspace_iam.invitation (id, workspace_uuid, group_workspace_key, token_hash, "
-                        + "invitation_token, mobile_normalized, issuer_display_name_snapshot, status, "
-                        + "expires_at_epoch_millis, version, created_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, "
-                        + "'PENDING', ?, 1, ?)",
+        persistence.insertInvitation(
                 invitationId,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -262,9 +293,7 @@ public class WorkspaceInvitationService {
                 expiresAtEpochMillis,
                 now);
         for (AssignmentIntent intent : intents) {
-            jdbc.update(
-                    "INSERT INTO workspace_iam.invitation_assignment_intent (invitation_id, role_id, "
-                            + "service_node_type, service_node_id) VALUES (?, ?, ?, ?)",
+            persistence.insertAssignmentIntent(
                     invitationId,
                     intent.roleId(),
                     intent.serviceNodeType(),
@@ -325,88 +354,42 @@ public class WorkspaceInvitationService {
             String fixedTargetType,
             UUID fixedTargetId) {
         PageRequest page = PageRequest.from(request);
-        InvitationPageSql sql = invitationPageSql(workspaceUuid, key, request, fixedTargetType, fixedTargetId);
-        long total = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM workspace_iam.invitation i WHERE " + sql.where(),
-                Long.class,
-                sql.arguments().toArray());
+        WorkspaceInvitationPersistence.PageRows result = persistence.page(
+                workspaceUuid,
+                key,
+                normalizedMobileQuery(request.mobile()),
+                request.status(),
+                request.expiresFrom(),
+                request.expiresTo(),
+                request.targetOrganizationType(),
+                request.targetOrganizationRef(),
+                request.roleId(),
+                fixedTargetType,
+                fixedTargetId,
+                page.sort(),
+                page.direction(),
+                page.page(),
+                page.pageSize());
+        long total = result.total();
         if (total == 0)
             return new ManagementInvitationPage(List.of(), page.page(), page.pageSize(), 0L, page.criteria());
-        List<WorkspaceInvitationReadback> rows = jdbc.query(
-                "SELECT i.id, i.mobile_normalized, i.status, i.expires_at_epoch_millis, i.version, "
-                        + "i.created_at_epoch_millis, i.consented_at_epoch_millis, i.completed_at_epoch_millis, "
-                        + "i.cancelled_at_epoch_millis, i.invitation_token FROM workspace_iam.invitation i WHERE "
-                        + sql.where() + " ORDER BY i." + page.orderColumn() + " " + page.direction()
-                        + ", i.id ASC LIMIT ? OFFSET ?",
-                (row, index) -> new WorkspaceInvitationReadback(
-                        row.getObject(1, UUID.class),
+        List<WorkspaceInvitationReadback> rows = result.items().stream()
+                .map(row -> new WorkspaceInvitationReadback(
+                        row.id(),
                         workspaceUuid,
                         key,
-                        row.getString(2),
-                        row.getString(3),
-                        row.getLong(4),
-                        row.getLong(5),
-                        row.getLong(6),
-                        row.getObject(7, Long.class),
-                        row.getObject(8, Long.class),
-                        row.getObject(9, Long.class),
-                        row.getString(10)),
-                arguments(sql.arguments(), page.pageSize(), (page.page() - 1) * page.pageSize()));
+                        row.mobile(),
+                        row.status(),
+                        row.expiresAtEpochMillis(),
+                        row.version(),
+                        row.createdAtEpochMillis(),
+                        row.consentedAtEpochMillis(),
+                        row.completedAtEpochMillis(),
+                        row.cancelledAtEpochMillis(),
+                        row.invitationToken()))
+                .toList();
         return new ManagementInvitationPage(
                 managementViews(rows), page.page(), page.pageSize(), total, page.criteria());
-    }
-
-    private static InvitationPageSql invitationPageSql(
-            UUID workspaceUuid, String key, ManagementInvitationPageRequest request, String fixedType, UUID fixedId) {
-        List<String> clauses = new ArrayList<>(List.of("i.workspace_uuid=?", "i.group_workspace_key=?"));
-        List<Object> arguments = new ArrayList<>(List.of(workspaceUuid, key));
-        String mobileQuery = normalizedMobileQuery(request.mobile());
-        if (mobileQuery != null) {
-            clauses.add("i.mobile_normalized LIKE ?");
-            arguments.add("%" + mobileQuery + "%");
-        }
-        if (request.status() != null) {
-            clauses.add("i.status=?");
-            arguments.add(request.status());
-        }
-        if (request.expiresFrom() != null) {
-            clauses.add("i.expires_at_epoch_millis>=?");
-            arguments.add(request.expiresFrom());
-        }
-        if (request.expiresTo() != null) {
-            clauses.add("i.expires_at_epoch_millis<=?");
-            arguments.add(request.expiresTo());
-        }
-        if (request.targetOrganizationType() != null
-                || request.targetOrganizationRef() != null
-                || request.roleId() != null) {
-            clauses.add("EXISTS (SELECT 1 FROM workspace_iam.invitation_assignment_intent intent WHERE "
-                    + "intent.invitation_id=i.id AND (CAST(? AS text) IS NULL OR intent.service_node_type=?) AND "
-                    + "(CAST(? AS uuid) IS NULL OR intent.service_node_id=?) AND (CAST(? AS uuid) IS NULL OR "
-                    + "intent.role_id=?))");
-            arguments.add(request.targetOrganizationType());
-            arguments.add(request.targetOrganizationType());
-            arguments.add(request.targetOrganizationRef());
-            arguments.add(request.targetOrganizationRef());
-            arguments.add(request.roleId());
-            arguments.add(request.roleId());
-        }
-        if (fixedType != null) {
-            if (fixedId == null) {
-                clauses.add("EXISTS (SELECT 1 FROM workspace_iam.invitation_assignment_intent intent WHERE "
-                        + "intent.invitation_id=i.id AND intent.service_node_type=?)");
-                arguments.add(fixedType);
-            } else {
-                clauses.add("EXISTS (SELECT 1 FROM workspace_iam.invitation_assignment_intent intent WHERE "
-                        + "intent.invitation_id=i.id AND intent.service_node_type=? AND intent.service_node_id=?)");
-                arguments.add(fixedType);
-                arguments.add(fixedId);
-            }
-        }
-        // JDBC intentionally needs null placeholders for independently optional
-        // type/ref/role filters; List.copyOf rejects those nulls.
-        return new InvitationPageSql(
-                String.join(" AND ", clauses), Collections.unmodifiableList(new ArrayList<>(arguments)));
     }
 
     private static String normalizedMobileQuery(String value) {
@@ -415,11 +398,6 @@ public class WorkspaceInvitationService {
         return normalized.startsWith("+") ? normalized.substring(1) : normalized;
     }
 
-    private static Object[] arguments(List<Object> values, Object... tail) {
-        List<Object> result = new ArrayList<>(values);
-        result.addAll(List.of(tail));
-        return result.toArray();
-    }
 
     @Transactional(readOnly = true)
     public ManagementInvitationView managementView(WorkspaceInvitationReadback invitation) {
@@ -525,15 +503,11 @@ public class WorkspaceInvitationService {
     public void cancel(
             UUID workspaceUuid, String groupWorkspaceKey, UUID invitationId, long expectedVersion, AuditActor actor) {
         Invitation before = invitation(workspaceUuid, groupWorkspaceKey, invitationId);
-        if (jdbc.update(
-                        "UPDATE workspace_iam.invitation SET status='CANCELLED', cancelled_at_epoch_millis=?, "
-                                + "version=version+1 WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND "
-                                + "status "
-                                + "IN ('PENDING','MOBILE_VERIFIED') AND version=?",
-                        time.currentEpochMillis(),
+        if (persistence.cancel(
                         invitationId,
                         workspaceUuid,
                         groupWorkspaceKey,
+                        time.currentEpochMillis(),
                         expectedVersion)
                 != 1) throw new InvitationStateException();
         audit(
@@ -599,40 +573,12 @@ public class WorkspaceInvitationService {
     @Transactional
     public WorkspaceInvitationReadback reissue(
             UUID workspaceUuid, String groupWorkspaceKey, UUID invitationId, long expectedVersion, AuditActor actor) {
-        Invitation previous = jdbc.query(
-                "SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, status, expires_at_epoch_millis, "
-                        + "version FROM workspace_iam.invitation WHERE id=? AND workspace_uuid=? AND "
-                        + "group_workspace_key=?",
-                statement -> {
-                    statement.setObject(1, invitationId);
-                    statement.setObject(2, workspaceUuid);
-                    statement.setString(3, groupWorkspaceKey);
-                },
-                result -> {
-                    if (!result.next()) throw new InvitationNotFoundException();
-                    return new Invitation(
-                            result.getObject(1, UUID.class),
-                            result.getObject(2, UUID.class),
-                            result.getString(3),
-                            result.getString(4),
-                            result.getString(5),
-                            result.getLong(6),
-                            result.getLong(7));
-                });
+        Invitation previous = invitation(workspaceUuid, groupWorkspaceKey, invitationId);
         if (!Set.of("PENDING", "CANCELLED", "EXPIRED").contains(previous.status())
                 || previous.version() != expectedVersion) throw new InvitationStateException();
-        if (jdbc.update(
-                        "UPDATE workspace_iam.invitation SET status='REISSUED', version=version+1 WHERE id=? AND "
-                                + "version=?",
-                        invitationId,
-                        expectedVersion)
+        if (persistence.reissue(invitationId, expectedVersion)
                 != 1) throw new InvitationStateException();
-        List<AssignmentIntent> intents = jdbc.query(
-                "SELECT role_id, service_node_type, service_node_id FROM workspace_iam.invitation_assignment_intent "
-                        + "WHERE invitation_id=?",
-                (row, index) -> new AssignmentIntent(
-                        row.getObject(1, UUID.class), row.getString(2), row.getObject(3, UUID.class)),
-                invitationId);
+        List<AssignmentIntent> intents = assignmentIntents(invitationId);
         audit(
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -696,14 +642,7 @@ public class WorkspaceInvitationService {
         Invitation invitation = requireGroupInvitation(groupWorkspaceKey, rawInvitationToken);
         String nextStep = publicResumeStep(invitation);
         if ("ACCEPT".equals(nextStep)) {
-            if (jdbc.update(
-                            "UPDATE workspace_iam.invitation SET status='ACCEPT_INTENT_RECORDED', "
-                                    + "consented_at_epoch_millis=?, version=version+1 WHERE id=? AND status='PENDING' "
-                                    + "AND "
-                                    + "version=?",
-                            time.currentEpochMillis(),
-                            invitation.id(),
-                            invitation.version())
+            if (persistence.acceptIntent(invitation.id(), time.currentEpochMillis(), invitation.version())
                     == 1) {
                 audit(
                         invitation.workspaceUuid(),
@@ -725,17 +664,8 @@ public class WorkspaceInvitationService {
     @Transactional(readOnly = true)
     public PublicInvitationView publicView(String groupWorkspaceKey, String rawInvitationToken) {
         Invitation invitation = requireGroupInvitation(groupWorkspaceKey, rawInvitationToken);
-        List<String> roleNames = jdbc.query(
-                "SELECT r.name FROM workspace_iam.invitation_assignment_intent i JOIN workspace_iam.workspace_role r "
-                        + "ON r.id=i.role_id WHERE i.invitation_id=? ORDER BY r.name",
-                (row, index) -> row.getString(1),
-                invitation.id());
-        List<AssignmentIntent> intents = jdbc.query(
-                "SELECT role_id, service_node_type, service_node_id FROM workspace_iam.invitation_assignment_intent "
-                        + "WHERE invitation_id=? ORDER BY service_node_type, service_node_id",
-                (row, index) -> new AssignmentIntent(
-                        row.getObject(1, UUID.class), row.getString(2), row.getObject(3, UUID.class)),
-                invitation.id());
+        List<String> roleNames = persistence.roleNames(invitation.id());
+        List<AssignmentIntent> intents = assignmentIntents(invitation.id());
         if (roleNames.isEmpty() || intents.isEmpty()) throw new InvitationStateException();
         String type = intents.getFirst().serviceNodeType();
         if (intents.stream().anyMatch(intent -> !type.equals(intent.serviceNodeType())))
@@ -785,19 +715,10 @@ public class WorkspaceInvitationService {
                 invitation.groupWorkspaceKey(),
                 "INVITATION_MOBILE_VERIFY",
                 invitation.id());
-        int consumed = jdbc.update(
-                "UPDATE workspace_iam.otp_grant SET status='USED', used_at_epoch_millis=? WHERE subject_ref=? AND "
-                        + "purpose='INVITATION_MOBILE_VERIFY' AND token_hash=? AND status='ACTIVE' AND "
-                        + "expires_at_epoch_millis>?",
-                time.currentEpochMillis(),
-                invitation.id(),
-                sha256(rawOtp),
-                time.currentEpochMillis());
+        int consumed = persistence.consumeOtp(
+                time.currentEpochMillis(), invitation.id(), sha256(rawOtp), time.currentEpochMillis());
         if (consumed != 1) {
-            jdbc.update(
-                    "UPDATE workspace_iam.otp_grant SET attempt_count=attempt_count+1 WHERE subject_ref=? AND "
-                            + "purpose='INVITATION_MOBILE_VERIFY' AND status='ACTIVE'",
-                    invitation.id());
+            persistence.incrementOtpAttempt(invitation.id());
             otpLimits.invalidVerify(
                     invitation.workspaceUuid(),
                     invitation.groupWorkspaceKey(),
@@ -814,22 +735,9 @@ public class WorkspaceInvitationService {
         long expires = Math.min(invitation.expiresAtEpochMillis(), time.currentEpochMillis() + 15 * 60 * 1000L);
         boolean firstVerification = "ACCEPT_INTENT_RECORDED".equals(invitation.status());
         if (firstVerification
-                && jdbc.update(
-                                "UPDATE workspace_iam.invitation SET status='MOBILE_VERIFIED', version=version+1 WHERE "
-                                        + "id=? AND status='ACCEPT_INTENT_RECORDED' AND version=?",
-                                invitation.id(),
-                                invitation.version())
+                && persistence.markMobileVerified(invitation.id(), invitation.version())
                         != 1) throw new InvitationStateException();
-        jdbc.update(
-                "INSERT INTO workspace_iam.invitation_public_progress (invitation_id, verification_grant_hash, "
-                        + "verification_grant_expires_at_epoch_millis, version) VALUES (?, ?, ?, 1) ON CONFLICT "
-                        + "(invitation_id) DO UPDATE SET verification_grant_hash=EXCLUDED.verification_grant_hash, "
-                        + "verification_grant_expires_at_epoch_millis=EXCLUDED.verification_grant_expires_at_epoch_mill"
-                        + "is, "
-                        + "version=workspace_iam.invitation_public_progress.version+1",
-                invitation.id(),
-                sha256(grant),
-                expires);
+        persistence.upsertPublicProgress(invitation.id(), sha256(grant), expires);
         if (firstVerification)
             audit(
                     invitation.workspaceUuid(),
@@ -857,21 +765,14 @@ public class WorkspaceInvitationService {
                 || password.length < 8) throw new InvitationStateException();
         String normalized = normalizedLogin(loginName);
         String name = text(userName, 120);
-        if (jdbc.update(
-                        "UPDATE workspace_iam.invitation_public_progress SET login_name_normalized=?, display_name=?, "
-                                + "password_hash=?, credential_ready_at_epoch_millis=?, version=version+1 WHERE "
-                                + "invitation_id=?",
+        if (persistence.updateCredentials(
                         normalized,
                         name,
                         passwords.encode(new String(password)),
                         time.currentEpochMillis(),
                         invitation.id())
                 != 1) throw new InvitationStateException();
-        if (jdbc.update(
-                        "UPDATE workspace_iam.invitation SET status='CREDENTIAL_READY', version=version+1 WHERE id=? "
-                                + "AND status='MOBILE_VERIFIED' AND version=?",
-                        invitation.id(),
-                        invitation.version())
+        if (persistence.markCredentialReady(invitation.id(), invitation.version())
                 != 1) throw new InvitationStateException();
         audit(
                 invitation.workspaceUuid(),
@@ -894,12 +795,7 @@ public class WorkspaceInvitationService {
         if (progress.passwordHash() == null || progress.loginName() == null || progress.displayName() == null)
             throw new InvitationStateException();
         UUID accountId = completeReadyInvitation(invitation, progress);
-        jdbc.update(
-                "UPDATE workspace_iam.invitation_public_progress SET completion_account_id=?, "
-                        + "completed_at_epoch_millis=?, version=version+1 WHERE invitation_id=?",
-                accountId,
-                time.currentEpochMillis(),
-                invitation.id());
+        persistence.completeProgress(accountId, time.currentEpochMillis(), invitation.id());
         audit(
                 invitation.workspaceUuid(),
                 invitation.groupWorkspaceKey(),
@@ -919,21 +815,7 @@ public class WorkspaceInvitationService {
     /** Delivery adapters may receive this transient secret; HTTP edge controllers must never return it. */
     @Transactional
     public String issueMobileVerificationOtp(UUID invitationId, long expiresAtEpochMillis) {
-        Invitation invitation = jdbc.query(
-                "SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, status, expires_at_epoch_millis, "
-                        + "version FROM workspace_iam.invitation WHERE id=?",
-                statement -> statement.setObject(1, invitationId),
-                result -> {
-                    if (!result.next()) throw new InvitationNotFoundException();
-                    return new Invitation(
-                            result.getObject(1, UUID.class),
-                            result.getObject(2, UUID.class),
-                            result.getString(3),
-                            result.getString(4),
-                            result.getString(5),
-                            result.getLong(6),
-                            result.getLong(7));
-                });
+        Invitation invitation = invitation(persistence.byId(invitationId));
         return issueMobileVerificationOtp(invitation, expiresAtEpochMillis);
     }
 
@@ -941,18 +823,11 @@ public class WorkspaceInvitationService {
         if (!Set.of("ACCEPT_INTENT_RECORDED", "MOBILE_VERIFIED").contains(invitation.status())
                 || expiresAtEpochMillis <= time.currentEpochMillis()
                 || expiresAtEpochMillis > invitation.expiresAtEpochMillis()) throw new InvitationStateException();
-        jdbc.update(
-                "UPDATE workspace_iam.otp_grant SET status='SUPERSEDED' WHERE subject_ref=? AND "
-                        + "purpose='INVITATION_MOBILE_VERIFY' AND status='ACTIVE'",
-                invitation.id());
+        persistence.supersedeActiveOtp(invitation.id());
         String otp = fixedOtpIssuer == null
                 ? String.format("%06d", random.nextInt(1_000_000))
                 : fixedOtpIssuer.issue("INVITATION_MOBILE_VERIFY", invitation.id());
-        jdbc.update(
-                "INSERT INTO workspace_iam.otp_grant (id, workspace_uuid, group_workspace_key, purpose, token_hash, "
-                        + "subject_ref, status, expires_at_epoch_millis) VALUES (?, ?, ?, 'INVITATION_MOBILE_VERIFY', "
-                        + "?, "
-                        + "?, 'ACTIVE', ?)",
+        persistence.createOtp(
                 UUID.randomUUID(),
                 invitation.workspaceUuid(),
                 invitation.groupWorkspaceKey(),
@@ -994,15 +869,16 @@ public class WorkspaceInvitationService {
     }
 
     private AssignmentIntent invitationTarget(UUID invitationId) {
-        List<AssignmentIntent> intents = jdbc.query(
-                "SELECT role_id, service_node_type, service_node_id "
-                        + "FROM workspace_iam.invitation_assignment_intent WHERE invitation_id=?",
-                (row, index) -> new AssignmentIntent(
-                        row.getObject(1, UUID.class), row.getString(2), row.getObject(3, UUID.class)),
-                invitationId);
+        List<AssignmentIntent> intents = assignmentIntents(invitationId);
         singleTargetType(intents);
         singleTargetId(intents);
         return intents.getFirst();
+    }
+
+    private List<AssignmentIntent> assignmentIntents(UUID invitationId) {
+        return persistence.assignmentIntents(invitationId).stream()
+                .map(row -> new AssignmentIntent(row.roleId(), row.serviceNodeType(), row.serviceNodeId()))
+                .toList();
     }
 
     private static String singleTargetType(List<AssignmentIntent> intents) {
@@ -1040,18 +916,9 @@ public class WorkspaceInvitationService {
     }
 
     private UUID completeReadyInvitation(Invitation invitation, Progress progress) {
-        if (jdbc.update(
-                        "UPDATE workspace_iam.invitation SET status='COMPLETING', version=version+1 WHERE id=? AND "
-                                + "status='CREDENTIAL_READY' AND version=?",
-                        invitation.id(),
-                        invitation.version())
+        if (persistence.markCompleting(invitation.id(), invitation.version())
                 != 1) throw new InvitationStateException();
-        List<AssignmentIntent> intents = jdbc.query(
-                "SELECT role_id, service_node_type, service_node_id FROM workspace_iam.invitation_assignment_intent "
-                        + "WHERE invitation_id=?",
-                (row, index) -> new AssignmentIntent(
-                        row.getObject(1, UUID.class), row.getString(2), row.getObject(3, UUID.class)),
-                invitation.id());
+        List<AssignmentIntent> intents = assignmentIntents(invitation.id());
         if (intents.isEmpty()) throw new InvitationValidationException();
         for (AssignmentIntent intent : intents) {
             roles.require(invitation.workspaceUuid(), invitation.groupWorkspaceKey(), intent.roleId());
@@ -1063,12 +930,7 @@ public class WorkspaceInvitationService {
         long now = time.currentEpochMillis();
         if (accountId == null) {
             accountId = UUID.randomUUID();
-            jdbc.update(
-                    "INSERT INTO workspace_iam.workspace_account (id, workspace_uuid, group_workspace_key, "
-                            + "mobile_normalized, login_name_normalized, display_name, status, version, "
-                            + "created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, 'ENABLED', "
-                            + "1, "
-                            + "?, ?)",
+            persistence.createAccount(
                     accountId,
                     invitation.workspaceUuid(),
                     invitation.groupWorkspaceKey(),
@@ -1077,20 +939,10 @@ public class WorkspaceInvitationService {
                     progress.displayName(),
                     now,
                     now);
-            jdbc.update(
-                    "INSERT INTO workspace_iam.workspace_credential (account_id, password_hash, algorithm, "
-                            + "changed_at_epoch_millis, version) VALUES (?, ?, 'bcrypt', ?, 1)",
-                    accountId,
-                    progress.passwordHash(),
-                    now);
+            persistence.createCredential(accountId, progress.passwordHash(), now);
         }
         for (AssignmentIntent intent : intents)
-            jdbc.update(
-                    "INSERT INTO workspace_iam.role_assignment (id, workspace_uuid, group_workspace_key, account_id, "
-                            + "role_id, source_invitation_id, service_node_type, service_node_id, status, version, "
-                            + "created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "
-                            + "'ACTIVE', "
-                            + "1, ?, ?)",
+            persistence.createRoleAssignment(
                     UUID.randomUUID(),
                     invitation.workspaceUuid(),
                     invitation.groupWorkspaceKey(),
@@ -1101,11 +953,7 @@ public class WorkspaceInvitationService {
                     intent.serviceNodeId(),
                     time.currentEpochMillis(),
                     time.currentEpochMillis());
-        if (jdbc.update(
-                        "UPDATE workspace_iam.invitation SET status='COMPLETED', completed_at_epoch_millis=?, "
-                                + "version=version+1 WHERE id=? AND status='COMPLETING'",
-                        time.currentEpochMillis(),
-                        invitation.id())
+        if (persistence.markCompleted(invitation.id(), time.currentEpochMillis())
                 != 1) throw new InvitationStateException();
         return accountId;
     }
@@ -1124,23 +972,11 @@ public class WorkspaceInvitationService {
             intents.put(id, new ArrayList<>());
             roleNames.put(id, new ArrayList<>());
         });
-        jdbc.query(
-                "SELECT intent.invitation_id, intent.role_id, intent.service_node_type, intent.service_node_id, "
-                        + "role.name FROM workspace_iam.invitation_assignment_intent intent JOIN "
-                        + "workspace_iam.workspace_role role ON role.id=intent.role_id WHERE intent.invitation_id IN ("
-                        + placeholders(ids.size())
-                        + ") ORDER BY intent.invitation_id, intent.service_node_type, intent.service_node_id, "
-                        + "role.name",
-                statement -> {
-                    for (int index = 0; index < ids.size(); index++) statement.setObject(index + 1, ids.get(index));
-                },
-                (org.springframework.jdbc.core.RowCallbackHandler) row -> {
-                    UUID invitationId = row.getObject(1, UUID.class);
-                    intents.get(invitationId)
-                            .add(new AssignmentIntent(
-                                    row.getObject(2, UUID.class), row.getString(3), row.getObject(4, UUID.class)));
-                    roleNames.get(invitationId).add(row.getString(5));
-                });
+        persistence.assignmentFacts(ids).forEach(row -> {
+            intents.get(row.invitationId())
+                    .add(new AssignmentIntent(row.roleId(), row.serviceNodeType(), row.serviceNodeId()));
+            roleNames.get(row.invitationId()).add(row.roleName());
+        });
         return new InvitationAssignmentIntentFacts(copyLists(intents), copyLists(roleNames));
     }
 
@@ -1153,15 +989,7 @@ public class WorkspaceInvitationService {
     private Map<UUID, String> issuerNamesByInvitation(List<WorkspaceInvitationReadback> invitations) {
         List<UUID> ids =
                 invitations.stream().map(WorkspaceInvitationReadback::id).toList();
-        Map<UUID, String> result = new LinkedHashMap<>();
-        jdbc.query(
-                "SELECT id, issuer_display_name_snapshot FROM workspace_iam.invitation WHERE id IN ("
-                        + placeholders(ids.size()) + ")",
-                statement -> {
-                    for (int index = 0; index < ids.size(); index++) statement.setObject(index + 1, ids.get(index));
-                },
-                (org.springframework.jdbc.core.RowCallbackHandler)
-                        row -> result.put(row.getObject(1, UUID.class), row.getString(2)));
+        Map<UUID, String> result = persistence.issuerNames(ids);
         if (result.size() != ids.size()) throw new InvitationStateException();
         return Map.copyOf(result);
     }
@@ -1211,11 +1039,6 @@ public class WorkspaceInvitationService {
                 invitation.version());
     }
 
-    private static String placeholders(int size) {
-        if (size <= 0) throw new InvitationStateException();
-        return String.join(",", java.util.Collections.nCopies(size, "?"));
-    }
-
     private String path(Invitation invitation, AssignmentIntent intent) {
         return switch (intent.serviceNodeType()) {
             case ServiceNodeTypes.GROUP -> groups.describeCommercialGroup(
@@ -1242,16 +1065,11 @@ public class WorkspaceInvitationService {
         AuditChangePolicy policy = new AuditChangePolicy("WORKSPACE_INVITATION", action, INVITATION_FIELDS);
         List<AuditChange> changes = List.of(
                 new AuditChange("status", beforeStatus, afterStatus), new AuditChange("lifecycleEvent", null, action));
-        jdbc.update(
-                "INSERT INTO workspace_iam.audit_event (id, workspace_uuid, group_workspace_key, entity_type, "
-                        + "entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, "
-                        + "occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'WORKSPACE_INVITATION', ?, ?, ?, "
-                        + "?, ?, "
-                        + "?, CAST(? AS JSONB))",
+        persistence.appendAudit(
                 UUID.randomUUID(),
                 workspaceUuid,
                 key,
-                invitationId.toString(),
+                invitationId,
                 actor.actorType(),
                 actor.actorId(),
                 actor.displaySnapshot(),
@@ -1261,55 +1079,35 @@ public class WorkspaceInvitationService {
     }
 
     private Invitation invitation(UUID workspaceUuid, String key, UUID invitationId) {
-        return jdbc.query(
-                "SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, status, expires_at_epoch_millis, "
-                        + "version FROM workspace_iam.invitation WHERE id=? AND workspace_uuid=? AND "
-                        + "group_workspace_key=?",
-                statement -> {
-                    statement.setObject(1, invitationId);
-                    statement.setObject(2, workspaceUuid);
-                    statement.setString(3, key);
-                },
-                result -> {
-                    if (!result.next()) throw new InvitationNotFoundException();
-                    return new Invitation(
-                            result.getObject(1, UUID.class),
-                            result.getObject(2, UUID.class),
-                            result.getString(3),
-                            result.getString(4),
-                            result.getString(5),
-                            result.getLong(6),
-                            result.getLong(7));
-                });
+        WorkspaceInvitationPersistence.InvitationRow row =
+                persistence.scopedInvitation(workspaceUuid, key, invitationId);
+        if (row == null) throw new InvitationNotFoundException();
+        return new Invitation(
+                row.id(),
+                row.workspaceUuid(),
+                row.groupWorkspaceKey(),
+                row.mobile(),
+                row.status(),
+                row.expiresAtEpochMillis(),
+                row.version());
     }
 
     private WorkspaceInvitationReadback readback(UUID workspaceUuid, String key, UUID invitationId) {
-        return jdbc.query(
-                "SELECT id, mobile_normalized, status, expires_at_epoch_millis, version, "
-                        + "created_at_epoch_millis, consented_at_epoch_millis, completed_at_epoch_millis, "
-                        + "cancelled_at_epoch_millis, invitation_token FROM workspace_iam.invitation "
-                        + "WHERE id=? AND workspace_uuid=? AND group_workspace_key=?",
-                statement -> {
-                    statement.setObject(1, invitationId);
-                    statement.setObject(2, workspaceUuid);
-                    statement.setString(3, key);
-                },
-                result -> {
-                    if (!result.next()) throw new InvitationNotFoundException();
-                    return new WorkspaceInvitationReadback(
-                            result.getObject(1, UUID.class),
-                            workspaceUuid,
-                            key,
-                            result.getString(2),
-                            result.getString(3),
-                            result.getLong(4),
-                            result.getLong(5),
-                            result.getLong(6),
-                            result.getObject(7, Long.class),
-                            result.getObject(8, Long.class),
-                            result.getObject(9, Long.class),
-                            result.getString(10));
-                });
+        WorkspaceInvitationPersistence.InvitationReadRow row = persistence.readback(workspaceUuid, key, invitationId);
+        if (row == null) throw new InvitationNotFoundException();
+        return new WorkspaceInvitationReadback(
+                row.id(),
+                workspaceUuid,
+                key,
+                row.mobile(),
+                row.status(),
+                row.expiresAtEpochMillis(),
+                row.version(),
+                row.createdAtEpochMillis(),
+                row.consentedAtEpochMillis(),
+                row.completedAtEpochMillis(),
+                row.cancelledAtEpochMillis(),
+                row.invitationToken());
     }
 
     private static String auditJson(List<AuditChange> changes) {
@@ -1325,19 +1123,11 @@ public class WorkspaceInvitationService {
     }
 
     private AccountPresence accountPresence(UUID workspaceUuid, String groupWorkspaceKey, String mobileNormalized) {
-        return jdbc.query(
-                "SELECT id, status FROM workspace_iam.workspace_account WHERE workspace_uuid=? AND "
-                        + "group_workspace_key=? AND mobile_normalized=?",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    statement.setString(3, mobileNormalized);
-                },
-                result -> {
-                    if (!result.next()) return new AccountPresence(null, AccountPresenceStatus.ABSENT);
-                    return new AccountPresence(
-                            result.getObject(1, UUID.class), accountPresenceStatus(result.getString(2)));
-                });
+        WorkspaceInvitationPersistence.AccountPresenceRow row =
+                persistence.accountPresence(workspaceUuid, groupWorkspaceKey, mobileNormalized);
+        return row == null
+                ? new AccountPresence(null, AccountPresenceStatus.ABSENT)
+                : new AccountPresence(row.accountId(), accountPresenceStatus(row.status()));
     }
 
     private static AccountPresenceStatus accountPresenceStatus(String status) {
@@ -1361,19 +1151,9 @@ public class WorkspaceInvitationService {
         java.util.LinkedHashSet<UUID> requested = new java.util.LinkedHashSet<>(roleIds);
         if (requested.contains(null)) throw new WorkspaceRoleService.RoleNotFoundException();
         List<UUID> ids = new ArrayList<>(requested);
-        String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
-        List<InvitationRoleFact> roles = jdbc.query(
-                "SELECT id, name, service_node_type, status FROM workspace_iam.workspace_role WHERE workspace_uuid=? "
-                        + "AND group_workspace_key=? AND id IN ("
-                        + placeholders
-                        + ") FOR UPDATE",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    for (int index = 0; index < ids.size(); index++) statement.setObject(index + 3, ids.get(index));
-                },
-                (row, index) -> new InvitationRoleFact(
-                        row.getObject(1, UUID.class), row.getString(2), row.getString(3), row.getString(4)));
+        List<InvitationRoleFact> roles = persistence.enabledRoles(workspaceUuid, groupWorkspaceKey, ids).stream()
+                .map(row -> new InvitationRoleFact(row.id(), row.name(), row.serviceNodeType(), row.status()))
+                .toList();
         if (roles.size() != ids.size()) throw new WorkspaceRoleService.RoleNotFoundException();
         Map<UUID, InvitationRoleFact> rolesById = new LinkedHashMap<>();
         roles.forEach(role -> rolesById.put(role.id(), role));
@@ -1385,31 +1165,13 @@ public class WorkspaceInvitationService {
     }
 
     private boolean validGrant(UUID invitationId, String rawGrant) {
-        return rawGrant != null
-                && jdbc.queryForObject(
-                                "SELECT COUNT(*) FROM workspace_iam.invitation_public_progress WHERE invitation_id=? "
-                                        + "AND verification_grant_hash=? AND "
-                                        + "verification_grant_expires_at_epoch_millis>?",
-                                Integer.class,
-                                invitationId,
-                                sha256(rawGrant),
-                                time.currentEpochMillis())
-                        == 1;
+        return rawGrant != null && persistence.validGrant(invitationId, sha256(rawGrant), time.currentEpochMillis());
     }
 
     private Progress progress(UUID invitationId) {
-        return jdbc.query(
-                "SELECT login_name_normalized, display_name, password_hash, completion_account_id FROM "
-                        + "workspace_iam.invitation_public_progress WHERE invitation_id=?",
-                statement -> statement.setObject(1, invitationId),
-                result -> {
-                    if (!result.next()) throw new InvitationStateException();
-                    return new Progress(
-                            result.getString(1),
-                            result.getString(2),
-                            result.getString(3),
-                            result.getObject(4, UUID.class));
-                });
+        WorkspaceInvitationPersistence.ProgressRow row = persistence.progress(invitationId);
+        if (row == null) throw new InvitationStateException();
+        return new Progress(row.loginName(), row.displayName(), row.passwordHash(), row.accountId());
     }
 
     private PublicCompletion completion(Invitation invitation) {
@@ -1435,21 +1197,19 @@ public class WorkspaceInvitationService {
     }
 
     private Invitation read(String raw) {
-        return jdbc.query(
-                "SELECT id, workspace_uuid, group_workspace_key, mobile_normalized, status, expires_at_epoch_millis, "
-                        + "version FROM workspace_iam.invitation WHERE token_hash=?",
-                statement -> statement.setString(1, sha256(raw)),
-                result -> {
-                    if (!result.next()) throw new InvitationNotFoundException();
-                    return new Invitation(
-                            result.getObject(1, UUID.class),
-                            result.getObject(2, UUID.class),
-                            result.getString(3),
-                            result.getString(4),
-                            result.getString(5),
-                            result.getLong(6),
-                            result.getLong(7));
-                });
+        return invitation(persistence.byToken(sha256(raw)));
+    }
+
+    private static Invitation invitation(WorkspaceInvitationPersistence.InvitationRow row) {
+        if (row == null) throw new InvitationNotFoundException();
+        return new Invitation(
+                row.id(),
+                row.workspaceUuid(),
+                row.groupWorkspaceKey(),
+                row.mobile(),
+                row.status(),
+                row.expiresAtEpochMillis(),
+                row.version());
     }
 
     private String randomToken() {
@@ -1596,26 +1356,19 @@ public class WorkspaceInvitationService {
         }
     }
 
-    private record InvitationPageSql(String where, List<Object> arguments) {}
-
     private record PageRequest(
-            int page, int pageSize, String orderColumn, String direction, ManagementInvitationPageRequest criteria) {
+            int page, int pageSize, String sort, String direction, ManagementInvitationPageRequest criteria) {
         private static PageRequest from(ManagementInvitationPageRequest request) {
             if (request == null || request.page() < 1 || request.pageSize() < 1 || request.pageSize() > 100)
                 throw new InvitationValidationException();
             String sort = request.sort() == null ? "CREATED_AT" : request.sort();
             String direction = request.direction() == null ? "DESC" : request.direction();
-            String column =
-                    switch (sort) {
-                        case "CREATED_AT" -> "created_at_epoch_millis";
-                        case "EXPIRES_AT" -> "expires_at_epoch_millis";
-                        default -> throw new InvitationValidationException();
-                    };
-            if (!Set.of("ASC", "DESC").contains(direction)) throw new InvitationValidationException();
+            if (!Set.of("CREATED_AT", "EXPIRES_AT").contains(sort)
+                    || !Set.of("ASC", "DESC").contains(direction)) throw new InvitationValidationException();
             return new PageRequest(
                     request.page(),
                     request.pageSize(),
-                    column,
+                    sort,
                     direction,
                     new ManagementInvitationPageRequest(
                             request.mobile(),

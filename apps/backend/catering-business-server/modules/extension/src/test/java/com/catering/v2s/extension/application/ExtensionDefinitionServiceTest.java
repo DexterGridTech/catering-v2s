@@ -8,11 +8,17 @@ import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.api.ExtensionHostTypes;
 import com.catering.v2s.extension.api.ExtensionSubmission;
+import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,6 +41,8 @@ class ExtensionDefinitionServiceTest {
     private static UUID workspaceId;
     private static JdbcTemplate jdbc;
     private static TransactionTemplate transactions;
+    private static ExtensionDefinitionPersistence persistence;
+    private static WorkspaceStatusLookup workspaceStatuses;
 
     @BeforeAll
     static void setup() {
@@ -61,15 +69,15 @@ class ExtensionDefinitionServiceTest {
                 now,
                 now,
                 now);
-        WorkspaceStatusLookup workspaceStatuses = (id, key) -> jdbc.queryForObject(
+        workspaceStatuses = (id, key) -> jdbc.queryForObject(
                 "SELECT status FROM platform_workspace.group_workspace "
                         + "WHERE workspace_uuid=? AND group_workspace_key=?",
                 String.class,
                 id,
                 key);
+        persistence = new ExtensionDefinitionPersistence(jdbc, (TimeProvider) () -> now);
         service = new ExtensionDefinitionService(
-                jdbc,
-                (TimeProvider) () -> now,
+                persistence,
                 new ExtensionCommandReceiptService(jdbc, () -> now),
                 actor -> {},
                 workspaceStatuses);
@@ -193,6 +201,106 @@ class ExtensionDefinitionServiceTest {
                 service.replaceDraft(workspaceId, "extension-test", "PROJECT", 0, draft, AuditActor.system(), key));
 
         assertEquals(first, replay);
+    }
+
+    @Test
+    void concurrentInitialWritesHaveOneWinnerAndStaleUpdatesAffectNoRows() throws Exception {
+        String groupWorkspaceKey = "extension-cas-" + UUID.randomUUID().toString().replace("-", "");
+        UUID isolatedWorkspace = createWorkspace(groupWorkspaceKey);
+        long now = 1_785_000_000_000L;
+        CountDownLatch preStateReaders = new CountDownLatch(2);
+        CountDownLatch releaseWriters = new CountDownLatch(1);
+        ExtensionDefinitionPersistence racingPersistence = new ExtensionDefinitionPersistence(jdbc, () -> now) {
+            @Override
+            public ExtensionDefinitionPersistence.PreStateRow findPreState(
+                    UUID workspaceUuid, String key, String hostType) {
+                ExtensionDefinitionPersistence.PreStateRow row = super.findPreState(workspaceUuid, key, hostType);
+                if (isolatedWorkspace.equals(workspaceUuid)
+                        && groupWorkspaceKey.equals(key)
+                        && ExtensionHostTypes.STORE.equals(hostType)) {
+                    preStateReaders.countDown();
+                    try {
+                        if (!releaseWriters.await(10, TimeUnit.SECONDS))
+                            throw new AssertionError("concurrent CAS writers were not released");
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        throw new AssertionError(interrupted);
+                    }
+                }
+                return row;
+            }
+        };
+        ExtensionDefinitionService racingService = new ExtensionDefinitionService(
+                racingPersistence,
+                new ExtensionCommandReceiptService(jdbc, () -> now),
+                actor -> {},
+                workspaceStatuses);
+        List<ExtensionDefinitionService.Field> fields = List.of(new ExtensionDefinitionService.Field(
+                "capacity", "Capacity", "NUMBER", false, List.of(), "ENABLED", 0, null));
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<ExtensionDefinitionReadback> first = executor.submit(() -> racingService.replace(
+                    isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE, 0, fields));
+            Future<ExtensionDefinitionReadback> second = executor.submit(() -> racingService.replace(
+                    isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE, 0, fields));
+            assertTrue(preStateReaders.await(10, TimeUnit.SECONDS));
+            releaseWriters.countDown();
+            int winners = 0;
+            int conflicts = 0;
+            for (Future<ExtensionDefinitionReadback> attempt : List.of(first, second)) {
+                try {
+                    assertEquals(1, attempt.get(10, TimeUnit.SECONDS).version());
+                    winners++;
+                } catch (java.util.concurrent.ExecutionException failure) {
+                    assertTrue(failure.getCause() instanceof ExtensionDefinitionService.DefinitionVersionConflictException);
+                    conflicts++;
+                }
+            }
+            assertEquals(1, winners);
+            assertEquals(1, conflicts);
+        } finally {
+            releaseWriters.countDown();
+            executor.shutdownNow();
+        }
+
+        var committed = persistence.findDefinition(isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE);
+        assertEquals(1, committed.revision());
+        assertTrue(committed.definitionsJson().contains("capacity"));
+        assertEquals(
+                0,
+                persistence.updateDefinition(
+                        isolatedWorkspace,
+                        groupWorkspaceKey,
+                        ExtensionHostTypes.STORE,
+                        "[]",
+                        2,
+                        0));
+        var afterStaleUpdate = persistence.findDefinition(isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE);
+        assertEquals(1, afterStaleUpdate.revision());
+        assertTrue(afterStaleUpdate.definitionsJson().contains("capacity"));
+        assertThrows(
+                ExtensionDefinitionService.DefinitionVersionConflictException.class,
+        () -> service.replace(isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE, 0, List.of()));
+    }
+
+    private static UUID createWorkspace(String groupWorkspaceKey) {
+        UUID id = UUID.randomUUID();
+        long now = 1_785_000_000_000L;
+        String name = "Extension " + groupWorkspaceKey;
+        jdbc.update(
+                "INSERT INTO platform_workspace.group_workspace (workspace_uuid, group_workspace_key, name, "
+                        + "name_normalized, operations_title, status, revision, version, created_at_epoch_millis, "
+                        + "updated_at_epoch_millis, status_changed_at_epoch_millis) VALUES (?, ?, ?, ?, ?, 'ENABLED', "
+                        + "1, 1, ?, ?, ?)",
+                id,
+                groupWorkspaceKey,
+                name,
+                name.toLowerCase(java.util.Locale.ROOT),
+                name,
+                now,
+                now,
+                now);
+        return id;
     }
 
     @Test
@@ -333,8 +441,7 @@ class ExtensionDefinitionServiceTest {
     @Test
     void disabledPlatformActorIsRejectedBeforeReceiptDefinitionOrAuditMutation() {
         ExtensionDefinitionService denied = new ExtensionDefinitionService(
-                jdbc,
-                () -> 1_785_000_000_000L,
+                new ExtensionDefinitionPersistence(jdbc, () -> 1_785_000_000_000L),
                 new ExtensionCommandReceiptService(jdbc, () -> 1_785_000_000_000L),
                 actor -> {
                     throw new IllegalStateException("platform administrator disabled");

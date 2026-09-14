@@ -28,6 +28,17 @@ export type InputDiagnostic = Readonly<{
 
 export type InputDiagnosticReporter = (diagnostic: InputDiagnostic) => void;
 
+export type InputKeyboardPlacement = 'surface' | 'field';
+
+export type InputKeyboardProps = Readonly<{
+  /**
+   * The layout owner for the shared keyboard. `surface` is docked by
+   * InputSurfaceFrame; `field` is rendered by the consumer at its local
+   * field/card position. Both placements use the same InputProvider owner.
+   */
+  readonly placement: InputKeyboardPlacement;
+}>;
+
 type InputFieldOptionsBase = Readonly<{
   readonly fieldId: string;
   readonly testID: string;
@@ -39,6 +50,7 @@ type InputFieldOptionsBase = Readonly<{
   readonly secureTextEntry?: boolean;
   readonly nativeLess?: boolean;
   readonly focusScopeId?: string;
+  readonly keyboardPlacement?: InputKeyboardPlacement;
 }>;
 
 export type InputFieldOptions = InputFieldOptionsBase & Readonly<{
@@ -74,6 +86,7 @@ export type InputFieldController = Readonly<{
   readonly maxLength?: number;
   readonly inputRef: RefObject<PrimitiveInputHandle | null> | null;
   readonly focusScopeId: string;
+  readonly keyboardPlacement: InputKeyboardPlacement;
   readonly applyKey: (key: KeyboardKey) => EditResult;
   readonly getEditState: () => EditState;
 }>;
@@ -87,6 +100,7 @@ export type InputFieldRegistration = Readonly<{
   readonly maxLength?: number;
   readonly inputRef: RefObject<PrimitiveInputHandle | null> | null;
   readonly focusScopeId: string;
+  readonly keyboardPlacement: InputKeyboardPlacement;
   readonly applyKey: (key: KeyboardKey) => EditResult;
   readonly getEditState: () => EditState;
 }>;
@@ -103,6 +117,7 @@ export type InputController = Readonly<{
       readonly layout: KeyboardLayout;
       readonly maxLength?: number;
       readonly focusScopeId: string;
+      readonly keyboardPlacement: InputKeyboardPlacement;
     }>,
   ) => void;
   readonly handleFocus: (fieldId: string) => void;
@@ -120,6 +135,7 @@ export type InputController = Readonly<{
 export type InputKeyboardState = Readonly<{
   readonly activeFieldId: string | null;
   readonly owner: 'none' | 'virtual';
+  readonly keyboardPlacement: InputKeyboardPlacement;
   readonly layout: KeyboardLayout;
   readonly capacity: KeyboardCapacity;
   readonly blockedFieldId: string | null;

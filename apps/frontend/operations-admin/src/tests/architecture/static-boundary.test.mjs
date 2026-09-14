@@ -82,10 +82,19 @@ test('operations shell fixes the range footer outside its only scrollable naviga
 });
 
 test('operations business surfaces never expose owner internals, raw scope identities, or copy implementation terms', () => {
-  const dictionary = fs.readFileSync(
-    new URL('../../features/catalog-management/ui/CatalogDictionaryDrawerState.tsx', import.meta.url),
+  const dictionaryState = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/dictionary/CatalogDictionaryDrawerState.tsx', import.meta.url),
     'utf8',
   );
+  const dictionaryView = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/dictionary/CatalogDictionaryDrawerView.tsx', import.meta.url),
+    'utf8',
+  );
+  const dictionaryModel = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/dictionary/catalogDictionaryDrawerModel.ts', import.meta.url),
+    'utf8',
+  );
+  const dictionary = dictionaryState + dictionaryView + dictionaryModel;
   const configurationSurface = fs.readFileSync(
     new URL('../../features/catalog-management/ui/CatalogConfigurationDrawerSurface.tsx', import.meta.url),
     'utf8',
@@ -94,10 +103,15 @@ test('operations business surfaces never expose owner internals, raw scope ident
     new URL('../../features/catalog-management/ui/CatalogItemDrawer.tsx', import.meta.url),
     'utf8',
   );
-  const localCopy = fs.readFileSync(
-    new URL('../../features/catalog-management/ui/LocalCatalogCopyDrawer.tsx', import.meta.url),
+  const localCopyController = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/local-copy/LocalCatalogCopyDrawer.tsx', import.meta.url),
     'utf8',
   );
+  const localCopyView = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/local-copy/LocalCatalogCopyView.tsx', import.meta.url),
+    'utf8',
+  );
+  const localCopy = localCopyController + localCopyView;
   const brandCopy = fs.readFileSync(
     new URL('../../features/catalog-management/ui/BrandCatalogCopyDrawer.tsx', import.meta.url),
     'utf8',
@@ -121,10 +135,19 @@ test('operations business surfaces never expose owner internals, raw scope ident
 });
 
 test('catalog configuration drawer keeps one first-level workspace with stable library navigation and small atom modals only', () => {
-  const dictionary = fs.readFileSync(
-    new URL('../../features/catalog-management/ui/CatalogDictionaryDrawerState.tsx', import.meta.url),
+  const dictionaryState = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/dictionary/CatalogDictionaryDrawerState.tsx', import.meta.url),
     'utf8',
   );
+  const dictionaryView = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/dictionary/CatalogDictionaryDrawerView.tsx', import.meta.url),
+    'utf8',
+  );
+  const dictionaryModel = fs.readFileSync(
+    new URL('../../features/catalog-management/ui/dictionary/catalogDictionaryDrawerModel.ts', import.meta.url),
+    'utf8',
+  );
+  const dictionary = dictionaryState + dictionaryView + dictionaryModel;
   const navigation = fs.readFileSync(
     new URL('../../features/catalog-management/ui/CatalogConfigurationLibraryNavigation.tsx', import.meta.url),
     'utf8',
@@ -197,7 +220,10 @@ test('catalog configuration drawer keeps one first-level workspace with stable l
     /canWrite && creatingKind && \([\s\S]*<Modal[\s\S]*width=\{creationKind === 'UNIT' \? 720 : 480\}/,
   );
   assert.doesNotMatch(dictionary, /上移|下移|reorderOperationsCatalogDictionaryEntry/);
-  assert.match(dictionary, /if \(open && !wasOpen\.current\) \{[\s\S]*selectLibrary\(initialConfigLibrary\);/);
+  assert.match(
+    dictionary,
+    /if \(open && \(!wasOpen\.current \|\| configLibrary\.contextChanged\)\) \{[\s\S]*selectLibrary\(initialConfigLibrary\);/,
+  );
   assert.match(dictionary, /dictionaryData = dictionaryQuery\.currentData\?\.data/);
   assert.match(dictionary, /productionQuery\.currentData\?\.data/);
   assert.match(dictionary, /const isSkuAttributeManagement = kind === 'SKU_ATTRIBUTE';/);
@@ -239,12 +265,28 @@ test('catalog configuration drawer keeps one first-level workspace with stable l
 test('catalog product controls derive every runtime testId from the shared business-identity vocabulary', () => {
   const uiDirectory = new URL('../../features/catalog-management/ui/', import.meta.url);
   const sources = fs
-    .readdirSync(uiDirectory)
-    .filter(fileName => /\.(?:tsx|ts)$/.test(fileName) && !/\.test\.(?:tsx|ts)$/.test(fileName))
+    .readdirSync(uiDirectory, {recursive: true})
+    .filter(
+      fileName =>
+        typeof fileName === 'string' && /\.(?:tsx|ts)$/.test(fileName) && !/\.test\.(?:tsx|ts)$/.test(fileName),
+    )
     .map(fileName => [fileName, fs.readFileSync(new URL(fileName, uiDirectory), 'utf8')]);
+  assert.ok(
+    sources.some(([fileName]) => fileName === 'dictionary/CatalogDictionaryDrawerView.tsx'),
+    'the UI vocabulary boundary must include nested Dictionary surfaces',
+  );
+  assert.ok(
+    sources.some(([fileName]) => fileName === 'local-copy/LocalCatalogCopyView.tsx'),
+    'the UI vocabulary boundary must include nested Local Copy surfaces',
+  );
   const directCatalogTestId = /\btestId(?:\(|=)\s*\{?\s*(?:`catalog-|['"]catalog-)/;
   const offenders = sources.filter(([, source]) => directCatalogTestId.test(source)).map(([fileName]) => fileName);
   assert.deepEqual(offenders, []);
+  const redFixture = [...sources, ['dictionary/red-fixture.tsx', "testId('catalog-nested-red')"]];
+  assert.deepEqual(
+    redFixture.filter(([, source]) => directCatalogTestId.test(source)).map(([fileName]) => fileName),
+    ['dictionary/red-fixture.tsx'],
+  );
   const catalogTestIds = fs.readFileSync(
     new URL('../../features/catalog-management/catalogTestIds.ts', import.meta.url),
     'utf8',
@@ -252,6 +294,62 @@ test('catalog product controls derive every runtime testId from the shared busin
   assert.match(catalogTestIds, /inventory:\s*\{[\s\S]*bomLine:/);
   assert.match(catalogTestIds, /copy:\s*\{[\s\S]*confirmation:/);
   assert.match('testId(`catalog-inventory-bom-remove-${index}`)', directCatalogTestId);
+});
+
+test('catalog split compatibility entries are pure barrels and unused root wrappers stay absent', () => {
+  const uiDirectory = new URL('../../features/catalog-management/ui/', import.meta.url);
+  const compatibilityFiles = ['CatalogDictionaryDrawer.tsx', 'dictionary/index.ts', 'local-copy/index.ts'];
+  const sources = compatibilityFiles.map(fileName => [
+    fileName,
+    fs.readFileSync(new URL(fileName, uiDirectory), 'utf8'),
+  ]);
+  const localCopyController = fs.readFileSync(new URL('local-copy/LocalCatalogCopyDrawer.tsx', uiDirectory), 'utf8');
+  const localCopyView = fs.readFileSync(new URL('local-copy/LocalCatalogCopyView.tsx', uiDirectory), 'utf8');
+  const dictionaryState = fs.readFileSync(new URL('dictionary/CatalogDictionaryDrawerState.tsx', uiDirectory), 'utf8');
+  const barrelPattern = /^\s*export\s+(?:\*|\{|type\b)/m;
+  const implementationPattern = /\b(?:function|class|const|let)\s+\w+|<Drawer\b|useDrawerFormLifecycle/;
+
+  for (const [fileName, source] of sources) {
+    assert.match(source, barrelPattern, `${fileName} must remain a compatibility barrel`);
+    assert.doesNotMatch(source, implementationPattern, `${fileName} must not grow implementation logic`);
+  }
+  assert.equal(
+    fs.existsSync(new URL('CatalogDictionaryDrawerState.tsx', uiDirectory)),
+    false,
+    'the old root Dictionary state wrapper must not return',
+  );
+  assert.equal(
+    fs.existsSync(new URL('LocalCatalogCopyDrawer.tsx', uiDirectory)),
+    false,
+    'the old root Local Copy wrapper must not return',
+  );
+  assert.doesNotMatch(localCopyController, /from ['"]\.\.\/\.\.\/model\/catalogModel['"]/);
+  assert.doesNotMatch(localCopyView, /from ['"]\.\.\/\.\.\/model\/catalogModel['"]/);
+  assert.match(localCopyView, /onComplete=\{lifecycle\.closeAfterSuccess\}/);
+  assert.match(localCopyView, /afterOpenChange=\{afterOpenChange\}/);
+  assert.match(localCopyController, /const handleAfterOpenChange/);
+  assert.match(localCopyController, /lifecycle\.setSubmitting\(true\)/);
+  assert.match(localCopyController, /lifecycle\.setSubmitting\(false\)/);
+  assert.match(localCopyController, /resetLifecyclePreservingOpen\(\)/);
+  assert.match(dictionaryState, /const requestConfigClose = lifecycle\.requestClose/);
+  for (const formName of [
+    'tagForm',
+    'unitForm',
+    'skuAttributeForm',
+    'productionTagForm',
+    'attributeValueForm',
+    'editNameForm',
+    'editUnitForm',
+  ]) {
+    assert.match(dictionaryState, new RegExp(`${formName}\\.resetFields\\(\\)`), formName);
+  }
+  assert.match(dictionaryState, /resetTransientState\(\)/);
+  assert.match(dictionaryState, /const handleAfterClose/);
+  assert.match(dictionaryState, /resetLifecyclePreservingOpen\(\)/);
+
+  const redFixture = 'export function accidentalImplementation() { return null; }';
+  assert.match(redFixture, implementationPattern);
+  assert.doesNotMatch(redFixture, barrelPattern);
 });
 
 test(

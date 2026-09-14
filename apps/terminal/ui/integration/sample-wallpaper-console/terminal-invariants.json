@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/ui-integration-sample-wallpaper-console",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-integration-sample-wallpaper-console", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "ownerKind": "owner",
+  "publicExports": [
+    "PortraitSurfaceDeclarations",
+    "SurfaceCreationInput",
+    "SurfaceDeclarations",
+    "SurfaceForm",
+    "SurfaceOrientation",
+    "SurfaceSize",
+    "TerminalSurfaces",
+    "WallpaperConsoleAssembly",
+    "createBaseModuleDescriptors",
+    "createSampleWallpaperConsoleAssembly",
+    "createSampleWallpaperConsoleModule",
+    "createSurfaceForDisplayIndex",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "getSurfaceDeclarations",
+    "moduleKind",
+    "moduleName",
+    "parts",
+    "readTerminalSurfaces",
+    "surfaceFormForOrientation",
+    "terminalSurfaces",
+    "waitingPart",
+    "welcomePart"
+  ]
+}

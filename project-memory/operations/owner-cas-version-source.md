@@ -9,7 +9,7 @@ owners: ["backend","frontend-platform"]
 impacts: ["runtime","contract","evidence"]
 triggers: ["implementation","failure","review"]
 assertions: ["COMMAND_EXPECTED_VERSION_MUST_MATCH_OWNER_AGGREGATE","ROW_VERSION_IS_NOT_AGGREGATE_CAS_VERSION","FRONTEND_COMMAND_USES_OWNER_READ_VERSION","VERSION_CONFLICT_IS_NOT_FIXED_BY_RETRY"]
-sourceRefs: ["apps/backend/catering-business-server/modules/sales-menu/src/main/java/com/catering/v2s/salesmenu/application/SalesMenuOwnerService.java","apps/backend/catering-business-server/modules/sales-menu/src/main/java/com/catering/v2s/salesmenu/infrastructure/JdbcSalesMenuRepository.java","apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx","project-memory/operations/owner-cas-version-source.md"]
+sourceRefs: ["apps/backend/catering-business-server/modules/sales-menu/src/main/java/com/catering/v2s/salesmenu/application/SalesMenuOwnerService.java","apps/backend/catering-business-server/modules/sales-menu/src/main/java/com/catering/v2s/salesmenu/application/persistence/SalesMenuPersistence.java","apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuPage.tsx","project-memory/operations/owner-cas-version-source.md"]
 ---
 
 # owner CAS 版本必须来自 CAS 目标聚合

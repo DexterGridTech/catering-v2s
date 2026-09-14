@@ -1,12 +1,28 @@
-import {useCallback, useEffect, useMemo, useRef, useState, type FC, type ReactElement} from 'react';
-import {Pressable, StyleSheet, Text, View, type LayoutChangeEvent} from 'react-native';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+  type FC,
+  type ReactElement,
+} from 'react';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type GestureResponderEvent,
+  type LayoutChangeEvent,
+} from 'react-native';
 import {
   readDisplayInfo,
   resolveSecondarySurfaceAvailable,
   type DisplayMode,
 } from '@catering-v2s/kernel-base-display-context';
 import type {PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
-import {createWebPlatformPorts, type SurfaceMode} from '../implementations/webPlatform';
+import {createWebPlatformPorts, type SurfaceMode, type WebPlatformOptions} from '../implementations/webPlatform';
 import {createWebSurfaceHostSource, type WebSurfaceHostSource} from '../implementations/webSurfaceHost';
 import {
   calculateSurfacePreviewGeometry,
@@ -47,6 +63,7 @@ export type TestExpoAppOptions<TAssembly extends TestExpoAssembly> = Readonly<{
   readonly terminalSurfaces: TerminalSurfaces;
   readonly surfaceForm?: SurfaceForm;
   readonly persistenceKey?: string;
+  readonly webPlatformOptions?: WebPlatformOptions;
   readonly createAssembly: (
     input: Readonly<{
       readonly platformPorts: PlatformPorts;
@@ -58,10 +75,21 @@ export type TestExpoAppOptions<TAssembly extends TestExpoAssembly> = Readonly<{
   readonly getRuntimeStatus: (assembly: TAssembly) => TestExpoRuntimeStatus;
 }>;
 
+const SURFACE_FORM_QUERY_PARAM = 'surfaceForm';
+
 const CONTENT_MAX_WIDTH = 1600;
 const CONTENT_HORIZONTAL_PADDING = 28;
 const DEV_HOST_PREVIEW_LAYOUT: SurfacePreviewLayout = 'column';
-const DEV_HOST_PREVIEW_POLICY: SurfacePreviewPolicy = 'width-fill-preserve-ratio';
+const DEV_HOST_PREVIEW_POLICY: SurfacePreviewPolicy = 'width-selective-preserve-ratio';
+const SURFACE_WIDTH_MIN_PERCENT = 30;
+const SURFACE_WIDTH_MAX_PERCENT = 100;
+const SURFACE_WIDTH_STEP_PERCENT = 1;
+const DEFAULT_SURFACE_WIDTH_PERCENT = SURFACE_WIDTH_MAX_PERCENT;
+
+const clampSurfaceWidthPercent = (value: number): number => {
+  if (!Number.isFinite(value)) return DEFAULT_SURFACE_WIDTH_PERCENT;
+  return Math.min(SURFACE_WIDTH_MAX_PERCENT, Math.max(SURFACE_WIDTH_MIN_PERCENT, Math.round(value)));
+};
 
 const resolvePreviewLayoutStyles = (layout: SurfacePreviewLayout) => ({
   flexDirection: layout === 'row' ? ('row' as const) : ('column' as const),
@@ -92,6 +120,7 @@ type SurfaceCanvasProps = Readonly<{
   readonly assembly: TestExpoAssembly;
   readonly logger: PlatformPorts['logger'];
   readonly showSecondary: boolean;
+  readonly surfaceWidthPercent: number;
   readonly surfaceForm: SurfaceForm;
   readonly terminalSurfaces: TerminalSurfaces;
   readonly testIdPrefix: string;
@@ -112,6 +141,32 @@ const resolveSurfaceGroup = (terminalSurfaces: TerminalSurfaces, surfaceForm: Su
   const portrait = terminalSurfaces.orientations.portrait;
   if (portrait === undefined) throw new Error('[ui-base-dev-host] mobile surface declarations are required');
   return {primary: portrait.PRIMARY, secondary: portrait.PRIMARY};
+};
+
+const isSurfaceForm = (value: string | null): value is SurfaceForm => value === 'laptop' || value === 'mobile';
+
+const readSurfaceFormFromWebLocation = (): SurfaceForm | undefined => {
+  if (typeof window === 'undefined' || typeof window.location?.search !== 'string') return undefined;
+  const requested = new URLSearchParams(window.location.search).get(SURFACE_FORM_QUERY_PARAM);
+  return isSurfaceForm(requested) ? requested : undefined;
+};
+
+const resolveInitialSurfaceForm = (
+  defaultSurfaceForm: SurfaceForm,
+  terminalSurfaces: TerminalSurfaces,
+): SurfaceForm => {
+  const requested = readSurfaceFormFromWebLocation();
+  if (requested === undefined) return defaultSurfaceForm;
+  if (requested === 'mobile' && terminalSurfaces.orientations.portrait === undefined) return defaultSurfaceForm;
+  return requested;
+};
+
+const restartWebSurfaceWithForm = (surfaceForm: SurfaceForm): boolean => {
+  if (typeof window === 'undefined' || typeof window.location?.replace !== 'function') return false;
+  const nextUrl = new URL(window.location.href);
+  nextUrl.searchParams.set(SURFACE_FORM_QUERY_PARAM, surfaceForm);
+  window.location.replace(nextUrl.toString());
+  return true;
 };
 
 type WebRect = Readonly<{
@@ -194,7 +249,15 @@ const readWebViewport = (): WebViewport => {
   };
 };
 
-const SurfaceCanvas = ({assembly, logger, showSecondary, surfaceForm, terminalSurfaces, testIdPrefix}: SurfaceCanvasProps) => {
+const SurfaceCanvas = ({
+  assembly,
+  logger,
+  showSecondary,
+  surfaceWidthPercent,
+  surfaceForm,
+  terminalSurfaces,
+  testIdPrefix,
+}: SurfaceCanvasProps) => {
   const {primary, secondary} = resolveSurfaceGroup(terminalSurfaces, surfaceForm);
   const [previewViewportSize, setPreviewViewportSize] = useState<PreviewViewportSize | null>(null);
   const canvasNodeRef = useRef<unknown>(null);
@@ -244,11 +307,14 @@ const SurfaceCanvas = ({assembly, logger, showSecondary, surfaceForm, terminalSu
           : calculateSurfacePreviewGeometry({
             layout: DEV_HOST_PREVIEW_LAYOUT,
             showSecondary,
-            viewport: previewViewportSize,
+            viewport: {
+              width: previewViewportSize.width * (surfaceWidthPercent / 100),
+              height: previewViewportSize.height,
+            },
             primary,
             secondary,
           }),
-    [primary, secondary, previewViewportSize, showSecondary],
+    [primary, secondary, previewViewportSize, showSecondary, surfaceWidthPercent],
   );
   useEffect(() => {
     if (!__DEV__ || geometry === null) return;
@@ -262,6 +328,7 @@ const SurfaceCanvas = ({assembly, logger, showSecondary, surfaceForm, terminalSu
         viewport: readWebViewport(),
         layout: DEV_HOST_PREVIEW_LAYOUT,
         previewPolicy: DEV_HOST_PREVIEW_POLICY,
+        surfaceWidthPercent,
         showSecondary,
         previewViewportWidth: previewViewportSize?.width ?? null,
         previewViewportHeight: previewViewportSize?.height ?? null,
@@ -283,7 +350,17 @@ const SurfaceCanvas = ({assembly, logger, showSecondary, surfaceForm, terminalSu
         secondaryRect: showSecondary ? readWebRect(surfaceNodeRefs.current.SECONDARY) : null,
       },
     });
-  }, [geometry, logger, previewViewportSize, primary.height, primary.width, secondary.height, secondary.width, showSecondary]);
+  }, [
+    geometry,
+    logger,
+    previewViewportSize,
+    primary.height,
+    primary.width,
+    secondary.height,
+    secondary.width,
+    showSecondary,
+    surfaceWidthPercent,
+  ]);
   const surfaceStyle = (size: SurfaceSize) => ({
     width: size.width,
     height: size.height,
@@ -391,6 +468,175 @@ type HeaderStatusProps = Readonly<{
   readonly testIdPrefix: string;
 }>;
 
+type SurfaceFormSwitcherProps = Readonly<{
+  readonly surfaceForm: SurfaceForm;
+  readonly supportsMobile: boolean;
+  readonly onSelect: (surfaceForm: SurfaceForm) => void;
+  readonly testIdPrefix: string;
+}>;
+
+type SurfaceRadioOptionProps = Readonly<{
+  readonly label: string;
+  readonly selected: boolean;
+  readonly onPress: () => void;
+  readonly optionTestID: string;
+}>;
+
+const SurfaceRadioOption = ({label, selected, onPress, optionTestID}: SurfaceRadioOptionProps) => (
+  <Pressable
+    testID={optionTestID}
+    accessibilityRole="radio"
+    accessibilityLabel={label}
+    accessibilityState={{selected}}
+    aria-checked={selected}
+    onPress={onPress}
+    style={({pressed}) => [
+      styles.surfaceRadioOption,
+      selected && styles.surfaceRadioOptionSelected,
+      pressed && styles.surfaceRadioOptionPressed,
+    ]}
+  >
+    <View style={[styles.surfaceRadioCircle, selected && styles.surfaceRadioCircleSelected]}>
+      {selected ? <View style={styles.surfaceRadioDot} /> : null}
+    </View>
+    <Text style={[styles.surfaceRadioText, selected && styles.surfaceRadioTextSelected]}>{label}</Text>
+  </Pressable>
+);
+
+const SurfaceFormSwitcher = ({surfaceForm, supportsMobile, onSelect, testIdPrefix}: SurfaceFormSwitcherProps) => (
+  <View
+    style={styles.surfaceRadioGroup}
+    testID={`${testIdPrefix}:surface-form-switcher`}
+    accessibilityLabel="终端视角"
+  >
+    <Text style={styles.surfaceRadioGroupLabel}>视角</Text>
+    <SurfaceRadioOption
+      optionTestID={`${testIdPrefix}:surface-form:laptop`}
+      label="laptop 视角"
+      selected={surfaceForm === 'laptop'}
+      onPress={() => onSelect('laptop')}
+    />
+    {supportsMobile ? (
+      <SurfaceRadioOption
+        optionTestID={`${testIdPrefix}:surface-form:mobile`}
+        label="mobile 视角"
+        selected={surfaceForm === 'mobile'}
+        onPress={() => onSelect('mobile')}
+      />
+    ) : null}
+  </View>
+);
+
+type SurfaceWidthControlProps = Readonly<{
+  readonly surfaceWidthPercent: number;
+  readonly onChange: (value: number) => void;
+  readonly testIdPrefix: string;
+}>;
+
+const SURFACE_WIDTH_SLIDER_TRACK_WIDTH = 132;
+
+type SurfaceWidthKeyDownEvent = Readonly<{
+  readonly nativeEvent: Readonly<{readonly key: string}>;
+  readonly preventDefault: () => void;
+}>;
+
+const surfaceWidthPercentFromLocation = (locationX: number): number =>
+  clampSurfaceWidthPercent(
+    SURFACE_WIDTH_MIN_PERCENT
+      + (locationX / SURFACE_WIDTH_SLIDER_TRACK_WIDTH)
+        * (SURFACE_WIDTH_MAX_PERCENT - SURFACE_WIDTH_MIN_PERCENT),
+  );
+
+const SurfaceWidthSlider = ({surfaceWidthPercent, onChange, testIdPrefix}: SurfaceWidthControlProps) => {
+  const handleLocation = (event: GestureResponderEvent): void => {
+    const locationX = event.nativeEvent.locationX;
+    if (Number.isFinite(locationX)) onChange(surfaceWidthPercentFromLocation(locationX));
+  };
+  const handleKeyDown = (event: SurfaceWidthKeyDownEvent): void => {
+    const key = event.nativeEvent.key;
+    const delta = key === 'ArrowLeft' || key === 'ArrowDown' ? -SURFACE_WIDTH_STEP_PERCENT
+      : key === 'ArrowRight' || key === 'ArrowUp' ? SURFACE_WIDTH_STEP_PERCENT
+        : 0;
+    if (delta === 0) return;
+    event.preventDefault();
+    onChange(clampSurfaceWidthPercent(surfaceWidthPercent + delta));
+  };
+  const fillPercent =
+    ((surfaceWidthPercent - SURFACE_WIDTH_MIN_PERCENT)
+      / (SURFACE_WIDTH_MAX_PERCENT - SURFACE_WIDTH_MIN_PERCENT)) * 100;
+  const pressableProps: ComponentProps<typeof Pressable> & Readonly<{
+    readonly onKeyDown: (event: SurfaceWidthKeyDownEvent) => void;
+  }> = {
+    accessibilityLabel: 'surface 宽度比例',
+    accessibilityRole: 'adjustable',
+    accessibilityValue: {
+      min: SURFACE_WIDTH_MIN_PERCENT,
+      max: SURFACE_WIDTH_MAX_PERCENT,
+      now: surfaceWidthPercent,
+      text: `${surfaceWidthPercent}%`,
+    },
+    onKeyDown: handleKeyDown,
+    onPressIn: handleLocation,
+    onPressMove: handleLocation,
+    style: styles.surfaceWidthSlider,
+    testID: `${testIdPrefix}:surface-width-slider`,
+  };
+  return (
+    <Pressable {...pressableProps}>
+      <View style={styles.surfaceWidthSliderTrack}>
+        <View style={[styles.surfaceWidthSliderFill, {width: `${fillPercent}%`}]} />
+        <View style={[styles.surfaceWidthSliderThumb, {left: `${fillPercent}%`}]} />
+      </View>
+    </Pressable>
+  );
+};
+
+type SurfaceModeRadioProps = Readonly<{
+  readonly surfaceMode: SurfaceMode;
+  readonly onSelect: (surfaceMode: SurfaceMode) => void;
+  readonly testIdPrefix: string;
+}>;
+
+const SurfaceModeRadio = ({surfaceMode, onSelect, testIdPrefix}: SurfaceModeRadioProps) => (
+  <View
+    style={styles.surfaceRadioGroup}
+    testID={`${testIdPrefix}:surface-toggle`}
+    accessibilityLabel="屏幕模式"
+  >
+    <Text style={styles.surfaceRadioGroupLabel}>屏幕</Text>
+    <SurfaceRadioOption
+      optionTestID={`${testIdPrefix}:surface-mode:single`}
+      label="单屏模式"
+      selected={surfaceMode === 'single'}
+      onPress={() => onSelect('single')}
+    />
+    <SurfaceRadioOption
+      optionTestID={`${testIdPrefix}:surface-mode:dual`}
+      label="双屏模式"
+      selected={surfaceMode === 'dual'}
+      onPress={() => onSelect('dual')}
+    />
+  </View>
+);
+
+const SurfaceWidthControl = ({surfaceWidthPercent, onChange, testIdPrefix}: SurfaceWidthControlProps) => (
+  <View
+    style={styles.surfaceWidthControl}
+    testID={`${testIdPrefix}:surface-width-control`}
+    accessibilityLabel="surface 宽度"
+  >
+    <Text style={styles.surfaceWidthControlLabel}>surface 宽度</Text>
+    <SurfaceWidthSlider
+      surfaceWidthPercent={surfaceWidthPercent}
+      onChange={onChange}
+      testIdPrefix={testIdPrefix}
+    />
+    <Text style={styles.surfaceWidthControlValue} testID={`${testIdPrefix}:surface-width-value`}>
+      {surfaceWidthPercent}%
+    </Text>
+  </View>
+);
+
 const HeaderStatus = ({runtimeStatus, showSecondary, surfaceForm, terminalSurfaces, testIdPrefix}: HeaderStatusProps) => {
   const {primary, secondary} = resolveSurfaceGroup(terminalSurfaces, surfaceForm);
   return (
@@ -486,9 +732,14 @@ const HostStateCard = ({
 export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: TestExpoAppOptions<TAssembly>): FC => {
   const testIdPrefix = `${options.appName}:test-expo`;
   const persistenceKey = options.persistenceKey ?? `${options.appName}-web`;
-  const surfaceForm = options.surfaceForm ?? 'laptop';
+  const defaultSurfaceForm = options.surfaceForm ?? 'laptop';
+  const supportsMobile = options.terminalSurfaces.orientations.portrait !== undefined;
 
   const TestExpoApp: FC = () => {
+    const [surfaceForm, setSurfaceForm] = useState<SurfaceForm>(() =>
+      resolveInitialSurfaceForm(defaultSurfaceForm, options.terminalSurfaces),
+    );
+    const [surfaceWidthPercent, setSurfaceWidthPercent] = useState(DEFAULT_SURFACE_WIDTH_PERCENT);
     const [surfaceMode, setSurfaceMode] = useState<SurfaceMode>('single');
     const surfaceModeRef = useRef<SurfaceMode>(surfaceMode);
     surfaceModeRef.current = surfaceMode;
@@ -498,9 +749,10 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
     const platformPorts = useMemo(
       () =>
         createWebPlatformPorts(() => surfaceModeRef.current, {
+          ...options.webPlatformOptions,
           storageNamespace: options.appName,
         }),
-      [],
+      [options.appName, options.webPlatformOptions],
     );
     const webSurfaceHostSources = useMemo(() => {
       const {primary, secondary} = resolveSurfaceGroup(options.terminalSurfaces, surfaceForm);
@@ -514,6 +766,9 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
 
     useEffect(() => {
       let active = true;
+      setAssembly(undefined);
+      setStartupError(false);
+      setShowSecondary(undefined);
       void options
         .createAssembly({platformPorts, persistenceKey, surfaceForm, surfaceHostSourcesByDisplayIndex: webSurfaceHostSources})
         .then(nextAssembly => {
@@ -537,7 +792,7 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
       return () => {
         active = false;
       };
-    }, [platformPorts, webSurfaceHostSources]);
+    }, [platformPorts, surfaceForm, webSurfaceHostSources]);
 
     useEffect(() => {
       if (assembly === undefined) return;
@@ -566,11 +821,11 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
         <View style={styles.scroll}>
           <View style={styles.content}>
             <View style={styles.stageHeader}>
-              <View>
-                <Text style={styles.sectionEyebrow}>LIVE SURFACE PREVIEW</Text>
-                <Text style={styles.stageTitle}>{options.title}</Text>
-              </View>
-              <View style={styles.stageHeaderRight}>
+              <View style={styles.stageHeaderTopRow} testID={`${testIdPrefix}:stage-header-top`}>
+                <View>
+                  <Text style={styles.sectionEyebrow}>LIVE SURFACE PREVIEW</Text>
+                  <Text style={styles.stageTitle}>{options.title}</Text>
+                </View>
                 <HeaderStatus
                   runtimeStatus={runtimeStatus}
                   showSecondary={showSecondary}
@@ -578,27 +833,43 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
                   terminalSurfaces={options.terminalSurfaces}
                   testIdPrefix={testIdPrefix}
                 />
-                {surfaceForm === 'laptop' ? <View style={styles.toolbarActions}>
-                  <View style={styles.modePill}>
-                    <View style={styles.modePillDot} />
-                    <Text style={styles.modePillLabel} testID={`${testIdPrefix}:surface-mode`}>
-                      {surfaceMode === 'dual' ? '双屏模式' : '单屏模式'}
-                    </Text>
-                  </View>
-                  <Pressable
-                    testID={`${testIdPrefix}:surface-toggle`}
-                    accessibilityRole="button"
-                    accessibilityLabel="切换单屏双屏"
-                    accessibilityHint={
-                      surfaceMode === 'dual' ? '切换为单屏并保留当前运行时' : '切换为双屏并保留当前运行时'
-                    }
-                    onPress={() => setSurfaceMode(current => (current === 'single' ? 'dual' : 'single'))}
-                    style={({pressed}) => [styles.modeButton, pressed && styles.modeButtonPressed]}
-                  >
-                    <Text style={styles.modeButtonText}>{surfaceMode === 'dual' ? '切换为单屏' : '切换为双屏'}</Text>
-                    <Text style={styles.modeButtonArrow}>→</Text>
-                  </Pressable>
-                </View> : null}
+              </View>
+              <View style={styles.toolbarActions} testID={`${testIdPrefix}:toolbar-actions`}>
+                  <SurfaceWidthControl
+                    surfaceWidthPercent={surfaceWidthPercent}
+                    onChange={setSurfaceWidthPercent}
+                    testIdPrefix={testIdPrefix}
+                  />
+                  <SurfaceFormSwitcher
+                    surfaceForm={surfaceForm}
+                    supportsMobile={supportsMobile}
+                    testIdPrefix={testIdPrefix}
+                    onSelect={nextSurfaceForm => {
+                      if (nextSurfaceForm === surfaceForm) return;
+                      const restarted = restartWebSurfaceWithForm(nextSurfaceForm);
+                      platformPorts.logger.info({
+                        category: `${options.appName}.test-expo`,
+                        event: 'surface-form-switch-requested',
+                        message: restarted
+                          ? 'Web surface form switch requested; restarting the surface page'
+                          : 'Surface form switch requested; rebuilding the host in place',
+                        data: {
+                          from: surfaceForm,
+                          to: nextSurfaceForm,
+                          restart: restarted ? 'web-page-reload' : 'in-memory-rebuild',
+                        },
+                      });
+                      setSurfaceMode('single');
+                      if (!restarted) setSurfaceForm(nextSurfaceForm);
+                    }}
+                  />
+                  {surfaceForm === 'laptop' ? (
+                    <SurfaceModeRadio
+                      surfaceMode={surfaceMode}
+                      onSelect={setSurfaceMode}
+                      testIdPrefix={testIdPrefix}
+                    />
+                  ) : null}
               </View>
             </View>
             {startupError ? (
@@ -625,9 +896,11 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
             ) : (
               <>
                 <SurfaceCanvas
+                  key={surfaceForm}
                   assembly={assembly}
                   logger={platformPorts.logger}
                   showSecondary={showSecondary}
+                  surfaceWidthPercent={surfaceWidthPercent}
                   surfaceForm={surfaceForm}
                   terminalSurfaces={options.terminalSurfaces}
                   testIdPrefix={testIdPrefix}
@@ -730,65 +1003,123 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   toolbarActions: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
     gap: 12,
   },
-  stageHeaderRight: {
-    flex: 1,
-    minWidth: 460,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  modePill: {
+  surfaceRadioGroup: {
     minHeight: 36,
-    paddingHorizontal: 12,
+    padding: 4,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    borderRadius: 18,
+    gap: 4,
+    borderRadius: 12,
     backgroundColor: '#0D263B',
     borderWidth: 1,
     borderColor: '#2E6287',
   },
-  modePillDot: {
+  surfaceRadioGroupLabel: {
+    paddingHorizontal: 7,
+    color: COLORS.inkMuted,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  surfaceRadioOption: {
+    minHeight: 28,
+    paddingHorizontal: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 8,
+  },
+  surfaceRadioOptionSelected: {
+    backgroundColor: COLORS.primarySoft,
+  },
+  surfaceRadioOptionPressed: {
+    opacity: 0.78,
+  },
+  surfaceRadioCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.inkMuted,
+  },
+  surfaceRadioCircleSelected: {
+    borderColor: COLORS.primary,
+  },
+  surfaceRadioDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: COLORS.primary,
   },
-  modePillLabel: {
-    color: COLORS.ink,
-    fontSize: 13,
-    fontWeight: '700',
+  surfaceRadioText: {
+    color: COLORS.inkMuted,
+    fontSize: 11,
+    fontWeight: '800',
   },
-  modeButton: {
-    minHeight: 44,
-    paddingHorizontal: 16,
+  surfaceRadioTextSelected: {
+    color: COLORS.ink,
+  },
+  surfaceWidthControl: {
+    minHeight: 36,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     borderRadius: 12,
-    backgroundColor: '#116EA9',
+    backgroundColor: '#0D263B',
     borderWidth: 1,
-    borderColor: '#45C9FF',
-    boxShadow: '0px 4px 12px rgba(30, 183, 245, 0.28)',
+    borderColor: '#2E6287',
   },
-  modeButtonPressed: {
-    opacity: 0.78,
-  },
-  modeButtonText: {
-    color: COLORS.white,
-    fontSize: 13,
+  surfaceWidthControlLabel: {
+    color: COLORS.inkMuted,
+    fontSize: 11,
     fontWeight: '800',
   },
-  modeButtonArrow: {
-    color: '#BFD7FF',
-    fontSize: 18,
-    lineHeight: 18,
+  surfaceWidthSlider: {
+    width: 132,
+    height: 24,
+    justifyContent: 'center',
+  },
+  surfaceWidthSliderTrack: {
+    width: SURFACE_WIDTH_SLIDER_TRACK_WIDTH,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.borderStrong,
+    position: 'relative',
+  },
+  surfaceWidthSliderFill: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primary,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+  },
+  surfaceWidthSliderThumb: {
+    width: 18,
+    height: 18,
+    marginLeft: -9,
+    marginTop: -6,
+    borderRadius: 9,
+    backgroundColor: COLORS.primary,
+    position: 'absolute',
+    top: 3,
+  },
+  surfaceWidthControlValue: {
+    minWidth: 34,
+    color: COLORS.ink,
+    fontSize: 11,
+    fontWeight: '800',
+    textAlign: 'right',
   },
   content: {
     width: '100%',
@@ -842,6 +1173,10 @@ const styles = StyleSheet.create({
   stageHeader: {
     width: '100%',
     marginBottom: 14,
+    gap: 14,
+  },
+  stageHeaderTopRow: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'flex-start',
     flexWrap: 'wrap',

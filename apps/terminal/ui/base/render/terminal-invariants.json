@@ -34,6 +34,8 @@
     "SurfaceHostController",
     "SurfaceHostGeometry",
     "SurfaceHostMeasurementSnapshot",
+    "SurfaceHostIdentityRejection",
+    "SurfaceHostIdentityRejectionHandler",
     "SurfaceHostMeasurementSource",
     "SurfaceHostSize",
     "SurfaceHostSnapshot",

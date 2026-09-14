@@ -32,4 +32,32 @@ class WorkspaceIamSummaryReadServiceTest {
                 .queryForObject(contains("workspace_account"), any(RowMapper.class), eq(workspace), eq(workspace));
         verifyNoMoreInteractions(jdbc);
     }
+
+    @Test
+    void accountCountReadsTheTypedOwnerCountAndNormalizesNullToZero() {
+        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+        UUID workspace = UUID.randomUUID();
+        when(jdbc.queryForObject(any(String.class), eq(Long.class), eq(workspace)))
+                .thenReturn(7L);
+
+        long actual = new WorkspaceIamSummaryReadService(jdbc).accountCount(workspace);
+
+        assertEquals(7L, actual);
+        verify(jdbc).queryForObject(contains("workspace_account"), eq(Long.class), eq(workspace));
+        verifyNoMoreInteractions(jdbc);
+    }
+
+    @Test
+    void roleCountReadsTheTypedOwnerCountAndNormalizesNullToZero() {
+        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+        UUID workspace = UUID.randomUUID();
+        when(jdbc.queryForObject(any(String.class), eq(Long.class), eq(workspace)))
+                .thenReturn(null);
+
+        long actual = new WorkspaceIamSummaryReadService(jdbc).roleCount(workspace);
+
+        assertEquals(0L, actual);
+        verify(jdbc).queryForObject(contains("workspace_role"), eq(Long.class), eq(workspace));
+        verifyNoMoreInteractions(jdbc);
+    }
 }

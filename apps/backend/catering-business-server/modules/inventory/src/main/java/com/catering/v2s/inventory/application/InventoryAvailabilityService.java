@@ -1,5 +1,7 @@
 package com.catering.v2s.inventory.application;
 
+import com.catering.v2s.inventory.application.persistence.InventoryAvailabilityServiceSql;
+import com.catering.v2s.inventory.application.persistence.InventoryAvailabilityPersistence;
 import static com.catering.v2s.inventory.api.InventoryOwnerApi.*;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
@@ -47,13 +49,6 @@ public class InventoryAvailabilityService {
     private static final String SKU_BASE_UNIT_ARGS = "SKU 基础计量单位判断参数不完整";
     private static final String INCOMPLETE_CONSUMPTION_UNIT_SNAPSHOT = "单位快照不完整";
     private static final String SALES_MENU_STATE_UNKNOWN = "库存状态无法转换为销售菜单可用事实";
-    private static final String TARGET_SELECT_COLUMNS =
-            "target_ref,item_ref,product_sku_ref,item_code,sku_code,measure_mode,balance,configuration::text,"
-                    + "version,updated_at_epoch_millis,consumption_unit_ref,consumption_unit_code,"
-                    + "consumption_unit_name,consumption_unit_dimension,consumption_unit_precision,"
-                    + "counting_unit_ref,counting_unit_code,counting_unit_name,counting_unit_dimension,"
-                    + "counting_unit_precision,counting_unit_conversion_factor,definition_status,inventory_mode,"
-                    + "component_eligible";
     /** Mapping types consumed by inventory copy; catalog may carry other owner mappings in the same plan. */
     private static final Set<String> INVENTORY_COPY_MAPPING_TYPES = Set.of(
             "CATALOG_ITEM",
@@ -63,12 +58,20 @@ public class InventoryAvailabilityService {
             "CATALOG_ORDER_OPTION_DEFINITION_VALUE",
             "STOCK_TARGET");
 
-    private final JdbcTemplate jdbc;
+    private final InventoryAvailabilityPersistence persistence;
     private final ObjectMapper mapper;
     private final TimeProvider time;
 
     public InventoryAvailabilityService(JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time) {
-        this.jdbc = jdbc;
+        this.persistence = new InventoryAvailabilityPersistence(jdbc);
+        this.mapper = mapper;
+        this.time = time;
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public InventoryAvailabilityService(
+            InventoryAvailabilityPersistence persistence, ObjectMapper mapper, TimeProvider time) {
+        this.persistence = persistence;
         this.mapper = mapper;
         this.time = time;
     }
@@ -78,41 +81,21 @@ public class InventoryAvailabilityService {
             String dataNodeRef, String brandRef, Set<InventoryOwnerApi.InventoryTargetRef> targetRefs) {
         requireSalesMenuAvailabilityScope(dataNodeRef, brandRef);
         Set<InventoryOwnerApi.InventoryTargetRef> requestedIdentities = normalizedInventoryTargetRefs(targetRefs);
-        Map<TargetIdentity, TargetRow> targets = targetRowsByIdentities(
+        Map<InventoryAvailabilityPersistence.TargetIdentity, InventoryAvailabilityPersistence.TargetRow> targets =
+                persistence.readTargets(
                 dataNodeRef,
                 brandRef,
                 requestedIdentities.stream()
-                        .map(identity -> new TargetIdentity(identity.itemRef(), identity.productSkuRef()))
+                        .map(identity -> new InventoryAvailabilityPersistence.TargetIdentity(
+                                identity.itemRef(), identity.productSkuRef()))
                         .toList(),
                 false);
         return requestedIdentities.stream()
                 .map(identity -> salesMenuAvailabilityFact(
-                        identity, targets.get(new TargetIdentity(identity.itemRef(), identity.productSkuRef()))))
+                        identity,
+                        targets.get(new InventoryAvailabilityPersistence.TargetIdentity(
+                                identity.itemRef(), identity.productSkuRef()))))
                 .toList();
-    }
-
-    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(java.sql.ResultSet result) throws java.sql.SQLException {
-        UUID ref = result.getObject(1, UUID.class);
-        if (ref == null || result.getString(2) == null || result.getString(3) == null || result.getString(4) == null)
-            throw new InventoryOwnerApi.Problem("CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, "单位快照不完整");
-        return new InventoryOwnerApi.UnitSnapshot(
-                ref, result.getString(2), result.getString(3), result.getString(4), result.getInt(5));
-    }
-
-    private static InventoryOwnerApi.UnitSnapshot unitSnapshot(java.sql.ResultSet result, int firstColumn)
-            throws java.sql.SQLException {
-        String refValue = result.getString(firstColumn);
-        UUID ref;
-        try {
-            ref = refValue == null ? null : UUID.fromString(refValue);
-        } catch (IllegalArgumentException failure) {
-            return null;
-        }
-        String code = result.getString(firstColumn + 1);
-        String name = result.getString(firstColumn + 2);
-        String dimension = result.getString(firstColumn + 3);
-        if (ref == null || code == null || name == null || dimension == null) return null;
-        return new InventoryOwnerApi.UnitSnapshot(ref, code, name, dimension, result.getInt(firstColumn + 4));
     }
 
     private InventoryOwnerApi.UnitSnapshot requiredUnitSnapshot(JsonNode node, String field) {
@@ -157,112 +140,6 @@ public class InventoryAvailabilityService {
                 counting);
     }
 
-    private Map<TargetIdentity, TargetRow> targetRowsByIdentities(
-            String scope, String brand, List<TargetIdentity> identities) {
-        return targetRowsByIdentities(scope, brand, identities, true);
-    }
-
-    private Map<TargetIdentity, TargetRow> targetRowsByIdentities(
-            String scope, String brand, List<TargetIdentity> identities, boolean requireCompleteConsumptionUnit) {
-        if (identities.isEmpty()) return Map.of();
-        String predicates = String.join(
-                " OR ",
-                java.util.Collections.nCopies(
-                        identities.size(), "(item_ref=? AND product_sku_ref IS NOT DISTINCT FROM ?)"));
-        List<Object> args = new ArrayList<>();
-        args.add(scope);
-        args.add(brand);
-        for (TargetIdentity identity : identities) {
-            args.add(identity.itemRef());
-            args.add(identity.productSkuRef());
-        }
-        String sql = "SELECT "
-                + TARGET_SELECT_COLUMNS
-                + " FROM inventory.stock_target WHERE data_node_ref=? AND "
-                + "brand_ref=? AND definition_status='ENABLED' AND ("
-                + predicates + ")";
-        if (requireCompleteConsumptionUnit) {
-            Map<TargetIdentity, TargetRow> result = new LinkedHashMap<>();
-            for (TargetRow row :
-                    jdbc.query(sql, (row, number) -> targetRowWithConsumptionUnitSnapshot(row), args.toArray())) {
-                result.put(new TargetIdentity(row.itemRef(), row.productSkuRef()), row);
-            }
-            return result;
-        }
-        return jdbc.query(
-                sql,
-                statement -> {
-                    statement.setString(1, scope);
-                    statement.setString(2, brand);
-                    int parameter = 3;
-                    for (TargetIdentity identity : identities) {
-                        statement.setObject(parameter++, identity.itemRef());
-                        statement.setObject(parameter++, identity.productSkuRef());
-                    }
-                },
-                resultSet -> {
-                    Map<TargetIdentity, TargetRow> result = new LinkedHashMap<>();
-                    while (resultSet.next()) {
-                        TargetRow row = targetRow(resultSet, unitSnapshot(resultSet, 11));
-                        TargetIdentity identity = new TargetIdentity(row.itemRef(), row.productSkuRef());
-                        if (result.putIfAbsent(identity, row) != null)
-                            throw new InventoryOwnerApi.Problem(
-                                    ("REFERENCE_MAPPING_UNRESOLVED"), (422), ("目标库存对象引用不唯一"));
-                    }
-                    return result;
-                });
-    }
-
-    private static TargetRow targetRow(java.sql.ResultSet row) throws java.sql.SQLException {
-        return targetRow(row, 1, null);
-    }
-
-    private static TargetRow targetRowWithConsumptionUnitSnapshot(java.sql.ResultSet row) throws java.sql.SQLException {
-        return targetRowWithConsumptionUnitSnapshot(row, 1);
-    }
-
-    private static TargetRow targetRowWithConsumptionUnitSnapshot(java.sql.ResultSet row, int firstColumn)
-            throws java.sql.SQLException {
-        return targetRow(row, firstColumn, requiredUnitSnapshot(row, firstColumn + 10));
-    }
-
-    private static TargetRow targetRow(java.sql.ResultSet row, InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot)
-            throws java.sql.SQLException {
-        return targetRow(row, 1, consumptionUnitSnapshot);
-    }
-
-    private static TargetRow targetRow(
-            java.sql.ResultSet row, int firstColumn, InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot)
-            throws java.sql.SQLException {
-        boolean hasUnitConfigurationColumns = row.getMetaData().getColumnCount() >= firstColumn + 22;
-        return new TargetRow(
-                row.getObject(firstColumn, UUID.class),
-                row.getObject(firstColumn + 1, UUID.class),
-                row.getObject(firstColumn + 2, UUID.class),
-                row.getString(firstColumn + 3),
-                row.getString(firstColumn + 4),
-                row.getString(firstColumn + 5),
-                row.getBigDecimal(firstColumn + 6),
-                row.getString(firstColumn + 7),
-                row.getLong(firstColumn + 8),
-                row.getLong(firstColumn + 9),
-                consumptionUnitSnapshot,
-                hasUnitConfigurationColumns ? unitSnapshot(row, firstColumn + 15) : null,
-                hasUnitConfigurationColumns ? row.getBigDecimal(firstColumn + 20) : null,
-                hasUnitConfigurationColumns ? row.getString(firstColumn + 21) : "ENABLED",
-                hasUnitConfigurationColumns ? row.getString(firstColumn + 22) : null,
-                row.getMetaData().getColumnCount() >= firstColumn + 23 && row.getBoolean(firstColumn + 23));
-    }
-
-    private static InventoryOwnerApi.UnitSnapshot requiredUnitSnapshot(java.sql.ResultSet result, int firstColumn)
-            throws java.sql.SQLException {
-        InventoryOwnerApi.UnitSnapshot snapshot = unitSnapshot(result, firstColumn);
-        if (snapshot == null)
-            throw new InventoryOwnerApi.Problem(
-                    "CONSUMPTION_UNIT_SNAPSHOT_REQUIRED", 422, INCOMPLETE_CONSUMPTION_UNIT_SNAPSHOT);
-        return snapshot;
-    }
-
     private JsonNode json(String text) {
         if (text == null || text.isBlank())
             throw new InventoryOwnerApi.Problem("RESULT_UNKNOWN", 500, "库存 JSON fact is missing");
@@ -279,7 +156,7 @@ public class InventoryAvailabilityService {
     }
 
     private InventoryOwnerApi.InventoryAvailabilityFact salesMenuAvailabilityFact(
-            InventoryOwnerApi.InventoryTargetRef identity, TargetRow target) {
+            InventoryOwnerApi.InventoryTargetRef identity, InventoryAvailabilityPersistence.TargetRow target) {
         if (target == null) return InventoryOwnerApi.InventoryAvailabilityFact.notApplicable(identity);
 
         JsonNode configuration = json(target.configuration());
@@ -375,46 +252,6 @@ public class InventoryAvailabilityService {
         }
         return threshold.signum() > 0 && balance.compareTo(threshold) < 0 ? "LOW" : "OK";
     }
-
-
-
-
-
-    private record TargetRow(
-            UUID ref,
-            UUID itemRef,
-            UUID productSkuRef,
-            String itemCode,
-            String skuCode,
-            String measureMode,
-            BigDecimal balance,
-            String configuration,
-            long version,
-            long updatedAt,
-            InventoryOwnerApi.UnitSnapshot consumptionUnitSnapshot,
-            InventoryOwnerApi.UnitSnapshot countingUnitSnapshot,
-            BigDecimal countingUnitConversionFactor,
-            String definitionStatus,
-            String inventoryMode,
-            boolean componentEligible) {}
-
-
-
-
-
-    private record TargetIdentity(UUID itemRef, UUID productSkuRef) {}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

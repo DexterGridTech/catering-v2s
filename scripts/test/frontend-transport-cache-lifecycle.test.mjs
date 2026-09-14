@@ -29,12 +29,15 @@ const catalogItemEditorState = read(
 const catalogDefinitionLibraries = read(
   'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDefinitionLibraries.tsx',
 );
-const catalogModel = read('apps/frontend/operations-admin/src/features/catalog-management/model/catalogModel.ts');
+const catalogModel = [
+  read('apps/frontend/operations-admin/src/features/catalog-management/model/catalogModel.ts'),
+  read('apps/frontend/operations-admin/src/features/catalog-management/model/catalog/catalogCopyModel.ts'),
+].join('\n');
 const catalogDictionaryDrawer = read(
-  'apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryDrawerState.tsx',
+  'apps/frontend/operations-admin/src/features/catalog-management/ui/dictionary/CatalogDictionaryDrawerState.tsx',
 );
-const localCatalogCopyDrawer = read(
-  'apps/frontend/operations-admin/src/features/catalog-management/ui/LocalCatalogCopyDrawer.tsx',
+const localCatalogCopyDrawerView = read(
+  'apps/frontend/operations-admin/src/features/catalog-management/ui/local-copy/LocalCatalogCopyView.tsx',
 );
 const brandCatalogCopyDrawer = read(
   'apps/frontend/operations-admin/src/features/catalog-management/ui/BrandCatalogCopyDrawer.tsx',
@@ -177,8 +180,8 @@ test('catalog-inventory content refresh reaches every open read model without ov
   assert.match(catalogItemEditorState, /const refetchDetail = detailQuery\.refetch;/);
   assert.match(catalogItemEditorState, /void refetchDetail\(\);/);
   assert.match(catalogItemEditorState, /useRefreshVersion\(operationsContentTabRefreshSignal\)/);
-  assert.doesNotMatch(localCatalogCopyDrawer, /onCompleted/);
-  assert.match(localCatalogCopyDrawer, /onComplete=\{onClose\}/);
+  assert.doesNotMatch(localCatalogCopyDrawerView, /onCompleted/);
+  assert.match(localCatalogCopyDrawerView, /onComplete=\{lifecycle\.closeAfterSuccess\}/);
   assert.doesNotMatch(brandCatalogCopyDrawer, /onCompleted/);
 
   assert.match(catalogWorkbenchReadModel, /useRefreshVersion\(operationsContentTabRefreshSignal\)/);

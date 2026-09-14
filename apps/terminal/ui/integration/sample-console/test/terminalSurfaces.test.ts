@@ -12,14 +12,14 @@ describe('terminal surface declaration parser', () => {
       orientations: {
         landscape,
         portrait: {
-          PRIMARY: {width: 360, height: 720},
+          PRIMARY: {width: 360, height: 640},
         },
       },
     })).toEqual({
       orientations: {
         landscape,
         portrait: {
-          PRIMARY: {width: 360, height: 720},
+          PRIMARY: {width: 360, height: 640},
         },
       },
     })
@@ -30,8 +30,8 @@ describe('terminal surface declaration parser', () => {
       orientations: {
         landscape,
         portrait: {
-          PRIMARY: {width: 360, height: 720},
-          SECONDARY: {width: 360, height: 720},
+          PRIMARY: {width: 360, height: 640},
+          SECONDARY: {width: 360, height: 640},
         },
       },
     })).toThrow(/portrait.*SECONDARY.*not allowed/)
@@ -74,7 +74,7 @@ describe('terminal surface declaration parser', () => {
     expect(module.surfaceFormForOrientation('portrait')).toBe('mobile')
     expect(module.getSurfaceDeclarations(readTerminalSurfaces({orientations: {
       landscape,
-      portrait: {PRIMARY: {width: 360, height: 800}},
-    }}), 'mobile')).toEqual({PRIMARY: {width: 360, height: 800}})
+      portrait: {PRIMARY: {width: 360, height: 640}},
+    }}), 'mobile')).toEqual({PRIMARY: {width: 360, height: 640}})
   })
 })

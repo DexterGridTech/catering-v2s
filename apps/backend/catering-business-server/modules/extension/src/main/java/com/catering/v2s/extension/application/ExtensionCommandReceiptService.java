@@ -1,12 +1,14 @@
 package com.catering.v2s.extension.application;
 
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
+import com.catering.v2s.extension.application.persistence.ExtensionCommandReceiptPersistence;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,12 +16,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ExtensionCommandReceiptService {
     private static final ObjectMapper JSON = new ObjectMapper();
-    private final JdbcTemplate jdbc;
-    private final TimeProvider time;
+    private final ExtensionCommandReceiptPersistence persistence;
 
+    @Autowired
+    public ExtensionCommandReceiptService(ExtensionCommandReceiptPersistence persistence) {
+        this.persistence = persistence;
+    }
+
+    /** Compatibility constructor for focused tests and direct owner construction. */
     public ExtensionCommandReceiptService(JdbcTemplate jdbc, TimeProvider time) {
-        this.jdbc = jdbc;
-        this.time = time;
+        this(new ExtensionCommandReceiptPersistence(jdbc, time));
     }
 
     @Transactional
@@ -33,7 +39,8 @@ public class ExtensionCommandReceiptService {
         if (key == null || key.length() < 16 || key.length() > 128)
             throw new ExtensionDefinitionService.DefinitionInvalidException();
         String requestHash = sha256(request);
-        Receipt existing = claim(key, workspaceUuid, groupWorkspaceKey, entityType, requestHash);
+        ExtensionCommandReceiptPersistence.Receipt existing =
+                claim(key, workspaceUuid, groupWorkspaceKey, entityType, requestHash);
         if (existing != null) {
             if (!existing.requestHash().equals(requestHash)) throw new ExtensionIdempotencyConflictException();
             try {
@@ -46,13 +53,7 @@ public class ExtensionCommandReceiptService {
             ExtensionDefinitionReadback response = command.get();
             int updated;
             try {
-                updated = jdbc.update(
-                        "UPDATE extension.extension_command_receipt SET response_json=CAST(? AS JSONB), "
-                                + "state='SUCCEEDED' WHERE workspace_uuid=? AND idempotency_key=? AND "
-                                + "state='IN_PROGRESS'",
-                        JSON.writeValueAsString(response),
-                        workspaceUuid,
-                        key);
+                updated = persistence.complete(workspaceUuid, key, JSON.writeValueAsString(response));
             } catch (Exception failure) {
                 throw new ExtensionReceiptCorruptException(failure);
             }
@@ -64,32 +65,13 @@ public class ExtensionCommandReceiptService {
         }
     }
     /** Insert, rather than an absent-row lock, is the workspace-scoped receipt linearization point. */
-    private Receipt claim(
+    private ExtensionCommandReceiptPersistence.Receipt claim(
             String key, UUID workspaceUuid, String groupWorkspaceKey, String entityType, String requestHash) {
-        int claimed = jdbc.update(
-                "INSERT INTO extension.extension_command_receipt (idempotency_key, workspace_uuid, "
-                        + "group_workspace_key, entity_type, request_hash, response_json, state, "
-                        + "created_at_epoch_millis) VALUES (?, ?, ?, ?, ?, '{}'::jsonb, 'IN_PROGRESS', ?) "
-                        + "ON CONFLICT (workspace_uuid, idempotency_key) DO NOTHING",
-                key,
-                workspaceUuid,
-                groupWorkspaceKey,
-                entityType,
-                requestHash,
-                time.currentEpochMillis());
+        int claimed = persistence.claim(key, workspaceUuid, groupWorkspaceKey, entityType, requestHash);
         if (claimed == 1) {
             return null;
         }
-        Receipt existing = jdbc.query(
-                "SELECT request_hash, response_json::text, state FROM extension.extension_command_receipt WHERE "
-                        + "workspace_uuid=? AND idempotency_key=?",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, key);
-                },
-                result -> result.next()
-                        ? new Receipt(result.getString(1), result.getString(2), result.getString(3))
-                        : null);
+        ExtensionCommandReceiptPersistence.Receipt existing = persistence.find(workspaceUuid, key);
         if (existing == null || !"SUCCEEDED".equals(existing.state()))
             throw new ExtensionReceiptCorruptException(
                     new IllegalStateException("extension command receipt is not terminal"));
@@ -103,8 +85,6 @@ public class ExtensionCommandReceiptService {
             throw new ExtensionReceiptCorruptException(failure);
         }
     }
-
-    private record Receipt(String requestHash, String responseJson, String state) {}
 
     public static final class ExtensionIdempotencyConflictException extends RuntimeException {}
 

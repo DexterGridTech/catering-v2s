@@ -13,6 +13,7 @@ import {
   createClearUiVariablesActor,
   createCloseLayerActor,
   createOpenLayerActor,
+  createPruneHydratedLayersActor,
   createSetUiVariablesActor,
   createShowScreenActor,
 } from '../features/actors'
@@ -21,10 +22,14 @@ import {
   clearUiVariablesCommand,
   closeLayerCommand,
   openLayerCommand,
+  pruneHydratedLayersCommand,
   setUiVariablesCommand,
   showScreenCommand,
 } from '../features/commands'
-import {contentStateRegistrations} from '../foundations/workspaceSlices'
+import {
+  createContentStateRegistrations,
+  type ContentHydrationDiagnostic,
+} from '../foundations/workspaceSlices'
 import {
   createVariableStateFamily,
   readVariableState,
@@ -73,11 +78,16 @@ export const createUiStateModule = (
   const registry = createVariableRegistry(input.variables)
   const variableFamily = createVariableStateFamily(registry)
   const surfaceFormSlice = createSurfaceFormSlice(input.surfaceForm)
+  const hydrationDiagnostics: ContentHydrationDiagnostic[] = []
+  const contentStateRegistrations = createContentStateRegistrations((diagnostic) => {
+    hydrationDiagnostics.push(diagnostic)
+  })
   const actors = [
     createShowScreenActor(),
     createOpenLayerActor({catalog: input.catalog, selectSurfaceForm: selectSurfaceFormFromState}),
     createCloseLayerActor(),
     createClearLayersActor(),
+    createPruneHydratedLayersActor({catalog: input.catalog}),
     createSetUiVariablesActor(registry, variableFamily),
     createClearUiVariablesActor(registry, variableFamily),
   ] as const
@@ -86,6 +96,7 @@ export const createUiStateModule = (
     openLayerCommand,
     closeLayerCommand,
     clearLayersCommand,
+    pruneHydratedLayersCommand,
     setUiVariablesCommand,
     clearUiVariablesCommand,
   ] as const
@@ -127,6 +138,21 @@ export const createUiStateModule = (
     catalog: input.catalog,
     selectSurfaceForm: selectSurfaceFormFromState,
     selectUiVariable,
+    install: async context => {
+      const diagnostics = hydrationDiagnostics.splice(0, hydrationDiagnostics.length)
+      for (const diagnostic of diagnostics) {
+        context.platformPorts.logger.warn({
+          category: 'ui-state-hydration',
+          event: 'ui-state-hydration.layer.discarded',
+          message: 'Hydrated UI layer was discarded during validation',
+          data: diagnostic,
+        })
+      }
+      const pruning = await context.dispatchCommand(pruneHydratedLayersCommand, Object.freeze({}))
+      if (pruning.status !== 'completed') {
+        throw new Error(`UI state hydrated-layer membership cleanup failed: ${pruning.status}`)
+      }
+    },
   }
   return Object.freeze(module)
 }

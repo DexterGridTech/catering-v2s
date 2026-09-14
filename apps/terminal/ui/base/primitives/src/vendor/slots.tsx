@@ -7,7 +7,7 @@ import {
   type ComponentRef,
   type ReactNode,
 } from 'react'
-import {ActivityIndicator, Pressable, ScrollView, Text, TextInput, View, VirtualizedList, type VirtualizedListProps} from 'react-native'
+import {ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View, VirtualizedList, type VirtualizedListProps} from 'react-native'
 import Svg, {Path, type SvgProps} from 'react-native-svg'
 import {cn} from './cn'
 
@@ -24,6 +24,7 @@ export type RnrPressableProps = ComponentProps<typeof Pressable> & NativeWindCla
 export type RnrScrollViewProps = ComponentPropsWithoutRef<typeof ScrollView> & NativeWindClassName
 export type RnrScrollViewRef = ComponentRef<typeof ScrollView>
 export type RnrActivityIndicatorProps = ComponentProps<typeof ActivityIndicator> & NativeWindClassName
+export type RnrImageProps = ComponentProps<typeof Image> & NativeWindClassName
 export type RnrVirtualizedListProps<ItemT> = VirtualizedListProps<ItemT> & NativeWindClassName
 
 /**
@@ -84,6 +85,10 @@ const ActivityIndicatorSlot = ActivityIndicator ?? View
 
 export const RnrActivityIndicator = ({className, ...props}: RnrActivityIndicatorProps) => (
   <ActivityIndicatorSlot {...props} {...({className} as {readonly className?: string})} />
+)
+
+export const RnrImage = ({className, ...props}: RnrImageProps) => (
+  <Image {...props} {...({className} as {readonly className?: string})} />
 )
 
 export const RnrVirtualizedList = <ItemT,>({className, ...props}: RnrVirtualizedListProps<ItemT>) => (

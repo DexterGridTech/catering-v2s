@@ -1,6 +1,5 @@
 import {useMemo, useState} from 'react'
 import {
-  PrimitiveActions,
   PrimitiveButton,
   PrimitiveContainer,
   PrimitiveEmptyState,
@@ -8,7 +7,6 @@ import {
   PrimitiveHeading,
   PrimitiveKeyValueRow,
   PrimitiveStack,
-  PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
 import {
   createCatalogContext,
@@ -34,7 +32,7 @@ export const AdminShell = ({onClose}: AdminShellProps) => {
 
   if (snapshot.root === undefined) {
     return (
-      <PrimitiveContainer testID={adminTestIds.shell} layout="card">
+      <PrimitiveContainer testID={adminTestIds.shell} layout="card" bounded>
         <PrimitiveHeading testID="terminal.admin:shell:title">终端管理</PrimitiveHeading>
         <PrimitiveEmptyState testID={`${adminTestIds.content}:unavailable`}>运行状态尚未就绪</PrimitiveEmptyState>
         <PrimitiveButton testID={adminTestIds.close} onPress={onClose}>关闭</PrimitiveButton>
@@ -56,9 +54,9 @@ export const AdminShell = ({onClose}: AdminShellProps) => {
   const activeSection = activeBinding?.component as AdminSectionComponent | undefined
 
   return (
-    <PrimitiveContainer testID={adminTestIds.shell} layout="card">
-      <PrimitiveGrid testID="terminal.admin:header">
-        <PrimitiveStack testID="terminal.admin:header:facts">
+    <PrimitiveContainer testID={adminTestIds.shell} layout="card" bounded style={{flex: 1}}>
+      <PrimitiveGrid testID="terminal.admin:header" style={{flexWrap: 'nowrap'}}>
+        <PrimitiveStack testID="terminal.admin:header:facts" style={{flex: 1, minWidth: 0}}>
           <PrimitiveHeading testID="terminal.admin:shell:title">终端管理</PrimitiveHeading>
           <PrimitiveKeyValueRow testID="terminal.admin:shell:form" label="形态" value={surface.surfaceForm} />
           <PrimitiveKeyValueRow testID="terminal.admin:shell:mode" label="画布模式" value={surface.displayMode} />
@@ -68,7 +66,12 @@ export const AdminShell = ({onClose}: AdminShellProps) => {
             value={surface.isHostPrimaryDisplay ? '是' : '否'}
           />
         </PrimitiveStack>
-        <PrimitiveButton testID={adminTestIds.close} accessibilityLabel="关闭终端管理" onPress={onClose}>
+        <PrimitiveButton
+          testID={adminTestIds.close}
+          accessibilityLabel="关闭终端管理"
+          onPress={onClose}
+          style={{flexShrink: 0}}
+        >
           关闭
         </PrimitiveButton>
       </PrimitiveGrid>
@@ -77,7 +80,7 @@ export const AdminShell = ({onClose}: AdminShellProps) => {
         selectedPartKey={activePartKey}
         onSelect={setSelectedPartKey}
       />
-      <PrimitiveContainer testID={adminTestIds.content} layout="content">
+      <PrimitiveContainer testID={adminTestIds.content} layout="content" bounded>
         {activeEntry === undefined || activeSection === undefined ? (
           <PrimitiveEmptyState testID={`${adminTestIds.content}:empty`} accessibilityLabel="暂无可用诊断节">
             暂无可用诊断节
@@ -98,9 +101,6 @@ export const AdminShell = ({onClose}: AdminShellProps) => {
           )
         })()}
       </PrimitiveContainer>
-      <PrimitiveActions testID="terminal.admin:shell:actions">
-        <PrimitiveText testID="terminal.admin:shell:readonly">只读诊断</PrimitiveText>
-      </PrimitiveActions>
     </PrimitiveContainer>
   )
 }

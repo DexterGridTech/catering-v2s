@@ -1,5 +1,6 @@
 package com.catering.v2s.salesmenu.application;
 
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
@@ -45,7 +46,6 @@ import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOptionValue;
 import com.catering.v2s.salesmenu.domain.SalesMenuTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionKind;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionQuery;
-import com.catering.v2s.salesmenu.infrastructure.SalesMenuRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
@@ -53,7 +53,6 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -91,24 +90,24 @@ public class SalesMenuDefinitionService {
             INHERITED_IMAGE_BINDING_PREFIX + INHERITED_IMAGE_BINDING_SUFFIX;
     private static final Set<String> REJECTED_OPERATION_TARGET_MAY_BE_MISSING =
             Set.of("SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH");
-    private final SalesMenuRepository repository;
+    private final SalesMenuPersistence persistence;
     private final TimeProvider time;
     private final ObjectMapper json;
     private final BusinessChannelOwnerApi channels;
     private final OrganizationOwnerApi organization;
 
-    public SalesMenuDefinitionService(SalesMenuRepository repository, TimeProvider time, ObjectMapper json) {
-        this(repository, time, json, null, null);
+    public SalesMenuDefinitionService(SalesMenuPersistence persistence, TimeProvider time, ObjectMapper json) {
+        this(persistence, time, json, null, null);
     }
 
     @Autowired
     public SalesMenuDefinitionService(
-            SalesMenuRepository repository,
+            SalesMenuPersistence persistence,
             TimeProvider time,
             ObjectMapper json,
             OrganizationOwnerApi organization,
             BusinessChannelOwnerApi channels) {
-        this.repository = Objects.requireNonNull(repository, "repository");
+        this.persistence = Objects.requireNonNull(persistence, "persistence");
         this.time = Objects.requireNonNull(time, "time");
         this.json = Objects.requireNonNull(json, "json");
         this.organization = organization;
@@ -129,41 +128,7 @@ public class SalesMenuDefinitionService {
                 filter,
                 query.page().pageSize());
         OpaqueCollectionCursor.Position position = decodeCursor(query.page().cursor(), identity);
-        List<Object> arguments = new ArrayList<>(List.of(
-                query.channelRef(),
-                query.scope().workspaceUuid(),
-                query.scope().groupWorkspaceKey(),
-                query.scope().storeRef(),
-                "%" + filter + "%"));
-        StringBuilder frontier = new StringBuilder();
-        if (position != null) {
-            frontier.append(" AND (c.name > ? OR (c.name = ? AND c.collection_ref > ?))");
-            arguments.add(position.sortKey());
-            arguments.add(position.sortKey());
-            arguments.add(position.tieBreaker());
-        }
-        arguments.add(query.page().pageSize() + 1);
-        List<MenuListRow> rows = repository.query(
-                "SELECT c.collection_ref,c.store_ref,c.name,c.archived_at_epoch_millis,c.version,"
-                        + "d.revision draft_revision,"
-                        + "p.revision published_revision,"
-                        + "publication.source_draft_revision latest_published_source_draft_revision,"
-                        + "d.schedule_kind,d.schedule_start_local_time,"
-                        + "d.schedule_end_local_time,"
-                        + "a.channel_ref,a.status,a.version activation_version FROM sales_menu.sales_collection c "
-                        + "JOIN sales_menu.sales_collection_version d ON d.version_ref=c.current_draft_version_ref "
-                        + "LEFT JOIN sales_menu.sales_collection_version p "
-                        + "ON p.version_ref=c.latest_published_version_ref "
-                        + "LEFT JOIN sales_menu.sales_publication publication "
-                        + "ON publication.published_version_ref=p.version_ref "
-                        + "AND publication.collection_ref=c.collection_ref "
-                        + "LEFT JOIN sales_menu.sales_collection_activation a "
-                        + "ON a.collection_ref=c.collection_ref AND a.channel_ref=? "
-                        + "WHERE c.workspace_uuid=? AND c.group_workspace_key=? AND c.store_ref=? AND c.name ILIKE ? "
-                        + frontier
-                        + " ORDER BY c.name,c.collection_ref LIMIT ?",
-                SalesMenuReadModels::menuListRow,
-                arguments.toArray());
+        List<MenuListRow> rows = persistence.listMenuRows(query, position, filter);
         boolean hasNext = rows.size() > query.page().pageSize();
         List<MenuListRow> page = hasNext ? rows.subList(0, query.page().pageSize()) : rows;
         String nextCursor = hasNext
@@ -191,14 +156,7 @@ public class SalesMenuDefinitionService {
     public SalesMenuReadback.MenuDetail readMenu(SalesMenuTarget target, UUID channelRef) {
         requireOwnerRead(target.scope(), channelRef);
         var menu = requireMenu(target, false);
-        var activation = repository
-                .query(
-                        "SELECT channel_ref,status,version "
-                                + "FROM sales_menu.sales_collection_activation "
-                                + "WHERE collection_ref=? AND channel_ref=?",
-                        SalesMenuReadModels::activationRow,
-                        target.salesMenuRef(),
-                        channelRef)
+        var activation = persistence.readActivation(target.salesMenuRef(), channelRef)
                 .stream()
                 .findFirst()
                 .map(row -> new SalesMenuReadback.Activation(row.channelRef(), row.status(), row.version()))
@@ -233,25 +191,11 @@ public class SalesMenuDefinitionService {
                 ignored -> {
                     UUID menu = UUID.randomUUID();
                     UUID draft = UUID.randomUUID();
-                    repository.update(
-                            "INSERT INTO sales_menu.sales_collection(collection_ref,workspace_uuid,group_workspace_key,"
-                                    + "store_ref,name,version) VALUES(?,?,?,?,?,1)",
-                            menu,
-                            command.context().scope().workspaceUuid(),
-                            command.context().scope().groupWorkspaceKey(),
-                            command.context().scope().storeRef(),
-                            command.name());
+                    persistence.createCollection(menu, command.context().scope(), command.name());
                     insertVersion(draft, menu, SalesMenuVersionKind.DRAFT, 0, SalesMenuSchedule.allDay(), null, null);
-                    repository.update(
-                            "UPDATE sales_menu.sales_collection SET current_draft_version_ref=? WHERE collection_ref=?",
-                            draft,
-                            menu);
-                    repository.update(
-                            "INSERT INTO sales_menu.sales_collection_activation(collection_ref,channel_ref,status,"
-                                    + "version) VALUES(?,?,?,1)",
-                            menu,
-                            command.channelRef(),
-                            SalesMenuActivationStatus.DISABLED.name());
+                    persistence.attachDraftToCollection(draft, menu);
+                    persistence.initializeCollectionActivation(
+                            menu, command.channelRef(), SalesMenuActivationStatus.DISABLED.name());
                     SalesMenuReadback.Command readback = command(
                             "createOperationsSalesMenu",
                             command.context(),
@@ -279,19 +223,9 @@ public class SalesMenuDefinitionService {
                     String sourceName =
                             source.name().length() > 154 ? source.name().substring(0, 154) : source.name();
                     String name = sourceName + " 副本";
-                    repository.update(
-                            "INSERT INTO sales_menu.sales_collection(collection_ref,workspace_uuid,group_workspace_key,"
-                                    + "store_ref,name,version) VALUES(?,?,?,?,?,1)",
-                            copy,
-                            source.scope().workspaceUuid(),
-                            source.scope().groupWorkspaceKey(),
-                            source.scope().storeRef(),
-                            name);
+                    persistence.copyCollection(copy, source.scope(), name);
                     insertVersion(draft, copy, SalesMenuVersionKind.DRAFT, 0, source.draftSchedule(), null, null);
-                    repository.update(
-                            "UPDATE sales_menu.sales_collection SET current_draft_version_ref=? WHERE collection_ref=?",
-                            draft,
-                            copy);
+                    persistence.attachCopiedDraft(draft, copy);
                     copyDraft(source.salesMenuRef(), copy, draft);
                     SalesMenuReadback.Command readback = command(
                             "copyOperationsSalesMenu",
@@ -307,10 +241,7 @@ public class SalesMenuDefinitionService {
     @Transactional(propagation = Propagation.REQUIRED)
     public SalesMenuReadback.Command rename(SalesMenuOwnerApi.RenameCommand command) {
         return mutate("renameOperationsSalesMenu", command.context(), command, command.expectedVersion(), () -> {
-            repository.update(
-                    "UPDATE sales_menu.sales_collection SET name=? WHERE collection_ref=?",
-                    command.name(),
-                    command.context().salesMenuRef());
+            persistence.renameCollection(command.name(), command.context().salesMenuRef());
             return SalesMenuCommandReadbackStatus.APPLIED;
         });
     }
@@ -318,10 +249,7 @@ public class SalesMenuDefinitionService {
     @Transactional(propagation = Propagation.REQUIRED)
     public SalesMenuReadback.Command archive(SalesMenuOwnerApi.ArchiveCommand command) {
         return mutate("archiveOperationsSalesMenu", command.context(), command, command.expectedVersion(), () -> {
-            repository.update(
-                    "UPDATE sales_menu.sales_collection SET archived_at_epoch_millis=? WHERE collection_ref=?",
-                    time.currentEpochMillis(),
-                    command.context().salesMenuRef());
+            persistence.archiveCollection(time.currentEpochMillis(), command.context().salesMenuRef());
             return SalesMenuCommandReadbackStatus.ARCHIVED;
         });
     }
@@ -335,14 +263,8 @@ public class SalesMenuDefinitionService {
                 command.expectedVersion(),
                 command.channelRef(),
                 () -> {
-                    repository.update(
-                            "INSERT INTO sales_menu.sales_collection_activation("
-                                    + "collection_ref,channel_ref,status,version) "
-                                    + "VALUES(?,?,?,1) ON CONFLICT (collection_ref,channel_ref) DO UPDATE SET "
-                                    + "status=EXCLUDED.status,version=sales_menu.sales_collection_activation.version+1",
-                            command.context().salesMenuRef(),
-                            command.channelRef(),
-                            command.status().name());
+                    persistence.updateActivation(
+                            command.context().salesMenuRef(), command.channelRef(), command.status().name());
                     return SalesMenuCommandReadbackStatus.APPLIED;
                 });
     }
@@ -352,14 +274,7 @@ public class SalesMenuDefinitionService {
         return mutate(
                 "updateOperationsSalesMenuSchedule", command.context(), command, command.expectedVersion(), () -> {
                     UUID version = draftVersion(command.context().salesMenuRef());
-                    repository.update(
-                            "UPDATE sales_menu.sales_collection_version SET schedule_kind=?,"
-                                    + "schedule_start_local_time=?,"
-                                    + "schedule_end_local_time=? WHERE version_ref=?",
-                            command.schedule().kind().name(),
-                            command.schedule().startLocalTime(),
-                            command.schedule().endLocalTime(),
-                            version);
+                    persistence.updateSchedule(version, command.schedule());
                     advanceDraftRevision(version);
                     return SalesMenuCommandReadbackStatus.APPLIED;
                 });
@@ -443,28 +358,18 @@ public class SalesMenuDefinitionService {
             Function<L, P> preflight,
             Function<P, T> action) {
         String hash = hash(receiptRequest(request));
-        repository.lockCommandReceipt(context.scope().workspaceUuid(), operation, context.idempotencyKey());
+        persistence.lockCommandReceipt(context.scope().workspaceUuid(), operation, context.idempotencyKey());
         L locked = lock.get();
-        ReceiptRow existing = repository
-                .query(
-                        "SELECT request_hash,status,readback_json::text readback_json "
-                                + "FROM sales_menu.sales_command_receipt "
-                                + "WHERE workspace_uuid=? AND operation_id=? AND idempotency_key=?",
-                        SalesMenuReadModels::receiptRow,
-                        context.scope().workspaceUuid(),
-                        operation,
-                        context.idempotencyKey())
+        ReceiptRow existing = persistence
+                .readDefinitionCommandReceipt(
+                        context.scope().workspaceUuid(), operation, context.idempotencyKey())
                 .stream()
                 .findFirst()
                 .orElse(null);
         if (existing != null) return replay(operation, context, hash);
         P state = preflight.apply(locked);
         T result = action.apply(state);
-        int inserted = repository.update(
-                "INSERT INTO sales_menu.sales_command_receipt(receipt_ref,workspace_uuid,group_workspace_key,"
-                        + "operation_id,idempotency_key,request_hash,status,readback_json,created_at_epoch_millis) "
-                        + "VALUES(?,?,?,?,?,?,? ,?::jsonb,?) "
-                        + "ON CONFLICT (workspace_uuid,operation_id,idempotency_key) DO NOTHING",
+        int inserted = persistence.insertDefinitionCommandReceipt(
                 UUID.randomUUID(),
                 context.scope().workspaceUuid(),
                 context.scope().groupWorkspaceKey(),
@@ -499,15 +404,9 @@ public class SalesMenuDefinitionService {
             UUID salesMenuRef, String scheduleKind, String startLocalTime, String endLocalTime, long expectedVersion) {}
 
     private <T> T replay(String operation, SalesMenuOwnerApi.CommandContext context, String hash) {
-        var row = repository
-                .query(
-                        "SELECT request_hash,status,readback_json::text readback_json "
-                                + "FROM sales_menu.sales_command_receipt "
-                                + "WHERE workspace_uuid=? AND operation_id=? AND idempotency_key=?",
-                        SalesMenuReadModels::receiptRow,
-                        context.scope().workspaceUuid(),
-                        operation,
-                        context.idempotencyKey())
+        var row = persistence
+                .readDefinitionCommandReceiptForReplay(
+                        context.scope().workspaceUuid(), operation, context.idempotencyKey())
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> problem("RECEIPT_MISSING", 500, "命令回执缺失"));
@@ -529,117 +428,37 @@ public class SalesMenuDefinitionService {
     private void copyDraft(UUID source, UUID target, UUID targetVersion) {
         Map<UUID, UUID> sections = new HashMap<>();
         UUID sourceVersion = draftVersion(source);
-        for (var row : repository.query(
-                "SELECT section_ref,name,display_order FROM sales_menu.sales_version_section "
-                        + "WHERE version_ref=? ORDER BY display_order",
-                SalesMenuReadModels::sectionOrderRow,
-                sourceVersion)) {
+        for (var row : persistence.readSectionsForCopy(sourceVersion)) {
             UUID section = UUID.randomUUID();
             sections.put(row.sectionRef(), section);
-            repository.update(
-                    "INSERT INTO sales_menu.sales_section(section_ref,collection_ref) VALUES(?,?)", section, target);
-            repository.update(
-                    "INSERT INTO sales_menu.sales_version_section(version_ref,section_ref,collection_ref,name,"
-                            + "display_order) "
-                            + "VALUES(?,?,?,?,?)",
-                    targetVersion,
-                    section,
-                    target,
-                    row.name(),
-                    row.displayOrder());
+            persistence.createCopiedSection(section, target);
+            persistence.copySectionVersion(targetVersion, section, target, row);
         }
-        List<ItemRow> sourceItems = repository.query(
-                "SELECT v.version_ref,i.sales_item_ref,i.catalog_item_ref,v.section_ref,v.display_order,"
-                        + "v.version,v.display_name_override,v.resolved_item_name,v.resolved_item_code,"
-                        + "v.resolved_product_shape,v.resolved_sales_unit_ref,v.resolved_sales_unit_code,"
-                        + "v.resolved_sales_unit_name,v.resolved_sales_unit_dimension,v.resolved_sales_unit_precision,"
-                        + "v.listed_price_cents,v.ordering_constraints_json,"
-                        + "v.display_media_mode,v.published_primary_image_asset_ref,"
-                        + "v.published_catalog_image_asset_refs::text published_catalog_image_asset_refs,"
-                        + "false AS can_move_up,false AS can_move_down "
-                        + "FROM sales_menu.sales_version_item v "
-                        + "JOIN sales_menu.sales_item i ON i.sales_item_ref=v.sales_item_ref "
-                        + "WHERE v.version_ref=? ORDER BY v.display_order",
-                SalesMenuReadModels::itemRow,
-                sourceVersion);
+        List<ItemRow> sourceItems = persistence.readItemsForCopy(sourceVersion);
         Map<UUID, List<SkuRow>> sourceSkus = persistedSkuRowsByItem(sourceItems);
         Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> sourceOrderOptions =
                 selectedOrderOptionsByItem(sourceItems);
         Map<UUID, List<UUID>> sourceMedia = mediaByItem(sourceItems, false);
         for (var row : sourceItems) {
             UUID item = UUID.randomUUID();
-            repository.update(
-                    "INSERT INTO sales_menu.sales_item(sales_item_ref,collection_ref,catalog_item_ref) VALUES(?,?,?)",
-                    item,
-                    target,
-                    row.catalogItemRef());
-            repository.update(
-                    "INSERT INTO sales_menu.sales_version_item(version_ref,sales_item_ref,section_ref,collection_ref,"
-                            + "display_order,display_name_override,resolved_item_name,resolved_item_code,"
-                            + "resolved_product_shape,listed_price_cents,ordering_constraints_json,"
-                            + "display_media_mode,version) VALUES(?,?,?,?,?,?,?,?,?,?,?::jsonb,?,1)",
+            persistence.createCopiedItem(item, target, row.catalogItemRef());
+            persistence.copyItemVersion(
                     targetVersion,
                     item,
                     sections.get(row.sectionRef()),
                     target,
                     row.displayOrder(),
-                    row.displayNameOverride(),
-                    row.resolvedItemName(),
-                    row.resolvedItemCode(),
-                    row.resolvedProductShape(),
-                    row.listedPriceCents(),
-                    row.orderingConstraintsJson(),
-                    row.displayMediaMode());
+                    row);
             for (var sku : sourceSkus.getOrDefault(row.salesItemRef(), List.of()))
-                repository.update(
-                        "INSERT INTO sales_menu.sales_version_item_sku(version_ref,sales_item_ref,sku_ref,"
-                                + "listed_price_cents,resolved_sku_code,resolved_sku_name,default_price_cents,"
-                                + "display_order) VALUES(?,?,?,?,?,?,?,?)",
-                        targetVersion,
-                        item,
-                        sku.skuRef(),
-                        sku.listedPriceCents(),
-                        sku.resolvedSkuCode(),
-                        sku.resolvedSkuName(),
-                        sku.defaultPriceCents(),
-                        sku.displayOrder());
+                persistence.copySku(targetVersion, item, sku);
             for (var option : sourceOrderOptions.getOrDefault(row.salesItemRef(), List.of())) {
-                repository.update(
-                        "INSERT INTO sales_menu.sales_version_item_order_option(version_ref,sales_item_ref,"
-                                + "definition_ref,resolved_definition_name,selection_mode,required,min_selection_count,"
-                                + "max_selection_count,display_order) VALUES(?,?,?,?,?,?,?,?,?)",
-                        targetVersion,
-                        item,
-                        option.definitionRef(),
-                        option.name(),
-                        option.selectionMode(),
-                        option.required(),
-                        option.minSelectionCount(),
-                        option.maxSelectionCount(),
-                        option.displayOrder());
+                persistence.copyOrderOption(targetVersion, item, option);
                 for (var value : option.values())
-                    repository.update(
-                            "INSERT INTO sales_menu.sales_version_item_order_option_value(version_ref,sales_item_ref,"
-                                    + "definition_ref,definition_value_ref,resolved_value_name,display_order,"
-                                    + "default_value,extra_price) VALUES(?,?,?,?,?,?,?,?)",
-                            targetVersion,
-                            item,
-                            option.definitionRef(),
-                            value.definitionValueRef(),
-                            value.name(),
-                            value.displayOrder(),
-                            value.defaultValue(),
-                            value.extraPrice());
+                    persistence.copyOrderOptionValue(targetVersion, item, option.definitionRef(), value);
             }
             List<UUID> mediaRefs = sourceMedia.getOrDefault(row.salesItemRef(), List.of());
             for (int index = 0; index < mediaRefs.size(); index++)
-                repository.update(
-                        "INSERT INTO sales_menu.sales_version_item_media(version_ref,sales_item_ref,"
-                                + "asset_ref,display_order) VALUES(?,?,?,?)",
-                        targetVersion,
-                        item,
-                        mediaRefs.get(index),
-                        index);
+                persistence.copyMedia(targetVersion, item, mediaRefs.get(index), index);
         }
     }
 
@@ -651,49 +470,16 @@ public class SalesMenuDefinitionService {
             SalesMenuSchedule schedule,
             UUID sourceDraft,
             Long sourceDraftRevision) {
-        repository.update(
-                "INSERT INTO sales_menu.sales_collection_version(version_ref,collection_ref,kind,revision,"
-                        + "schedule_kind,schedule_start_local_time,schedule_end_local_time,"
-                        + "source_draft_version_ref,source_draft_revision,version) VALUES(?,?,?,?,?,?,?,?,?,1)",
-                version,
-                menu,
-                kind.name(),
-                revision,
-                schedule.kind().name(),
-                schedule.startLocalTime(),
-                schedule.endLocalTime(),
-                sourceDraft,
-                sourceDraft == null ? null : sourceDraftRevision);
+        persistence.insertVersion(version, menu, kind, revision, schedule, sourceDraft, sourceDraftRevision);
     }
 
     private Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> selectedOrderOptionsByItem(List<ItemRow> rows) {
         if (rows.isEmpty()) return Map.of();
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
-        String placeholders = String.join(",", Collections.nCopies(itemRefs.size(), "?"));
-        List<Object> arguments = new ArrayList<>();
-        arguments.add(rows.getFirst().versionRef());
-        arguments.addAll(itemRefs);
-        List<OrderOptionGroupRow> groups = repository.query(
-                "SELECT sales_item_ref,definition_ref,resolved_definition_name,selection_mode,required,"
-                        + "min_selection_count,max_selection_count,display_order "
-                        + "FROM sales_menu.sales_version_item_order_option WHERE version_ref=? "
-                        + "AND sales_item_ref IN (" + placeholders + ") "
-                        + "ORDER BY sales_item_ref,display_order,definition_ref",
-                SalesMenuReadModels::orderOptionGroupRow,
-                arguments.toArray());
+        List<OrderOptionGroupRow> groups = persistence.readOrderOptionGroups(rows.getFirst().versionRef(), itemRefs);
         if (groups.isEmpty()) return Map.of();
-        List<Object> valueArguments = new ArrayList<>();
-        valueArguments.add(rows.getFirst().versionRef());
-        valueArguments.addAll(itemRefs);
-        List<OrderOptionValueRow> values = repository.query(
-                "SELECT sales_item_ref,definition_ref,definition_value_ref,resolved_value_name,display_order,"
-                        + "default_value,extra_price "
-                        + "FROM sales_menu.sales_version_item_order_option_value WHERE version_ref=? "
-                        + "AND sales_item_ref IN (" + placeholders + ") "
-                        + "ORDER BY sales_item_ref,definition_ref,display_order,definition_value_ref",
-                SalesMenuReadModels::orderOptionValueRow,
-                valueArguments.toArray());
+        List<OrderOptionValueRow> values = persistence.readOrderOptionValues(rows.getFirst().versionRef(), itemRefs);
         Map<OptionKey, List<OrderOptionValueRow>> valuesByGroup = new LinkedHashMap<>();
         values.forEach(value -> valuesByGroup
                 .computeIfAbsent(
@@ -731,19 +517,8 @@ public class SalesMenuDefinitionService {
         if (rows.isEmpty()) return Map.of();
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
-        String placeholders = String.join(",", Collections.nCopies(itemRefs.size(), "?"));
-        List<Object> arguments = new ArrayList<>();
-        arguments.add(rows.getFirst().versionRef());
-        arguments.addAll(itemRefs);
         Map<UUID, List<SkuRow>> result = new LinkedHashMap<>();
-        repository
-                .query(
-                        "SELECT sales_item_ref,sku_ref,listed_price_cents,resolved_sku_code,resolved_sku_name,"
-                                + "default_price_cents,display_order FROM sales_menu.sales_version_item_sku "
-                                + "WHERE version_ref=? AND sales_item_ref IN (" + placeholders + ") "
-                                + "ORDER BY sales_item_ref,display_order,sku_ref",
-                        SalesMenuReadModels::skuRow,
-                        arguments.toArray())
+        persistence.readSkuRows(rows.getFirst().versionRef(), itemRefs)
                 .forEach(row -> result.computeIfAbsent(row.salesItemRef(), ignored -> new ArrayList<>())
                         .add(row));
         result.replaceAll((ignored, values) -> List.copyOf(values));
@@ -754,19 +529,8 @@ public class SalesMenuDefinitionService {
         if (rows.isEmpty()) return Map.of();
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
-        String placeholders = String.join(",", Collections.nCopies(itemRefs.size(), "?"));
-        List<Object> arguments = new ArrayList<>();
-        arguments.add(rows.getFirst().versionRef());
-        arguments.addAll(itemRefs);
         Map<UUID, List<UUID>> result = new HashMap<>();
-        repository
-                .query(
-                        "SELECT sales_item_ref,asset_ref,display_order "
-                                + "FROM sales_menu.sales_version_item_media WHERE version_ref=? "
-                                + "AND sales_item_ref IN (" + placeholders + ") "
-                                + "ORDER BY sales_item_ref,display_order,asset_ref",
-                        SalesMenuReadModels::mediaItemRow,
-                        arguments.toArray())
+        persistence.readMediaItems(rows.getFirst().versionRef(), itemRefs)
                 .forEach(row -> result.computeIfAbsent(row.salesItemRef(), ignored -> new ArrayList<>())
                         .add(row.assetRef()));
         result.replaceAll((ignored, refs) -> List.copyOf(refs));
@@ -783,22 +547,14 @@ public class SalesMenuDefinitionService {
     }
 
     private UUID draftVersion(UUID menu) {
-        return repository
-                .query(
-                        "SELECT current_draft_version_ref FROM sales_menu.sales_collection " + "WHERE collection_ref=?",
-                        SalesMenuReadModels::uuidValueRow,
-                        menu)
+        return persistence.readDraftVersion(menu)
                 .stream()
                 .findFirst()
-                .orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"))
-                .value();
+                .orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
     }
 
     private void advanceDraftRevision(UUID version) {
-        if (repository.update(
-                        "UPDATE sales_menu.sales_collection_version SET revision=revision+1 "
-                                + "WHERE version_ref=? AND kind='DRAFT'",
-                        version)
+        if (persistence.advanceDraftRevision(version)
                 != 1) throw problem("SALES_MENU_DRAFT_NOT_FOUND", 404, "销售菜单草稿不存在");
     }
 
@@ -810,7 +566,7 @@ public class SalesMenuDefinitionService {
     }
 
     private void requireCas(SalesMenuTarget target, long expectedVersion) {
-        if (ownerApisConfigured() && !repository.compareAndSetVersion(target, expectedVersion)) {
+        if (ownerApisConfigured() && !persistence.compareAndSetVersion(target, expectedVersion)) {
             throw problem("SALES_MENU_VERSION_CONFLICT", 409, "销售菜单版本已变化");
         }
     }
@@ -864,7 +620,7 @@ public class SalesMenuDefinitionService {
     }
 
     private com.catering.v2s.salesmenu.domain.SalesMenuAggregate requireMenu(SalesMenuTarget target, boolean lock) {
-        return (lock ? repository.findForUpdate(target) : repository.find(target))
+        return (lock ? persistence.findForUpdate(target) : persistence.find(target))
                 .orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
     }
 
@@ -903,11 +659,7 @@ public class SalesMenuDefinitionService {
             UUID target,
             String targetKind,
             String targetDisplaySnapshot) {
-        repository.update(
-                "INSERT INTO sales_menu.sales_operation_record(record_ref,workspace_uuid,group_workspace_key,"
-                        + "store_ref,channel_ref,collection_ref,operation_kind,target_ref,target_kind,"
-                        + "target_display_snapshot,result,actor_type,actor_id,actor_display_snapshot,"
-                        + "occurred_at_epoch_millis,idempotency_key) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        persistence.recordDefinitionOperation(
                 UUID.randomUUID(),
                 context.scope().workspaceUuid(),
                 context.scope().groupWorkspaceKey(),
@@ -932,7 +684,7 @@ public class SalesMenuDefinitionService {
             UUID menu,
             UUID target,
             SalesMenuCommandReadbackStatus status) {
-        SalesMenuAggregate persisted = repository
+        SalesMenuAggregate persisted = persistence
                 .find(new SalesMenuTarget(context.scope(), menu))
                 .orElseThrow(() -> problem("SALES_MENU_RESULT_UNKNOWN", 503, "销售菜单命令结果无法读取"));
         return new SalesMenuReadback.Command(operation, persisted.salesMenuRef(), target, persisted.version(), status);

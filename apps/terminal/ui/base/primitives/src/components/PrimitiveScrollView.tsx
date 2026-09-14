@@ -10,18 +10,18 @@ import type {
 } from '../types/types';
 
 type ScrollViewWithNativeNodes = RnrScrollViewRef & Readonly<{
-  readonly getInnerViewNode?: () => PrimitiveNativeNode | null | undefined;
+  readonly getInnerViewRef?: () => PrimitiveNativeNode | null | undefined;
 }>;
 
 export const PrimitiveScrollView = forwardRef<PrimitiveScrollViewHandle, PrimitiveScrollViewProps>(
-  ({testID, children, onLayout, onScrollOffsetChange}, ref) => {
+  ({testID, children, layout = 'fill', onLayout, onScrollOffsetChange}, ref) => {
     const nativeScrollViewRef = useRef<RnrScrollViewRef>(null);
     useImperativeHandle(
       ref,
       () => ({
         getContentNativeNode: () => {
           const nativeScrollView = nativeScrollViewRef.current as ScrollViewWithNativeNodes | null;
-          return nativeScrollView?.getInnerViewNode?.() ?? null;
+          return nativeScrollView?.getInnerViewRef?.() ?? null;
         },
         measureInWindow: (callback: PrimitiveMeasureInWindowCallback) => {
           const nativeScrollView = nativeScrollViewRef.current as
@@ -40,7 +40,9 @@ export const PrimitiveScrollView = forwardRef<PrimitiveScrollViewHandle, Primiti
       <RnrScrollView
         ref={nativeScrollViewRef}
         testID={assertTestID(testID)}
-        className={baseTokens.scroll}
+        className={layout === 'transparent'
+          ? baseTokens.scrollTransparent
+          : baseTokens.scroll}
         contentContainerStyle={{gap: baseLayout.scrollContentGap}}
         onLayout={onLayout}
         onScroll={

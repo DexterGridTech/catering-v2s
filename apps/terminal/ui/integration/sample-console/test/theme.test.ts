@@ -47,6 +47,7 @@ describe('sample-console app theme wiring', () => {
     const assembly = await createSampleAssembly({
       platformPorts: createTestPlatformPorts(),
       persistenceKey: `sample-console-theme-test-${Date.now()}`,
+      surfaceForm: 'laptop',
     })
     let renderer: ReactTestRenderer | undefined
     try {

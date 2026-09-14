@@ -191,7 +191,6 @@ export const createDisplayRuntime = (input: Readonly<{
       runtimeName: input.runtimeName ?? `display-context-${Math.random().toString(36).slice(2)}`,
       environmentMode: 'TEST',
       persistenceKey: 'display-context-test',
-      storageTimeouts: {readMs: 50, writeMs: 50, resetMs: 50},
       persistenceDebounceMs: 0,
     },
   }

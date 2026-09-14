@@ -5,7 +5,6 @@ import {
   unavailableConnectorPort,
   unavailableHotUpdatePort,
   unavailableLogUploadPort,
-  unavailablePersistSecurePort,
   unavailableScriptPort,
   unavailableTopologyHostPort,
 } from '@catering-v2s/kernel-base-platform-ports'
@@ -20,8 +19,8 @@ const platformPorts = createPlatformPorts({
   environmentMode: 'DEV',
   bindings: {
     logger: consoleLoggerBinding,
-    persistKv: createAndroidPersistKvPort(persistenceKey),
-    persistSecure: unavailablePersistSecurePort,
+    persistKv: createAndroidPersistKvPort(persistenceKey, 'plain'),
+    persistSecure: createAndroidPersistKvPort(persistenceKey, 'protected'),
     device: createAndroidDevicePort(),
     appControl: unavailableAppControlPort,
     script: unavailableScriptPort,
@@ -32,12 +31,11 @@ const platformPorts = createPlatformPorts({
   },
 })
 
-export const createSampleTerminalAssembly = (input: Readonly<{readonly surfaceForm?: SurfaceForm}> = {}) => {
-  const surfaceForm = input.surfaceForm ?? 'laptop'
+export const createSampleTerminalAssembly = (input: Readonly<{readonly surfaceForm: SurfaceForm}>) => {
   return createSampleAssembly({
     platformPorts,
     persistenceKey,
-    surfaceForm,
+    surfaceForm: input.surfaceForm,
     surfaceHostSourcesByDisplayIndex: {
       0: createAndroidSurfaceHostSource({surfaceKey: 'PRIMARY', displayIndex: 0}),
       1: createAndroidSurfaceHostSource({surfaceKey: 'SECONDARY', displayIndex: 1}),

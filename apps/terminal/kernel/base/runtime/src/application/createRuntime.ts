@@ -387,7 +387,6 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
           plainStorage: input.platformPorts.persistKv,
           protectedStorage: input.platformPorts.persistSecure,
           persistenceKey: input.state.persistenceKey,
-          storageTimeouts: input.state.storageTimeouts,
           persistenceDebounceMs: input.state.persistenceDebounceMs,
           storeEnhancers: input.state.storeEnhancers,
         })

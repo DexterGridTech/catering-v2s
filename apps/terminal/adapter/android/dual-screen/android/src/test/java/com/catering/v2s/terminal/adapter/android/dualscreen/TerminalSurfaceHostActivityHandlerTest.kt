@@ -1,5 +1,6 @@
 package com.catering.v2s.terminal.adapter.android.dualscreen
 
+import android.content.pm.ActivityInfo
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -63,6 +64,84 @@ class TerminalSurfaceHostActivityHandlerTest {
     surfaceDensityDpi = row.surfaceDensityDpi,
     surfaceDensity = row.surfaceDensity,
   )
+
+  @Test
+  fun `classifies calibrated device widths without using current orientation`() {
+    assertEquals("mobile", classifySurfaceForm(360).surfaceForm)
+    assertEquals("mobile", classifySurfaceForm(580).surfaceForm)
+    assertEquals("laptop", classifySurfaceForm(581).surfaceForm)
+    assertEquals("laptop", classifySurfaceForm(800).surfaceForm)
+    assertEquals("mobile", classifySurfaceForm(360, laptopThresholdDp = 581).surfaceForm)
+  }
+
+  @Test
+  fun `falls back to laptop with diagnostic for unavailable device width`() {
+    listOf(null, 0, -1).forEach { smallestWidthDp ->
+      val decision = classifySurfaceForm(smallestWidthDp)
+      assertEquals("laptop", decision.surfaceForm)
+      assertEquals("smallest-screen-width-unavailable", decision.diagnostic)
+    }
+  }
+
+  @Test
+  fun `selects primary-only and secondary display snapshots from display ids`() {
+    assertEquals(
+      DisplaySnapshotReadResult.Ready(displayCount = 1, secondaryDisplayIndex = null),
+      readDisplaySnapshotSelection { listOf(0) },
+    )
+    assertEquals(
+      DisplaySnapshotReadResult.Ready(displayCount = 2, secondaryDisplayIndex = 1),
+      readDisplaySnapshotSelection { listOf(0, 2) },
+    )
+  }
+
+  @Test
+  fun `reports unavailable manager and failed display snapshot distinctly`() {
+    assertEquals(
+      DisplaySnapshotReadResult.Unavailable("display-manager-unavailable"),
+      readDisplaySnapshotSelection { null },
+    )
+    assertEquals(
+      DisplaySnapshotReadResult.Unavailable("display-snapshot-failed"),
+      readDisplaySnapshotSelection { error("display read failed") },
+    )
+  }
+
+  @Test
+  fun `keeps the already selected form when a later configuration value changes`() {
+    val frozen = classifySurfaceForm(360)
+    val laterConfiguration = classifySurfaceForm(800)
+    val options = createSurfaceLaunchOptions(0, 1, frozen.surfaceForm)
+
+    assertEquals("mobile", frozen.surfaceForm)
+    assertEquals("laptop", laterConfiguration.surfaceForm)
+    assertEquals("mobile", options.surfaceForm)
+  }
+
+  @Test
+  fun `maps the frozen form to the matching requested orientation`() {
+    assertEquals(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, requestedOrientationForSurfaceForm("mobile"))
+    assertEquals(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE, requestedOrientationForSurfaceForm("laptop"))
+  }
+
+  @Test
+  fun `propagates one frozen form to primary and secondary launch options`() {
+    val decision = classifySurfaceForm(360)
+    val primary = createSurfaceLaunchOptions(0, 2, decision.surfaceForm)
+    val secondary = createSurfaceLaunchOptions(1, 2, decision.surfaceForm)
+
+    assertEquals(0, primary.displayIndex)
+    assertEquals(1, secondary.displayIndex)
+    assertEquals(2, primary.displayCount)
+    assertEquals(2, secondary.displayCount)
+    assertEquals("mobile", primary.surfaceForm)
+    assertEquals("mobile", secondary.surfaceForm)
+
+    val laterConfiguration = classifySurfaceForm(800)
+    assertEquals("laptop", laterConfiguration.surfaceForm)
+    assertEquals("mobile", primary.surfaceForm)
+    assertEquals("mobile", secondary.surfaceForm)
+  }
 
   @Test
   fun `accepts a shared render density independent of hardware density`() {

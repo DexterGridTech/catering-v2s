@@ -1,5 +1,9 @@
 package com.catering.v2s.salesmenu.application;
 
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence;
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence.PublicationItemSeed;
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence.PublicationMediaSeed;
+import com.catering.v2s.salesmenu.application.persistence.SalesMenuPersistence.PublicationSkuSeed;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
@@ -46,15 +50,11 @@ import com.catering.v2s.salesmenu.domain.SalesMenuSelectedOrderOptionValue;
 import com.catering.v2s.salesmenu.domain.SalesMenuTarget;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionKind;
 import com.catering.v2s.salesmenu.domain.SalesMenuVersionQuery;
-import com.catering.v2s.salesmenu.infrastructure.SalesMenuRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Time;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -80,7 +80,7 @@ public class SalesMenuPublicationService {
 
     private static final String CAPABILITY = "EDIT_STORE_SALES_MENU";
 
-    private final SalesMenuRepository repository;
+    private final SalesMenuPersistence persistence;
     private final TimeProvider time;
     private final ObjectMapper json;
     private final CatalogOwnerApi catalog;
@@ -90,14 +90,14 @@ public class SalesMenuPublicationService {
     private final SalesMenuAssetReadApi assets;
     private final CatalogAssetReferenceLock catalogAssetReferenceLock;
 
-    public SalesMenuPublicationService(SalesMenuRepository repository, TimeProvider time, ObjectMapper json) {
-        this(repository, time, json, null, null, null, null, null, null);
+    public SalesMenuPublicationService(SalesMenuPersistence persistence, TimeProvider time, ObjectMapper json) {
+        this(persistence, time, json, null, null, null, null, null, null);
     }
 
     @Autowired
 
     public SalesMenuPublicationService(
-            SalesMenuRepository repository,
+            SalesMenuPersistence persistence,
             TimeProvider time,
             ObjectMapper json,
             CatalogOwnerApi catalog,
@@ -107,7 +107,7 @@ public class SalesMenuPublicationService {
             SalesMenuAssetReadApi assets,
             CatalogAssetReferenceLock catalogAssetReferenceLock) {
 
-        this.repository = Objects.requireNonNull(repository, "repository");
+        this.persistence = Objects.requireNonNull(persistence, "persistence");
         this.time = Objects.requireNonNull(time, "time");
         this.json = Objects.requireNonNull(json, "json");
         this.catalog = catalog;
@@ -152,11 +152,7 @@ public class SalesMenuPublicationService {
                             draft,
                             menu.draftRevision());
                     copyPublicationRows(published, validation, menu.salesMenuRef());
-                    repository.update(
-                            "INSERT INTO sales_menu.sales_publication(publication_ref,collection_ref,"
-                                    + "published_version_ref,"
-                                    + "source_draft_revision,actor_type,actor_id,actor_display_snapshot,"
-                                    + "occurred_at_epoch_millis) VALUES(?,?,?,?,?,?,?,?)",
+                    persistence.insertPublicationRecord(
                             UUID.randomUUID(),
                             menu.salesMenuRef(),
                             published,
@@ -165,11 +161,7 @@ public class SalesMenuPublicationService {
                             command.context().actor().actorId(),
                             command.context().actor().displaySnapshot(),
                             time.currentEpochMillis());
-                    repository.update(
-                            "UPDATE sales_menu.sales_collection SET latest_published_version_ref=? "
-                                    + "WHERE collection_ref=?",
-                            published,
-                            menu.salesMenuRef());
+                    persistence.setLatestPublishedVersion(published, menu.salesMenuRef());
                     removeUnpublishedChildManualStatuses(menu.salesMenuRef(), published);
                     SalesMenuReadback.Command readback = command(
                             "publishOperationsSalesMenu",
@@ -188,25 +180,7 @@ public class SalesMenuPublicationService {
     }
 
     private void removeUnpublishedChildManualStatuses(UUID collectionRef, UUID publishedVersion) {
-        repository.update(
-                "DELETE FROM sales_menu.sales_manual_status_current current_status "
-                        + "USING sales_menu.sales_item item "
-                        + "WHERE current_status.sales_item_ref=item.sales_item_ref "
-                        + "AND item.collection_ref=? "
-                        + "AND current_status.target_kind <> 'ITEM' "
-                        + "AND NOT EXISTS ("
-                        + "SELECT 1 FROM sales_menu.sales_version_item_sku sku "
-                        + "WHERE sku.version_ref=? AND sku.sales_item_ref=current_status.sales_item_ref "
-                        + "AND current_status.target_kind='SKU' AND sku.sku_ref=current_status.target_ref) "
-                        + "AND NOT EXISTS ("
-                        + "SELECT 1 FROM sales_menu.sales_version_item_order_option_value option_value "
-                        + "WHERE option_value.version_ref=? AND option_value.sales_item_ref="
-                        + "current_status.sales_item_ref "
-                        + "AND current_status.target_kind='ORDER_OPTION_VALUE' "
-                        + "AND option_value.definition_value_ref=current_status.target_ref)",
-                collectionRef,
-                publishedVersion,
-                publishedVersion);
+        persistence.removeUnpublishedChildManualStatuses(collectionRef, publishedVersion);
     }
 
     private MenuCommandLock lockMenuTargetWithStore(SalesMenuOwnerApi.CommandContext context, UUID channelRef) {
@@ -233,14 +207,10 @@ public class SalesMenuPublicationService {
             Function<L, P> preflight,
             Function<P, T> action) {
         String hash = hash(receiptRequest(request));
-        repository.lockCommandReceipt(context.scope().workspaceUuid(), operation, context.idempotencyKey());
+        persistence.lockCommandReceipt(context.scope().workspaceUuid(), operation, context.idempotencyKey());
         L locked = lock.get();
-        ReceiptRow existing = repository
-                .query(
-                        "SELECT request_hash,status,readback_json::text readback_json "
-                                + "FROM sales_menu.sales_command_receipt "
-                                + "WHERE workspace_uuid=? AND operation_id=? AND idempotency_key=?",
-                        SalesMenuReadModels::receiptRow,
+        ReceiptRow existing = persistence
+                .readCommandReceipt(
                         context.scope().workspaceUuid(),
                         operation,
                         context.idempotencyKey())
@@ -250,11 +220,7 @@ public class SalesMenuPublicationService {
         if (existing != null) return replay(operation, context, hash);
         P state = preflight.apply(locked);
         T result = action.apply(state);
-        int inserted = repository.update(
-                "INSERT INTO sales_menu.sales_command_receipt(receipt_ref,workspace_uuid,group_workspace_key,"
-                        + "operation_id,idempotency_key,request_hash,status,readback_json,created_at_epoch_millis) "
-                        + "VALUES(?,?,?,?,?,?,? ,?::jsonb,?) "
-                        + "ON CONFLICT (workspace_uuid,operation_id,idempotency_key) DO NOTHING",
+        int inserted = persistence.insertCommandReceipt(
                 UUID.randomUUID(),
                 context.scope().workspaceUuid(),
                 context.scope().groupWorkspaceKey(),
@@ -274,12 +240,8 @@ public class SalesMenuPublicationService {
     }
 
     private <T> T replay(String operation, SalesMenuOwnerApi.CommandContext context, String hash) {
-        var row = repository
-                .query(
-                        "SELECT request_hash,status,readback_json::text readback_json "
-                                + "FROM sales_menu.sales_command_receipt "
-                                + "WHERE workspace_uuid=? AND operation_id=? AND idempotency_key=?",
-                        SalesMenuReadModels::receiptRow,
+        var row = persistence
+                .readCommandReceiptForReplay(
                         context.scope().workspaceUuid(),
                         operation,
                         context.idempotencyKey())
@@ -571,14 +533,7 @@ public class SalesMenuPublicationService {
     }
 
     private void copyPublicationRows(UUID publishedVersion, PublicationValidation validation, UUID collectionRef) {
-        repository.update(
-                "INSERT INTO sales_menu.sales_version_section(version_ref,section_ref,collection_ref,name,"
-                        + "display_order) "
-                        + "SELECT ?,section_ref,collection_ref,name,display_order "
-                        + "FROM sales_menu.sales_version_section "
-                        + "WHERE version_ref=?",
-                publishedVersion,
-                validation.draftVersion());
+        persistence.copyPublishedSections(publishedVersion, validation.draftVersion());
         insertPublicationItems(publishedVersion, validation.rows(), validation.facts(), collectionRef);
         insertPublicationSkus(publishedVersion, validation.rows(), validation.facts(), validation.skuByItem());
         insertPublicationOrderOptions(publishedVersion, validation.orderOptionsByItem());
@@ -589,32 +544,10 @@ public class SalesMenuPublicationService {
             UUID publishedVersion, Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> orderOptionsByItem) {
         for (var entry : orderOptionsByItem.entrySet()) {
             for (var option : entry.getValue()) {
-                repository.update(
-                        "INSERT INTO sales_menu.sales_version_item_order_option(version_ref,sales_item_ref,"
-                                + "definition_ref,resolved_definition_name,selection_mode,required,min_selection_count,"
-                                + "max_selection_count,display_order) VALUES(?,?,?,?,?,?,?,?,?)",
-                        publishedVersion,
-                        entry.getKey(),
-                        option.definitionRef(),
-                        option.name(),
-                        option.selectionMode(),
-                        option.required(),
-                        option.minSelectionCount(),
-                        option.maxSelectionCount(),
-                        option.displayOrder());
+                persistence.insertPublishedOrderOption(publishedVersion, entry.getKey(), option);
                 for (var value : option.values())
-                    repository.update(
-                            "INSERT INTO sales_menu.sales_version_item_order_option_value(version_ref,sales_item_ref,"
-                                    + "definition_ref,definition_value_ref,resolved_value_name,display_order,"
-                                    + "default_value,extra_price) VALUES(?,?,?,?,?,?,?,?)",
-                            publishedVersion,
-                            entry.getKey(),
-                            option.definitionRef(),
-                            value.definitionValueRef(),
-                            value.name(),
-                            value.displayOrder(),
-                            value.defaultValue(),
-                            value.extraPrice());
+                    persistence.insertPublishedOrderOptionValue(
+                            publishedVersion, entry.getKey(), option.definitionRef(), value);
             }
         }
     }
@@ -624,64 +557,36 @@ public class SalesMenuPublicationService {
             List<ItemRow> rows,
             Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts,
             UUID collectionRef) {
-        if (rows.isEmpty()) return;
-        StringBuilder values = new StringBuilder();
-        List<Object> arguments = new ArrayList<>(rows.size() * 17);
-        for (int index = 0; index < rows.size(); index++) {
-            if (index > 0) values.append(',');
-            ItemRow row = rows.get(index);
+        List<PublicationItemSeed> items = new ArrayList<>(rows.size());
+        for (ItemRow row : rows) {
             CatalogOwnerApi.SalesMenuItemFacts fact = facts.get(row.catalogItemRef());
-            values.append("(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?::jsonb,?,?,?::jsonb,1)");
-            arguments.add(publishedVersion);
-            arguments.add(row.salesItemRef());
-            arguments.add(row.sectionRef());
-            arguments.add(collectionRef);
-            arguments.add(row.displayOrder());
-            arguments.add(row.displayNameOverride());
-            arguments.add(fact == null ? row.resolvedItemName() : fact.itemName());
-            arguments.add(fact == null ? row.resolvedItemCode() : fact.itemCode());
-            arguments.add(fact == null ? row.resolvedProductShape() : fact.shapeKey());
-            arguments.add(
-                    fact == null || fact.salesUnitSnapshot() == null
-                            ? null
-                            : fact.salesUnitSnapshot().unitRef());
-            arguments.add(
-                    fact == null || fact.salesUnitSnapshot() == null
-                            ? null
-                            : fact.salesUnitSnapshot().code());
-            arguments.add(
-                    fact == null || fact.salesUnitSnapshot() == null
-                            ? null
-                            : fact.salesUnitSnapshot().name());
-            arguments.add(
-                    fact == null || fact.salesUnitSnapshot() == null
-                            ? null
-                            : fact.salesUnitSnapshot().unitDimension());
-            arguments.add(
-                    fact == null || fact.salesUnitSnapshot() == null
-                            ? null
-                            : fact.salesUnitSnapshot().precision());
-            arguments.add(row.listedPriceCents());
-            arguments.add(row.orderingConstraintsJson());
-            arguments.add(row.displayMediaMode());
-            arguments.add(
+            var salesUnit = fact == null ? null : fact.salesUnitSnapshot();
+            items.add(new PublicationItemSeed(
+                    publishedVersion,
+                    row.salesItemRef(),
+                    row.sectionRef(),
+                    collectionRef,
+                    row.displayOrder(),
+                    row.displayNameOverride(),
+                    fact == null ? row.resolvedItemName() : fact.itemName(),
+                    fact == null ? row.resolvedItemCode() : fact.itemCode(),
+                    fact == null ? row.resolvedProductShape() : fact.shapeKey(),
+                    salesUnit == null ? null : salesUnit.unitRef(),
+                    salesUnit == null ? null : salesUnit.code(),
+                    salesUnit == null ? null : salesUnit.name(),
+                    salesUnit == null ? null : salesUnit.unitDimension(),
+                    salesUnit == null ? null : salesUnit.precision(),
+                    row.listedPriceCents(),
+                    row.orderingConstraintsJson(),
+                    row.displayMediaMode(),
                     "INHERIT_CATALOG".equals(row.displayMediaMode()) && fact != null
                             ? fact.defaultImageAssetRef()
-                            : null);
-            arguments.add(
+                            : null,
                     "INHERIT_CATALOG".equals(row.displayMediaMode()) && fact != null
                             ? writeJson(fact.imageAssetRefs())
-                            : writeJson(List.of()));
+                            : writeJson(List.of())));
         }
-        repository.update(
-                "INSERT INTO sales_menu.sales_version_item(version_ref,sales_item_ref,section_ref,"
-                        + "collection_ref,display_order,display_name_override,resolved_item_name,resolved_item_code,"
-                        + "resolved_product_shape,resolved_sales_unit_ref,resolved_sales_unit_code,"
-                        + "resolved_sales_unit_name,resolved_sales_unit_dimension,resolved_sales_unit_precision,"
-                        + "listed_price_cents,ordering_constraints_json,display_media_mode,"
-                        + "published_primary_image_asset_ref,published_catalog_image_asset_refs,version) VALUES "
-                        + values,
-                arguments.toArray());
+        persistence.insertPublishedItems(items);
     }
 
     private void insertPublicationSkus(
@@ -689,58 +594,39 @@ public class SalesMenuPublicationService {
             List<ItemRow> rows,
             Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> facts,
             Map<UUID, List<SkuRow>> skuByItem) {
-        List<Object> arguments = new ArrayList<>();
-        StringBuilder values = new StringBuilder();
+        List<PublicationSkuSeed> skus = new ArrayList<>();
         for (ItemRow row : rows) {
             CatalogOwnerApi.SalesMenuItemFacts fact = facts.get(row.catalogItemRef());
             for (SkuRow selected : skuByItem.getOrDefault(row.salesItemRef(), List.of())) {
-                if (!values.isEmpty()) values.append(',');
                 CatalogOwnerApi.SalesMenuSkuFact factSku = fact == null
                         ? null
                         : fact.skus().stream()
                                 .filter(candidate -> selected.skuRef().equals(candidate.productSkuRef()))
                                 .findFirst()
                                 .orElse(null);
-                values.append("(?,?,?,?,?,?,?,?)");
-                arguments.add(publishedVersion);
-                arguments.add(row.salesItemRef());
-                arguments.add(selected.skuRef());
-                arguments.add(selected.listedPriceCents());
-                arguments.add(factSku == null ? selected.resolvedSkuCode() : factSku.skuCode());
-                arguments.add(factSku == null ? selected.resolvedSkuName() : factSku.skuName());
-                arguments.add(factSku == null ? selected.defaultPriceCents() : factSku.standardSalePrice());
-                arguments.add(selected.displayOrder());
+                skus.add(new PublicationSkuSeed(
+                        publishedVersion,
+                        row.salesItemRef(),
+                        selected.skuRef(),
+                        selected.listedPriceCents(),
+                        factSku == null ? selected.resolvedSkuCode() : factSku.skuCode(),
+                        factSku == null ? selected.resolvedSkuName() : factSku.skuName(),
+                        factSku == null ? selected.defaultPriceCents() : factSku.standardSalePrice(),
+                        selected.displayOrder()));
             }
         }
-        if (values.isEmpty()) return;
-        repository.update(
-                "INSERT INTO sales_menu.sales_version_item_sku(version_ref,sales_item_ref,sku_ref,"
-                        + "listed_price_cents,resolved_sku_code,resolved_sku_name,default_price_cents,"
-                        + "display_order) VALUES "
-                        + values,
-                arguments.toArray());
+        persistence.insertPublishedSkus(skus);
     }
 
     private void insertPublicationMedia(UUID publishedVersion, List<ItemRow> rows, Map<UUID, List<UUID>> mediaByItem) {
-        List<Object> arguments = new ArrayList<>();
-        StringBuilder values = new StringBuilder();
+        List<PublicationMediaSeed> media = new ArrayList<>();
         for (ItemRow row : rows) {
             List<UUID> mediaRefs = mediaByItem.getOrDefault(row.salesItemRef(), List.of());
             for (int index = 0; index < mediaRefs.size(); index++) {
-                if (!values.isEmpty()) values.append(',');
-                values.append("(?,?,?,?)");
-                arguments.add(publishedVersion);
-                arguments.add(row.salesItemRef());
-                arguments.add(mediaRefs.get(index));
-                arguments.add(index);
+                media.add(new PublicationMediaSeed(publishedVersion, row.salesItemRef(), mediaRefs.get(index), index));
             }
         }
-        if (values.isEmpty()) return;
-        repository.update(
-                "INSERT INTO sales_menu.sales_version_item_media(version_ref,sales_item_ref,asset_ref,"
-                        + "display_order) VALUES "
-                        + values,
-                arguments.toArray());
+        persistence.insertPublishedMedia(media);
     }
 
     private void insertVersion(
@@ -751,19 +637,14 @@ public class SalesMenuPublicationService {
             SalesMenuSchedule schedule,
             UUID sourceDraft,
             Long sourceDraftRevision) {
-        repository.update(
-                "INSERT INTO sales_menu.sales_collection_version(version_ref,collection_ref,kind,revision,"
-                        + "schedule_kind,schedule_start_local_time,schedule_end_local_time,"
-                        + "source_draft_version_ref,source_draft_revision,version) VALUES(?,?,?,?,?,?,?,?,?,1)",
+        persistence.insertVersion(
                 version,
                 menu,
-                kind.name(),
+                kind,
                 revision,
-                schedule.kind().name(),
-                schedule.startLocalTime(),
-                schedule.endLocalTime(),
+                schedule,
                 sourceDraft,
-                sourceDraft == null ? null : sourceDraftRevision);
+                sourceDraftRevision);
     }
 
     private List<ItemRow> itemRows(SalesMenuTarget target, SalesMenuVersionKind kind, UUID section, UUID itemRef) {
@@ -786,64 +667,16 @@ public class SalesMenuPublicationService {
     }
 
     private List<ItemRow> itemRows(UUID version, UUID section, UUID itemRef) {
-        String sql = "SELECT v.version_ref,i.sales_item_ref,i.catalog_item_ref,v.section_ref,v.display_order,v.version,"
-                + "v.display_name_override,v.resolved_item_name,v.resolved_item_code,"
-                + "v.resolved_product_shape,v.resolved_sales_unit_ref,v.resolved_sales_unit_code,"
-                + "v.resolved_sales_unit_name,v.resolved_sales_unit_dimension,v.resolved_sales_unit_precision,"
-                + "v.listed_price_cents,"
-                + "v.ordering_constraints_json::text ordering_constraints_json,v.display_media_mode,"
-                + "v.published_primary_image_asset_ref,"
-                + "v.published_catalog_image_asset_refs::text published_catalog_image_asset_refs,"
-                + "EXISTS (SELECT 1 FROM sales_menu.sales_version_item previous "
-                + "WHERE previous.version_ref=v.version_ref AND previous.section_ref=v.section_ref AND "
-                + "(previous.display_order < v.display_order OR "
-                + "(previous.display_order=v.display_order AND "
-                + "previous.sales_item_ref < v.sales_item_ref))) can_move_up,"
-                + "EXISTS (SELECT 1 FROM sales_menu.sales_version_item next_item "
-                + "WHERE next_item.version_ref=v.version_ref AND next_item.section_ref=v.section_ref AND "
-                + "(next_item.display_order > v.display_order OR "
-                + "(next_item.display_order=v.display_order AND "
-                + "next_item.sales_item_ref > v.sales_item_ref))) can_move_down "
-                + "FROM sales_menu.sales_version_item v JOIN sales_menu.sales_item i "
-                + "ON i.sales_item_ref=v.sales_item_ref WHERE v.version_ref=?"
-                + (section == null ? "" : " AND v.section_ref=?")
-                + (itemRef == null ? "" : " AND v.sales_item_ref=?")
-                + " ORDER BY v.section_ref,v.display_order,v.sales_item_ref";
-        List<Object> arguments = new ArrayList<>();
-        arguments.add(version);
-        if (section != null) arguments.add(section);
-        if (itemRef != null) arguments.add(itemRef);
-        return repository.query(sql, SalesMenuReadModels::itemRow, arguments.toArray());
+        return persistence.readVersionItemRows(version, section, itemRef);
     }
 
     private Map<UUID, List<SalesMenuReadback.SalesMenuOrderOption>> selectedOrderOptionsByItem(List<ItemRow> rows) {
         if (rows.isEmpty()) return Map.of();
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
-        String placeholders = String.join(",", Collections.nCopies(itemRefs.size(), "?"));
-        List<Object> arguments = new ArrayList<>();
-        arguments.add(rows.getFirst().versionRef());
-        arguments.addAll(itemRefs);
-        List<OrderOptionGroupRow> groups = repository.query(
-                "SELECT sales_item_ref,definition_ref,resolved_definition_name,selection_mode,required,"
-                        + "min_selection_count,max_selection_count,display_order "
-                        + "FROM sales_menu.sales_version_item_order_option WHERE version_ref=? "
-                        + "AND sales_item_ref IN (" + placeholders + ") "
-                        + "ORDER BY sales_item_ref,display_order,definition_ref",
-                SalesMenuReadModels::orderOptionGroupRow,
-                arguments.toArray());
+        List<OrderOptionGroupRow> groups = persistence.readItemOrderOptionGroups(rows.getFirst().versionRef(), itemRefs);
         if (groups.isEmpty()) return Map.of();
-        List<Object> valueArguments = new ArrayList<>();
-        valueArguments.add(rows.getFirst().versionRef());
-        valueArguments.addAll(itemRefs);
-        List<OrderOptionValueRow> values = repository.query(
-                "SELECT sales_item_ref,definition_ref,definition_value_ref,resolved_value_name,display_order,"
-                        + "default_value,extra_price "
-                        + "FROM sales_menu.sales_version_item_order_option_value WHERE version_ref=? "
-                        + "AND sales_item_ref IN (" + placeholders + ") "
-                        + "ORDER BY sales_item_ref,definition_ref,display_order,definition_value_ref",
-                SalesMenuReadModels::orderOptionValueRow,
-                valueArguments.toArray());
+        List<OrderOptionValueRow> values = persistence.readItemOrderOptionValues(rows.getFirst().versionRef(), itemRefs);
         Map<OptionKey, List<OrderOptionValueRow>> valuesByGroup = new LinkedHashMap<>();
         values.forEach(value -> valuesByGroup
                 .computeIfAbsent(
@@ -913,19 +746,8 @@ public class SalesMenuPublicationService {
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
         if (!allowWithoutOwnerApis && catalog == null && organization == null) return Map.of();
-        String placeholders = String.join(",", Collections.nCopies(itemRefs.size(), "?"));
-        List<Object> arguments = new ArrayList<>();
-        arguments.add(rows.getFirst().versionRef());
-        arguments.addAll(itemRefs);
         Map<UUID, List<SkuRow>> result = new LinkedHashMap<>();
-        repository
-                .query(
-                        "SELECT sales_item_ref,sku_ref,listed_price_cents,resolved_sku_code,resolved_sku_name,"
-                                + "default_price_cents,display_order FROM sales_menu.sales_version_item_sku "
-                                + "WHERE version_ref=? AND sales_item_ref IN (" + placeholders + ") "
-                                + "ORDER BY sales_item_ref,display_order,sku_ref",
-                        SalesMenuReadModels::skuRow,
-                        arguments.toArray())
+        persistence.readItemSkuRows(rows.getFirst().versionRef(), itemRefs)
                 .forEach(row -> result.computeIfAbsent(row.salesItemRef(), ignored -> new ArrayList<>())
                         .add(row));
         result.replaceAll((ignored, values) -> List.copyOf(values));
@@ -940,19 +762,8 @@ public class SalesMenuPublicationService {
         if (rows.isEmpty()) return Map.of();
         List<UUID> itemRefs =
                 rows.stream().map(ItemRow::salesItemRef).distinct().toList();
-        String placeholders = String.join(",", Collections.nCopies(itemRefs.size(), "?"));
-        List<Object> arguments = new ArrayList<>();
-        arguments.add(rows.getFirst().versionRef());
-        arguments.addAll(itemRefs);
         Map<UUID, List<UUID>> result = new HashMap<>();
-        repository
-                .query(
-                        "SELECT sales_item_ref,asset_ref,display_order "
-                                + "FROM sales_menu.sales_version_item_media WHERE version_ref=? "
-                                + "AND sales_item_ref IN (" + placeholders + ") "
-                                + "ORDER BY sales_item_ref,display_order,asset_ref",
-                        SalesMenuReadModels::mediaItemRow,
-                        arguments.toArray())
+        persistence.readItemMediaRows(rows.getFirst().versionRef(), itemRefs)
                 .forEach(row -> result.computeIfAbsent(row.salesItemRef(), ignored -> new ArrayList<>())
                         .add(row.assetRef()));
         result.replaceAll((ignored, refs) -> List.copyOf(refs));
@@ -1004,29 +815,13 @@ public class SalesMenuPublicationService {
     }
 
     private UUID draftVersion(UUID menu) {
-        return repository
-                .query(
-                        "SELECT current_draft_version_ref FROM sales_menu.sales_collection " + "WHERE collection_ref=?",
-                        SalesMenuReadModels::uuidValueRow,
-                        menu)
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"))
-                .value();
+        return persistence.readDraftVersion(menu)
+                .orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
     }
 
     private UUID publishedVersion(UUID menu) {
-        return repository
-                .query(
-                        "SELECT latest_published_version_ref FROM sales_menu.sales_collection "
-                                + "WHERE collection_ref=?",
-                        SalesMenuReadModels::uuidValueRow,
-                        menu)
-                .stream()
-                .filter(row -> row.value() != null)
-                .findFirst()
-                .orElseThrow(() -> problem("PUBLICATION_NOT_FOUND", 404, "尚无发布版本"))
-                .value();
+        return persistence.readLatestPublishedVersion(menu)
+                .orElseThrow(() -> problem("PUBLICATION_NOT_FOUND", 404, "尚无发布版本"));
     }
 
     private Map<UUID, CatalogOwnerApi.SalesMenuItemFacts> catalogFacts(SalesMenuScope scope, Set<UUID> itemRefs) {
@@ -1054,15 +849,7 @@ public class SalesMenuPublicationService {
     }
 
     private List<UUID> activationChannels(UUID menu) {
-        return repository
-                .query(
-                        "SELECT channel_ref FROM sales_menu.sales_collection_activation WHERE collection_ref=? "
-                                + "AND status='ENABLED' ORDER BY channel_ref",
-                        SalesMenuReadModels::uuidValueRow,
-                        menu)
-                .stream()
-                .map(UuidValueRow::value)
-                .toList();
+        return persistence.readEnabledActivationChannels(menu);
     }
 
     private OrganizationOwnerApi.SalesMenuStoreJudgment requireOwnerCommand(
@@ -1073,7 +860,7 @@ public class SalesMenuPublicationService {
     }
 
     private void requireCas(SalesMenuTarget target, long expectedVersion) {
-        if (ownerApisConfigured() && !repository.compareAndSetVersion(target, expectedVersion)) {
+        if (ownerApisConfigured() && !persistence.compareAndSetVersion(target, expectedVersion)) {
             throw problem("SALES_MENU_VERSION_CONFLICT", 409, "销售菜单版本已变化");
         }
     }
@@ -1122,7 +909,7 @@ public class SalesMenuPublicationService {
     }
 
     private com.catering.v2s.salesmenu.domain.SalesMenuAggregate requireMenu(SalesMenuTarget target, boolean lock) {
-        return (lock ? repository.findForUpdate(target) : repository.find(target))
+        return (lock ? persistence.findForUpdate(target) : persistence.find(target))
                 .orElseThrow(() -> problem("SALES_MENU_NOT_FOUND", 404, "销售菜单不存在"));
     }
 
@@ -1161,11 +948,7 @@ public class SalesMenuPublicationService {
             UUID target,
             String targetKind,
             String targetDisplaySnapshot) {
-        repository.update(
-                "INSERT INTO sales_menu.sales_operation_record(record_ref,workspace_uuid,group_workspace_key,"
-                        + "store_ref,channel_ref,collection_ref,operation_kind,target_ref,target_kind,"
-                        + "target_display_snapshot,result,actor_type,actor_id,actor_display_snapshot,"
-                        + "occurred_at_epoch_millis,idempotency_key) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        persistence.recordSuccess(
                 UUID.randomUUID(),
                 context.scope().workspaceUuid(),
                 context.scope().groupWorkspaceKey(),
@@ -1190,7 +973,7 @@ public class SalesMenuPublicationService {
             UUID menu,
             UUID target,
             SalesMenuCommandReadbackStatus status) {
-        SalesMenuAggregate persisted = repository
+        SalesMenuAggregate persisted = persistence
                 .find(new SalesMenuTarget(context.scope(), menu))
                 .orElseThrow(() -> problem("SALES_MENU_RESULT_UNKNOWN", 503, "销售菜单命令结果无法读取"));
         return new SalesMenuReadback.Command(operation, persisted.salesMenuRef(), target, persisted.version(), status);
@@ -1227,82 +1010,6 @@ public class SalesMenuPublicationService {
 
     private static boolean draftDirty(long draftRevision, Long latestPublishedSourceDraftRevision) {
         return latestPublishedSourceDraftRevision == null || draftRevision != latestPublishedSourceDraftRevision;
-    }
-
-    private static ReceiptRow receiptRow(ResultSet result, int ignored) throws SQLException {
-        return new ReceiptRow(
-                result.getString("request_hash"), result.getString("status"), result.getString("readback_json"));
-    }
-
-    private static ItemRow itemRow(ResultSet result, int ignored) throws SQLException {
-        return new ItemRow(
-                result.getObject("version_ref", UUID.class),
-                result.getObject("sales_item_ref", UUID.class),
-                result.getObject("catalog_item_ref", UUID.class),
-                result.getObject("section_ref", UUID.class),
-                result.getLong("display_order"),
-                result.getLong("version"),
-                result.getString("display_name_override"),
-                result.getString("resolved_item_name"),
-                result.getString("resolved_item_code"),
-                result.getString("resolved_product_shape"),
-                result.getObject("resolved_sales_unit_ref", UUID.class),
-                result.getString("resolved_sales_unit_code"),
-                result.getString("resolved_sales_unit_name"),
-                result.getString("resolved_sales_unit_dimension"),
-                result.getObject("resolved_sales_unit_precision", Integer.class),
-                result.getObject("listed_price_cents", Long.class),
-                result.getString("ordering_constraints_json"),
-                result.getString("display_media_mode"),
-                result.getObject("published_primary_image_asset_ref", UUID.class),
-                result.getString("published_catalog_image_asset_refs"),
-                result.getBoolean("can_move_up"),
-                result.getBoolean("can_move_down"));
-    }
-
-    private static SkuRow skuRow(ResultSet result, int ignored) throws SQLException {
-        return new SkuRow(
-                result.getObject("sales_item_ref", UUID.class),
-                result.getObject("sku_ref", UUID.class),
-                result.getLong("listed_price_cents"),
-                result.getString("resolved_sku_code"),
-                result.getString("resolved_sku_name"),
-                result.getLong("default_price_cents"),
-                result.getLong("display_order"));
-    }
-
-    private static MediaItemRow mediaItemRow(ResultSet result, int ignored) throws SQLException {
-        return new MediaItemRow(
-                result.getObject("sales_item_ref", UUID.class),
-                result.getObject("asset_ref", UUID.class),
-                result.getLong("display_order"));
-    }
-
-    private static OrderOptionGroupRow orderOptionGroupRow(ResultSet result, int ignored) throws SQLException {
-        return new OrderOptionGroupRow(
-                result.getObject("sales_item_ref", UUID.class),
-                result.getObject("definition_ref", UUID.class),
-                result.getString("resolved_definition_name"),
-                result.getString("selection_mode"),
-                result.getBoolean("required"),
-                result.getObject("min_selection_count", Integer.class),
-                result.getObject("max_selection_count", Integer.class),
-                result.getLong("display_order"));
-    }
-
-    private static OrderOptionValueRow orderOptionValueRow(ResultSet result, int ignored) throws SQLException {
-        return new OrderOptionValueRow(
-                result.getObject("sales_item_ref", UUID.class),
-                result.getObject("definition_ref", UUID.class),
-                result.getObject("definition_value_ref", UUID.class),
-                result.getString("resolved_value_name"),
-                result.getLong("display_order"),
-                result.getBoolean("default_value"),
-                result.getObject("extra_price", Long.class));
-    }
-
-    private static UuidValueRow uuidValueRow(ResultSet result, int ignored) throws SQLException {
-        return new UuidValueRow(result.getObject(1, UUID.class));
     }
 
     private record MenuCommandLock(

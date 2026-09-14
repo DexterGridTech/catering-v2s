@@ -1,5 +1,6 @@
 package com.catering.v2s.contract.application;
 
+import com.catering.v2s.contract.application.persistence.ContractCommandReceiptPersistence;
 import com.catering.v2s.contract.api.StoreContractReadback;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
@@ -7,18 +8,22 @@ import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import java.util.function.Supplier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 /** Owner-local, exact terminal readback persistence for required-idempotency contract commands. */
 @Service
 public final class ContractCommandReceiptService {
     private static final ObjectMapper JSON = new ObjectMapper().findAndRegisterModules();
-    private final JdbcTemplate jdbc;
+    private final ContractCommandReceiptPersistence persistence;
     private final TimeProvider time;
 
-    public ContractCommandReceiptService(JdbcTemplate jdbc, TimeProvider time) {
-        this.jdbc = jdbc;
+    public ContractCommandReceiptService(org.springframework.jdbc.core.JdbcTemplate jdbc, TimeProvider time) {
+        this(new ContractCommandReceiptPersistence(jdbc), time);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ContractCommandReceiptService(ContractCommandReceiptPersistence persistence, TimeProvider time) {
+        this.persistence = persistence;
         this.time = time;
     }
 
@@ -27,36 +32,14 @@ public final class ContractCommandReceiptService {
         if (workspaceUuid == null || key == null || key.length() < 16 || key.length() > 128)
             throw new ContractCommandService.ContractValidationException();
         String hash = hash(canonicalRequest);
-        Receipt prior = jdbc.query(
-                "SELECT receipt.request_hash, receipt.response_json::text FROM (SELECT "
-                        + "pg_advisory_xact_lock(hashtext(CAST(? AS text)), hashtext(CAST(? AS text)))) advisory "
-                        + "LEFT JOIN contract.contract_command_receipt receipt ON receipt.workspace_uuid=? "
-                        + "AND receipt.idempotency_key=?",
-                statement -> {
-                    statement.setString(1, workspaceUuid.toString());
-                    statement.setString(2, key);
-                    statement.setObject(3, workspaceUuid);
-                    statement.setString(4, key);
-                },
-                result -> {
-                    if (!result.next() || result.getString(1) == null) return null;
-                    return new Receipt(result.getString(1), result.getString(2));
-                });
+        ContractCommandReceiptPersistence.Receipt prior = persistence.find(workspaceUuid, key);
         if (prior != null) {
-            if (!hash.equals(prior.hash())) throw new ContractIdempotencyConflictException();
-            return read(prior.json());
+            if (!hash.equals(prior.requestHash())) throw new ContractIdempotencyConflictException();
+            return read(prior.responseJson());
         }
         try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             StoreContractReadback result = command.get();
-            jdbc.update(
-                    "INSERT INTO contract.contract_command_receipt (workspace_uuid, idempotency_key, contract_id, "
-                            + "request_hash, response_json, created_at_epoch_millis) VALUES (?, ?, ?, ?, ?::jsonb, ?)",
-                    workspaceUuid,
-                    key,
-                    result.id(),
-                    hash,
-                    write(result),
-                    time.currentEpochMillis());
+            persistence.insert(workspaceUuid, key, result.id(), hash, write(result), time.currentEpochMillis());
             return result;
         }
     }
@@ -84,8 +67,6 @@ public final class ContractCommandReceiptService {
             throw new IllegalStateException(exception);
         }
     }
-
-    private record Receipt(String hash, String json) {}
 
     public static final class ContractIdempotencyConflictException extends RuntimeException {}
 

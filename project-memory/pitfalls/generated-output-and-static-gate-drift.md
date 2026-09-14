@@ -9,7 +9,7 @@ owners: ["backend", "platform"]
 impacts: ["contract", "evidence", "architecture"]
 triggers: ["implementation", "failure", "review"]
 assertions: ["GENERATED_OUTPUT_MUST_FOLLOW_OWNING_SOURCE", "STATIC_TEXT_GATE_MUST_TRACK_REAL_SHAPE"]
-sourceRefs: ["project-memory/decisions/http-crud-efficiency-design-redlines.md", "doc/plans/platform/2026-08-18-v2s-unified-list-pagination-implementation-design-codex.md"]
+sourceRefs: ["doc/plans/platform/2026-08-18-v2s-unified-list-pagination-implementation-design-codex.md", "project-memory/decisions/http-crud-efficiency-design-redlines.md", "project-memory/pitfalls/generated-output-and-static-gate-drift.md"]
 ---
 # Generated output and static gate drift
 

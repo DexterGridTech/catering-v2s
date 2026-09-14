@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.catering.v2s.fulfillment.production.application.persistence.ProductionTagOwnerPersistence;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +25,8 @@ class ProductionTagReferenceReadbackTest {
                                 .ProductionTagReferenceReadback(second, "SECOND", "Second", "ENABLED", 1),
                         new com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi
                                 .ProductionTagReferenceReadback(first, "FIRST", "First", "ENABLED", 1)));
-        ProductionTagOwnerService service = new ProductionTagOwnerService(jdbc, new ObjectMapper(), () -> 1L);
+        ProductionTagOwnerService service = new ProductionTagOwnerService(
+                new ProductionTagOwnerPersistence(jdbc, () -> 1L), new ObjectMapper());
 
         var result = service.readTagReferencesByRefs("scope", "brand", List.of(first, second, first), "request");
 

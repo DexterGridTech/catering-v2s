@@ -1,0 +1,63 @@
+package com.catering.v2s.businesschannel.application.persistence;
+
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+/** Typed persistence execution for business-channel command receipts. */
+@Repository
+public class BusinessChannelCommandReceiptPersistence {
+    private final JdbcTemplate jdbc;
+
+    public BusinessChannelCommandReceiptPersistence(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
+    }
+
+    public record Receipt(String requestHash, String responseJson) {}
+
+    public void lock(UUID workspaceUuid, String groupWorkspaceKey, String idempotencyKey) {
+        jdbc.queryForList(
+                BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_SELECT_PG_ADVISORY_XACT_LOCK_HASHTEXT_TEXT,
+                workspaceUuid.toString(),
+                groupWorkspaceKey + ":" + idempotencyKey);
+    }
+
+    public Optional<Receipt> find(UUID workspaceUuid, String groupWorkspaceKey, String idempotencyKey) {
+        return jdbc.query(
+                        BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_SELECT_COMMAND_RECEIPT_REQUEST_HASH_RESPONSE_JSON_TEXT
+                                + BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_IDEMPOTENCY_KEY,
+                        statement -> {
+                            statement.setObject(1, workspaceUuid);
+                            statement.setString(2, groupWorkspaceKey);
+                            statement.setString(3, idempotencyKey);
+                        },
+                        result -> result.next()
+                                ? Optional.of(new Receipt(result.getString(1), result.getString(2)))
+                                : Optional.empty());
+    }
+
+    public void insert(
+            UUID receiptRef,
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String idempotencyKey,
+            String operationId,
+            String requestHash,
+            String responseJson,
+            long createdAtEpochMillis) {
+        jdbc.update(
+                BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_INSERT_INTO_COMMAND_RECEIPT_INSERT_INTO_BUSINESS_CHANNEL
+                        + BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_OPEN_PAREN_RECEIPT_REF
+                        + BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_CONTINUATION_REQUEST_HASH
+                        + BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_VALUES_VALUES_JSONB,
+                receiptRef,
+                workspaceUuid,
+                groupWorkspaceKey,
+                idempotencyKey,
+                operationId,
+                requestHash,
+                responseJson,
+                createdAtEpochMillis);
+    }
+}

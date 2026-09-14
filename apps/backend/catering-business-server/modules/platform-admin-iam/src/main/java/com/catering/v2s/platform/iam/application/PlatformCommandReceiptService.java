@@ -4,9 +4,11 @@ import com.catering.v2s.platform.foundation.json.LegacyReceiptJson;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.platform.iam.application.persistence.PlatformCommandReceiptPersistence;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.function.Supplier;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -14,12 +16,18 @@ import org.springframework.stereotype.Service;
 @Service
 public final class PlatformCommandReceiptService {
     private static final ObjectMapper JSON = new ObjectMapper().findAndRegisterModules();
-    private final JdbcTemplate jdbc;
+    private final PlatformCommandReceiptPersistence persistence;
     private final TimeProvider time;
 
-    public PlatformCommandReceiptService(JdbcTemplate jdbc, TimeProvider time) {
-        this.jdbc = jdbc;
+    @Autowired
+    public PlatformCommandReceiptService(PlatformCommandReceiptPersistence persistence, TimeProvider time) {
+        this.persistence = persistence;
         this.time = time;
+    }
+
+    /** Test-only compatibility constructor; production injects the typed persistence boundary. */
+    public PlatformCommandReceiptService(JdbcTemplate jdbc, TimeProvider time) {
+        this(new PlatformCommandReceiptPersistence(jdbc), time);
     }
 
     public PlatformAuthenticationService.PlatformAdminReadback execute(
@@ -29,33 +37,19 @@ public final class PlatformCommandReceiptService {
         if (key == null || key.length() < 16 || key.length() > 128)
             throw new PlatformAuthenticationService.InvalidAdministratorInputException();
         String hash = sha256(canonicalRequest);
-        jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtext(?))", key);
-        Receipt prior = jdbc.query(
-                "SELECT request_hash, response_json::text FROM platform_iam.platform_command_receipt WHERE "
-                        + "idempotency_key=?",
-                statement -> statement.setString(1, key),
-                result -> result.next() ? new Receipt(result.getString(1), result.getString(2)) : null);
+        persistence.lock(key);
+        PlatformCommandReceiptPersistence.Receipt prior = persistence.find(key).orElse(null);
         if (prior != null) {
             if (!hash.equals(prior.requestHash())) throw new PlatformIdempotencyConflictException();
             PlatformAuthenticationService.PlatformAdminReadback replay = deserialize(prior.responseJson());
             if (LegacyReceiptJson.looksLikeLegacy(JSON, prior.responseJson())) {
-                jdbc.update(
-                        "UPDATE platform_iam.platform_command_receipt SET response_json=?::jsonb WHERE "
-                                + "idempotency_key=?",
-                        serialize(replay),
-                        key);
+                persistence.upgradeLegacyResponse(serialize(replay), key);
             }
             return replay;
         }
         try (var ignored = OwnerOperationDiagnostics.beginCommand()) {
             PlatformAuthenticationService.PlatformAdminReadback result = command.get();
-            jdbc.update(
-                    "INSERT INTO platform_iam.platform_command_receipt (idempotency_key, request_hash, response_json, "
-                            + "created_at_epoch_millis) VALUES (?, ?, ?::jsonb, ?)",
-                    key,
-                    hash,
-                    serialize(result),
-                    time.currentEpochMillis());
+            persistence.insert(key, hash, serialize(result), time.currentEpochMillis());
             return result;
         }
     }
@@ -92,8 +86,6 @@ public final class PlatformCommandReceiptService {
             throw new IllegalStateException(failure);
         }
     }
-
-    private record Receipt(String requestHash, String responseJson) {}
 
     public static final class PlatformIdempotencyConflictException extends RuntimeException {}
 

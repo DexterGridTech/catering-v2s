@@ -4,9 +4,9 @@
 REVIEW_TARGET=IMPLEMENTATION
 EXECUTOR=MAIN_AGENT
 EXECUTION_DATE=2026-09-12
-AUTHORIZATION=source implementation, tests, necessary documentation, and implementation evidence only
-NOT_AUTHORIZED=Web, Android runtime, native runtime, release build, DEV, seed, UAT, deployment, Git
-IMPLEMENTATION_STATUS=SOURCE_AND_FOCUSED_STATIC_IMPLEMENTATION_COMPLETE
+AUTHORIZATION=source implementation, tests, necessary documentation, implementation evidence, and Dexter-authorized TER Web proof against the existing 8081 service
+NOT_AUTHORIZED=additional Android/native runtime beyond prior recorded evidence, release build, backend DEV, seed, UAT, deployment, Git
+IMPLEMENTATION_STATUS=SOURCE_AND_FOCUSED_REMEDIATION_COMPLETE_WITH_ANDROID_OPEN_BOUNDARIES
 CODE_DESIGN_RECONCILIATION=MATCHED
 INDEPENDENT_IMPLEMENTATION_REVIEW=NOT_RUN
 VISUAL_ACCEPTANCE=NOT_RUN
@@ -20,16 +20,18 @@ VISUAL_ACCEPTANCE=NOT_RUN
 
 实现范围保持需求 §11.3 的九步顺序：CP-01 形态来源、CP-02 系统键盘原子退役、CP-03 catalog/物理 host 来源与 layer 选择、CP-04 设备标识与口令、CP-05 调试态、CP-06 primitives、CP-07 承载态与动态生命周期、CP-08 admin-shell/生产注入、CP-09 证据收口。没有新增 backend、DB、migration、seed、transport gateway、第二 registry、第二 overlay stack 或第二 input pipeline。
 
-未启动或操作：Web、Android、DEV、seed、UAT、部署、native/Kotlin 运行、release build、视觉验收。Android/native 源码只做了静态改动和已有 JS 测试；这不等于 Android/native 行为证据。
+本次源码 remediation 未新增启动或操作：Web、Android、DEV、seed、UAT、部署、native/Kotlin 运行、release build、视觉验收。历史 Android/native 结果只在后文明确标为历史档位；本次 Android/native 源码静态改动和已有 JS 测试不等于新的 Android/native 行为证据。
 
 ## 2. 首败与 last known good
 
-最终包级复跑的首个失败是 sample-console typecheck：A-15 新增测试的 `findTextInput` 辅助类型漏声明读取的 `value`，错误在 `apps/terminal/ui/integration/sample-console/test/sampleAssembly.test.tsx:218,235,248`（TS2339）。生产代码和运行时测试没有因此失败。
+最终包级复跑的首个失败是 sample-console typecheck：A-15 新增测试的
+`apps/terminal/ui/integration/sample-console/test/sampleAssembly.test.tsx#findTextInput`
+辅助类型漏声明读取的 `value`（TS2339）。生产代码和运行时测试没有因此失败。
 
 最小修复是在同一测试辅助类型加入 `readonly value?: unknown`，随后：
 
 - `yarn workspace @catering-v2s/ui-integration-sample-console typecheck`：exit 0；
-- 同包 `test --run`：7 files / 27 tests，exit 0；
+- 同包 `test --run`：7 files / 33 tests，exit 0；
 - 其余最终复跑中的包、静态门和行为门均以 exit 0 收口。
 
 实施早期另有两类静态 first failure 已在进入后续 CP 前修复：platform-ports invariant 漏保留既有 `StateStorageWriteInput`，以及新增 render/ui-state public surface/依赖没有同步到当前静态门。修复的是 invariant、依赖声明和行为沙箱锚点，不是放宽门禁。行为 runner 输出的单项 `mutation_exit=1` 是故意破坏源码后应当变红的红夹具；每个 runner 最终都报告 baseline/红变异/cleanup PASS 并以 exit 0 退出，不应误读为业务失败。
@@ -40,14 +42,14 @@ VISUAL_ACCEPTANCE=NOT_RUN
 
 | step | requirements ↔ design/IA ↔ memory 对账锚点 | 实际源码/测试锚点 | proof | reconciliation |
 | --- | --- | --- | --- | --- |
-| CP-01 | 需求 §3.1/CT-1/CT-2 ↔ 详设 CP-01 ↔ logical-canvas/display-context memory | `apps/terminal/ui/integration/sample-console/src/application/terminalSurfaces.ts#readTerminalSurfaces/parseTerminalSurfacePackage`; `.../assembly/assembly.tsx#createSurfaceForDisplayIndex`; dev-host `testExpoApp.tsx`; Android `App.tsx` | sample-console typecheck + 7 files/27 tests；dev-host 4 files/12 tests；静态 skeleton/readability | MATCHED |
+| CP-01 | 需求 §3.1/CT-1/CT-2 ↔ 详设 CP-01 ↔ logical-canvas/display-context memory | `apps/terminal/ui/integration/sample-console/src/application/terminalSurfaces.ts#readTerminalSurfaces/parseTerminalSurfacePackage`; `.../assembly/assembly.tsx#createSurfaceForDisplayIndex`; dev-host `testExpoApp.tsx`; Android `App.tsx` | sample-console typecheck + 7 files/33 tests；dev-host 4 files/12 tests；静态 skeleton/readability | MATCHED |
 | CP-02 | 需求 IN-1..IN-4/CT-3 ↔ 详设 CP-02 ↔ input/IME retirement memory | `ui/base/input` types/hooks/provider；`ui/base/primitives` props/vendor；`ui/base/render/foundations/surfaceHost.ts`；Android Kotlin snapshot/coordinator sources | input 10 files/49 tests；primitives 13 tests；render 10 files/44 tests；dual-screen 7 tests；静态可读性 | MATCHED（Kotlin truth-table 未运行，见 A-28） |
 | CP-03 | 需求 CT-1/CT-2/CT-4/CT-5 ↔ 详设 catalog/host flow ↔ selector/display-context memory | `kernel/base/ui-state` catalog/module/actor；`render` `definePart/resolvePart/LayerStack/ScreenContainer/SurfaceRoot`；`surfaceHost.ts`; dev-host/Android adapter | ui-state 6 files/32 tests；render/adapter/dev-host/sample tests；ui-state/render/skeleton/display static | MATCHED |
 | CP-04 | 需求 ID-1/ID-2/AC-2 ↔ 详设 device/password boundary ↔ device identity/privacy memory | `platform-ports` device types/normalizer/factory；Android JS/Kotlin device module；`admin-shell/foundations/adminPassword.ts`; sample assembly startup | platform-ports 5 files/18 passed + 1 skipped；Android device 2 tests；admin-shell 6 tests；sample identity focused test | MATCHED（Android persistence/permission runtime 未运行） |
 | CP-05 | 需求 DBG-1..DBG-6 ↔ 详设 runtime facts ↔ debug/privacy memory | `render/src/types/runtimeFacts.ts`; `RenderProvider/RenderContext`; sample assembly runtime-facts diagnostic；`RuntimeSection` | runtime facts 9-row matrix in render suite；sample debug/password privacy focused test；runtime behavior 6 tests | MATCHED（release 未运行） |
 | CP-06 | 需求 PR-1..PR-7/CT-7 ↔ 详设 primitives/token/list boundary ↔ frontend foundation/input memory | `primitives/src/types`, components, vendor slots, theme tokens, index；sample/member/staff consumers；Chinese README | primitives 13 tests/typecheck；readability static；primitives behavior baseline/red/cleanup；N-2 100-row proof | MATCHED |
 | CP-07 | 需求 AC-3A/§3.3 ↔ 详设 loading/identity lifecycle ↔ logical-canvas/recovery memory | `SurfaceHostController/SurfaceRoot/SurfaceContext`; `bindSurfaceHostIdentity`; `AdminLayer` four-value effect; sample geometry-only and replacement fixtures | render loading/focus/lifecycle tests；sample dynamic and same-value snapshot tests | MATCHED（Web/Android lifecycle 未运行） |
-| CP-08 | 需求 AC-3/AC-5/AC-6/AC-5.7 ↔ IA/Journey/admin contract ↔ admin UI ownership memory | `admin-shell` components/foundations/parts；`adminShellAssembly`; sample `createSampleDefinedParts`; real launcher/keypad/verify/tab/close/reopen | admin-shell 2 files/6 tests；sample 7 files/27 tests；production sample section through catalog | MATCHED（平台/display section 的完整 real-control path 仍在 A-21/A-22 partial） |
+| CP-08 | 需求 AC-3/AC-5/AC-6/AC-5.7 ↔ IA/Journey/admin contract ↔ admin UI ownership memory | `admin-shell` components/foundations/parts；`adminShellAssembly`; sample `createSampleDefinedParts`; real launcher/keypad/verify/tab/close/reopen | admin-shell 2 files/7 tests；sample 7 files/33 tests；production sample section through catalog | MATCHED（平台/display section 的完整 real-control path 仍在 A-21/A-22 partial） |
 | CP-09 | 需求 §9/§11 ↔ 详设/实施计划证据矩阵 ↔ verification governance memory | static/behavior runners、本文 A matrix、计划 §13c | all listed runners exit 0；main-agent code↔design reconciliation | MATCHED；independent implementation review NOT_RUN/OPEN |
 
 ## 4. Code ↔ design reconciliation
@@ -63,9 +65,9 @@ VISUAL_ACCEPTANCE=NOT_RUN
 | input retirement | `ui/base/input/src/types/types.ts`; `useInputField.ts`; `useInputFocusController.ts`; `InputProvider.tsx`; primitives `PrimitiveInput.tsx`/`vendor/slots.tsx`; render/Android IME sources | one virtual keyboard owner; nullable native ref; public `showSoftInputOnFocus` absent; system IME contract removed as one atomic group | MATCHED |
 | device/runtime facts | `platform-ports/src/types/device.ts`; `normalizeDeviceIdentity.ts`; `createPlatformPorts.ts`; Android device module; `sample-console/src/assembly/assembly.tsx` | one startup `getDeviceInfo` read per assembly; synchronous pure derivation; capability status is method-level; debug can be enabled independently of `__DEV__`/environment mode | MATCHED |
 | primitives/vendor/theme | `primitives/src/index.ts`, `types/types.ts`, `components/*`, `vendor/slots.tsx`, `theme/tokens.ts`, `foundations/toneClassName.ts` | required bounded primitive set, semantic tone matrix, vendor-only RN/SVG values, fixed list bound 24, no overlay/input owner | MATCHED |
-| admin shell identity/focus | `admin-shell/src/foundations/adminIdentity.ts`; `components/AdminLayer.tsx`; `AdminLauncher.tsx`; `AdminLogin.tsx`; `AdminShell.tsx` | local admin constants; existing closeLayer command; four scalar effect deps; previous-mode cleanup; admin focus scope; real controls | MATCHED |
+| admin shell identity/focus | `admin-shell/src/foundations/adminIdentity.ts`; `components/AdminLayer.tsx`; `AdminLauncher.tsx`; `AdminLogin.tsx`; `AdminShell.tsx` | local admin constants; existing closeLayer command; four scalar effect deps; effect-closure previous-mode cleanup; ancestor touch observer with logical coordinate conversion; admin focus scope; real controls | MATCHED |
 | admin catalog/production injection | `admin-shell/src/parts/parts.ts`; `adminShellAssembly`; `sample-console/src/assembly/assembly.tsx#createSampleDefinedParts` | one catalog projection; three built-in read-only sections; one production sample title-only section; no second registry/list | MATCHED |
-| loading/dynamic proof | `SurfaceHostController.tsx`; `sampleAssembly.test.tsx` geometry/replacement/focus tests | explicit loading indicator with no children before readiness; same-value snapshot preserves admin; identity replacement removes only admin and recomputes geometry | MATCHED |
+| loading/dynamic proof | `SurfaceHostController.tsx`; `surfaceHost.ts#bindSurfaceHostIdentity`; `sampleAssembly.test.tsx` geometry/replacement/focus/host-rejection/in-flight/persistence tests | explicit loading indicator with no children before readiness; contradictory physical host fact is typed/logged; same-value snapshot preserves admin; identity replacement removes only admin and recomputes geometry | MATCHED |
 | package/invariant/tools | `skeleton-graph.ts`; package manifests; terminal invariants; terminal static/behavior runners | graph and package edges exact; invariant/public surface synchronized; red mutations remain real and cleanup is separate | MATCHED |
 | documentation | implementation design/IA/plan; `admin-shell/README.md`; this evidence file | implementation status and evidence tiers are distinct; Chinese README gives定位、作用、结构、用法与迭代指引 | MATCHED |
 
@@ -83,10 +85,10 @@ Unrelated dirty backend files and unrelated documents visible in `git status` we
 | `@catering-v2s/kernel-base-platform-ports` | typecheck PASS; 5 files / 18 passed + 1 skipped PASS |
 | `@catering-v2s/ui-base-input` | typecheck PASS; 10 files / 49 tests PASS |
 | `@catering-v2s/ui-base-primitives` | typecheck PASS; 1 file / 13 tests PASS |
-| `@catering-v2s/ui-base-render` | typecheck PASS; 10 files / 44 tests PASS |
-| `@catering-v2s/ui-base-admin-shell` | typecheck PASS; 2 files / 6 tests PASS |
+| `@catering-v2s/ui-base-render` | typecheck PASS; 10 files / 46 tests PASS |
+| `@catering-v2s/ui-base-admin-shell` | typecheck PASS; 2 files / 7 tests PASS |
 | `@catering-v2s/ui-base-dev-host` | typecheck PASS; 4 files / 12 tests PASS |
-| `@catering-v2s/ui-integration-sample-console` | typecheck PASS; 7 files / 27 tests PASS |
+| `@catering-v2s/ui-integration-sample-console` | typecheck PASS; 7 files / 33 tests PASS |
 | `@catering-v2s/adapter-android-device` | typecheck PASS; 1 file / 2 tests PASS |
 | `@catering-v2s/adapter-android-dual-screen` | typecheck PASS; 1 file / 7 tests PASS |
 | `@catering-v2s/assembly-android-sample-terminal` | typecheck PASS; Android runtime not run |
@@ -126,8 +128,9 @@ Status definitions: `FOCUSED_PASS` means the named local focused scenario ran; `
 | A-1 | PARTIALLY_EXECUTED | sample real primary launcher and physical non-host absence; no single component test covering both gate inputs |
 | A-2 | NOT_RUN | Android primary/secondary device gesture path not authorized/run |
 | A-3 | FOCUSED_PASS | `admin-shell/test/adminLauncher.test.ts` constants, bounds, expiry, five-press window |
-| A-4 | NOT_RUN | scaled host-window versus logical-canvas coordinate proof requires Android/native |
+| A-4 | PARTIALLY_EXECUTED | focused production assembly proves non-equal enlarged/reduced host scales and logical inside/outside points; Android real host-window action remains OPEN |
 | A-5 | FOCUSED_PASS | `sampleAssembly.test.tsx#cleans only admin state...` opens admin while business layer exists |
+| A-5A | FOCUSED_PASS | production assembly places a real `sample.auth.login:submit` descendant under the plain `AdminLauncher` observer; invalid credentials reach the real business action before the five-touch threshold, and the five logical touches still open admin |
 | A-6 | PARTIALLY_EXECUTED | `AdminLogin` one string/native-less numeric field plus real keypad; no dedicated tree-count assertion |
 | A-7 | PARTIALLY_EXECUTED | password pure vectors and three-hour window ran; full UI max-length/backspace/error path not separately run |
 | A-8 | PARTIALLY_EXECUTED | fallback/debug path and pure rejection ran; clock-error versus wrong-password UI focused case not separately run |
@@ -136,13 +139,13 @@ Status definitions: `FOCUSED_PASS` means the named local focused scenario ran; `
 | A-11 | PARTIALLY_EXECUTED | AdminShell source and real shell render ran; exact five direct-member set not separately asserted |
 | A-12 | PARTIALLY_EXECUTED | typed section command rejection and real section switch ran; complete context-type matrix not separately run |
 | A-13 | PARTIALLY_EXECUTED | layer-only catalog entry/static path and local render ran; physical root measurement/outside click Android half not run |
-| A-14 | NOT_RUN | no focused in-flight business-command resolution scenario |
+| A-14 | FOCUSED_PASS | production assembly holds `getDisplayInfo` after startup, opens admin while `submitMemberCommand` is in flight, then releases it; command completes and business screen/layer remain alongside admin |
 | A-15 | FOCUSED_PASS | real business input focus → launcher → native-less admin field/key → blocked business focus → close → restored business focus |
-| A-16 | NOT_RUN | no direct persisted-container snapshot assertion |
+| A-16 | FOCUSED_PASS | recording `persistKv`/`persistSecure` wrappers observe post-open/section writes; serialized values contain neither `admin.console` nor `sample.console.admin-test` |
 | A-17 | STATIC_PASS | admin-shell source placement/import scan and readability gate |
-| A-18 | PARTIALLY_EXECUTED | real `sample.console.admin-test` appears/disappears in the same selector; removal was not rendered through a mounted shell |
+| A-18 | FOCUSED_PASS | the real `sample.console.admin-test` defined part is rendered by the mobile production assembly and the same catalog projection excludes it when the production entry is omitted; no fixture list is used |
 | A-19 | PARTIALLY_EXECUTED | immutable exact catalog/definePart tests and red mutations ran; full registration-order adversary is not a standalone focused test |
-| A-20 | NOT_RUN | no mobile-only production section fixture/render path was executed |
+| A-20 | FOCUSED_PASS | mobile production assembly renders the injected section; laptop production assembly rejects the same layer part with `ERR_TER_UI_STATE_LAYER_PART_UNAVAILABLE` before state write |
 | A-21 | PARTIALLY_EXECUTED | runtime/sample section real navigation and source-backed section implementations exist; platform/display real navigation not separately run |
 | A-22 | PARTIALLY_EXECUTED | method-level descriptor source and platform-port factory tests ran; unavailable-row section rendering was not separately injected/focused |
 | A-23 | STATIC_PASS | section components have read-only source shape and no write-command imports; package/static checks pass |
@@ -404,3 +407,282 @@ STATUS=PASS
 日志：`.runtime/terminal-admin-console/android-20260912T130000Z/android-cleanup-final.log`、`.runtime/terminal-admin-console/android-20260912T130000Z/metro-cleanup.log`、`.runtime/terminal-admin-console/android-20260912T130000Z/resource-budget-final.log`。未停止未知 PID、未知端口进程，未执行 Web、DEV、seed、UAT、部署或 release/visual 验收。
 
 结论：本轮授权的 dynamic business path、native named test 与 cleanup 已在修复后闭合；历史首败已保留并有根因修复和同档复验。TER admin console 的整体 implementation acceptance 仍保持 OPEN，原因是证据档位边界（Web、真机/未覆盖 Android 子项、release、visual）和独立 implementation review 仍未被本节替代。
+
+## 11. Current implementation-review remediation (Dexter authorization, 2026-09-12)
+
+本节记录上一份独立 implementation review 指出的 M-01、S-01、S-02、A-5A/A-4、A-14、A-16 和三条 note 的当前字节修复与同档复验。它覆盖本次修复后的源码，不回写历史首败；本节的 focused 结果不升级为 Android、Web、native device、release 或 visual 验收，也不替代下一轮独立 implementation review。
+
+```text
+REMEDIATION_AUTHORIZATION=DEXTER_CURRENT_MESSAGE_2026-09-12
+REMEDIATION_EXECUTOR=MAIN_AGENT
+REMEDIATION_SCOPE=source, focused tests, static checks, evidence/design/plan synchronization, latest S-01/N-01/N-02 follow-up
+REMEDIATION_NOT_RUN=Web, new Android/native runtime, release, DEV, seed, UAT, deployment, visual verdict
+REMEDIATION_REVIEWER=not this main-agent run; Claude independent review remains required
+```
+
+### 11.1 首败、根因、最小修复与同档结果
+
+| finding / source anchor | 原失败 | 最小修复 | 当前结果与档位 |
+| --- | --- | --- | --- |
+| M-01 — `sample-console/src/assembly/assembly.tsx#sampleAdminTestPart` | sample section 与 laptop/mobile 形态没有真实区分；旧测试会把全开声明当作通过 | 只把真实 production `sample.console.admin-test` 的 `surfaceForm` 收窄为 `['mobile']`；不新增 registry/fixture | laptop production assembly 对同一 part 的 `openLayer` 在写入前返回 `ERR_TER_UI_STATE_LAYER_PART_UNAVAILABLE` 且层为空；mobile production assembly 经同一 catalog 渲染 section；`FOCUSED_PASS` |
+| S-01 — `render/src/foundations/surfaceHost.ts#bindSurfaceHostIdentity` | 物理 host bit 与绑定 display index 矛盾时静默返回 null，和普通未就绪无法区分 | 增加冻结 typed `SurfaceHostIdentityRejection` 回调；sample integration 用现有 logger 记录原因/索引/期望值，不记录原始标识 | render focused mismatch test 收到一次 typed rejection；sample production assembly 同时保持 loading、无 canvas/launcher，并记录 `surface.host-identity-rejected`；`FOCUSED_PASS` |
+| S-02 / A-5A — `admin-shell/src/components/AdminLauncher.tsx#AdminLauncher` | 独立不可见 `Pressable`/绝对覆盖层会消费业务区触摸；POC 原始宿主坐标还会在缩放画布上误判 | 将观察器改为包住 business content 的普通 `View`，不声明 press responder/消费回调；窗口页坐标经 `logicalPointFromWindow` 和宿主/画布比例换算后再进入纯 tracker | 真实 `sample.auth.login:submit` 在五击阈值前收到 invalid-credentials 动作并显示业务 notice；同一 wrapper 下五次逻辑触摸仍打开 admin；`FOCUSED_PASS` |
+| A-4 — `admin-shell/src/foundations/adminLauncher.ts#logicalPointFromWindow` + sample assembly | 没有证明窗口像素框与逻辑画布框不同的 inside/outside 两向判定 | 固定生产装配坐标：canvas 1280×800 配 host 2560×1200（scaleX=2、scaleY=1.5）先以逻辑 (95,100) 验证拒绝，再以 (95,95) 验证命中；另以 host 640×400 的 (100,100) 验证缩小宿主拒绝 | 非等比组件路径实际覆盖两轴；错误复制 `scaleY=host.width/canvas.width` 的变异在 outside-y 断言处真实失败；恢复后 sample focused 通过；真实 Android 窗口动作仍 OPEN |
+| A-14 — `sample-console/test/sampleAssembly.test.tsx` | admin 打开可能卸载/取消在途业务 command | 在 assembly 启动后的第二次 `getDisplayInfo` 读取上加测试 gate；admin 真实五击期间保持业务 command 在途，释放后检查完整业务结果与 state | `submitMemberCommand` 在 admin login 已出现时仍完成；`sample.desk.member-list` 与 `sample.desk.waiting-confirm` 及 admin layer 同时保留；`FOCUSED_PASS` |
+| A-16 — `sample-console/test/sampleAssembly.test.tsx#createRecordingStorage` | 未直接观察持久化容器，无法排除 admin layer/selected section 被写入 | 仅在测试中包住既有 `persistKv`/`persistSecure`，不改生产持久化 owner；真实打开/选择 section 后读取写入值 | 当前写入存在且所有序列化值均不含 `admin.console` 或 `sample.console.admin-test`；`FOCUSED_PASS` |
+| N-01 — `admin-shell/src/components/AdminLayer.tsx#useEffect` | 计划曾允许依赖不冻结的 previous-mode ref 形态 | 用 effect closure 直接捕获旧 `displayMode`；仍覆盖同态 identity 变化和旧 mode 子树卸载，仍调用既有 `closeLayer` | replacement/unmount 与同值 snapshot 的现有 focused 路径全绿；`STATIC + FOCUSED_PASS` |
+| N-02 — `render/src/foundations/definePart.ts#definePart` | `surfaceForm` 直接保留输入数组引用，后续调用者可静默改 catalog | 与其他声明数组一致，`Object.freeze([...input.surfaceForm])` | catalog test 先修改输入数组仍保持冻结副本；`FOCUSED_PASS` |
+| N-03 — `input/src/foundations/focusScope.ts#BUSINESS_FOCUS_SCOPE_ID` | `'business'` 在 input/admin-shell 多处重复，后续 scope 改名可漂移 | 从 input owner 导出唯一常量，替换同根消费点；无第二 scope owner | `rg` 只剩定义点和导入使用点；input/admin-shell focused/typecheck 通过；`STATIC + FOCUSED_PASS` |
+| latest S-01 — `admin-shell/src/components/AdminLauncher.tsx#coordinateSpaceOf` + `sample-console/test/sampleAssembly.test.tsx` | 组件级测试只用等比宿主，宽度复制到 `scaleY` 的生产变异可以静默通过 | 保留正确的逐轴生产推导；在同一组件级 production assembly 先用非等比 host 的 `(95,100)` outside-y，再用 `(95,95)` inside，证明错误轴会红 | 坏变异首轮因只有 inside 点仍全绿；补 outside-y 后 1 assertion 真实失败（期望 0、实际 3 个 login）；恢复后 7 files/33 tests PASS；`FOCUSED_PASS + mutation RED` |
+| latest N-01 — `sample-console/src/assembly/assembly.tsx#createSampleAssembly` + Android `platformPorts.ts#createSampleTerminalAssembly` | App、wrapper、assembly 三层各自默认 `laptop`，存在未来单点修改漂移 | 保留最外层 `App.tsx` 默认；把 wrapper/assembly 的 `surfaceForm` 改为必填并由调用者显式传递 | sample-console/Android typecheck PASS；所有当前 production/test call sites 均显式传值；`STATIC + FOCUSED_PASS` |
+| latest N-02 — `sample-console/test/sampleAssembly.test.tsx#pressLauncher` | 辅助函数先调用生产坐标转换又丢弃结果，形成死代码与潜在同义反复 | 删除死调用；仅对实际传给 `onTouchEnd` 的 page 坐标做有限性断言，坐标仍由独立 canvas transform 反推 | sample-console 7 files/33 tests PASS；`STATIC + FOCUSED_PASS` |
+
+### 11.2 当前新鲜命令结果
+
+本节命令均为本轮新的 main-agent 进程；没有把历史 Android log 或既往 review 当作本轮 focused 结果。
+
+本轮 remediation 的 first failure 是 sample-console typecheck：新增 A-15 集成夹具的
+`findTextInput` 辅助类型没有声明读取的 `value`，触发 TS2339。该失败只发生在测试辅助类型层，
+未被改写成生产行为失败；加入
+`readonly value?: unknown` 后同包 typecheck/test 通过。这个修复后的四包复跑与静态骨架门是
+本轮 remediation 的 last known good：sample-console 7 files/33 tests、admin-shell 2 files/7
+tests、render 10 files/46 tests、input 10 files/49 tests，均 exit 0；扩展回归的 ui-state、
+platform-ports、primitives、dev-host 与 skeleton static 也均 exit 0。此前中间运行暴露的
+launcher 丢失 children、业务提交 notice 未出现和 wrapper remount 焦点丢失，均已分别完成根因
+修复并包含在上述最终结果内，不应被压缩成“第一次就全绿”。
+
+本次 follow-up 另保留一条故意变异的失败链。第一次把
+`AdminLauncher.tsx#coordinateSpaceOf` 的 `scaleY` 暂时改成
+`host.width / canvas.width` 时，旧的组件 fixture 只有非等比 host 下的 inside 点，
+因此 7 files/33 tests 仍全绿；这不是通过，而是证明红夹具还不够。随后在同一生产 assembly
+加入 `(95,100)` 的 outside-y 点后，第二次执行同一坏变异于 `sampleAssembly.test.tsx:328`
+失败：期望 login 数为 0，实际为 3（1 file failed、1 test failed、32 passed）。恢复为
+`host.height / canvas.height` 后，sample-console 复跑回到 7 files/33 tests PASS；这条
+mutation RED→restore PASS 是 S-01 的可证伪证据，不是 Android 或视觉证据。
+
+```text
+13:17:28  yarn workspace @catering-v2s/ui-base-admin-shell typecheck && test
+          typecheck=PASS, 2 files / 7 tests PASS
+13:17:29  yarn workspace @catering-v2s/ui-base-render typecheck && test
+          typecheck=PASS, 10 files / 46 tests PASS
+13:17:28  yarn workspace @catering-v2s/ui-base-input typecheck && test
+          typecheck=PASS, 10 files / 49 tests PASS
+13:17:29  yarn workspace @catering-v2s/ui-integration-sample-console typecheck && test
+          typecheck=PASS, 7 files / 33 tests PASS
+13:13:23  kernel-base-ui-state typecheck/test=PASS, 6 files / 32 tests
+13:13:23  kernel-base-platform-ports typecheck/test=PASS, 5 files / 18 passed + 1 skipped
+13:13:23  ui-base-primitives typecheck/test=PASS, 1 file / 13 tests
+13:13:23  ui-base-dev-host typecheck/test=PASS, 4 files / 12 tests
+13:13:23  node tools/terminal-skeleton/check-static.mjs=PASS
+13:39:14  baseline sample-console test run=PASS, 7 files / 33 tests
+13:39:23  baseline admin-shell test run=PASS, 2 files / 7 tests
+13:40:40  intentional bad mutation (`scaleY=host.width/canvas.width`)=RED at sampleAssembly.test.tsx:328; 1 failed / 32 passed
+13:40:52  restored `scaleY=host.height/canvas.height`; sample-console test=PASS, 7 files / 33 tests
+13:41:05  follow-up typechecks=PASS: sample-console, admin-shell, Android sample-terminal
+```
+
+### 11.3 当前 evidence 分档与下一轮边界
+
+| 档位 | 当前修复结果 | 尚未证明 |
+| --- | --- | --- |
+| static | `PASS`；source、exports、invariants、dependency graph、README 与当前 test source 已回读 | 运行时平台行为、视觉质量 |
+| focused | `PASS`；本节九项修复和本地回归均有新鲜结果，cleanup 由各测试 `finally`/`releaseRuntimeForTest` 完成 | 不外推为 Web/Android/native/release/visual |
+| Android | 历史 §9/§10 的 `PARTIAL_PASS_WITH_OPEN_BOUNDARIES` 保持原口径；本节未启动 Android | scaled real-window A-4、第二 display 手势、IME/no-popup、真机/权限/protected persistence 等仍 OPEN |
+| native | 历史命名 Kotlin 单测结果按 §10 保留；本节未新增 native run | 不外推为 native device/Android 行为 |
+| Web | `NOT_RUN_OPEN` | Web host bool/geometry/SVG/L2 |
+| release | `NOT_RUN_OPEN` | PROD bundle debug/privacy/keyboard proof |
+| visual | `NOT_RUN_OPEN` | wireframe 对照与视觉 verdict |
+| cleanup | `PASS_FOR_FOCUSED_RUNS` | 没有启动新的受管外部 runtime，因此没有新的外部进程 cleanup |
+
+当前 remediation 的结论是：上述实现性 findings 已在当前源码中修复，并由 static/focused 同档证据闭合；整体 implementation acceptance 仍不是 GO，下一步需要 fresh 独立 implementation review 重新打开当前源码与本节证据。`CODE_DESIGN_RECONCILIATION` 的 current-byte 状态为 `MATCHED`；它不替代独立 reviewer 的 GO/NO-GO。
+
+## 12. Shared keyboard placement API and current TER dynamic recheck (Dexter authorization, 2026-09-12)
+
+本节记录用户追加的通用键盘呈现要求及其当前字节复验。两种呈现方式不是两套输入实现：
+业务只选择 placement，字段 owner、provider、controller、键盘 renderer、按键动作与字符串状态保持同一份。
+本节不把 focused、DOM/UI hierarchy 或截图升级为像素级 visual PASS。
+
+    DYNAMIC_AUTHORIZATION=DEXTER_CURRENT_CONVERSATION
+    DYNAMIC_EXECUTOR=MAIN_AGENT
+    DYNAMIC_SCOPE=TER-only Web laptop/mobile, TER-only Android laptop, focused, static
+    DYNAMIC_NOT_RUN=backend DEV, seed, UAT, deployment, release, visual verdict
+    OVERALL_ACCEPTANCE=OPEN_NOT_CLAIMED
+
+### 12.1 当前公共契约
+
+| 业务选择 | 字段配置 | presenter 挂载点 | 尺寸/行为责任 |
+| --- | --- | --- | --- |
+| 独立弹出 | 省略 keyboardPlacement，默认 surface | InputSurfaceFrame 自动挂载一次 InputKeyboard placement=surface | surface frame 自己测量，业务不传尺寸、不写按键处理 |
+| 非独立、局部呈现 | keyboardPlacement: field | 业务卡片/字段布局挂载一次同一个 InputKeyboard placement=field | presenter 自动测量局部父级宽度，业务不维护第二份值/焦点/键盘 |
+
+实现锚点：
+
+- apps/terminal/ui/base/input/src/components/InputKeyboard.tsx#InputKeyboard 是唯一业务键盘呈现入口；
+- apps/terminal/ui/base/input/src/types/types.ts#InputKeyboardPlacement 与 InputKeyboardProps 是公共选择面；
+- InputSurfaceFrame 只负责 surface placement，AdminLogin 只选择 field placement；
+- placement 不一致时 presenter 返回空，不会同时出现 dock 与局部键盘；
+- VirtualKeyboard 仍是 presenter 内部 renderer，业务 feature 不得直接拼接第二套键盘；
+- src/index.ts、terminal-invariants.json、input README 与 implementation plan 的 keyboard 行已同步。
+
+### 12.2 当前 focused/static 复验
+
+当前字节重新执行：
+
+    ui-base-input: typecheck PASS; 10 test files / 50 tests PASS
+    ui-base-admin-shell: typecheck PASS; 2 test files / 8 tests PASS
+    ui-integration-sample-console: typecheck PASS; 7 test files / 34 tests PASS
+    tools/terminal-skeleton/check-static.mjs: PASS
+
+input focused test 直接分别挂载 surface 与 field placement，均只得到一个
+ui.base.input:virtual-keyboard；field placement 还用父级宽度 480 的 layout 回调验证了局部宽度重算。
+这些结果证明公共 presenter 的 owner/rendering 形状，不证明 Android/Web 的全部视觉或设备行为。
+
+### 12.3 Web 当前字节复验
+
+TER Web 使用本地 sample-console Expo Web，独立 Playwright headed session；没有启动后台 DEV。
+
+| 形态 | 真实动作 | 结果 |
+| --- | --- | --- |
+| laptop | 店员真实登录 → launcher 自身边缘位置五次真实 click → 真实六个虚拟键 → 真实验证按钮 | 登录层出现且键盘数量为 1；六位填满后进入 admin shell，验证后键盘数量为 0；PASS_FOR_BEHAVIOR |
+| mobile | 临时只把 test-expo 入口显式设为 surfaceForm='mobile'，完成同一真实五击/六键/验证，随后删除临时行并 reload 回 laptop | 手持屏显示 360 × 800；登录框与局部键盘均出现且键盘数量为 1；六位填满后进入 shell；PASS_FOR_BEHAVIOR |
+
+本次 Web 几何观测中，laptop 登录框与 keyboard 都是同一 login subtree 的局部 field
+placement；mobile 也由同一 presenter 根据局部父级宽度布局，没有第二个 keyboard owner。
+DOM bounding boxes 仅是当前窗口的运行时观测，不是批准 wireframe 下的逐像素视觉 verdict。
+
+Web 事件层有一条已处理的 automation 首败：对 launcher 中心调用 locator click 会命中业务子节点，
+五次动作不达 launcher 阈值；改为 launcher 自身边缘位置后五次真实 click 成功。该失败是事件目标定位，
+不是把 product failure 改写为 PASS。当前 Web console 仍报告既有 persistSecure unavailable/default
+诊断；它是 TER Web 的 protected-storage port 边界，未通过注入或静默 catch 掩盖。
+
+### 12.4 Android laptop 当前字节复验
+
+Android 使用 TER 独立 Metro/Pixel Tablet emulator（2560 × 1600）；没有启动 backend DEV。
+为取得当前时间窗口的诊断向量，曾临时打开既有 debug 观测开关，随后已删除并以 clean source 重启。
+debug hierarchy 只作校准，不作验收证据；clean hierarchy 明确没有
+terminal.admin:debug-password。
+
+产物目录：
+apps/terminal/assembly/android/sample-terminal/android/.runtime/terminal-admin-console/android-20260912T172200Z/
+
+| 场景 | 当前 clean 结果 | 证据 |
+| --- | --- | --- |
+| launcher → login | physical primary 坐标五击后出现真实 terminal.admin:login，六位 native-less field 与同一 ui.base.input:virtual-keyboard 均在 hierarchy | clean-login.xml |
+| 六键输入 | 逐位用真实 Android keypad 控件输入，CLEAN_FILLED_COUNT=6，VERIFY_ENABLED=true | clean-input.xml |
+| 认证 | 真实点击当前 clean verify 后 login 消失、terminal.admin:shell 出现，DEBUG_PASSWORD_EXPOSED_AFTER=0 | clean-auth.xml |
+| 四节导航 | 真实点击 platform-ports/runtime/display-context/sample-console；每个 tab selected=true，对应内容文本存在 | nav-platform-ports.xml、nav-runtime.xml、nav-display-context.xml、nav-sample-console.xml |
+| 关闭与再次打开 | 真实 close 后 login/shell 均消失；再次五击重新出现 login，且 debug password 不可见 | clean-closed.xml、clean-reopen.xml |
+
+Android 运行期间曾有三类诊断输入：冷启动 host snapshot 到达而 JS 首帧仍停 loading 的时序首败、
+错误使用物理坐标导致手势不在逻辑 96×96 区域、以及旧/错误动态口令。后两者已用当前 hierarchy
+bounds 与当前时间窗口向量纠正；首类成功重启后恢复。它们均保留在本目录的历史 log/XML 中，不能被压成
+“第一次即通过”。
+
+### 12.5 证据档位与 cleanup
+
+| 档位 | 当前口径 | 边界 |
+| --- | --- | --- |
+| static | PASS | 当前源码、公共 exports、invariants、README、计划矩阵与临时开关撤回均已回读 |
+| focused | PASS | input/admin-shell/sample-console 与骨架静态门有新鲜结果 |
+| Web | PASS_FOR_BEHAVIOR_WITHOUT_VISUAL | laptop/mobile 真实事件与认证通过；protected persistence 仍是 default unavailable 诊断，未做 visual verdict |
+| Android | PARTIAL_PASS_WITH_OPEN_BOUNDARIES | 当前 clean laptop 的真实登录、键盘、认证、四节导航、关闭重开通过；第二显示触控、IME/no-popup、权限/数据清理、真机与 protected persistence 仍 OPEN |
+| native | PASS_FOR_NAMED_KOTLIN_UNIT_TEST | 仅既有命名单测，不外推 Android IME/device |
+| release | NOT_RUN_OPEN | 未执行 release bundle |
+| visual | NOT_RUN_OPEN | 没有 Dexter 批准的 raster/wireframe reference；DOM/XML/PNG 不构成逐像素 PASS |
+| cleanup | PASS_FOR_ANDROID; Web 服务按用户体验要求保留 | Android app、reverse 与本次 Android Metro 已按精确 owner 清理；TER Web Expo 进程保留在 8081，未停止未知进程 |
+
+### 12.6 dev-host laptop/mobile 视角选择（当前 focused/static）
+
+本轮把视角选择放在 TER 的 Expo Web dev-host 页面框架，而不是业务 assembly 内。宿主读取
+`?surfaceForm=laptop|mobile` 作为启动选择；页面头部在存在 portrait 声明时显示一个包含两个可测
+radio option 的视角 group，
+切换后写入 URL 并用页面 reload 让下一次 assembly 从头以新形态初始化。无浏览器的 focused 回退
+路径只用于验证宿主生命周期，会在内存中重建 fake assembly；生产 Web 路径不会在同一页面叠加第二个
+runtime。laptop 的 `surfaceMode` 单屏／双屏 radio group 保持独立，mobile 不显示 SECONDARY 控件。
+
+当前 owning source：
+
+- `apps/terminal/ui/base/dev-host/src/components/testExpoApp.tsx#SurfaceFormSwitcher`：视角控件、URL
+  读取/重启、有效形态回退、laptop/mobile surface group 选择；
+- `apps/terminal/ui/base/dev-host/test/testExpoApp.test.tsx`：声明两种形态，执行真实 Pressable
+  动作，断言 assembly 收到 `laptop` 后收到 `mobile`、PRIMARY 重建为 `360×800`、mobile 没有
+  SECONDARY，且原有单屏／双屏生命周期不被改变；
+- 两个 README、IA §3.8、implementation design §7 与 plan Step 1 已同步该契约；`SurfaceFormSwitcher`
+  与 `SurfaceModeRadio` 共用 `SurfaceRadioOption`，每个选项输出 `role=radio` 与 `aria-checked`。
+
+本轮命令与结果：
+
+    yarn workspace @catering-v2s/ui-base-dev-host typecheck && test
+    PASS: 4 test files / 13 tests
+    yarn workspace @catering-v2s/ui-integration-sample-console typecheck && test
+    PASS: 7 test files / 34 tests
+
+首次 focused 失败是测试断言把 mobile 不挂载 SECONDARY 的生命周期期望写成了 `1/1`；日志和失败
+边界表明生产实现已按 portrait PRIMARY-only 渲染，修正断言为 `0/0` 后同一测试进程复验通过。
+这不是逐像素视觉证据；本节 focused/static 结果对应的 Web 真实读回见 §12.8。本轮没有启动或停止
+TER Web 服务，Web 只复用了现有 `http://localhost:8081/`；没有运行 Android、release 或 visual 验收。
+
+### 12.7 dev-host surface 宽度控制（当前 focused/static）
+
+页面头部新增 `surface 宽度` range 控件，取值为当前 preview content rect 的 30%–100%，步长为
+1%。控件只把测量宽度乘以百分比后交给现有 `calculateSurfacePreviewGeometry`；逻辑 surface 的
+`width/height`、assembly/runtime、surfaceForm、输入坐标与 laptop 单/双屏语义均不变。
+
+当前 owning source：
+
+- `apps/terminal/ui/base/dev-host/src/components/testExpoApp.tsx#SurfaceWidthControl`：range 控件、
+  30/100 边界、百分比文本、ARIA 值与状态接线；
+- `apps/terminal/ui/base/dev-host/src/components/testExpoApp.tsx#SurfaceCanvas`：把当前测得的
+  preview 宽度按比例传入既有几何函数，保留统一比例和滚动承载；
+- `apps/terminal/ui/base/dev-host/src/foundations/surfacePreview.ts#SurfacePreviewPolicy`：当前策略名
+  为 `width-selective-preserve-ratio`；IA、详设、实施计划与两个 README 已同步。
+
+focused 断言覆盖：range 的 `min=30`、`max=100`、`step=1`；选择 30% 后 rendered stage 宽度为
+当前 preview 宽度的 30%、统一缩放随之变化、逻辑 PRIMARY 仍为 `1920×1080`；恢复 100% 后既有
+单双屏与缩放测试继续通过。最新 dev-host 结果为 4 个测试文件/13 个测试 PASS，sample-console
+为 7 个测试文件/34 个测试 PASS。
+
+本节包含通过独立 headed Playwright 会话对现有 TER Web `8081` 服务的真实 DOM/键盘/点击读回，
+但不是逐像素 visual PASS；本轮没有重新启动 Web 服务，也未运行 Android、release 或 visual 验收。
+此前尝试读取用户当前已打开的 TER Web tab 时，CUA kernel 连续两次在 30 秒处超时并自动 reset；
+随后使用独立 Playwright 会话取得了可用证据，CUA 工具失败不解释为产品失败。
+
+当前 source safety scan：
+
+    Android platformPorts.ts startupDebugMode=true: 0
+    Web test-expo App.tsx hard-coded mobile override: 0 (view selection is host-owned)
+    runtime source constrainToParent API: 0
+    backend DEV/seed/UAT/deployment: not started
+
+### 12.8 dev-host radio control row（当前 focused/Web）
+
+本轮将标题旁原先分散的状态 pill、切换按钮与视角 segmented buttons 收敛为两个 radio group，并把
+宽度 range、视角 radio、屏幕模式 radio 从标题/状态行拆到下方独立的居中 toolbar row。屏幕模式
+radio 仍只在 laptop 出现；选择 `双屏模式` 只挂载 SECONDARY，选择 `单屏模式` 只卸载 SECONDARY；
+视角 radio 仍通过 URL reload 选择 laptop/mobile。
+
+当前 owning source：
+
+- `apps/terminal/ui/base/dev-host/src/components/testExpoApp.tsx#SurfaceRadioOption`：统一的 radio option
+  输出、选中态、`role=radio` 与 `aria-checked`；
+- `...#SurfaceFormSwitcher` / `...#SurfaceModeRadio`：两个互斥 group 的标签、选项与现有动作接线；
+- `...#createTestExpoApp`：标题/状态 top row 与独立居中 toolbar row 的布局。
+
+新鲜 focused 结果：dev-host typecheck + 4 files/13 tests PASS；sample-console typecheck + 7 files/34
+tests PASS；`check-static.mjs` PASS；`git diff --check` PASS。
+
+新鲜 Web 结果（独立 headed Playwright，使用已运行的 TER `8081`，未启动后台 DEV）：
+
+- snapshot 读到「终端视角」下 `laptop 视角`/`mobile 视角` 两个 `radio`，以及「屏幕模式」下
+  `单屏模式`/`双屏模式` 两个 `radio`；初始 `laptop`、`单屏模式` 为 checked；
+- DOM 几何读回：viewport `1200×918`；标题/状态行 `top=24,bottom=64`；控制行
+  `top=78,bottom=116`，`left=28,width=1144`；宽度、视角、屏幕三个 group 的 y 均为 `78/79`，
+  三者总宽含间距为 `768.48`，相对 toolbar 的剩余空间左右各约 `187.76`，符合居中；
+- 点击 `双屏模式` 后 snapshot 读到 `双屏模式 [checked]` 与 `SURFACES 2 个 Root`；再点击
+  `单屏模式` 后读到 `单屏模式 [checked]` 与 `SURFACES 1 个 Root`；
+- `aria-checked=true/false` 与选中项同步。该结果是 Web 行为与布局几何证据，不是视觉或像素级验收。
+
+结论：通用键盘呈现方法、dev-host surface 宽度控制、两个 radio group 与标题下独立居中控制行已落地并记录在 README；当前 TER 行为分档复验已完成，但整体
+implementation acceptance 仍不能写成完整 GO。visual/release、Android 未覆盖子项和 protected
+persistence 等 OPEN 边界必须按各自档位继续关闭，不能由本节的 focused、Web 行为或 Android
+hierarchy 结果替代。

@@ -190,13 +190,13 @@ const createDispatchCommand = (runtime: Runtime): RenderProviderProps['dispatchC
 export const createSampleAssembly = async (input: Readonly<{
   readonly platformPorts: PlatformPorts
   readonly persistenceKey?: string
-  readonly surfaceForm?: SurfaceForm
+  readonly surfaceForm: SurfaceForm
   readonly environmentMode?: EnvironmentMode
   readonly packagingDebugMode?: boolean
   readonly startupDebugMode?: boolean
   readonly surfaceHostSourcesByDisplayIndex?: Readonly<Partial<Record<0 | 1, SurfaceHostMeasurementSource>>>
 }>): Promise<SampleAssembly> => {
-  const surfaceForm = input.surfaceForm ?? 'laptop'
+  const surfaceForm = input.surfaceForm
   const environmentMode = input.environmentMode ?? 'DEV'
   const surfaceDeclarations = getSurfaceDeclarations(terminalSurfaces, surfaceForm)
   const deviceInfoResult = await input.platformPorts.device.getDeviceInfo({timeoutMs: 2_000})
@@ -236,7 +236,6 @@ export const createSampleAssembly = async (input: Readonly<{
       runtimeName: 'sample-console',
       environmentMode,
       persistenceKey: input.persistenceKey ?? defaultPersistenceKey,
-      storageTimeouts: {readMs: 2_000, writeMs: 2_000, resetMs: 5_000},
       persistenceDebounceMs: 300,
     },
   })
@@ -270,12 +269,31 @@ export const createSampleAssembly = async (input: Readonly<{
     const cacheKey = `${surface.displayIndex}:${surface.displayMode}:${surface.surfaceForm}`
     const cached = boundHostSources.get(cacheKey)
     if (cached !== undefined) return cached
-    const bound = bindSurfaceHostIdentity(source, {
-      surfaceKey: surface.displayIndex === 0 ? 'PRIMARY' : 'SECONDARY',
-      displayIndex: surface.displayIndex,
-      surfaceForm: surface.surfaceForm,
-      displayMode: surface.displayMode,
-    })
+    const bound = bindSurfaceHostIdentity(
+      source,
+      {
+        surfaceKey: surface.displayIndex === 0 ? 'PRIMARY' : 'SECONDARY',
+        displayIndex: surface.displayIndex,
+        surfaceForm: surface.surfaceForm,
+        displayMode: surface.displayMode,
+      },
+      rejection => {
+        input.platformPorts.logger.warn({
+          category: 'display-diagnostics',
+          event: 'surface.host-identity-rejected',
+          message: 'Surface host source rejected because its physical host flag does not match the bound display index',
+          data: {
+            source: 'sample-console.bindSurfaceHostIdentity',
+            reason: rejection.reason,
+            displayIndex: rejection.displayIndex,
+            expectedIsHostPrimaryDisplay: rejection.expectedIsHostPrimaryDisplay,
+            actualIsHostPrimaryDisplay: rejection.actualIsHostPrimaryDisplay,
+            displayMode: surface.displayMode,
+            surfaceForm: surface.surfaceForm,
+          },
+        })
+      },
+    )
     boundHostSources.set(cacheKey, bound)
     return bound
   }
@@ -359,8 +377,7 @@ export const createSampleAssembly = async (input: Readonly<{
               logger={input.platformPorts.logger}
               hostSourceAttached={input.surfaceHostSourcesByDisplayIndex?.[surface.displayIndex] !== undefined}
             >
-              <AdminLauncher />
-              {content}
+              <AdminLauncher canvas={declaredSize}>{content}</AdminLauncher>
             </SurfaceInputFrame>
           )}
         />

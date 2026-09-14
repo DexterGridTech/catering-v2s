@@ -1,5 +1,6 @@
 package com.catering.v2s.workspace.iam.application;
 
+import com.catering.v2s.workspace.iam.application.persistence.WorkspacePasswordRecoveryPersistence;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
@@ -20,7 +21,7 @@ public class WorkspacePasswordRecoveryService {
     private static final long FLOW_TTL_MILLIS = 30 * 60 * 1000L;
     private static final long OTP_TTL_MILLIS = 5 * 60 * 1000L;
     private static final long GRANT_TTL_MILLIS = 15 * 60 * 1000L;
-    private final JdbcTemplate jdbc;
+    private final WorkspacePasswordRecoveryPersistence persistence;
     private final TimeProvider time;
     private final WorkspaceOtpRateLimitService otpLimits;
     private final WorkspaceLoginRateLimitService recoveryLimits;
@@ -32,7 +33,7 @@ public class WorkspacePasswordRecoveryService {
     /** Compatibility constructor for focused owner tests; production injects all guards. */
     public WorkspacePasswordRecoveryService(JdbcTemplate jdbc, TimeProvider time) {
         this(
-                jdbc,
+                new WorkspacePasswordRecoveryPersistence(jdbc),
                 time,
                 new WorkspaceOtpRateLimitService(jdbc, time),
                 new WorkspaceLoginRateLimitService(jdbc, time),
@@ -40,7 +41,7 @@ public class WorkspacePasswordRecoveryService {
                 new com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy("", false));
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
+    /** Compatibility constructor for focused owner tests; production injects the typed persistence boundary. */
     public WorkspacePasswordRecoveryService(
             JdbcTemplate jdbc,
             TimeProvider time,
@@ -48,7 +49,24 @@ public class WorkspacePasswordRecoveryService {
             WorkspaceLoginRateLimitService recoveryLimits,
             WorkspaceStatusLookup workspaces,
             com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy otpDebugExposurePolicy) {
-        this.jdbc = jdbc;
+        this(
+                new WorkspacePasswordRecoveryPersistence(jdbc),
+                time,
+                otpLimits,
+                recoveryLimits,
+                workspaces,
+                otpDebugExposurePolicy);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public WorkspacePasswordRecoveryService(
+            WorkspacePasswordRecoveryPersistence persistence,
+            TimeProvider time,
+            WorkspaceOtpRateLimitService otpLimits,
+            WorkspaceLoginRateLimitService recoveryLimits,
+            WorkspaceStatusLookup workspaces,
+            com.catering.v2s.platform.foundation.security.OtpDebugExposurePolicy otpDebugExposurePolicy) {
+        this.persistence = persistence;
         this.time = time;
         this.otpLimits = otpLimits;
         this.recoveryLimits = recoveryLimits;
@@ -70,19 +88,12 @@ public class WorkspacePasswordRecoveryService {
                 : null;
         long now = time.currentEpochMillis();
         if (account != null) {
-            jdbc.update(
-                    "UPDATE workspace_iam.operations_password_recovery SET status='SUPERSEDED', version=version+1 "
-                            + "WHERE account_id=? AND status IN ('PENDING','OTP_VERIFIED')",
-                    account.id());
+            persistence.supersedeAccountRecoveries(account.id());
         }
         UUID recoveryId = UUID.randomUUID();
         String rawFlow = secret();
         long expiresAt = now + FLOW_TTL_MILLIS;
-        jdbc.update(
-                "INSERT INTO workspace_iam.operations_password_recovery (id, workspace_uuid, group_workspace_key, "
-                        + "account_id, flow_token_hash, status, expires_at_epoch_millis, version, "
-                        + "created_at_epoch_millis) "
-                        + "VALUES (?, ?, ?, ?, ?, 'PENDING', ?, 1, ?)",
+        persistence.createRecovery(
                 recoveryId,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -104,15 +115,9 @@ public class WorkspacePasswordRecoveryService {
         long expiresAt = Math.min(recovery.expiresAt(), time.currentEpochMillis() + OTP_TTL_MILLIS);
         String otp = null;
         if (recovery.accountId() != null) {
-            jdbc.update(
-                    "UPDATE workspace_iam.otp_grant SET status='SUPERSEDED' WHERE subject_ref=? AND "
-                            + "purpose='OPERATIONS_PASSWORD_RECOVERY' AND status='ACTIVE'",
-                    recovery.id());
+            persistence.supersedeActiveOtp(recovery.id());
             otp = String.format("%06d", random.nextInt(1_000_000));
-            jdbc.update(
-                    "INSERT INTO workspace_iam.otp_grant (id, workspace_uuid, group_workspace_key, purpose, "
-                            + "token_hash, subject_ref, status, expires_at_epoch_millis) VALUES (?, ?, ?, "
-                            + "'OPERATIONS_PASSWORD_RECOVERY', ?, ?, 'ACTIVE', ?)",
+            persistence.createOtp(
                     UUID.randomUUID(),
                     recovery.workspaceUuid(),
                     recovery.groupWorkspaceKey(),
@@ -140,19 +145,13 @@ public class WorkspacePasswordRecoveryService {
         sourceAttempt(recovery, sourceAddress);
         otpLimits.beforeVerify(
                 recovery.workspaceUuid(), recovery.groupWorkspaceKey(), "OPERATIONS_PASSWORD_RECOVERY", recovery.id());
-        int consumed = jdbc.update(
-                "UPDATE workspace_iam.otp_grant SET status='USED', used_at_epoch_millis=? WHERE subject_ref=? AND "
-                        + "purpose='OPERATIONS_PASSWORD_RECOVERY' AND token_hash=? AND status='ACTIVE' AND "
-                        + "expires_at_epoch_millis>?",
-                time.currentEpochMillis(),
+        long now = time.currentEpochMillis();
+        int consumed = persistence.consumeOtp(
+                now,
                 recovery.id(),
-                sha256(rawOtp),
-                time.currentEpochMillis());
+                sha256(rawOtp));
         if (recovery.accountId() == null || consumed != 1) {
-            jdbc.update(
-                    "UPDATE workspace_iam.otp_grant SET attempt_count=attempt_count+1 WHERE subject_ref=? AND "
-                            + "purpose='OPERATIONS_PASSWORD_RECOVERY' AND status='ACTIVE'",
-                    recovery.id());
+            persistence.incrementOtpAttempt(recovery.id());
             otpLimits.invalidVerify(
                     recovery.workspaceUuid(),
                     recovery.groupWorkspaceKey(),
@@ -166,16 +165,8 @@ public class WorkspacePasswordRecoveryService {
                 recovery.workspaceUuid(), recovery.groupWorkspaceKey(), "OPERATIONS_PASSWORD_RECOVERY", recovery.id());
         String rawGrant = secret();
         long grantExpiry = Math.min(recovery.expiresAt(), time.currentEpochMillis() + GRANT_TTL_MILLIS);
-        if (jdbc.update(
-                        "UPDATE workspace_iam.operations_password_recovery SET status='OTP_VERIFIED', "
-                                + "completion_grant_hash=?, completion_grant_expires_at_epoch_millis=?, "
-                                + "version=version+1 "
-                                + "WHERE id=? AND status='PENDING' AND version=?",
-                        sha256(rawGrant),
-                        grantExpiry,
-                        recovery.id(),
-                        recovery.version())
-                != 1) throw new RecoveryStateException();
+        if (persistence.markOtpVerified(sha256(rawGrant), grantExpiry, recovery.id(), recovery.version()) != 1)
+            throw new RecoveryStateException();
         return new VerificationResult(rawGrant);
     }
 
@@ -203,28 +194,10 @@ public class WorkspacePasswordRecoveryService {
         Account account = enabledAccount(recovery);
         if (account == null) throw new RecoveryStateException();
         long now = time.currentEpochMillis();
-        jdbc.update(
-                "UPDATE workspace_iam.workspace_credential SET password_hash=?, changed_at_epoch_millis=?, "
-                        + "failed_attempts=0, locked_until_epoch_millis=NULL, password_change_required=FALSE, "
-                        + "version=version+1 WHERE account_id=?",
-                passwords.encode(new String(password)),
-                now,
-                account.id());
-        int revoked = jdbc.update(
-                "UPDATE workspace_iam.workspace_session SET status='REVOKED', revoked_at_epoch_millis=? WHERE "
-                        + "account_id=? AND status='ACTIVE'",
-                now,
-                account.id());
-        if (jdbc.update(
-                        "UPDATE workspace_iam.operations_password_recovery SET status='COMPLETED', "
-                                + "completion_grant_hash=NULL, completion_grant_expires_at_epoch_millis=NULL, "
-                                + "completed_at_epoch_millis=?, version=version+1 WHERE id=? AND status='OTP_VERIFIED' "
-                                + "AND "
-                                + "version=?",
-                        now,
-                        recovery.id(),
-                        recovery.version())
-                != 1) throw new RecoveryStateException();
+        persistence.updateCredential(passwords.encode(new String(password)), now, account.id());
+        int revoked = persistence.revokeSessions(now, account.id());
+        if (persistence.completeRecovery(now, recovery.id(), recovery.version()) != 1)
+            throw new RecoveryStateException();
         return new Completion("COMPLETED", revoked > 0);
     }
 
@@ -251,23 +224,19 @@ public class WorkspacePasswordRecoveryService {
 
     private Recovery requireActive(String rawFlow, String requiredStatus) {
         if (rawFlow == null || rawFlow.isBlank()) throw new RecoveryStateException();
-        Recovery recovery = jdbc.query(
-                "SELECT id, workspace_uuid, group_workspace_key, account_id, status, expires_at_epoch_millis, version, "
-                        + "completion_grant_hash, completion_grant_expires_at_epoch_millis FROM "
-                        + "workspace_iam.operations_password_recovery WHERE flow_token_hash=?",
-                statement -> statement.setString(1, sha256(rawFlow)),
-                result -> result.next()
-                        ? new Recovery(
-                                result.getObject(1, UUID.class),
-                                result.getObject(2, UUID.class),
-                                result.getString(3),
-                                result.getObject(4, UUID.class),
-                                result.getString(5),
-                                result.getLong(6),
-                                result.getLong(7),
-                                result.getString(8),
-                                result.getObject(9, Long.class))
-                        : null);
+        WorkspacePasswordRecoveryPersistence.RecoveryRow row = persistence.activeRecovery(sha256(rawFlow));
+        Recovery recovery = row == null
+                ? null
+                : new Recovery(
+                        row.id(),
+                        row.workspaceUuid(),
+                        row.groupWorkspaceKey(),
+                        row.accountId(),
+                        row.status(),
+                        row.expiresAt(),
+                        row.version(),
+                        row.completionGrantHash(),
+                        row.completionGrantExpiresAt());
         if (recovery == null
                 || !requiredStatus.equals(recovery.status())
                 || recovery.expiresAt() <= time.currentEpochMillis()) throw new RecoveryStateException();
@@ -277,44 +246,18 @@ public class WorkspacePasswordRecoveryService {
     private Account matchingEnabledAccount(
             UUID workspaceUuid, String groupWorkspaceKey, String loginName, String mobile) {
         if (loginName.isBlank() || mobile.isBlank()) return null;
-        return jdbc.query(
-                "SELECT id, workspace_uuid, group_workspace_key, status FROM workspace_iam.workspace_account WHERE "
-                        + "workspace_uuid=? AND group_workspace_key=? AND login_name_normalized=? AND "
-                        + "mobile_normalized=? "
-                        + "AND status='ENABLED'",
-                statement -> {
-                    statement.setObject(1, workspaceUuid);
-                    statement.setString(2, groupWorkspaceKey);
-                    statement.setString(3, loginName);
-                    statement.setString(4, mobile);
-                },
-                result -> result.next()
-                        ? new Account(
-                                result.getObject(1, UUID.class),
-                                result.getObject(2, UUID.class),
-                                result.getString(3),
-                                result.getString(4))
-                        : null);
+        return account(persistence.matchingAccount(workspaceUuid, groupWorkspaceKey, loginName, mobile));
     }
 
     private Account enabledAccount(Recovery recovery) {
         if (recovery.accountId() == null
                 || !workspaces.isEnabled(recovery.workspaceUuid(), recovery.groupWorkspaceKey())) return null;
-        return jdbc.query(
-                "SELECT id, workspace_uuid, group_workspace_key, status FROM workspace_iam.workspace_account WHERE "
-                        + "id=? AND workspace_uuid=? AND group_workspace_key=? AND status='ENABLED'",
-                statement -> {
-                    statement.setObject(1, recovery.accountId());
-                    statement.setObject(2, recovery.workspaceUuid());
-                    statement.setString(3, recovery.groupWorkspaceKey());
-                },
-                result -> result.next()
-                        ? new Account(
-                                result.getObject(1, UUID.class),
-                                result.getObject(2, UUID.class),
-                                result.getString(3),
-                                result.getString(4))
-                        : null);
+        return account(persistence.enabledAccount(
+                recovery.accountId(), recovery.workspaceUuid(), recovery.groupWorkspaceKey()));
+    }
+
+    private static Account account(WorkspacePasswordRecoveryPersistence.AccountRow row) {
+        return row == null ? null : new Account(row.id(), row.workspaceUuid(), row.groupWorkspaceKey(), row.status());
     }
 
     private boolean validGrant(Recovery recovery, String rawGrant) {

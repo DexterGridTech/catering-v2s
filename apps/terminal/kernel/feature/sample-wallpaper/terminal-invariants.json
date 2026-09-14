@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/kernel-feature-sample-wallpaper",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-feature-sample-wallpaper", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "ownerKind": "owner",
+  "publicExports": [
+    "WallpaperId", "WallpaperState", "confirmWallpaperCommand", "createSampleWallpaperModule",
+    "dependencyModuleNames", "devDependencyModuleNames", "isWallpaperId", "moduleKind", "moduleName",
+    "selectPendingWallpaperId", "selectWallpaperCommand", "selectWallpaperId"
+  ]
+}

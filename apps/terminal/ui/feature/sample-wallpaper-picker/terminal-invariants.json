@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/ui-feature-sample-wallpaper-picker",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-feature-sample-wallpaper-picker", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "ownerKind": "owner",
+  "publicExports": [
+    "WallpaperBackground", "WallpaperPicker", "WallpaperPickerAssembly",
+    "WallpaperId", "WallpaperPickerCommandPayload", "assetsById",
+    "confirmWallpaperRequestedCommand", "createSampleWallpaperPickerModule",
+    "dependencyModuleNames", "devDependencyModuleNames", "moduleKind", "moduleName",
+    "parts", "sampleWallpaperPickerAssembly", "wallpaperOptionTestId", "wallpaperPickerTestIds",
+    "wallpaperOptionSelectedCommand"
+  ]
+}
