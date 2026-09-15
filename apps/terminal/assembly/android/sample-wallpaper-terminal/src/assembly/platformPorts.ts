@@ -1,3 +1,4 @@
+import packageJson from '../../package.json'
 import {createAndroidPlatformBinding} from '@catering-v2s/assembly-base-android'
 import {
   createSampleWallpaperConsoleAssembly,
@@ -15,4 +16,5 @@ export const createSampleWallpaperTerminalAssembly = (input: Readonly<{
   ...androidPlatform,
   persistenceKey,
   surfaceForm: input.surfaceForm,
+  terminalSurfaces: packageJson.terminalSurfaces,
 })

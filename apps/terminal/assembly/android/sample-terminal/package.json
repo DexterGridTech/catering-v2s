@@ -7,6 +7,26 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "terminalSurfaces": {
+    "orientations": {
+      "landscape": {
+        "PRIMARY": {
+          "width": 1280,
+          "height": 800
+        },
+        "SECONDARY": {
+          "width": 960,
+          "height": 540
+        }
+      },
+      "portrait": {
+        "PRIMARY": {
+          "width": 360,
+          "height": 640
+        }
+      }
+    }
+  },
   "dependencies": {
     "@catering-v2s/assembly-base-android": "workspace:*",
     "@catering-v2s/ui-base-render": "workspace:*",

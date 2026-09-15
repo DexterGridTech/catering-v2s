@@ -246,6 +246,31 @@ const findTextInput = (renderer: ReactTestRenderer, testID: string): TextInputTe
 }
 
 describe('sample-console real assembly', () => {
+  it('uses caller-provided surface declarations for the selected form', async () => {
+    const override = {
+      orientations: {
+        landscape: {
+          PRIMARY: {width: 1400, height: 700},
+          SECONDARY: {width: 700, height: 400},
+        },
+        portrait: {
+          PRIMARY: {width: 411, height: 731},
+        },
+      },
+    } as const
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts(),
+      persistenceKey: `sample-console-surface-override-${Date.now()}`,
+      surfaceForm: 'laptop',
+      terminalSurfaces: override,
+    })
+    try {
+      expect(assembly.surfaceDeclarations).toEqual(override.orientations.landscape)
+    } finally {
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
   it('does not reuse a platform-port run id for separate console writers', async () => {
     const firstEvents: LogEvent[] = []
     const secondEvents: LogEvent[] = []

@@ -16,6 +16,7 @@ import {
   terminalSurfaces,
   type SurfaceCreationInput,
   type SurfaceForm,
+  type TerminalSurfaces,
 } from '../application/terminalSurfaces'
 
 const defaultPersistenceKey = 'sample-console'
@@ -50,6 +51,7 @@ type SampleAssemblyInput = Readonly<{
   readonly nativeLoadingCapability: NativeLoadingCapability
   readonly persistenceKey?: string
   readonly surfaceForm: SurfaceForm
+  readonly terminalSurfaces?: TerminalSurfaces
   readonly environmentMode?: EnvironmentMode
   readonly packagingDebugMode?: boolean
   readonly startupDebugMode?: boolean
@@ -74,7 +76,7 @@ export async function createSampleAssembly(
     nativeLoadingCapability,
     persistenceKey: input.persistenceKey,
     surfaceForm,
-    surfaceDeclarations: getSurfaceDeclarations(terminalSurfaces, surfaceForm),
+    surfaceDeclarations: getSurfaceDeclarations(input.terminalSurfaces ?? terminalSurfaces, surfaceForm),
     environmentMode,
     packagingDebugMode: input.packagingDebugMode,
     startupDebugMode: input.startupDebugMode,

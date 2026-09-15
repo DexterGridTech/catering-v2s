@@ -44,6 +44,7 @@ Android 正常入口由 adapter 传入 `displayIndex` 与 `surfaceForm`。App �
 options 的受批准 fallback 使用 `displayIndex=0`、`surfaceForm='laptop'`；它不按窗口宽度
 重新判断设备形态。mobile 不创建副屏，laptop 的副屏由 adapter 的既有 Presentation 路径
 创建并使用相同的 integration assembly。
+Android 运行时使用本包 `package.json` 的 `terminalSurfaces` 整份覆盖 integration 默认值；integration 仍按 `surfaceForm` 选择对应声明。
 
 ## 迭代指引
 

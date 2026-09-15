@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "sample-console",
+    "slug": "sample-console",
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

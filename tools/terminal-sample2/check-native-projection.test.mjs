@@ -92,7 +92,9 @@ withFixture(({appsRoot}) => {
 withFixture(({appsRoot}) => {
   const readmePath = path.join(appsRoot, 'sample-wallpaper-terminal/assets/README.md')
   const source = fs.readFileSync(readmePath, 'utf8')
-  fs.writeFileSync(readmePath, source.replace('119462bb78eb240a65c869fc067ee599639b3cb5a41953f25c07b17d2a8c7e0f', '0'.repeat(64)))
+  const iconHash = source.match(/^\| `icon\.png` \|.*\| `([0-9a-f]{64})` \|$/m)?.[1]
+  assert.ok(iconHash, 'APP_ASSET_HASH_DRIFT fixture could not find the current icon hash')
+  fs.writeFileSync(readmePath, source.replace(iconHash, '0'.repeat(64)))
 }, 'APP_ASSET_HASH_DRIFT')
 
 withFixtureError(({appsRoot}) => {

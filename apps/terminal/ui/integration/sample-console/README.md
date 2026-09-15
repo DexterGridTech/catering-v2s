@@ -18,6 +18,8 @@
 - `src/application/module.ts`：sample-console 自己拥有的可移除运行期模块声明。
 - `src/application/terminalSurfaces.ts`：读取本包 `package.json` 的固定逻辑 surface 配置并导出 typed 常量。
 - `theme/`：本应用的 NativeWind/Tailwind 语义色 token；主题属于 integration app，不抽到共享包。
+- `app.json` 与 `assets/favicon.png`：仅供本包 Expo Web 预览消费的浏览器标题图标配置；不声明
+  App application icon，也不改变 App 内 UI 图标。
 - `test-expo/App.tsx`：把本包的 assembly、surface 配置与运行时状态 reader 注入通用宿主的薄入口。
 - `test/`：Vitest focused test，包含 `.ts` 与 `.tsx`，跨包组装走真实调用链。
 
@@ -43,6 +45,7 @@
 `assembly.createSurface({displayIndex, displayMode, surfaceForm})` 仍是通用宿主按已确定模式挂载
 surface 的闭包入口。
 `persistenceKey` 仅用于测试隔离；生产端口由 assembly 的消费者注入。
+调用方可通过可选的 `terminalSurfaces` 整份覆盖本包默认配置；未传入时使用本包 `package.json`，而具体形态仍由本包按 `surfaceForm` 选择。
 
 主题 token 由 `theme/global.css` 声明、由 `tailwind.config.cjs` 映射为语义 class；
 `ui/base/primitives` 只消费这些语义 class，不反向 import 应用主题。新增应用时复制自己的

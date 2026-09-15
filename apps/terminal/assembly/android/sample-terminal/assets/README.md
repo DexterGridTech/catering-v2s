@@ -6,10 +6,16 @@
 更新 `app.json` 或原生资源登记及其尺寸、来源和 hash，不能留下未消费的孤立文件。原生
 资源登记独立于本表，但两者共同构成该 App 的完整资产投影。
 
+本次图标底稿是仓内 `doc/assets/ter-terminal-brand/` 的品牌化衍生，源自 Tabler Icons
+v3.46.0 的 `cpu` 轮廓：[原始图标](https://github.com/tabler/tabler-icons/blob/v3.46.0/icons/outline/cpu.svg)，
+[MIT License](https://github.com/tabler/tabler-icons/blob/v3.46.0/LICENSE)，取得日期
+为 2026-09-16。资源只用于浏览器 favicon、Android 启动器和 Android 开机画面，不是
+App 内 UI 图标。
+
 | relative path | owner | consumer | reason | dimensions | sha256 |
 | --- | --- | --- | --- | ---: | --- |
-| `icon.png` | app-config | `app.json:expo.icon` | Android/Web application icon | 1024×1024 | `119462bb78eb240a65c869fc067ee599639b3cb5a41953f25c07b17d2a8c7e0f` |
-| `android-icon-foreground.png` | app-config | `app.json:expo.android.adaptiveIcon.foregroundImage` | Android adaptive foreground | 512×512 | `9e3d0315a33c6799de601dd34cd8bf8cc3a8d16f3bf75592baec2ceb7240b391` |
-| `android-icon-background.png` | app-config | `app.json:expo.android.adaptiveIcon.backgroundImage` | Android adaptive background | 512×512 | `fb139c2dee362ebf2070e23b96da6fc0d43f8492de38b8af1fd7223e19b5861d` |
-| `android-icon-monochrome.png` | app-config | `app.json:expo.android.adaptiveIcon.monochromeImage` | Android adaptive monochrome | 432×432 | `6371fc2c12e33ad2215a86c281db3d682a81bebe7c957a842c13b8bf00cceb83` |
-| `favicon.png` | app-config | `app.json:expo.web.favicon` | Web favicon | 48×48 | `a4e030697a7571b3e95d31860e4da55d2f98e5e861e2b55e414f45a8556828ba` |
+| `icon.png` | app-config | `app.json:expo.icon` | Android/Web application icon | 1024×1024 | `83a7346c663e923c9e09727fdf5cc313121ad51046454a94f068b51be8fee4b7` |
+| `android-icon-foreground.png` | app-config | `app.json:expo.android.adaptiveIcon.foregroundImage` | Android adaptive foreground | 512×512 | `251f5cff3f6113a7a991d69ab893af135347b634ed8bc76d91c9c8f8847cd2cc` |
+| `android-icon-background.png` | app-config | `app.json:expo.android.adaptiveIcon.backgroundImage` | Android adaptive background | 512×512 | `65c2b71130db47b3037e61c48d6dacb1bf21309db7f58250894da3bbabeb11d1` |
+| `android-icon-monochrome.png` | app-config | `app.json:expo.android.adaptiveIcon.monochromeImage` | Android adaptive monochrome | 432×432 | `de6b3b65eb48fbf2eec8ea47eb7c6ea2509745c824717d18f09c121badede983` |
+| `favicon.png` | app-config | `app.json:expo.web.favicon` | Web favicon | 48×48 | `b3ac22293b37bd4283ed8c54f0c130e97ed7ce19fc64a574a58bef38549d1720` |

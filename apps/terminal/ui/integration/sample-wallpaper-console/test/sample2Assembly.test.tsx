@@ -78,6 +78,31 @@ const dispatchOptions = (displayMode: 'PRIMARY' | 'SECONDARY' = 'PRIMARY') => ({
 })
 
 describe('sample2 wallpaper console assembly', () => {
+  it('uses caller-provided surface declarations for the selected form', async () => {
+    const override = {
+      orientations: {
+        landscape: {
+          PRIMARY: {width: 1400, height: 700},
+          SECONDARY: {width: 700, height: 400},
+        },
+        portrait: {
+          PRIMARY: {width: 411, height: 731},
+        },
+      },
+    } as const
+    const assembly = await createSampleWallpaperConsoleAssembly({
+      platformPorts: createTestPlatformPorts(),
+      persistenceKey: `sample2-surface-override-${Date.now()}`,
+      surfaceForm: 'mobile',
+      terminalSurfaces: override,
+    })
+    try {
+      expect(assembly.surfaceDeclarations).toEqual(override.orientations.portrait)
+    } finally {
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
   it('keeps one logical canvas for laptop dual surfaces and rejects mobile secondary', async () => {
     const laptop = await createSampleWallpaperConsoleAssembly({
       platformPorts: createTestPlatformPorts({displayCount: 2}),

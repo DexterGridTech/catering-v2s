@@ -1,3 +1,4 @@
+import packageJson from '../../package.json'
 import {createAndroidPlatformBinding} from '@catering-v2s/assembly-base-android'
 import {createSampleAssembly, type SurfaceForm} from '@catering-v2s/ui-integration-sample-console'
 
@@ -11,5 +12,6 @@ export const createSampleTerminalAssembly = (input: Readonly<{readonly surfaceFo
     ...androidPlatform,
     persistenceKey,
     surfaceForm: input.surfaceForm,
+    terminalSurfaces: packageJson.terminalSurfaces,
   })
 }

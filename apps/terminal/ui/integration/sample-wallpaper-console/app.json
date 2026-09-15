@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "sample-wallpaper-console",
+    "slug": "sample-wallpaper-console",
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

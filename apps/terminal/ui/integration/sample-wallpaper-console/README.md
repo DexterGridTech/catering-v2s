@@ -22,6 +22,8 @@
   副屏 welcome；匿名或登出时显示副屏 waiting（副屏不可用时不派发）。
 - `src/parts/parts.ts` 与 `src/components/`：副屏 waiting/welcome 两个透明 section part。
 - `theme/`：本应用的 19 个语义 token；action 使用红色，error 仍是错误语义。
+- `app.json` 与 `assets/favicon.png`：仅供本包 Expo Web 预览消费的浏览器标题图标配置；不声明
+  App application icon，也不改变 App 内 UI 图标。
 - `test-expo/App.tsx`：仅把本包 assembly 接入通用 TER dev-host；不是生产 runtime 的第二入口。
 
 公共导出包括 `createSampleWallpaperConsoleAssembly`、`createSurfaceForDisplayIndex`、
@@ -39,6 +41,8 @@ const assembly = await createSampleWallpaperConsoleAssembly({
 const primary = createSurfaceForDisplayIndex(assembly, 0)
 const secondary = createSurfaceForDisplayIndex(assembly, 1)
 ```
+
+调用方可通过可选的 `terminalSurfaces` 整份覆盖本包默认配置；未传入时使用本包 `package.json`，而具体形态仍由本包按 `surfaceForm` 选择。
 
 `displayIndex` 只选择物理 host source；`displayMode` 由 display-context 统一推导并决定画布
 与 catalog placement。mobile 只创建主屏，不调用副屏入口。Web 预览由 dev-host 通过 URL
