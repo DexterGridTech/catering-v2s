@@ -52,8 +52,42 @@ public class OperationsOrganizationTaskReadService {
             String direction,
             int page,
             int pageSize) {
+        return brands(
+                workspaceUuid,
+                groupWorkspaceKey,
+                queryText,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                null,
+                null);
+    }
+
+    @Transactional(readOnly = true)
+    public BusinessEntityService.BrandPage brands(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String queryText,
+            String status,
+            String sort,
+            String direction,
+            int page,
+            int pageSize,
+            String extensionFilters,
+            String definitionRevision) {
         return primary(() -> entities.pageBrands(
-                workspaceUuid, groupWorkspaceKey, queryText, status, sort, direction, page, pageSize));
+                workspaceUuid,
+                groupWorkspaceKey,
+                queryText,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                extensionFilters,
+                definitionRevision));
     }
 
     @Transactional(readOnly = true)
@@ -69,6 +103,37 @@ public class OperationsOrganizationTaskReadService {
             String direction,
             int page,
             int pageSize) {
+        return tenants(
+                workspaceUuid,
+                groupWorkspaceKey,
+                name,
+                code,
+                legalName,
+                unifiedSocialCreditCode,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                null,
+                null);
+    }
+
+    @Transactional(readOnly = true)
+    public BusinessEntityService.EntityPage tenants(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String name,
+            String code,
+            String legalName,
+            String unifiedSocialCreditCode,
+            String status,
+            String sort,
+            String direction,
+            int page,
+            int pageSize,
+            String extensionFilters,
+            String definitionRevision) {
         return entityPage(
                 "TENANT",
                 workspaceUuid,
@@ -81,7 +146,9 @@ public class OperationsOrganizationTaskReadService {
                 sort,
                 direction,
                 page,
-                pageSize);
+                pageSize,
+                extensionFilters,
+                definitionRevision);
     }
 
     @Transactional(readOnly = true)
@@ -97,6 +164,37 @@ public class OperationsOrganizationTaskReadService {
             String direction,
             int page,
             int pageSize) {
+        return headCompanies(
+                workspaceUuid,
+                groupWorkspaceKey,
+                name,
+                code,
+                legalName,
+                unifiedSocialCreditCode,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                null,
+                null);
+    }
+
+    @Transactional(readOnly = true)
+    public BusinessEntityService.EntityPage headCompanies(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String name,
+            String code,
+            String legalName,
+            String unifiedSocialCreditCode,
+            String status,
+            String sort,
+            String direction,
+            int page,
+            int pageSize,
+            String extensionFilters,
+            String definitionRevision) {
         return entityPage(
                 ServiceNodeTypes.HEAD_COMPANY,
                 workspaceUuid,
@@ -109,7 +207,9 @@ public class OperationsOrganizationTaskReadService {
                 sort,
                 direction,
                 page,
-                pageSize);
+                pageSize,
+                extensionFilters,
+                definitionRevision);
     }
 
     @Transactional(readOnly = true)
@@ -171,7 +271,9 @@ public class OperationsOrganizationTaskReadService {
             String sort,
             String direction,
             int page,
-            int pageSize) {
+            int pageSize,
+            String extensionFilters,
+            String definitionRevision) {
         return primary(() -> entities.pageEntities(
                 type,
                 workspaceUuid,
@@ -184,7 +286,9 @@ public class OperationsOrganizationTaskReadService {
                 sort,
                 direction,
                 page,
-                pageSize));
+                pageSize,
+                extensionFilters,
+                definitionRevision));
     }
 
     private OrganizationEntityReadback entity(

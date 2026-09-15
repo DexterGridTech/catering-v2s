@@ -1,0 +1,79 @@
+{
+  "runId": "sample-wallpaper-terminal-mobile-1789465672929",
+  "app": "sample-wallpaper-terminal",
+  "packageName": "com.catering.v2s.terminal.samplewallpaper",
+  "serial": "emulator-5556",
+  "shape": "mobile",
+  "failureMode": null,
+  "startedAt": "2026-09-15T09:47:52.929Z",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "firstFailure": null,
+  "display": {
+    "ids": [
+      0
+    ],
+    "hasSecondary": false
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": []
+  },
+  "timeline": [
+    {
+      "event": "before-launch",
+      "timestamp": "2026-09-15T09:47:53.165Z",
+      "splashVisible": false,
+      "packagePid": ""
+    },
+    {
+      "event": "after-launch-before-ready-poll",
+      "timestamp": "2026-09-15T09:47:53.613Z",
+      "millisecondsSinceLaunch": 430,
+      "splashVisible": true
+    },
+    {
+      "event": "t0-first-rn-content",
+      "timestamp": "2026-09-15T09:47:56.036Z",
+      "splashVisible": false,
+      "failurePage": false,
+      "readyCandidateObservedInSameDeviceLog": true,
+      "readyHiddenObservedInSameDeviceLog": true
+    },
+    {
+      "event": "ready-or-failure-observed",
+      "timestamp": "2026-09-15T09:47:56.351Z",
+      "millisecondsSinceLaunch": 3168,
+      "readyCandidate": true,
+      "readyHidden": true,
+      "startupComplete": true,
+      "failurePage": false,
+      "splashVisible": false,
+      "splashVisibleBeforeReady": true,
+      "preReadyCaptured": true
+    },
+    {
+      "event": "settled",
+      "timestamp": "2026-09-15T09:48:00.195Z",
+      "splashVisible": false,
+      "packagePid": "7722",
+      "secondarySurfaceObserved": false,
+      "primaryUiHasRnContent": true
+    },
+    {
+      "event": "startup-order",
+      "candidateEpoch": 1789465659.675,
+      "hiddenEpoch": 1789465659.715,
+      "completeEpoch": 1789465659.683,
+      "firstContentObservationTimestamp": "2026-09-15T09:47:56.036Z",
+      "firstContentObservationSplashVisible": false,
+      "firstContentObservedAfterReadyCandidate": true,
+      "firstContentObservedAfterReadyHidden": true,
+      "provenReadyAfterRenderOwnedContent": true,
+      "settledSplashHidden": true
+    }
+  ],
+  "finishedAt": "2026-09-15T09:48:00.288Z"
+}

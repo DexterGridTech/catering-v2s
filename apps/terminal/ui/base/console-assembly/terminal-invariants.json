@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/ui-base-console-assembly",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-base-console-assembly", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": [
+    "ConsoleAssembly", "ConsoleAssemblyInput", "ConsoleSurfaceCreationInput", "ConsoleSurfaceDeclarations",
+    "StartupDiagnosticsWriter", "StartupDiagnosticsWriterInput",
+    "createConsoleAssembly", "createDispatchCommand", "createStateSource", "createSurfaceForDisplayIndex",
+    "createStartupDiagnosticsWriter", "dependencyModuleNames", "devDependencyModuleNames",
+    "moduleName"
+  ]
+}

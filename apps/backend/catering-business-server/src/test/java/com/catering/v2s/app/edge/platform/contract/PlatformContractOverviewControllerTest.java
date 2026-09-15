@@ -89,7 +89,9 @@ class PlatformContractOverviewControllerTest {
                 "ASC",
                 2,
                 /* format-wrap */
-                40);
+                40,
+                null,
+                null);
 
         verify(reads)
                 .platformOverviewTaskPage(

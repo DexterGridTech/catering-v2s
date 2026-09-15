@@ -58,7 +58,7 @@ class OperationsBusinessEntityControllerTest {
                 null);
 
         var response = controller.brands(
-                request, WORKSPACE_KEY, 1L, "brand", BusinessEntityStatus.ENABLED, "NAME", "ASC", 3, 7);
+                request, WORKSPACE_KEY, 1L, "brand", BusinessEntityStatus.ENABLED, "NAME", "ASC", 3, 7, null, null);
 
         assertEquals(51L, response.metadata().total());
         assertEquals(3L, response.metadata().page());
@@ -138,7 +138,9 @@ class OperationsBusinessEntityControllerTest {
                 "NAME",
                 "ASC",
                 2,
-                5);
+                5,
+                null,
+                null);
         var headCompanies = controller.headCompanies(
                 request,
                 WORKSPACE_KEY,
@@ -151,7 +153,9 @@ class OperationsBusinessEntityControllerTest {
                 "UPDATED_AT",
                 "DESC",
                 4,
-                3);
+                3,
+                null,
+                null);
 
         assertEquals(12L, tenants.metadata().total());
         assertEquals(9L, headCompanies.metadata().total());
@@ -236,7 +240,20 @@ class OperationsBusinessEntityControllerTest {
                     .thenReturn(new BusinessEntityService.EntityPage(heads, itemCount, 1, itemCount));
 
             var response = controller.headCompanies(
-                    request, WORKSPACE_KEY, 1L, null, null, null, null, null, "NAME", "ASC", 1, itemCount);
+                    request,
+                    WORKSPACE_KEY,
+                    1L,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "NAME",
+                    "ASC",
+                    1,
+                    itemCount,
+                    null,
+                    null);
 
             assertEquals(itemCount, response.items().size());
             verify(entities)

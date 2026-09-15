@@ -2,7 +2,6 @@ package com.catering.v2s.app.edge.platform.contract;
 
 import com.catering.v2s.app.edge.generated.wire.ContractOverviewItem;
 import com.catering.v2s.app.edge.generated.wire.ContractOverviewItemContractRef;
-import com.catering.v2s.app.edge.generated.wire.ContractOverviewItemExtensionFieldsItem;
 import com.catering.v2s.app.edge.generated.wire.ContractOverviewItemProjectRef;
 import com.catering.v2s.app.edge.generated.wire.ContractOverviewItemStoreRef;
 import com.catering.v2s.app.edge.generated.wire.ContractOverviewItemTenantRef;
@@ -13,14 +12,10 @@ import com.catering.v2s.app.edge.generated.wire.StoreContractSortDirection;
 import com.catering.v2s.app.edge.generated.wire.StoreContractSortKey;
 import com.catering.v2s.app.edge.generated.wire.StoreContractStatus;
 import com.catering.v2s.app.edge.platform.session.PlatformSessionResolver;
-import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.contract.application.ContractTaskReadService;
-import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,7 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/platform/group-workspaces/{groupWorkspaceKey}/contract-overview")
 public final class PlatformContractOverviewController {
-    private static final ObjectMapper JSON = new ObjectMapper();
     private final PlatformSessionResolver sessions;
     private final ContractTaskReadService reads;
     private final ExtensionDefinitionService definitions;
@@ -62,7 +56,9 @@ public final class PlatformContractOverviewController {
             @RequestParam(defaultValue = "UPDATED_AT") String sort,
             @RequestParam(defaultValue = "DESC") String direction,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "50") int pageSize) {
+            @RequestParam(defaultValue = "50") int pageSize,
+            @RequestParam(required = false) String extensionFilters,
+            @RequestParam(required = false) String definitionRevision) {
         UUID workspaceUuid = sessions.requireRead(request)
                 .requireEnabledSelectedWorkspace(workspaces, groupWorkspaceKey)
                 .workspaceUuid();
@@ -82,7 +78,9 @@ public final class PlatformContractOverviewController {
                         sort,
                         direction,
                         page,
-                        pageSize)));
+                        pageSize,
+                        extensionFilters,
+                        definitionRevision)));
     }
 
     @GetMapping("/{contractId}")
@@ -92,11 +90,7 @@ public final class PlatformContractOverviewController {
                 .requireEnabledSelectedWorkspace(workspaces, groupWorkspaceKey)
                 .workspaceUuid();
         var value = reads.platformOverviewTaskDetail(workspaceUuid, groupWorkspaceKey, contractId);
-        return overviewItem(
-                value,
-                extensionFields(
-                        definitions.platformContractManagementDefinition(workspaceUuid, groupWorkspaceKey),
-                        value.extensionValues()));
+        return overviewItem(value);
     }
 
     private static ContractOverviewPage overview(ContractTaskReadService.ContractPage value) {
@@ -111,7 +105,8 @@ public final class PlatformContractOverviewController {
                         (long) value.metadata().pageSize(),
                         value.metadata().total(),
                         StoreContractSortKey.valueOf(value.metadata().sort()),
-                        StoreContractSortDirection.valueOf(value.metadata().direction())),
+                        StoreContractSortDirection.valueOf(value.metadata().direction()),
+                        value.metadata().definitionRevision()),
                 value.items().stream()
                         .map(PlatformContractOverviewController::overviewItem)
                         .toList(),
@@ -132,31 +127,6 @@ public final class PlatformContractOverviewController {
                 tenantRef(value.tenant()),
                 value.effectiveFrom().toString(),
                 value.effectiveTo() == null ? null : value.effectiveTo().toString(),
-                null,
-                StoreContractStatus.valueOf(value.status()),
-                value.source(),
-                value.revision(),
-                value.createdAt(),
-                value.updatedAt(),
-                "RESOLVED",
-                "RESOLVED",
-                projectRef(value.project()),
-                value.items().stream()
-                        .map(item -> new StoreContractItem(item.code(), item.name()))
-                        .toList(),
-                java.util.List.of());
-    }
-
-    private static ContractOverviewItem overviewItem(
-            ContractTaskReadService.StoreContractView value,
-            java.util.List<ContractOverviewItemExtensionFieldsItem> extensionFields) {
-        return new ContractOverviewItem(
-                contractRef(value.id(), value.contractNo(), value.contractNo(), "RESOLVED"),
-                storeRef(value.store()),
-                value.phaseName(),
-                tenantRef(value.tenant()),
-                value.effectiveFrom().toString(),
-                value.effectiveTo() == null ? null : value.effectiveTo().toString(),
                 value.note(),
                 StoreContractStatus.valueOf(value.status()),
                 value.source(),
@@ -169,7 +139,8 @@ public final class PlatformContractOverviewController {
                 value.items().stream()
                         .map(item -> new StoreContractItem(item.code(), item.name()))
                         .toList(),
-                extensionFields);
+                extensionValues(value.extensionValues()),
+                value.extensionRuleRevision());
     }
 
     private static ContractOverviewItemContractRef contractRef(
@@ -189,23 +160,16 @@ public final class PlatformContractOverviewController {
         return new ContractOverviewItemTenantRef(value.id().toString(), value.code(), value.name(), "RESOLVED");
     }
 
-    private java.util.List<ContractOverviewItemExtensionFieldsItem> extensionFields(
-            ExtensionDefinitionReadback definition, java.util.Map<String, String> values) {
-        return definition.fields().stream()
-                .filter(field -> "ENABLED".equals(field.status()))
-                .sorted(java.util.Comparator.comparingInt(ExtensionDefinitionReadback.Field::displayOrder))
-                .map(field -> new ContractOverviewItemExtensionFieldsItem(
-                        field.label(), displayValue(values.get(field.fieldKey()))))
-                .toList();
-    }
-
-    private static String displayValue(String encoded) {
-        if (encoded == null) return null;
-        try {
-            JsonNode value = JSON.readTree(encoded);
-            return value.isValueNode() ? value.asText() : value.toString();
-        } catch (java.io.IOException failure) {
-            throw new InvalidEdgeRequestException("invalid contract extension value", failure);
-        }
+    private static tools.jackson.databind.JsonNode extensionValues(java.util.Map<String, String> values) {
+        tools.jackson.databind.ObjectMapper json = new tools.jackson.databind.ObjectMapper();
+        tools.jackson.databind.node.ObjectNode result = json.createObjectNode();
+        values.forEach((key, encodedValue) -> {
+            try {
+                result.set(key, json.readTree(encodedValue));
+            } catch (Exception failure) {
+                throw new IllegalStateException("contract owner emitted invalid extension JSON", failure);
+            }
+        });
+        return result;
     }
 }

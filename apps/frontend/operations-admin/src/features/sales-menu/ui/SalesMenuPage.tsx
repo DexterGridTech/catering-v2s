@@ -628,7 +628,9 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
   const [candidateOpen, setCandidateOpen] = useState(false);
   const [editorItem, setEditorItem] = useState<SalesMenuDraftItemView>();
   const [editorOpen, setEditorOpen] = useState(false);
+  const [productDetailItemCode, setProductDetailItemCode] = useState<string>();
   const editorTriggerRef = useRef<HTMLElement | null>(null);
+  const productDetailTriggerRef = useRef<HTMLElement | null>(null);
   const candidateTriggerRef = useRef<HTMLElement | null>(null);
   const createTriggerRef = useRef<HTMLElement | null>(null);
   const menuActionTriggerRef = useRef<HTMLElement | null>(null);
@@ -741,6 +743,30 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
       window.requestAnimationFrame(() => {
         detailTriggerRef.current?.focus();
         detailTriggerRef.current = null;
+      });
+    }
+  }, []);
+
+  const openProductDetail = useCallback((itemCode: string, trigger: HTMLElement) => {
+    if (!itemCode) return;
+    productDetailTriggerRef.current = trigger;
+    setProductDetailItemCode(itemCode);
+  }, []);
+
+  const closeProductDetail = useCallback(() => {
+    setProductDetailItemCode(undefined);
+  }, []);
+
+  const clearProductDetailContext = useCallback(() => {
+    productDetailTriggerRef.current = null;
+    setProductDetailItemCode(undefined);
+  }, []);
+
+  const productDetailAfterOpenChange = useCallback((visible: boolean) => {
+    if (!visible && productDetailTriggerRef.current) {
+      window.requestAnimationFrame(() => {
+        productDetailTriggerRef.current?.focus();
+        productDetailTriggerRef.current = null;
       });
     }
   }, []);
@@ -1023,13 +1049,25 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
               ),
             '销售项已删除。',
             () => {
-              if (editorItem?.salesItemRef === item.salesItemRef) setEditorOpen(false);
+              if (editorItem?.salesItemRef === item.salesItemRef) {
+                clearProductDetailContext();
+                setEditorOpen(false);
+              }
             },
           );
         },
       );
     },
-    [askConfirmation, basePath, canEdit, commands, editorItem?.salesItemRef, runCommand, selectedMenu],
+    [
+      askConfirmation,
+      basePath,
+      canEdit,
+      clearProductDetailContext,
+      commands,
+      editorItem?.salesItemRef,
+      runCommand,
+      selectedMenu,
+    ],
   );
 
   const deleteSection = useCallback(
@@ -1566,13 +1604,29 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
           menuVersion: selectedMenu?.version,
           commands,
           onSave: saveItem,
-          onClose: () => setEditorOpen(false),
-          onSaved: () => setEditorItem(undefined),
+          onClose: () => {
+            clearProductDetailContext();
+            setEditorOpen(false);
+          },
+          onSaved: () => {
+            clearProductDetailContext();
+            setEditorItem(undefined);
+          },
           onDelete: deleteItem,
+          onViewProduct: openProductDetail,
           onClosedFocus: () => {
             editorTriggerRef.current?.focus();
             editorTriggerRef.current = null;
           },
+        }}
+        catalogItem={{
+          itemCode: productDetailItemCode,
+          initialMode: 'view',
+          queryContext,
+          canWriteCatalog: false,
+          surface: 'store',
+          onClose: closeProductDetail,
+          onAfterOpenChange: productDetailAfterOpenChange,
         }}
         detail={{
           item: detailItem,

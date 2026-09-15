@@ -1,9 +1,3 @@
-module.exports = function configureBabel(api) {
-  api.cache(true)
-  return {
-    presets: [
-      ['babel-preset-expo', {jsxImportSource: 'nativewind'}],
-      'nativewind/babel',
-    ],
-  }
-}
+module.exports = require('@catering-v2s/assembly-base-android/config').createBabelConfig({
+  appDir: __dirname,
+})

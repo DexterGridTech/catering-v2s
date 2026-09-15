@@ -1,0 +1,100 @@
+         1789464801.311  5616  5616 D AndroidRuntime: Shutting down VM
+         1789464801.312  5616  5616 E AndroidRuntime: FATAL EXCEPTION: main
+         1789464801.312  5616  5616 E AndroidRuntime: Process: com.anonymous.sampleterminal, PID: 5616
+         1789464801.312  5616  5616 E AndroidRuntime: java.lang.RuntimeException: Unable to start activity ComponentInfo{com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity}: java.lang.IllegalStateException: You need to use a Theme.AppCompat theme (or descendant) with this activity.
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:4280)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:4467)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:222)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.app.servertransaction.TransactionExecutor.executeNonLifecycleItem(TransactionExecutor.java:133)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.app.servertransaction.TransactionExecutor.executeTransactionItems(TransactionExecutor.java:103)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:80)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:2823)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.os.Handler.dispatchMessage(Handler.java:110)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.os.Looper.loopOnce(Looper.java:248)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.os.Looper.loop(Looper.java:338)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.app.ActivityThread.main(ActivityThread.java:9067)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:593)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:932)
+         1789464801.312  5616  5616 E AndroidRuntime: Caused by: java.lang.IllegalStateException: You need to use a Theme.AppCompat theme (or descendant) with this activity.
+         1789464801.312  5616  5616 E AndroidRuntime: 	at androidx.appcompat.app.AppCompatDelegateImpl.createSubDecor(AppCompatDelegateImpl.java:902)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at androidx.appcompat.app.AppCompatDelegateImpl.ensureSubDecor(AppCompatDelegateImpl.java:865)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at androidx.appcompat.app.AppCompatDelegateImpl.findViewById(AppCompatDelegateImpl.java:667)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at androidx.appcompat.app.AppCompatActivity.findViewById(AppCompatActivity.java:251)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at com.catering.v2s.terminal.assembly.base.android.TerminalNativeLoadingRegistry.installOnMain(TerminalNativeLoadingRegistry.kt:114)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at com.catering.v2s.terminal.assembly.base.android.TerminalNativeLoadingRegistry.registerOnActivity$lambda$3(TerminalNativeLoadingRegistry.kt:84)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at com.catering.v2s.terminal.assembly.base.android.TerminalNativeLoadingRegistry.$r8$lambda$tP06g2SozFq6x-QHBmdNUNGZgMM(Unknown Source:0)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at com.catering.v2s.terminal.assembly.base.android.TerminalNativeLoadingRegistry$$ExternalSyntheticLambda0.invoke(D8$$SyntheticClass:0)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at com.catering.v2s.terminal.assembly.base.android.TerminalNativeLoadingRegistry.onMain(TerminalNativeLoadingRegistry.kt:155)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at com.catering.v2s.terminal.assembly.base.android.TerminalNativeLoadingRegistry.registerOnActivity(TerminalNativeLoadingRegistry.kt:84)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at com.anonymous.sampleterminal.MainActivity.onCreate(MainActivity.kt:18)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.app.Activity.performCreate(Activity.java:9155)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.app.Activity.performCreate(Activity.java:9133)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1521)
+         1789464801.312  5616  5616 E AndroidRuntime: 	at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:4262)
+         1789464801.312  5616  5616 E AndroidRuntime: 	... 13 more
+         1789464801.537  5672  5672 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789464801.540  5672  5672 I AndroidRuntime: Using default boot image
+         1789464801.540  5672  5672 I AndroidRuntime: Leaving lock profiling enabled
+         1789464801.614  5672  5672 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789464802.866  5672  5672 D AndroidRuntime: Shutting down VM
+         1789464803.820  5694  5694 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789464803.822  5694  5694 I AndroidRuntime: Using default boot image
+         1789464803.822  5694  5694 I AndroidRuntime: Leaving lock profiling enabled
+         1789464803.866  5694  5694 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789464804.885  5694  5694 D AndroidRuntime: Shutting down VM
+         1789464806.169  5719  5719 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789464806.170  5719  5719 I AndroidRuntime: Using default boot image
+         1789464806.170  5719  5719 I AndroidRuntime: Leaving lock profiling enabled
+         1789464806.216  5719  5719 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789464807.291  5719  5719 D AndroidRuntime: Shutting down VM
+         1789464808.569  5745  5745 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789464808.570  5745  5745 I AndroidRuntime: Using default boot image
+         1789464808.570  5745  5745 I AndroidRuntime: Leaving lock profiling enabled
+         1789464808.618  5745  5745 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789464809.686  5745  5745 D AndroidRuntime: Shutting down VM
+         1789464810.958  5771  5771 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789464810.962  5771  5771 I AndroidRuntime: Using default boot image
+         1789464810.962  5771  5771 I AndroidRuntime: Leaving lock profiling enabled
+         1789464811.021  5771  5771 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789464812.050  5771  5771 D AndroidRuntime: Shutting down VM
+         1789464813.334  5800  5800 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789464813.337  5800  5800 I AndroidRuntime: Using default boot image
+         1789464813.337  5800  5800 I AndroidRuntime: Leaving lock profiling enabled
+         1789464813.381  5800  5800 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789464814.431  5800  5800 D AndroidRuntime: Shutting down VM
+         1789464815.690  5825  5825 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789464815.693  5825  5825 I AndroidRuntime: Using default boot image
+         1789464815.693  5825  5825 I AndroidRuntime: Leaving lock profiling enabled
+         1789464815.742  5825  5825 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789464816.764  5825  5825 D AndroidRuntime: Shutting down VM
+         1789464818.028  5850  5850 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789464818.030  5850  5850 I AndroidRuntime: Using default boot image
+         1789464818.030  5850  5850 I AndroidRuntime: Leaving lock profiling enabled
+         1789464818.079  5850  5850 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789464819.105  5850  5850 D AndroidRuntime: Shutting down VM
+         1789464820.321  5875  5875 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789464820.323  5875  5875 I AndroidRuntime: Using default boot image
+         1789464820.323  5875  5875 I AndroidRuntime: Leaving lock profiling enabled
+         1789464820.388  5875  5875 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789464821.411  5875  5875 D AndroidRuntime: Shutting down VM
+         1789464822.704  5901  5901 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789464822.708  5901  5901 I AndroidRuntime: Using default boot image
+         1789464822.708  5901  5901 I AndroidRuntime: Leaving lock profiling enabled
+         1789464822.760  5901  5901 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789464823.778  5901  5901 D AndroidRuntime: Shutting down VM
+         1789464825.007  5927  5927 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789464825.010  5927  5927 I AndroidRuntime: Using default boot image
+         1789464825.010  5927  5927 I AndroidRuntime: Leaving lock profiling enabled
+         1789464825.067  5927  5927 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789464826.114  5927  5927 D AndroidRuntime: Shutting down VM
+         1789464827.390  5955  5955 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789464827.392  5955  5955 I AndroidRuntime: Using default boot image
+         1789464827.392  5955  5955 I AndroidRuntime: Leaving lock profiling enabled
+         1789464827.439  5955  5955 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789464828.463  5955  5955 D AndroidRuntime: Shutting down VM
+         1789464829.703  5984  5984 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789464829.705  5984  5984 I AndroidRuntime: Using default boot image
+         1789464829.705  5984  5984 I AndroidRuntime: Leaving lock profiling enabled
+         1789464829.752  5984  5984 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789464830.774  5984  5984 D AndroidRuntime: Shutting down VM

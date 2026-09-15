@@ -152,7 +152,9 @@ public final class OperationsStoreManagementController {
             @RequestParam(required = false) OrganizationStoreSortKey sort,
             @RequestParam(required = false) OrganizationStoreSortDirection direction,
             @RequestParam(required = false, defaultValue = "1") int page,
-            @RequestParam(required = false, defaultValue = "20") int pageSize) {
+            @RequestParam(required = false, defaultValue = "20") int pageSize,
+            @RequestParam(required = false) String extensionFilters,
+            @RequestParam(required = false) String definitionRevision) {
         WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion);
         UUID scopedProjectId = user.resolveSelectedProjectScope(session, null).targetId();
         var result = reads.stores(
@@ -169,9 +171,12 @@ public final class OperationsStoreManagementController {
                         scopedProjectId,
                         null,
                         null,
+                        null,
                         sort == null ? null : sort.name(),
                         direction == null ? null : direction.name(),
-                        scopedProjectId),
+                        scopedProjectId,
+                        extensionFilters,
+                        definitionRevision),
                 page,
                 pageSize);
         List<UUID> storeIds = result.items().stream()
@@ -188,7 +193,8 @@ public final class OperationsStoreManagementController {
                 (long) result.metadata().pageSize(),
                 result.metadata().total(),
                 OrganizationStoreSortKey.valueOf(result.metadata().sort()),
-                OrganizationStoreSortDirection.valueOf(result.metadata().direction()));
+                OrganizationStoreSortDirection.valueOf(result.metadata().direction()),
+                result.metadata().definitionRevision());
         return new OrganizationStorePage(
                 metadata,
                 result.items().stream()

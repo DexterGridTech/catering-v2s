@@ -17,10 +17,10 @@ surface 由 `ui.integration.sample-wallpaper-console` 持有；本包不复制�
 ## 结构
 
 ```text
-App.tsx                         Expo React 根组件；等待 assembly 后呈现指定 displayIndex
+App.tsx                         Expo React 根组件；等待 assembly 后呈现指定 displayIndex，注入 render-owned failure page
 index.ts                        Expo registerRootComponent 入口
-src/assembly/platformPorts.ts   Android port binding 与 sample2 assembly 连接
-src/dependencies.ts             assembly 的 workspace module 依赖声明
+src/assembly/platformPorts.ts   Android port binding、logger 与 sample2 assembly 连接
+src/dependencies.ts             assembly、render 与 integration 的 workspace module 依赖声明
 src/moduleName.ts               固定 moduleName 转发
 app.json                        独立 slug、applicationId、Android adaptive icon 与 favicon
 android/                        Expo prebuild 生成的 Android 工程
@@ -49,6 +49,7 @@ options 的受批准 fallback 使用 `displayIndex=0`、`surfaceForm='laptop'`�
 
 新增平台能力先检查对应 adapter 与 platform-ports 的公开契约，再在本包只接线；不要在这里
 新增壁纸 registry、第二套 state、第二个 runtime、第二个 surface host 或 UI overlay。新增
-图片、picker 控件或 section 必须回到各自 owner 包与同一 UiCatalog。改完至少执行本包
+图片、picker 控件或 section 必须回到各自 owner 包与同一 UiCatalog；assembly rejection 的失败页
+必须复用 `ui.base.render` 的 `StandaloneStartupFailurePage`，不能在此复制 UI 或 splash 逻辑。改完至少执行本包
 typecheck，并按详设/实施计划重新运行 skeleton、Android 与必要的 Web/visual proof；类型或
 静态通过不等于真实设备或像素验收通过。

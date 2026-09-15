@@ -1,0 +1,17 @@
+{
+  "installMode": "install-release",
+  "local": {
+    "path": "apps/terminal/assembly/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk",
+    "exists": true,
+    "bytes": 88329653,
+    "sha256": "65242127eef6df56fa48fe0ffa042e171bbffeea2024fe76cbf66e0c7f2d4b1b"
+  },
+  "installed": {
+    "paths": [
+      "/data/app/~~3V7VxA9zVKdLbfP8Ulg9Ew==/com.catering.v2s.terminal.samplewallpaper-rgFNwx9nA9IVFYwyux0XIA==/base.apk"
+    ],
+    "path": "/data/app/~~3V7VxA9zVKdLbfP8Ulg9Ew==/com.catering.v2s.terminal.samplewallpaper-rgFNwx9nA9IVFYwyux0XIA==/base.apk",
+    "bytes": 88329653,
+    "sha256": "65242127eef6df56fa48fe0ffa042e171bbffeea2024fe76cbf66e0c7f2d4b1b"
+  }
+}

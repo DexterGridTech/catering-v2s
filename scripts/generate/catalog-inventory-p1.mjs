@@ -5859,6 +5859,7 @@ const seedBusinessLabels = {
       'SIZE-LARGE': '大杯',
       'SIZE-MEDIUM': '中杯',
       'SIZE-SMALL': '小杯',
+      'SIZE-XL': '超大杯',
     },
     ORDER_OPTION_VALUE: {
       BURRATA_SAUCE_BALSAMIC: '黑醋汁',

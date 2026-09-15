@@ -10,16 +10,14 @@ export const unavailableTopologyHostPort: TopologyHostPort = {
   getDiagnosticsSnapshot: async (_input: TopologyHostCall): Promise<PortResult<TopologyHostDiagnostics>> => createUnavailable('topologyHost', 'getDiagnosticsSnapshot'),
 };
 
-if (__DEV__) {
-  Object.defineProperty(unavailableTopologyHostPort, PORT_DESCRIPTOR_KEY, {
-    value: Object.freeze({
-      port: 'topologyHost',
-      capabilities: Object.freeze([
-        'start', 'stop', 'getStatus', 'getDiagnosticsSnapshot',
-      ].map(capability => Object.freeze({capability, state: 'unavailable' as const, source: 'default' as const}))),
-    }),
-    enumerable: false,
-    writable: false,
-    configurable: false,
-  });
-}
+Object.defineProperty(unavailableTopologyHostPort, PORT_DESCRIPTOR_KEY, {
+  value: Object.freeze({
+    port: 'topologyHost',
+    capabilities: Object.freeze([
+      'start', 'stop', 'getStatus', 'getDiagnosticsSnapshot',
+    ].map(capability => Object.freeze({capability, state: 'unavailable' as const, source: 'default' as const}))),
+  }),
+  enumerable: false,
+  writable: false,
+  configurable: false,
+});

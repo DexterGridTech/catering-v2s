@@ -11,6 +11,7 @@ import com.catering.v2s.contract.application.ContractCommandReceiptService;
 import com.catering.v2s.contract.application.ContractCommandService;
 import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
+import com.catering.v2s.extension.api.ExtensionFilterQuery;
 import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.organization.application.BusinessEntityCommandReceiptService;
@@ -41,6 +42,9 @@ import com.catering.v2s.workspace.iam.application.WorkspaceRoleService;
 import com.catering.v2s.workspace.iam.application.WorkspaceRoleService.RoleCapabilityCatalogDriftException;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -62,6 +66,7 @@ public final class ContractProblemAdvice {
     private static final String SALES_MENU_OWNER_REJECTED = "销售菜单 owner 不接受该请求";
 
     private static final Logger log = LoggerFactory.getLogger(ContractProblemAdvice.class);
+    private static final ObjectMapper DETAILS_JSON = new ObjectMapper();
     private static final tools.jackson.databind.ObjectMapper RESPONSE_JSON = new tools.jackson.databind.ObjectMapper();
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
@@ -334,6 +339,40 @@ public final class ContractProblemAdvice {
                 : "PLATFORM_COMMON_VERSION_CONFLICT";
         // spotless:on
         return problem(HttpStatus.CONFLICT, code, "owner readback 已变化，请重新读取后再操作", request);
+    }
+
+    @ExceptionHandler(ExtensionFilterQuery.DefinitionRevisionStaleException.class)
+    ResponseEntity<Problem> extensionDefinitionRevisionStale(
+            ExtensionFilterQuery.DefinitionRevisionStaleException exception, HttpServletRequest request) {
+        ObjectNode details = DETAILS_JSON.createObjectNode();
+        details.put("currentDefinitionRevision", exception.currentRevision());
+        details.put("retryable", true);
+        return problem(
+                HttpStatus.CONFLICT,
+                "EXTENSION_DEFINITION_REVISION_STALE",
+                "扩展字段定义已更新，请重新读取后再筛选",
+                request,
+                details);
+    }
+
+    @ExceptionHandler(ExtensionFilterQuery.InvalidFilterException.class)
+    ResponseEntity<Problem> extensionFilterInvalid(
+            ExtensionFilterQuery.InvalidFilterException exception, HttpServletRequest request) {
+        ArrayNode reasons = DETAILS_JSON.createArrayNode();
+        for (ExtensionFilterQuery.InvalidReason reason : exception.reasons()) {
+            ObjectNode item = reasons.addObject();
+            if (reason.fieldKey() != null) item.put("fieldKey", reason.fieldKey());
+            item.put("reason", reason.reason());
+            if (reason.expectedType() != null) item.put("expectedType", reason.expectedType());
+        }
+        ObjectNode details = DETAILS_JSON.createObjectNode();
+        details.set("invalidFields", reasons);
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "EXTENSION_FILTER_INVALID",
+                "扩展字段筛选条件不符合当前字段定义",
+                request,
+                details);
     }
 
     @ExceptionHandler(PlatformAuthenticationService.LoginNameConflictException.class)

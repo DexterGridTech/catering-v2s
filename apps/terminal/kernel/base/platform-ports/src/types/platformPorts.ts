@@ -45,6 +45,8 @@ export interface PlatformPortBindings {
 }
 
 export interface PlatformPorts {
+  /** Development startup diagnostics identity; absent in release builds. */
+  readonly startupRunId?: string;
   readonly logger: LoggerPort;
   readonly persistKv: StateStoragePort;
   readonly persistSecure: StateStoragePort;

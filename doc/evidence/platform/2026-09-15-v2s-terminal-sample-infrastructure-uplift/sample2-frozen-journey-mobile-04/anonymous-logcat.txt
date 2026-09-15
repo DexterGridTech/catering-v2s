@@ -1,0 +1,1466 @@
+--------- beginning of main
+         1789439047.565  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c1938) locale list changing from [] to [en-US]
+         1789439047.567  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cbed8) locale list changing from [] to [en-US]
+         1789439047.568  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410dc558) locale list changing from [] to [en-US]
+         1789439047.569  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c9958) locale list changing from [] to [en-US]
+         1789439047.570  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cc1f8) locale list changing from [] to [en-US]
+         1789439047.570  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cd198) locale list changing from [] to [en-US]
+         1789439047.571  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cfa38) locale list changing from [] to [en-US]
+         1789439047.573  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d38b8) locale list changing from [] to [en-US]
+         1789439047.574  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d6ab8) locale list changing from [] to [en-US]
+         1789439047.575  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cf718) locale list changing from [] to [en-US]
+         1789439047.576  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d4b78) locale list changing from [] to [en-US]
+         1789439047.580  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d4538) locale list changing from [] to [en-US]
+         1789439047.581  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c6d98) locale list changing from [] to [en-US]
+         1789439047.582  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410ca5d8) locale list changing from [] to [en-US]
+         1789439047.583  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c8cd8) locale list changing from [] to [en-US]
+         1789439047.585  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c9f98) locale list changing from [] to [en-US]
+         1789439047.586  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410dc878) locale list changing from [] to [en-US]
+         1789439047.589  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410ce458) locale list changing from [] to [en-US]
+         1789439047.592  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d1c98) locale list changing from [] to [en-US]
+         1789439047.593  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c0358) locale list changing from [] to [en-US]
+         1789439047.593  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d9cb8) locale list changing from [] to [en-US]
+         1789439047.594  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b1f38) locale list changing from [] to [en-US]
+         1789439047.595  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410bd158) locale list changing from [] to [en-US]
+         1789439047.597  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c70b8) locale list changing from [] to [en-US]
+         1789439047.598  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b0f98) locale list changing from [] to [en-US]
+         1789439047.598  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d8d18) locale list changing from [] to [en-US]
+         1789439047.599  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cedb8) locale list changing from [] to [en-US]
+         1789439047.601  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d1018) locale list changing from [] to [en-US]
+         1789439047.602  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d22d8) locale list changing from [] to [en-US]
+         1789439047.603  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cce78) locale list changing from [] to [en-US]
+         1789439047.603  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cea98) locale list changing from [] to [en-US]
+         1789439047.604  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d0078) locale list changing from [] to [en-US]
+         1789439047.606  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410da938) locale list changing from [] to [en-US]
+         1789439047.606  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d8098) locale list changing from [] to [en-US]
+         1789439047.608  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c41d8) locale list changing from [] to [en-US]
+         1789439047.610  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b6718) locale list changing from [] to [en-US]
+         1789439047.610  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c6a78) locale list changing from [] to [en-US]
+         1789439047.611  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410afcd8) locale list changing from [] to [en-US]
+         1789439047.612  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d0cf8) locale list changing from [] to [en-US]
+         1789439047.616  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d2f58) locale list changing from [] to [en-US]
+         1789439047.624  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cbbb8) locale list changing from [] to [en-US]
+         1789439047.627  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d5b18) locale list changing from [] to [en-US]
+         1789439047.631  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b5a98) locale list changing from [] to [en-US]
+         1789439047.633  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b31f8) locale list changing from [] to [en-US]
+--------- beginning of system
+         1789439047.635   681  1945 I ActivityManager: Force stopping com.catering.v2s.terminal.samplewallpaper appid=10214 user=0: from pid 9000
+         1789439047.636  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410bce38) locale list changing from [] to [en-US]
+         1789439047.641   681   814 I system_server: AssetManager2(0xb400007141194838) locale list changing from [] to [en-US]
+         1789439047.641   681  1035 I AppWidgetServiceImpl: Received broadcast: android.intent.action.PACKAGE_RESTARTED on user 0
+         1789439047.641   681  1035 I AppWidgetServiceImpl: Updating package stopped masked state for uid 10214 package com.catering.v2s.terminal.samplewallpaper isStopped true
+         1789439047.641  1263  1263 D CarrierSvcBindHelper: onHandleForceStop: [com.catering.v2s.terminal.samplewallpaper]
+         1789439047.641  1263  1263 D CarrierSvcBindHelper: No carrier app for: 0
+         1789439047.642  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c8058) locale list changing from [] to [en-US]
+         1789439047.642   681   814 I system_server: AssetManager2(0xb400007141128818) locale list changing from [] to [en-US]
+         1789439047.646  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d54d8) locale list changing from [] to [en-US]
+         1789439047.648  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410bed78) locale list changing from [] to [en-US]
+         1789439047.652  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410dd1d8) locale list changing from [] to [en-US]
+         1789439047.653  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cc838) locale list changing from [] to [en-US]
+         1789439047.655  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410a7358) locale list changing from [] to [en-US]
+         1789439047.656  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c5ad8) locale list changing from [] to [en-US]
+         1789439047.657  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410daf78) locale list changing from [] to [en-US]
+         1789439047.657  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d0398) locale list changing from [] to [en-US]
+         1789439047.659  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cb578) locale list changing from [] to [en-US]
+         1789439047.659  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d06b8) locale list changing from [] to [en-US]
+         1789439047.661  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c0998) locale list changing from [] to [en-US]
+         1789439047.662  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b8658) locale list changing from [] to [en-US]
+         1789439047.663  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d1fb8) locale list changing from [] to [en-US]
+         1789439047.663  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c89b8) locale list changing from [] to [en-US]
+         1789439047.664  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410bf098) locale list changing from [] to [en-US]
+         1789439047.666   681  2201 I ActivityManager: Force stopping com.catering.v2s.terminal.samplewallpaper appid=10214 user=0: clear data
+         1789439047.668   681   740 E AppOps  : package pm not found, can't check for attributionTag null
+         1789439047.668   681   740 E AppOps  : Bad call made by uid 1000. Package "pm" does not belong to uid 1000.
+         1789439047.668   681   740 E AppOps  : Cannot noteOperation: non-application UID 1000
+         1789439047.668   681   740 I ActivityManager: Force stopping com.catering.v2s.terminal.samplewallpaper appid=10214 user=-1: clearApplicationUserData
+         1789439047.668   681  2722 E TaskPersister: File error accessing recents directory (directory doesn't exist?).
+         1789439047.670  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c1c58) locale list changing from [] to [en-US]
+         1789439047.671   248   262 I keystore2: system/security/keystore2/src/maintenance.rs:607 - clearNamespace(r#APP, nspace=10214)
+         1789439047.672  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d6478) locale list changing from [] to [en-US]
+         1789439047.673  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d25f8) locale list changing from [] to [en-US]
+         1789439047.675   681  1035 I AppWidgetServiceImpl: Received broadcast: android.intent.action.PACKAGE_DATA_CLEARED on user 0
+         1789439047.675   681  1035 I AppWidgetServiceImpl: Received broadcast: android.intent.action.PACKAGE_RESTARTED on user 0
+         1789439047.675   681  1035 I AppWidgetServiceImpl: Updating package stopped masked state for uid 10214 package com.catering.v2s.terminal.samplewallpaper isStopped true
+         1789439047.675   681  1052 D ShortcutService: received package broadcast intent: Intent { act=android.intent.action.PACKAGE_DATA_CLEARED dat=package: flg=0x5000010 (has extras) }
+         1789439047.675   681  1052 D ShortcutService: clearing data for package: com.catering.v2s.terminal.samplewallpaper userId=0
+         1789439047.676  1263  1263 D CarrierSvcBindHelper: onHandleForceStop: [com.catering.v2s.terminal.samplewallpaper]
+         1789439047.676  1263  1263 D CarrierSvcBindHelper: No carrier app for: 0
+         1789439047.678  2626  2626 D ActivityThread: Package [com.catering.v2s.terminal.samplewallpaper] reported as REPLACED, but missing application info. Assuming REMOVED.
+         1789439047.678   681   715 D ActivityManager: sync unfroze 2626 com.google.android.documentsui for 3
+         1789439047.683  1714  1714 W MediaProvider: WorkProfileOwnerApps cache is empty
+         1789439047.683  1714  1714 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@ec68c1f[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+         1789439047.683  1714  1714 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@ec68c1f[Locked by thread main]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+         1789439047.683  1714  1714 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@ec68c1f[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+         1789439047.684   681   715 D ActivityManager: sync unfroze 7268 com.android.chrome for 3
+         1789439047.685   681  1203 W JobInfo : Job 'com.google.android.providers.media.module/com.android.providers.media.MediaService#-300' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+         1789439047.686  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c7d38) locale list changing from [] to [en-US]
+         1789439047.692  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d9678) locale list changing from [] to [en-US]
+         1789439047.694  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c2bf8) locale list changing from [] to [en-US]
+         1789439047.695  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cd4b8) locale list changing from [] to [en-US]
+         1789439047.696   681   701 D SafetySourceDataValidat: No cert check requested for package com.google.android.permissioncontroller
+         1789439047.696  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b4af8) locale list changing from [] to [en-US]
+         1789439047.698  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b5138) locale list changing from [] to [en-US]
+         1789439047.698  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410bb218) locale list changing from [] to [en-US]
+         1789439047.699  7268  7268 D ActivityThread: Package [com.catering.v2s.terminal.samplewallpaper] reported as REPLACED, but missing application info. Assuming REMOVED.
+         1789439047.700  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410af698) locale list changing from [] to [en-US]
+         1789439047.701  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c3238) locale list changing from [] to [en-US]
+         1789439047.701  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c2f18) locale list changing from [] to [en-US]
+         1789439047.702  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c25b8) locale list changing from [] to [en-US]
+         1789439047.703  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c8378) locale list changing from [] to [en-US]
+         1789439047.703  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410bfd18) locale list changing from [] to [en-US]
+         1789439047.704  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d9038) locale list changing from [] to [en-US]
+         1789439047.705   681  1207 W ActivityTaskManager: callingPackage for (uid=2000, pid=9015) has no WPC
+         1789439047.706   681  1945 D ActivityManager: sync unfroze 1608 com.google.android.gms for 6
+         1789439047.706   681  1207 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10214, packageName = null, attributionTag = null, token = android.os.Binder@8503600, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+         1789439047.706   681  1207 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE
+         1789439047.706   681  1207 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE
+         1789439047.706   681  1207 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES
+         1789439047.706   681  1207 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE
+         1789439047.714   528   566 I BpBinder: onLastStrongRef automatically unlinking death recipients: 
+         1789439047.714  1092  1092 D PersistedStoragePackageUninstalledReceiver: Received android.intent.action.PACKAGE_DATA_CLEARED for com.catering.v2s.terminal.samplewallpaper for u0
+         1789439047.716   681  1207 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_ORIENTATION_OVERRIDE
+         1789439047.716  1714  2172 I MediaProvider: Begin Intent { act=android.intent.action.PACKAGE_DATA_CLEARED dat=package: flg=0x5000010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService (has extras) }
+         1789439047.716  1714  2172 D MediaProvider: Deleted 0 Android/media items belonging to com.catering.v2s.terminal.samplewallpaper on /data/user/0/com.google.android.providers.media.module/databases/external.db
+         1789439047.717  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410ba8b8) locale list changing from [] to [en-US]
+         1789439047.717  1714  2172 I FuseDaemon: Successfully deleted rows in leveldb for owner_id:  and ownerPackageIdentifier: com.catering.v2s.terminal.samplewallpaper::0
+         1789439047.718  1714  2172 D MediaGrants: Removed 0 media_grants for 0 user for [com.catering.v2s.terminal.samplewallpaper, com.catering.v2s.terminal.samplewallpaper]. Reason: Package orphaned
+         1789439047.718  1714  2172 I MediaProvider: End Intent { act=android.intent.action.PACKAGE_DATA_CLEARED dat=package: flg=0x5000010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService (has extras) }
+         1789439047.718  1608  1608 D ActivityThread: Package [com.catering.v2s.terminal.samplewallpaper] reported as REPLACED, but missing application info. Assuming REMOVED.
+         1789439047.719  1091  1238 I ndroid.systemui: AssetManager2(0xb4000071410fd258) locale list changing from [] to [en-US]
+         1789439047.719   681  1211 D CompatChangeReporter: Compat change id reported: 377864165; UID 10214; state: ENABLED
+         1789439047.720  1091  1201 V WindowManagerShell: Transition requested (#206): android.os.BinderProxy@83eb3df TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=103 effectiveUid=10214 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=com.catering.v2s.terminal.samplewallpaper/.MainActivity } baseActivity=ComponentInfo{com.catering.v2s.terminal.samplewallpaper/com.catering.v2s.terminal.samplewallpaper.MainActivity} topActivity=ComponentInfo{com.catering.v2s.terminal.samplewallpaper/com.catering.v2s.terminal.samplewallpaper.MainActivity} origActivity=null realActivity=ComponentInfo{com.catering.v2s.terminal.samplewallpaper/com.catering.v2s.terminal.samplewallpaper.MainActivity} numActivities=1 lastActiveTime=167225686 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@afab82c} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 0 - 0, 0) topActivityInfo=ActivityInfo{ee602f5 com.catering.v2s.terminal.samplewallpaper.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=false lastNonFullscreenBounds=Rect(142, 280 - 579, 1000) capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=-9 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false eligibleForLetterboxEducation= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 720, 1280) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null cameraCompatTaskInfo=CameraCompatTaskInfo { freeformCameraCompatMode=inactive}} topActivityMainWindowFrame=null}, pipChange = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 206 }
+         1789439047.720  1091  1201 D ShellSplitScreen: logExit: no-op, mLoggerSessionId is null
+         1789439047.722   681  1207 I ActivityTaskManager: START u0 {flg=0x10000000 xflg=0x5 cmp=com.catering.v2s.terminal.samplewallpaper/.MainActivity} with LAUNCH_SINGLE_TASK from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+         1789439047.724  1414  1414 W SplitSelectStateCtor: Missing session instanceIds
+         1789439047.724  1414  1414 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+         1789439047.725  1091  1201 D WindowManagerShell: setLauncherKeepClearAreaHeight: visible=false, height=350
+         1789439047.727  1091  1239 W HWUI    : Image decoding logging dropped!
+         1789439047.727   681   709 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10214, packageName = null, attributionTag = null, token = android.os.Binder@8503600, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+         1789439047.727  1091  1239 D SplashScreenView: Build android.window.SplashScreenView{fd9e0c4 V.E...... ......ID 0,0-0,0}
+         1789439047.727  1091  1239 D SplashScreenView: Icon: view: android.widget.ImageView{dd89bad V.ED..... ......I. 0,0-0,0 #1020542 android:id/splashscreen_icon_view} drawable: com.android.wm.shell.startingsurface.SplashscreenIconDrawableFactory$ImmobileIconDrawable@9772ee2 size: 384
+         1789439047.727  1091  1239 D SplashScreenView: Branding: view: android.view.View{cd40273 G.ED..... ......I. 0,0-0,0 #1020541 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+         1789439047.731   528   528 I BpBinder: onLastStrongRef automatically unlinking death recipients: 
+         1789439047.733   681   701 D CoreBackPreview: Window{5763e2b u0 Splash Screen com.catering.v2s.terminal.samplewallpaper}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@b189207, mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}
+         1789439047.733  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c0678) locale list changing from [] to [en-US]
+         1789439047.736   460   460 D Zygote  : Forked child process 9019
+         1789439047.736   681   716 I ActivityManager: Start proc 9019:com.catering.v2s.terminal.samplewallpaper/u0a214 for next-top-activity {com.catering.v2s.terminal.samplewallpaper/com.catering.v2s.terminal.samplewallpaper.MainActivity}
+         1789439047.736   681   716 I ActivityManager: ProcessObserver broadcast disabled
+         1789439047.737  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410bf9f8) locale list changing from [] to [en-US]
+         1789439047.738   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789439047.739  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d7a58) locale list changing from [] to [en-US]
+         1789439047.740   681  1035 I AppWidgetServiceImpl: Received broadcast: android.intent.action.PACKAGE_UNSTOPPED on user 0
+         1789439047.740   681  1035 I AppWidgetServiceImpl: Updating package stopped masked state for uid 10214 package com.catering.v2s.terminal.samplewallpaper isStopped false
+         1789439047.741  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410baef8) locale list changing from [] to [en-US]
+         1789439047.741  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d6158) locale list changing from [] to [en-US]
+         1789439047.742  9019  9019 I samplewallpaper: Using CollectorTypeCMC GC.
+         1789439047.742  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d70f8) locale list changing from [] to [en-US]
+         1789439047.744  9019  9019 E samplewallpaper: Not starting debugger since process cannot load the jdwp agent.
+         1789439047.744  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410dd818) locale list changing from [] to [en-US]
+         1789439047.745  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d9358) locale list changing from [] to [en-US]
+         1789439047.745  9019  9019 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+         1789439047.746  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d7418) locale list changing from [] to [en-US]
+         1789439047.747  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c3eb8) locale list changing from [] to [en-US]
+         1789439047.749  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b9918) locale list changing from [] to [en-US]
+         1789439047.751  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d89f8) locale list changing from [] to [en-US]
+         1789439047.751  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b7cf8) locale list changing from [] to [en-US]
+         1789439047.751  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b63f8) locale list changing from [] to [en-US]
+         1789439047.753  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b6a38) locale list changing from [] to [en-US]
+         1789439047.753  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b3b58) locale list changing from [] to [en-US]
+         1789439047.754  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410bcb18) locale list changing from [] to [en-US]
+         1789439047.754  1608  9022 I Blockstore: [PackageIntentOperation] Checking IS_RESTORE extra. [CONTEXT service_id=258 ]
+         1789439047.755  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c12f8) locale list changing from [] to [en-US]
+         1789439047.756  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410ce778) locale list changing from [] to [en-US]
+         1789439047.757  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cdaf8) locale list changing from [] to [en-US]
+         1789439047.758   681   706 V WindowManager: Sent Transition (#206) createdAt=09-15 11:24:07.706 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=103 effectiveUid=10214 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=com.catering.v2s.terminal.samplewallpaper/.MainActivity } baseActivity=ComponentInfo{com.catering.v2s.terminal.samplewallpaper/com.catering.v2s.terminal.samplewallpaper.MainActivity} topActivity=ComponentInfo{com.catering.v2s.terminal.samplewallpaper/com.catering.v2s.terminal.samplewallpaper.MainActivity} origActivity=null realActivity=ComponentInfo{com.catering.v2s.terminal.samplewallpaper/com.catering.v2s.terminal.samplewallpaper.MainActivity} numActivities=1 lastActiveTime=167225686 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{8f8ddb8 Task{ebf0bb3 #103 type=standard A=10214:com.catering.v2s.terminal.samplewallpaper}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 0 - 0, 0) topActivityInfo=ActivityInfo{9d4a791 com.catering.v2s.terminal.samplewallpaper.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=false lastNonFullscreenBounds=Rect(142, 280 - 579, 1000) capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=-9 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false eligibleForLetterboxEducation= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 720, 1280) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null cameraCompatTaskInfo=CameraCompatTaskInfo { freeformCameraCompatMode=inactive}} topActivityMainWindowFrame=null}, pipChange = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 206 }
+         1789439047.758   681   706 V WindowManager:     startWCT=WindowContainerTransaction { changes= {} hops= [] errorCallbackToken=null taskFragmentOrganizer=null }
+         1789439047.758   681   706 V WindowManager:     info={id=206 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[
+         1789439047.758   681   706 V WindowManager:         {WCT{RemoteToken{8f8ddb8 Task{ebf0bb3 #103 type=standard A=10214:com.catering.v2s.terminal.samplewallpaper}}} m=OPEN f=NONE leash=Surface(name=Task=103)/@0x9d1a22a sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},
+         1789439047.758   681   706 V WindowManager:         {WCT{RemoteToken{10fdbd2 Task{fa2d952 #1 type=home}}} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0xd911921 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},
+         1789439047.758   681   706 V WindowManager:         {m=TO_BACK f=IS_WALLPAPER leash=Surface(name=WallpaperWindowToken{e7f8052 showWhenLocked=false})/@0xfdfe7cc sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0}
+         1789439047.758   681   706 V WindowManager:     ]}
+         1789439047.760  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d3598) locale list changing from [] to [en-US]
+         1789439047.760   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789439047.761  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b7398) locale list changing from [] to [en-US]
+         1789439047.763  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cac18) locale list changing from [] to [en-US]
+         1789439047.763   681  1001 D WifiClientModeImpl[19543:wlan0]: updateLinkLayerStatsRssiSpeedFrequencyCapabilities rssi=-50 TxLinkspeed=1 freq=2447 RxLinkSpeed=2
+         1789439047.763   681  1001 D WifiDataStall: tx tput in kbps: 11000
+         1789439047.763   681  1001 D WifiDataStall: rx tput in kbps: 11000
+         1789439047.763   681  1001 V WifiConfigManager: Updating scan detail cache freq=2447 BSSID=00:13:10:85:fe:01 RSSI=-50 for "AndroidWifi"NONE
+         1789439047.763   681  1001 D WifiThroughputPredictor:  utilization (LLS) 80 isBluetoothConnected: false final utilization: 80
+         1789439047.763   681  1001 D WifiThroughputPredictor:  BW: 0 RSSI: -50 Nss: 1 Mode: 1 symDur: 4000 snrDb 30 bitPerTone: 4500 rate: 54 throughput: 11
+         1789439047.763   681  1001 D WifiThroughputPredictor:  utilization (LLS) 80 isBluetoothConnected: false final utilization: 80
+         1789439047.763   681  1001 D WifiThroughputPredictor:  BW: 0 RSSI: -50 Nss: 1 Mode: 1 symDur: 4000 snrDb 30 bitPerTone: 4500 rate: 54 throughput: 11
+         1789439047.764   681  1001 D WifiThroughputPredictor:  utilization (LLS) 80 isBluetoothConnected: false final utilization: 80
+         1789439047.764   681  1001 D WifiThroughputPredictor:  BW: 0 RSSI: -50 Nss: 1 Mode: 1 symDur: 4000 snrDb 30 bitPerTone: 4500 rate: 54 throughput: 11
+         1789439047.764   681  1001 D WifiThroughputPredictor:  utilization (LLS) 80 isBluetoothConnected: false final utilization: 80
+         1789439047.764   681  1001 D WifiThroughputPredictor:  BW: 0 RSSI: -50 Nss: 1 Mode: 1 symDur: 4000 snrDb 30 bitPerTone: 4500 rate: 54 throughput: 11
+         1789439047.764   681  1001 D WifiScoreCard: BSSID update SIGNAL_POLL ID: 267711513 SSID: "AndroidWifi", BSSID: 00:13:10:85:fe:01, MAC: 02:15:b4:00:00:00, IP: /10.0.2.16, Security type: 0, Supplicant state: COMPLETED, Wi-Fi standard: legacy, RSSI: -50, Link speed: 1Mbps, Tx Link speed: 1Mbps, Max Supported Tx Link speed: 11Mbps, Rx Link speed: 2Mbps, Max Supported Rx Link speed: 11Mbps, Frequency: 2447MHz, Net ID: 0, Metered hint: false, score: 60, isUsable: true, CarrierMerged: false, SubscriptionId: -1, IsPrimary: 1, Trusted: true, Restricted: false, Ephemeral: false, OEM paid: false, OEM private: false, OSU AP: false, FQDN: <none>, Provider friendly name: <none>, Requesting package name: <none>"AndroidWifi"openMLO Information: , Is TID-To-Link negotiation supported by the AP: false, AP MLD Address: <none>, AP MLO Link Id: <none>, AP MLO Affiliated links: <none>, Vendor Data: <none>
+         1789439047.764   681  1001 D WifiScoreCard: txRate: 1 txSpeed: 1
+         1789439047.764   681  1001 D WifiScoreCard: network update SIGNAL_POLL "AndroidWifi" ID: 1779565205 RSSI -50 txSpeed -1
+         1789439047.764   681  1001 D WifiClientModeImpl[19543:wlan0]:  ClientModeImpl$L2ConnectedState screen=on 1 0 "AndroidWifi" 00:13:10:85:fe:01 rssi=-50 f=2447 sc=60 link=1 tx=0.0, 0.0, 0.0 rx=0.0 bcn=0 [on:0 tx:0 rx:0 period:3006] from screen [on:0 period:-1562314668] score=60
+         1789439047.766  9019  9019 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+         1789439047.766  9019  9019 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.sidecar.jar
+         1789439047.767  9019  9019 D nativeloader: Configuring clns-9 for other apk /data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/lib/arm64:/data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.catering.v2s.terminal.samplewallpaper
+         1789439047.769  9019  9019 I samplewallpaper: AssetManager2(0xb4000071410a8618) locale list changing from [] to [en-US]
+         1789439047.770  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410a9298) locale list changing from [] to [en-US]
+         1789439047.771  1457  9020 I Fitness : FitCleanupIntentOperation received Intent android.intent.action.PACKAGE_DATA_CLEARED [CONTEXT service_id=17 ]
+         1789439047.773  1091  1406 V WindowManagerShell: onTransitionReady(transaction=2924872749849)
+         1789439047.773  9019  9019 V GraphicsEnvironment: Currently set values for:
+         1789439047.773  9019  9019 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[]
+         1789439047.773  9019  9019 V GraphicsEnvironment:   angle_gl_driver_selection_values=[]
+         1789439047.773  9019  9019 V GraphicsEnvironment: com.catering.v2s.terminal.samplewallpaper is not listed in per-application setting
+         1789439047.773  9019  9019 V GraphicsEnvironment: ANGLE allowlist from config: com.dreamgames.royalmatch com.dts.freefiremax com.dxx.firenow com.gramgames.mergedragons com.ludo.king com.mojang.minecraftpe com.my.defense com.nintendo.zaka com.os.airforce com.playrix.fishdomdd.gplay io.teslatech.callbreak jp.konami.prospia net.peakgames.toonblast
+         1789439047.773  9019  9019 V GraphicsEnvironment: com.catering.v2s.terminal.samplewallpaper is not listed in ANGLE allowlist or settings, returning default
+         1789439047.773  9019  9019 V GraphicsEnvironment: Neither updatable production driver nor prerelease driver is supported.
+         1789439047.778  1091  1201 V WindowManagerShell: onTransitionReady (#206) android.os.BinderProxy@83eb3df: {id=206 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[
+         1789439047.778  1091  1201 V WindowManagerShell:         {m=OPEN f=NONE leash=Surface(name=Task=103)/@0x8ca00e1 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},
+         1789439047.778  1091  1201 V WindowManagerShell:         {m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x94d1e06 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},
+         1789439047.778  1091  1201 V WindowManagerShell:         {m=TO_BACK f=IS_WALLPAPER leash=Surface(name=WallpaperWindowToken{e7f8052 showWhenLocked=false})/@0x39fccc7 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0}
+         1789439047.778  1091  1201 V WindowManagerShell:     ]}
+         1789439047.778  1091  1201 V WindowManagerShell: Playing animation for (#206) android.os.BinderProxy@83eb3df@0
+         1789439047.778  1091  1201 V ShellRecents: RecentsTransitionHandler.startAnimation: no controller found
+         1789439047.778  1091  1201 V WindowManagerShell: Transition doesn't have explicit remote, search filters for match for {id=206 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=OPEN f=NONE leash=Surface(name=Task=103)/@0x8ca00e1 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},{m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x94d1e06 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},{m=TO_BACK f=IS_WALLPAPER leash=Surface(name=WallpaperWindowToken{e7f8052 showWhenLocked=false})/@0x39fccc7 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0}]}
+         1789439047.778  1091  1201 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=undefined independent=true modes=[CLOSE,TO_BACK] flags=IN_TASK_WITH_EMBEDDED_ACTIVITY mustBeTask=false order=ANY topActivity=null launchCookie=null taskFragmentToken=android.os.BinderProxy@d60f29a windowingMode=undefined}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@94e67cb, appThread = android.app.IApplicationThread$Stub$Proxy@c043ba8, debugName = overlayBackTransition }}
+         1789439047.778  1091  1201 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=dream independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null windowingMode=undefined},{atype=home independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null windowingMode=undefined}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@3eac6c1, appThread = android.app.IApplicationThread$Stub$Proxy@dcb9e66, debugName = LauncherToDream }}
+         1789439047.778  1091  1201 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity} launchCookie=null windowingMode=undefined},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null windowingMode=undefined},{NOT atype=undefined independent=true modes=[] flags=NONE mustBeTask=true order=ANY topActivity=null launchCookie=null customAnim=true windowingMode=undefined}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@2d9b5a7, appThread = android.app.IApplicationThread$Stub$Proxy@2356a54, debugName = QuickstepLaunchHome }}
+         1789439047.778  1091  1201 V WindowManagerShell:  Delegate animation for (#206) to null
+         1789439047.778  1091  1201 V WindowManagerShell: start default transition animation, info = {id=206 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=OPEN f=NONE leash=Surface(name=Task=103)/@0x8ca00e1 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},{m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x94d1e06 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},{m=TO_BACK f=IS_WALLPAPER leash=Surface(name=WallpaperWindowToken{e7f8052 showWhenLocked=false})/@0x39fccc7 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0}]}
+         1789439047.778  1091  1201 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@584ca1d animAttr=0x13 type=OPEN isEntrance=false
+         1789439047.778  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b3838) locale list changing from [] to [en-US]
+         1789439047.784  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d1338) locale list changing from [] to [en-US]
+         1789439047.786  1751  2136 I AssistantForeground: (REDACTED) Get launcher package: %s
+         1789439047.788  9019  9019 W SoLoader: Initializing SoLoader: 0
+         1789439047.788  9019  9019 W SoLoader: Recording new base apk path: /data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk
+         1789439047.788  9019  9019 W SoLoader: Previously recorded 0 base apk paths.
+         1789439047.789  9019  9019 I SoLoader: Preparing SO source: DirectorySoSource[root = /vendor/lib64 flags = 2]
+         1789439047.789  9019  9019 I SoLoader: Preparing SO source: DirectorySoSource[root = /system/lib64 flags = 2]
+         1789439047.789  9019  9019 I SoLoader: Preparing SO source: DirectApkSoSource[root = [/data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk!/lib/arm64-v8a]]
+         1789439047.791  9019  9019 I SoLoader: Preparing SO source: ApplicationSoSource[DirectorySoSource[root = /data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/lib/arm64 flags = 0]]
+         1789439047.791  9019  9019 I SoLoader: init finish: 4 SO sources prepared
+         1789439047.791  9019  9019 W SoLoader: SoLoader initialized: 8
+         1789439047.793  1091  1201 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@728eb19 animAttr=0x12 type=OPEN isEntrance=true
+         1789439047.793  1091  1201 V WindowManagerShell:  animated by com.android.wm.shell.transition.DefaultTransitionHandler@fa3bab9
+         1789439047.794  9019  9019 D nativeloader: Load /data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk!/lib/arm64-v8a/libc++_shared.so using class loader ns clns-9 (caller=/data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk): ok
+         1789439047.795  9019  9019 D nativeloader: Load /data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk!/lib/arm64-v8a/libjsi.so using class loader ns clns-9 (caller=/data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk): ok
+         1789439047.795  1608  9033 I Auth    : [SupervisedAccountIntentOperationV2] onHandleIntent: android.intent.action.PACKAGE_ADDED [CONTEXT service_id=42 ]
+         1789439047.796  9019  9019 D nativeloader: Load /data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk!/lib/arm64-v8a/libfbjni.so using class loader ns clns-9 (caller=/data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk): ok
+         1789439047.798  1608  8528 I Icing   : doRemovePackageData com.catering.v2s.terminal.samplewallpaper
+         1789439047.799  9019  9019 D nativeloader: Load /data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk!/lib/arm64-v8a/libreactnative.so using class loader ns clns-9 (caller=/data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk): ok
+         1789439047.799  9019  9019 D jni_lib_merge: Entering merged library JNI_OnLoad.
+         1789439047.799  9019  9019 D jni_lib_merge: Preparing 13 pre-merged libs (including stub)
+         1789439047.799  9019  9019 D jni_lib_merge: Preparing to register libfabricjni_so.  onload_func: 0x6f233b95e8
+         1789439047.799  9019  9019 D jni_lib_merge: Preparing to register libreact_devsupportjni_so.  onload_func: 0x6f2348dc4c
+         1789439047.799  9019  9019 D jni_lib_merge: Preparing to register libreact_featureflagsjni_so.  onload_func: 0x6f234aa068
+         1789439047.799  9019  9019 D jni_lib_merge: Preparing to register libreact_newarchdefaults_so.  onload_func: 0x6f234eddd4
+         1789439047.799  9019  9019 D jni_lib_merge: Preparing to register libreact_tracingjni_so.  onload_func: 0x6f235d89c0
+         1789439047.799  9019  9019 D jni_lib_merge: Preparing to register libreactnativeblob_so.  onload_func: 0x6f235ddc54
+         1789439047.799  9019  9019 D jni_lib_merge: Preparing to register libreactnativejni_so.  onload_func: 0x6f235e9c58
+         1789439047.799  9019  9019 D jni_lib_merge: Preparing to register libreactnativejni_common_so.  onload_func: 0x6f235ecb1c
+         1789439047.799  9019  9019 D jni_lib_merge: Preparing to register librninstance_so.  onload_func: 0x6f23612164
+         1789439047.799  9019  9019 D jni_lib_merge: Preparing to register libturbomodulejsijni_so.  onload_func: 0x6f236bd580
+         1789439047.799  9019  9019 D jni_lib_merge: Preparing to register libuimanagerjni_so.  onload_func: 0x6f236c3f94
+         1789439047.799  9019  9019 D jni_lib_merge: Preparing to register libyoga_so.  onload_func: 0x6f236cb56c
+         1789439047.799  9019  9019 D jni_lib_merge: About to register 12 actual methods.
+         1789439047.804  9019  9019 D nativeloader: Load /data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk!/lib/arm64-v8a/libreact_codegen_rnsvg.so using class loader ns clns-9 (caller=/data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk): ok
+         1789439047.805  9019  9019 D jni_lib_merge: Entering merged library JNI_OnLoad.
+         1789439047.805  9019  9019 D jni_lib_merge: Preparing 13 pre-merged libs (including stub)
+         1789439047.805  9019  9019 D jni_lib_merge: Preparing to register libfabricjni_so.  onload_func: 0x6f233b95e8
+         1789439047.805  9019  9019 D jni_lib_merge: Preparing to register libreact_devsupportjni_so.  onload_func: 0x6f2348dc4c
+         1789439047.805  9019  9019 D jni_lib_merge: Preparing to register libreact_featureflagsjni_so.  onload_func: 0x6f234aa068
+         1789439047.805  9019  9019 D jni_lib_merge: Preparing to register libreact_newarchdefaults_so.  onload_func: 0x6f234eddd4
+         1789439047.805  9019  9019 D jni_lib_merge: Preparing to register libreact_tracingjni_so.  onload_func: 0x6f235d89c0
+         1789439047.805  9019  9019 D jni_lib_merge: Preparing to register libreactnativeblob_so.  onload_func: 0x6f235ddc54
+         1789439047.805  9019  9019 D jni_lib_merge: Preparing to register libreactnativejni_so.  onload_func: 0x6f235e9c58
+         1789439047.805  9019  9019 D jni_lib_merge: Preparing to register libreactnativejni_common_so.  onload_func: 0x6f235ecb1c
+         1789439047.805  9019  9019 D jni_lib_merge: Preparing to register librninstance_so.  onload_func: 0x6f23612164
+         1789439047.805  9019  9019 D jni_lib_merge: Preparing to register libturbomodulejsijni_so.  onload_func: 0x6f236bd580
+         1789439047.805  9019  9019 D jni_lib_merge: Preparing to register libuimanagerjni_so.  onload_func: 0x6f236c3f94
+         1789439047.805  9019  9019 D jni_lib_merge: Preparing to register libyoga_so.  onload_func: 0x6f236cb56c
+         1789439047.805  9019  9019 D jni_lib_merge: About to register 12 actual methods.
+         1789439047.805  9019  9019 D nativeloader: Load /data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk!/lib/arm64-v8a/libappmodules.so using class loader ns clns-9 (caller=/data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk): ok
+         1789439047.810  1457  9026 I Fitness : FitCleanupIntentOperation received Intent android.intent.action.PACKAGE_REMOVED [CONTEXT service_id=17 ]
+         1789439047.810  1457  9026 I ProximityAuth: [RecentAppsMediator] Package added: (user=UserHandle{0}) com.catering.v2s.terminal.samplewallpaper
+         1789439047.810  1608  8725 I gle.android.gms: AssetManager2(0xb4000071410f0418) locale list changing from [] to [en-US]
+         1789439047.811  1457  9026 I .gms.persistent: AssetManager2(0xb4000071410c8cd8) locale list changing from [] to [en-US]
+         1789439047.813   681  2208 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ENABLE_FAKE_FOCUS
+         1789439047.815  1751  1751 I fiis    : (REDACTED) O received %s
+         1789439047.817  9019  9060 I DisplayManager: Choreographer implicitly registered for the refresh rate.
+         1789439047.819  9019  9019 I samplewallpaper: AssetManager2(0xb4000071410ad758) locale list changing from [] to [en-US]
+         1789439047.822   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789439047.822   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789439047.824  9019  9019 D AppCompatDelegate: Checking for metadata for AppLocalesMetadataHolderService : Service not found
+         1789439047.824  9019  9019 I samplewallpaper: AssetManager2(0xb4000071410af698) locale list changing from [] to [en-US]
+         1789439047.824  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c28d8) locale list changing from [] to [en-US]
+         1789439047.825  1751  1751 I fiis    : (REDACTED) O received %s
+         1789439047.827  1751  2119 W ejzw    : Failed to notify listeners
+         1789439047.827  1751  2119 W ejzw    : java.util.concurrent.CancellationException
+         1789439047.827  1751  2119 W ejzw    : 	at java.util.concurrent.FutureTask.report(FutureTask.java:121)
+         1789439047.827  1751  2119 W ejzw    : 	at java.util.concurrent.FutureTask.get(FutureTask.java:191)
+         1789439047.827  1751  2119 W ejzw    : 	at fvgs.get(PG:1)
+         1789439047.827  1751  2119 W ejzw    : 	at b.cc(PG:2)
+         1789439047.827  1751  2119 W ejzw    : 	at fvip.y(PG:10)
+         1789439047.827  1751  2119 W ejzw    : 	at fvgx.run(PG:23)
+         1789439047.827  1751  2119 W ejzw    : 	at fvgd.execute(PG:1)
+         1789439047.827  1751  2119 W ejzw    : 	at fvgh.c(PG:1)
+         1789439047.827  1751  2119 W ejzw    : 	at fvgh.b(PG:32)
+         1789439047.827  1751  2119 W ejzw    : 	at fvhr.done(PG:3)
+         1789439047.827  1751  2119 W ejzw    : 	at java.util.concurrent.FutureTask.finishCompletion(FutureTask.java:434)
+         1789439047.827  1751  2119 W ejzw    : 	at java.util.concurrent.FutureTask.cancel(FutureTask.java:179)
+         1789439047.827  1751  2119 W ejzw    : 	at fvgs.cancel(PG:5)
+         1789439047.827  1751  2119 W ejzw    : 	at ejzp.run(PG:14)
+         1789439047.827  1751  2119 W ejzw    : 	at fkqv.run(PG:24)
+         1789439047.827  1751  2119 W ejzw    : 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:524)
+         1789439047.827  1751  2119 W ejzw    : 	at fvim.a(PG:3)
+         1789439047.827  1751  2119 W ejzw    : 	at fvho.run(PG:19)
+         1789439047.827  1751  2119 W ejzw    : 	at fvin.run(PG:5)
+         1789439047.827  1751  2119 W ejzw    : 	at dpnc.run(PG:7)
+         1789439047.827  1751  2119 W ejzw    : 	at ftuu.run(PG:44)
+         1789439047.827  1751  2119 W ejzw    : 	at dpmt.run(PG:42)
+         1789439047.827  1751  2119 W ejzw    : 	at java.lang.Thread.run(Thread.java:1119)
+         1789439047.827  1751  2119 W ejzw    : 	at dpof.run(PG:62)
+         1789439047.828  1751  1751 I fiis    : (REDACTED) O received %s
+         1789439047.829  9019  9019 E ashmem  : Pinning is deprecated since Android Q. Please use trim or other methods.
+         1789439047.834  1608  9039 W SQLiteLog: (28) double-quoted string literal: "com.catering.v2s.terminal.samplewallpaper"
+         1789439047.834  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c6758) locale list changing from [] to [en-US]
+         1789439047.835  1608  2529 I Icing   : IndexChimeraService.getServiceInterface callingPackage=com.google.android.gms componentName=AppsCorpus serviceId=36
+         1789439047.836  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410cf3f8) locale list changing from [] to [en-US]
+         1789439047.837  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b0638) locale list changing from [] to [en-US]
+         1789439047.838  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b3b58) locale list changing from [] to [en-US]
+         1789439047.839  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b79d8) locale list changing from [] to [en-US]
+         1789439047.840  9019  9019 D CompatChangeReporter: Compat change id reported: 377864165; UID 10214; state: ENABLED
+         1789439047.841  9019  9019 D DesktopModeFlags: Toggle override initialized to: OVERRIDE_UNSET
+         1789439047.842   681  2208 D ActivityManager: sync unfroze 32241 com.google.android.googlequicksearchbox:search for 6
+         1789439047.845   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789439047.850 32241 32241 D ActivityThread: Package [com.catering.v2s.terminal.samplewallpaper] reported as REPLACED, but missing application info. Assuming REMOVED.
+         1789439047.850  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b4198) locale list changing from [] to [en-US]
+         1789439047.851   681  2208 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_IGNORE_REQUESTED_ORIENTATION
+         1789439047.851   681  2208 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED
+         1789439047.851  9019  9019 I TerminalDualScreen: event=surface-form-decision surfaceForm=mobile smallestScreenWidthDp=360 thresholdDp=581 source=configuration.smallestScreenWidthDp diagnostic=none
+         1789439047.851  9019  9019 I TerminalDualScreen: event=display-snapshot-entry displayIndex=0 displayId=0 name=Built-in_Screen state=2 flags=16515 rotation=0 refreshRate=60.000004 appWidthPx=720 appHeightPx=1280 appDensityDpi=320 appDensity=2.0 appScaledDensity=2.0 appXdpi=320.0 appYdpi=320.0 realWidthPx=720 realHeightPx=1280 modeWidthPx=720 modeHeightPx=1280
+         1789439047.851  9019  9019 I TerminalDualScreen: event=display-snapshot-read displayCount=1 secondaryDisplayId=none
+         1789439047.854  9019  9019 I TerminalDualScreen: event=primary-activity-configuration displayIndex=0 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=360 screenHeightDp=640 smallestWidthDp=360 orientation=1 resourceWidthPx=720 resourceHeightPx=1280
+         1789439047.854  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b2ed8) locale list changing from [] to [en-US]
+         1789439047.855  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b6a38) locale list changing from [] to [en-US]
+         1789439047.856  1608  1608 D BoundBrokerSvc: onBind: Intent { act=com.google.android.gms.feedback.internal.IFeedbackService dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+         1789439047.856  1608  1608 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.gms.feedback.internal.IFeedbackService dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+         1789439047.857  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d89f8) locale list changing from [] to [en-US]
+         1789439047.858  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b7cf8) locale list changing from [] to [en-US]
+         1789439047.859  9019  9019 W unknown:BridgelessReact: ReactHost{0}.startSurface(surfaceId = 0): Schedule
+         1789439047.859  9019  9019 W unknown:BridgelessReact: ReactHost{0}.attachSurface(surfaceId = 0)
+         1789439047.860  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410b9918) locale list changing from [] to [en-US]
+         1789439047.861  9019  9067 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask()
+         1789439047.861  9019  9067 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Start
+         1789439047.861  9019  9067 W unknown:BridgelessReact: ReactHost{0}.getJSBundleLoader()
+         1789439047.861  9019  9067 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Creating BridgelessReactContext
+         1789439047.862  9019  9019 W WindowOnBackDispatcher: OnBackInvokedCallback is not enabled for the application.
+         1789439047.862  9019  9019 W WindowOnBackDispatcher: Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+         1789439047.862  9019  9067 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Creating ReactInstance
+         1789439047.862  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c0cb8) locale list changing from [] to [en-US]
+         1789439047.863  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d7418) locale list changing from [] to [en-US]
+         1789439047.865  9019  9019 W unknown:BridgelessReact: ReactHost{0}.onHostResume(activity)
+         1789439047.865  9019  9019 W unknown:BridgelessReact: ReactHost{0}.ReactContext.onHostResume()
+         1789439047.868  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410c3eb8) locale list changing from [] to [en-US]
+         1789439047.877  9019  9019 W HWUI    : Unknown dataspace 0
+--------- beginning of kernel
+         1789439047.878   222   222 I servicemanager: Caller(pid=9019,uid=10214,sid=u:r:untrusted_app:s0:c214,c256,c512,c768) Found android.hardware.graphics.allocator.IAllocator/default in device VINTF manifest.
+         1789439047.884   222   222 I servicemanager: Caller(pid=9019,uid=10214,sid=u:r:untrusted_app:s0:c214,c256,c512,c768) Found android.hardware.graphics.allocator.IAllocator/default in device VINTF manifest.
+         1789439047.886   222   222 I servicemanager: Caller(pid=9019,uid=10214,sid=u:r:untrusted_app:s0:c214,c256,c512,c768) Found mapper/ranchu in device VINTF manifest.
+         1789439047.894 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439047.900  9019  9067 D nativeloader: Load /data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk!/lib/arm64-v8a/libhermesvm.so using class loader ns clns-9 (caller=/data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk): ok
+         1789439047.901  9019  9067 D nativeloader: Load /data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk!/lib/arm64-v8a/libhermestooling.so using class loader ns clns-9 (caller=/data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk): ok
+         1789439047.901  9019  9067 D jni_lib_merge: Entering merged library JNI_OnLoad.
+         1789439047.901  9019  9067 D jni_lib_merge: Preparing 4 pre-merged libs (including stub)
+         1789439047.901  9019  9067 D jni_lib_merge: Preparing to register libhermes_executor_so.  onload_func: 0x6f81babeec
+         1789439047.901  9019  9067 D jni_lib_merge: Preparing to register libhermesinstancejni_so.  onload_func: 0x6f81bb369c
+         1789439047.901  9019  9067 D jni_lib_merge: Preparing to register libjsijniprofiler_so.  onload_func: 0x6f81bb3f44
+         1789439047.901  9019  9067 D jni_lib_merge: About to register 3 actual methods.
+         1789439047.905 32241 32273 W adua    : Abort, client detached.
+         1789439047.905 32241 32273 W adua    : Abort, client detached.
+         1789439047.905 32241 32273 W adua    : Abort, client detached.
+         1789439047.906 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439047.907 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439047.908  1751  2161 I hbox:interactor: AssetManager2(0xb4000071410ca5d8) locale list changing from [] to [en-US]
+         1789439047.909 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439047.910 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439047.910 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439047.912 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439047.913 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439047.913  9019  9060 I EGL_emulation: Opening libGLESv1_CM_emulation.so
+         1789439047.914  9019  9060 I EGL_emulation: Opening libGLESv2_emulation.so
+         1789439047.917   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789439047.917   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789439047.922  1608  8528 I Icing   : Usage reports ok 1, Failed Usage reports 0, indexed 0, rejected 0
+         1789439047.923 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439047.925  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410dd818) locale list changing from [] to [en-US]
+         1789439047.926  9019  9060 W HWUI    : Failed to choose config with EGL_SWAP_BEHAVIOR_PRESERVED, retrying without...
+         1789439047.926  9019  9060 W HWUI    : Failed to initialize 101010-2 format, error = EGL_SUCCESS
+         1789439047.927 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439047.928  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d6798) locale list changing from [] to [en-US]
+         1789439047.929 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439047.930 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439047.930  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410dbbf8) locale list changing from [] to [en-US]
+         1789439047.930 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439047.932  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d6158) locale list changing from [] to [en-US]
+         1789439047.934  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410baef8) locale list changing from [] to [en-US]
+         1789439047.942 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439047.943  9019  9067 I ExpoModulesCore: ✅ AppContext was initialized
+         1789439047.944  1608  2529 I Icing   : IndexChimeraService.getServiceInterface callingPackage=com.google.android.gms componentName=null serviceId=30
+         1789439047.944  9019  9019 D InsetsController: Setting requestedVisibleTypes to -12 (was -9)
+         1789439047.945  9019  9019 D InsetsController: Setting requestedVisibleTypes to -16 (was -12)
+         1789439047.945   681  1948 W WindowManager: Failed looking up window session=Session{2da2ac7 9019:u0a10214} callers=com.android.server.wm.WindowManagerService.windowForClientLocked:6410 com.android.server.wm.Session.updateRequestedVisibleTypes:700 android.view.IWindowSession$Stub.onTransact:1023 
+         1789439047.945   681  1948 W WindowManager: Failed looking up window session=Session{2da2ac7 9019:u0a10214} callers=com.android.server.wm.WindowManagerService.windowForClientLocked:6410 com.android.server.wm.Session.updateRequestedVisibleTypes:700 android.view.IWindowSession$Stub.onTransact:1023 
+         1789439047.953   681  1211 D CoreBackPreview: Window{5ed28de u0 com.catering.v2s.terminal.samplewallpaper/com.catering.v2s.terminal.samplewallpaper.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@849c3db, mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}
+         1789439047.953  1654  1742 I .apps.wellbeing: AssetManager2(0xb4000071410d9998) locale list changing from [] to [en-US]
+         1789439047.960  9019  9019 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789439047.961  9019  9019 I TerminalDualScreen: event=surface-host-snapshot-ready surfaceKey=PRIMARY generation=1 displayId=0 windowIdentity=primary orientation=portrait stableWidthPx=720 stableHeightPx=1280 currentWidthPx=720 currentHeightPx=1280 stableWidthLogical=360.0 stableHeightLogical=640.0 currentWidthLogical=360.0 currentHeightLogical=640.0 hardwareDensityDpi=320 hardwareDensity=2.0 hardwareScaledDensity=2.0 surfaceDensityDpi=320 surfaceDensity=2.0 source=android-display-context measurementContext=owner-decorView-layout
+         1789439047.961  9019  9019 I TerminalDualScreen: event=primary-window-post-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789439047.965  1608  8528 I Icing   : Usage reports ok 0, Failed Usage reports 0, indexed 0, rejected 0
+         1789439047.966   528  1393 I BpBinder: onLastStrongRef automatically unlinking death recipients: 
+         1789439047.968  9019  9067 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Loading JS Bundle
+         1789439047.969  9019  9067 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): DevSupportManager.onNewReactContextCreated()
+         1789439047.969  9019  9067 W unknown:BridgelessReact: ReactHost{0}.startSurface(surfaceId = 0): Execute
+         1789439047.984  9019  9019 W unknown:BridgelessReact: ReactHost{0}.ReactContext.onHostResume()
+         1789439047.984  9019  9019 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Executing ReactInstanceEventListeners
+         1789439047.992  9019  9068 D nativeloader: Load /data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk!/lib/arm64-v8a/libworklets.so using class loader ns clns-9 (caller=/data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk): ok
+         1789439047.994  9019  9068 D nativeloader: Load /data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk!/lib/arm64-v8a/libexpo-modules-core.so using class loader ns clns-9 (caller=/data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk): ok
+         1789439047.994  9019  9068 W BridgelessReactContext: [WARNING] Bridgeless doesn't support CatalystInstance. Accessing an API that's not part of the new architecture is not encouraged usage.
+         1789439047.998  9019  9068 I ExpoModulesCore: ✅ JSI interop was installed
+         1789439048.001  9019  9068 I ExpoModulesCore: ✅ Constants were exported
+         1789439048.006  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class expo.modules.kotlin.views.GroupViewManagerWrapper
+         1789439048.007  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.uimanager.LayoutShadowNode
+         1789439048.007  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.swmansion.reanimated.view.REASharedTransitionBoundaryManager
+         1789439048.009  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$DefsViewManager
+         1789439048.010  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.VirtualViewManager$RenderableShadowNode
+         1789439048.010  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeMergeManager
+         1789439048.011  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.safeareaview.ReactSafeAreaViewManager
+         1789439048.012  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$LinearGradientManager
+         1789439048.015  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeGaussianBlurManager
+         1789439048.018  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.progressbar.ReactProgressBarViewManager
+         1789439048.018  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.scroll.ReactHorizontalScrollViewManager
+         1789439048.019  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.text.ReactTextViewManager
+         1789439048.020  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeColorMatrixManager
+         1789439048.021  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.scroll.ReactHorizontalScrollContainerViewManager
+         1789439048.021  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$ClipPathViewManager
+         1789439048.022  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$SymbolManager
+         1789439048.022  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$PatternManager
+         1789439048.023  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeBlendManager
+         1789439048.023  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.view.ReactViewManager
+         1789439048.023  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.SvgViewManager
+         1789439048.024  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.switchview.ReactSwitchManager
+         1789439048.024  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$UseViewManager
+         1789439048.025  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$CircleViewManager
+         1789439048.025  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$TSpanViewManager
+         1789439048.026  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FilterManager
+         1789439048.026  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$MarkerManager
+         1789439048.027  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.modal.ReactModalHostManager
+         1789439048.027  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$ForeignObjectManager
+         1789439048.028  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$EllipseViewManager
+         1789439048.028  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$LineViewManager
+         1789439048.029  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeFloodManager
+         1789439048.029  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$GroupViewManager
+         1789439048.030  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$TextViewManager
+         1789439048.030  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$ImageViewManager
+         1789439048.031  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeCompositeManager
+         1789439048.032  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.image.ReactImageManager
+         1789439048.033  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$RadialGradientManager
+         1789439048.034  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$MaskManager
+         1789439048.034  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.unimplementedview.ReactUnimplementedViewManager
+         1789439048.035  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$RectViewManager
+         1789439048.035  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$TextPathViewManager
+         1789439048.036  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.scroll.ReactScrollViewManager
+         1789439048.037  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeOffsetManager
+         1789439048.037  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$PathViewManager
+         1789439048.037  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.drawer.ReactDrawerLayoutManager
+         1789439048.038  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.swiperefresh.SwipeRefreshLayoutManager
+         1789439048.039  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.textinput.ReactTextInputManager
+         1789439048.039  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.text.SelectableTextViewManager
+         1789439048.040  9019  9068 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.virtual.view.ReactVirtualViewManager
+         1789439048.045  9019  9068 I ReactNativeJS: Running "main"
+         1789439048.053  9019  9076 I TerminalDevice: event=device-info-read status=succeeded
+         1789439048.055  9019  9076 D nativeloader: Load /data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk!/lib/arm64-v8a/libmmkv.so using class loader ns clns-9 (caller=/data/app/~~aXAzABFdqz88KTtdehSWuQ==/com.catering.v2s.terminal.samplewallpaper-zTfgcWHTZUJZkBewDj3spA==/base.apk!classes2.dex): ok
+         1789439048.055  9019  9076 I MMKV    : current API level = 36, libc++_shared=0
+         1789439048.055  9019  9076 I MMKV    : <MMKV.cpp:182::initialize> version v2.4.2, page size 4096, arch arm64-v8a
+         1789439048.055  9019  9076 I MMKV    : <MMKV.cpp:193::initialize> armv8 AES instructions is supported
+         1789439048.055  9019  9076 I MMKV    : <MMKV.cpp:201::initialize> armv8 CRC32 instructions is supported
+         1789439048.055  9019  9076 I MMKV    : <MMKV.cpp:239::initializeMMKV> root dir: /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv
+         1789439048.055  9019  9076 I MMKV    : <MMKV_Android.cpp:383::enableDisableProcessMode> process mode check enable/disable: 0
+         1789439048.055  9019  9076 I MMKV    : Disable checkProcessMode()
+         1789439048.056  9019  9076 I MMKV    : <MemoryFile.cpp:103::open> open fd[121], flag 0x7, /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android
+         1789439048.056  9019  9076 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x727aaa0000], oldPtr [0x0], [/data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android]
+         1789439048.056  9019  9076 I MMKV    : <MemoryFile.cpp:109::close> closing fd[121], /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android
+         1789439048.056  9019  9076 I MMKV    : <MemoryFile.cpp:103::open> open fd[121], flag 0x7, /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android.crc
+         1789439048.056  9019  9076 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x727aa78000], oldPtr [0x0], [/data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android.crc]
+         1789439048.056  9019  9076 I MMKV    : <MemoryFile.cpp:103::open> open fd[122], flag 0x7, /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android
+         1789439048.056  9019  9076 I MMKV    : <MemoryFile.cpp:109::close> closing fd[122], /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android
+         1789439048.056  9019  9076 I MMKV    : <MMKV_IO.cpp:96::loadFromFile> loading [catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android] with 0 actual size, file size 4096, InterProcess 0, meta info version:0
+         1789439048.056  9019  9076 I MMKV    : <MMKV_IO.cpp:151::loadFromFile> loaded [catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android] with 0 key-values
+         1789439048.056  9019  9076 I TerminalPersistKv: event=persist-kv operation=listKeys mode=plain status=succeeded
+         1789439048.057  9019  9076 I TerminalPersistKv: event=persist-kv operation=readMany mode=plain status=succeeded
+         1789439048.058  9019  9076 W MMKV    : <MMKV_IO.cpp:1690::getStorage> file id [catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android] not exist in path /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv
+         1789439048.058  9019  9076 I MMKV    : <MemoryFile.cpp:103::open> open fd[122], flag 0x7, /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android
+         1789439048.058  9019  9076 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x727aa36000], oldPtr [0x0], [/data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android]
+         1789439048.058  9019  9076 I MMKV    : <MemoryFile.cpp:109::close> closing fd[122], /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android
+         1789439048.058  9019  9076 I MMKV    : <MemoryFile.cpp:103::open> open fd[122], flag 0x7, /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android.crc
+         1789439048.058  9019  9076 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x727aa35000], oldPtr [0x0], [/data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android.crc]
+         1789439048.058  9019  9076 I MMKV    : <MemoryFile.cpp:103::open> open fd[123], flag 0x7, /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android
+         1789439048.058  9019  9076 I MMKV    : <MemoryFile.cpp:109::close> closing fd[123], /data/data/com.catering.v2s.terminal.samplewallpaper/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android
+         1789439048.058  9019  9076 I MMKV    : <MMKV_IO.cpp:96::loadFromFile> loading [catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android] with 0 actual size, file size 4096, InterProcess 0, meta info version:0
+         1789439048.058  9019  9076 I MMKV    : <MMKV_IO.cpp:151::loadFromFile> loaded [catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android] with 0 key-values
+         1789439048.058  9019  9076 I MMKV    : <MMKV_IO.cpp:664::writeActualSize> [catering-v2s.terminal.state.protected.v1.sample-wallpaper-terminal-android] increase sequence to 1, crc 2347068758, actualSize 4
+         1789439048.058  9019  9076 I MMKV    : <MMKV.cpp:1227::sync> MMKV::sync, SyncFlag = 1
+         1789439048.061  9019  9076 I TerminalPersistKv: event=persist-kv operation=listKeys mode=protected status=succeeded
+         1789439048.061  9019  9076 I TerminalPersistKv: event=persist-kv operation=readMany mode=protected status=succeeded
+         1789439048.062  9019  9068 W ReactNativeJS: { timestamp: 1789439048062,
+         1789439048.062  9019  9068 W ReactNativeJS:   level: 'warn',
+         1789439048.062  9019  9068 W ReactNativeJS:   category: 'display-context.power-bridge',
+         1789439048.062  9019  9068 W ReactNativeJS:   event: 'power-bridge.subscription-unavailable',
+         1789439048.062  9019  9068 W ReactNativeJS:   message: 'Power status subscription was unavailable',
+         1789439048.062  9019  9068 W ReactNativeJS:   scope: 
+         1789439048.062  9019  9068 W ReactNativeJS:    { moduleName: 'platform-ports',
+         1789439048.062  9019  9068 W ReactNativeJS:      layer: 'kernel',
+         1789439048.062  9019  9068 W ReactNativeJS:      subsystem: undefined,
+         1789439048.062  9019  9068 W ReactNativeJS:      component: undefined },
+         1789439048.062  9019  9068 W ReactNativeJS:   context: 
+         1789439048.062  9019  9068 W ReactNativeJS:    { requestId: undefined,
+         1789439048.062  9019  9068 W ReactNativeJS:      commandId: undefined,
+         1789439048.062  9019  9068 W ReactNativeJS:      commandName: undefined,
+         1789439048.062  9019  9068 W ReactNativeJS:      sessionId: undefined,
+         1789439048.062  9019  9068 W ReactNativeJS:      connectionId: undefined,
+         1789439048.062  9019  9068 W ReactNativeJS:      nodeId: 'nod_mu21t27p_eq0g9rsulix8035g',
+         1789439048.062  9019  9068 W ReactNativeJS:      peerNodeId: undefined },
+         1789439048.062  9019  9068 W ReactNativeJS:   data: 
+         1789439048.062  9019  9068 W ReactNativeJS:    { status: 'unavailable',
+         1789439048.062  9019  9068 W ReactNativeJS:      capability: 'subscribePowerStatus',
+         1789439048.062  9019  9068 W ReactNativeJS:      reason: 'ADAPTER_NOT_INJECTED' },
+         1789439048.062  9019  9068 W ReactNativeJS:   error: undefined,
+         1789439048.062  9019  9068 W ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789439048.064  9019  9076 I TerminalDevice: event=display-info-entry displayIndex=0 displayId=0 name=Built-in_Screen state=2 flags=16515 rotation=0 appWidthPx=720 appHeightPx=1280 densityDpi=320 density=2.0 scaledDensity=2.0 realWidthPx=720 realHeightPx=1280 modeWidthPx=720 modeHeightPx=1280
+         1789439048.064  9019  9076 I TerminalDevice: event=display-info-read status=succeeded displayCount=1
+         1789439048.064  9019  9076 I MMKV    : <MMKV_IO.cpp:664::writeActualSize> [catering-v2s.terminal.state.v1.sample-wallpaper-terminal-android] increase sequence to 1, crc 4063715352, actualSize 4
+         1789439048.064  9019  9076 I MMKV    : <MMKV.cpp:1227::sync> MMKV::sync, SyncFlag = 1
+         1789439048.066  9019  9068 I ReactNativeJS: { timestamp: 1789439048066,
+         1789439048.066  9019  9068 I ReactNativeJS:   level: 'info',
+         1789439048.066  9019  9068 I ReactNativeJS:   category: 'display-diagnostics',
+         1789439048.066  9019  9068 I ReactNativeJS:   event: 'sample-wallpaper-console.secondary-placement',
+         1789439048.066  9019  9068 I ReactNativeJS:   message: 'Secondary placement availability resolved',
+         1789439048.066  9019  9068 I ReactNativeJS:   scope: 
+         1789439048.066  9019  9068 I ReactNativeJS:    { moduleName: 'platform-ports',
+         1789439048.066  9019  9068 I ReactNativeJS:      layer: 'kernel',
+         1789439048.066  9019  9068 I ReactNativeJS:      subsystem: undefined,
+         1789439048.066  9019  9068 I ReactNativeJS:      component: undefined },
+         1789439048.066  9019  9068 I ReactNativeJS:   context: undefined,
+         1789439048.066  9019  9068 I ReactNativeJS:   data: 
+         1789439048.066  9019  9068 I ReactNativeJS:    { source: 'sample-wallpaper-console.placement-actor',
+         1789439048.066  9019  9068 I ReactNativeJS:      requestedPartKey: 'sample.wallpaper-console.waiting',
+         1789439048.066  9019  9068 I ReactNativeJS:      displayInfoStatus: 'valid',
+         1789439048.066  9019  9068 I ReactNativeJS:      secondaryAvailable: false },
+         1789439048.066  9019  9068 I ReactNativeJS:   error: undefined,
+         1789439048.066  9019  9068 I ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789439048.067  9019  9019 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789439048.068  9019  9076 I TerminalPersistKv: event=persist-kv operation=write mode=plain status=succeeded
+         1789439048.069  9019  9076 I MMKV    : <MMKV.cpp:1227::sync> MMKV::sync, SyncFlag = 1
+         1789439048.070  9019  9076 I TerminalPersistKv: event=persist-kv operation=write mode=plain status=succeeded
+         1789439048.070  9019  9076 I MMKV    : <MMKV.cpp:1227::sync> MMKV::sync, SyncFlag = 1
+         1789439048.071  9019  9076 I TerminalPersistKv: event=persist-kv operation=write mode=plain status=succeeded
+         1789439048.071  9019  9076 I MMKV    : <MMKV.cpp:1227::sync> MMKV::sync, SyncFlag = 1
+         1789439048.072  9019  9076 I TerminalPersistKv: event=persist-kv operation=write mode=plain status=succeeded
+         1789439048.073  9019  9076 I MMKV    : <MMKV.cpp:1227::sync> MMKV::sync, SyncFlag = 1
+         1789439048.074  9019  9076 I TerminalPersistKv: event=persist-kv operation=write mode=plain status=succeeded
+         1789439048.074  9019  9076 I MMKV    : <MMKV.cpp:1227::sync> MMKV::sync, SyncFlag = 1
+         1789439048.075  9019  9076 I TerminalPersistKv: event=persist-kv operation=write mode=plain status=succeeded
+         1789439048.076  9019  9076 I MMKV    : <MMKV.cpp:1227::sync> MMKV::sync, SyncFlag = 1
+         1789439048.077  9019  9076 I TerminalPersistKv: event=persist-kv operation=write mode=plain status=succeeded
+         1789439048.077  9019  9076 I MMKV    : <MMKV.cpp:1227::sync> MMKV::sync, SyncFlag = 1
+         1789439048.078  9019  9076 I TerminalPersistKv: event=persist-kv operation=write mode=plain status=succeeded
+         1789439048.078  9019  9076 I MMKV    : <MMKV.cpp:1227::sync> MMKV::sync, SyncFlag = 1
+         1789439048.079  9019  9076 I TerminalPersistKv: event=persist-kv operation=write mode=plain status=succeeded
+         1789439048.079  9019  9076 I MMKV    : <MMKV.cpp:1227::sync> MMKV::sync, SyncFlag = 1
+         1789439048.080  9019  9076 I TerminalPersistKv: event=persist-kv operation=write mode=plain status=succeeded
+         1789439048.081  9019  9076 I MMKV    : <MMKV.cpp:1227::sync> MMKV::sync, SyncFlag = 1
+         1789439048.082  1091  1201 V WindowManagerShell: Transition animation finished (aborted=false), notifying core (#206) android.os.BinderProxy@83eb3df@0
+         1789439048.083  9019  9076 I TerminalPersistKv: event=persist-kv operation=write mode=plain status=succeeded
+         1789439048.083   681   706 V WindowManager: Finish Transition (#206): created at 09-15 11:24:07.706 collect-started=0.015ms request-sent=13.344ms started=16.701ms ready=39.26ms sent=51.371ms commit=40.578ms finished=376.989ms
+         1789439048.084  1414  1414 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+         1789439048.084  9019  9076 I MMKV    : <MMKV.cpp:1227::sync> MMKV::sync, SyncFlag = 1
+         1789439048.084  1091  1201 V WindowManagerShell: Track 0 became idle
+         1789439048.085  1091  1201 V WindowManagerShell: All active transition animations finished
+         1789439048.086  9019  9076 I TerminalPersistKv: event=persist-kv operation=write mode=plain status=succeeded
+         1789439048.086  9019  9076 I MMKV    : <MMKV.cpp:1227::sync> MMKV::sync, SyncFlag = 1
+         1789439048.087  9019  9076 I TerminalPersistKv: event=persist-kv operation=write mode=plain status=succeeded
+         1789439048.089  9019  9068 I ReactNativeJS: { timestamp: 1789439048089,
+         1789439048.089  9019  9068 I ReactNativeJS:   level: 'info',
+         1789439048.089  9019  9068 I ReactNativeJS:   category: 'startup.runtime-facts',
+         1789439048.089  9019  9068 I ReactNativeJS:   event: 'sample.runtime-facts-resolved',
+         1789439048.089  9019  9068 I ReactNativeJS:   message: 'Sample runtime facts resolved',
+         1789439048.089  9019  9068 I ReactNativeJS:   scope: 
+         1789439048.089  9019  9068 I ReactNativeJS:    { moduleName: 'platform-ports',
+         1789439048.089  9019  9068 I ReactNativeJS:      layer: 'kernel',
+         1789439048.089  9019  9068 I ReactNativeJS:      subsystem: undefined,
+         1789439048.089  9019  9068 I ReactNativeJS:      component: undefined },
+         1789439048.089  9019  9068 I ReactNativeJS:   context: undefined,
+         1789439048.089  9019  9068 I ReactNativeJS:   data: 
+         1789439048.089  9019  9068 I ReactNativeJS:    { source: 'ui.base.console-assembly.createConsoleAssembly',
+         1789439048.089  9019  9068 I ReactNativeJS:      appName: 'sample-wallpaper-console',
+         1789439048.089  9019  9068 I ReactNativeJS:      debugEnabled: false,
+         1789439048.089  9019  9068 I ReactNativeJS:      debugSource: 'default',
+         1789439048.089  9019  9068 I ReactNativeJS:      deviceIdentityAvailable: true,
+         1789439048.089  9019  9068 I ReactNativeJS:      capabilityDescriptorCount: 10 },
+         1789439048.089  9019  9068 I ReactNativeJS:   error: undefined,
+         1789439048.089  9019  9068 I ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789439048.093  9019  9068 W HWUI    : Image decoding logging dropped!
+         1789439048.094  9019  9068 W HWUI    : Image decoding logging dropped!
+         1789439048.098  1414  1414 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+         1789439048.106  9019  9019 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789439048.107  9019  9068 I ReactNativeJS: { timestamp: 1789439048106,
+         1789439048.107  9019  9068 I ReactNativeJS:   level: 'info',
+         1789439048.107  9019  9068 I ReactNativeJS:   category: 'startup.ready-candidate',
+         1789439048.107  9019  9068 I ReactNativeJS:   event: 'startup.ready-candidate',
+         1789439048.107  9019  9068 I ReactNativeJS:   message: 'Resolved PRIMARY screen part completed its first layout',
+         1789439048.107  9019  9068 I ReactNativeJS:   scope: 
+         1789439048.107  9019  9068 I ReactNativeJS:    { moduleName: 'platform-ports',
+         1789439048.107  9019  9068 I ReactNativeJS:      layer: 'kernel',
+         1789439048.107  9019  9068 I ReactNativeJS:      subsystem: undefined,
+         1789439048.107  9019  9068 I ReactNativeJS:      component: undefined },
+         1789439048.107  9019  9068 I ReactNativeJS:   context: undefined,
+         1789439048.107  9019  9068 I ReactNativeJS:   data: 
+         1789439048.107  9019  9068 I ReactNativeJS:    { surfaceKey: 'PRIMARY',
+         1789439048.107  9019  9068 I ReactNativeJS:      displayIndex: 0,
+         1789439048.107  9019  9068 I ReactNativeJS:      displayMode: 'PRIMARY',
+         1789439048.107  9019  9068 I ReactNativeJS:      containerKey: 'main',
+         1789439048.107  9019  9068 I ReactNativeJS:      partKey: 'sample.auth.login',
+         1789439048.107  9019  9068 I ReactNativeJS:      layoutWidth: 360,
+         1789439048.107  9019  9068 I ReactNativeJS:      layoutHeight: 640,
+         1789439048.107  9019  9068 I ReactNativeJS:      hostWidth: 360,
+         1789439048.107  9019  9068 I ReactNativeJS:      hostHeight: 640,
+         1789439048.107  9019  9068 I ReactNativeJS:      source: 'ui-base-render.ScreenReadyBoundary' },
+         1789439048.107  9019  9068 I ReactNativeJS:   error: undefined,
+         1789439048.107  9019  9068 I ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789439048.110  9019  9068 I ReactNativeJS: { timestamp: 1789439048110,
+         1789439048.110  9019  9068 I ReactNativeJS:   level: 'info',
+         1789439048.110  9019  9068 I ReactNativeJS:   category: 'startup.ready',
+         1789439048.110  9019  9068 I ReactNativeJS:   event: 'startup.ready',
+         1789439048.110  9019  9068 I ReactNativeJS:   message: 'Primary sample2 surface readiness accepted by wallpaper console',
+         1789439048.110  9019  9068 I ReactNativeJS:   scope: 
+         1789439048.110  9019  9068 I ReactNativeJS:    { moduleName: 'platform-ports',
+         1789439048.110  9019  9068 I ReactNativeJS:      layer: 'kernel',
+         1789439048.110  9019  9068 I ReactNativeJS:      subsystem: undefined,
+         1789439048.110  9019  9068 I ReactNativeJS:      component: undefined },
+         1789439048.110  9019  9068 I ReactNativeJS:   context: undefined,
+         1789439048.110  9019  9068 I ReactNativeJS:   data: 
+         1789439048.110  9019  9068 I ReactNativeJS:    { surfaceKey: 'PRIMARY',
+         1789439048.110  9019  9068 I ReactNativeJS:      displayIndex: 0,
+         1789439048.110  9019  9068 I ReactNativeJS:      readyPartKey: 'sample.auth.login',
+         1789439048.110  9019  9068 I ReactNativeJS:      writer: 'ui.base.console-assembly' },
+         1789439048.110  9019  9068 I ReactNativeJS:   error: undefined,
+         1789439048.110  9019  9068 I ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789439048.110  9019  9068 I ReactNativeJS: { timestamp: 1789439048110,
+         1789439048.110  9019  9068 I ReactNativeJS:   level: 'info',
+         1789439048.110  9019  9068 I ReactNativeJS:   category: 'startup.complete',
+         1789439048.110  9019  9068 I ReactNativeJS:   event: 'startup.complete',
+         1789439048.110  9019  9068 I ReactNativeJS:   message: 'Terminal startup completed',
+         1789439048.110  9019  9068 I ReactNativeJS:   scope: 
+         1789439048.110  9019  9068 I ReactNativeJS:    { moduleName: 'platform-ports',
+         1789439048.110  9019  9068 I ReactNativeJS:      layer: 'kernel',
+         1789439048.110  9019  9068 I ReactNativeJS:      subsystem: undefined,
+         1789439048.110  9019  9068 I ReactNativeJS:      component: undefined },
+         1789439048.110  9019  9068 I ReactNativeJS:   context: undefined,
+         1789439048.110  9019  9068 I ReactNativeJS:   data: 
+         1789439048.110  9019  9068 I ReactNativeJS:    { startupRunId: 'run_mu21t27p_f3jeb4k7yze5epzr',
+         1789439048.110  9019  9068 I ReactNativeJS:      appName: 'sample-wallpaper-console',
+         1789439048.110  9019  9068 I ReactNativeJS:      surfaceProvenance: { surfaceKey: 'PRIMARY', displayIndex: 0, surfaceForm: 'mobile' },
+         1789439048.110  9019  9068 I ReactNativeJS:      writer: 'ui.base.console-assembly' },
+         1789439048.110  9019  9068 I ReactNativeJS:   error: undefined,
+         1789439048.110  9019  9068 I ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789439048.114  9019  9068 I ReactNativeJS: { timestamp: 1789439048114,
+         1789439048.114  9019  9068 I ReactNativeJS:   level: 'info',
+         1789439048.114  9019  9068 I ReactNativeJS:   category: 'startup.ready-hidden',
+         1789439048.114  9019  9068 I ReactNativeJS:   event: 'startup.ready-hidden',
+         1789439048.114  9019  9068 I ReactNativeJS:   message: 'Native loading hidden after resolved PRIMARY screen layout',
+         1789439048.114  9019  9068 I ReactNativeJS:   scope: 
+         1789439048.114  9019  9068 I ReactNativeJS:    { moduleName: 'platform-ports',
+         1789439048.114  9019  9068 I ReactNativeJS:      layer: 'kernel',
+         1789439048.114  9019  9068 I ReactNativeJS:      subsystem: undefined,
+         1789439048.114  9019  9068 I ReactNativeJS:      component: undefined },
+         1789439048.114  9019  9068 I ReactNativeJS:   context: undefined,
+         1789439048.114  9019  9068 I ReactNativeJS:   data: 
+         1789439048.114  9019  9068 I ReactNativeJS:    { surfaceKey: 'PRIMARY',
+         1789439048.114  9019  9068 I ReactNativeJS:      displayIndex: 0,
+         1789439048.114  9019  9068 I ReactNativeJS:      displayMode: 'PRIMARY',
+         1789439048.114  9019  9068 I ReactNativeJS:      partKey: 'sample.auth.login',
+         1789439048.114  9019  9068 I ReactNativeJS:      source: 'ui-base-render.ScreenReadyBoundary' },
+         1789439048.114  9019  9068 I ReactNativeJS:   error: undefined,
+         1789439048.114  9019  9068 I ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789439048.163   681   706 I ActivityTaskManager: Displayed com.catering.v2s.terminal.samplewallpaper/.MainActivity for user 0: +457ms
+         1789439048.165  1414  1414 D BaseDepthController: setSurface:
+         1789439048.165  1414  1414 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+         1789439048.165  1414  1414 D BaseDepthController: 	mBaseSurface: null
+         1789439048.166  1414  1414 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+         1789439048.167  1414  1414 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+         1789439048.167  1414  1414 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 43e00d9cd0eb17b3d9dd30fc1741b1c71445c4c0f7c8c9b81300265c86c5b873:4)
+         1789439048.167  1414  1414 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 43e00d9cd0eb17b3d9dd30fc1741b1c71445c4c0f7c8c9b81300265c86c5b873:1)
+         1789439048.167  1414  1414 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 43e00d9cd0eb17b3d9dd30fc1741b1c71445c4c0f7c8c9b81300265c86c5b873:34)
+         1789439048.167  9019  9019 D SplashScreenView: Building from parcel drawable: android.graphics.drawable.BitmapDrawable@589d099
+         1789439048.167  1414  1414 D StatsLog: LAUNCHER_ONSTOP
+         1789439048.167  9019  9019 D SplashScreenView: Build android.window.SplashScreenView{3b0af3f V.E...... ......ID 0,0-0,0}
+         1789439048.167  9019  9019 D SplashScreenView: Icon: view: androidx.appcompat.widget.AppCompatImageView{15a000c V.ED..... ......I. 0,0-0,0 #1020542 android:id/splashscreen_icon_view} drawable: android.graphics.drawable.BitmapDrawable@589d099 size: 384
+         1789439048.167  9019  9019 D SplashScreenView: Branding: view: android.view.View{49ddd55 G.ED..... ......I. 0,0-0,0 #1020541 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+         1789439048.168  1414  1414 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+         1789439048.168   681  1211 I AppWidgetServiceImpl: setAppWidgetHidden() 0
+         1789439048.181  9019  9019 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789439048.182   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789439048.184   681   813 I ImeTracker: com.catering.v2s.terminal.samplewallpaper:fd86cfe5: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+         1789439048.185  9019  9019 D InsetsController: hide(ime(), fromIme=false)
+         1789439048.185  9019  9019 I ImeTracker: com.catering.v2s.terminal.samplewallpaper:fd86cfe5: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+         1789439048.186   681  1948 I ImeTracker: system_server:80f4592e: onRequestHide at ORIGIN_SERVER reason IME_REQUESTED_CHANGED_LISTENER fromUser false
+         1789439048.187   681   709 I ImeTracker: system_server:80f4592e: onCancelled at PHASE_SERVER_SHOULD_HIDE
+         1789439048.217  1091  1238 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda13@cdd572e
+         1789439048.217   681  1945 D CoreBackPreview: Window{5763e2b u0 Splash Screen com.catering.v2s.terminal.samplewallpaper}: Setting back callback null
+         1789439048.227  9084  9084 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789439048.230  9084  9084 I AndroidRuntime: Using default boot image
+         1789439048.230  9084  9084 I AndroidRuntime: Leaving lock profiling enabled
+         1789439048.231  9084  9084 I app_process: Core platform API reporting enabled, enforcing=false
+         1789439048.232  9084  9084 I app_process: Using CollectorTypeCMC GC.
+         1789439048.273  9084  9084 D nativeloader: InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+         1789439048.277  9084  9084 D nativeloader: Load libicu_jni.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+         1789439048.277  9084  9084 D app_process: u_setTimeZoneFilesDirectory("/apex/com.android.tzdata/etc/tz/versioned/9/icu") succeeded. 
+         1789439048.277  9084  9084 D app_process: I18n APEX ICU file found: /apex/com.android.i18n/etc/icu/icudt76l.dat
+         1789439048.277  9084  9084 D nativeloader: Load libjavacore.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+         1789439048.278  9084  9084 D nativeloader: Load libopenjdk.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+         1789439048.278  9084  9084 W app_process: ClassLoaderContext shared library size mismatch. Expected=2, found=0 (PCL[]{PCL[/system/framework/android.test.base.jar*2789897741]#PCL[/system/framework/android.test.mock.jar*3361312393]} | PCL[])
+         1789439048.279  9084  9084 W app_process: ClassLoaderContext classpath size mismatch. expected=0, found=1 (PCL[]{PCL[/system/framework/android.test.runner.jar*895143020]#PCL[/system/framework/android.test.base.jar*2789897741]} | PCL[/system/framework/android.test.runner.jar*895143020])
+         1789439048.290  9084  9084 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+         1789439048.290  9084  9084 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789439048.292  9084  9084 I AconfigPackage: android.media.swcodec.flags is mapped to com.android.media.swcodec
+         1789439048.292  9084  9084 I AconfigPackage: com.google.android.settings.simplemode.flags is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.google.android.systemui is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.google.android.apps.nexuslauncher is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.android.settings.accessibility is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.android.settings.flags is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.google.android.apps.miphone.aiai.matchmaker.overview.ui is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.google.android.settings.flags is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.android.launcher3 is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.android.wallpaper is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.android.settings.media_drm is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.android.systemui.accessibility.accessibilitymenu is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.android.settings.keyboard is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.policy.feature.flags is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.android.settings.factory_reset is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.google.android.haptics.flags is mapped to system_ext
+         1789439048.292  9084  9084 I AconfigPackage: com.android.permission.flags is mapped to com.android.permission
+         1789439048.292  9084  9084 I AconfigPackage: com.android.icu is mapped to com.android.i18n
+         1789439048.292  9084  9084 I AconfigPackage: com.android.appsearch.flags is mapped to com.android.appsearch
+         1789439048.292  9084  9084 I AconfigPackage: android.uprobestats.mainline.flags is mapped to com.android.uprobestats
+         1789439048.292  9084  9084 I AconfigPackage: android.provider.flags is mapped to com.android.configinfrastructure
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.deviceconfig is mapped to com.android.configinfrastructure
+         1789439048.292  9084  9084 I AconfigPackage: com.android.nfc.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.app.admin.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.database.sqlite is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.providers.calendar is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.power.feature.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.media.performance.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.app.contextualsearch.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.app.ondeviceintelligence.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.media.projection.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.companion is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.service.controls.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.text.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.providers.contactkeys.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.intentresolver is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.companion.virtualdevice.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.uprobestats.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.net.thread.platform.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.view.contentprotection.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.dreams is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.graphics.surfaceflinger.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.hardware.input is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.sdk is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.input.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.tracing is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.biometrics is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.view.contentcapture.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.app.job is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.content.res is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.net.platform.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.aconfig.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.graphics.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.server.app is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.speech.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.stats is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.hardware.biometrics is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.car.feature is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.adpf is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.location.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.settingslib.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.managedprovisioning.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.app.assist.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.net is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.settingslib.widget.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.internal.camera.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.hardware.libsensor.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.internal.jank is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.providers.settings is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.multiuser is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.power.optimization is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.calllogbackup is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.media.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.graphics.libvulkan.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.app.appfunctions.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.app.smartspace.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.providers.contacts.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.shell.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.media.aaudio is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.hardware.radio is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.google.wear.services.infra.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: suspend_service.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.media.midi is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.libcore.readonly is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.settingslib.widget.selectorwithwidgetpreference.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.service.notification is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.systemui.shared is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.app.jank is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.app.wearable is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.media.audio is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.service.chooser is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.compat is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.alarm is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.apex.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.service.quickaccesswallet is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.app.usage is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.accessibility is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.app.supervision.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.utils is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.chre.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.content.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.media.codec is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.internal.os is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.nfc.nci.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.app is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.security.keystore2 is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.crashrecovery.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.tradeinmode.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.hardware.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.telecom.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.settingslib.media.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.policy is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.media.audiopolicy is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.egg.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.internal.compat.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.security is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.service.autofill is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.example.android.aconfig.demo.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.view.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.companion.virtual.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.aconfig_new_storage is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.feature.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.systemui is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.power.batterysaver is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.widget.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.media.editing.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.media.codec.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.powerstats is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.graphics.egl.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.media.audioserver is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.deviceidle is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.nfc is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.permission.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.service.voice.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.content.pm is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.power.hint is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.os is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.service.dreams is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.graphics.libgui.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.hardware.usb.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.provider is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.job is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.internal.foldables.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.internal.telephony.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.webkit is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.credentials.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.display.feature.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.notification is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.appwidget.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.frameworks.sensorservice.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.printspooler.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.window.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.adaptiveauth is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.net.wifi.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.media.tv.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.usb.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.os.vibrator is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.hardware.devicestate.feature.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.usage is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.server is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.wm.shell is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.view.inputmethod is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.graphics.hwui.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.backup is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.internal.pm.pkg.component.flags is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.view.accessibility is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.google.wear.sdk is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: android.media.audio is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.server.am is mapped to system
+         1789439048.292  9084  9084 I AconfigPackage: com.android.media.playback.flags is mapped to system
+         1789439048.293  9084  9084 I AconfigPackage: com.android.art.flags is mapped to com.android.art
+         1789439048.293  9084  9084 I AconfigPackage: com.android.libcore is mapped to com.android.art
+         1789439048.293  9084  9084 I AconfigPackage: com.android.media.extractor.flags is mapped to com.android.media
+         1789439048.293  9084  9084 I AconfigPackage: com.android.media.mainline.flags is mapped to com.android.media
+         1789439048.293  9084  9084 I AconfigPackage: com.android.wifi.flags is mapped to com.android.wifi
+         1789439048.293  9084  9084 I AconfigPackage: com.android.org.conscrypt.flags is mapped to com.android.conscrypt
+         1789439048.293  9084  9084 I AconfigPackage: com.android.healthfitness.flags is mapped to com.android.healthfitness
+         1789439048.293  9084  9084 I AconfigPackage: com.google.android.input.twoshay.flags is mapped to vendor
+         1789439048.293  9084  9084 I AconfigPackage: libgooglecamerahal.flags is mapped to vendor
+         1789439048.294  9084  9084 I AconfigPackage: com.android.ipsec.flags is mapped to com.android.ipsec
+         1789439048.294  9084  9084 I AconfigPackage: com.android.nfc.module.flags is mapped to com.android.nfcservices
+         1789439048.294  9084  9084 I AconfigPackage: com.android.adservices.ondevicepersonalization.flags is mapped to com.android.ondevicepersonalization
+         1789439048.294  9084  9084 I AconfigPackage: com.android.bluetooth.flags is mapped to com.android.bt
+         1789439048.294  9084  9084 I AconfigPackage: com.android.devicelock.flags is mapped to com.android.devicelock
+         1789439048.294  9084  9084 I AconfigPackage: android.os.profiling is mapped to com.android.profiling
+         1789439048.294  9084  9084 I AconfigPackage: com.android.os.statsd.flags is mapped to com.android.os.statsd
+         1789439048.294  9084  9084 I AconfigPackage: com.android.cellbroadcastreceiver.flags is mapped to com.android.cellbroadcast
+         1789439048.294  9084  9084 I AconfigPackage: com.android.adservices.flags is mapped to com.android.adservices
+         1789439048.294  9084  9084 I AconfigPackage: com.android.sdksandbox.flags is mapped to com.android.adservices
+         1789439048.294  9084  9084 I AconfigPackage: com.android.uwb.flags is mapped to com.android.uwb
+         1789439048.294  9084  9084 I AconfigPackage: com.android.ranging.flags is mapped to com.android.uwb
+         1789439048.294  9084  9084 I AconfigPackage: android.graphics.pdf.flags is mapped to com.android.mediaprovider
+         1789439048.294  9084  9084 I AconfigPackage: com.android.providers.media.flags is mapped to com.android.mediaprovider
+         1789439048.294  9084  9084 I AconfigPackage: android.graphics.pdf.flags.readonly is mapped to com.android.mediaprovider
+         1789439048.294  9084  9084 I AconfigPackage: com.android.net.ct.flags is mapped to com.android.tethering
+         1789439048.294  9084  9084 I AconfigPackage: com.android.net.flags is mapped to com.android.tethering
+         1789439048.294  9084  9084 I AconfigPackage: android.net.vcn is mapped to com.android.tethering
+         1789439048.294  9084  9084 I AconfigPackage: com.android.nearby.flags is mapped to com.android.tethering
+         1789439048.294  9084  9084 I AconfigPackage: android.net.http is mapped to com.android.tethering
+         1789439048.294  9084  9084 I AconfigPackage: com.android.net.thread.flags is mapped to com.android.tethering
+         1789439048.294  9084  9084 I AconfigPackage: com.android.system.virtualmachine.flags is mapped to com.android.virt
+         1789439048.294  9084  9084 E FeatureFlagsImplExport: android.os.flagging.AconfigStorageReadException: ERROR_PACKAGE_NOT_FOUND: package android.xr cannot be found on the device
+         1789439048.299  9084  9084 D UiAutomationConnection: Created on user UserHandle{0}
+         1789439048.299  9084  9084 I UiAutomation: Initialized for user 0 on display 0
+         1789439048.299  9084  9084 W UiAutomation: Created with deprecatead constructor, assumes DEFAULT_DISPLAY
+         1789439048.300   681  1948 D AccessibilityManagerService: changeCurrentUserForTestAutomationIfNeededLocked(0): ignoring because device doesn't support visible background users
+         1789439048.301   681  1948 I UiAutomationManager: Registering UiTestAutomationService (id=com.android.server.accessibility/UiAutomation, flags=0x0) when called by user 0
+         1789439048.301   681  1948 V AccessibilityManagerService: onUserStateChangedLocked for userId: 0, forceUpdate: false
+         1789439048.301   681  1948 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+         1789439048.302   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.302   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.302   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.302   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.303  1725  4227 I AiAiEcho: Settings changed for uri: content://settings/secure/accessibility_enabled
+         1789439048.303  1725  1872 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789439048.303  1725  1872 I AiAiEcho: EchoTargets: 
+         1789439048.303  1725  1872 I AiAiEcho: Filtered by AiAi flag check: 
+         1789439048.303  1725  1872 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789439048.303  1725  1872 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789439048.303  1725  1872 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789439048.303  1725  1872 I AiAiEcho: EchoTargets: 
+         1789439048.303  1725  1872 I AiAiEcho: Filtered by AiAi flag check: 
+         1789439048.303  1725  1872 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789439048.303  1725  1872 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789439048.303  1725  1872 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+         1789439048.303  1725  1872 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+         1789439048.303   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.303   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.304   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.304   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.304  1091  1091 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+         1789439048.304   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.304   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.304   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.304  1414  1414 D SsBaseTemplateCard: No text view can be set up
+         1789439048.304  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439048.304  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439048.304  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439048.304  1414  1414 I SsBaseTemplateCard: Secondary card pane is null
+         1789439048.304   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.305   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.305   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.305   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.305   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.305   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.305   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.305   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.305   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.305   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.305   681   681 D BatterySaverPolicy: accessibility changed to true, updating policy.
+         1789439048.305  9084  9098 V UiAutomation: Init UiAutomation@34750ac[id=319, displayId=0, flags=0]
+         1789439048.306   681  1207 V AccessibilityManagerService: onUserStateChangedLocked for userId: 0, forceUpdate: false
+         1789439048.306   681  1207 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+         1789439048.306 32241 32266 I amtp    : NGA enabled in interactor.
+         1789439048.307   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.307   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.307   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.307   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.307   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.307   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.307   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.307   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.307   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.307 32241 32265 I amtp    : NGA enabled in interactor.
+         1789439048.307   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.307   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.307   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.307  1725  4233 I AiAiEcho: Settings changed for uri: content://settings/secure/accessibility_enabled
+         1789439048.307   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.307   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439048.308  1725  1872 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789439048.308  1725  1872 I AiAiEcho: EchoTargets: 
+         1789439048.308  1725  1872 I AiAiEcho: Filtered by AiAi flag check: 
+         1789439048.308  1725  1872 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789439048.308  1725  1872 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789439048.308  1725  1872 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789439048.308  1725  1872 I AiAiEcho: EchoTargets: 
+         1789439048.308  1725  1872 I AiAiEcho: Filtered by AiAi flag check: 
+         1789439048.308  1725  1872 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789439048.308  1725  1872 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789439048.308  1725  1872 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+         1789439048.308  1725  1872 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+         1789439048.309  1414  1414 D SsBaseTemplateCard: No text view can be set up
+         1789439048.309  1092  1366 D AccessibilitySourceService: enabled a11y services count 0
+         1789439048.309  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439048.309  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439048.309  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439048.309  1414  1414 I SsBaseTemplateCard: Secondary card pane is null
+         1789439048.309  1092  1366 D AccessibilitySourceService: a11y source sending 0 issue to sc
+         1789439048.309   681  1211 D SafetySourceDataValidat: No cert check requested for package com.google.android.permissioncontroller
+         1789439048.313  1091  1091 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+         1789439048.333   681  2201 E AppOps  : attributionTag VCN not declared in manifest of android
+         1789439048.367  9019  9080 W InteractionJankMonitor: Initializing without READ_DEVICE_CONFIG permission. enabled=true, interval=1, missedFrameThreshold=3, frameTimeThreshold=64, package=com.catering.v2s.terminal.samplewallpaper
+         1789439048.370  1457  1808 I FontLog : Received query Noto Color Emoji Compat, URI content://com.google.android.gms.fonts [CONTEXT service_id=132 ]
+         1789439048.370  1457  1808 I FontLog : Query [emojicompat-emoji-font] resolved to {Noto Color Emoji Compat, wdth 100.0, wght 400, ital 0.0, bestEffort false}, isVf false} [CONTEXT service_id=132 ]
+         1789439048.371  1457  1808 I FontLog : Fetch {Noto Color Emoji Compat, wdth 100.0, wght 400, ital 0.0, bestEffort false}, isVf false} end status Status{statusCode=SUCCESS, resolution=null} [CONTEXT service_id=132 ]
+         1789439048.372  1457  1808 I FontLog : Pulling font file for id = 112, cache size = 4 [CONTEXT service_id=132 ]
+         1789439048.375  1457  1808 I FontLog : Pulling font file for id = 112, cache size = 4 [CONTEXT service_id=132 ]
+         1789439048.390   457   498 I netd    : tetherGetStats() -> {[]} <0.42ms>
+         1789439048.615  9019  9019 D SplashScreenView: remove starting view
+         1789439048.615  9019  9019 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789439048.924  1608  8528 I Icing   : Indexing com.google.android.gms-apps from com.google.android.gms
+         1789439048.926  1608  8528 I gle.android.gms: AssetManager2(0xb4000071410f0418) locale list changing from [] to [en-US]
+         1789439048.930  1608  8528 I Icing   : Indexing com.google.android.gms-internal.3p:MobileApplication from com.google.android.gms
+         1789439048.932  1608  8528 I Icing   : Indexing done com.google.android.gms-apps
+         1789439048.933  1608  8528 I Icing   : Indexing done com.google.android.gms-internal.3p:MobileApplication
+         1789439049.739  9084  9084 W AccessibilityNodeInfoDumper: Fetch time: 2ms
+         1789439049.740   681  2201 V AccessibilityManagerService: onUserStateChangedLocked for userId: 0, forceUpdate: false
+         1789439049.740   681  2201 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+         1789439049.741   681  2201 D AccessibilityManagerService: restoreCurrentUserForTestAutomationIfNeededLocked(): ignoring because device doesn't support visible background users
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741  1725  4233 I AiAiEcho: Settings changed for uri: content://settings/secure/accessibility_enabled
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741  1725  1872 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789439049.741  1725  1872 I AiAiEcho: EchoTargets: 
+         1789439049.741  1725  1872 I AiAiEcho: Filtered by AiAi flag check: 
+         1789439049.741  1725  1872 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741  1725  1872 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741  1725  1872 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789439049.741  1725  1872 I AiAiEcho: EchoTargets: 
+         1789439049.741  1725  1872 I AiAiEcho: Filtered by AiAi flag check: 
+         1789439049.741  1725  1872 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789439049.741  1725  1872 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.741  1725  1872 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+         1789439049.742   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.742   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.742   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.742   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.742   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.742   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439049.742   681   681 D BatterySaverPolicy: accessibility changed to false, updating policy.
+         1789439049.742  1725  1872 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+         1789439049.743  9084  9095 W IPCThreadState: call to talkWithDriver in joinThreadPool returned error: -9 (Bad file descriptor), FD: -1
+         1789439049.743 32241 32266 I amtp    : NGA enabled in interactor.
+         1789439049.744  9084  9097 W IPCThreadState: call to talkWithDriver in joinThreadPool returned error: -9 (Bad file descriptor), FD: -1
+         1789439049.745  9084  9084 D AndroidRuntime: Shutting down VM
+         1789439049.746 32241 32265 I amtp    : NGA enabled in interactor.
+         1789439049.747  1091  1091 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+         1789439049.747  1414  1414 D SsBaseTemplateCard: No text view can be set up
+         1789439049.747  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439049.747  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439049.747  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439049.747  1414  1414 I SsBaseTemplateCard: Secondary card pane is null
+         1789439050.646  9104  9104 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789439050.648  9104  9104 I AndroidRuntime: Using default boot image
+         1789439050.648  9104  9104 I AndroidRuntime: Leaving lock profiling enabled
+         1789439050.650  9104  9104 I app_process: Core platform API reporting enabled, enforcing=false
+         1789439050.650  9104  9104 I app_process: Using CollectorTypeCMC GC.
+         1789439050.686  9104  9104 D nativeloader: InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+         1789439050.691  9104  9104 D nativeloader: Load libicu_jni.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+         1789439050.691  9104  9104 D app_process: u_setTimeZoneFilesDirectory("/apex/com.android.tzdata/etc/tz/versioned/9/icu") succeeded. 
+         1789439050.691  9104  9104 D app_process: I18n APEX ICU file found: /apex/com.android.i18n/etc/icu/icudt76l.dat
+         1789439050.691  9104  9104 D nativeloader: Load libjavacore.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+         1789439050.691  9104  9104 D nativeloader: Load libopenjdk.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+         1789439050.693  9104  9104 W app_process: ClassLoaderContext shared library size mismatch. Expected=2, found=0 (PCL[]{PCL[/system/framework/android.test.base.jar*2789897741]#PCL[/system/framework/android.test.mock.jar*3361312393]} | PCL[])
+         1789439050.693  9104  9104 W app_process: ClassLoaderContext classpath size mismatch. expected=0, found=1 (PCL[]{PCL[/system/framework/android.test.runner.jar*895143020]#PCL[/system/framework/android.test.base.jar*2789897741]} | PCL[/system/framework/android.test.runner.jar*895143020])
+         1789439050.704  9104  9104 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+         1789439050.704  9104  9104 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789439050.706  9104  9104 I AconfigPackage: android.media.swcodec.flags is mapped to com.android.media.swcodec
+         1789439050.706  9104  9104 I AconfigPackage: com.google.android.settings.simplemode.flags is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.google.android.systemui is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.google.android.apps.nexuslauncher is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.android.settings.accessibility is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.android.settings.flags is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.google.android.apps.miphone.aiai.matchmaker.overview.ui is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.google.android.settings.flags is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.android.launcher3 is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.android.wallpaper is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.android.settings.media_drm is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.android.systemui.accessibility.accessibilitymenu is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.android.settings.keyboard is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.policy.feature.flags is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.android.settings.factory_reset is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.google.android.haptics.flags is mapped to system_ext
+         1789439050.706  9104  9104 I AconfigPackage: com.android.permission.flags is mapped to com.android.permission
+         1789439050.706  9104  9104 I AconfigPackage: com.android.icu is mapped to com.android.i18n
+         1789439050.706  9104  9104 I AconfigPackage: com.android.appsearch.flags is mapped to com.android.appsearch
+         1789439050.706  9104  9104 I AconfigPackage: android.uprobestats.mainline.flags is mapped to com.android.uprobestats
+         1789439050.706  9104  9104 I AconfigPackage: android.provider.flags is mapped to com.android.configinfrastructure
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.deviceconfig is mapped to com.android.configinfrastructure
+         1789439050.706  9104  9104 I AconfigPackage: com.android.nfc.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.app.admin.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.database.sqlite is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.providers.calendar is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.power.feature.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.media.performance.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.app.contextualsearch.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.app.ondeviceintelligence.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.media.projection.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.companion is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.service.controls.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.text.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.providers.contactkeys.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.intentresolver is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.companion.virtualdevice.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.uprobestats.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.net.thread.platform.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.view.contentprotection.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.dreams is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.graphics.surfaceflinger.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.hardware.input is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.sdk is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.input.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.tracing is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.biometrics is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.view.contentcapture.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.app.job is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.content.res is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.net.platform.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.aconfig.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.graphics.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.server.app is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.speech.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.stats is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.hardware.biometrics is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.car.feature is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.adpf is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.location.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.settingslib.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.managedprovisioning.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.app.assist.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.net is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.settingslib.widget.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.internal.camera.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.hardware.libsensor.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.internal.jank is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.providers.settings is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.multiuser is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.power.optimization is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.calllogbackup is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.media.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.graphics.libvulkan.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.app.appfunctions.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.app.smartspace.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.providers.contacts.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.shell.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.media.aaudio is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.hardware.radio is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.google.wear.services.infra.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: suspend_service.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.media.midi is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.libcore.readonly is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.settingslib.widget.selectorwithwidgetpreference.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.service.notification is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.systemui.shared is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.app.jank is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.app.wearable is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.media.audio is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.service.chooser is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.compat is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.alarm is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.apex.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.service.quickaccesswallet is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.app.usage is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.accessibility is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.app.supervision.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.utils is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.chre.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.content.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.media.codec is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.internal.os is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.nfc.nci.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.app is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.security.keystore2 is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.crashrecovery.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.tradeinmode.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.hardware.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.telecom.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.settingslib.media.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.policy is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.media.audiopolicy is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.egg.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.internal.compat.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.security is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.service.autofill is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.example.android.aconfig.demo.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.view.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.companion.virtual.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.aconfig_new_storage is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.feature.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.systemui is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.power.batterysaver is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.widget.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.media.editing.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.media.codec.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.powerstats is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.graphics.egl.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.media.audioserver is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.deviceidle is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.nfc is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.permission.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.service.voice.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.content.pm is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.power.hint is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.os is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.service.dreams is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.graphics.libgui.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.hardware.usb.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.provider is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.job is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.internal.foldables.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.internal.telephony.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.webkit is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.credentials.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.display.feature.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.server.notification is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: android.appwidget.flags is mapped to system
+         1789439050.706  9104  9104 I AconfigPackage: com.android.frameworks.sensorservice.flags is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: com.android.printspooler.flags is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: com.android.window.flags is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: android.adaptiveauth is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: android.net.wifi.flags is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: android.media.tv.flags is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: com.android.server.usb.flags is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: android.os.vibrator is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: android.hardware.devicestate.feature.flags is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: com.android.server.usage is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: android.server is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: com.android.wm.shell is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: android.view.inputmethod is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: com.android.graphics.hwui.flags is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: com.android.server.backup is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: com.android.internal.pm.pkg.component.flags is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: android.view.accessibility is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: com.google.wear.sdk is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: android.media.audio is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: com.android.server.am is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: com.android.media.playback.flags is mapped to system
+         1789439050.707  9104  9104 I AconfigPackage: com.android.art.flags is mapped to com.android.art
+         1789439050.707  9104  9104 I AconfigPackage: com.android.libcore is mapped to com.android.art
+         1789439050.707  9104  9104 I AconfigPackage: com.android.media.extractor.flags is mapped to com.android.media
+         1789439050.707  9104  9104 I AconfigPackage: com.android.media.mainline.flags is mapped to com.android.media
+         1789439050.707  9104  9104 I AconfigPackage: com.android.wifi.flags is mapped to com.android.wifi
+         1789439050.707  9104  9104 I AconfigPackage: com.android.org.conscrypt.flags is mapped to com.android.conscrypt
+         1789439050.707  9104  9104 I AconfigPackage: com.android.healthfitness.flags is mapped to com.android.healthfitness
+         1789439050.707  9104  9104 I AconfigPackage: com.google.android.input.twoshay.flags is mapped to vendor
+         1789439050.707  9104  9104 I AconfigPackage: libgooglecamerahal.flags is mapped to vendor
+         1789439050.707  9104  9104 I AconfigPackage: com.android.ipsec.flags is mapped to com.android.ipsec
+         1789439050.707  9104  9104 I AconfigPackage: com.android.nfc.module.flags is mapped to com.android.nfcservices
+         1789439050.707  9104  9104 I AconfigPackage: com.android.adservices.ondevicepersonalization.flags is mapped to com.android.ondevicepersonalization
+         1789439050.707  9104  9104 I AconfigPackage: com.android.bluetooth.flags is mapped to com.android.bt
+         1789439050.707  9104  9104 I AconfigPackage: com.android.devicelock.flags is mapped to com.android.devicelock
+         1789439050.708  9104  9104 I AconfigPackage: android.os.profiling is mapped to com.android.profiling
+         1789439050.708  9104  9104 I AconfigPackage: com.android.os.statsd.flags is mapped to com.android.os.statsd
+         1789439050.708  9104  9104 I AconfigPackage: com.android.cellbroadcastreceiver.flags is mapped to com.android.cellbroadcast
+         1789439050.708  9104  9104 I AconfigPackage: com.android.adservices.flags is mapped to com.android.adservices
+         1789439050.708  9104  9104 I AconfigPackage: com.android.sdksandbox.flags is mapped to com.android.adservices
+         1789439050.708  9104  9104 I AconfigPackage: com.android.uwb.flags is mapped to com.android.uwb
+         1789439050.708  9104  9104 I AconfigPackage: com.android.ranging.flags is mapped to com.android.uwb
+         1789439050.708  9104  9104 I AconfigPackage: android.graphics.pdf.flags is mapped to com.android.mediaprovider
+         1789439050.708  9104  9104 I AconfigPackage: com.android.providers.media.flags is mapped to com.android.mediaprovider
+         1789439050.708  9104  9104 I AconfigPackage: android.graphics.pdf.flags.readonly is mapped to com.android.mediaprovider
+         1789439050.708  9104  9104 I AconfigPackage: com.android.net.ct.flags is mapped to com.android.tethering
+         1789439050.708  9104  9104 I AconfigPackage: com.android.net.flags is mapped to com.android.tethering
+         1789439050.708  9104  9104 I AconfigPackage: android.net.vcn is mapped to com.android.tethering
+         1789439050.708  9104  9104 I AconfigPackage: com.android.nearby.flags is mapped to com.android.tethering
+         1789439050.708  9104  9104 I AconfigPackage: android.net.http is mapped to com.android.tethering
+         1789439050.708  9104  9104 I AconfigPackage: com.android.net.thread.flags is mapped to com.android.tethering
+         1789439050.708  9104  9104 I AconfigPackage: com.android.system.virtualmachine.flags is mapped to com.android.virt
+         1789439050.708  9104  9104 E FeatureFlagsImplExport: android.os.flagging.AconfigStorageReadException: ERROR_PACKAGE_NOT_FOUND: package android.xr cannot be found on the device
+         1789439050.714  9104  9104 D UiAutomationConnection: Created on user UserHandle{0}
+         1789439050.714  9104  9104 I UiAutomation: Initialized for user 0 on display 0
+         1789439050.714  9104  9104 W UiAutomation: Created with deprecatead constructor, assumes DEFAULT_DISPLAY
+         1789439050.715   681  1211 D AccessibilityManagerService: changeCurrentUserForTestAutomationIfNeededLocked(0): ignoring because device doesn't support visible background users
+         1789439050.715   681  1211 I UiAutomationManager: Registering UiTestAutomationService (id=com.android.server.accessibility/UiAutomation, flags=0x0) when called by user 0
+         1789439050.715   681  1211 V AccessibilityManagerService: onUserStateChangedLocked for userId: 0, forceUpdate: false
+         1789439050.716   681  1211 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+         1789439050.717  1725  4233 I AiAiEcho: Settings changed for uri: content://settings/secure/accessibility_enabled
+         1789439050.717  1725  1872 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.717   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.718   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.718   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.718   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.718   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.718   681   681 D BatterySaverPolicy: accessibility changed to true, updating policy.
+         1789439050.718  9104  9116 V UiAutomation: Init UiAutomation@50f4416[id=320, displayId=0, flags=0]
+         1789439050.717  1725  1872 I AiAiEcho: EchoTargets: 
+         1789439050.717  1725  1872 I AiAiEcho: Filtered by AiAi flag check: 
+         1789439050.717  1725  1872 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789439050.719  1725  1872 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789439050.719   681  1945 V AccessibilityManagerService: onUserStateChangedLocked for userId: 0, forceUpdate: false
+         1789439050.719  1725  1872 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789439050.719  1725  1872 I AiAiEcho: EchoTargets: 
+         1789439050.719  1725  1872 I AiAiEcho: Filtered by AiAi flag check: 
+         1789439050.719  1725  1872 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789439050.720  1725  1872 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789439050.720  1725  1872 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+         1789439050.720   681  1945 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+         1789439050.720  1725  1872 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+         1789439050.720   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.720   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.721   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.722  1725  4233 I AiAiEcho: Settings changed for uri: content://settings/secure/accessibility_enabled
+         1789439050.722  1725  1872 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789439050.722  1725  1872 I AiAiEcho: EchoTargets: 
+         1789439050.722  1725  1872 I AiAiEcho: Filtered by AiAi flag check: 
+         1789439050.722  1725  1872 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789439050.722  1725  1872 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789439050.722   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.722   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.722   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.722   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.722   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.722   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.722   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.722   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.722   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.722   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.723   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439050.723 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439050.723  1725  1872 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789439050.723  1725  1872 I AiAiEcho: EchoTargets: 
+         1789439050.723  1725  1872 I AiAiEcho: Filtered by AiAi flag check: 
+         1789439050.723  1725  1872 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789439050.723  1725  1872 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789439050.723  1725  1872 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+         1789439050.723  1092  1366 D AccessibilitySourceService: enabled a11y services count 0
+         1789439050.723  1092  1366 D AccessibilitySourceService: a11y source sending 0 issue to sc
+         1789439050.723  1725  1872 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+         1789439050.723   681  2722 E TaskPersister: File error accessing recents directory (directory doesn't exist?).
+         1789439050.723   681  2201 D SafetySourceDataValidat: No cert check requested for package com.google.android.permissioncontroller
+         1789439050.723  1091  1091 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+         1789439050.724  1091  1091 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+         1789439050.724  1414  1414 D SsBaseTemplateCard: No text view can be set up
+         1789439050.725  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439050.725  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439050.725  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439050.725  1414  1414 I SsBaseTemplateCard: Secondary card pane is null
+         1789439050.725  1414  1414 D SsBaseTemplateCard: No text view can be set up
+         1789439050.725  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439050.725  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439050.725  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439050.725  1414  1414 I SsBaseTemplateCard: Secondary card pane is null
+         1789439050.727 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439050.765   681  1001 D WifiClientModeImpl[19543:wlan0]: updateLinkLayerStatsRssiSpeedFrequencyCapabilities rssi=-50 TxLinkspeed=1 freq=2447 RxLinkSpeed=2
+         1789439050.765   681  1001 D WifiDataStall: tx tput in kbps: 11000
+         1789439050.765   681  1001 D WifiDataStall: rx tput in kbps: 11000
+         1789439050.765   681  1001 V WifiConfigManager: Updating scan detail cache freq=2447 BSSID=00:13:10:85:fe:01 RSSI=-50 for "AndroidWifi"NONE
+         1789439050.765   681  1001 D WifiThroughputPredictor:  utilization (LLS) 80 isBluetoothConnected: false final utilization: 80
+         1789439050.765   681  1001 D WifiThroughputPredictor:  BW: 0 RSSI: -50 Nss: 1 Mode: 1 symDur: 4000 snrDb 30 bitPerTone: 4500 rate: 54 throughput: 11
+         1789439050.765   681  1001 D WifiThroughputPredictor:  utilization (LLS) 80 isBluetoothConnected: false final utilization: 80
+         1789439050.765   681  1001 D WifiThroughputPredictor:  BW: 0 RSSI: -50 Nss: 1 Mode: 1 symDur: 4000 snrDb 30 bitPerTone: 4500 rate: 54 throughput: 11
+         1789439050.765   681  1001 D WifiThroughputPredictor:  utilization (LLS) 80 isBluetoothConnected: false final utilization: 80
+         1789439050.765   681  1001 D WifiThroughputPredictor:  BW: 0 RSSI: -50 Nss: 1 Mode: 1 symDur: 4000 snrDb 30 bitPerTone: 4500 rate: 54 throughput: 11
+         1789439050.765   681  1001 D WifiThroughputPredictor:  utilization (LLS) 80 isBluetoothConnected: false final utilization: 80
+         1789439050.765   681  1001 D WifiThroughputPredictor:  BW: 0 RSSI: -50 Nss: 1 Mode: 1 symDur: 4000 snrDb 30 bitPerTone: 4500 rate: 54 throughput: 11
+         1789439050.766   681  1001 D WifiScoreCard: BSSID update SIGNAL_POLL ID: 267711513 SSID: "AndroidWifi", BSSID: 00:13:10:85:fe:01, MAC: 02:15:b4:00:00:00, IP: /10.0.2.16, Security type: 0, Supplicant state: COMPLETED, Wi-Fi standard: legacy, RSSI: -50, Link speed: 1Mbps, Tx Link speed: 1Mbps, Max Supported Tx Link speed: 11Mbps, Rx Link speed: 2Mbps, Max Supported Rx Link speed: 11Mbps, Frequency: 2447MHz, Net ID: 0, Metered hint: false, score: 60, isUsable: true, CarrierMerged: false, SubscriptionId: -1, IsPrimary: 1, Trusted: true, Restricted: false, Ephemeral: false, OEM paid: false, OEM private: false, OSU AP: false, FQDN: <none>, Provider friendly name: <none>, Requesting package name: <none>"AndroidWifi"openMLO Information: , Is TID-To-Link negotiation supported by the AP: false, AP MLD Address: <none>, AP MLO Link Id: <none>, AP MLO Affiliated links: <none>, Vendor Data: <none>
+         1789439050.766   681  1001 D WifiScoreCard: txRate: 1 txSpeed: 1
+         1789439050.766   681  1001 D WifiScoreCard: network update SIGNAL_POLL "AndroidWifi" ID: 1779565205 RSSI -50 txSpeed -1
+         1789439050.766   681  1001 D WifiClientModeImpl[19543:wlan0]:  ClientModeImpl$L2ConnectedState screen=on 1 0 "AndroidWifi" 00:13:10:85:fe:01 rssi=-50 f=2447 sc=60 link=1 tx=0.0, 0.0, 0.0 rx=0.0 bcn=0 [on:0 tx:0 rx:0 period:3002] from screen [on:0 period:-1562311666] score=60
+         1789439051.728  9104  9104 W AccessibilityNodeInfoDumper: Fetch time: 3ms
+         1789439051.729   681  1211 V AccessibilityManagerService: onUserStateChangedLocked for userId: 0, forceUpdate: false
+         1789439051.729   681  1211 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+         1789439051.729   681  1211 D AccessibilityManagerService: restoreCurrentUserForTestAutomationIfNeededLocked(): ignoring because device doesn't support visible background users
+         1789439051.729   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.729  1725  4233 I AiAiEcho: Settings changed for uri: content://settings/secure/accessibility_enabled
+         1789439051.729  9104  9104 D AndroidRuntime: Shutting down VM
+         1789439051.729  9104  9113 W IPCThreadState: call to talkWithDriver in joinThreadPool returned error: -9 (Bad file descriptor), FD: -1
+         1789439051.730   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.730   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.730   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.730   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.730   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.730  9104  9114 W IPCThreadState: call to talkWithDriver in joinThreadPool returned error: -9 (Bad file descriptor), FD: -1
+         1789439051.730   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.730   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.730   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.731   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.731  1725  1872 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789439051.731  1725  1872 I AiAiEcho: EchoTargets: 
+         1789439051.731  1725  1872 I AiAiEcho: Filtered by AiAi flag check: 
+         1789439051.731  1725  1872 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789439051.731  1725  1872 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789439051.731  1725  1872 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789439051.731  1725  1872 I AiAiEcho: EchoTargets: 
+         1789439051.731  1725  1872 I AiAiEcho: Filtered by AiAi flag check: 
+         1789439051.731  1725  1872 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789439051.731  1725  1872 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789439051.731  1725  1872 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+         1789439051.731  1725  1872 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+         1789439051.732   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.733  1414  1414 D SsBaseTemplateCard: No text view can be set up
+         1789439051.733  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439051.733  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439051.733  1414  1414 D SsBaseTemplateCard: Passed-in item info is null
+         1789439051.733  1414  1414 I SsBaseTemplateCard: Secondary card pane is null
+         1789439051.733   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.733   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.733   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.736 32241 32266 I amtp    : NGA enabled in interactor.
+         1789439051.736   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.736   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.736   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.736   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.736   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.736   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.736   681   681 W IPCThreadState: Sending oneway calls to frozen process.
+         1789439051.736   681   681 D BatterySaverPolicy: accessibility changed to false, updating policy.
+         1789439051.739 32241 32268 I amtp    : NGA enabled in interactor.
+         1789439051.740  1091  1091 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+         1789439052.599  9121  9121 W dumpsys : Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: window
+         1789439052.629  9124  9124 W dumpsys : Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: activity
+         1789439052.655   233   233 I logd    : logdr: UID=2000 GID=2000 PID=9127 n tail=0 logMask=99 pid=0 start=0ns deadline=0ns

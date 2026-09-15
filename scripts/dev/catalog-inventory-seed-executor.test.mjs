@@ -145,3 +145,24 @@ test('catalog seed requires strict category paths, complete sorted list rows, an
   assert.match(source, /updatedAt: 124/);
   assert.match(source, /inventoryDeductionSummary: \{grain: "SKU", mode: null, consumptionUnitSnapshot: null, bomLineCount: null\}/);
 });
+
+test('catalog seed business labels cover every qualified SKU attribute value in the parity plan', async () => {
+  const [fixtureText, planText, generatorSource] = await Promise.all([
+    readFile(new URL('../../contracts/policy/catalog-inventory-fixture-catalog.json', import.meta.url), 'utf8'),
+    readFile(new URL('../../doc/evidence/platform/2026-08-07-v2s-catalog-inventory-seed-plan-codex.json', import.meta.url), 'utf8'),
+    readFile(new URL('../generate/catalog-inventory-p1.mjs', import.meta.url), 'utf8'),
+  ]);
+  const fixture = JSON.parse(fixtureText);
+  const plan = JSON.parse(planText);
+  const expected = new Set();
+  const collect = (sku) => {
+    for (const [attributeCode, valueCode] of Object.entries(sku?.attributeValues ?? {}))
+      expected.add(`${attributeCode}-${String(valueCode).trim()}`);
+  };
+  for (const source of plan.sourceItems ?? []) for (const sku of source.skus ?? []) collect(sku);
+  for (const dataset of plan.seedDatasets ?? []) for (const sku of dataset.entities?.skus ?? []) collect(sku);
+  const labels = fixture.seedBusinessLabels?.dictionary?.SKU_ATTRIBUTE_VALUE ?? {};
+  assert.deepEqual(Object.keys(labels).sort(), [...expected].sort());
+  assert.equal(labels['SIZE-XL'], '超大杯');
+  assert.match(generatorSource, /'SIZE-XL': '超大杯'/);
+});

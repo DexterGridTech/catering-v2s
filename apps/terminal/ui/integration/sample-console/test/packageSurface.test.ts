@@ -13,6 +13,7 @@ describe('sample-console package surface', () => {
     'kernel.feature.sample-member-registry',
     'kernel.feature.sample-staff-session',
       'ui.base.admin-shell',
+      'ui.base.console-assembly',
       'ui.base.input',
       'ui.base.render',
       'ui.feature.sample-member-desk',

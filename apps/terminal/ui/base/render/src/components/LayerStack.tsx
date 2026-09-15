@@ -101,6 +101,7 @@ export const LayerStack = () => {
     logger,
     uiCatalog,
     rendererCatalog,
+    layerDismissals,
     reportPartDiagnostic,
     clearPartDiagnostic,
     selectSurfaceForm,
@@ -171,15 +172,31 @@ export const LayerStack = () => {
   const topGuard = topLayer === undefined
     ? 'dismissible' as const
     : layerGuardOf(topLayer, uiCatalog, rendererCatalog)
+  const topLayerDismissal = topLayer === undefined
+    ? undefined
+    : layerDismissals?.[topLayer.partKey]
 
   const dismissTopLayer = useCallback(() => {
     if (topLayer === undefined || topGuard !== 'dismissible') return
+    if (topLayerDismissal !== undefined) {
+      try {
+        void Promise.resolve(topLayerDismissal({
+          dispatchCommand,
+          displayMode,
+          layerId: topLayer.layerId,
+        })).catch(() => undefined)
+      } catch {
+        // The feature-owned intent remains best-effort at an input boundary;
+        // its command dispatcher records the actual rejection.
+      }
+      return
+    }
     void dispatchWithRequestId({
       dispatchCommand,
       definition: closeLayerCommand,
       payload: {displayMode, layerId: topLayer.layerId},
     }).catch(() => undefined)
-  }, [dispatchCommand, displayMode, topGuard, topLayer])
+  }, [dispatchCommand, displayMode, topGuard, topLayer, topLayerDismissal])
 
   useEffect(() => {
     if (Platform?.OS === 'web' || typeof BackHandler?.addEventListener !== 'function') return undefined

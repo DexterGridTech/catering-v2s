@@ -10,6 +10,11 @@ layer、catalog 或输入管线。
 - `src/components/`：console layer、登录和只读 section 的 React Native 呈现；`AdminLauncher` 是包住业务内容的普通 `View` 观察器，不是会吞掉业务触摸的独立 `Pressable`；
 - `src/foundations/adminTestIds.ts`：真实控件与 focused/L2 绑定共用的 test ID 单源。
 
+公共面由 `src/index.ts` 导出；除模块元数据、assembly 与组件外，事件坐标归一化的
+`adminLauncherPointFromEvent`、手势状态/跟踪函数和 admin identity/test ID 常量也属于
+受 invariant 锁定的 owner API。新增导出时必须同步更新 `terminal-invariants.json` 与
+public-surface focused test，不得让 README 或 invariant 漂移。
+
 入口手势由 `AdminLauncher` 在原生观察业务内容祖先上的触摸结束事件，在 Web 观察同一祖先上的点击事件；两种平台事件互斥绑定。
 它先兼容解析原生 RN、Web TouchEvent 与 Web MouseEvent 的窗口坐标，再用测得的窗口原点和宿主/画布比例调用
 `foundations/adminLauncher.ts#logicalPointFromWindow`，把逻辑坐标交给同一个纯手势跟踪器；96×96 阈值因此按逻辑画布而不是窗口像素判定。

@@ -9,7 +9,7 @@ class TerminalDualScreenModule : Module() {
     Events(SURFACE_HOST_CHANGED)
 
     AsyncFunction("getSurfaceHostSnapshot") { surfaceKey: String ->
-      TerminalSurfaceHostRegistry.snapshot(surfaceKey)?.toMap()
+      TerminalSurfaceHostRegistry.event(surfaceKey)?.toMap()
     }
 
     OnCreate {
@@ -30,8 +30,18 @@ class TerminalDualScreenModule : Module() {
 
 private fun TerminalSurfaceHostEvent.toMap(): Map<String, Any?> = when (this) {
   is TerminalSurfaceHostEvent.Ready -> snapshot.toMap()
+  is TerminalSurfaceHostEvent.RecoverableRemoval -> mapOf(
+    "available" to false,
+    "status" to "recovering",
+    "surfaceKey" to surfaceKey,
+    "generation" to generation,
+    "displayId" to displayId,
+    "windowIdentity" to windowIdentity,
+    "reason" to reason,
+  )
   is TerminalSurfaceHostEvent.Unavailable -> mapOf(
     "available" to false,
+    "status" to "unavailable",
     "surfaceKey" to surfaceKey,
     "generation" to generation,
     "displayId" to displayId,

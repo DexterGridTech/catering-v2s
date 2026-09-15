@@ -1,0 +1,70 @@
+{
+  "runId": "u8-1789471678338",
+  "tool": "tools/terminal-sample2/run-u8-release-cold-start.mjs",
+  "mode": "record-only-release-cold-start",
+  "failureMode": "wrong-primary-display",
+  "startedAt": "2026-09-15T11:27:58.338Z",
+  "phoneSerial": "emulator-5556",
+  "dualSerial": "emulator-5554",
+  "profiles": [
+    "sample-terminal",
+    "sample-wallpaper-terminal"
+  ],
+  "build": "SKIPPED_BY_EXPLICIT_OPTION",
+  "apkBindings": {
+    "sample-terminal": {
+      "path": "apps/terminal/assembly/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk",
+      "sha256": "9fe47967bb5824ee63e19f565af7a3218d3d116f3cbf31472b62dc21eec04077",
+      "bytes": 87920433,
+      "mtimeMs": 1789471559958.712
+    },
+    "sample-wallpaper-terminal": {
+      "path": "apps/terminal/assembly/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk",
+      "sha256": "65242127eef6df56fa48fe0ffa042e171bbffeea2024fe76cbf66e0c7f2d4b1b",
+      "bytes": 88329653,
+      "mtimeMs": 1789471599927.1309
+    }
+  },
+  "finishedAt": "2026-09-15T11:28:29.410Z",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "firstFailure": null,
+  "records": [
+    {
+      "runId": "sample-terminal-mobile-1789471678990",
+      "app": "sample-terminal",
+      "serial": "emulator-5556",
+      "shape": "mobile",
+      "business": "PASS",
+      "cleanup": "PASS",
+      "firstFailure": null
+    },
+    {
+      "runId": "sample-terminal-dual-1789471686902",
+      "app": "sample-terminal",
+      "serial": "emulator-5554",
+      "shape": "dual",
+      "business": "PASS",
+      "cleanup": "PASS",
+      "firstFailure": null
+    },
+    {
+      "runId": "sample-wallpaper-terminal-mobile-1789471694554",
+      "app": "sample-wallpaper-terminal",
+      "serial": "emulator-5556",
+      "shape": "mobile",
+      "business": "PASS",
+      "cleanup": "PASS",
+      "firstFailure": null
+    },
+    {
+      "runId": "sample-wallpaper-terminal-dual-1789471702608",
+      "app": "sample-wallpaper-terminal",
+      "serial": "emulator-5554",
+      "shape": "dual",
+      "business": "PASS",
+      "cleanup": "PASS",
+      "firstFailure": null
+    }
+  ]
+}

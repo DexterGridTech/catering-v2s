@@ -134,7 +134,9 @@ public final class OperationsContractController {
             @org.springframework.web.bind.annotation.RequestParam(defaultValue = SortDirection.DEFAULT_WIRE)
                     String direction,
             @org.springframework.web.bind.annotation.RequestParam(defaultValue = "1") int page,
-            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "20") int pageSize) {
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "20") int pageSize,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String extensionFilters,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String definitionRevision) {
         WorkspaceSessionReadback session = checkedSession(request, groupWorkspaceKey, expectedContextVersion);
         UUID scopedProjectId = scopedProject(session);
         var result = reads.operationsTaskPage(
@@ -153,7 +155,9 @@ public final class OperationsContractController {
                         sort,
                         direction,
                         page,
-                        pageSize));
+                        pageSize,
+                        extensionFilters,
+                        definitionRevision));
         return new StoreContractPage(
                 ContractWireMapper.metadata(result.metadata()),
                 result.items().stream().map(ContractWireMapper::wire).toList());

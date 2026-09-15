@@ -109,7 +109,8 @@ final class ContractWireMapper {
                 (long) value.pageSize(),
                 value.total(),
                 StoreContractSortKey.valueOf(value.sort()),
-                StoreContractSortDirection.valueOf(value.direction()));
+                StoreContractSortDirection.valueOf(value.direction()),
+                value.definitionRevision());
     }
 
     private static StoreContractProject project(ContractTaskReadService.Reference value) {

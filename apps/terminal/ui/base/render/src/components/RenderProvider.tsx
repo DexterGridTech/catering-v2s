@@ -1,16 +1,22 @@
-import {useEffect, useMemo, useRef, useSyncExternalStore} from 'react'
+import {useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore} from 'react'
 import {createRenderPartDiagnosticReporter} from '../foundations/diagnostics'
 import {createRenderSnapshotReader} from '../foundations/createRenderSnapshotReader'
 import {RenderContext, type RenderContextValue} from '../contexts/RenderContext'
-import type {RenderProviderProps} from '../types/props'
+import type {RenderProviderProps, RenderSurfaceReadyInput} from '../types/props'
+
+const emptyLayerDismissals = Object.freeze({})
 
 export const RenderProvider = ({
   stateSource,
   uiCatalog,
   rendererCatalog,
   logger,
+  nativeLoadingCapability,
+  onPrimarySurfaceReady,
+  getPrimarySurfaceReady,
   runtimeFacts,
   dispatchCommand,
+  layerDismissals,
   selectUiVariable,
   selectSurfaceForm,
   children,
@@ -21,6 +27,13 @@ export const RenderProvider = ({
     })
   const snapshotReader = useMemo(() => createRenderSnapshotReader(stateSource), [stateSource])
   const status = useSyncExternalStore(stateSource.subscribe, stateSource.getStatus, stateSource.getStatus)
+  const [hasPrimarySurfaceReady, setHasPrimarySurfaceReady] = useState(
+    () => getPrimarySurfaceReady?.() ?? false,
+  )
+  const reportPrimarySurfaceReady = useCallback(async (input: RenderSurfaceReadyInput) => {
+    await onPrimarySurfaceReady?.(input)
+    setHasPrimarySurfaceReady(true)
+  }, [onPrimarySurfaceReady])
   const previousStatus = useRef(status)
   const startupReported = useRef(false)
   useEffect(() => {
@@ -64,8 +77,12 @@ export const RenderProvider = ({
     uiCatalog,
     rendererCatalog,
     logger,
+    nativeLoadingCapability,
+    onPrimarySurfaceReady: onPrimarySurfaceReady === undefined ? undefined : reportPrimarySurfaceReady,
+    hasPrimarySurfaceReady,
     runtimeFacts,
     dispatchCommand,
+    layerDismissals: layerDismissals ?? emptyLayerDismissals,
     selectUiVariable,
     selectSurfaceForm: selectSurfaceFormReader,
     snapshotReader,
@@ -74,7 +91,12 @@ export const RenderProvider = ({
   }), [
     diagnosticReporter.report,
     dispatchCommand,
+    getPrimarySurfaceReady,
+    layerDismissals,
     logger,
+    nativeLoadingCapability,
+    onPrimarySurfaceReady,
+    reportPrimarySurfaceReady,
     rendererCatalog,
     selectUiVariable,
     selectSurfaceFormReader,
@@ -82,6 +104,7 @@ export const RenderProvider = ({
     stateSource,
     runtimeFacts,
     uiCatalog,
+    hasPrimarySurfaceReady,
   ])
 
   return <RenderContext.Provider value={contextValue}>{children}</RenderContext.Provider>

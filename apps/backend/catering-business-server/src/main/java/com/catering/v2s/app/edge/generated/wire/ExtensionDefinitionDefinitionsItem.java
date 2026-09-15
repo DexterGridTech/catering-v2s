@@ -4,7 +4,9 @@ package com.catering.v2s.app.edge.generated.wire;
 public record ExtensionDefinitionDefinitionsItem(
     String key,
     String label,
-    String type,
+    ExtensionFieldType type,
+    Boolean listDisplay,
+    Boolean searchable,
     Boolean required,
     java.util.List<String> options,
     String status,

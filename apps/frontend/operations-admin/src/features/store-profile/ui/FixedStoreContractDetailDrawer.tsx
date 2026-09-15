@@ -2,6 +2,7 @@ import {Alert, Descriptions, Drawer, Skeleton, Space} from 'antd';
 import {
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  formatTypedExtensionValue,
   NameCodeText,
   testId,
   ValidityStatus,
@@ -11,7 +12,7 @@ import {
 import {useEffect, useMemo} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
-import type {JsonValue, StoreContract} from '../../../app/api/generated/operations-edge';
+import type {StoreContract} from '../../../app/api/generated/operations-edge';
 import type {OperationsPageContext} from '../../../app/routing/model';
 
 type Props = {
@@ -43,7 +44,7 @@ export function FixedStoreContractDetailDrawer({contract, queryContext, onClose}
     .map(field => ({
       key: `extension-${field.key}`,
       label: field.label,
-      children: valueOf(selected?.extensionValues?.[field.key]),
+      children: formatTypedExtensionValue(selected?.extensionValues?.[field.key], field),
     }));
 
   useEffect(() => {
@@ -128,8 +129,4 @@ export function FixedStoreContractDetailDrawer({contract, queryContext, onClose}
       )}
     </Drawer>
   );
-}
-
-function valueOf(value: JsonValue | undefined) {
-  return value === undefined || value === null || value === '' ? '—' : String(value);
 }

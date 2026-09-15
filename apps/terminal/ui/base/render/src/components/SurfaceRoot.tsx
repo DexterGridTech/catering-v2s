@@ -5,7 +5,7 @@ import {ScreenContainer} from './ScreenContainer'
 import {SurfaceContext} from '../contexts/SurfaceContext'
 import {useRenderContext} from '../contexts/RenderContext'
 import {SurfaceHostController} from './SurfaceHostController'
-import {useSurfaceHostSnapshot} from './SurfaceHostController'
+import {useSurfaceHostAvailability, useSurfaceHostSnapshot} from './SurfaceHostController'
 import {useUiStateSelector} from '../hooks/useUiStateSelector'
 import type {SurfaceRootProps} from '../types/props'
 
@@ -21,16 +21,23 @@ export const SurfaceRoot = ({
   const selectedSurfaceForm = useUiStateSelector(selectSurfaceForm)
   const surfaceForm = selectedSurfaceForm ?? 'laptop'
   const surfaceHostSnapshot = useSurfaceHostSnapshot(surfaceHostSource)
+  const explicitSurfaceHostAvailability = useSurfaceHostAvailability(surfaceHostSource)
+  const surfaceHostAvailability = surfaceHostSource === undefined
+    ? 'not-attached' as const
+    : explicitSurfaceHostAvailability ?? (surfaceHostSnapshot === null ? 'pending' : 'ready')
+  const surfaceIdentity = surfaceHostSnapshot?.surfaceIdentity ?? surfaceHostSource?.getSurfaceIdentity?.() ?? null
   const surfaceValue = useMemo(
     () => Object.freeze({
       displayMode,
       containerKey,
       surfaceForm,
-      isHostPrimaryDisplay: surfaceHostSnapshot?.isHostPrimaryDisplay ?? false,
-      surfaceIdentity: surfaceHostSnapshot?.surfaceIdentity ?? null,
+      isHostPrimaryDisplay: surfaceHostSnapshot?.isHostPrimaryDisplay
+        ?? (surfaceHostAvailability === 'unavailable' && surfaceIdentity?.displayIndex === 0),
+      surfaceIdentity,
       hostLogicalSize: surfaceHostSnapshot?.stableHostLogicalSize ?? null,
+      surfaceHostAvailability,
     }),
-    [containerKey, displayMode, surfaceForm, surfaceHostSnapshot?.isHostPrimaryDisplay, surfaceHostSnapshot?.stableHostLogicalSize, surfaceHostSnapshot?.surfaceIdentity],
+    [containerKey, displayMode, surfaceForm, surfaceHostAvailability, surfaceHostSnapshot?.isHostPrimaryDisplay, surfaceHostSnapshot?.stableHostLogicalSize, surfaceIdentity],
   )
   const previousLayout = useRef<string | null>(null)
   const reportLayout = useCallback((event: LayoutChangeEvent) => {

@@ -12,6 +12,7 @@ import {moduleName as primitives} from '@catering-v2s/ui-base-primitives'
 import {moduleName as staffAuth} from '@catering-v2s/ui-feature-sample-staff-auth'
 import {moduleName as wallpaperPicker} from '@catering-v2s/ui-feature-sample-wallpaper-picker'
 import {moduleName as devHost} from '@catering-v2s/ui-base-dev-host'
+import {moduleName as consoleAssembly} from '@catering-v2s/ui-base-console-assembly'
 
 export const dependencyModuleNames = [
   contracts,
@@ -27,6 +28,17 @@ export const dependencyModuleNames = [
   primitives,
   staffAuth,
   wallpaperPicker,
+  consoleAssembly,
 ] as const
 
 export const devDependencyModuleNames = [devHost] as const
+
+export const runtimeModuleDependencyNames = [
+  runtime,
+  displayContext,
+  uiState,
+  staffSession,
+  wallpaper,
+  staffAuth,
+  wallpaperPicker,
+] as const

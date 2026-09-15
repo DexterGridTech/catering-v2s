@@ -56,15 +56,16 @@ export const createMemoryStorageForTest = (): StateStoragePort => {
   }
 }
 
-const createLoggerBinding = () => ({
+const createLoggerBinding = (events: LogEvent[]) => ({
   kind: 'sink' as const,
-  write: (_event: LogEvent): void => undefined,
+  write: (event: LogEvent): void => { events.push(event) },
 })
 
 export const createTestRuntime = (
   modules: readonly RuntimeModule[],
   plainStorage = createMemoryStorageForTest(),
   runtimeName = 'sample-staff-session-test',
+  loggerEvents: LogEvent[] = [],
 ) => createRuntime({
   localNodeId: 'node_test' as CreateRuntimeInput['localNodeId'],
   modules: [
@@ -91,7 +92,7 @@ export const createTestRuntime = (
   platformPorts: createPlatformPorts({
     environmentMode: 'TEST',
     bindings: {
-      logger: createLoggerBinding(),
+      logger: createLoggerBinding(loggerEvents),
       persistKv: plainStorage,
       persistSecure: createMemoryStorageForTest(),
       device: {} as never,

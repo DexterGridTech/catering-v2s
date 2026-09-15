@@ -1,0 +1,70 @@
+{
+  "runId": "u8-1789477485584",
+  "tool": "tools/terminal-sample2/run-u8-release-cold-start.mjs",
+  "mode": "record-only-release-cold-start",
+  "failureMode": null,
+  "startedAt": "2026-09-15T13:04:45.584Z",
+  "phoneSerial": "emulator-5556",
+  "dualSerial": "emulator-5554",
+  "profiles": [
+    "sample-terminal",
+    "sample-wallpaper-terminal"
+  ],
+  "build": "SKIPPED_BY_EXPLICIT_OPTION",
+  "apkBindings": {
+    "sample-terminal": {
+      "path": "apps/terminal/assembly/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk",
+      "sha256": "e985891e238e72a7ff68af44e93b1b6d7629df375e6759a16c83a3b67d9f8c94",
+      "bytes": 87920433,
+      "mtimeMs": 1789475059777.5083
+    },
+    "sample-wallpaper-terminal": {
+      "path": "apps/terminal/assembly/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk",
+      "sha256": "0388b6f77b49841104cdd867103ceb641326b66279bc32af62f0e6021e8045dd",
+      "bytes": 88329713,
+      "mtimeMs": 1789474937414.9946
+    }
+  },
+  "finishedAt": "2026-09-15T13:05:18.488Z",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "firstFailure": null,
+  "records": [
+    {
+      "runId": "sample-terminal-mobile-1789477486296",
+      "app": "sample-terminal",
+      "serial": "emulator-5556",
+      "shape": "mobile",
+      "business": "PASS",
+      "cleanup": "PASS",
+      "firstFailure": null
+    },
+    {
+      "runId": "sample-terminal-dual-1789477494187",
+      "app": "sample-terminal",
+      "serial": "emulator-5554",
+      "shape": "dual",
+      "business": "PASS",
+      "cleanup": "PASS",
+      "firstFailure": null
+    },
+    {
+      "runId": "sample-wallpaper-terminal-mobile-1789477502488",
+      "app": "sample-wallpaper-terminal",
+      "serial": "emulator-5556",
+      "shape": "mobile",
+      "business": "PASS",
+      "cleanup": "PASS",
+      "firstFailure": null
+    },
+    {
+      "runId": "sample-wallpaper-terminal-dual-1789477510199",
+      "app": "sample-wallpaper-terminal",
+      "serial": "emulator-5554",
+      "shape": "dual",
+      "business": "PASS",
+      "cleanup": "PASS",
+      "firstFailure": null
+    }
+  ]
+}

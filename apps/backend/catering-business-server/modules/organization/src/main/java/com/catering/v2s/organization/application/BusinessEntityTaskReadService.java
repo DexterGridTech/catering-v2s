@@ -1,5 +1,7 @@
 package com.catering.v2s.organization.application;
 
+import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
+import com.catering.v2s.extension.api.ExtensionFilterQuery;
 import com.catering.v2s.organization.application.persistence.BusinessEntityTaskReadPersistence;
 import com.catering.v2s.organization.api.BusinessEntityTypes;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
@@ -31,17 +33,31 @@ public class BusinessEntityTaskReadService {
     private static final Set<String> ENTITY_TYPES = Set.of("BRAND", "TENANT", BusinessEntityTypes.HEAD_COMPANY);
     private final BusinessEntityTaskReadPersistence persistence;
     private final OrganizationNodeLookup nodes;
+    private final ExtensionDefinitionLookup definitions;
 
     @Autowired
     public BusinessEntityTaskReadService(
-            BusinessEntityTaskReadPersistence persistence, OrganizationNodeLookup nodes) {
+            BusinessEntityTaskReadPersistence persistence,
+            OrganizationNodeLookup nodes,
+            ExtensionDefinitionLookup definitions) {
         this.persistence = persistence;
         this.nodes = nodes;
+        this.definitions = definitions;
+    }
+
+    public BusinessEntityTaskReadService(
+            BusinessEntityTaskReadPersistence persistence, OrganizationNodeLookup nodes) {
+        this(persistence, nodes, null);
     }
 
     /** Compatibility constructor for existing unit tests; production wiring uses the typed boundary. */
     public BusinessEntityTaskReadService(JdbcTemplate jdbc, OrganizationNodeLookup nodes) {
         this(new BusinessEntityTaskReadPersistence(jdbc), nodes);
+    }
+
+    public BusinessEntityTaskReadService(
+            JdbcTemplate jdbc, ExtensionDefinitionLookup definitions, OrganizationNodeLookup nodes) {
+        this(new BusinessEntityTaskReadPersistence(jdbc), nodes, definitions);
     }
 
     @Transactional(readOnly = true)
@@ -273,6 +289,31 @@ public class BusinessEntityTaskReadService {
             String direction,
             int page,
             int pageSize) {
+        return pageBrands(
+                workspaceUuid,
+                groupWorkspaceKey,
+                queryText,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                null,
+                null);
+    }
+
+    @Transactional(readOnly = true)
+    public BrandPage pageBrands(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String queryText,
+            String status,
+            String sort,
+            String direction,
+            int page,
+            int pageSize,
+            String extensionFilters,
+            String definitionRevision) {
         BusinessEntityPage values = pageBusinessEntities(
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -286,12 +327,15 @@ public class BusinessEntityTaskReadService {
                 direction,
                 page,
                 pageSize,
-                true);
+                true,
+                extensionFilters,
+                definitionRevision);
         return new BrandPage(
                 values.items().stream().map(BusinessEntityPageItem::entity).toList(),
                 values.total(),
                 values.page(),
-                values.pageSize());
+                values.pageSize(),
+                values.definitionRevision());
     }
 
     /** Every business-entity page keeps predicate, total and bounded slice inside the organization owner. */
@@ -309,6 +353,39 @@ public class BusinessEntityTaskReadService {
             String direction,
             int page,
             int pageSize) {
+        return pageEntities(
+                entityType,
+                workspaceUuid,
+                groupWorkspaceKey,
+                name,
+                code,
+                legalName,
+                unifiedSocialCreditCode,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                null,
+                null);
+    }
+
+    @Transactional(readOnly = true)
+    public EntityPage pageEntities(
+            String entityType,
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String name,
+            String code,
+            String legalName,
+            String unifiedSocialCreditCode,
+            String status,
+            String sort,
+            String direction,
+            int page,
+            int pageSize,
+            String extensionFilters,
+            String definitionRevision) {
         String type = entityType(entityType);
         BusinessEntityPage values = pageBusinessEntities(
                 workspaceUuid,
@@ -322,12 +399,16 @@ public class BusinessEntityTaskReadService {
                 sort,
                 direction,
                 page,
-                pageSize);
+                pageSize,
+                false,
+                extensionFilters,
+                definitionRevision);
         return new EntityPage(
                 values.items().stream().map(BusinessEntityPageItem::entity).toList(),
                 values.total(),
                 values.page(),
-                values.pageSize());
+                values.pageSize(),
+                values.definitionRevision());
     }
 
     /**
@@ -361,7 +442,42 @@ public class BusinessEntityTaskReadService {
                 direction,
                 page,
                 pageSize,
-                false);
+                null,
+                null);
+    }
+
+    @Transactional(readOnly = true)
+    public BusinessEntityPage pageBusinessEntities(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String entityType,
+            String name,
+            String code,
+            String legalName,
+            String unifiedSocialCreditCode,
+            String status,
+            String sort,
+            String direction,
+            int page,
+            int pageSize,
+            String extensionFilters,
+            String definitionRevision) {
+        return pageBusinessEntities(
+                workspaceUuid,
+                groupWorkspaceKey,
+                entityType,
+                name,
+                code,
+                legalName,
+                unifiedSocialCreditCode,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                false,
+                extensionFilters,
+                definitionRevision);
     }
 
     private BusinessEntityPage pageBusinessEntities(
@@ -377,8 +493,12 @@ public class BusinessEntityTaskReadService {
             String direction,
             int page,
             int pageSize,
-            boolean brandQueryText) {
+            boolean brandQueryText,
+            String extensionFilters,
+            String definitionRevision) {
         String type = entityType == null ? null : entityType(entityType);
+        ExtensionFilterQuery.Prepared filters = prepareFilters(
+                workspaceUuid, groupWorkspaceKey, type, extensionFilters, definitionRevision);
         try {
             BusinessEntityTaskReadPersistence.PageData values = persistence.pageBusinessEntities(
                     workspaceUuid,
@@ -393,14 +513,38 @@ public class BusinessEntityTaskReadService {
                     direction,
                     page,
                     pageSize,
-                    brandQueryText);
+                    brandQueryText,
+                    filters);
             List<BusinessEntityPageItem> items = values.items().stream()
                     .map(item -> new BusinessEntityPageItem(item.entityType(), item.entity()))
                     .toList();
-            return new BusinessEntityPage(items, values.total(), values.page(), values.pageSize());
+            return new BusinessEntityPage(
+                    items, values.total(), values.page(), values.pageSize(), filters.definitionRevision());
         } catch (IllegalArgumentException invalid) {
             throw new OrganizationValidationException(invalid);
         }
+    }
+
+    private ExtensionFilterQuery.Prepared prepareFilters(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String entityType,
+            String extensionFilters,
+            String definitionRevision) {
+        if (extensionFilters == null) {
+            return ExtensionFilterQuery.Prepared.empty();
+        }
+        if (entityType == null || definitions == null) {
+            throw new ExtensionFilterQuery.InvalidFilterException(List.of(
+                    new ExtensionFilterQuery.InvalidReason(entityType, "HOST_TYPE_REQUIRED", null)));
+        }
+        return ExtensionFilterQuery.prepare(
+                definitions,
+                workspaceUuid,
+                groupWorkspaceKey,
+                entityType,
+                extensionFilters,
+                definitionRevision);
     }
 
     /** Canonical owner lookup when an app knows a business-entity id but not its subtype. */

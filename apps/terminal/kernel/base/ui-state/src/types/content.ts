@@ -14,6 +14,8 @@ export type LayerEntry = Readonly<{
   readonly partKey: PartKey
   readonly props?: StateJsonValue
   readonly openedAt: TimestampMs
+  /** Omitted legacy values are durable; ephemeral entries never hydrate. */
+  readonly persistence?: 'durable' | 'ephemeral'
 }>
 
 export type ContentSet = Readonly<{

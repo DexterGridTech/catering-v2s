@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/ui-base-feature-assembly",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-base-feature-assembly", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": [
+    "CreateFeatureAssemblyInput", "CreateFeatureAssemblyModuleInput", "FeatureAssembly",
+    "createFeatureAssembly", "createFeatureAssemblyModule",
+    "dependencyModuleNames", "devDependencyModuleNames", "moduleName"
+  ]
+}

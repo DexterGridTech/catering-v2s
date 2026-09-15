@@ -11,6 +11,7 @@ import {moduleName as staffAuth} from '@catering-v2s/ui-feature-sample-staff-aut
 import {moduleName as memberDesk} from '@catering-v2s/ui-feature-sample-member-desk'
 import {moduleName as devHost} from '@catering-v2s/ui-base-dev-host'
 import {moduleName as adminShell} from '@catering-v2s/ui-base-admin-shell'
+import {moduleName as consoleAssembly} from '@catering-v2s/ui-base-console-assembly'
 
 export const dependencyModuleNames = [
   contracts,
@@ -25,6 +26,17 @@ export const dependencyModuleNames = [
   staffAuth,
   memberDesk,
   adminShell,
+  consoleAssembly,
 ] as const;
 
 export const devDependencyModuleNames = [devHost] as const
+
+export const runtimeModuleDependencyNames = [
+  runtime,
+  displayContext,
+  uiState,
+  staffSession,
+  memberRegistry,
+  staffAuth,
+  memberDesk,
+] as const

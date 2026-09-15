@@ -31,6 +31,8 @@
                 "key",
                 "label",
                 "type",
+                "listDisplay",
+                "searchable",
                 "required",
                 "options",
                 "status"
@@ -48,14 +50,15 @@
                   "maxLength": 120
                 },
                 "type": {
-                  "type": "string",
-                  "enum": [
-                    "TEXT",
-                    "NUMBER",
-                    "DATE",
-                    "BOOLEAN",
-                    "SELECT"
-                  ]
+                  "$ref": "#/components/schemas/ExtensionFieldType"
+                },
+                "listDisplay": {
+                  "type": "boolean",
+                  "nullable": true
+                },
+                "searchable": {
+                  "type": "boolean",
+                  "nullable": true
                 },
                 "required": {
                   "type": "boolean"
@@ -123,6 +126,8 @@
               "required": [
                 "label",
                 "type",
+                "listDisplay",
+                "searchable",
                 "required",
                 "options",
                 "status"
@@ -140,14 +145,15 @@
                   "maxLength": 120
                 },
                 "type": {
-                  "type": "string",
-                  "enum": [
-                    "TEXT",
-                    "NUMBER",
-                    "DATE",
-                    "BOOLEAN",
-                    "SELECT"
-                  ]
+                  "$ref": "#/components/schemas/ExtensionFieldType"
+                },
+                "listDisplay": {
+                  "type": "boolean",
+                  "nullable": true
+                },
+                "searchable": {
+                  "type": "boolean",
+                  "nullable": true
                 },
                 "required": {
                   "type": "boolean"
@@ -183,6 +189,51 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "ExtensionFieldType": {
+        "type": "string",
+        "enum": [
+          "TEXT",
+          "NUMBER",
+          "DATE",
+          "BOOLEAN",
+          "SELECT"
+        ]
+      },
+      "ExtensionFilter": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "fieldKey",
+          "type",
+          "value"
+        ],
+        "properties": {
+          "fieldKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "type": {
+            "$ref": "#/components/schemas/ExtensionFieldType"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "ExtensionFilterQuery": {
+        "type": "string",
+        "maxLength": 16384,
+        "description": "Percent-encoded JSON array of ExtensionFilter objects",
+        "x-v2s-logical-schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/ExtensionFilter"
           }
         }
       },

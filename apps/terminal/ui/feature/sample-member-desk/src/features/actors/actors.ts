@@ -218,11 +218,15 @@ export const createDeskNoticeActor = (): ActorDefinition => defineActor(moduleNa
 
 export const createDeskSystemNoticeActor = (): ActorDefinition => defineActor(moduleName, 'desk-system-notice', [
   onCommand(deskSystemFailureObservedCommand, async context => {
+    const hasNotice = selectLayers(context.getState(), primary)
+      .some(layer => layer.layerId === 'sample.desk.system-notice')
+    if (hasNotice) return null
     await context.dispatchCommand(openLayerCommand, {
       displayMode: primary,
       layerId: 'sample.desk.system-notice',
       partKey: 'sample.desk.system-notice',
       props: {operation: context.command.payload.operation},
+      persistence: 'ephemeral',
     })
     return null
   }),

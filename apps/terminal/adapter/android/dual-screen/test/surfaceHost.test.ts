@@ -113,7 +113,7 @@ describe('acceptAndroidSurfaceHostEvent', () => {
     }).accepted).toBe(false)
   })
 
-  it('clears a removed surface and accepts a later generation on a new display', () => {
+  it('clears a terminally unavailable surface and accepts a later generation on a new display', () => {
     const first = accept('SECONDARY', {
       generation: -1,
       displayId: null,
@@ -125,6 +125,7 @@ describe('acceptAndroidSurfaceHostEvent', () => {
     }))
     const removed = accept('SECONDARY', first.state, {
       available: false,
+      status: 'unavailable',
       surfaceKey: 'SECONDARY',
       generation: 2,
       displayId: 2,
@@ -142,9 +143,31 @@ describe('acceptAndroidSurfaceHostEvent', () => {
     })).accepted).toBe(true)
   })
 
+  it('keeps the last valid snapshot for a recoverable removal', () => {
+    const first = accept('PRIMARY', {
+      generation: -1,
+      displayId: null,
+      snapshot: null,
+    }, readyEvent())
+    const recovering = accept('PRIMARY', first.state, {
+      available: false,
+      status: 'recovering',
+      surfaceKey: 'PRIMARY',
+      generation: 2,
+      displayId: 0,
+      windowIdentity: 'primary',
+      reason: 'primary-destroyed',
+    })
+
+    expect(recovering.accepted).toBe(true)
+    expect(recovering.eventKind).toBe('recoverable-removal')
+    expect(recovering.state).toBe(first.state)
+    expect(recovering.state.snapshot).toEqual(first.state.snapshot)
+  })
+
   it('does not let a stale or wrong-display event overwrite the async initial snapshot', async () => {
     nativeModuleMock.mockReturnValue({
-      getSurfaceHostSnapshot: vi.fn(async () => createSnapshot()),
+      getSurfaceHostSnapshot: vi.fn(async () => readyEvent()),
     })
     const source = (await import('../src/implementations/surfaceHost')).createAndroidSurfaceHostSource({surfaceKey: 'PRIMARY', displayIndex: 0})
     const observed: Array<AndroidSurfaceHostMeasurementSnapshot | null> = []
@@ -163,14 +186,41 @@ describe('acceptAndroidSurfaceHostEvent', () => {
 
     eventListeners[0]?.({
       available: false,
+      status: 'recovering',
       surfaceKey: 'PRIMARY',
       generation: 2,
       displayId: 0,
       windowIdentity: 'primary',
       reason: 'primary-destroyed',
     })
+    expect(source.getSnapshot()?.generation).toBe(1)
+    expect(observed).toHaveLength(1)
+    expect(source.getAvailability()).toBe('ready')
+    unsubscribe()
+  })
+
+  it('propagates an initial native unavailable event instead of leaving the host pending', async () => {
+    nativeModuleMock.mockReturnValue({
+      getSurfaceHostSnapshot: vi.fn(async () => ({
+        available: false,
+        status: 'unavailable',
+        surfaceKey: 'PRIMARY',
+        generation: 1,
+        displayId: null,
+        windowIdentity: 'primary',
+        reason: 'display-manager-unavailable',
+      })),
+    })
+    const module = await import('../src/implementations/surfaceHost')
+    const source = module.createAndroidSurfaceHostSource({surfaceKey: 'PRIMARY', displayIndex: 0})
+    const observed: Array<AndroidSurfaceHostMeasurementSnapshot | null> = []
+    const unsubscribe = source.subscribe(snapshot => observed.push(snapshot))
+    await Promise.resolve()
+    await Promise.resolve()
+
     expect(source.getSnapshot()).toBeNull()
-    expect(observed.at(-1)).toBeNull()
+    expect(source.getAvailability()).toBe('unavailable')
+    expect(observed).toEqual([null])
     unsubscribe()
   })
 
@@ -196,12 +246,33 @@ describe('acceptAndroidSurfaceHostEvent', () => {
     unsubscribe()
   })
 
+  it('turns a matching host on the wrong physical display into terminal unavailability', async () => {
+    nativeModuleMock.mockReturnValue({
+      getSurfaceHostSnapshot: vi.fn(async () => null),
+    })
+    const module = await import('../src/implementations/surfaceHost')
+    const source = module.createAndroidSurfaceHostSource({surfaceKey: 'PRIMARY', displayIndex: 0})
+    const observed: Array<AndroidSurfaceHostMeasurementSnapshot | null> = []
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const unsubscribe = source.subscribe(snapshot => observed.push(snapshot))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    eventListeners[0]?.(readyEvent({displayId: 1, isHostPrimaryDisplay: false}))
+
+    expect(source.getSnapshot()).toBeNull()
+    expect(source.getAvailability()).toBe('unavailable')
+    expect(observed.at(-1)).toBeNull()
+    expect(errorSpy).toHaveBeenCalledTimes(1)
+    unsubscribe()
+  })
+
   it('ignores a valid broadcast event belonging to the other surface source', async () => {
     nativeModuleMock.mockReturnValue({
       getSurfaceHostSnapshot: vi.fn(async (surfaceKey: string) =>
         surfaceKey === 'PRIMARY'
-          ? createSnapshot()
-          : createSnapshot({
+          ? readyEvent()
+          : readyEvent({
               surfaceKey: 'SECONDARY',
               displayId: 2,
               isHostPrimaryDisplay: false,

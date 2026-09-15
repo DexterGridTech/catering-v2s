@@ -98,13 +98,39 @@ type DispatcherInput = Readonly<{
   }
 }>
 
-const toLedgerError = (error: AppError): LedgerError => Object.freeze({
-  key: error.key,
-  code: error.code,
-  message: error.message,
-  category: error.category,
-  severity: error.severity,
-})
+const safeLedgerDetailKeys = new Set([
+  'operation',
+  'phase',
+  'childStatus',
+  'childErrorCode',
+  'categoryWasBusiness',
+])
+
+const safeLedgerDetails = (value: unknown): LedgerError['details'] => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
+  const details: Record<string, string | number | boolean | null> = {}
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    if (!safeLedgerDetailKeys.has(key)) continue
+    if (entry !== null
+      && typeof entry !== 'string'
+      && typeof entry !== 'number'
+      && typeof entry !== 'boolean') continue
+    details[key] = entry
+  }
+  return Object.keys(details).length === 0 ? undefined : Object.freeze(details)
+}
+
+const toLedgerError = (error: AppError): LedgerError => {
+  const details = safeLedgerDetails(error.details)
+  return Object.freeze({
+    key: error.key,
+    code: error.code,
+    message: error.message,
+    category: error.category,
+    severity: error.severity,
+    ...(details === undefined ? {} : {details}),
+  })
+}
 
 const makeAppError = (input: Readonly<{
   key: string

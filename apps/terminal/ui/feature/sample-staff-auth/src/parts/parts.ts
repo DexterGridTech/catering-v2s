@@ -1,7 +1,8 @@
-import {definePart} from '@catering-v2s/ui-base-render'
+import {definePart, type RenderLayerDismissal} from '@catering-v2s/ui-base-render'
 import {AuthNotice} from '../components/AuthNotice'
 import {AuthSystemNotice} from '../components/AuthSystemNotice'
 import {StaffLogin} from '../components/StaffLogin'
+import {dispatchAuthSystemFailureDismissal} from '../foundations/systemFailureDismissal'
 
 const allForms = ['laptop', 'mobile'] as const
 
@@ -47,3 +48,8 @@ export const systemNoticePart = definePart({
 })
 
 export const parts = Object.freeze([loginPart, noticePart, systemNoticePart])
+
+export const layerDismissals: Readonly<Record<string, RenderLayerDismissal>> = Object.freeze({
+  [systemNoticePart.catalogEntry.partKey]: ({dispatchCommand}) =>
+    dispatchAuthSystemFailureDismissal(dispatchCommand),
+})

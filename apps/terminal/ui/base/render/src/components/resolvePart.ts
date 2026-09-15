@@ -50,6 +50,15 @@ type ResolvePartInput = Readonly<{
   readonly elementKey?: string
 }>
 
+export type PartResolution = Readonly<{
+  readonly kind: 'resolved'
+  readonly node: ReactNode
+}> | Readonly<{
+  readonly kind: 'fallback'
+  readonly reason: RenderFallbackReason
+  readonly node: ReactNode
+}>
+
 const hasOwn = (value: object, property: PropertyKey): boolean =>
   Object.prototype.hasOwnProperty.call(value, property)
 
@@ -75,14 +84,18 @@ const readComponentProps = (
     : Object.freeze({invalidValue: value})
 }
 
-export const resolvePart = (input: ResolvePartInput): ReactNode => {
+export const resolvePartWithStatus = (input: ResolvePartInput): PartResolution => {
   const entry = input.uiCatalog.byPartKey[input.placement.partKey]
   if (entry === undefined) {
     input.reportPartDiagnostic({
       event: 'missing-catalog-entry',
       data: {partKey: input.placement.partKey, displayMode: input.displayMode},
     })
-    return createElement(RenderFallback, {reason: 'missing-catalog-entry', key: input.elementKey})
+    return {
+      kind: 'fallback',
+      reason: 'missing-catalog-entry',
+      node: createElement(RenderFallback, {reason: 'missing-catalog-entry', key: input.elementKey}),
+    }
   }
 
   if (!isUiCatalogEntryAvailable(entry, input.containerKey, input.catalogContext)) {
@@ -95,7 +108,11 @@ export const resolvePart = (input: ResolvePartInput): ReactNode => {
         surfaceForm: input.catalogContext.surfaceForm,
       },
     })
-    return createElement(RenderFallback, {reason: 'incompatible-catalog-entry', key: input.elementKey})
+    return {
+      kind: 'fallback',
+      reason: 'incompatible-catalog-entry',
+      node: createElement(RenderFallback, {reason: 'incompatible-catalog-entry', key: input.elementKey}),
+    }
   }
 
   const binding = input.rendererCatalog.resolve(entry.rendererKey)
@@ -108,7 +125,11 @@ export const resolvePart = (input: ResolvePartInput): ReactNode => {
         rendererKey: entry.rendererKey,
       },
     })
-    return createElement(RenderFallback, {reason: 'missing-renderer', key: input.elementKey})
+    return {
+      kind: 'fallback',
+      reason: 'missing-renderer',
+      node: createElement(RenderFallback, {reason: 'missing-renderer', key: input.elementKey}),
+    }
   }
 
   const componentProps = readComponentProps(input.placement)
@@ -121,12 +142,18 @@ export const resolvePart = (input: ResolvePartInput): ReactNode => {
         valueType: valueType(componentProps.invalidValue),
       },
     })
-    return createElement(RenderFallback, {reason: 'invalid-props', key: input.elementKey})
+    return {
+      kind: 'fallback',
+      reason: 'invalid-props',
+      node: createElement(RenderFallback, {reason: 'invalid-props', key: input.elementKey}),
+    }
   }
 
   const props = input.elementKey === undefined
     ? componentProps.props
     : {...componentProps.props, key: input.elementKey}
   input.clearPartDiagnostic(input.placement.partKey, input.displayMode)
-  return createElement(binding.component, props)
+  return {kind: 'resolved', node: createElement(binding.component, props)}
 }
+
+export const resolvePart = (input: ResolvePartInput): ReactNode => resolvePartWithStatus(input).node

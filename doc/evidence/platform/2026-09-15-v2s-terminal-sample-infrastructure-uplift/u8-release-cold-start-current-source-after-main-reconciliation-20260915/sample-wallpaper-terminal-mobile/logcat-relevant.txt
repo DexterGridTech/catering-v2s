@@ -1,0 +1,23 @@
+         1789471630.819 11752 11752 I TerminalDualScreen: event=primary-activity-configuration displayIndex=0 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=360 screenHeightDp=640 smallestWidthDp=360 orientation=1 resourceWidthPx=720 resourceHeightPx=1280
+         1789471630.842 11752 11779 I ExpoModulesCore: ✅ AppContext was initialized
+         1789471630.867 11752 11752 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789471630.877 11752 11752 I TerminalDualScreen: event=primary-window-post-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789471630.891 11752 11780 I ExpoModulesCore: ✅ JSI interop was installed
+         1789471630.900 11752 11780 I ExpoModulesCore: ✅ Constants were exported
+         1789471630.970 11752 11752 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789471630.987 11752 11752 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789471630.989 11752 11780 I ReactNativeJS:   category: 'startup.ready-candidate',
+         1789471630.989 11752 11780 I ReactNativeJS:   event: 'startup.ready-candidate',
+         1789471630.992 11752 11780 I ReactNativeJS:   category: 'startup.ready',
+         1789471630.992 11752 11780 I ReactNativeJS:   event: 'startup.ready',
+         1789471630.998 11752 11780 I ReactNativeJS:   category: 'startup.complete',
+         1789471630.998 11752 11780 I ReactNativeJS:   event: 'startup.complete',
+         1789471631.014 11752 11780 I ReactNativeJS:   category: 'startup.ready-hidden',
+         1789471631.014 11752 11780 I ReactNativeJS:   event: 'startup.ready-hidden',
+         1789471631.097 11752 11752 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789471631.286 11828 11828 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789471631.288 11828 11828 I AndroidRuntime: Using default boot image
+         1789471631.288 11828 11828 I AndroidRuntime: Leaving lock profiling enabled
+         1789471631.340 11828 11828 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789471631.549 11752 11752 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789471632.683 11828 11828 D AndroidRuntime: Shutting down VM

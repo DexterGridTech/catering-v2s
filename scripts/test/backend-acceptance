@@ -13,6 +13,7 @@ operation="$2"
 shift 2
 calibration=false
 production_mutation=''
+extension_scale_proof=false
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --calibration)
@@ -30,6 +31,14 @@ while [[ "$#" -gt 0 ]]; do
       }
       production_mutation="$2"
       shift 2
+      ;;
+    --extension-scale-proof)
+      [[ "$operation" == 'typed-filter-validation-and-recovery' && "$extension_scale_proof" == false ]] || {
+        printf '%s\n' 'BACKEND_ACCEPTANCE_EXTENSION_SCALE_PROOF_ARGUMENT_INVALID' >&2
+        exit 2
+      }
+      extension_scale_proof=true
+      shift
       ;;
     *)
       printf '%s\n' 'BACKEND_ACCEPTANCE_ARGUMENT_INVALID' >&2
@@ -53,6 +62,11 @@ if [[ -n "$production_mutation" ]]; then
   }
 fi
 
+if [[ "$extension_scale_proof" == true && "$calibration" == true ]]; then
+  printf '%s\n' 'BACKEND_ACCEPTANCE_EXTENSION_SCALE_PROOF_CALIBRATION_INVALID' >&2
+  exit 2
+fi
+
 export V2S_BACKEND_ACCEPTANCE_OPERATION="$operation"
 if [[ "$calibration" == true ]]; then
   export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=CALIBRATION
@@ -65,5 +79,8 @@ runner_arguments=(
 )
 if [[ -n "$production_mutation" ]]; then
   runner_arguments+=(--production-mutation "$production_mutation")
+fi
+if [[ "$extension_scale_proof" == true ]]; then
+  runner_arguments+=(--extension-scale-proof)
 fi
 V2S_BACKEND_ACCEPTANCE_EXECUTION=true exec node "$REPO_ROOT/scripts/test/r5-remote-testcontainers.mjs" "${runner_arguments[@]}"

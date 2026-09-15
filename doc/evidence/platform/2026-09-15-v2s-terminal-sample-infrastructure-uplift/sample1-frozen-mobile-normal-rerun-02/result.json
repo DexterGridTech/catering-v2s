@@ -1,0 +1,97 @@
+{
+  "runId": "sample1-frozen-mobile-normal-1789441474707",
+  "tool": "tools/terminal-sample2/run-sample1-frozen-journey.mjs",
+  "packageName": "com.anonymous.sampleterminal",
+  "activity": "com.anonymous.sampleterminal/.MainActivity",
+  "serial": "emulator-5556",
+  "shape": "mobile",
+  "journeyCase": "normal",
+  "startedAt": "2026-09-15T03:04:34.707Z",
+  "business": "NOT_RUN",
+  "cleanup": "PASS",
+  "firstFailure": "UI resource did not reach expected state: sample.desk.member-list\nt=\"密码\" resource-id=\"sample.auth.login:passcode-label\" class=\"android.widget.TextView\" package=\"com.anonymous.sampleterminal\" content-desc=\"\" checkable=\"false\" checked=\"false\" clickable=\"false\" enabled=\"true\" focusable=\"false\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[48,312][672,352]\" drawing-order=\"4\" hint=\"\" /><node index=\"4\" text=\"\" resource-id=\"sample.auth.login:passcode\" class=\"android.widget.EditText\" package=\"com.anonymous.sampleterminal\" content-desc=\"密码\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"true\" password=\"true\" selected=\"false\" bounds=\"[48,376][672,472]\" drawing-order=\"5\" hint=\"\" /></node></node><node index=\"5\" text=\"\" resource-id=\"sample.auth.login:submit\" class=\"android.widget.Button\" package=\"com.anonymous.sampleterminal\" content-desc=\"登录\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[48,1136][176,1232]\" drawing-order=\"5\" hint=\"\"><node index=\"0\" text=\"登录\" resource-id=\"\" class=\"android.widget.TextView\" package=\"com.anonymous.sampleterminal\" content-desc=\"\" checkable=\"false\" checked=\"false\" clickable=\"false\" enabled=\"true\" focusable=\"false\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[80,1160][144,1208]\" drawing-order=\"1\" hint=\"\" /></node></node></node></node></node></node></node></node></node></node></node></hierarchy>",
+  "lastKnownGood": "S1-02",
+  "brokenBoundary": "S1-02",
+  "steps": [
+    {
+      "name": "s1-01-anonymous",
+      "timestamp": "2026-09-15T03:04:41.037Z",
+      "expectedPrimaryIds": [
+        "sample.auth.login"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "ui-base-render:layer-stack",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ]
+    },
+    {
+      "name": "s1-02-invalid-login",
+      "timestamp": "2026-09-15T03:06:04.271Z",
+      "expectedPrimaryIds": [
+        "sample.auth.login",
+        "sample.auth.notice",
+        "sample.auth.notice:title",
+        "sample.auth.notice:message",
+        "sample.auth.notice:dismiss"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "ui-base-render:layer-stack",
+        "ui-base-render:layer-backdrop",
+        "ui-base-render:layer:sample.auth.notice",
+        "sample.auth.notice",
+        "sample.auth.notice:title",
+        "sample.auth.notice:message",
+        "sample.auth.notice:actions",
+        "sample.auth.notice:dismiss",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ]
+    }
+  ],
+  "display": {
+    "ids": [
+      0
+    ],
+    "hasSecondary": false
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": []
+  },
+  "finishedAt": "2026-09-15T03:07:00.489Z"
+}

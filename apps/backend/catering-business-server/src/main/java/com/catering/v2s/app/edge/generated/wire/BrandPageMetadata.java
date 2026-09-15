@@ -7,5 +7,6 @@ public record BrandPageMetadata(
     Long pageSize,
     Long total,
     BusinessEntitySortKey sort,
-    BusinessEntitySortDirection direction
+    BusinessEntitySortDirection direction,
+    Long definitionRevision
 ) {}

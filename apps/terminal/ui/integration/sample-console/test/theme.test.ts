@@ -1,9 +1,18 @@
 import {readFileSync} from 'node:fs'
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {describe, expect, it} from 'vitest'
-import {createSampleAssembly, createSurfaceForDisplayIndex} from '../src'
+import {createSampleAssembly as createProductionSampleAssembly, createSurfaceForDisplayIndex} from '../src'
 import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
-import {createTestPlatformPorts} from './support'
+import {createTestPlatformPorts, type TestPlatformPorts} from './support'
+
+type TestSampleAssemblyInput = Omit<Parameters<typeof createProductionSampleAssembly>[0], 'platformPorts' | 'nativeLoadingCapability'> & Readonly<{
+  readonly platformPorts: TestPlatformPorts
+}>
+
+const createSampleAssembly = (input: TestSampleAssemblyInput) => createProductionSampleAssembly({
+  ...input,
+  nativeLoadingCapability: input.platformPorts.nativeLoadingCapability,
+})
 
 describe('sample-console app theme wiring', () => {
   it('maps every primitive semantic token to this app theme', () => {

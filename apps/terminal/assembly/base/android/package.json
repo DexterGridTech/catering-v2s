@@ -1,0 +1,39 @@
+{
+  "name": "@catering-v2s/assembly-base-android",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./config": "./config/index.cjs",
+    "./config/global": "./config/global.d.ts",
+    "./config/nativewind-env": "./config/nativewind-env.d.ts",
+    "./config/tsconfig.json": "./config/tsconfig.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
+  },
+  "dependencies": {
+    "@catering-v2s/adapter-android-device": "workspace:*",
+    "@catering-v2s/adapter-android-dual-screen": "workspace:*",
+    "@catering-v2s/adapter-android-persist-kv": "workspace:*",
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*",
+    "expo-splash-screen": "~57.0.9"
+  },
+  "peerDependencies": {
+    "expo": "~57.0.18",
+    "expo-modules-core": "~57.0.14",
+    "nativewind": "4.2.6",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "tailwindcss": "3.4.19"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "expo": "~57.0.18",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "typescript": "~6.0.3",
+    "vitest": "4.1.10"
+  }
+}

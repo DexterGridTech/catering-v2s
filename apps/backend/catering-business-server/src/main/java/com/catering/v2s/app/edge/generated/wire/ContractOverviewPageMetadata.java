@@ -7,5 +7,6 @@ public record ContractOverviewPageMetadata(
     Long pageSize,
     Long total,
     StoreContractSortKey sort,
-    StoreContractSortDirection direction
+    StoreContractSortDirection direction,
+    Long definitionRevision
 ) {}

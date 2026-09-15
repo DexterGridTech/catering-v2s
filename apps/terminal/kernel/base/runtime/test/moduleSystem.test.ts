@@ -8,6 +8,7 @@ import {
 import {createActorRegistry} from '../src/foundations/createActorRegistry'
 import {describeRuntimeModule} from '../src/application/moduleManifest'
 import {resolveModuleOrder} from '../src/foundations/resolveModuleOrder'
+import {createDisplayContextModule} from '@catering-v2s/kernel-base-display-context'
 import {createTestRuntimeInput, createTestSlice} from './testSupport'
 import type {
   ActorCommandHandlerDefinition,
@@ -26,6 +27,12 @@ const moduleWith = (
 
 describe('runtime module system', () => {
   it('M-1 validates required, optional, duplicate, and cyclic dependency shapes', () => {
+    const realDisplayContext = createDisplayContextModule()
+    const registeredPrerequisites = (realDisplayContext.dependencies ?? [])
+      .filter(dependency => dependency.moduleName !== 'kernel.base.runtime')
+      .map(dependency => moduleWith(dependency.moduleName))
+    expect(() => resolveModuleOrder([...registeredPrerequisites, realDisplayContext]))
+      .toThrow(/Missing required runtime module dependency.*kernel\.base\.runtime/)
     expect(() => resolveModuleOrder([
       moduleWith('a', [{moduleName: 'missing'}]),
     ])).toThrow('Missing required runtime module dependency')

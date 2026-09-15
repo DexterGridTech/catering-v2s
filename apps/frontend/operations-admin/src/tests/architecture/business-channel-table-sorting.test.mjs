@@ -31,8 +31,8 @@ const platformContractDetail = appSource(
   'platform-admin',
   'features/organization-contract-overview/ui/ContractOverviewDetailDrawer.tsx',
 );
-const businessChannelOwner = readRoot(
-  'apps/backend/catering-business-server/modules/business-channel/src/main/java/com/catering/v2s/businesschannel/application/BusinessChannelOwnerService.java',
+const businessChannelTemplateSql = readRoot(
+  'apps/backend/catering-business-server/modules/business-channel/src/main/java/com/catering/v2s/businesschannel/application/persistence/BusinessChannelTemplateServiceSql.java',
 );
 
 const getParameters = path => businessChannelPaths.paths[path].get.parameters.map(parameter => parameter.name);
@@ -72,7 +72,7 @@ test('business-channel list reads carry explicit bounded sort parameters', () =>
   assert.ok(candidateParameters.includes('sortKey'), 'store template candidates must declare sortKey');
   assert.ok(candidateParameters.includes('sortDirection'), 'store template candidates must declare sortDirection');
   assert.match(
-    businessChannelOwner,
+    businessChannelTemplateSql,
     /(?:t\.)?operator_kind='STORE' AND (?:t\.)?status='ENABLED'/,
     'store template candidates must be filtered to effective store templates by the owner',
   );

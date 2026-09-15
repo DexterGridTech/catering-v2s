@@ -1,7 +1,6 @@
 import {createContext, useContext} from 'react'
 import type {ContainerKey, DisplayMode, SurfaceForm} from '@catering-v2s/kernel-base-ui-state'
-import type {SurfaceIdentity} from '../foundations/surfaceHost'
-import type {SurfaceHostSize} from '../foundations/surfaceHost'
+import type {SurfaceIdentity, SurfaceHostAvailability, SurfaceHostSize} from '../foundations/surfaceHost'
 
 export type SurfaceContextValue = Readonly<{
   readonly displayMode: DisplayMode
@@ -10,6 +9,7 @@ export type SurfaceContextValue = Readonly<{
   readonly isHostPrimaryDisplay: boolean
   readonly surfaceIdentity: SurfaceIdentity | null
   readonly hostLogicalSize: SurfaceHostSize | null
+  readonly surfaceHostAvailability: SurfaceHostAvailability | 'not-attached'
 }>
 
 export const SurfaceContext = createContext<SurfaceContextValue | undefined>(undefined)

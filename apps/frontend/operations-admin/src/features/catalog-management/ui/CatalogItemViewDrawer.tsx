@@ -35,6 +35,7 @@ export function CatalogItemViewDrawer({
   onEdit,
   onCopy,
   onClose,
+  onAfterOpenChange,
 }: CatalogItemDrawerProps) {
   const [viewedItemCode, setViewedItemCode] = useState(itemCode);
   const [activeTab, setActiveTab] = useState(initialViewTab || 'basic');
@@ -267,6 +268,8 @@ export function CatalogItemViewDrawer({
           <AdminDetailActionMenu items={actionItems} triggerTestId={catalogTestIdControls.view.action} />
         ) : undefined
       }
+      afterOpenChange={onAfterOpenChange}
+      maskClosable
       {...adminWideDrawerSurfaceProps}
       {...testId(catalogTestIds.surface.itemViewDrawer)}
     >

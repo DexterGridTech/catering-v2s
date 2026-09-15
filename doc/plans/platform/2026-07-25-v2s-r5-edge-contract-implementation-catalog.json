@@ -425,6 +425,34 @@
       "EXTENSION_DEFINITION_INVALID",
       "EXTENSION_DEFINITION_VERSION_CONFLICT"
     ],
+    "getPlatformContractOverviewPage": [
+      "EXTENSION_DEFINITION_REVISION_STALE",
+      "EXTENSION_FILTER_INVALID"
+    ],
+    "getPlatformOrganizationOverviewPage": [
+      "EXTENSION_DEFINITION_REVISION_STALE",
+      "EXTENSION_FILTER_INVALID"
+    ],
+    "getOperationsOrganizationBrands": [
+      "EXTENSION_DEFINITION_REVISION_STALE",
+      "EXTENSION_FILTER_INVALID"
+    ],
+    "getOperationsOrganizationTenants": [
+      "EXTENSION_DEFINITION_REVISION_STALE",
+      "EXTENSION_FILTER_INVALID"
+    ],
+    "getOperationsOrganizationHeadCompanies": [
+      "EXTENSION_DEFINITION_REVISION_STALE",
+      "EXTENSION_FILTER_INVALID"
+    ],
+    "getOperationsOrganizationStores": [
+      "EXTENSION_DEFINITION_REVISION_STALE",
+      "EXTENSION_FILTER_INVALID"
+    ],
+    "getOperationsContracts": [
+      "EXTENSION_DEFINITION_REVISION_STALE",
+      "EXTENSION_FILTER_INVALID"
+    ],
     "createOperationsOrganizationBrand": [
       "ORGANIZATION_BUSINESS_ENTITY_CODE_CONFLICT",
       "ORGANIZATION_BUSINESS_ENTITY_NAME_CONFLICT",
@@ -1114,6 +1142,24 @@
             "minimum": 1,
             "maximum": 100
           }
+        },
+        {
+          "name": "extensionFilters",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "ExtensionFilterQuery"
+          }
+        },
+        {
+          "name": "definitionRevision",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
         }
       ],
       "requestSchema": "NoBody",
@@ -1729,6 +1775,24 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 100
+          }
+        },
+        {
+          "name": "extensionFilters",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "ExtensionFilterQuery"
+          }
+        },
+        {
+          "name": "definitionRevision",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       ],
@@ -2967,6 +3031,24 @@
             "minimum": 1,
             "maximum": 100
           }
+        },
+        {
+          "name": "extensionFilters",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "ExtensionFilterQuery"
+          }
+        },
+        {
+          "name": "definitionRevision",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
         }
       ],
       "requestSchema": "NoBody",
@@ -3210,6 +3292,24 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 100
+          }
+        },
+        {
+          "name": "extensionFilters",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "ExtensionFilterQuery"
+          }
+        },
+        {
+          "name": "definitionRevision",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       ],
@@ -3463,6 +3563,24 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 100
+          }
+        },
+        {
+          "name": "extensionFilters",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "ExtensionFilterQuery"
+          }
+        },
+        {
+          "name": "definitionRevision",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       ],
@@ -6577,6 +6695,24 @@
             "minimum": 1,
             "maximum": 100
           }
+        },
+        {
+          "name": "extensionFilters",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "ExtensionFilterQuery"
+          }
+        },
+        {
+          "name": "definitionRevision",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
         }
       ],
       "requestSchema": "NoBody",
@@ -7048,6 +7184,24 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 100
+          }
+        },
+        {
+          "name": "extensionFilters",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "ref": "ExtensionFilterQuery"
+          }
+        },
+        {
+          "name": "definitionRevision",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       ],
@@ -11374,6 +11528,51 @@
     "ExtensionDefinitionUpdateRequest": {
       "ref": "ExtensionDefinitionUpdateRequest"
     },
+    "ExtensionFieldType": {
+      "type": "string",
+      "enum": [
+        "TEXT",
+        "NUMBER",
+        "DATE",
+        "BOOLEAN",
+        "SELECT"
+      ]
+    },
+    "ExtensionFilter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fieldKey",
+        "type",
+        "value"
+      ],
+      "properties": {
+        "fieldKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "type": {
+          "ref": "ExtensionFieldType"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      }
+    },
+    "ExtensionFilterQuery": {
+      "type": "string",
+      "maxLength": 16384,
+      "description": "Percent-encoded JSON array of ExtensionFilter objects",
+      "x-v2s-logical-schema": {
+        "type": "array",
+        "items": {
+          "ref": "ExtensionFilter"
+        }
+      }
+    },
     "ExtensionEntityCatalogPage": {
       "ref": "ExtensionEntityCatalogPage"
     },
@@ -13678,6 +13877,8 @@
               "key",
               "label",
               "type",
+              "listDisplay",
+              "searchable",
               "required",
               "options",
               "status"
@@ -13695,14 +13896,15 @@
                 "maxLength": 120
               },
               "type": {
-                "type": "string",
-                "enum": [
-                  "TEXT",
-                  "NUMBER",
-                  "DATE",
-                  "BOOLEAN",
-                  "SELECT"
-                ]
+                "ref": "ExtensionFieldType"
+              },
+              "listDisplay": {
+                "type": "boolean",
+                "nullable": true
+              },
+              "searchable": {
+                "type": "boolean",
+                "nullable": true
               },
               "required": {
                 "type": "boolean"
@@ -13765,6 +13967,8 @@
             "required": [
               "label",
               "type",
+              "listDisplay",
+              "searchable",
               "required",
               "options",
               "status"
@@ -13782,14 +13986,15 @@
                 "maxLength": 120
               },
               "type": {
-                "type": "string",
-                "enum": [
-                  "TEXT",
-                  "NUMBER",
-                  "DATE",
-                  "BOOLEAN",
-                  "SELECT"
-                ]
+                "ref": "ExtensionFieldType"
+              },
+              "listDisplay": {
+                "type": "boolean",
+                "nullable": true
+              },
+              "searchable": {
+                "type": "boolean",
+                "nullable": true
               },
               "required": {
                 "type": "boolean"
@@ -14254,10 +14459,14 @@
       }
     },
     "ContractOverviewItem": {
+      "removeProperties": [
+        "extensionFields"
+      ],
       "requiredAdditions": [
         "projectRef",
         "items",
-        "extensionFields"
+        "extensionValues",
+        "extensionRuleRevision"
       ],
       "properties": {
         "phaseName": {
@@ -14306,26 +14515,38 @@
             "ref": "StoreContractItem"
           }
         },
-        "extensionFields": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "name"
-            ],
-            "properties": {
-              "name": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 120
-              },
-              "value": {
-                "type": "string",
-                "nullable": true,
-                "maxLength": 4000
-              }
-            }
+        "extensionValues": {
+          "type": "object",
+          "nullable": false,
+          "additionalProperties": true
+        },
+        "extensionRuleRevision": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 0
+        }
+      }
+    },
+    "ContractOverviewPage": {
+      "nestedPropertyAdditions": {
+        "metadata": {
+          "definitionRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "nullable": true
+          }
+        }
+      }
+    },
+    "StoreContractPage": {
+      "nestedPropertyAdditions": {
+        "metadata": {
+          "definitionRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "nullable": true
           }
         }
       }
@@ -14349,6 +14570,7 @@
         },
         "extensionFields": {
           "type": "array",
+          "nullable": true,
           "items": {
             "type": "object",
             "additionalProperties": false,
@@ -14367,6 +14589,77 @@
                 "maxLength": 4000
               }
             }
+          }
+        },
+        "extensionValues": {
+          "type": "object",
+          "nullable": true,
+          "additionalProperties": true
+        },
+        "extensionRuleRevision": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 0,
+          "nullable": true
+        }
+      }
+    },
+    "OrganizationOverviewPage": {
+      "nestedPropertyAdditions": {
+        "metadata": {
+          "definitionRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "nullable": true
+          }
+        }
+      }
+    },
+    "BrandPage": {
+      "nestedPropertyAdditions": {
+        "metadata": {
+          "definitionRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "nullable": true
+          }
+        }
+      }
+    },
+    "TenantPage": {
+      "nestedPropertyAdditions": {
+        "metadata": {
+          "definitionRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "nullable": true
+          }
+        }
+      }
+    },
+    "HeadCompanyPage": {
+      "nestedPropertyAdditions": {
+        "metadata": {
+          "definitionRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "nullable": true
+          }
+        }
+      }
+    },
+    "OrganizationStorePage": {
+      "nestedPropertyAdditions": {
+        "metadata": {
+          "definitionRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "nullable": true
           }
         }
       }

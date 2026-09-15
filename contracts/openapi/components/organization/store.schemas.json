@@ -430,6 +430,12 @@
               },
               "direction": {
                 "$ref": "#/components/schemas/OrganizationStoreSortDirection"
+              },
+              "definitionRevision": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0,
+                "nullable": true
               }
             }
           },

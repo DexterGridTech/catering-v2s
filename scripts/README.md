@@ -218,7 +218,7 @@ production gate 会拒绝缺少上述必要内容的 reviewer verdict 或作者 
 
 收到任何 reviewer finding 后，Codex 不得全盘接受或直接拒绝：逐条重开 owning source/代码/evidence，对外部漂移事实查官方一手资料或做可复现实验，主动寻找反例与适用条件，并写明 `CONFIRMED / PARTIALLY_CONFIRMED / REJECTED_WITH_EVIDENCE / UNVERIFIED_REQUIRES_EVIDENCE / DEXTER_DECISION`。只有已确认部分能驱动修订；修复还要与更小方案比较，避免审查诱发过度设计，信息不全不得武断扩范围。
 
-同一 `REVIEW_CYCLE_ID + REVIEW_TARGET + 批准范围` 的独立子 agent 对抗审查最多两轮。每轮声明 `REVIEW_ROUND=1|2`、固定 `REVIEW_ROUND_LIMIT=2`、`reviewerKind=INDEPENDENT_SUBAGENT`、输入清单 path+hash 与盲审声明；第二轮声明 `ROUND_FINAL_DECISION=SELF_DECIDED` 后由作者基于独立 finding 的处置证据收口，不得继续召集第三轮。换 reviewer/模型/文件/hash/措辞或局部修订不重置；只有 DESIGN→IMPLEMENTATION 或 Dexter 实质改变 Journey、范围、授权/目标才建立有触发记录的新 cycle。`--self-test` 包含 round-three、round-two-without-self-decision、错误 reviewerKind 与缺失输入清单 red fixtures。
+轮次上限按 Dexter 2026-09-14 裁定区分（正本见上述治理决定第 1 节）。`REVIEW_TARGET=DESIGN` 同一 `REVIEW_CYCLE_ID + REVIEW_TARGET + 批准范围` 最多两轮：每轮声明 `REVIEW_ROUND=1|2`、固定 `REVIEW_ROUND_LIMIT=2`、`reviewerKind=INDEPENDENT_SUBAGENT`、输入清单路径与盲审声明；第二轮声明 `ROUND_FINAL_DECISION=SELF_DECIDED` 后由作者基于独立 finding 的处置证据收口，不得继续召集第三轮；换 reviewer/模型/文件/措辞或局部修订不重置，只有 Dexter 实质改变 Journey、范围、授权/目标才建立有触发记录的新 cycle。`REVIEW_TARGET=IMPLEMENTATION` 不设轮次上限但必须依据详设文档：`REVIEW_ROUND` 只作正整数序号，不得声明 `REVIEW_ROUND_LIMIT` 或 `ROUND_FINAL_DECISION`。`--self-test` 包含 DESIGN round-three、DESIGN round-two-without-self-decision、IMPLEMENTATION 声明轮次上限、closure-only 与 blind-finding-acceptance red fixtures，并证明 IMPLEMENTATION 第三轮可通过。
 
 ## Codex hooks 客户端兼容性
 

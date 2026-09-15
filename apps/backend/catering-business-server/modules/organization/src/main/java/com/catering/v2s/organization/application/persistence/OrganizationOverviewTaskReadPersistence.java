@@ -2,6 +2,7 @@ package com.catering.v2s.organization.application.persistence;
 
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
+import com.catering.v2s.extension.api.ExtensionFilterQuery;
 import com.catering.v2s.extension.api.ExtensionHostTypes;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.organization.api.BusinessEntityTypes;
@@ -94,7 +95,9 @@ public class OrganizationOverviewTaskReadPersistence {
                                 safeQuery.sort(),
                                 safeQuery.direction(),
                                 safePage,
-                                safeSize)
+                                safeSize,
+                                safeQuery.extensionFilters(),
+                                safeQuery.definitionRevision())
                 : null;
         OrganizationHierarchyService.HierarchyPage hierarchyPage = "HIERARCHY".equals(category)
                 ? requiredHierarchy()
@@ -109,9 +112,33 @@ public class OrganizationOverviewTaskReadPersistence {
                                         safeQuery.projectId(),
                                         safeQuery.sort(),
                                         safeQuery.direction(),
-                                        safePage,
-                                        safeSize))
+                        safePage,
+                        safeSize))
                 : null;
+        // Current business-entity and hierarchy owner projections are MANUAL facts. Keep the platform
+        // source filter truthful at this composition boundary until those owner APIs expose source-aware reads.
+        if ("SYSTEM".equals(safeQuery.source())) {
+            if (businessEntityPage != null) {
+                businessEntityPage = new BusinessEntityService.BusinessEntityPage(
+                        List.of(),
+                        0L,
+                        businessEntityPage.page(),
+                        businessEntityPage.pageSize(),
+                        businessEntityPage.definitionRevision());
+            }
+            if (hierarchyPage != null) {
+                hierarchyPage = new OrganizationHierarchyService.HierarchyPage(
+                        hierarchyPage.page(),
+                        hierarchyPage.pageSize(),
+                        0L,
+                        hierarchyPage.sort(),
+                        hierarchyPage.direction(),
+                        List.of());
+            }
+        }
+        ExtensionFilterQuery.Prepared storeFilters = ServiceNodeTypes.STORE.equals(category)
+                ? prepareStoreFilters(workspaceUuid, key, safeQuery)
+                : ExtensionFilterQuery.Prepared.empty();
         List<Item> items =
                 switch (category) {
                     case "HIERARCHY" -> hierarchyPage.items().stream()
@@ -120,15 +147,29 @@ public class OrganizationOverviewTaskReadPersistence {
                     case "BUSINESS_ENTITY" -> businessEntityPage.items().stream()
                             .map(item -> entityItem(key, item.entityType(), item.entity()))
                             .toList();
-                    case ServiceNodeTypes.STORE -> storePage(workspaceUuid, key, safeQuery, safeSize, offset);
+                    case ServiceNodeTypes.STORE -> storePage(
+                            workspaceUuid, key, safeQuery, safeSize, offset, storeFilters);
                     default -> throw new IllegalArgumentException("unsupported overview category");
                 };
         long total = businessEntityPage != null
                 ? businessEntityPage.total()
-                : hierarchyPage != null ? hierarchyPage.total() : count(workspaceUuid, key, category, safeQuery);
+                : hierarchyPage != null
+                        ? hierarchyPage.total()
+                        : count(workspaceUuid, key, category, safeQuery, storeFilters);
         long asOf = items.stream().mapToLong(Item::updatedAt).max().orElse(0L);
+        Long definitionRevision = businessEntityPage != null
+                ? businessEntityPage.definitionRevision()
+                : storeFilters.definitionRevision();
         return new Page(
-                new Metadata(key, category, safePage, safeSize, total, safeQuery.sort(), safeQuery.direction()),
+                new Metadata(
+                        key,
+                        category,
+                        safePage,
+                        safeSize,
+                        total,
+                        safeQuery.sort(),
+                        safeQuery.direction(),
+                        definitionRevision),
                 items,
                 "AVAILABLE",
                 asOf,
@@ -139,61 +180,10 @@ public class OrganizationOverviewTaskReadPersistence {
                 List.of());
     }
 
-    /**
-     * The platform overview page is one fixed organization-owner statement. It keeps the three category projections,
-     * their common predicate, total, resolved ancestry, filter options and project-phase source in the same snapshot;
-     * the edge receives only this typed page model.
-     */
+    /** Platform edge adapter entry point; the organization owner remains the single page/query implementation. */
     public Page platformOverviewTaskPage(
             UUID workspaceUuid, String key, String category, Query query, int page, int pageSize) {
-        Query safe = (query == null ? Query.empty() : query).validated(category);
-        int safePage = Math.max(1, page);
-        int safeSize = Math.min(100, Math.max(1, pageSize));
-        long offset = (long) (safePage - 1) * safeSize;
-        return ReadBudgetComponent.measure(
-                ReadBudgetComponent.Component.PRIMARY_QUERY,
-                () -> jdbc.query(
-                        (OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CTE_FILTERED_WORKSPACE_UUID_TEXT_WORKSPACE_KEY_CATEGORY
-                                + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_EMPTY_LITERAL + platformOrder(safe)
-                                + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_LIMIT_FILTERED
-                                + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_EMPTY_LITERAL_ALTERNATE_A + platformOrder(safe)
-                                + OrganizationOverviewTaskReadServiceSql.PLATFORM_FILTER_OPTIONS_SUFFIX),
-                        statement -> {
-                            int index = 1;
-                            statement.setObject(index++, workspaceUuid);
-                            statement.setString(index++, key);
-                            statement.setString(index++, category);
-                            statement.setString(index++, safe.type());
-                            statement.setString(index++, like(safe.name()));
-                            statement.setString(index++, like(safe.code()));
-                            statement.setString(index++, like(safe.legalName()));
-                            statement.setString(index++, like(safe.unifiedSocialCreditCode()));
-                            statement.setString(index++, safe.status());
-                            statement.setString(index++, safe.source());
-                            statement.setObject(index++, safe.projectId());
-                            statement.setObject(index++, safe.brandId());
-                            statement.setObject(index++, safe.tenantId());
-                            statement.setObject(index++, safe.headCompanyId());
-                            statement.setObject(index++, safe.scopeNodeId());
-                            statement.setInt(index++, safeSize);
-                            statement.setLong(index, offset);
-                        },
-                        result -> {
-                            if (!result.next()) throw new BusinessEntityService.OrganizationNotFoundException();
-                            long total = result.getLong(1);
-                            long asOf = result.getLong(2);
-                            return new Page(
-                                    new Metadata(
-                                            key, category, safePage, safeSize, total, safe.sort(), safe.direction()),
-                                    jsonOverviewItems(key, result.getString(3)),
-                                    "AVAILABLE",
-                                    asOf,
-                                    List.of(),
-                                    jsonFilterOptions(result.getString(4)),
-                                    "AVAILABLE",
-                                    asOf,
-                                    List.of());
-                        }));
+        return page(workspaceUuid, key, category, query, page, pageSize);
     }
 
     public Item detail(UUID workspaceUuid, String key, String category, UUID itemId) {
@@ -549,14 +539,21 @@ public class OrganizationOverviewTaskReadPersistence {
         return commercialGroups;
     }
 
-    private List<Item> storePage(UUID workspaceUuid, String key, Query query, int size, long offset) {
+    private List<Item> storePage(
+            UUID workspaceUuid,
+            String key,
+            Query query,
+            int size,
+            long offset,
+            ExtensionFilterQuery.Prepared filters) {
         String scopePredicate = visibleStorePredicate(
                 query.scopeNodeId(),
                 OrganizationOverviewTaskReadServiceSql.STORE_ID_COLUMN,
                 OrganizationOverviewTaskReadServiceSql.STORE_PROJECT_ID_COLUMN);
         String where = baseFilters(OrganizationOverviewTaskReadServiceSql.STORE_ALIAS_PREFIX, null, query) + scopePredicate
                 + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONDITION_PROJECT_ID_BRAND_ID
-                + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_TENANT_ID_HEAD_COMPANY_ID;
+                + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_ALTERNATIVE_TENANT_ID_HEAD_COMPANY_ID
+                + (filters.isEmpty() ? "" : " AND " + filters.predicate("s.extension_values"));
         List<Object> values = baseValues(workspaceUuid, key, query);
         addVisibleStoreValues(values, workspaceUuid, key, query.scopeNodeId());
         values.add(query.projectId());
@@ -567,6 +564,7 @@ public class OrganizationOverviewTaskReadPersistence {
         values.add(query.tenantId());
         values.add(query.headCompanyId());
         values.add(query.headCompanyId());
+        values.addAll(filters.parameters());
         values.add(size);
         values.add(offset);
         List<Item> rows = jdbc.query(
@@ -654,7 +652,9 @@ public class OrganizationOverviewTaskReadPersistence {
                 null,
                 List.of(),
                 List.of(),
-                "BRAND".equals(type) ? entity.alias() : null);
+                "BRAND".equals(type) ? entity.alias() : null,
+                entity.extensionValues(),
+                entity.extensionRuleRevision());
     }
 
     private Item storeDetail(UUID workspaceUuid, String key, UUID itemId) {
@@ -705,7 +705,12 @@ public class OrganizationOverviewTaskReadPersistence {
         return value == null ? null : new OperationsStoreCommandApi.Reference(value.id(), value.code(), value.name());
     }
 
-    private long count(UUID workspaceUuid, String key, String category, Query query) {
+    private long count(
+            UUID workspaceUuid,
+            String key,
+            String category,
+            Query query,
+            ExtensionFilterQuery.Prepared filters) {
         return switch (category) {
             case "HIERARCHY" -> throw new IllegalStateException(
                     "hierarchy count is owned by OrganizationHierarchyService");
@@ -722,6 +727,7 @@ public class OrganizationOverviewTaskReadPersistence {
                 values.add(query.tenantId());
                 values.add(query.headCompanyId());
                 values.add(query.headCompanyId());
+                values.addAll(filters.parameters());
                 yield jdbc.queryForObject(
                         OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_SELECT_SELECT_COUNT
                                 + storeRowsSql().substring(storeRowsSql().indexOf(OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_FROM_CLAUSE))
@@ -731,12 +737,28 @@ public class OrganizationOverviewTaskReadPersistence {
                                         OrganizationOverviewTaskReadServiceSql.STORE_ID_COLUMN,
                                         OrganizationOverviewTaskReadServiceSql.STORE_PROJECT_ID_COLUMN)
                                 + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONDITION_PROJECT_ID_BRAND_ID_ALTERNATE_A
-                                + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_OPEN_PAREN_TENANT_ID_HEAD_COMPANY_ID,
+                                + OrganizationOverviewTaskReadServiceSql.ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_OPEN_PAREN_TENANT_ID_HEAD_COMPANY_ID
+                                + (filters.isEmpty() ? "" : " AND " + filters.predicate("s.extension_values")),
                         Long.class,
                         values.toArray());
             }
             default -> throw new IllegalArgumentException("unsupported overview category");
         };
+    }
+
+    private ExtensionFilterQuery.Prepared prepareStoreFilters(UUID workspaceUuid, String key, Query query) {
+        if (query.extensionFilters() == null) return ExtensionFilterQuery.Prepared.empty();
+        if (definitions == null) {
+            throw new ExtensionFilterQuery.InvalidFilterException(List.of(
+                    new ExtensionFilterQuery.InvalidReason(ExtensionHostTypes.STORE, "DEFINITION_LOOKUP_UNAVAILABLE", null)));
+        }
+        return ExtensionFilterQuery.prepare(
+                definitions,
+                workspaceUuid,
+                key,
+                ExtensionHostTypes.STORE,
+                query.extensionFilters(),
+                query.definitionRevision());
     }
 
     private static String baseFilters(String prefix, String typeColumn, Query query) {
@@ -925,7 +947,9 @@ public class OrganizationOverviewTaskReadPersistence {
                 head,
                 List.of(),
                 List.of(),
-                null);
+                null,
+                jsonObject(row.getString("extension_values")),
+                row.getLong("extension_rule_revision"));
     }
 
     private static Item withPath(Item item, List<Reference> path) {
@@ -952,7 +976,9 @@ public class OrganizationOverviewTaskReadPersistence {
                 item.headCompany(),
                 item.unresolvedReferences(),
                 item.extensionFields(),
-                item.alias());
+                item.alias(),
+                item.extensionValues(),
+                item.extensionRuleRevision());
     }
 
     private Item withExtensionFields(Item item, List<ExtensionDisplayField> fields) {
@@ -978,7 +1004,9 @@ public class OrganizationOverviewTaskReadPersistence {
                 item.headCompany(),
                 item.unresolvedReferences(),
                 fields,
-                item.alias());
+                item.alias(),
+                item.extensionValues(),
+                item.extensionRuleRevision());
     }
 
     private List<ExtensionDisplayField> extensionFields(UUID workspaceUuid, String key, String hostType, UUID id) {

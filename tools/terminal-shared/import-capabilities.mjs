@@ -47,6 +47,10 @@ export function collectImportedCapabilities(sourceFile) {
     } else if (ts.isImportTypeNode(node)) {
       const moduleName = importTypeModuleName(node)
       if (moduleName !== undefined) add(node, moduleName, importTypeName(node), importTypeName(node), 'type')
+    } else if (ts.isImportEqualsDeclaration(node)
+      && ts.isExternalModuleReference(node.moduleReference)
+      && ts.isStringLiteral(node.moduleReference.expression)) {
+      add(node, node.moduleReference.expression.text, '*', node.name.text, 'import-equals')
     } else if (ts.isCallExpression(node) && node.arguments.length > 0 && ts.isStringLiteral(node.arguments[0])) {
       const moduleName = node.arguments[0].text
       if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {

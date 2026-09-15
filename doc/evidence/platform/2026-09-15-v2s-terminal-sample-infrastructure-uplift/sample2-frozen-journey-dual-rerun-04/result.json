@@ -1,0 +1,76 @@
+{
+  "runId": "sample2-frozen-dual-1789439906707",
+  "tool": "tools/terminal-sample2/run-sample2-frozen-journey.mjs",
+  "packageName": "com.catering.v2s.terminal.samplewallpaper",
+  "activity": "com.catering.v2s.terminal.samplewallpaper/.MainActivity",
+  "serial": "emulator-5554",
+  "shape": "dual",
+  "startedAt": "2026-09-15T02:38:26.707Z",
+  "business": "NOT_RUN",
+  "cleanup": "PASS",
+  "firstFailure": "UI resource did not reach expected state: ui.base.input:virtual-keyboard:text-1\n12,352]\" /><node index=\"4\" text=\"\" resource-id=\"sample.auth.login:passcode\" class=\"android.widget.EditText\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"密码\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"true\" password=\"true\" selected=\"false\" bounds=\"[48,376][2512,472]\" /></node></node><node index=\"5\" text=\"\" resource-id=\"sample.auth.login:submit\" class=\"android.widget.Button\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"登录\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[48,1456][176,1552]\"><node index=\"0\" text=\"登录\" resource-id=\"\" class=\"android.widget.TextView\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"\" checkable=\"false\" checked=\"false\" clickable=\"false\" enabled=\"true\" focusable=\"false\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[80,1480][144,1528]\" /></node></node></node></node></node></node></node></node></node></node></node></hierarchy>",
+  "lastKnownGood": "anonymous-login",
+  "brokenBoundary": "anonymous-login",
+  "steps": [
+    {
+      "name": "anonymous",
+      "timestamp": "2026-09-15T02:38:33.712Z",
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "ui-base-render:layer-stack",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": null
+        },
+        {
+          "id": "w1",
+          "node": null
+        },
+        {
+          "id": "w2",
+          "node": null
+        },
+        {
+          "id": "w3",
+          "node": null
+        }
+      ],
+      "backgroundPresent": false
+    }
+  ],
+  "display": {
+    "ids": [
+      0,
+      2
+    ],
+    "hasSecondary": true
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": [
+      "11529215047789101945"
+    ]
+  },
+  "finishedAt": "2026-09-15T02:39:11.711Z"
+}

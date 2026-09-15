@@ -4,6 +4,7 @@ import com.catering.v2s.app.edge.generated.wire.ExtensionDefinition;
 import com.catering.v2s.app.edge.generated.wire.ExtensionDefinitionBlocker;
 import com.catering.v2s.app.edge.generated.wire.ExtensionDefinitionDefinitionsItem;
 import com.catering.v2s.app.edge.generated.wire.ExtensionEntityType;
+import com.catering.v2s.app.edge.generated.wire.ExtensionFieldType;
 import com.catering.v2s.app.edge.generated.wire.GroupWorkspaceStatus;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 
@@ -34,7 +35,9 @@ public final class ExtensionDefinitionWireMapper {
         return new ExtensionDefinitionDefinitionsItem(
                 value.fieldKey(),
                 value.label(),
-                value.fieldType(),
+                ExtensionFieldType.valueOf(value.fieldType()),
+                value.listDisplay(),
+                value.searchable(),
                 value.required(),
                 value.options(),
                 value.status(),

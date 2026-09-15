@@ -1,0 +1,31 @@
+{
+  "runId": "sample2-frozen-dual-1789439827538",
+  "tool": "tools/terminal-sample2/run-sample2-frozen-journey.mjs",
+  "packageName": "com.catering.v2s.terminal.samplewallpaper",
+  "activity": "com.catering.v2s.terminal.samplewallpaper/.MainActivity",
+  "serial": "emulator-5554",
+  "shape": "dual",
+  "startedAt": "2026-09-15T02:37:07.538Z",
+  "business": "NOT_RUN",
+  "cleanup": "PASS",
+  "firstFailure": "UI resource did not reach expected state: sample.auth.login\nfocusable=\"false\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[732,875][1828,971]\"><node index=\"0\" text=\"\" resource-id=\"android:id/radio\" class=\"android.widget.RadioButton\" package=\"android\" content-desc=\"\" checkable=\"true\" checked=\"false\" clickable=\"false\" enabled=\"true\" focusable=\"false\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[780,891][876,955]\" /><node index=\"1\" text=\"\" resource-id=\"\" class=\"android.widget.LinearLayout\" package=\"android\" content-desc=\"\" checkable=\"false\" checked=\"false\" clickable=\"false\" enabled=\"true\" focusable=\"false\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[876,901][1780,944]\"><node index=\"0\" text=\"Google Voice Typing\" resource-id=\"android:id/text1\" class=\"android.widget.TextView\" package=\"android\" content-desc=\"\" checkable=\"false\" checked=\"false\" clickable=\"false\" enabled=\"true\" focusable=\"false\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[876,901][1168,944]\" /></node></node></node></node></node></node></node></node></hierarchy>",
+  "lastKnownGood": null,
+  "brokenBoundary": "before-first-known-good",
+  "steps": [],
+  "display": {
+    "ids": [
+      0,
+      2
+    ],
+    "hasSecondary": true
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": [
+      "11529215047789101945"
+    ]
+  },
+  "finishedAt": "2026-09-15T02:37:39.741Z"
+}

@@ -647,6 +647,17 @@ class BackendAcceptanceTest {
                 new ScenarioContext(null, "performance.coverage-only"));
     }
 
+    /**
+     * Disabled by default; explicit enablement is provided only by the managed scale-proof command. The proof is not an
+     * AcceptanceScenario and must not change the business scenario denominator.
+     */
+    @Test
+    @EnabledIfEnvironmentVariable(named = "V2S_EXTENSION_SCALE_PROOF", matches = "true")
+    void extensionScaleProof() throws Exception {
+        requireRemoteExecution();
+        ExtensionScaleProof.run(this, jdbc, mapper);
+    }
+
     private void executeScenario(ScenarioDefinition definition) throws Throwable {
         ScenarioContext context = new ScenarioContext(definition.annotation());
         try {

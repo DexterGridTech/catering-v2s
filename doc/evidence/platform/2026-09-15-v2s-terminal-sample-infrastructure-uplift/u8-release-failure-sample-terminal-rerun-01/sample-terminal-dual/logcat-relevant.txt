@@ -1,0 +1,53 @@
+         1789135895.199 21622 21622 I TerminalDualScreen: event=primary-activity-configuration displayIndex=0 densityDpi=213 density=1.3312501 scaledDensity=1.3312501 fontScale=1.0 screenWidthDp=962 screenHeightDp=541 smallestWidthDp=541 orientation=2 resourceWidthPx=1280 resourceHeightPx=720
+         1789135895.208 21622 21622 I TerminalDualScreen: event=secondary-react-surface-context displayIndex=1 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=541 screenHeightDp=962 smallestWidthDp=541 orientation=1 resourceWidthPx=720 resourceHeightPx=1280
+         1789135895.208 21622 21622 I TerminalDualScreen: event=secondary-react-surface-created displayId=2 surfaceDensityDpi=320 surfaceDensity=2.0 surfaceWidthPx=0 surfaceHeightPx=0
+         1789135895.216 21622 21622 I TerminalDualScreen: event=secondary-start-requested displayId=2 displayCount=2
+         1789135895.231 21622 21622 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789135895.231 21622 21622 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789135895.255 21622 21651 I ExpoModulesCore: ✅ AppContext was initialized
+         1789135895.267 21622 21622 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789135895.268 21622 21622 I TerminalDualScreen: event=secondary-presentation-window-post-create displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789135895.268 21622 21622 I TerminalDualScreen: event=secondary-presentation-window-post-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789135895.268 21622 21622 I TerminalDualScreen: event=secondary-react-surface-post-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789135895.269 21622 21622 I TerminalDualScreen: event=primary-window-post-layout displayIndex=0 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789135895.272 21622 21622 I TerminalDualScreen: event=secondary-start-completed
+         1789135895.278 21622 21653 I ExpoModulesCore: ✅ JSI interop was installed
+         1789135895.279 21622 21653 I ExpoModulesCore: ✅ Constants were exported
+         1789135895.367 21622 21622 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789135895.368 21622 21622 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789135895.368 21622 21622 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789135895.376 21622 21654 E AndroidRuntime: FATAL EXCEPTION: mqt_v_native
+         1789135895.376 21622 21654 E AndroidRuntime: Process: com.anonymous.sampleterminal, PID: 21622
+         1789135895.376 21622 21654 E AndroidRuntime: com.facebook.react.common.JavascriptException: Error: [sample-console] display index 1 is unavailable for mobile
+         1789135895.376 21622 21654 E AndroidRuntime: 
+         1789135895.376 21622 21654 E AndroidRuntime: This error is located at:
+         1789135895.376 21622 21654 E AndroidRuntime:     at AndroidTerminalApp (address at index.android.bundle:1:1141465)
+         1789135895.376 21622 21654 E AndroidRuntime:     at App (address at index.android.bundle:1:961859)
+         1789135895.376 21622 21654 E AndroidRuntime:     at RCTView (<anonymous>)
+         1789135895.376 21622 21654 E AndroidRuntime:     at View (address at index.android.bundle:1:670398)
+         1789135895.376 21622 21654 E AndroidRuntime:     at CssInterop.View (address at index.android.bundle:1:1199239)
+         1789135895.376 21622 21654 E AndroidRuntime:     at AppContainer (address at index.android.bundle:1:670217), stack:
+         1789135895.376 21622 21654 E AndroidRuntime: createSurfaceForDisplayIndex@1:1133444
+         1789135895.376 21622 21654 E AndroidRuntime: renderSurface@1:1341684
+         1789135895.376 21622 21654 E AndroidRuntime: AndroidTerminalApp@1:1141794
+         1789135895.376 21622 21654 E AndroidRuntime: renderWithHooks@1:548982
+         1789135895.376 21622 21654 E AndroidRuntime: beginWork@1:580282
+         1789135895.376 21622 21654 E AndroidRuntime: workLoopSync@1:597029
+         1789135895.376 21622 21654 E AndroidRuntime: renderRootSync@1:596864
+         1789135895.376 21622 21654 E AndroidRuntime: performWorkOnRoot@1:593897
+         1789135895.376 21622 21654 E AndroidRuntime: performWorkOnRootViaSchedulerTask@1:544776
+         1789135895.376 21622 21654 E AndroidRuntime: 
+         1789135895.376 21622 21654 E AndroidRuntime: 	at com.facebook.react.modules.core.ExceptionsManagerModule.reportException(ExceptionsManagerModule.kt:52)
+         1789135895.376 21622 21654 E AndroidRuntime: 	at com.facebook.jni.NativeRunnable.run(Native Method)
+         1789135895.376 21622 21654 E AndroidRuntime: 	at android.os.Handler.handleCallback(Handler.java:959)
+         1789135895.376 21622 21654 E AndroidRuntime: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+         1789135895.376 21622 21654 E AndroidRuntime: 	at com.facebook.react.bridge.queue.MessageQueueThreadHandler.dispatchMessage(MessageQueueThreadHandler.kt:21)
+         1789135895.376 21622 21654 E AndroidRuntime: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789135895.376 21622 21654 E AndroidRuntime: 	at android.os.Looper.loop(Looper.java:317)
+         1789135895.376 21622 21654 E AndroidRuntime: 	at com.facebook.react.bridge.queue.MessageQueueThreadImpl$Companion.startNewBackgroundThread$lambda$0(MessageQueueThreadImpl.kt:152)
+         1789135895.376 21622 21654 E AndroidRuntime: 	at com.facebook.react.bridge.queue.MessageQueueThreadImpl$Companion.$r8$lambda$YYXYCFexeoKtAeDpeNYkxZZlpbA(Unknown Source:0)
+         1789135895.376 21622 21654 E AndroidRuntime: 	at com.facebook.react.bridge.queue.MessageQueueThreadImpl$Companion$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+         1789135895.376 21622 21654 E AndroidRuntime: 	at java.lang.Thread.run(Thread.java:1012)
+         1789135895.384 21622 21622 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789135895.384 21622 21622 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789135895.384 21622 21622 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023

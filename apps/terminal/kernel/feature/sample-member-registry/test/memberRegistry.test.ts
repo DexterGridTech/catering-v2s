@@ -26,9 +26,7 @@ describe('sample member registry owner module', () => {
     expect(module.moduleName).toBe('kernel.feature.sample-member-registry')
     expect(module.kind).toBe('owner')
     expect(module.dependencies?.map(dependency => dependency.moduleName)).toEqual([
-      'kernel.base.contracts',
       'kernel.base.runtime',
-      'kernel.base.state',
     ])
     expect(module.commands?.map(command => [command.name, command.visibility])).toEqual([
       ['kernel.feature.sample-member-registry.submit-member', 'public'],

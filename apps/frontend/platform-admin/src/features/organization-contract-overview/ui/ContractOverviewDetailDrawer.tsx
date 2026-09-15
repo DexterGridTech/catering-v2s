@@ -9,6 +9,8 @@ import {
   ValidityStatus,
 } from '@catering-v2s/admin-ui-foundation';
 import type {ContractOverviewItem} from '../../../app/api/generated/platform-edge';
+import type {ExtensionDefinition} from '../../../app/api/generated/platform-edge';
+import {organizationOverviewExtensionItems} from './OrganizationOverviewPresentation';
 import {platformDetailDrawerTestIds} from '../../../app/automation/platformDetailDrawerTestIds';
 
 export function ContractOverviewDetailDrawer({
@@ -16,6 +18,7 @@ export function ContractOverviewDetailDrawer({
   loading,
   problem,
   item,
+  definition,
   onClose,
   onAudit,
 }: {
@@ -23,16 +26,12 @@ export function ContractOverviewDetailDrawer({
   loading: boolean;
   problem?: {title: string; detail: string};
   item?: ContractOverviewItem;
+  definition?: ExtensionDefinition;
   onClose: () => void;
   onAudit: () => void;
 }) {
   useOverlayLock(open);
-  const extensionItems =
-    item?.extensionFields?.map(field => ({
-      key: `extension-${field.name}`,
-      label: field.name,
-      children: field.value || '—',
-    })) ?? [];
+  const extensionItems = organizationOverviewExtensionItems(definition, item?.extensionValues);
   const actionItems = item
     ? [
         {

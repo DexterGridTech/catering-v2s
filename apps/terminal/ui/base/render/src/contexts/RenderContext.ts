@@ -1,5 +1,5 @@
 import {createContext, useContext} from 'react'
-import type {LoggerPort} from '@catering-v2s/kernel-base-platform-ports'
+import type {LoggerPort, NativeLoadingCapability} from '@catering-v2s/kernel-base-platform-ports'
 import type {UiCatalog} from '@catering-v2s/kernel-base-ui-state'
 import type {RenderSnapshotReader} from '../foundations/createRenderSnapshotReader'
 import type {RendererCatalog} from '../types/catalog'
@@ -11,8 +11,12 @@ export type RenderContextValue = Readonly<{
   readonly uiCatalog: UiCatalog
   readonly rendererCatalog: RendererCatalog
   readonly logger: LoggerPort
+  readonly nativeLoadingCapability: NativeLoadingCapability
+  readonly onPrimarySurfaceReady?: RenderProviderProps['onPrimarySurfaceReady']
+  readonly hasPrimarySurfaceReady: boolean
   readonly runtimeFacts: RenderProviderProps['runtimeFacts']
   readonly dispatchCommand: RenderProviderProps['dispatchCommand']
+  readonly layerDismissals: RenderProviderProps['layerDismissals']
   readonly selectUiVariable: RenderProviderProps['selectUiVariable']
   readonly selectSurfaceForm: NonNullable<RenderProviderProps['selectSurfaceForm']>
   readonly snapshotReader: RenderSnapshotReader

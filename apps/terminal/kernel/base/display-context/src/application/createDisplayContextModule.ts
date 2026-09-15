@@ -1,5 +1,5 @@
 import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime'
-import {dependencyModuleNames} from '../dependencies'
+import {runtimeModuleDependencyNames} from '../dependencies'
 import {moduleKind, moduleName} from '../moduleName'
 import {displayRoleSlice, displayRoleSliceName} from '../features/slices/displayRole'
 import {
@@ -25,7 +25,10 @@ export const createDisplayContextModule = (): RuntimeModule => {
   return Object.freeze({
     moduleName,
     kind: moduleKind,
-    dependencies: dependencyModuleNames.map((name) => ({moduleName: name})),
+    // The package dependency list is the source-import closure.  Only the
+    // runtime owner is a runtime-module edge; contracts, ports and state are
+    // toolkits and are not fabricated into the runtime graph.
+    dependencies: runtimeModuleDependencyNames.map((name) => ({moduleName: name})),
     commands: [
       {name: switchDisplayRoleCommand.commandName, visibility: switchDisplayRoleCommand.visibility},
       {name: switchInstanceModeCommand.commandName, visibility: switchInstanceModeCommand.visibility},

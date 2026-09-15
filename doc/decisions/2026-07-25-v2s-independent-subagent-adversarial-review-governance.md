@@ -17,17 +17,29 @@ reviewStatus: CLAUDE_GO_0M_0S_1N_RESOLVED
 
 恢复并强化 all-v2 `AGENTS.md` 的独立性强度：从**下一个**
 `REVIEW_CYCLE_ID + REVIEW_TARGET + 批准范围` 起，所有
-`REVIEW_TARGET=DESIGN` 与 `REVIEW_TARGET=IMPLEMENTATION` 的两轮对抗性 review 必须由
+`REVIEW_TARGET=DESIGN` 与 `REVIEW_TARGET=IMPLEMENTATION` 的对抗性 review 必须由
 独立子 agent 执行。作者会话不得自审自判、不得代写对抗审查 verdict；作者只负责：
 
 1. 在送审前提供问题、Dexter 意图、替代方案、范围和证据索引；
 2. 在子 agent 独立 verdict 产生后，逐 finding 重开 owning source/代码/evidence，完成
    辩证 intake、最小修复比较与处置；
-3. 需要第二轮时提交修订后的对象给另一个 fresh 子 agent 定向盲审。
+3. 需要下一轮时提交修订后的对象给另一个 fresh 子 agent 定向盲审。
 
-两轮上限不变。第二轮仍是 hard stop，但 `ROUND_FINAL_DECISION=SELF_DECIDED` 只能由
-第二轮独立子 agent 写入其 own review artifact；它表示该 reviewer 对本 cycle 的最终综合，
-不表示作者会话自判。Claude review 继续是该流程之后的独立外部 review，不得替代这两轮。
+轮次上限按 Dexter 2026-09-14 裁定区分：
+
+- `REVIEW_TARGET=DESIGN`（agent 自己的需求、详设或实施计划）最多两轮。第二轮仍是 hard stop，但
+  `ROUND_FINAL_DECISION=SELF_DECIDED` 只能由第二轮独立子 agent 写入其 own review artifact；它表示该
+  reviewer 对本 cycle 的最终综合，不表示作者会话自判。
+- 实施完成后对整批做的 `REVIEW_TARGET=IMPLEMENTATION` 对抗审查不设轮次上限，但必须依据详设文档：
+  每条 finding 写明依据的详设位置与对应实现位置；详设中找不到判据的问题按
+  `doc/platform/review-standard.md` §2 记入 `DESIGN_GAPS`、交回设计侧，不得在审查里就地立标准。
+  `NO-GO` 时修复后交新的 fresh 子 agent 复审，不由作者 `SELF_DECIDED` 收口。
+- 实施过程中「实施结果 ↔ 需求、详设」的对账（步骤级独立对账、整体三维对账、交付前逐代码与详设对账）
+  不设轮次上限，`OPEN` 修复后交 fresh 子 agent 复查，直到 `MATCHED`。
+- Codex 与 Claude 之间经 Dexter 中转的 review 不设轮次上限，做几轮由 Dexter 决定。
+
+不设上限的审查只把 `REVIEW_ROUND=N` 当序号，不写 `REVIEW_ROUND_LIMIT` 或 `ROUND_FINAL_DECISION`。
+Claude review 继续是该流程之后的独立外部 review，不得替代独立子 agent 审查。
 
 ## 2. 独立、盲审与最小输入
 
@@ -104,3 +116,22 @@ proof 后，作者必须用同一输入逐项回读实现与证据，确认用�
 reviewer 必须以这些原文逐点核验，而不是用总览阅读、静态通过或后续 L2 推定一致。
 缺失任一变更点的双读、或以不相干的泛化准备取代它，必须作为 finding。该纪律只强化
 实施和 review 质量，不授权新范围，也不要求 prompt hook 查询或注入上下文。
+
+## 6. 2026-09-15 Dexter 补充裁决：重复失败后的主 agent 接管
+
+正常路径仍必须优先由 fresh、独立的子 agent 完成对抗式 review，以及任务要求的独立实施对账。
+若同一 review 任务的 fresh reviewer 因工具错误、进程/运行失败、明确越界，或经诊断确认的卡死，
+连续至少三次均未能产出可用 verdict 或对账结论，则由主 agent 接管完成同一审查范围，结果对当前任务
+与 fresh reviewer 结果同样有效。这里的“失败”不包括 reviewer 已产出的 `NO-GO`、`OPEN` 或 findings；
+它们是有效审查结果，必须进入正常的辩证 intake、修复与复查流程。
+
+每次失败尝试必须保留真实 status、实际已读范围、first failure、last known good phase、broken boundary
+和诊断原因；不得用盲等、增加 timeout、重复轮询、吞错或把失败改名为成功来满足阈值。主 agent 接管前
+必须在交接记录中列出失败尝试的 reviewer/session 标识与证据，并重新读取该任务的完整最小输入和 owning
+source。接管结果必须标记
+`REVIEW_FALLBACK=MAIN_AGENT_AFTER_REPEATED_SUBAGENT_FAILURE`，不得冒充 `INDEPENDENT_SUBAGENT`，
+不得伪造 fresh checklist 或独立 verdict；不能核实的输入仍保持 `OPEN`。
+
+该例外不重置 review cycle、不取消 Claude/Dexter 的外部 review、不扩大授权范围，也不把主 agent 接管
+变成默认审查人。若 Dexter 后续要求 fresh reviewer，必须按新的指令继续派发，并将本次回退记录作为已知
+上下文，而不是隐藏子 agent 失败。

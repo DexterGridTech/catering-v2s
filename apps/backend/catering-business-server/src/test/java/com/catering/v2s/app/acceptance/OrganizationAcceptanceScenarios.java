@@ -1,6 +1,7 @@
 package com.catering.v2s.app.acceptance;
 
 import static com.catering.v2s.app.acceptance.BackendAcceptanceTest.*;
+import static com.catering.v2s.app.acceptance.ExtensionAcceptanceScenarios.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -355,6 +356,354 @@ final class OrganizationAcceptanceScenarios {
                 "DISABLED",
                 headCompanyDisabled.json().path("status").asText(),
                 "BUSINESS: head-company status is persisted separately from brand and tenant status");
+    }
+
+    @AcceptanceScenario(
+            id = "org.brand-extension-filtered-list",
+            module = "ORG",
+            operation = "getOperationsOrganizationBrands")
+    void brandExtensionFilteredList(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        organizationExtensionFilteredList(
+                context,
+                "BRAND",
+                OPERATIONS_ORGANIZATION_BRANDS,
+                "/organization/brands",
+                Set.of("BC-ORG-BRAND-CREATE"));
+    }
+
+    @AcceptanceScenario(
+            id = "org.tenant-extension-filtered-list",
+            module = "ORG",
+            operation = "getOperationsOrganizationTenants")
+    void tenantExtensionFilteredList(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        organizationExtensionFilteredList(
+                context,
+                "TENANT",
+                OPERATIONS_ORGANIZATION_TENANTS,
+                "/organization/tenants",
+                Set.of("BC-ORG-TENANT-CREATE"));
+    }
+
+    @AcceptanceScenario(
+            id = "org.head-company-extension-filtered-list",
+            module = "ORG",
+            operation = "getOperationsOrganizationHeadCompanies")
+    void headCompanyExtensionFilteredList(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        organizationExtensionFilteredList(
+                context,
+                "HEAD_COMPANY",
+                OPERATIONS_ORGANIZATION_HEAD_COMPANIES,
+                "/organization/head-companies",
+                Set.of("BC-ORG-HEAD-COMPANY-CREATE"));
+    }
+
+    @AcceptanceScenario(
+            id = "org.store-extension-filtered-list",
+            module = "ORG",
+            operation = "getOperationsOrganizationStores")
+    void storeExtensionFilteredList(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        organizationExtensionFilteredList(
+                context,
+                "STORE",
+                OPERATIONS_ORGANIZATION_STORES,
+                "/organization/stores",
+                Set.of("BC-ORG-STORE-CREATE"));
+    }
+
+    @AcceptanceScenario(
+            id = "org.platform-organization-extension-filtered-list",
+            module = "ORG",
+            operation = "getPlatformOrganizationOverviewPage")
+    void platformOrganizationExtensionFilteredList(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        BackendAcceptanceTest.Fixture fixture = host.fixture(
+                "GROUP",
+                Set.of(
+                        "BC-ORG-BRAND-CREATE",
+                        "BC-ORG-TENANT-CREATE",
+                        "BC-ORG-HEAD-COMPANY-CREATE"));
+        host.ensurePlatformAdministrator();
+        BackendAcceptanceTest.Session platform = host.platformLogin(context);
+        for (String hostType : List.of("BRAND", "TENANT", "HEAD_COMPANY", "STORE")) {
+            replaceDefinition(
+                    context,
+                    fixture.groupWorkspaceKey(),
+                    platform.cookie(),
+                    hostType,
+                    typedFlatFieldsFor("organizationFilter"));
+        }
+        host.completeInvitation(context, fixture);
+        BackendAcceptanceTest.Session operations = host.login(context, fixture);
+        for (String hostType : List.of("BRAND", "TENANT", "HEAD_COMPANY")) {
+            createOrganizationExtensionEntity(
+                    context, fixture, operations, hostType, "A", "organizationFilter", "platform-match");
+            createOrganizationExtensionEntity(
+                    context, fixture, operations, hostType, "B", "organizationFilter", "platform-match");
+            createOrganizationExtensionEntity(
+                    context, fixture, operations, hostType, "C", "organizationFilter", "platform-non-match");
+        }
+        BackendAcceptanceTest.Fixture projectFixture = host.projectUserFixture(
+                fixture, Set.of("BC-ORG-STORE-CREATE"));
+        host.completeInvitation(context, projectFixture);
+        BackendAcceptanceTest.Session projectOperations = host.login(context, projectFixture);
+        for (String suffix : List.of("A", "B")) {
+            createOrganizationExtensionEntity(
+                    context, fixture, projectOperations, "STORE", suffix, "organizationFilter", "platform-match");
+        }
+        createOrganizationExtensionEntity(
+                context, fixture, projectOperations, "STORE", "C", "organizationFilter", "platform-non-match");
+        for (String hostType : List.of("BRAND", "TENANT", "HEAD_COMPANY", "STORE")) {
+            assertPlatformOrganizationIdentity(context, fixture, platform, hostType, "organizationFilter");
+        }
+        Response hierarchyPage = context.get(
+                PLATFORM_ORGANIZATION_OVERVIEW,
+                "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey()
+                        + "/organization-overview?category=HIERARCHY&page=1&pageSize=10",
+                platform.cookie(),
+                Set.of(200));
+        assertFalse(
+                hierarchyPage.json().path("items").isEmpty(),
+                "BUSINESS: platform hierarchy overview returns hierarchy items");
+        JsonNode hierarchyItem = hierarchyPage.json().path("items").get(0);
+        assertTrue(
+                hierarchyItem.has("extensionFields"),
+                "BUSINESS: hierarchy overview keeps the legacy extension field projection");
+        assertFalse(
+                hierarchyItem.has("extensionValues"),
+                "BUSINESS: hierarchy overview does not expose flat raw extension values");
+        assertFalse(
+                hierarchyItem.has("extensionRuleRevision"),
+                "BUSINESS: hierarchy overview does not expose the flat definition revision");
+    }
+
+    @AcceptanceScenario(
+            id = "extension.authorization-scope-isolation",
+            module = "EXTENSION",
+            operation = "getOperationsOrganizationBrands")
+    void extensionAuthorizationScopeIsolation(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        BackendAcceptanceTest.Fixture first = host.fixture("GROUP", Set.of("BC-ORG-BRAND-CREATE"));
+        BackendAcceptanceTest.Fixture second = host.fixture("GROUP", Set.of("BC-ORG-BRAND-CREATE"));
+        host.ensurePlatformAdministrator();
+        BackendAcceptanceTest.Session platform = host.platformLogin(context);
+        replaceDefinition(context, first.groupWorkspaceKey(), platform.cookie(), "BRAND", typedFlatFieldsFor("scopeFilter"));
+        replaceDefinition(context, second.groupWorkspaceKey(), platform.cookie(), "BRAND", typedFlatFieldsFor("scopeFilter"));
+        host.completeInvitation(context, first);
+        host.completeInvitation(context, second);
+        BackendAcceptanceTest.Session firstOperations = host.login(context, first);
+        BackendAcceptanceTest.Session secondOperations = host.login(context, second);
+        createOrganizationExtensionEntity(context, first, firstOperations, "BRAND", "A", "scopeFilter", "same-value");
+        createOrganizationExtensionEntity(context, second, secondOperations, "BRAND", "B", "scopeFilter", "same-value");
+
+        Response page = context.get(
+                OPERATIONS_ORGANIZATION_BRANDS,
+                "/api/operations/group-workspaces/" + first.groupWorkspaceKey()
+                        + "/organization/brands?expectedContextVersion=" + firstOperations.contextVersion()
+                        + "&queryText=ExtensionFilter&extensionFilters="
+                        + filterWire(typedFilterSpecs("scopeFilter", "same-value"))
+                        + "&definitionRevision=1&page=1&pageSize=10",
+                firstOperations.cookie(),
+                Set.of(200));
+        assertEquals(1, page.json().path("metadata").path("total").asInt(),
+                "BUSINESS: extension filtering cannot cross workspace scope");
+        assertEquals("ExtensionFilterBRANDA", page.json().path("items").get(0).path("name").asText(),
+                "BUSINESS: scoped extension result belongs to the requesting workspace");
+    }
+
+    private static void assertPlatformOrganizationIdentity(
+            BackendAcceptanceTest.ScenarioContext context,
+            BackendAcceptanceTest.Fixture fixture,
+            BackendAcceptanceTest.Session platform,
+            String hostType,
+            String fieldPrefix)
+            throws Exception {
+        String category = "STORE".equals(hostType) ? "STORE" : "BUSINESS_ENTITY";
+        String requestBase = "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey()
+                + "/organization-overview?category=" + category
+                + "&type=" + hostType
+                + "&name=ExtensionFilter"
+                + ("STORE".equals(hostType) ? "&projectId=" + fixture.projectId() : "")
+                + "&pageSize=1&extensionFilters="
+                + filterWire(typedFilterSpecs(fieldPrefix, "platform-match"))
+                + "&definitionRevision=1";
+        Response page = context.get(
+                PLATFORM_ORGANIZATION_OVERVIEW,
+                requestBase + "&page=1",
+                platform.cookie(),
+                Set.of(200));
+        Response secondPage = context.get(
+                PLATFORM_ORGANIZATION_OVERVIEW,
+                requestBase + "&page=2",
+                platform.cookie(),
+                Set.of(200));
+        assertPlatformOrganizationPage(page, 1, hostType, category, fieldPrefix);
+        assertPlatformOrganizationPage(secondPage, 2, hostType, category, fieldPrefix);
+        assertNotEquals(
+                page.json().path("items").get(0).path("id").asText(),
+                secondPage.json().path("items").get(0).path("id").asText(),
+                "BUSINESS: platform " + hostType + " pages do not repeat an item");
+    }
+
+    private static void assertPlatformOrganizationPage(
+            Response page, int expectedPage, String hostType, String category, String fieldPrefix) {
+        assertOrganizationExtensionPage(
+                page,
+                expectedPage,
+                fieldPrefix,
+                "platform " + hostType + " organization overview page",
+                "platform-match");
+        JsonNode item = page.json().path("items").get(0);
+        assertEquals(category, item.path("category").asText(), "BUSINESS: platform page keeps category identity");
+        assertEquals(hostType, item.path("type").asText(), "BUSINESS: platform page keeps type identity");
+        assertTrue(
+                item.path("name").asText().startsWith("ExtensionFilter" + hostType),
+                "BUSINESS: platform page does not leak another organization identity");
+        assertFalse(
+                item.has("extensionFields"),
+                "BUSINESS: flat platform page does not expose the hierarchy extension field projection");
+        assertTrue(
+                item.path("extensionValues").isObject(),
+                "BUSINESS: flat platform page exposes raw extension values");
+        assertTrue(
+                item.has("extensionRuleRevision"),
+                "BUSINESS: flat platform page exposes the applied definition revision");
+    }
+
+    private void organizationExtensionFilteredList(
+            BackendAcceptanceTest.ScenarioContext context,
+            String hostType,
+            RouteIdentity listRoute,
+            String endpoint,
+            Set<String> capabilities)
+            throws Exception {
+        String target = "STORE".equals(hostType) ? "PROJECT" : "GROUP";
+        BackendAcceptanceTest.Fixture fixture = host.fixture(target, capabilities);
+        host.ensurePlatformAdministrator();
+        BackendAcceptanceTest.Session platform = host.platformLogin(context);
+        String fieldKey = "organizationFilter";
+        replaceDefinition(
+                context,
+                fixture.groupWorkspaceKey(),
+                platform.cookie(),
+                hostType,
+                typedFlatFieldsFor(fieldKey));
+        host.completeInvitation(context, fixture);
+        BackendAcceptanceTest.Session operations = host.login(context, fixture);
+        createOrganizationExtensionEntity(context, fixture, operations, hostType, "A", fieldKey, "match-value");
+        createOrganizationExtensionEntity(context, fixture, operations, hostType, "B", fieldKey, "match-value");
+        createOrganizationExtensionEntity(context, fixture, operations, hostType, "C", fieldKey, "different-value");
+
+        String coreQuery = "BRAND".equals(hostType) ? "&queryText=ExtensionFilter" : "&name=ExtensionFilter";
+        String requestBase = "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + endpoint
+                + "?expectedContextVersion=" + operations.contextVersion()
+                + coreQuery
+                + "&pageSize=1&extensionFilters="
+                + filterWire(typedFilterSpecs(fieldKey, "match-value"))
+                + "&definitionRevision=1";
+        Response page = context.get(listRoute, requestBase + "&page=1", operations.cookie(), Set.of(200));
+        assertOrganizationExtensionPage(page, 1, fieldKey, "operations " + hostType + " page");
+        Response secondPage = context.get(listRoute, requestBase + "&page=2", operations.cookie(), Set.of(200));
+        assertOrganizationExtensionPage(secondPage, 2, fieldKey, "operations " + hostType + " page");
+        assertNotEquals(
+                page.json().path("items").get(0).path("id").asText(),
+                secondPage.json().path("items").get(0).path("id").asText(),
+                "BUSINESS: operations " + hostType + " pages do not repeat an item");
+    }
+
+    private static void createOrganizationExtensionEntity(
+            BackendAcceptanceTest.ScenarioContext context,
+            BackendAcceptanceTest.Fixture fixture,
+            BackendAcceptanceTest.Session operations,
+            String hostType,
+            String suffix,
+            String fieldPrefix,
+            String textValue)
+            throws Exception {
+        String normalizedHost = hostType.toLowerCase().replace('_', '-');
+        String name = "ExtensionFilter" + hostType + suffix;
+        List<Map<String, Object>> extensionValues = typedExtensionValues(fieldPrefix, textValue);
+        if ("BRAND".equals(hostType)) {
+            context.post(
+                    OPERATIONS_ORGANIZATION_BRAND_CREATE,
+                    "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/organization/brands",
+                    operations.cookie(),
+                    Map.of(
+                            "code", "acceptance-filter-" + normalizedHost + "-" + suffix.toLowerCase(),
+                            "name", name,
+                            "alias", "AFB" + suffix,
+                            "remark", "extension-filter",
+                            "extensionValues", extensionValues),
+                    Set.of(201));
+            return;
+        }
+        if ("TENANT".equals(hostType)) {
+            context.post(
+                    OPERATIONS_ORGANIZATION_TENANT_CREATE,
+                    "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/organization/tenants",
+                    operations.cookie(),
+                    Map.of(
+                            "code", "acceptance-filter-" + normalizedHost + "-" + suffix.toLowerCase(),
+                            "name", name,
+                            "legalName", name + " Ltd",
+                            "unifiedSocialCreditCode", "91310000FILTERTENANT" + suffix,
+                            "remark", "extension-filter",
+                            "extensionValues", extensionValues),
+                    Set.of(201));
+            return;
+        }
+        if ("HEAD_COMPANY".equals(hostType)) {
+            context.post(
+                    OPERATIONS_ORGANIZATION_HEAD_COMPANY_CREATE,
+                    "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/organization/head-companies",
+                    operations.cookie(),
+                    Map.of(
+                            "code", "acceptance-filter-" + normalizedHost + "-" + suffix.toLowerCase(),
+                            "name", name,
+                            "legalName", name + " Ltd",
+                            "unifiedSocialCreditCode", "91310000FILTERHEAD" + suffix,
+                            "remark", "extension-filter",
+                            "extensionValues", extensionValues),
+                    Set.of(201));
+            return;
+        }
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("brandId", fixture.brandId().toString());
+        body.put("tenantId", fixture.tenantId().toString());
+        body.put("headCompanyId", null);
+        body.put("code", "acceptance-filter-" + normalizedHost + "-" + suffix.toLowerCase());
+        body.put("name", name);
+        body.put("notes", "extension-filter");
+        body.put("extensionValues", extensionValues);
+        context.post(
+                OPERATIONS_ORGANIZATION_STORE_CREATE,
+                "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/organization/stores",
+                operations.cookie(),
+                body,
+                Set.of(201));
+    }
+
+    private static void assertOrganizationExtensionPage(Response page, int expectedPage, String fieldPrefix, String label) {
+        assertOrganizationExtensionPage(page, expectedPage, fieldPrefix, label, "match-value");
+    }
+
+    private static void assertOrganizationExtensionPage(
+            Response page, int expectedPage, String fieldPrefix, String label, String expectedTextValue) {
+        JsonNode metadata = page.json().path("metadata");
+        assertEquals(expectedPage, metadata.path("page").asInt(), "BUSINESS: " + label + " preserves page identity");
+        assertEquals(1, metadata.path("pageSize").asInt(), "BUSINESS: " + label + " preserves page size");
+        assertEquals(2, metadata.path("total").asInt(), "BUSINESS: " + label + " totals the core and extension matches");
+        assertEquals(1, page.json().path("items").size(), "BUSINESS: " + label + " returns one item per page");
+        assertEquals(
+                1,
+                metadata.path("definitionRevision").asLong(),
+                "BUSINESS: " + label + " returns the applied definition revision");
+        JsonNode values = page.json().path("items").get(0).path("extensionValues");
+        assertEquals(
+                expectedTextValue,
+                values.path(fieldPrefix + "Text").asText(),
+                "BUSINESS: " + label + " returns TEXT raw value");
+        assertEquals(12.5, values.path(fieldPrefix + "Number").asDouble(), "BUSINESS: " + label + " returns NUMBER raw value");
+        assertEquals("2026-09-15", values.path(fieldPrefix + "Date").asText(), "BUSINESS: " + label + " returns DATE raw value");
+        assertTrue(values.path(fieldPrefix + "Boolean").asBoolean(), "BUSINESS: " + label + " returns BOOLEAN raw value");
+        assertEquals("直营", values.path(fieldPrefix + "Select").asText(), "BUSINESS: " + label + " returns SELECT raw value");
     }
 
     @AcceptanceScenario(

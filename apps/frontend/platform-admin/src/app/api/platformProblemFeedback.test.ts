@@ -39,4 +39,37 @@ describe('platform Problem feedback contract', () => {
     expect(platformProblemOf({status: 503, data: null}).errorCode).toBe('PLATFORM_COMMON_RESULT_UNKNOWN');
     expect(platformProblemOf(new Error('socket closed')).errorCode).toBe('NETWORK_ERROR');
   });
+
+  it('retains the server definition revision needed to bound stale recovery', () => {
+    expect(
+      platformProblemOf({
+        data: {
+          errorCode: 'EXTENSION_DEFINITION_REVISION_STALE',
+          details: {currentDefinitionRevision: 7},
+        },
+      }).currentDefinitionRevision,
+    ).toBe(7);
+    expect(
+      platformProblemOf({
+        data: {
+          errorCode: 'EXTENSION_DEFINITION_REVISION_STALE',
+          details: {currentDefinitionRevision: '7'},
+        },
+      }).currentDefinitionRevision,
+    ).toBeUndefined();
+  });
+
+  it('retains sanitized field-level details for invalid extension filters', () => {
+    const problem = platformProblemOf({
+      data: {
+        errorCode: 'EXTENSION_FILTER_INVALID',
+        details: {
+          invalidFields: [{fieldKey: 'brandLevel', reason: 'TYPE_MISMATCH', expectedType: 'NUMBER'}],
+        },
+      },
+    });
+    expect(problem.invalidFields).toEqual([
+      {fieldKey: 'brandLevel', reason: 'TYPE_MISMATCH', expectedType: 'NUMBER'},
+    ]);
+  });
 });

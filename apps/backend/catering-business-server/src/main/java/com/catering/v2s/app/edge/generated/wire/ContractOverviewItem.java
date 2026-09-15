@@ -18,5 +18,6 @@ public record ContractOverviewItem(
     String tenantResolutionStatus,
     ContractOverviewItemProjectRef projectRef,
     java.util.List<StoreContractItem> items,
-    java.util.List<ContractOverviewItemExtensionFieldsItem> extensionFields
+    tools.jackson.databind.JsonNode extensionValues,
+    Long extensionRuleRevision
 ) {}

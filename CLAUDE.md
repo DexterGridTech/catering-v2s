@@ -94,7 +94,7 @@ findings 直接交 Codex 在既有批准边界内自主修复，不构成再授�
 
 Claude finding 是供 Codex 与 Dexter 复核的独立输入，不自动成为新权威。请在每条 finding 中区分仓内事实、外部事实、推论、产品判断与尚缺证据的假设，给出 owning source、适用条件和可能反例；外部漂移事实优先引用官方一手资料。修复建议要说明为什么不是更小方案，避免用评审制造过度设计。信息不足时明确写 `UNVERIFIED` 或 `DEXTER_DECISION`，不得用确定语气替代证据。
 
-自下一个 review cycle 起，DESIGN/IMPLEMENTATION 的每轮对抗审查必须由 fresh 独立子 agent 盲审，不得由作者会话自审自判；作者仅在独立 verdict 后做辩证 intake 与处置。独立子 agent 的 prompt 必须逐项列出最小输入清单并以“找出它为什么不成立”为立场，缺一输入或先读作者材料即该轮无效。两轮硬上限与第二轮 `SELF_DECIDED` 收口不变；Claude 检查此边界但不允许作者自审替代独立子 agent，也不得用换 reviewer 或局部修订重置 cycle。
+自下一个 review cycle 起，DESIGN/IMPLEMENTATION 的每轮对抗审查必须由 fresh 独立子 agent 盲审，不得由作者会话自审自判；作者仅在独立 verdict 后做辩证 intake 与处置。独立子 agent 的 prompt 必须逐项列出最小输入清单并以“找出它为什么不成立”为立场，缺一输入或先读作者材料即该轮无效。`REVIEW_TARGET=DESIGN`（agent 自己的需求、详设或实施计划）的两轮硬上限与第二轮 `SELF_DECIDED` 收口不变；实施完成后整批 `REVIEW_TARGET=IMPLEMENTATION` 对抗审查、实施过程中的对账以及经 Dexter 中转的 Codex↔Claude review 不设轮次上限，其中 IMPLEMENTATION 审查必须依据详设文档（Dexter 2026-09-14，正本见 `doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md` 第 1 节）。Claude 检查此边界但不允许作者自审替代独立子 agent，也不得用换 reviewer 或局部修订重置 DESIGN cycle。
 
 项目 skills 只从 `.agents/skills/` 读取；`.claude/skills` 是指向它的仓内链接。Claude 的用户级记忆按项目路径隔离、不跨仓跟随——评审所需的一切约定以本文件与仓内文档为准。
 

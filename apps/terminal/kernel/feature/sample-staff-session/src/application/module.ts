@@ -1,6 +1,6 @@
 import {createRequestId} from '@catering-v2s/kernel-base-contracts'
 import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime'
-import {dependencyModuleNames} from '../dependencies'
+import {runtimeModuleDependencyNames} from '../dependencies'
 import {
   bootstrapSessionCommand,
   loginCommand,
@@ -36,7 +36,7 @@ export const createSampleStaffSessionModule = (): RuntimeModule => {
   return Object.freeze({
     moduleName,
     kind: moduleKind,
-    dependencies: dependencyModuleNames.map(name => ({moduleName: name})),
+    dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
     errorDefinitions: [invalidCredentialsErrorDefinition],
     commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,

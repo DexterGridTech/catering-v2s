@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "resources": [
+    {
+      "path": "app/src/main/res/drawable-mdpi/splashscreen_logo.png",
+      "owner": "native-resource",
+      "consumer": "app/src/main/res/values/styles.xml#Theme.App.SplashScreen/windowSplashScreenAnimatedIcon",
+      "reason": "SDK 57 Android splash theme icon input",
+      "dimensions": "288×288",
+      "sha256": "f84b9b17a4a1c7d7dd840cd272c07a6c3fd66d5a9826b64bb53facb6f176bc24"
+    },
+    {
+      "path": "app/src/main/res/drawable-hdpi/splashscreen_logo.png",
+      "owner": "native-resource",
+      "consumer": "app/src/main/res/values/styles.xml#Theme.App.SplashScreen/windowSplashScreenAnimatedIcon",
+      "reason": "SDK 57 Android splash theme icon input",
+      "dimensions": "432×432",
+      "sha256": "721c895579cb08ec4c9a0fe7dadafe9a97c33ef758d3578ad5e8b540de59f974"
+    },
+    {
+      "path": "app/src/main/res/drawable-xhdpi/splashscreen_logo.png",
+      "owner": "native-resource",
+      "consumer": "app/src/main/res/values/styles.xml#Theme.App.SplashScreen/windowSplashScreenAnimatedIcon",
+      "reason": "SDK 57 Android splash theme icon input",
+      "dimensions": "576×576",
+      "sha256": "e1c5250e339add5ed7849cb0859d052edb9781abb91db049e68ae3a4059247d7"
+    },
+    {
+      "path": "app/src/main/res/drawable-xxhdpi/splashscreen_logo.png",
+      "owner": "native-resource",
+      "consumer": "app/src/main/res/values/styles.xml#Theme.App.SplashScreen/windowSplashScreenAnimatedIcon",
+      "reason": "SDK 57 Android splash theme icon input",
+      "dimensions": "864×864",
+      "sha256": "23d97ccb41a821ee345b2c5bb0c9bdab730a751a9227925acbf0af021dc38a9b"
+    },
+    {
+      "path": "app/src/main/res/drawable-xxxhdpi/splashscreen_logo.png",
+      "owner": "native-resource",
+      "consumer": "app/src/main/res/values/styles.xml#Theme.App.SplashScreen/windowSplashScreenAnimatedIcon",
+      "reason": "SDK 57 Android splash theme icon input",
+      "dimensions": "1152×1152",
+      "sha256": "be9fac5c4cda48c41dce592288c486524bba3e4ca7fa00c0a04a46928154b5bf"
+    }
+  ]
+}

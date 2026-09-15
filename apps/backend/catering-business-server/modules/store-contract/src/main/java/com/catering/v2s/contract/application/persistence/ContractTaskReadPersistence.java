@@ -16,6 +16,8 @@ import com.catering.v2s.contract.application.ContractTaskReadService.Reference;
 import com.catering.v2s.contract.application.ContractTaskReadService.SelectedTenant;
 import com.catering.v2s.contract.application.ContractTaskReadService.StoreCandidate;
 import com.catering.v2s.contract.application.ContractTaskReadService.StoreContractView;
+import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
+import com.catering.v2s.extension.api.ExtensionFilterQuery;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,9 +45,16 @@ public class ContractTaskReadPersistence {
                     + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_ALTERNATIVE_TENANT_ORGANIZATION_NODE_PROJECT_ID
                     + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_TENANT_ID;
     private final JdbcTemplate jdbc;
+    private final ExtensionDefinitionLookup definitions;
 
     public ContractTaskReadPersistence(JdbcTemplate jdbc) {
+        this(jdbc, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ContractTaskReadPersistence(JdbcTemplate jdbc, ExtensionDefinitionLookup definitions) {
         this.jdbc = jdbc;
+        this.definitions = definitions;
     }
 
     public UUID requireWorkspaceUuid(String key) {
@@ -226,6 +235,7 @@ public class ContractTaskReadPersistence {
                 : ContractTaskReadServiceSql.SORT_DIRECTION_DESC;
         int safePage = Math.max(1, safe.page());
         int safeSize = Math.min(100, Math.max(1, safe.pageSize()));
+        ExtensionFilterQuery.Prepared filters = prepareFilters(workspaceUuid, key, safe);
         String where = ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PROJECT_ID
                 + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONDITION_STORE_ID_TENANT_ID_TEXT
                 + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_ALTERNATIVE_CONTRACT_NO_ILIKE_ESCAPE
@@ -233,11 +243,12 @@ public class ContractTaskReadPersistence {
                 + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONDITION_JSONB_ARRAY_ELEMENTS_TEXT_ITEMS_JSON
                 + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_CODE_ILIKE_ESCAPE
                 + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONDITION_DATE_EFFECTIVE_FROM_EFFECTIVE_TO
-                + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_EFFECTIVE_TO_TEXT_STATUS;
+                + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_EFFECTIVE_TO_TEXT_STATUS
+                + (filters.isEmpty() ? "" : " AND " + filters.predicate("c.extension_values"));
         String contractPattern = like(safe.contractNo());
         String phasePattern = like(safe.phaseName());
         String itemPattern = like(safe.itemCode());
-        List<Object> values = Arrays.asList(
+        List<Object> values = new ArrayList<>(Arrays.asList(
                 workspaceUuid,
                 key,
                 safe.projectId(),
@@ -257,7 +268,8 @@ public class ContractTaskReadPersistence {
                 safe.dateTo(),
                 safe.dateTo(),
                 normalizedStatus,
-                normalizedStatus);
+                normalizedStatus));
+        values.addAll(filters.parameters());
         String from = ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_FROM_CLAUSE_STORE_STORE_ID_ALTERNATE_A
                 + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_ALTERNATIVE_TENANT_ORGANIZATION_NODE_PROJECT_ID_ALTERNATE_A
                 + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_TENANT_ID_ALTERNATE_A;
@@ -283,88 +295,28 @@ public class ContractTaskReadPersistence {
                         safeSize,
                         total,
                         sortKey,
-                        orderDirection),
+                        orderDirection,
+                        filters.definitionRevision()),
                 items);
     }
 
     public ContractPage taskPage(UUID workspaceUuid, String key, ContractListQuery query) {
-        ContractListQuery safe = query == null ? ContractListQuery.empty() : query;
-        if (safe.status() != null && !List.of("VALID", "INVALID").contains(safe.status()))
-            throw new ContractCommandService.ContractValidationException();
-        String status = "VALID".equals(safe.status()) ? "ACTIVE" : "INVALID".equals(safe.status()) ? "INVALID" : null;
-        String sort = safe.sort() == null ? "UPDATED_AT" : safe.sort();
-        String direction = ContractTaskReadServiceSql.SORT_DIRECTION_ASC.equals(safe.direction())
-                ? ContractTaskReadServiceSql.SORT_DIRECTION_ASC
-                : ContractTaskReadServiceSql.SORT_DIRECTION_DESC;
-        String order = switch (sort) {
-            case "CONTRACT_NO" -> ContractTaskReadServiceSql.CONTRACT_NO_COLUMN;
-            case "EFFECTIVE_FROM" -> ContractTaskReadServiceSql.EFFECTIVE_FROM_COLUMN;
-            case "UPDATED_AT" -> ContractTaskReadServiceSql.UPDATED_AT_COLUMN;
-            default -> throw new ContractCommandService.ContractValidationException();
-        };
-        if (safe.direction() != null
-                && !List.of(
-                                ContractTaskReadServiceSql.SORT_DIRECTION_ASC,
-                                ContractTaskReadServiceSql.SORT_DIRECTION_DESC)
-                        .contains(safe.direction()))
-            throw new ContractCommandService.ContractValidationException();
-        int page = Math.max(1, safe.page());
-        int size = Math.min(100, Math.max(1, safe.pageSize()));
-        String contract = like(safe.contractNo());
-        String phase = like(safe.phaseName());
-        String item = like(safe.itemCode());
-        return ReadBudgetComponent.measure(
-                ReadBudgetComponent.Component.PRIMARY_QUERY,
-                () -> jdbc.query(
-                        ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CTE_PROJECT_META_NAME_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NODE_TYPE
-                                .replace("__ORDER__", order)
-                                .replace("__DIRECTION__", direction),
-                        statement -> {
-                            statement.setObject(1, safe.projectId());
-                            statement.setObject(2, safe.projectId());
-                            statement.setObject(3, workspaceUuid);
-                            statement.setString(4, key);
-                            statement.setObject(5, workspaceUuid);
-                            statement.setString(6, key);
-                            statement.setObject(7, safe.projectId());
-                            statement.setObject(8, safe.projectId());
-                            statement.setObject(9, safe.storeId());
-                            statement.setObject(10, safe.storeId());
-                            statement.setObject(11, safe.tenantId());
-                            statement.setObject(12, safe.tenantId());
-                            statement.setString(13, contract);
-                            statement.setString(14, contract);
-                            statement.setString(15, phase);
-                            statement.setString(16, phase);
-                            statement.setString(17, item);
-                            statement.setString(18, item);
-                            statement.setObject(19, safe.dateFrom());
-                            statement.setObject(20, safe.dateFrom());
-                            statement.setObject(21, safe.dateTo());
-                            statement.setObject(22, safe.dateTo());
-                            statement.setString(23, status);
-                            statement.setString(24, status);
-                            statement.setInt(25, size);
-                            statement.setInt(26, (page - 1) * size);
-                        },
-                        result -> {
-                            List<StoreContractView> items = new ArrayList<>();
-                            long total = 0;
-                            UUID projectId = null;
-                            String projectName = null;
-                            while (result.next()) {
-                                total = result.getLong(25);
-                                projectId = result.getObject(26, UUID.class);
-                                projectName = result.getString(27);
-                                if (result.getObject(1) != null) items.add(readView(result));
-                            }
-                            if (safe.projectId() != null && projectId == null)
-                                throw new ContractCommandService.ContractNotFoundException();
-                            return new ContractPage(
-                                    new ContractPageMetadata(
-                                            key, projectId, projectName, page, size, total, sort, direction),
-                                    List.copyOf(items));
-                        }));
+        return list(workspaceUuid, key, query);
+    }
+
+    private ExtensionFilterQuery.Prepared prepareFilters(UUID workspaceUuid, String key, ContractListQuery query) {
+        if (query.extensionFilters() == null) return ExtensionFilterQuery.Prepared.empty();
+        if (definitions == null) {
+            throw new ExtensionFilterQuery.InvalidFilterException(List.of(
+                    new ExtensionFilterQuery.InvalidReason("CONTRACT", "DEFINITION_LOOKUP_UNAVAILABLE", null)));
+        }
+        return ExtensionFilterQuery.prepare(
+                definitions,
+                workspaceUuid,
+                key,
+                "CONTRACT",
+                query.extensionFilters(),
+                query.definitionRevision());
     }
 
     public StoreContractView view(UUID workspaceUuid, String key, UUID contractId) {

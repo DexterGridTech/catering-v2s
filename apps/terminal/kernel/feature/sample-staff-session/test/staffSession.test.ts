@@ -25,9 +25,7 @@ describe('sample staff session owner module', () => {
     expect(module.moduleName).toBe('kernel.feature.sample-staff-session')
     expect(module.kind).toBe('owner')
     expect(module.dependencies?.map(dependency => dependency.moduleName)).toEqual([
-      'kernel.base.contracts',
       'kernel.base.runtime',
-      'kernel.base.state',
     ])
     expect(module.commands?.map(command => [command.name, command.visibility])).toEqual([
       ['kernel.feature.sample-staff-session.bootstrap-session', 'internal'],

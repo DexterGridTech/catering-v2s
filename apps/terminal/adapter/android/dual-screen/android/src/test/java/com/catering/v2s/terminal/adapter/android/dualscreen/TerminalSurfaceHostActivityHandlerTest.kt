@@ -8,6 +8,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TerminalSurfaceHostActivityHandlerTest {
+  @Test
+  fun `only default physical display is the primary Activity surface`() {
+    assertTrue(isPrimaryActivitySurface(surfaceIndex = 0, displayId = 0))
+    assertFalse(isPrimaryActivitySurface(surfaceIndex = 0, displayId = 2))
+    assertFalse(isPrimaryActivitySurface(surfaceIndex = 1, displayId = 0))
+    assertFalse(isPrimaryActivitySurface(surfaceIndex = 0, displayId = null))
+  }
+
   private val stableSnapshot = TerminalSurfaceHostSnapshot(
     surfaceKey = "PRIMARY",
     generation = 1,
@@ -238,7 +246,7 @@ class TerminalSurfaceHostActivityHandlerTest {
   }
 
   @Test
-  fun `invalid owner layout clears matching entry and publishes next unavailable generation`() {
+  fun `invalid owner layout keeps matching entry and publishes a recoverable next generation`() {
     val result = resolveSurfaceHostRemoval(
       currentSnapshot = stableSnapshot,
       ownerMatches = true,
@@ -246,9 +254,9 @@ class TerminalSurfaceHostActivityHandlerTest {
       reason = "invalid-owner-layout",
     )
 
-    assertTrue(result.shouldClear)
-    assertNull(result.snapshotToKeep)
-    val event = result.unavailable
+    assertFalse(result.shouldClear)
+    assertEquals(stableSnapshot, result.snapshotToKeep)
+    val event = result.recoverable
     assertTrue(event != null)
     assertEquals("PRIMARY", event?.surfaceKey)
     assertEquals(2L, event?.generation)
@@ -268,7 +276,7 @@ class TerminalSurfaceHostActivityHandlerTest {
 
     assertFalse(result.shouldClear)
     assertNull(result.snapshotToKeep)
-    assertNull(result.unavailable)
+    assertNull(result.recoverable)
   }
 
   @Test
@@ -282,7 +290,7 @@ class TerminalSurfaceHostActivityHandlerTest {
 
     assertFalse(result.shouldClear)
     assertEquals(stableSnapshot, result.snapshotToKeep)
-    assertNull(result.unavailable)
+    assertNull(result.recoverable)
   }
 
   @Test
@@ -315,7 +323,7 @@ class TerminalSurfaceHostActivityHandlerTest {
 
     if (primaryRemoval.shouldClear) entries.remove(0)
 
-    assertNull(entries[0])
+    assertEquals(stableSnapshot, entries[0])
     assertEquals(secondarySnapshot, entries[1])
   }
 }

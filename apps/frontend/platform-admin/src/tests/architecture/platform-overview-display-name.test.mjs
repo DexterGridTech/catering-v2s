@@ -20,16 +20,31 @@ const organizationController = fs.readFileSync(
 
 test('overview consumers use the display-name wire and the platform edge adapts owner DTOs explicitly', () => {
   for (const source of consumerFiles) {
-    assert.match(source, /field\.name/);
-    assert.doesNotMatch(source, /field\.label/);
+    assert.match(source, /extensionValues/);
+    assert.match(source, /organizationOverviewExtensionItems/);
   }
+  assert.match(
+    organizationController,
+    /extensionValues\(value\.extensionValues\(\)\)/,
+  );
   assert.match(
     organizationController,
     /new OrganizationOverviewItemExtensionFieldsItem\(field\.name\(\), field\.value\(\)\)/,
   );
+  assert.match(organizationController, /boolean hierarchy = "HIERARCHY"\.equals\(value\.category\(\)\)/);
   assert.doesNotMatch(organizationController, /@GetMapping OrganizationOverviewTaskReadService\.(Page|Item)/);
   assert.doesNotMatch(
     organizationController,
     /@GetMapping\("\/hierarchy"\) OrganizationOverviewTaskReadService\.HierarchyTree/,
   );
+});
+
+test('hierarchy detail continues to consume the existing display-name wire', () => {
+  const page = consumerFiles[0];
+  assert.match(page, /Omit<OrganizationOverviewItem, 'extensionFields'>/);
+  assert.match(page, /extensionFields: \(item\.extensionFields \?\? \[\]\)\.map/);
+  assert.match(page, /hierarchyDetailPresentation\(detail\)/);
+  assert.doesNotMatch(page, /hierarchyDetailPresentation\(detail, /);
+  assert.doesNotMatch(page, /extensionValues: hierarchyRoot\.extensionValues/);
+  assert.doesNotMatch(page, /extensionRuleRevision: hierarchyRoot\.extensionRuleRevision/);
 });

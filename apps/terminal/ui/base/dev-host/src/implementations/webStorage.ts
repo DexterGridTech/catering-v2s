@@ -115,8 +115,7 @@ export const createWebStateStoragePort = (
       } catch (error) { return failure(port, 'clear', error) }
     },
   }
-  if (__DEV__) {
-    Object.defineProperty(storagePort, PORT_DESCRIPTOR_KEY, {
+  Object.defineProperty(storagePort, PORT_DESCRIPTOR_KEY, {
     value: Object.freeze({
       port,
       capabilities: Object.freeze([
@@ -127,6 +126,5 @@ export const createWebStateStoragePort = (
     writable: false,
     configurable: false,
     })
-  }
   return Object.freeze(storagePort)
 }

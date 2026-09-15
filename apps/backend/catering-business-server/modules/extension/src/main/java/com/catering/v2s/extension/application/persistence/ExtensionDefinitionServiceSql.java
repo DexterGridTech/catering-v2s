@@ -15,6 +15,16 @@ public final class ExtensionDefinitionServiceSql {
     public static final String EXTENSION_DEFINITION_SERVICE_CONTINUATION_ENTITY_TYPE_REVISION = "entity_type=? AND revision=?";
     public static final String EXTENSION_DEFINITION_SERVICE_SELECT_EXTENSION_DEFINITION_DEFINITIONS_TEXT_REVISION_WORKSPACE_UUID = "SELECT definitions::text, revision FROM extension.extension_definition WHERE workspace_uuid=? AND ";
     public static final String EXTENSION_DEFINITION_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_ENTITY_TYPE = "group_workspace_key=? AND entity_type=?";
+    public static final String EXTENSION_DEFINITION_SERVICE_SELECT_DEFINITION_HISTORY_CHANGES = """
+            SELECT changes_json::text
+              FROM extension.audit_event
+             WHERE workspace_uuid=?
+               AND group_workspace_key=?
+               AND entity_type='EXTENSION_DEFINITION'
+               AND entity_ref_text=?
+               AND action='EXTENSION_DEFINITION_REPLACED'
+             ORDER BY occurred_at_epoch_millis, id
+            """;
     public static final String EXTENSION_DEFINITION_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE = "INSERT INTO extension.audit_event (id, workspace_uuid, group_workspace_key, entity_type, ";
     public static final String EXTENSION_DEFINITION_SERVICE_CONTINUATION_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT = "entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, ";
     public static final String EXTENSION_DEFINITION_SERVICE_CONTINUATION_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_EXTENSION_DEFINITION = "occurred_at_epoch_millis, changes_json) VALUES (?, ?, ?, 'EXTENSION_DEFINITION', ?, ?, ?, ";

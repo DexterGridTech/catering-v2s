@@ -21,7 +21,7 @@ import {
   resolveSecondarySurfaceAvailable,
   type DisplayMode,
 } from '@catering-v2s/kernel-base-display-context';
-import type {PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
+import type {NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
 import {createWebPlatformPorts, type SurfaceMode, type WebPlatformOptions} from '../implementations/webPlatform';
 import {createWebSurfaceHostSource, type WebSurfaceHostSource} from '../implementations/webSurfaceHost';
 import {
@@ -67,13 +67,26 @@ export type TestExpoAppOptions<TAssembly extends TestExpoAssembly> = Readonly<{
   readonly createAssembly: (
     input: Readonly<{
       readonly platformPorts: PlatformPorts;
+      readonly nativeLoadingCapability: NativeLoadingCapability;
       readonly persistenceKey: string;
       readonly surfaceForm: SurfaceForm;
       readonly surfaceHostSourcesByDisplayIndex: Readonly<Partial<Record<0 | 1, WebSurfaceHostSource>>>;
     }>,
   ) => Promise<TAssembly>;
   readonly getRuntimeStatus: (assembly: TAssembly) => TestExpoRuntimeStatus;
-}>;
+}>; 
+
+const createWebNativeLoadingCapability = (): NativeLoadingCapability => {
+  let hidden = false;
+  return Object.freeze({
+    targetPhysicalSurface: Object.freeze({surfaceKey: 'PRIMARY' as const, displayIndex: 0 as const}),
+    hideOnce: async (reason: string) => {
+      if (hidden) return Object.freeze({hidden: false, reason, alreadyHidden: true});
+      hidden = true;
+      return Object.freeze({hidden: true, reason, alreadyHidden: false});
+    },
+  });
+};
 
 const SURFACE_FORM_QUERY_PARAM = 'surfaceForm';
 
@@ -763,6 +776,7 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
           : {}),
       });
     }, [options.terminalSurfaces, surfaceForm]);
+    const nativeLoadingCapability = useMemo(createWebNativeLoadingCapability, []);
 
     useEffect(() => {
       let active = true;
@@ -770,7 +784,13 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
       setStartupError(false);
       setShowSecondary(undefined);
       void options
-        .createAssembly({platformPorts, persistenceKey, surfaceForm, surfaceHostSourcesByDisplayIndex: webSurfaceHostSources})
+        .createAssembly({
+          platformPorts,
+          nativeLoadingCapability,
+          persistenceKey,
+          surfaceForm,
+          surfaceHostSourcesByDisplayIndex: webSurfaceHostSources,
+        })
         .then(nextAssembly => {
           if (!active) return;
           setAssembly(nextAssembly);
@@ -792,7 +812,7 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
       return () => {
         active = false;
       };
-    }, [platformPorts, surfaceForm, webSurfaceHostSources]);
+    }, [nativeLoadingCapability, platformPorts, surfaceForm, webSurfaceHostSources]);
 
     useEffect(() => {
       if (assembly === undefined) return;

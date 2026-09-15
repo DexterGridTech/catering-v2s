@@ -80,6 +80,38 @@ function sourceFiles(packageRoot) {
   return result.sort()
 }
 
+const dependencyFilePattern = /\.(?:ts|tsx|js|jsx|mjs|cjs)$/
+
+function dependencySourceFiles(packageRoot) {
+  const result = []
+  const visit = directory => {
+    if (!fs.existsSync(directory)) return
+    for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+      if (['node_modules', '.turbo', '.expo', 'build', 'dist'].includes(entry.name)) continue
+      const entryPath = path.join(directory, entry.name)
+      if (entry.isDirectory()) visit(entryPath)
+      else if (entry.isFile() && dependencyFilePattern.test(entry.name)) result.push(entryPath)
+    }
+  }
+
+  for (const directoryName of ['src', 'test', 'test-expo', 'scripts']) {
+    visit(path.join(packageRoot, directoryName))
+  }
+  if (fs.existsSync(packageRoot)) {
+    for (const entry of fs.readdirSync(packageRoot, {withFileTypes: true})) {
+      if (entry.isFile() && dependencyFilePattern.test(entry.name)) result.push(path.join(packageRoot, entry.name))
+    }
+  }
+  return [...new Set(result)].sort()
+}
+
+function moduleNameFromPackageDirectory(root, packageRoot) {
+  const relative = path.relative(path.join(root, 'apps/terminal'), packageRoot)
+  if (!relative || relative.startsWith('..')) return null
+  const segments = relative.split(path.sep)
+  return segments.length === 3 ? segments.join('.') : null
+}
+
 function packageDirectories(root) {
   const result = []
   for (const layer of ['kernel', 'ui', 'adapter', 'assembly']) {
@@ -91,7 +123,15 @@ function packageDirectories(root) {
         const entryPath = path.join(directory, entry.name)
         if (entry.isDirectory()) visit(entryPath)
         else if (entry.isFile() && entry.name === 'package.json') {
-          result.push({directory: path.dirname(entryPath), layer})
+          const packageRoot = path.dirname(entryPath)
+          const packageJson = JSON.parse(fs.readFileSync(entryPath, 'utf8'))
+          const moduleName = moduleNameFromPackageDirectory(root, packageRoot)
+          result.push({
+            directory: packageRoot,
+            layer,
+            moduleName,
+            packageName: packageJson.name ?? (moduleName ? `${workspacePackagePrefix}${moduleName.replaceAll('.', '-')}` : null),
+          })
         }
       }
     }
@@ -101,12 +141,19 @@ function packageDirectories(root) {
 }
 
 function parseSource(filePath) {
+  const scriptKind = filePath.endsWith('.tsx')
+    ? ts.ScriptKind.TSX
+    : /\.(?:jsx)$/.test(filePath)
+      ? ts.ScriptKind.JSX
+      : /\.(?:js|mjs|cjs)$/.test(filePath)
+        ? ts.ScriptKind.JS
+        : ts.ScriptKind.TS
   return ts.createSourceFile(
     filePath,
     fs.readFileSync(filePath, 'utf8'),
     ts.ScriptTarget.Latest,
     true,
-    filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    scriptKind,
   )
 }
 

@@ -1,0 +1,56 @@
+{
+  "runId": "u8-1789437523773",
+  "tool": "tools/terminal-sample2/run-u8-release-cold-start.mjs",
+  "mode": "record-only-release-cold-start",
+  "failureMode": null,
+  "startedAt": "2026-09-15T01:58:43.773Z",
+  "phoneSerial": "emulator-5556",
+  "dualSerial": "emulator-5554",
+  "profiles": [
+    "sample-terminal",
+    "sample-wallpaper-terminal"
+  ],
+  "build": "SKIPPED_BY_EXPLICIT_OPTION",
+  "finishedAt": "2026-09-15T01:59:08.690Z",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "firstFailure": null,
+  "records": [
+    {
+      "runId": "sample-terminal-mobile-1789437524507",
+      "app": "sample-terminal",
+      "serial": "emulator-5556",
+      "shape": "mobile",
+      "business": "PASS",
+      "cleanup": "PASS",
+      "firstFailure": null
+    },
+    {
+      "runId": "sample-terminal-dual-1789437529821",
+      "app": "sample-terminal",
+      "serial": "emulator-5554",
+      "shape": "dual",
+      "business": "PASS",
+      "cleanup": "PASS",
+      "firstFailure": null
+    },
+    {
+      "runId": "sample-wallpaper-terminal-mobile-1789437536552",
+      "app": "sample-wallpaper-terminal",
+      "serial": "emulator-5556",
+      "shape": "mobile",
+      "business": "PASS",
+      "cleanup": "PASS",
+      "firstFailure": null
+    },
+    {
+      "runId": "sample-wallpaper-terminal-dual-1789437542080",
+      "app": "sample-wallpaper-terminal",
+      "serial": "emulator-5554",
+      "shape": "dual",
+      "business": "PASS",
+      "cleanup": "PASS",
+      "firstFailure": null
+    }
+  ]
+}

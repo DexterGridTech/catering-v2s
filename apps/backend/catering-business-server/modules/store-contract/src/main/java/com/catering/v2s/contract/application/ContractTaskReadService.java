@@ -141,13 +141,13 @@ public class ContractTaskReadService
         return persistence.list(workspaceUuid, key, query);
     }
 
-    /** Shared one-statement page projection for operations contracts and platform overview pages. */
+    /** Shared contract page entry point for operations contracts and platform overview pages. */
     @Transactional(readOnly = true)
     public ContractPage operationsTaskPage(UUID workspaceUuid, String key, ContractListQuery query) {
         return persistence.taskPage(workspaceUuid, key, query);
     }
 
-    /** Shared one-statement page projection for platform contract overview pages. */
+    /** Shared contract page entry point for platform contract overview pages. */
     @Transactional(readOnly = true)
     public ContractPage platformOverviewTaskPage(UUID workspaceUuid, String key, ContractListQuery query) {
         return persistence.taskPage(workspaceUuid, key, query);
@@ -291,10 +291,58 @@ public class ContractTaskReadService
             String sort,
             String direction,
             int page,
-            int pageSize) {
+            int pageSize,
+            String extensionFilters,
+            String definitionRevision) {
+        public ContractListQuery(
+                UUID projectId,
+                UUID storeId,
+                UUID tenantId,
+                String contractNo,
+                String phaseName,
+                String itemCode,
+                LocalDate dateFrom,
+                LocalDate dateTo,
+                String status,
+                String sort,
+                String direction,
+                int page,
+                int pageSize) {
+            this(
+                    projectId,
+                    storeId,
+                    tenantId,
+                    contractNo,
+                    phaseName,
+                    itemCode,
+                    dateFrom,
+                    dateTo,
+                    status,
+                    sort,
+                    direction,
+                    page,
+                    pageSize,
+                    null,
+                    null);
+        }
+
         public static ContractListQuery empty() {
             return new ContractListQuery(
-                    null, null, null, null, null, null, null, null, null, "UPDATED_AT", "DESC", 1, 50);
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "UPDATED_AT",
+                    "DESC",
+                    1,
+                    50,
+                    null,
+                    null);
         }
     }
 
@@ -308,5 +356,18 @@ public class ContractTaskReadService
             int pageSize,
             long total,
             String sort,
-            String direction) {}
+            String direction,
+            Long definitionRevision) {
+        public ContractPageMetadata(
+                String groupWorkspaceKey,
+                UUID projectRef,
+                String projectName,
+                int page,
+                int pageSize,
+                long total,
+                String sort,
+                String direction) {
+            this(groupWorkspaceKey, projectRef, projectName, page, pageSize, total, sort, direction, null);
+        }
+    }
 }

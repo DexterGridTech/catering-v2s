@@ -258,6 +258,7 @@
           },
           "extensionFields": {
             "type": "array",
+            "nullable": true,
             "items": {
               "type": "object",
               "additionalProperties": false,
@@ -277,6 +278,17 @@
                 }
               }
             }
+          },
+          "extensionValues": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "extensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "nullable": true
           }
         }
       },
@@ -335,6 +347,12 @@
               },
               "direction": {
                 "$ref": "#/components/schemas/OrganizationOverviewSortDirection"
+              },
+              "definitionRevision": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0,
+                "nullable": true
               }
             }
           },

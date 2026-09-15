@@ -36,6 +36,8 @@ class OrganizationOverviewQueryTest {
                 headCompanyId,
                 "NAME",
                 "ASC",
+                null,
+                null,
                 null);
         var page = new OrganizationOverviewTaskReadService(jdbc)
                 .page(UUID.randomUUID(), "workspace-a", "STORE", query, 2, 20);
@@ -61,7 +63,39 @@ class OrganizationOverviewQueryTest {
                 "store detail/list projection must carry the contract-declared notes field");
         assertTrue(jdbc.listSql.contains("s.head_company_id=?"));
         assertTrue(jdbc.countSql.contains("s.head_company_id=?"));
+        assertTrue(jdbc.listSql.contains("s.status=?)"));
+        assertTrue(jdbc.countSql.contains("s.status=?)"));
+        assertFalse(jdbc.listSql.contains("s.s.status"));
+        assertFalse(jdbc.countSql.contains("s.s.status"));
         assertTrue(jdbc.filterOptionsSql.contains("'HEAD_COMPANY'"));
+    }
+
+    @Test
+    void appliesSystemSourceEmptyPredicateToStoreOverviewReads() {
+        var jdbc = new RecordingJdbcTemplate();
+        var query = new OrganizationOverviewTaskReadService.Query(
+                "STORE",
+                null,
+                null,
+                null,
+                null,
+                null,
+                "SYSTEM",
+                null,
+                null,
+                null,
+                null,
+                "UPDATED_AT",
+                "DESC",
+                null,
+                null,
+                null);
+
+        new OrganizationOverviewTaskReadService(jdbc)
+                .page(UUID.randomUUID(), "workspace-a", "STORE", query, 1, 20);
+
+        assertTrue(jdbc.countSql.contains("AND 1=0"));
+        assertTrue(jdbc.listSql.contains("AND 1=0"));
     }
 
     @Test
@@ -88,7 +122,20 @@ class OrganizationOverviewQueryTest {
                 2L,
                 Map.of());
         when(entities.pageBusinessEntities(
-                        workspaceId, "workspace-a", "BRAND", null, null, null, null, null, "UPDATED_AT", "DESC", 1, 20))
+                        workspaceId,
+                        "workspace-a",
+                        "BRAND",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        "UPDATED_AT",
+                        "DESC",
+                        1,
+                        20,
+                        null,
+                        null))
                 .thenReturn(new BusinessEntityService.BusinessEntityPage(
                         List.of(new BusinessEntityService.BusinessEntityPageItem("BRAND", brand)), 1L, 1, 20));
 
@@ -148,51 +195,32 @@ class OrganizationOverviewQueryTest {
         service.platformOverviewTaskPage(
                 UUID.randomUUID(),
                 "workspace-a",
-                "HIERARCHY",
-                new OrganizationOverviewTaskReadService.Query(
-                        null, null, null, null, null, null, null, null, null, null, "UPDATED_AT", "DESC", null),
+                "STORE",
+                OrganizationOverviewTaskReadService.Query.empty(),
                 1,
                 20);
 
-        String sql = jdbc.platformSql.replaceAll("\\s+", " ");
-        assertTrue(sql.contains("ORDER BY updated_at DESC, id DESC"));
-        assertTrue(sql.contains(") ORDER BY updated_at DESC, id DESC) FROM paged"));
-        assertFalse(sql.contains("ORDER BYupdated_at"));
-        assertTrue(sql.contains("b.alias, b.remark AS notes, b.status"));
-        assertTrue(sql.contains("t.legal_name, t.credit_code, NULL::text, t.remark, t.status"));
-        assertTrue(sql.contains("h.legal_name, h.credit_code, NULL::text, h.remark, h.status"));
-        assertFalse(sql.contains("alias, remark AS notes, status"));
+        String sql = jdbc.listSql.replaceAll("\\s+", " ");
+        assertTrue(sql.contains("ORDER BY s.updated_at_epoch_millis DESC, s.id DESC LIMIT ? OFFSET ?"));
+        assertFalse(sql.contains("ORDER BYs.updated_at_epoch_millis"));
     }
 
     @Test
-    void platformOverviewUsesExplicitColumnsForMaterializedCteProjections() {
+    void storeOverviewUsesExplicitColumnsAndCarriesExtensionValues() {
         var jdbc = new RecordingJdbcTemplate();
         new OrganizationOverviewTaskReadService(jdbc)
                 .platformOverviewTaskPage(
                         UUID.randomUUID(),
                         "workspace-a",
-                        "HIERARCHY",
+                        "STORE",
                         OrganizationOverviewTaskReadService.Query.empty(),
                         1,
                         20);
 
-        String sql = jdbc.platformSql.replaceAll("\\s+", " ");
-        assertFalse(sql.contains("SELECT item.*"));
-        assertFalse(sql.contains("SELECT " + "* FROM filtered"));
-        assertTrue(sql.contains(
-                "SELECT item.id, item.category, item.type, item.code, item.name, item.status, item.source, "
-                        + "item.version, item.created_at, item.updated_at, item.notes, item.legal_name, "
-                        + "item.credit_code, item.alias, item.path, item.project, item.brand, item.tenant, "
-                        + "item.head_company, item.project_filter_id, item.brand_filter_id, "
-                        + "item.tenant_filter_id, item.head_filter_id, item.project_phases, "
-                        + "COUNT(*) OVER () AS total FROM all_items item"));
-        assertTrue(sql.contains("SELECT filtered.id, filtered.category, filtered.type, filtered.code, filtered.name, "
-                + "filtered.status, filtered.source, filtered.version, filtered.created_at, "
-                + "filtered.updated_at, filtered.notes, filtered.legal_name, filtered.credit_code, "
-                + "filtered.alias, filtered.path, filtered.project, filtered.brand, filtered.tenant, "
-                + "filtered.head_company, filtered.project_filter_id, filtered.brand_filter_id, "
-                + "filtered.tenant_filter_id, filtered.head_filter_id, filtered.project_phases, "
-                + "filtered.total FROM filtered"));
+        String sql = jdbc.listSql.replaceAll("\\s+", " ");
+        assertTrue(sql.startsWith("SELECT s.id, s.code, s.name, s.status, s.version"));
+        assertFalse(sql.contains("SELECT s.*"));
+        assertTrue(sql.contains("s.extension_rule_revision, s.extension_values::text"));
     }
 
     private static final class RecordingJdbcTemplate extends JdbcTemplate {

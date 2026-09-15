@@ -477,6 +477,14 @@ describe('catalog identification and preparation editor boundaries', () => {
     expect(viewSource).toContain("setActiveTab('basic')");
   });
 
+  it('lets an embedding task observe read-only detail close completion', () => {
+    const viewSource = readFileSync(new URL('./CatalogItemViewDrawer.tsx', import.meta.url), 'utf8');
+    const surfaceSource = readFileSync(new URL('../model/catalogItemSurfaceTypes.ts', import.meta.url), 'utf8');
+    expect(surfaceSource).toContain('onAfterOpenChange?: (visible: boolean) => void;');
+    expect(viewSource).toContain('afterOpenChange={onAfterOpenChange}');
+    expect(viewSource).toContain('maskClosable');
+  });
+
   it('lets the catalog owner, rather than a client-side shape guess, provide package-content candidates', () => {
     const source = readFileSync(new URL('./CatalogItemCompositeEditor.tsx', import.meta.url), 'utf8');
 

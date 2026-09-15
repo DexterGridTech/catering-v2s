@@ -1,0 +1,79 @@
+{
+  "runId": "sample-terminal-mobile-1789465657537",
+  "app": "sample-terminal",
+  "packageName": "com.anonymous.sampleterminal",
+  "serial": "emulator-5556",
+  "shape": "mobile",
+  "failureMode": null,
+  "startedAt": "2026-09-15T09:47:37.537Z",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "firstFailure": null,
+  "display": {
+    "ids": [
+      0
+    ],
+    "hasSecondary": false
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": []
+  },
+  "timeline": [
+    {
+      "event": "before-launch",
+      "timestamp": "2026-09-15T09:47:37.867Z",
+      "splashVisible": false,
+      "packagePid": ""
+    },
+    {
+      "event": "after-launch-before-ready-poll",
+      "timestamp": "2026-09-15T09:47:38.332Z",
+      "millisecondsSinceLaunch": 442,
+      "splashVisible": true
+    },
+    {
+      "event": "t0-first-rn-content",
+      "timestamp": "2026-09-15T09:47:40.693Z",
+      "splashVisible": false,
+      "failurePage": false,
+      "readyCandidateObservedInSameDeviceLog": true,
+      "readyHiddenObservedInSameDeviceLog": true
+    },
+    {
+      "event": "ready-or-failure-observed",
+      "timestamp": "2026-09-15T09:47:40.939Z",
+      "millisecondsSinceLaunch": 3049,
+      "readyCandidate": true,
+      "readyHidden": true,
+      "startupComplete": true,
+      "failurePage": false,
+      "splashVisible": false,
+      "splashVisibleBeforeReady": true,
+      "preReadyCaptured": true
+    },
+    {
+      "event": "settled",
+      "timestamp": "2026-09-15T09:47:44.584Z",
+      "splashVisible": false,
+      "packagePid": "7511",
+      "secondarySurfaceObserved": false,
+      "primaryUiHasRnContent": true
+    },
+    {
+      "event": "startup-order",
+      "candidateEpoch": 1789465644.37,
+      "hiddenEpoch": 1789465644.399,
+      "completeEpoch": 1789465644.377,
+      "firstContentObservationTimestamp": "2026-09-15T09:47:40.693Z",
+      "firstContentObservationSplashVisible": false,
+      "firstContentObservedAfterReadyCandidate": true,
+      "firstContentObservedAfterReadyHidden": true,
+      "provenReadyAfterRenderOwnedContent": true,
+      "settledSplashHidden": true
+    }
+  ],
+  "finishedAt": "2026-09-15T09:47:44.672Z"
+}

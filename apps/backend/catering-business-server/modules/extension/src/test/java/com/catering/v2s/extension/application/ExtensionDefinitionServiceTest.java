@@ -1,6 +1,7 @@
 package com.catering.v2s.extension.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -190,10 +191,47 @@ class ExtensionDefinitionServiceTest {
     }
 
     @Test
+    void doesNotReuseGeneratedKeyAfterItsFieldIsDeleted() {
+        String groupWorkspaceKey = "extension-history-" + UUID.randomUUID().toString().replace("-", "");
+        UUID isolatedWorkspace = createWorkspace(groupWorkspaceKey);
+        var first = service.replaceDraft(
+                isolatedWorkspace,
+                groupWorkspaceKey,
+                ExtensionHostTypes.BRAND,
+                0,
+                List.of(new ExtensionDefinitionService.DraftField(
+                        null, "Historical field", "TEXT", true, List.of(), "ENABLED", 0, null)),
+                AuditActor.system(),
+                "extension-history-key-0001");
+        assertEquals("field_1", first.fields().getFirst().fieldKey());
+
+        var removed = service.replaceDraft(
+                isolatedWorkspace,
+                groupWorkspaceKey,
+                ExtensionHostTypes.BRAND,
+                first.version(),
+                List.of(),
+                AuditActor.system(),
+                "extension-history-key-0002");
+        assertTrue(removed.fields().isEmpty());
+
+        var replacement = service.replaceDraft(
+                isolatedWorkspace,
+                groupWorkspaceKey,
+                ExtensionHostTypes.BRAND,
+                removed.version(),
+                List.of(new ExtensionDefinitionService.DraftField(
+                        null, "Replacement field", "TEXT", true, List.of(), "ENABLED", 0, null)),
+                AuditActor.system(),
+                "extension-history-key-0003");
+        assertEquals("field_2", replacement.fields().getFirst().fieldKey());
+    }
+
+    @Test
     void sequentialReplayInIndependentTransactionsReturnsCommittedReceipt() {
         String key = "extension-transaction-replay-0001";
         List<ExtensionDefinitionService.DraftField> draft = List.of(new ExtensionDefinitionService.DraftField(
-                null, "Transaction field", "TEXT", true, List.of(), "ENABLED", 0, null));
+                null, "Transaction field", "TEXT", null, null, true, List.of(), "ENABLED", 0, null));
 
         var first = transactions.execute(status ->
                 service.replaceDraft(workspaceId, "extension-test", "PROJECT", 0, draft, AuditActor.system(), key));
@@ -326,6 +364,46 @@ class ExtensionDefinitionServiceTest {
     }
 
     @Test
+    void readbackNormalizesMissingDisplayFlagsByHostApplicability() {
+        String legacyDefinition = "[{\"key\":\"legacy\",\"label\":\"Legacy\",\"type\":\"TEXT\","
+                + "\"required\":false,\"options\":[],\"status\":\"ENABLED\",\"displayOrder\":0}]";
+        persistence.insertDefinition(workspaceId, "extension-test", ExtensionHostTypes.BRAND, legacyDefinition);
+        persistence.insertDefinition(workspaceId, "extension-test", ExtensionHostTypes.REGION, legacyDefinition);
+
+        var flat = service.managementDefinition(workspaceId, "extension-test", ExtensionHostTypes.BRAND);
+        var tree = service.managementDefinition(workspaceId, "extension-test", ExtensionHostTypes.REGION);
+
+        assertEquals(Boolean.FALSE, flat.fields().getFirst().listDisplay());
+        assertEquals(Boolean.FALSE, flat.fields().getFirst().searchable());
+        assertNull(tree.fields().getFirst().listDisplay());
+        assertNull(tree.fields().getFirst().searchable());
+    }
+
+    @Test
+    void rejectsDisplayFlagsForTreeHosts() {
+        assertThrows(
+                ExtensionDefinitionService.DefinitionInvalidException.class,
+                () -> service.replace(
+                        workspaceId,
+                        "extension-test",
+                        ExtensionHostTypes.REGION,
+                        0,
+                        List.of(new ExtensionDefinitionService.Field(
+                                "regionLabel", "Region label", "TEXT", Boolean.FALSE, null, false,
+                                List.of(), "ENABLED", 0, null))));
+        assertThrows(
+                ExtensionDefinitionService.DefinitionInvalidException.class,
+                () -> service.replace(
+                        workspaceId,
+                        "extension-test",
+                        ExtensionHostTypes.REGION,
+                        0,
+                        List.of(new ExtensionDefinitionService.Field(
+                                "regionLabel", "Region label", "TEXT", null, Boolean.FALSE, false,
+                                List.of(), "ENABLED", 0, null))));
+    }
+
+    @Test
     void workspaceStatusIsReturnedAsIndependentDimensionAndDoesNotBlockDefinitionGovernance() {
         UUID disabledWorkspace = UUID.randomUUID();
         jdbc.update(
@@ -374,7 +452,7 @@ class ExtensionDefinitionServiceTest {
                         "REGION",
                         0,
                         List.of(new ExtensionDefinitionService.Field(
-                                "missingStatus", "Missing status", "TEXT", false, List.of(), null, 0, null))));
+                                "missingStatus", "Missing status", "TEXT", null, null, false, List.of(), null, 0, null))));
     }
 
     @Test
@@ -398,9 +476,9 @@ class ExtensionDefinitionServiceTest {
                 0,
                 List.of(
                         new ExtensionDefinitionService.Field(
-                                "area", "Area", "NUMBER", true, List.of(), "ENABLED", 0, null),
+                                "area", "Area", "NUMBER", null, null, true, List.of(), "ENABLED", 0, null),
                         new ExtensionDefinitionService.Field(
-                                "hidden", "Hidden", "TEXT", false, List.of(), "DISABLED", 1, null)));
+                                "hidden", "Hidden", "TEXT", null, null, false, List.of(), "DISABLED", 1, null)));
         String merged = ExtensionDefinitionService.mergeValues(
                 definition, "{}", java.util.Map.of("area", "120", "hidden", "\"ignored\""));
         assertEquals(java.util.Map.of("area", "120"), ExtensionDefinitionService.readValues(merged));

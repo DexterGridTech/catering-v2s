@@ -1,0 +1,9 @@
+{
+  "tool": "tools/terminal-sample2/run-sample2-frozen-journey.mjs",
+  "mode": "record-only-sample2-frozen-normal-journey",
+  "packageName": "com.catering.v2s.terminal.samplewallpaper",
+  "serial": "emulator-5554",
+  "shape": "dual",
+  "apk": "/Users/dexter/Documents/workspace/idea/catering-v2s/apps/terminal/assembly/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk",
+  "startedAt": "2026-09-15T02:37:07.537Z"
+}

@@ -280,6 +280,41 @@ describe('ui-state workspace content commands', () => {
     expect(expectedLayers[0]?.props).toEqual({source: 'restart'})
   })
 
+  it('does not persist an explicitly ephemeral layer and filters an old ephemeral row', async () => {
+    const plainStorage = createFakeStorage()
+    const protectedStorage = createFakeStorage()
+    const persistenceKey = 'ui-state-content-ephemeral-layer'
+    const first = await createFixture({plainStorage, protectedStorage, persistenceKey})
+    runtimes.push(first.runtime)
+
+    await first.runtime.dispatchCommand(openLayerCommand, {
+      displayMode: 'PRIMARY',
+      layerId: 'ephemeral-notice',
+      partKey: 'one',
+      persistence: 'ephemeral',
+    }, dispatchOptions('PRIMARY'))
+    expect(selectLayers(first.runtime.getState(), 'PRIMARY')[0]?.persistence).toBe('ephemeral')
+    releaseRuntimeForTest(first.runtime)
+
+    const second = await createFixture({plainStorage, protectedStorage, persistenceKey})
+    runtimes.push(second.runtime)
+    expect(selectLayers(second.runtime.getState(), 'PRIMARY')).toEqual([])
+
+    const diagnostics: {readonly reason: string}[] = []
+    expect(parseLayerEntries([{
+      layerId: 'legacy-ephemeral',
+      partKey: 'one',
+      openedAt: 101,
+      persistence: 'ephemeral',
+    }], {
+      workspace: 'MAIN',
+      displayMode: 'PRIMARY',
+      onHydrationDiagnostic: diagnostic => { diagnostics.push(diagnostic) },
+    })).toEqual([])
+    expect(diagnostics).toHaveLength(1)
+    expect(diagnostics[0]?.reason).toBe('ephemeral-entry')
+  })
+
   it('restores layers independently in all four workspace/displayMode buckets', async () => {
     const plainStorage = createFakeStorage()
     const protectedStorage = createFakeStorage()

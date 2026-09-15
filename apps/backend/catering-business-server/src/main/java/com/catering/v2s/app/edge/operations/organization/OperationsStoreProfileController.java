@@ -113,7 +113,8 @@ public final class OperationsStoreProfileController {
                         (long) value.pageSize(),
                         value.total(),
                         StoreContractSortKey.CONTRACT_NO,
-                        StoreContractSortDirection.ASC),
+                        StoreContractSortDirection.ASC,
+                        null),
                 value.items().stream()
                         .map(OperationsStoreProfileController::contract)
                         .toList());

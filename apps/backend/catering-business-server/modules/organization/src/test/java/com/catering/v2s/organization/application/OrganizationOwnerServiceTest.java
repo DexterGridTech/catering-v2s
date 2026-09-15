@@ -107,21 +107,21 @@ class OrganizationOwnerServiceTest {
                 "COMMERCIAL_GROUP",
                 0,
                 List.of(new ExtensionDefinitionService.Field(
-                        "groupLabel", "Group label", "TEXT", false, List.of(), "ENABLED", 0, null)));
+                        "groupLabel", "Group label", "TEXT", null, null, false, List.of(), "ENABLED", 0, null)));
         definitions.replace(
                 workspaceId,
                 "organization-test",
                 "REGION",
                 0,
                 List.of(new ExtensionDefinitionService.Field(
-                        "regionLabel", "Region label", "TEXT", false, List.of(), "ENABLED", 0, null)));
+                        "regionLabel", "Region label", "TEXT", null, null, false, List.of(), "ENABLED", 0, null)));
         definitions.replace(
                 workspaceId,
                 "organization-test",
                 "PROJECT",
                 0,
                 List.of(new ExtensionDefinitionService.Field(
-                        "projectBudget", "Project budget", "NUMBER", false, List.of(), "ENABLED", 0, null)));
+                        "projectBudget", "Project budget", "NUMBER", null, null, false, List.of(), "ENABLED", 0, null)));
     }
 
     @Test
@@ -365,7 +365,7 @@ class OrganizationOwnerServiceTest {
                 "COMMERCIAL_GROUP",
                 0,
                 List.of(new ExtensionDefinitionService.Field(
-                        "groupLabel", "Group label", "TEXT", false, List.of(), "ENABLED", 0, null)));
+                        "groupLabel", "Group label", "TEXT", null, null, false, List.of(), "ENABLED", 0, null)));
         long legacyWorkspaceId = jdbc().queryForObject(
                         "SELECT id FROM platform_workspace.group_workspace WHERE group_workspace_key=?",
                         Long.class,
@@ -529,7 +529,7 @@ class OrganizationOwnerServiceTest {
                 "COMMERCIAL_GROUP",
                 0,
                 List.of(new ExtensionDefinitionService.Field(
-                        "groupLabel", "Group label", "TEXT", false, List.of(), "ENABLED", 0, null)));
+                        "groupLabel", "Group label", "TEXT", null, null, false, List.of(), "ENABLED", 0, null)));
         long legacyWorkspaceId = jdbc().queryForObject(
                         "SELECT id FROM platform_workspace.group_workspace WHERE group_workspace_key=?",
                         Long.class,

@@ -155,8 +155,9 @@
 
 ### 7.3 轮次与收口
 
-- **两轮上限**,第二轮 `SELF_DECIDED` 收口
+- **两轮上限只管 `REVIEW_TARGET=DESIGN`**(agent 自己的需求、详设或实施计划),第二轮 `SELF_DECIDED` 收口
 - 换模型 / 换 agent / 改文件名 **不重置**轮次
+- **不设轮次上限**:实施完成后整批 `REVIEW_TARGET=IMPLEMENTATION` 审查(必须依据详设文档)、实施过程中的对账(直到 `MATCHED`)、经 Dexter 中转的 Codex↔Claude review(轮次由 Dexter 定)。正本见 `doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md` 第 1 节
 - ⚠️ 该上限约束的是 **agent 自主发起**的轮次。Dexter 在对话中要求再审时不受它约束
   (见 `project-memory/pitfalls/repo-rule-cited-against-dexter.md`)
 

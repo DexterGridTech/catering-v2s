@@ -11,12 +11,19 @@
     "clean": {"kind": "ABSENT"}
   },
   "publicExports": [
+    "PortraitSurfaceDeclarations",
     "SampleAssembly",
-    "createSampleAssembly",
+    "SurfaceCreationInput",
+    "SurfaceDeclarations",
+    "SurfaceForm",
+    "SurfaceOrientation",
+    "SurfaceSize",
+    "TerminalSurfaces",
+    "createSampleAssembly", "createSampleConsoleModule", "createSampleDefinedParts",
     "createSurfaceForDisplayIndex",
     "dependencyModuleNames",
     "devDependencyModuleNames",
-    "moduleName",
+    "moduleKind", "moduleName",
     "terminalSurfaces"
   ]
 }

@@ -3,6 +3,7 @@ package com.catering.v2s.organization.application;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
+import com.catering.v2s.extension.api.ExtensionValueSemantics;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -40,7 +41,7 @@ final class BusinessEntityValueSupport {
             return switch (field.fieldType()) {
                 case "TEXT" -> json.isTextual();
                 case "NUMBER" -> json.isNumber();
-                case "DATE" -> json.isTextual() && json.asText().matches("\\d{4}-\\d{2}-\\d{2}");
+                case "DATE" -> json.isTextual() && ExtensionValueSemantics.isCanonicalDate(json.asText());
                 case "BOOLEAN" -> json.isBoolean();
                 case "SELECT" -> json.isTextual() && field.options().contains(json.asText());
                 default -> false;

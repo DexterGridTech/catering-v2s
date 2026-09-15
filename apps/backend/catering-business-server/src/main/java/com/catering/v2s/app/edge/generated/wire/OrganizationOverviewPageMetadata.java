@@ -8,5 +8,6 @@ public record OrganizationOverviewPageMetadata(
     Long pageSize,
     Long total,
     OrganizationOverviewSortKey sort,
-    OrganizationOverviewSortDirection direction
+    OrganizationOverviewSortDirection direction,
+    Long definitionRevision
 ) {}

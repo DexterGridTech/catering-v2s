@@ -7,14 +7,15 @@
 装配到同一个 `SampleAssembly`；通用的开发宿主、Web 端口、surface canvas 与启动日志由
 `@catering-v2s/ui-base-dev-host` 提供。
 
-本包不拥有业务事实、业务命令或具体 renderer，不感知 `surfaceMode`，也不构造 platform port。
-`sample-console` 内的三个 base module descriptor 是当前 base 包尚未提供正本工厂时的单一过渡位置。
+本包不拥有业务事实或具体 renderer，不感知 `surfaceMode`，也不构造 platform port。
+它拥有自己的可移除 integration runtime module，并通过 `ui.base.console-assembly` 接入启动
+诊断写入；base module descriptor 不再由本包私藏或伪造。
 
 ## 结构
 
 - `src/assembly/assembly.tsx`：唯一的 `createSampleAssembly` 组装入口，以及按物理屏序创建 surface 的
   `createSurfaceForDisplayIndex` 入口；一次性闭包持有 runtime 与 catalog。
-- `src/application/baseModuleDescriptors.ts`：contracts、platform-ports、state 的一次性 descriptor 集合。
+- `src/application/module.ts`：sample-console 自己拥有的可移除运行期模块声明。
 - `src/application/terminalSurfaces.ts`：读取本包 `package.json` 的固定逻辑 surface 配置并导出 typed 常量。
 - `theme/`：本应用的 NativeWind/Tailwind 语义色 token；主题属于 integration app，不抽到共享包。
 - `test-expo/App.tsx`：把本包的 assembly、surface 配置与运行时状态 reader 注入通用宿主的薄入口。
@@ -22,12 +23,16 @@
 
 ## 公共面
 
-- `moduleName`、`dependencyModuleNames`、`devDependencyModuleNames`：包图元数据。
-- `createSampleAssembly`、`SampleAssembly`：唯一的真实组装入口及其返回契约。
+- `moduleName`、`moduleKind`、`dependencyModuleNames`、`devDependencyModuleNames`：包图元数据；
+  `createSampleConsoleModule` 是该 integration 的运行期模块工厂。
+- `createSampleAssembly`、`SampleAssembly`：唯一的真实组装入口及其返回契约；
+  `createSampleDefinedParts` 是测试/装配对账使用的定义部件工厂，不能替代 assembly 入口。
 - `createSurfaceForDisplayIndex`：接收一个既有 `SampleAssembly` 与 `0 | 1` 的物理屏序，
   从该 assembly 的 runtime 读取 display role 与 instance mode，统一调用
   `display-context.resolveSurfaceDisplayMode` 后再委托给该 assembly 的 `createSurface`。
-- `terminalSurfaces`：由本包 `package.json` 读取并校验后的固定逻辑 surface 配置。
+- `terminalSurfaces`：由本包 `package.json` 读取并校验后的固定逻辑 surface 配置；
+  `PortraitSurfaceDeclarations`、`SurfaceCreationInput`、`SurfaceDeclarations`、`SurfaceForm`、
+  `SurfaceOrientation`、`SurfaceSize`、`TerminalSurfaces` 是其 typed 契约。
 
 ## 用法
 

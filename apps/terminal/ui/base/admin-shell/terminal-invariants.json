@@ -18,6 +18,7 @@
     "ADMIN_PASSWORD_FALLBACK",
     "AdminLayer",
     "AdminLauncher", "AdminGestureCoordinateSpace",
+    "adminLauncherPointFromEvent",
     "AdminLogin",
     "AdminNavigationRejectedError",
     "AdminSectionComponent",

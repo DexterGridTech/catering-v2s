@@ -19,6 +19,7 @@ import {
   useDispatchCommand,
   type RenderProviderProps,
 } from '../src/index'
+import {nativeLoadingCapability} from './renderProviderBindings'
 
 ;(globalThis as {IS_REACT_ACT_ENVIRONMENT?: boolean}).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -86,6 +87,7 @@ describe('render command dispatch observation', () => {
           uiCatalog: createUiCatalog([]),
           rendererCatalog: createRendererCatalog([]),
           logger,
+          nativeLoadingCapability,
           runtimeFacts: createRenderRuntimeFacts({
             environmentMode: 'TEST',
             debugMode: resolveDebugMode({}),

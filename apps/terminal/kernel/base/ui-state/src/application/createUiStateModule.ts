@@ -37,7 +37,7 @@ import {
 import {createSurfaceFormSlice} from '../features/slices/surfaceForm'
 import {selectSurfaceForm as selectSurfaceFormFromState} from '../selectors/selectSurfaceForm'
 import {assertUiVariableDeclaration} from '../foundations/uiVariable'
-import {dependencyModuleNames} from '../dependencies'
+import {runtimeModuleDependencyNames} from '../dependencies'
 import {moduleKind, moduleName} from '../moduleName'
 import {isSurfaceForm, type SurfaceForm, type UiCatalog} from '../types/catalog'
 import type {UiStateModule} from '../types/module'
@@ -125,7 +125,7 @@ export const createUiStateModule = (
   const module: UiStateModule = {
     moduleName,
     kind: moduleKind,
-    dependencies: dependencyModuleNames.map(name => ({moduleName: name})),
+    dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
     commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
     actors: actors.map(actor => ({name: actor.actorName})),

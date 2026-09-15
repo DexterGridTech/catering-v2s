@@ -20,6 +20,7 @@ import {
   packageScope,
   collectStaticImportDeclarations,
   collectStaticImportSpecifiers,
+  collectBoundaryImportCapabilities,
 } from './graph-model.mjs';
 
 export const RULE_NAMES = Object.freeze([
@@ -27,6 +28,7 @@ export const RULE_NAMES = Object.freeze([
   'triple-naming',
   'dependency-direction',
   'dependency-declaration-completeness',
+  'runtime-dependency-contract',
   'tr01-reducer-boundary',
   'kernel-platform-independence',
 ]);
@@ -104,6 +106,65 @@ function leafPackageEntries(census, root) {
     }));
 }
 
+function isWithin(directory, candidate) {
+  const relative = path.relative(directory, candidate);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+function packageRecordForPath(packageRecords, candidatePath) {
+  return [...packageRecords]
+    .filter(entry => isWithin(entry.packageDirectory, candidatePath))
+    .sort((left, right) => right.packageDirectory.length - left.packageDirectory.length)[0];
+}
+
+function modulePackageRecords(root) {
+  return leafPackageEntries(readPackageCensus(root), root).filter(entry => entry.moduleName);
+}
+
+function packageRecordByName(packageRecords) {
+  return new Map(packageRecords.map(entry => [entry.package.name, entry]));
+}
+
+function boundaryTargetPackage(packageRecords, byName, filePath, moduleSpecifier, spec) {
+  if (moduleSpecifier.startsWith(packageScope)) {
+    return byName.get(moduleSpecifier) ?? packageRecords.find(entry =>
+      entry.moduleName === packageNameToModuleName(moduleSpecifier, spec));
+  }
+  if (!moduleSpecifier.startsWith('.')) return undefined;
+  return packageRecordForPath(packageRecords, path.resolve(path.dirname(filePath), moduleSpecifier));
+}
+
+function boundaryTsconfigFiles(packageDirectory) {
+  const files = [];
+  const visit = directory => {
+    if (!fs.existsSync(directory)) return;
+    for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+      if (['node_modules', '.git', 'build', 'dist', '.turbo', '.expo', '.runtime', '.gradle', '.kotlin', '.vite', 'coverage'].includes(entry.name)) continue;
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) visit(entryPath);
+      else if (entry.isFile() && /^tsconfig(?:\..+)?\.json$/.test(entry.name)) files.push(entryPath);
+    }
+  };
+  visit(packageDirectory);
+  return files.sort();
+}
+
+function boundaryTsconfigValues(tsconfig) {
+  const values = [];
+  for (const reference of tsconfig.references ?? []) {
+    if (reference && typeof reference.path === 'string') values.push(reference.path);
+  }
+  const paths = tsconfig.compilerOptions?.paths;
+  if (paths && typeof paths === 'object') {
+    for (const targets of Object.values(paths)) {
+      if (Array.isArray(targets)) {
+        for (const target of targets) if (typeof target === 'string') values.push(target);
+      }
+    }
+  }
+  return values;
+}
+
 function declaredWorkspaceDependencies(packageJson, spec) {
   const declared = [];
   for (const field of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
@@ -123,6 +184,277 @@ function declaredByField(packageJson, field, spec) {
       .map(packageName => packageNameToModuleName(packageName, spec))
       .filter(Boolean),
   );
+}
+
+function unwrapStaticExpression(expression) {
+  let current = expression;
+  while (
+    ts.isAsExpression(current)
+    || ts.isTypeAssertionExpression(current)
+    || ts.isSatisfiesExpression(current)
+    || ts.isParenthesizedExpression(current)
+  ) {
+    current = current.expression;
+  }
+  return current;
+}
+
+function isExportedVariableStatement(statement) {
+  return statement.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword) === true;
+}
+
+function readExportedArrayInitializer(filePath, exportName) {
+  const sourceFile = ts.createSourceFile(
+    filePath,
+    fs.readFileSync(filePath, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  for (const statement of sourceFile.statements) {
+    if (!ts.isVariableStatement(statement) || !isExportedVariableStatement(statement)) continue;
+    for (const declaration of statement.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name) || declaration.name.text !== exportName) continue;
+      if (!declaration.initializer) throw new Error(`${filePath} ${exportName} must have an initializer`);
+      const initializer = unwrapStaticExpression(declaration.initializer);
+      if (!ts.isArrayLiteralExpression(initializer)) {
+        throw new Error(`${filePath} ${exportName} must be a literal array`);
+      }
+      return {sourceFile, initializer};
+    }
+  }
+  return {sourceFile, initializer: null};
+}
+
+function readModuleNameImports(sourceFile, spec) {
+  const bindings = new Map();
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement)) continue;
+    if (statement.importClause?.isTypeOnly === true) continue;
+    if (!statement.importClause?.namedBindings || !ts.isNamedImports(statement.importClause.namedBindings)) continue;
+    const importedModuleName = packageNameToModuleName(statement.moduleSpecifier.text, spec);
+    if (!importedModuleName) continue;
+    for (const element of statement.importClause.namedBindings.elements) {
+      const importedName = element.propertyName?.text ?? element.name.text;
+      if (importedName === 'moduleName') bindings.set(element.name.text, importedModuleName);
+    }
+  }
+  return bindings;
+}
+
+function readDependencyArray(filePath, exportName, spec) {
+  const {sourceFile, initializer} = readExportedArrayInitializer(filePath, exportName);
+  if (initializer === null) return null;
+  const moduleNameImports = readModuleNameImports(sourceFile, spec);
+  const values = [];
+  for (const element of initializer.elements) {
+    const value = unwrapStaticExpression(element);
+    if (!ts.isIdentifier(value) || !moduleNameImports.has(value.text)) {
+      throw new Error(
+        `${filePath} ${exportName} must contain only imported moduleName bindings; opaque expression ${value.getText(sourceFile)}`,
+      );
+    }
+    values.push(moduleNameImports.get(value.text));
+  }
+  return values;
+}
+
+function readDeclaredModuleKind(packageDirectory) {
+  const filePath = path.join(packageDirectory, 'src/moduleName.ts');
+  if (!fs.existsSync(filePath)) throw new Error(`${packageDirectory} src/moduleName.ts is missing`);
+  const sourceFile = ts.createSourceFile(
+    filePath,
+    fs.readFileSync(filePath, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  for (const statement of sourceFile.statements) {
+    if (!ts.isVariableStatement(statement) || !isExportedVariableStatement(statement)) continue;
+    for (const declaration of statement.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name) || declaration.name.text !== 'moduleKind') continue;
+      if (!declaration.initializer) throw new Error(`${filePath} moduleKind must have an initializer`);
+      const value = unwrapStaticExpression(declaration.initializer);
+      if (!ts.isStringLiteral(value) || !['owner', 'toolkit'].includes(value.text)) {
+        throw new Error(`${filePath} moduleKind must be the literal owner or toolkit`);
+      }
+      return value.text;
+    }
+  }
+  return null;
+}
+
+function listProductionSourceFiles(directory) {
+  const files = [];
+  const visit = currentDirectory => {
+    for (const entry of fs.readdirSync(currentDirectory, {withFileTypes: true})) {
+      const filePath = path.join(currentDirectory, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === 'node_modules' || entry.name === 'build' || entry.name === 'dist') continue;
+        visit(filePath);
+      } else if (/\.(?:ts|tsx|js|jsx|mjs|cjs)$/.test(entry.name)) {
+        files.push(filePath);
+      }
+    }
+  };
+  visit(directory);
+  return files;
+}
+
+function expressionContainsIdentifier(expression, identifierName) {
+  let found = false;
+  const visit = node => {
+    if (found) return;
+    if (ts.isIdentifier(node) && node.text === identifierName) {
+      found = true;
+      return;
+    }
+    node.forEachChild(visit);
+  };
+  visit(expression);
+  return found;
+}
+
+function hasRuntimeDeclarationConsumption(packageDirectory) {
+  const dependenciesPath = path.join(packageDirectory, 'src/dependencies.ts');
+  for (const filePath of listProductionSourceFiles(path.join(packageDirectory, 'src'))) {
+    const sourceFile = ts.createSourceFile(
+      filePath,
+      fs.readFileSync(filePath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+      filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    );
+    const localNames = [];
+    for (const statement of sourceFile.statements) {
+      if (!ts.isImportDeclaration(statement)) continue;
+      if (statement.importClause?.isTypeOnly === true) continue;
+      if (!statement.importClause?.namedBindings || !ts.isNamedImports(statement.importClause.namedBindings)) continue;
+      const importedPath = path.resolve(path.dirname(filePath), statement.moduleSpecifier.text);
+      if (importedPath !== dependenciesPath && `${importedPath}.ts` !== dependenciesPath) continue;
+      for (const element of statement.importClause.namedBindings.elements) {
+        const importedName = element.propertyName?.text ?? element.name.text;
+        if (importedName === 'runtimeModuleDependencyNames') localNames.push(element.name.text);
+      }
+    }
+    if (!localNames.length) continue;
+    let consumed = false;
+    const visit = node => {
+      if (consumed) return;
+      if (ts.isPropertyAssignment(node)) {
+        const propertyName = node.name;
+        const isDependenciesProperty =
+          (ts.isIdentifier(propertyName) || ts.isStringLiteral(propertyName))
+          && propertyName.text === 'dependencies';
+        if (isDependenciesProperty) {
+          const initializer = node.initializer;
+          const isRuntimeArrayMap = ts.isCallExpression(initializer)
+            && ts.isPropertyAccessExpression(initializer.expression)
+            && initializer.expression.name.text === 'map'
+            && ts.isIdentifier(initializer.expression.expression)
+            && localNames.includes(initializer.expression.expression.text)
+            && initializer.arguments.length === 1;
+          if (isRuntimeArrayMap) {
+            const callback = initializer.arguments[0];
+            const callbackBody = ts.isArrowFunction(callback)
+              ? callback.body
+              : undefined;
+            const returnedObject = callbackBody === undefined
+              ? undefined
+              : ts.isParenthesizedExpression(callbackBody)
+                ? callbackBody.expression
+                : callbackBody;
+            const callbackParameter = ts.isArrowFunction(callback)
+              && callback.parameters.length === 1
+              && ts.isIdentifier(callback.parameters[0].name)
+                ? callback.parameters[0].name.text
+                : undefined;
+            const properties = returnedObject !== undefined && ts.isObjectLiteralExpression(returnedObject)
+              ? returnedObject.properties
+              : undefined;
+            const strictDescriptor = callbackParameter !== undefined
+              && properties !== undefined
+              && properties.length === 1
+              && ts.isPropertyAssignment(properties[0])
+              && (ts.isIdentifier(properties[0].name) || ts.isStringLiteral(properties[0].name))
+              && properties[0].name.text === 'moduleName'
+              && ts.isIdentifier(properties[0].initializer)
+              && properties[0].initializer.text === callbackParameter;
+            if (strictDescriptor) {
+              consumed = true;
+              return;
+            }
+            throw new Error(`${filePath} dependencies must map runtimeModuleDependencyNames to exact {moduleName} descriptors without optional/opaque fields`);
+          }
+          if (expressionContainsIdentifier(initializer, localNames[0])) {
+            throw new Error(`${filePath} dependencies must directly map runtimeModuleDependencyNames to exact {moduleName} descriptors`);
+          }
+        }
+      }
+      node.forEachChild(visit);
+    };
+    visit(sourceFile);
+    if (consumed) return true;
+  }
+  return false;
+}
+
+function runRuntimeDependencyContract(context) {
+  const {projected, root, spec} = context;
+  for (const moduleName of Object.keys(projected)) {
+    const packageDirectory = moduleNameToPath(moduleName, root);
+    const packageJsonPath = path.join(packageDirectory, 'package.json');
+    const dependenciesPath = path.join(packageDirectory, 'src/dependencies.ts');
+    if (!fs.existsSync(dependenciesPath)) throw new Error(`${moduleName} src/dependencies.ts is missing`);
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    const dependencyNames = readDependencyArray(dependenciesPath, 'dependencyModuleNames', spec);
+    const devDependencyNames = readDependencyArray(dependenciesPath, 'devDependencyModuleNames', spec);
+    if (dependencyNames === null || devDependencyNames === null) {
+      throw new Error(`${moduleName} must export dependencyModuleNames and devDependencyModuleNames literal arrays`);
+    }
+    if (new Set(dependencyNames).size !== dependencyNames.length) {
+      throw new Error(`${moduleName} dependencyModuleNames contains duplicate module names`);
+    }
+    if (new Set(devDependencyNames).size !== devDependencyNames.length) {
+      throw new Error(`${moduleName} devDependencyModuleNames contains duplicate module names`);
+    }
+    assertEqualSet(
+      `${moduleName} dependencyModuleNames`,
+      dependencyNames,
+      declaredByField(packageJson, 'dependencies', spec),
+    );
+    assertEqualSet(
+      `${moduleName} devDependencyModuleNames`,
+      devDependencyNames,
+      declaredByField(packageJson, 'devDependencies', spec),
+    );
+
+    const declaredKind = readDeclaredModuleKind(packageDirectory);
+    const runtimeNames = readDependencyArray(dependenciesPath, 'runtimeModuleDependencyNames', spec);
+    if (declaredKind !== 'owner') {
+      if (runtimeNames !== null && runtimeNames.length) {
+        throw new Error(`${moduleName} non-owner package may not declare runtime module dependencies`);
+      }
+      continue;
+    }
+    const expectedRuntimeNames = dependencyNames.filter(dependency =>
+      readDeclaredModuleKind(moduleNameToPath(dependency, root)) === 'owner',
+    );
+    if (runtimeNames === null) {
+      throw new Error(`${moduleName} owner package must export runtimeModuleDependencyNames`);
+    }
+    if (new Set(runtimeNames).size !== runtimeNames.length) {
+      throw new Error(`${moduleName} runtimeModuleDependencyNames contains duplicate module names`);
+    }
+    assertEqualSet(
+      `${moduleName} runtimeModuleDependencyNames`,
+      runtimeNames,
+      expectedRuntimeNames,
+    );
+    if (runtimeNames.length && !hasRuntimeDeclarationConsumption(packageDirectory)) {
+      throw new Error(`${moduleName} runtimeModuleDependencyNames is not consumed by a production RuntimeModule dependencies property`);
+    }
+  }
 }
 
 function plannedWorkspaceDependencies(packageJson, spec) {
@@ -169,10 +501,15 @@ function assertRuntimeImport(filePath, expectedSpecifier, label) {
 
 function runAssemblyEntryReachability(context) {
   const {projected, root} = context;
-  const assemblyModuleNames = [
-    'assembly.android.sample-terminal',
-    'assembly.android.sample-wallpaper-terminal',
-  ].filter(moduleName => projected[moduleName]);
+  const assemblyModuleNames = Object.keys(projected)
+    .filter(moduleName => {
+      const [layer, tier] = moduleName.split('.');
+      return layer === 'assembly' && tier !== 'base';
+    })
+    .sort();
+  if (!assemblyModuleNames.length) {
+    throw new Error('no non-base assembly App entry was discovered');
+  }
   for (const assemblyModuleName of assemblyModuleNames) {
     const assemblyDirectory = moduleNameToPath(assemblyModuleName, root);
     const entryPath = entryFile(assemblyDirectory, 'index.ts', `${assemblyModuleName} index.ts`);
@@ -201,8 +538,53 @@ function runAssemblyEntryReachability(context) {
   }
 }
 
+function workspacePatternMatches(pattern, relativePath) {
+  const patternSegments = pattern.replace(/^\.\//, '').split('/').filter(Boolean);
+  const pathSegments = relativePath.split('/').filter(Boolean);
+  const match = (patternIndex, pathIndex) => {
+    if (patternIndex === patternSegments.length) return pathIndex === pathSegments.length;
+    const segment = patternSegments[patternIndex];
+    if (segment === '**') {
+      return match(patternIndex + 1, pathIndex)
+        || (pathIndex < pathSegments.length && match(patternIndex, pathIndex + 1));
+    }
+    if (pathIndex === pathSegments.length) return false;
+    if (segment !== '*' && segment !== pathSegments[pathIndex]) return false;
+    return match(patternIndex + 1, pathIndex + 1);
+  };
+  return match(0, 0);
+}
+
+function runRootWorkspaceEnumeration(root) {
+  const rootPackagePath = path.join(root, 'package.json');
+  if (!fs.existsSync(rootPackagePath)) throw new Error('root package.json is missing');
+  const rootPackage = JSON.parse(fs.readFileSync(rootPackagePath, 'utf8'));
+  const declaredWorkspaces = Array.isArray(rootPackage.workspaces)
+    ? rootPackage.workspaces
+    : rootPackage.workspaces && Array.isArray(rootPackage.workspaces.packages)
+      ? rootPackage.workspaces.packages
+      : null;
+  if (declaredWorkspaces === null || declaredWorkspaces.some(pattern => typeof pattern !== 'string')) {
+    throw new Error('root package.json workspaces must be a string array or {packages: string[]}');
+  }
+  const patterns = declaredWorkspaces.filter(pattern => !pattern.startsWith('!'));
+  const packageEntries = readPackageCensus(root).filter(entry => {
+    if (entry.relativePath === 'apps/terminal') return true;
+    const relative = path.relative(path.join(root, 'apps/terminal'), entry.packageDirectory);
+    return relative && !relative.startsWith('..') && relative.split(path.sep).length === 3;
+  });
+  if (!packageEntries.length) throw new Error('TER workspace package census is empty');
+  const uncovered = packageEntries
+    .map(entry => entry.relativePath.split(path.sep).join('/'))
+    .filter(relativePath => !patterns.some(pattern => workspacePatternMatches(pattern, relativePath)));
+  if (uncovered.length) {
+    throw new Error(`root workspace enumeration misses TER package(s): ${JSON.stringify(sorted(uncovered))}`);
+  }
+}
+
 function runGraphComparison(context) {
   const {spec, projected, root} = context;
+  runRootWorkspaceEnumeration(root);
   for (const [moduleName, entry] of Object.entries(spec.graph)) {
     for (const dependency of [...entry.dependencies, ...entry.devDependencies]) {
       if (!spec.graph[dependency]) {
@@ -282,12 +664,106 @@ function runTripleNaming(context) {
       throw new Error(`${moduleName} package.json must not carry plannedKind/kind`);
     }
   }
-  if (Object.keys(spec.graph).length !== 31)
-    throw new Error(`skeleton spec must contain 31 nodes, got ${Object.keys(spec.graph).length}`);
+  if (Object.keys(spec.graph).length !== 32)
+    throw new Error(`skeleton spec must contain 32 nodes, got ${Object.keys(spec.graph).length}`);
 }
 
 function layerFor(moduleName) {
   return moduleName.split('.')[0];
+}
+
+function baseGraphDependencyViolation(sourceModuleName, targetModuleName) {
+  const sourceSegments = sourceModuleName.split('.');
+  if (!targetModuleName) return null;
+  const targetSegments = targetModuleName.split('.');
+  if (sourceSegments[1] !== 'base') return null;
+  if (targetSegments[1] === 'feature' || targetSegments[1] === 'integration') {
+    return `${sourceModuleName} may not depend on ${targetModuleName}`;
+  }
+  if (targetSegments[0] === 'assembly' && targetSegments[1] !== 'base') {
+    return `${sourceModuleName} may not depend on App package ${targetModuleName}`;
+  }
+  if (sourceSegments[0] === 'assembly' && targetSegments[0] === 'adapter'
+    && sourceSegments[2] !== targetSegments[1]) {
+    return `${sourceModuleName} may only depend on same-platform adapter ${targetModuleName}`;
+  }
+  return null;
+}
+
+function assemblyAdapterDependencyViolation(sourceModuleName, targetModuleName) {
+  if (!targetModuleName) return null;
+  const sourceSegments = sourceModuleName.split('.');
+  const targetSegments = targetModuleName.split('.');
+  if (sourceSegments[0] === 'assembly' && sourceSegments[1] !== 'base' && targetSegments[0] === 'adapter') {
+    return `${sourceModuleName} may not depend on adapter ${targetModuleName}`;
+  }
+  return null;
+}
+
+function sourceDependencyViolation(sourceModuleName, targetModuleName) {
+  return baseGraphDependencyViolation(sourceModuleName, targetModuleName)
+    ?? assemblyAdapterDependencyViolation(sourceModuleName, targetModuleName);
+}
+
+function sourceLine(node, sourceFile) {
+  return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+}
+
+function throwBoundaryViolation(root, violation, filePath, line, shape) {
+  throw new Error(`${violation} via ${shape} at ${path.relative(root, filePath).split(path.sep).join('/')}:${line}`);
+}
+
+function runBaseSourceDependencyBoundary(context) {
+  const {root, projected, spec} = context;
+  const packageRecords = modulePackageRecords(root);
+  const packageByName = packageRecordByName(packageRecords);
+  for (const sourcePackage of packageRecords.filter(entry => {
+    const [layer, tier] = entry.moduleName.split('.');
+    return projected[entry.moduleName] && (tier === 'base' || layer === 'assembly');
+  })) {
+    const sourceModuleName = sourcePackage.moduleName;
+    const inspectTarget = (targetPackage, filePath, line, shape) => {
+      const violation = sourceDependencyViolation(sourceModuleName, targetPackage?.moduleName);
+      if (violation !== null) throwBoundaryViolation(root, violation, filePath, line, shape);
+    };
+
+    const packageJsonPath = path.join(sourcePackage.packageDirectory, 'package.json');
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    for (const field of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
+      for (const packageName of Object.keys(packageJson[field] ?? {})) {
+        inspectTarget(packageByName.get(packageName), packageJsonPath, 1, `package.json ${field} (${packageName})`);
+      }
+    }
+
+    for (const tsconfigPath of boundaryTsconfigFiles(sourcePackage.packageDirectory)) {
+      const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf8'));
+      for (const value of boundaryTsconfigValues(tsconfig)) {
+        const targetPackage = value.startsWith(packageScope)
+          ? packageByName.get(value)
+          : packageRecordForPath(
+            packageRecords,
+            path.resolve(path.dirname(tsconfigPath), value.replace(/\*.*$/, '')),
+          );
+        inspectTarget(targetPackage, tsconfigPath, 1, `tsconfig path/reference (${value})`);
+      }
+    }
+
+    for (const {filePath, sourceFile, ...capability} of collectBoundaryImportCapabilities(sourcePackage.packageDirectory)) {
+      const targetPackage = boundaryTargetPackage(
+        packageRecords,
+        packageByName,
+        filePath,
+        capability.moduleName,
+        spec,
+      );
+      inspectTarget(
+        targetPackage,
+        filePath,
+        sourceLine(capability.node, sourceFile),
+        `${capability.kind} (${capability.moduleName})`,
+      );
+    }
+  }
 }
 
 function runDependencyDirection(context) {
@@ -307,8 +783,11 @@ function runDependencyDirection(context) {
       if (moduleName.startsWith('assembly.') && dependency === moduleName) {
         throw new Error(`${moduleName} contains a self edge`);
       }
+      const sourceViolation = sourceDependencyViolation(moduleName, dependency);
+      if (sourceViolation !== null) throw new Error(sourceViolation);
     }
   }
+  runBaseSourceDependencyBoundary(context);
 }
 
 function runDependencyDeclarationCompleteness(context) {
@@ -707,6 +1186,7 @@ export function runStaticChecks({root = repoRoot, batch} = {}) {
     ['triple-naming', () => runTripleNaming(context)],
     ['dependency-direction', () => runDependencyDirection(context)],
     ['dependency-declaration-completeness', () => runDependencyDeclarationCompleteness(context)],
+    ['runtime-dependency-contract', () => runRuntimeDependencyContract(context)],
     ['tr01-reducer-boundary', () => runTr01Boundary(context)],
     ['kernel-platform-independence', () => runKernelPlatformIndependence(context)],
   ];
@@ -731,7 +1211,7 @@ export function runStaticChecks({root = repoRoot, batch} = {}) {
 
 function printUsage() {
   console.log('Usage: node tools/terminal-skeleton/check-static.mjs [--help]');
-  console.log('Runs six TER static rule gates and one separately reported scaffold hygiene check.');
+  console.log('Runs seven TER static rule gates and one separately reported scaffold hygiene check.');
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

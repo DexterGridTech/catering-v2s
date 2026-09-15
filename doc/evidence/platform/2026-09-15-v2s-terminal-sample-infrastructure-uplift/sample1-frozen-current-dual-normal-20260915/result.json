@@ -1,0 +1,33 @@
+{
+  "runId": "sample1-frozen-dual-normal-1789465745741",
+  "tool": "tools/terminal-sample2/run-sample1-frozen-journey.mjs",
+  "packageName": "com.anonymous.sampleterminal",
+  "activity": "com.anonymous.sampleterminal/.MainActivity",
+  "serial": "emulator-5554",
+  "shape": "dual",
+  "journeyCase": "normal",
+  "age": "37",
+  "startedAt": "2026-09-15T09:49:05.741Z",
+  "business": "NOT_RUN",
+  "cleanup": "PASS",
+  "firstFailure": "s1-01-anonymous: secondary partKey missing: sample.desk.customer-welcome",
+  "lastKnownGood": null,
+  "brokenBoundary": "before-first-known-good",
+  "steps": [],
+  "display": {
+    "ids": [
+      0,
+      2
+    ],
+    "hasSecondary": true
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": [
+      "11529215047789101945"
+    ]
+  },
+  "finishedAt": "2026-09-15T09:49:14.382Z"
+}

@@ -124,6 +124,8 @@
     {"source": "CONTRACT_REVISION_CONFLICT", "target": "CONTRACT_VERSION_CONFLICT", "disposition": "RENAME"}
   ],
   "v2sNativeCodes": [
+    {"code": "EXTENSION_DEFINITION_REVISION_STALE", "origin": "V2S_EXTENSION_FIELD_LIST_SEARCH", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "EXTENSION_FILTER_INVALID", "origin": "V2S_EXTENSION_FIELD_LIST_SEARCH", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "PLATFORM_ASSET_NOT_ACTIVE", "origin": "R5_OWNER_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "PLATFORM_ASSET_NOT_FOUND", "origin": "R5_OWNER_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "PLATFORM_ASSET_USAGE_DENIED", "origin": "R5_OWNER_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
@@ -206,11 +208,11 @@
     "heritageSourceCodesOwnedByR3Compatibility": 1,
     "r3SourceCodeCount": 6,
     "r3DispositionCount": 6,
-    "v2sNativeCodeCount": 75,
+    "v2sNativeCodeCount": 77,
     "crossRegistryDuplicateCodeCount": 0,
     "heritageR3ActiveTargetCount": 78,
-    "v2sNativeActiveTargetCount": 75,
-    "totalActiveTargetCount": 153,
+    "v2sNativeActiveTargetCount": 77,
+    "totalActiveTargetCount": 155,
     "allowedDispositions": [
       "RETAIN",
       "RETAIN_R3_WIRE_COMPATIBILITY",

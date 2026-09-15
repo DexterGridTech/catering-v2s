@@ -16,6 +16,7 @@ import {
 } from 'antd';
 import {
   adminDrawerSurfaceProps,
+  isFlatExtensionHost,
   testId,
   useDrawerFormLifecycle,
   useOverlayLock,
@@ -24,6 +25,12 @@ import {
 import {useEffect, useState} from 'react';
 import {PLATFORM_ADMIN_OPERATION_IDS, type ExtensionDefinition} from '../../../app/api/generated/platform-edge';
 import {platformClient, platformProblemOf, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
+import {
+  extensionDefinitionFieldIdentity,
+  extensionDefinitionFieldTestId,
+  extensionDefinitionOptionTestId,
+  extensionTestIds,
+} from '../../../app/automation/extensionTestIds';
 
 type DefinitionField = ExtensionDefinition['definitions'][number];
 type ExtensionDraftField = Omit<DefinitionField, 'key'> & {key?: string};
@@ -46,16 +53,29 @@ const fieldTypeLabel = (value?: DefinitionField['type']) =>
 type RowProps = {
   field: FormListFieldData;
   index: number;
+  entityType: ExtensionDefinition['entityType'];
   form: FormInstance<ExtensionEditorFields>;
   existingKeys: ReadonlySet<string>;
   onRemove: (name: number) => void;
   onDragStart: (index: number) => void;
   onDrop: (index: number) => void;
+  listSearchApplicable: boolean;
 };
 
-function ExtensionEditorRow({field, index, form, existingKeys, onRemove, onDragStart, onDrop}: RowProps) {
+function ExtensionEditorRow({
+  field,
+  index,
+  entityType,
+  form,
+  existingKeys,
+  onRemove,
+  onDragStart,
+  onDrop,
+  listSearchApplicable,
+}: RowProps) {
   const type = Form.useWatch(['definitions', field.name, 'type'], form) as DefinitionField['type'] | undefined;
   const fieldKey = Form.useWatch(['definitions', field.name, 'key'], form) as string | undefined;
+  const fieldIdentity = extensionDefinitionFieldIdentity(fieldKey, field.key);
   const isExisting = existingKeys.has(fieldKey ?? '');
   const changeType = (next: DefinitionField['type']) => {
     const optionsPath: ['definitions', number, 'options'] = ['definitions', field.name, 'options'];
@@ -91,7 +111,7 @@ function ExtensionEditorRow({field, index, form, existingKeys, onRemove, onDragS
           danger
           type="text"
           onClick={() => onRemove(field.name)}
-          {...testId(`extension-definition-remove-${index}`)}
+          {...testId(extensionDefinitionFieldTestId(entityType, fieldIdentity, 'remove'))}
         >
           删除
         </Button>
@@ -103,14 +123,14 @@ function ExtensionEditorRow({field, index, form, existingKeys, onRemove, onDragS
         </Form.Item>
         <Col xs={24} sm={12} lg={6}>
           <Form.Item label="字段名称" name={[field.name, 'label']} rules={[{required: true, whitespace: true}]}>
-            <Input {...testId(`extension-definition-label-${index}`)} />
+            <Input {...testId(extensionDefinitionFieldTestId(entityType, fieldIdentity, 'label'))} />
           </Form.Item>
         </Col>
         <Col xs={24} sm={12} lg={6}>
           {isExisting ? (
             <Form.Item label="字段类型">
               <Space size={8}>
-                <Typography.Text {...testId(`extension-definition-type-display-${index}`)}>
+                <Typography.Text {...testId(extensionDefinitionFieldTestId(entityType, fieldIdentity, 'type-display'))}>
                   {fieldTypeLabel(type)}
                 </Typography.Text>
                 <Typography.Text type="secondary">已固定</Typography.Text>
@@ -124,10 +144,40 @@ function ExtensionEditorRow({field, index, form, existingKeys, onRemove, onDragS
               <Select
                 options={fieldTypeOptions}
                 onChange={changeType}
-                {...testId(`extension-definition-type-${index}`)}
+                {...testId(extensionDefinitionFieldTestId(entityType, fieldIdentity, 'type'))}
               />
             </Form.Item>
           )}
+        </Col>
+        <Col xs={12} sm={12} lg={3}>
+          <Form.Item label="是否列表展示" name={[field.name, 'listDisplay']} rules={[{required: listSearchApplicable}]}>
+            {listSearchApplicable ? (
+              <Select
+                options={[
+                  {value: true, label: '是'},
+                  {value: false, label: '否'},
+                ]}
+                {...testId(extensionDefinitionFieldTestId(entityType, fieldIdentity, 'list-display'))}
+              />
+            ) : (
+              <Typography.Text type="secondary">不适用</Typography.Text>
+            )}
+          </Form.Item>
+        </Col>
+        <Col xs={12} sm={12} lg={3}>
+          <Form.Item label="是否可搜索" name={[field.name, 'searchable']} rules={[{required: listSearchApplicable}]}>
+            {listSearchApplicable ? (
+              <Select
+                options={[
+                  {value: true, label: '是'},
+                  {value: false, label: '否'},
+                ]}
+                {...testId(extensionDefinitionFieldTestId(entityType, fieldIdentity, 'searchable'))}
+              />
+            ) : (
+              <Typography.Text type="secondary">不适用</Typography.Text>
+            )}
+          </Form.Item>
         </Col>
         <Col xs={12} sm={12} lg={3}>
           <Form.Item label="是否必填" name={[field.name, 'required']} rules={[{required: true}]}>
@@ -136,13 +186,16 @@ function ExtensionEditorRow({field, index, form, existingKeys, onRemove, onDragS
                 {value: true, label: '是'},
                 {value: false, label: '否'},
               ]}
-              {...testId(`extension-definition-required-${index}`)}
+              {...testId(extensionDefinitionFieldTestId(entityType, fieldIdentity, 'required'))}
             />
           </Form.Item>
         </Col>
         <Col xs={12} sm={12} lg={3}>
           <Form.Item label="是否启用" name={[field.name, 'status']}>
-            <Select options={fieldStatusOptions} {...testId(`extension-definition-status-${index}`)} />
+            <Select
+              options={fieldStatusOptions}
+              {...testId(extensionDefinitionFieldTestId(entityType, fieldIdentity, 'status'))}
+            />
           </Form.Item>
         </Col>
         {type === 'SELECT' && (
@@ -176,14 +229,18 @@ function ExtensionEditorRow({field, index, form, existingKeys, onRemove, onDragS
                             aria-label={`选项 ${optionIndex + 1}`}
                             placeholder={`选项 ${optionIndex + 1}`}
                             maxLength={120}
-                            {...testId(`extension-definition-option-${index}-${optionIndex}`)}
+                            {...testId(
+                              extensionDefinitionOptionTestId(entityType, fieldIdentity, optionField.key, 'value'),
+                            )}
                           />
                         </Form.Item>
                         <Button
                           danger
                           type="text"
                           onClick={() => remove(optionField.name)}
-                          {...testId(`extension-definition-option-remove-${index}-${optionIndex}`)}
+                          {...testId(
+                            extensionDefinitionOptionTestId(entityType, fieldIdentity, optionField.key, 'remove'),
+                          )}
                         >
                           删除
                         </Button>
@@ -192,7 +249,7 @@ function ExtensionEditorRow({field, index, form, existingKeys, onRemove, onDragS
                     <Button
                       type="dashed"
                       onClick={() => add('')}
-                      {...testId(`extension-definition-option-add-${index}`)}
+                      {...testId(extensionDefinitionFieldTestId(entityType, fieldIdentity, 'option-add'))}
                     >
                       添加选项
                     </Button>
@@ -243,6 +300,7 @@ export function ExtensionDefinitionEditDrawer({
     diagnosticOperationId: PLATFORM_ADMIN_OPERATION_IDS.replaceExtensionDefinition,
   });
   useOverlayLock(Boolean(definition));
+  const listSearchApplicable = isFlatExtensionHost(definition?.entityType);
   useEffect(() => {
     if (!definition) return;
     form.setFieldsValue({
@@ -270,6 +328,8 @@ export function ExtensionDefinitionEditDrawer({
               ...(field.key?.trim() ? {key: field.key.trim()} : {}),
               label: field.label.trim(),
               type: field.type,
+              listDisplay: listSearchApplicable ? (field.listDisplay ?? false) : null,
+              searchable: listSearchApplicable ? (field.searchable ?? false) : null,
               required: field.required,
               options: field.type === 'SELECT' ? field.options.map(option => option.trim()).filter(Boolean) : [],
               status: field.status ?? 'ENABLED',
@@ -298,7 +358,15 @@ export function ExtensionDefinitionEditDrawer({
   const addField = () => {
     form.setFieldValue('definitions', [
       ...(form.getFieldValue('definitions') ?? []),
-      {label: '', type: 'TEXT', required: false, status: 'ENABLED', options: []},
+      {
+        label: '',
+        type: 'TEXT',
+        listDisplay: listSearchApplicable ? false : null,
+        searchable: listSearchApplicable ? false : null,
+        required: false,
+        status: 'ENABLED',
+        options: [],
+      },
     ]);
     lifecycle.setDirty(true);
     markBusinessIntentChanged();
@@ -311,7 +379,7 @@ export function ExtensionDefinitionEditDrawer({
           type="primary"
           onClick={addField}
           disabled={lifecycle.submitting}
-          {...testId('extension-definition-add')}
+          {...testId(extensionTestIds.addField)}
         >
           添加字段
         </Button>
@@ -326,14 +394,14 @@ export function ExtensionDefinitionEditDrawer({
       {...adminDrawerSurfaceProps}
       footer={
         <Space>
-          <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>
+          <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting} {...testId(extensionTestIds.cancel)}>
             取消
           </Button>
           <Button
             type="primary"
             loading={lifecycle.submitting}
             onClick={() => form.submit()}
-            {...testId('extension-definition-save')}
+            {...testId(extensionTestIds.save)}
           >
             保存
           </Button>
@@ -347,7 +415,7 @@ export function ExtensionDefinitionEditDrawer({
           title={problem.title}
           description={problem.detail}
           style={{marginBottom: 16}}
-          {...testId('extension-definition-error')}
+          {...testId(extensionTestIds.error)}
         />
       )}
       <Form
@@ -368,6 +436,7 @@ export function ExtensionDefinitionEditDrawer({
                   key={field.key}
                   field={field}
                   index={index}
+                  entityType={definition!.entityType}
                   form={form}
                   existingKeys={existingKeys}
                   onRemove={remove}
@@ -376,6 +445,7 @@ export function ExtensionDefinitionEditDrawer({
                     if (dragIndex !== undefined && dragIndex !== target) move(dragIndex, target);
                     setDragIndex(undefined);
                   }}
+                  listSearchApplicable={listSearchApplicable}
                 />
               ))}
             </>

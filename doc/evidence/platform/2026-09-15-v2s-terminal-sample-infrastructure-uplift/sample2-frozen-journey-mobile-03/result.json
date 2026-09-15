@@ -1,0 +1,73 @@
+{
+  "runId": "sample2-frozen-mobile-1789439002661",
+  "tool": "tools/terminal-sample2/run-sample2-frozen-journey.mjs",
+  "packageName": "com.catering.v2s.terminal.samplewallpaper",
+  "activity": "com.catering.v2s.terminal.samplewallpaper/.MainActivity",
+  "serial": "emulator-5556",
+  "shape": "mobile",
+  "startedAt": "2026-09-15T02:23:22.661Z",
+  "business": "NOT_RUN",
+  "cleanup": "PASS",
+  "firstFailure": "picker required UI nodes missing: sample.wallpaper.picker:confirm",
+  "lastKnownGood": "anonymous-login",
+  "brokenBoundary": "anonymous-login",
+  "steps": [
+    {
+      "name": "anonymous",
+      "timestamp": "2026-09-15T02:23:28.954Z",
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "ui-base-render:layer-stack",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": null
+        },
+        {
+          "id": "w1",
+          "node": null
+        },
+        {
+          "id": "w2",
+          "node": null
+        },
+        {
+          "id": "w3",
+          "node": null
+        }
+      ],
+      "backgroundPresent": false
+    }
+  ],
+  "display": {
+    "ids": [
+      0
+    ],
+    "hasSecondary": false
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": []
+  },
+  "finishedAt": "2026-09-15T02:23:41.556Z"
+}

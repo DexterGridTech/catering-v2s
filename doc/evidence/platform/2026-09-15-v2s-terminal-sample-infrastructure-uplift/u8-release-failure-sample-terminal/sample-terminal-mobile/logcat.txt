@@ -1,0 +1,604 @@
+--------- beginning of main
+         1789436116.264 32241 32273 W adua    : Abort, client detached.
+         1789436116.265 32241 32273 W adua    : Abort, client detached.
+         1789436116.266   681   696 I system_server: Background concurrent mark compact GC freed 24MB AllocSpace bytes, 186(3828KB) LOS objects, 42% free, 32MB/56MB, paused 2.919ms,5.001ms total 614.939ms
+         1789436116.266  1457  6397 I Fitness : FitCleanupIntentOperation received Intent android.intent.action.PACKAGE_REMOVED [CONTEXT service_id=17 ]
+         1789436116.271 32241 32273 W adua    : Abort, client detached.
+         1789436116.277  1457  6396 I ProximityAuth: [RecentAppsMediator] Package added: (user=UserHandle{0}) com.anonymous.sampleterminal
+         1789436116.278  1457  6396 I .gms.persistent: AssetManager2(0xb4000071410d1fb8) locale list changing from [] to [en-US]
+         1789436116.283  1608  6386 W SQLiteLog: (28) double-quoted string literal: "com.anonymous.sampleterminal"
+         1789436116.288  1608  6402 I Auth    : [SupervisedAccountIntentOperationV2] onHandleIntent: android.intent.action.PACKAGE_ADDED [CONTEXT service_id=42 ]
+         1789436116.291  1608  1608 D BoundBrokerSvc: onBind: Intent { act=com.google.android.gms.common.BIND_SHARED_PREFS xflg=0x4 pkg=com.google.android.gms }
+         1789436116.291  1608  1608 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.gms.common.BIND_SHARED_PREFS xflg=0x4 pkg=com.google.android.gms }
+         1789436116.303  1608  6410 I gle.android.gms: AssetManager2(0xb4000071410c0998) locale list changing from [] to [en-US]
+         1789436116.305  1751  2039 I hbox:interactor: AssetManager2(0xb4000071410d7738) locale list changing from [] to [en-US]
+         1789436116.319  1608  2529 I Icing   : IndexChimeraService.getServiceInterface callingPackage=com.google.android.gms componentName=AppsCorpus serviceId=36
+         1789436116.320  1608  1608 D BoundBrokerSvc: onBind: Intent { act=com.google.android.gms.feedback.internal.IFeedbackService dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+         1789436116.320  1608  1608 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.gms.feedback.internal.IFeedbackService dat=chimera-action:/... xflg=0x4 cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+--------- beginning of system
+         1789436116.324   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789436116.325   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789436116.335  1608  5670 I Icing   : Usage reports ok 0, Failed Usage reports 0, indexed 0, rejected 0
+         1789436116.344  1608  3636 I Icing   : IndexChimeraService.getServiceInterface callingPackage=com.google.android.gms componentName=null serviceId=30
+         1789436116.348  1608  6410 I gle.android.gms: AssetManager2(0xb4000071410b92d8) locale list changing from [] to [en-US]
+         1789436116.355  1608  5670 I Icing   : Usage reports ok 0, Failed Usage reports 0, indexed 0, rejected 0
+         1789436116.357   681  1390 I ActivityManager: Force stopping com.anonymous.sampleterminal appid=10213 user=0: from pid 6418
+         1789436116.360  1263  1263 D CarrierSvcBindHelper: onHandleForceStop: [com.anonymous.sampleterminal]
+         1789436116.361   681   814 I system_server: AssetManager2(0xb400007141105278) locale list changing from [] to [en-US]
+         1789436116.361  1263  1263 D CarrierSvcBindHelper: No carrier app for: 0
+         1789436116.362  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b3838) locale list changing from [] to [en-US]
+         1789436116.363   681   814 I system_server: AssetManager2(0xb400007141105ef8) locale list changing from [] to [en-US]
+         1789436116.364   681  1035 I AppWidgetServiceImpl: Received broadcast: android.intent.action.PACKAGE_RESTARTED on user 0
+         1789436116.364   681  1035 I AppWidgetServiceImpl: Updating package stopped masked state for uid 10213 package com.anonymous.sampleterminal isStopped true
+         1789436116.367  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c9318) locale list changing from [] to [en-US]
+         1789436116.368  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410cac18) locale list changing from [] to [en-US]
+         1789436116.368  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d2c38) locale list changing from [] to [en-US]
+         1789436116.369  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d1338) locale list changing from [] to [en-US]
+         1789436116.370  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410afff8) locale list changing from [] to [en-US]
+         1789436116.370  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410be738) locale list changing from [] to [en-US]
+         1789436116.372  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d7a58) locale list changing from [] to [en-US]
+         1789436116.373  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410cb898) locale list changing from [] to [en-US]
+         1789436116.373  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410bd478) locale list changing from [] to [en-US]
+         1789436116.374  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d3598) locale list changing from [] to [en-US]
+         1789436116.374  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410cf0d8) locale list changing from [] to [en-US]
+         1789436116.375  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410cf3f8) locale list changing from [] to [en-US]
+         1789436116.375  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c8cd8) locale list changing from [] to [en-US]
+         1789436116.376  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d57f8) locale list changing from [] to [en-US]
+         1789436116.379  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d4218) locale list changing from [] to [en-US]
+         1789436116.380  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d1c98) locale list changing from [] to [en-US]
+         1789436116.381  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c6d98) locale list changing from [] to [en-US]
+         1789436116.383  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410ca5d8) locale list changing from [] to [en-US]
+         1789436116.383  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c9f98) locale list changing from [] to [en-US]
+         1789436116.384  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410be0f8) locale list changing from [] to [en-US]
+         1789436116.384  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410cf718) locale list changing from [] to [en-US]
+         1789436116.385  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d4b78) locale list changing from [] to [en-US]
+         1789436116.386  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d3ef8) locale list changing from [] to [en-US]
+         1789436116.386  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d38b8) locale list changing from [] to [en-US]
+         1789436116.387  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d3278) locale list changing from [] to [en-US]
+         1789436116.388  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410ce458) locale list changing from [] to [en-US]
+         1789436116.389  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c5498) locale list changing from [] to [en-US]
+         1789436116.390  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b3518) locale list changing from [] to [en-US]
+         1789436116.390  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c73d8) locale list changing from [] to [en-US]
+         1789436116.390  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d9fd8) locale list changing from [] to [en-US]
+         1789436116.391  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c4818) locale list changing from [] to [en-US]
+         1789436116.392  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d3bd8) locale list changing from [] to [en-US]
+         1789436116.392  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c5178) locale list changing from [] to [en-US]
+         1789436116.393  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c0038) locale list changing from [] to [en-US]
+         1789436116.394  6421  6421 W dumpsys : Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: window
+         1789436116.395  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c0358) locale list changing from [] to [en-US]
+         1789436116.395  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d1978) locale list changing from [] to [en-US]
+         1789436116.397  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c41d8) locale list changing from [] to [en-US]
+         1789436116.398  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d1018) locale list changing from [] to [en-US]
+         1789436116.401  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d0078) locale list changing from [] to [en-US]
+         1789436116.402  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b15d8) locale list changing from [] to [en-US]
+         1789436116.403  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410dcb98) locale list changing from [] to [en-US]
+         1789436116.404  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410cce78) locale list changing from [] to [en-US]
+         1789436116.404  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d22d8) locale list changing from [] to [en-US]
+         1789436116.405  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d4e98) locale list changing from [] to [en-US]
+         1789436116.405  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b7078) locale list changing from [] to [en-US]
+         1789436116.407  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b6718) locale list changing from [] to [en-US]
+         1789436116.408  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410da938) locale list changing from [] to [en-US]
+         1789436116.409  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410afcd8) locale list changing from [] to [en-US]
+         1789436116.409  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410db5b8) locale list changing from [] to [en-US]
+         1789436116.410  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410dd4f8) locale list changing from [] to [en-US]
+         1789436116.411  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d4858) locale list changing from [] to [en-US]
+         1789436116.411  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d54d8) locale list changing from [] to [en-US]
+         1789436116.411  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c9c78) locale list changing from [] to [en-US]
+         1789436116.412  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d5e38) locale list changing from [] to [en-US]
+         1789436116.413  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410ce138) locale list changing from [] to [en-US]
+         1789436116.413  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c8ff8) locale list changing from [] to [en-US]
+         1789436116.414  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b31f8) locale list changing from [] to [en-US]
+         1789436116.415  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410bce38) locale list changing from [] to [en-US]
+         1789436116.416  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d0cf8) locale list changing from [] to [en-US]
+         1789436116.416  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b9f58) locale list changing from [] to [en-US]
+         1789436116.418  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410daf78) locale list changing from [] to [en-US]
+         1789436116.419  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410cfd58) locale list changing from [] to [en-US]
+         1789436116.419  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410cc838) locale list changing from [] to [en-US]
+         1789436116.421  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c5ad8) locale list changing from [] to [en-US]
+         1789436116.422  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410dceb8) locale list changing from [] to [en-US]
+         1789436116.422  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c4e58) locale list changing from [] to [en-US]
+         1789436116.423  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d06b8) locale list changing from [] to [en-US]
+         1789436116.424  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c0998) locale list changing from [] to [en-US]
+         1789436116.424  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410a7358) locale list changing from [] to [en-US]
+         1789436116.424  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c3b98) locale list changing from [] to [en-US]
+         1789436116.425  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c1c58) locale list changing from [] to [en-US]
+         1789436116.426  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c8058) locale list changing from [] to [en-US]
+         1789436116.427  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c89b8) locale list changing from [] to [en-US]
+         1789436116.427  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c76f8) locale list changing from [] to [en-US]
+         1789436116.428  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c8378) locale list changing from [] to [en-US]
+         1789436116.429  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c7d38) locale list changing from [] to [en-US]
+         1789436116.429  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410ca8f8) locale list changing from [] to [en-US]
+         1789436116.430  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d9678) locale list changing from [] to [en-US]
+         1789436116.431  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410bf098) locale list changing from [] to [en-US]
+         1789436116.431  6424  6424 W dumpsys : Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: activity
+         1789436116.431  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410cb578) locale list changing from [] to [en-US]
+         1789436116.432  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410cd4b8) locale list changing from [] to [en-US]
+         1789436116.432  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b5138) locale list changing from [] to [en-US]
+         1789436116.433  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410af058) locale list changing from [] to [en-US]
+         1789436116.433  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410dd1d8) locale list changing from [] to [en-US]
+         1789436116.435  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b0c78) locale list changing from [] to [en-US]
+         1789436116.436  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c3238) locale list changing from [] to [en-US]
+         1789436116.436  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c3558) locale list changing from [] to [en-US]
+         1789436116.437  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c2bf8) locale list changing from [] to [en-US]
+         1789436116.438  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410bf6d8) locale list changing from [] to [en-US]
+         1789436116.440  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410baef8) locale list changing from [] to [en-US]
+         1789436116.440  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410bf9f8) locale list changing from [] to [en-US]
+         1789436116.441  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410bdab8) locale list changing from [] to [en-US]
+         1789436116.442  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b92d8) locale list changing from [] to [en-US]
+         1789436116.443  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410d9038) locale list changing from [] to [en-US]
+         1789436116.444  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c6118) locale list changing from [] to [en-US]
+         1789436116.445  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410da2f8) locale list changing from [] to [en-US]
+         1789436116.447  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410bddd8) locale list changing from [] to [en-US]
+         1789436116.448  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c4b38) locale list changing from [] to [en-US]
+         1789436116.450  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410bbe98) locale list changing from [] to [en-US]
+         1789436116.451  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c1618) locale list changing from [] to [en-US]
+         1789436116.453  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410bf3b8) locale list changing from [] to [en-US]
+         1789436116.455  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c28d8) locale list changing from [] to [en-US]
+         1789436116.456  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c3eb8) locale list changing from [] to [en-US]
+         1789436116.457  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410ba598) locale list changing from [] to [en-US]
+         1789436116.459  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410bb538) locale list changing from [] to [en-US]
+         1789436116.460  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c0cb8) locale list changing from [] to [en-US]
+         1789436116.461  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b0638) locale list changing from [] to [en-US]
+         1789436116.462  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410bd798) locale list changing from [] to [en-US]
+         1789436116.463  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b7cf8) locale list changing from [] to [en-US]
+         1789436116.464  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b63f8) locale list changing from [] to [en-US]
+         1789436116.465  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b9918) locale list changing from [] to [en-US]
+         1789436116.465  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c12f8) locale list changing from [] to [en-US]
+         1789436116.466  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b2ed8) locale list changing from [] to [en-US]
+         1789436116.466  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b76b8) locale list changing from [] to [en-US]
+         1789436116.469  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b8c98) locale list changing from [] to [en-US]
+         1789436116.471  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c5df8) locale list changing from [] to [en-US]
+         1789436116.471  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410ba278) locale list changing from [] to [en-US]
+         1789436116.472  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b95f8) locale list changing from [] to [en-US]
+         1789436116.476  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410ccb58) locale list changing from [] to [en-US]
+         1789436116.478  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b9c38) locale list changing from [] to [en-US]
+         1789436116.479  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b3b58) locale list changing from [] to [en-US]
+         1789436116.479  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410b6d58) locale list changing from [] to [en-US]
+         1789436116.480   681  1390 W ActivityTaskManager: callingPackage for (uid=2000, pid=6431) has no WPC
+         1789436116.480   681  1390 I system_server: AssetManager2(0xb400007141196138) locale list changing from [] to [en-US]
+         1789436116.481  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410cc1f8) locale list changing from [] to [en-US]
+         1789436116.481   681  1390 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10213, packageName = null, attributionTag = null, token = android.os.Binder@8503600, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+         1789436116.481   681  1390 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE
+         1789436116.481   681  1390 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE
+         1789436116.481   681  1390 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES
+         1789436116.481   681  1390 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE
+         1789436116.482  1654  1730 I .apps.wellbeing: AssetManager2(0xb4000071410c1938) locale list changing from [] to [en-US]
+         1789436116.485   681  1390 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_ORIENTATION_OVERRIDE
+         1789436116.485   528   663 I BpBinder: onLastStrongRef automatically unlinking death recipients: 
+         1789436116.486  1091  1238 I ndroid.systemui: AssetManager2(0xb400007141111118) locale list changing from [] to [en-US]
+         1789436116.487   681  1508 D CompatChangeReporter: Compat change id reported: 377864165; UID 10213; state: ENABLED
+         1789436116.487   681  1390 I ActivityTaskManager: START u0 {flg=0x10000000 xflg=0x5 cmp=com.anonymous.sampleterminal/.MainActivity} with LAUNCH_SINGLE_TASK from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+         1789436116.487  1414  1414 W SplitSelectStateCtor: Missing session instanceIds
+         1789436116.487  1414  1414 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+         1789436116.488  1091  1201 V WindowManagerShell: Transition requested (#180): android.os.BinderProxy@4ed376a TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=90 effectiveUid=10213 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=com.anonymous.sampleterminal/.MainActivity } baseActivity=ComponentInfo{com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity} topActivity=ComponentInfo{com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity} origActivity=null realActivity=ComponentInfo{com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity} numActivities=1 lastActiveTime=164294454 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@5df145b} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 0 - 0, 0) topActivityInfo=ActivityInfo{19194f8 com.anonymous.sampleterminal.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=false lastNonFullscreenBounds=Rect(142, 280 - 579, 1000) capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=-9 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false eligibleForLetterboxEducation= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 720, 1280) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null cameraCompatTaskInfo=CameraCompatTaskInfo { freeformCameraCompatMode=inactive}} topActivityMainWindowFrame=null}, pipChange = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 180 }
+         1789436116.489  1091  1201 D ShellSplitScreen: logExit: no-op, mLoggerSessionId is null
+         1789436116.490   681   709 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10213, packageName = null, attributionTag = null, token = android.os.Binder@8503600, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+         1789436116.490  1091  1201 D WindowManagerShell: setLauncherKeepClearAreaHeight: visible=false, height=350
+         1789436116.491   681  1035 I AppWidgetServiceImpl: Received broadcast: android.intent.action.PACKAGE_UNSTOPPED on user 0
+         1789436116.492   681  1035 I AppWidgetServiceImpl: Updating package stopped masked state for uid 10213 package com.anonymous.sampleterminal isStopped false
+         1789436116.492   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789436116.494  1091  1239 W HWUI    : Image decoding logging dropped!
+         1789436116.494  1091  1239 D SplashScreenView: Build android.window.SplashScreenView{929b3d3 V.E...... ......ID 0,0-0,0}
+         1789436116.494  1091  1239 D SplashScreenView: Icon: view: android.widget.ImageView{3be0b10 V.ED..... ......I. 0,0-0,0 #1020542 android:id/splashscreen_icon_view} drawable: com.android.wm.shell.startingsurface.SplashscreenIconDrawableFactory$ImmobileIconDrawable@da9c609 size: 384
+         1789436116.494  1091  1239 D SplashScreenView: Branding: view: android.view.View{f96400e G.ED..... ......I. 0,0-0,0 #1020541 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+         1789436116.495  1751  2136 I AssistantForeground: (REDACTED) Get launcher package: %s
+         1789436116.498   681  1508 D CoreBackPreview: Window{1a0af8d u0 Splash Screen com.anonymous.sampleterminal}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@73ec7af, mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}
+         1789436116.498   528   528 I BpBinder: onLastStrongRef automatically unlinking death recipients: 
+         1789436116.501   589   589 W IPCThreadState: Sending oneway calls to frozen process.
+         1789436116.511   681   706 V WindowManager: Sent Transition (#180) createdAt=09-15 10:35:16.481 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=90 effectiveUid=10213 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=com.anonymous.sampleterminal/.MainActivity } baseActivity=ComponentInfo{com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity} topActivity=ComponentInfo{com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity} origActivity=null realActivity=ComponentInfo{com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity} numActivities=1 lastActiveTime=164294454 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{17eda9a Task{593238c #90 type=standard A=10213:com.anonymous.sampleterminal}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 0 - 0, 0) topActivityInfo=ActivityInfo{6ba2fcb com.anonymous.sampleterminal.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=false lastNonFullscreenBounds=Rect(142, 280 - 579, 1000) capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=-9 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false eligibleForLetterboxEducation= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 720, 1280) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null cameraCompatTaskInfo=CameraCompatTaskInfo { freeformCameraCompatMode=inactive}} topActivityMainWindowFrame=null}, pipChange = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 180 }
+         1789436116.511   681   706 V WindowManager:     startWCT=WindowContainerTransaction { changes= {} hops= [] errorCallbackToken=null taskFragmentOrganizer=null }
+         1789436116.511   681   706 V WindowManager:     info={id=180 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[
+         1789436116.511   681   706 V WindowManager:         {WCT{RemoteToken{17eda9a Task{593238c #90 type=standard A=10213:com.anonymous.sampleterminal}}} m=OPEN f=NONE leash=Surface(name=Task=90)/@0x6ec87bc sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},
+         1789436116.511   681   706 V WindowManager:         {WCT{RemoteToken{10fdbd2 Task{fa2d952 #1 type=home}}} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0xd911921 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},
+         1789436116.511   681   706 V WindowManager:         {m=TO_BACK f=IS_WALLPAPER leash=Surface(name=WallpaperWindowToken{e7f8052 showWhenLocked=false})/@0xfdfe7cc sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0}
+         1789436116.511   681   706 V WindowManager:     ]}
+         1789436116.512  1091  2133 V WindowManagerShell: onTransitionReady(transaction=2924872748521)
+         1789436116.512  1091  1201 V WindowManagerShell: onTransitionReady (#180) android.os.BinderProxy@4ed376a: {id=180 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[
+         1789436116.512  1091  1201 V WindowManagerShell:         {m=OPEN f=NONE leash=Surface(name=Task=90)/@0x74fe2d4 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},
+         1789436116.512  1091  1201 V WindowManagerShell:         {m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x8185c7d sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},
+         1789436116.512  1091  1201 V WindowManagerShell:         {m=TO_BACK f=IS_WALLPAPER leash=Surface(name=WallpaperWindowToken{e7f8052 showWhenLocked=false})/@0x43ba772 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0}
+         1789436116.512  1091  1201 V WindowManagerShell:     ]}
+         1789436116.512  1091  1201 V WindowManagerShell: Playing animation for (#180) android.os.BinderProxy@4ed376a@0
+         1789436116.513  1091  1201 V ShellRecents: RecentsTransitionHandler.startAnimation: no controller found
+         1789436116.513  6435  6435 W dumpsys : Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: window
+         1789436116.513  1091  1201 V WindowManagerShell: Transition doesn't have explicit remote, search filters for match for {id=180 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=OPEN f=NONE leash=Surface(name=Task=90)/@0x74fe2d4 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},{m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x8185c7d sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},{m=TO_BACK f=IS_WALLPAPER leash=Surface(name=WallpaperWindowToken{e7f8052 showWhenLocked=false})/@0x43ba772 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0}]}
+         1789436116.513  1091  1201 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=undefined independent=true modes=[CLOSE,TO_BACK] flags=IN_TASK_WITH_EMBEDDED_ACTIVITY mustBeTask=false order=ANY topActivity=null launchCookie=null taskFragmentToken=android.os.BinderProxy@d60f29a windowingMode=undefined}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@94e67cb, appThread = android.app.IApplicationThread$Stub$Proxy@c043ba8, debugName = overlayBackTransition }}
+         1789436116.513  1091  1201 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=dream independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null windowingMode=undefined},{atype=home independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null windowingMode=undefined}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@3eac6c1, appThread = android.app.IApplicationThread$Stub$Proxy@dcb9e66, debugName = LauncherToDream }}
+         1789436116.513  1091  1201 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity} launchCookie=null windowingMode=undefined},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null windowingMode=undefined},{NOT atype=undefined independent=true modes=[] flags=NONE mustBeTask=true order=ANY topActivity=null launchCookie=null customAnim=true windowingMode=undefined}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@2d9b5a7, appThread = android.app.IApplicationThread$Stub$Proxy@2356a54, debugName = QuickstepLaunchHome }}
+         1789436116.513   460   460 D Zygote  : Forked child process 6437
+         1789436116.513  1091  1201 V WindowManagerShell:  Delegate animation for (#180) to null
+         1789436116.513  1091  1201 V WindowManagerShell: start default transition animation, info = {id=180 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=OPEN f=NONE leash=Surface(name=Task=90)/@0x74fe2d4 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},{m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x8185c7d sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0 taskParent=-1},{m=TO_BACK f=IS_WALLPAPER leash=Surface(name=WallpaperWindowToken{e7f8052 showWhenLocked=false})/@0x43ba772 sb=Rect(0, 0 - 720, 1280) eb=Rect(0, 0 - 720, 1280) epz=Point(720, 1280) d=0}]}
+         1789436116.515  1091  1201 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@6d34379 animAttr=0x13 type=OPEN isEntrance=false
+         1789436116.515  1091  1201 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@f18c8be animAttr=0x12 type=OPEN isEntrance=true
+         1789436116.515  1091  1201 V WindowManagerShell:  animated by com.android.wm.shell.transition.DefaultTransitionHandler@fa3bab9
+         1789436116.516   681   716 I ActivityManager: Start proc 6437:com.anonymous.sampleterminal/u0a213 for next-top-activity {com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity}
+         1789436116.523  6437  6437 I .sampleterminal: Using CollectorTypeCMC GC.
+         1789436116.524   681   716 I ActivityManager: ProcessObserver broadcast disabled
+         1789436116.525  6437  6437 E .sampleterminal: Not starting debugger since process cannot load the jdwp agent.
+         1789436116.527  6437  6437 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+         1789436116.530   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789436116.571  6437  6437 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+         1789436116.571  6437  6437 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.sidecar.jar
+         1789436116.574  6437  6437 D nativeloader: Configuring clns-9 for other apk /data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/lib/arm64:/data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.anonymous.sampleterminal
+         1789436116.581  6450  6450 W dumpsys : Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: activity
+         1789436116.601  6437  6437 I .sampleterminal: AssetManager2(0xb4000071410a8618) locale list changing from [] to [en-US]
+         1789436116.605  6437  6437 V GraphicsEnvironment: Currently set values for:
+         1789436116.605  6437  6437 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[]
+         1789436116.605  6437  6437 V GraphicsEnvironment:   angle_gl_driver_selection_values=[]
+         1789436116.605  6437  6437 V GraphicsEnvironment: com.anonymous.sampleterminal is not listed in per-application setting
+         1789436116.605  6437  6437 V GraphicsEnvironment: ANGLE allowlist from config: com.dreamgames.royalmatch com.dts.freefiremax com.dxx.firenow com.gramgames.mergedragons com.ludo.king com.mojang.minecraftpe com.my.defense com.nintendo.zaka com.os.airforce com.playrix.fishdomdd.gplay io.teslatech.callbreak jp.konami.prospia net.peakgames.toonblast
+         1789436116.605  6437  6437 V GraphicsEnvironment: com.anonymous.sampleterminal is not listed in ANGLE allowlist or settings, returning default
+         1789436116.605  6437  6437 V GraphicsEnvironment: Neither updatable production driver nor prerelease driver is supported.
+         1789436116.606   681  2204 W HWUI    : Image decoding logging dropped!
+         1789436116.613   681  7970 W HWUI    : Failed to choose config with EGL_SWAP_BEHAVIOR_PRESERVED, retrying without...
+         1789436116.614   681  7970 W HWUI    : Failed to initialize 101010-2 format, error = EGL_SUCCESS
+         1789436116.617  6437  6437 W SoLoader: Initializing SoLoader: 0
+         1789436116.617  6437  6437 W SoLoader: Recording new base apk path: /data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk
+         1789436116.617  6437  6437 W SoLoader: Previously recorded 0 base apk paths.
+         1789436116.618  6437  6437 I SoLoader: Preparing SO source: DirectorySoSource[root = /vendor/lib64 flags = 2]
+         1789436116.618  6437  6437 I SoLoader: Preparing SO source: DirectorySoSource[root = /system/lib64 flags = 2]
+         1789436116.618  6437  6437 I SoLoader: Preparing SO source: DirectApkSoSource[root = [/data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk!/lib/arm64-v8a]]
+         1789436116.618  6437  6437 I SoLoader: Preparing SO source: ApplicationSoSource[DirectorySoSource[root = /data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/lib/arm64 flags = 0]]
+         1789436116.619  6437  6437 I SoLoader: init finish: 4 SO sources prepared
+         1789436116.619  6437  6437 W SoLoader: SoLoader initialized: 8
+         1789436116.622  6437  6437 D nativeloader: Load /data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk!/lib/arm64-v8a/libc++_shared.so using class loader ns clns-9 (caller=/data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk): ok
+         1789436116.623  6437  6437 D nativeloader: Load /data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk!/lib/arm64-v8a/libjsi.so using class loader ns clns-9 (caller=/data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk): ok
+         1789436116.624  6437  6437 D nativeloader: Load /data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk!/lib/arm64-v8a/libfbjni.so using class loader ns clns-9 (caller=/data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk): ok
+         1789436116.626  6437  6437 D nativeloader: Load /data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk!/lib/arm64-v8a/libreactnative.so using class loader ns clns-9 (caller=/data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk): ok
+         1789436116.626  6437  6437 D jni_lib_merge: Entering merged library JNI_OnLoad.
+         1789436116.626  6437  6437 D jni_lib_merge: Preparing 13 pre-merged libs (including stub)
+         1789436116.626  6437  6437 D jni_lib_merge: Preparing to register libfabricjni_so.  onload_func: 0x6f26d535e8
+         1789436116.626  6437  6437 D jni_lib_merge: Preparing to register libreact_devsupportjni_so.  onload_func: 0x6f26e27c4c
+         1789436116.626  6437  6437 D jni_lib_merge: Preparing to register libreact_featureflagsjni_so.  onload_func: 0x6f26e44068
+         1789436116.626  6437  6437 D jni_lib_merge: Preparing to register libreact_newarchdefaults_so.  onload_func: 0x6f26e87dd4
+         1789436116.626  6437  6437 D jni_lib_merge: Preparing to register libreact_tracingjni_so.  onload_func: 0x6f26f729c0
+         1789436116.626  6437  6437 D jni_lib_merge: Preparing to register libreactnativeblob_so.  onload_func: 0x6f26f77c54
+         1789436116.626  6437  6437 D jni_lib_merge: Preparing to register libreactnativejni_so.  onload_func: 0x6f26f83c58
+         1789436116.626  6437  6437 D jni_lib_merge: Preparing to register libreactnativejni_common_so.  onload_func: 0x6f26f86b1c
+         1789436116.626  6437  6437 D jni_lib_merge: Preparing to register librninstance_so.  onload_func: 0x6f26fac164
+         1789436116.626  6437  6437 D jni_lib_merge: Preparing to register libturbomodulejsijni_so.  onload_func: 0x6f27057580
+         1789436116.626  6437  6437 D jni_lib_merge: Preparing to register libuimanagerjni_so.  onload_func: 0x6f2705df94
+         1789436116.626  6437  6437 D jni_lib_merge: Preparing to register libyoga_so.  onload_func: 0x6f2706556c
+         1789436116.626  6437  6437 D jni_lib_merge: About to register 12 actual methods.
+         1789436116.629  6437  6437 D nativeloader: Load /data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk!/lib/arm64-v8a/libreact_codegen_rnsvg.so using class loader ns clns-9 (caller=/data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk): ok
+         1789436116.629  6437  6437 D jni_lib_merge: Entering merged library JNI_OnLoad.
+         1789436116.629  6437  6437 D jni_lib_merge: Preparing 13 pre-merged libs (including stub)
+         1789436116.629  6437  6437 D jni_lib_merge: Preparing to register libfabricjni_so.  onload_func: 0x6f26d535e8
+         1789436116.629  6437  6437 D jni_lib_merge: Preparing to register libreact_devsupportjni_so.  onload_func: 0x6f26e27c4c
+         1789436116.629  6437  6437 D jni_lib_merge: Preparing to register libreact_featureflagsjni_so.  onload_func: 0x6f26e44068
+         1789436116.629  6437  6437 D jni_lib_merge: Preparing to register libreact_newarchdefaults_so.  onload_func: 0x6f26e87dd4
+         1789436116.629  6437  6437 D jni_lib_merge: Preparing to register libreact_tracingjni_so.  onload_func: 0x6f26f729c0
+         1789436116.629  6437  6437 D jni_lib_merge: Preparing to register libreactnativeblob_so.  onload_func: 0x6f26f77c54
+         1789436116.629  6437  6437 D jni_lib_merge: Preparing to register libreactnativejni_so.  onload_func: 0x6f26f83c58
+         1789436116.629  6437  6437 D jni_lib_merge: Preparing to register libreactnativejni_common_so.  onload_func: 0x6f26f86b1c
+         1789436116.629  6437  6437 D jni_lib_merge: Preparing to register librninstance_so.  onload_func: 0x6f26fac164
+         1789436116.629  6437  6437 D jni_lib_merge: Preparing to register libturbomodulejsijni_so.  onload_func: 0x6f27057580
+         1789436116.629  6437  6437 D jni_lib_merge: Preparing to register libuimanagerjni_so.  onload_func: 0x6f2705df94
+         1789436116.629  6437  6437 D jni_lib_merge: Preparing to register libyoga_so.  onload_func: 0x6f2706556c
+         1789436116.629  6437  6437 D jni_lib_merge: About to register 12 actual methods.
+         1789436116.631  6437  6437 D nativeloader: Load /data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk!/lib/arm64-v8a/libappmodules.so using class loader ns clns-9 (caller=/data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk): ok
+         1789436116.640   681  2209 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ENABLE_FAKE_FOCUS
+         1789436116.644   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789436116.644   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789436116.649   681  2204 E AppOps  : attributionTag VCN not declared in manifest of android
+         1789436116.652  6437  6459 I DisplayManager: Choreographer implicitly registered for the refresh rate.
+         1789436116.654  6437  6437 I .sampleterminal: AssetManager2(0xb4000071410ad758) locale list changing from [] to [en-US]
+         1789436116.657  6437  6437 D AppCompatDelegate: Checking for metadata for AppLocalesMetadataHolderService : Service not found
+         1789436116.657  6437  6437 I .sampleterminal: AssetManager2(0xb4000071410af698) locale list changing from [] to [en-US]
+         1789436116.659  6437  6437 E ashmem  : Pinning is deprecated since Android Q. Please use trim or other methods.
+         1789436116.664  6437  6437 D CompatChangeReporter: Compat change id reported: 377864165; UID 10213; state: ENABLED
+         1789436116.665  6437  6437 D DesktopModeFlags: Toggle override initialized to: OVERRIDE_UNSET
+         1789436116.669   681  2209 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_IGNORE_REQUESTED_ORIENTATION
+         1789436116.669   681  2209 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED
+         1789436116.669  6437  6437 I TerminalDualScreen: event=surface-form-decision surfaceForm=mobile smallestScreenWidthDp=360 thresholdDp=581 source=configuration.smallestScreenWidthDp diagnostic=none
+         1789436116.670  6437  6437 I TerminalDualScreen: event=display-snapshot-entry displayIndex=0 displayId=0 name=Built-in_Screen state=2 flags=16515 rotation=0 refreshRate=60.000004 appWidthPx=720 appHeightPx=1280 appDensityDpi=320 appDensity=2.0 appScaledDensity=2.0 appXdpi=320.0 appYdpi=320.0 realWidthPx=720 realHeightPx=1280 modeWidthPx=720 modeHeightPx=1280
+         1789436116.670  6437  6437 I TerminalDualScreen: event=display-snapshot-read displayCount=1 secondaryDisplayId=none
+         1789436116.671  6437  6437 I TerminalDualScreen: event=primary-activity-configuration displayIndex=0 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=360 screenHeightDp=640 smallestWidthDp=360 orientation=1 resourceWidthPx=720 resourceHeightPx=1280
+         1789436116.679  6437  6437 W unknown:BridgelessReact: ReactHost{0}.startSurface(surfaceId = 0): Schedule
+         1789436116.680  6437  6437 W unknown:BridgelessReact: ReactHost{0}.attachSurface(surfaceId = 0)
+         1789436116.680  6437  6463 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask()
+         1789436116.680  6437  6463 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Start
+         1789436116.680  6437  6463 W unknown:BridgelessReact: ReactHost{0}.getJSBundleLoader()
+         1789436116.680  6437  6463 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Creating BridgelessReactContext
+         1789436116.681  6437  6463 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Creating ReactInstance
+         1789436116.682  6437  6437 W WindowOnBackDispatcher: OnBackInvokedCallback is not enabled for the application.
+         1789436116.682  6437  6437 W WindowOnBackDispatcher: Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+         1789436116.684  6437  6437 W unknown:BridgelessReact: ReactHost{0}.onHostResume(activity)
+         1789436116.684  6437  6437 W unknown:BridgelessReact: ReactHost{0}.ReactContext.onHostResume()
+         1789436116.685  6437  6459 I EGL_emulation: Opening libGLESv1_CM_emulation.so
+         1789436116.685  6437  6459 I EGL_emulation: Opening libGLESv2_emulation.so
+         1789436116.687  6437  6463 D nativeloader: Load /data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk!/lib/arm64-v8a/libhermesvm.so using class loader ns clns-9 (caller=/data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk): ok
+         1789436116.688  6437  6463 D nativeloader: Load /data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk!/lib/arm64-v8a/libhermestooling.so using class loader ns clns-9 (caller=/data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk): ok
+         1789436116.688  6437  6463 D jni_lib_merge: Entering merged library JNI_OnLoad.
+         1789436116.688  6437  6463 D jni_lib_merge: Preparing 4 pre-merged libs (including stub)
+         1789436116.688  6437  6463 D jni_lib_merge: Preparing to register libhermes_executor_so.  onload_func: 0x6f81ba0eec
+         1789436116.688  6437  6463 D jni_lib_merge: Preparing to register libhermesinstancejni_so.  onload_func: 0x6f81ba869c
+         1789436116.688  6437  6463 D jni_lib_merge: Preparing to register libjsijniprofiler_so.  onload_func: 0x6f81ba8f44
+         1789436116.688  6437  6463 D jni_lib_merge: About to register 3 actual methods.
+         1789436116.691  6437  6459 W HWUI    : Failed to choose config with EGL_SWAP_BEHAVIOR_PRESERVED, retrying without...
+         1789436116.691  6437  6459 W HWUI    : Failed to initialize 101010-2 format, error = EGL_SUCCESS
+         1789436116.693  6437  6437 W HWUI    : Unknown dataspace 0
+--------- beginning of kernel
+         1789436116.694   222   222 I servicemanager: Caller(pid=6437,uid=10213,sid=u:r:untrusted_app:s0:c213,c256,c512,c768) Found android.hardware.graphics.allocator.IAllocator/default in device VINTF manifest.
+         1789436116.694   222   222 I servicemanager: Caller(pid=6437,uid=10213,sid=u:r:untrusted_app:s0:c213,c256,c512,c768) Found android.hardware.graphics.allocator.IAllocator/default in device VINTF manifest.
+         1789436116.697   222   222 I servicemanager: Caller(pid=6437,uid=10213,sid=u:r:untrusted_app:s0:c213,c256,c512,c768) Found mapper/ranchu in device VINTF manifest.
+         1789436116.698  6437  6437 D InsetsController: Setting requestedVisibleTypes to -12 (was -9)
+         1789436116.698  6437  6437 D InsetsController: Setting requestedVisibleTypes to -16 (was -12)
+         1789436116.699   681  2204 W WindowManager: Failed looking up window session=Session{bdf4ab4 6437:u0a10213} callers=com.android.server.wm.WindowManagerService.windowForClientLocked:6410 com.android.server.wm.Session.updateRequestedVisibleTypes:700 android.view.IWindowSession$Stub.onTransact:1023 
+         1789436116.702  6437  6463 I ExpoModulesCore: ✅ AppContext was initialized
+         1789436116.711  6437  6463 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Loading JS Bundle
+         1789436116.711  6437  6463 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): DevSupportManager.onNewReactContextCreated()
+         1789436116.712  6437  6463 W unknown:BridgelessReact: ReactHost{0}.startSurface(surfaceId = 0): Execute
+         1789436116.714  6457  6457 W screencap: Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: SurfaceFlingerAIDL
+         1789436116.714  6457  6457 W BpBinder: Linking to death on android.gui.ISurfaceComposer but there are no threads (yet?) listening to incoming transactions. See ProcessState::startThreadPool and ProcessState::setThreadPoolMaxThreadCount. Generally you should setup the binder threadpool before other initialization steps.
+         1789436116.714  6457  6457 W ProcessState: Extra binder thread started, but 0 threads requested. Do not use *startThreadPool when zero threads are requested.
+         1789436116.715   681  2209 D CoreBackPreview: Window{e805e20 u0 com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@f61f19e, mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}
+         1789436116.716   528   663 E HwcComposer: getLuts failed Status(-8, EX_SERVICE_SPECIFIC): '8: '
+         1789436116.716   528   663 E HWComposer: getLuts: getLuts failed for display 4619827259835644672: UNSUPPORTED (8)
+         1789436116.720   528   565 I BpBinder: onLastStrongRef automatically unlinking death recipients: 
+         1789436116.719   222   222 I servicemanager: Caller(pid=6457,uid=2000,sid=u:r:shell:s0) Found android.hardware.graphics.allocator.IAllocator/default in device VINTF manifest.
+         1789436116.720   222   222 I servicemanager: Caller(pid=6457,uid=2000,sid=u:r:shell:s0) Found android.hardware.graphics.allocator.IAllocator/default in device VINTF manifest.
+         1789436116.720   222   222 I servicemanager: Caller(pid=6457,uid=2000,sid=u:r:shell:s0) Found mapper/ranchu in device VINTF manifest.
+         1789436116.724  6437  6437 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789436116.725  6437  6437 I TerminalDualScreen: event=surface-host-snapshot-ready surfaceKey=PRIMARY generation=1 displayId=0 windowIdentity=primary orientation=portrait stableWidthPx=720 stableHeightPx=1280 currentWidthPx=720 currentHeightPx=1280 stableWidthLogical=360.0 stableHeightLogical=640.0 currentWidthLogical=360.0 currentHeightLogical=640.0 hardwareDensityDpi=320 hardwareDensity=2.0 hardwareScaledDensity=2.0 surfaceDensityDpi=320 surfaceDensity=2.0 source=android-display-context measurementContext=owner-decorView-layout
+         1789436116.725  6437  6437 W unknown:BridgelessReact: ReactHost{0}.ReactContext.onHostResume()
+         1789436116.725  6437  6437 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Executing ReactInstanceEventListeners
+         1789436116.726  6437  6437 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.uimanager.RootViewManager
+         1789436116.726  6437  6464 D nativeloader: Load /data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk!/lib/arm64-v8a/libworklets.so using class loader ns clns-9 (caller=/data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk): ok
+         1789436116.727  6437  6437 I TerminalDualScreen: event=primary-window-post-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789436116.727  6437  6464 D nativeloader: Load /data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk!/lib/arm64-v8a/libexpo-modules-core.so using class loader ns clns-9 (caller=/data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk): ok
+         1789436116.727  6437  6464 W BridgelessReactContext: [WARNING] Bridgeless doesn't support CatalystInstance. Accessing an API that's not part of the new architecture is not encouraged usage.
+         1789436116.731  6437  6464 I ExpoModulesCore: ✅ JSI interop was installed
+         1789436116.732  6437  6464 I ExpoModulesCore: ✅ Constants were exported
+         1789436116.734  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class expo.modules.kotlin.views.GroupViewManagerWrapper
+         1789436116.734  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.uimanager.LayoutShadowNode
+         1789436116.735  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.swmansion.reanimated.view.REASharedTransitionBoundaryManager
+         1789436116.736  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$DefsViewManager
+         1789436116.737  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.VirtualViewManager$RenderableShadowNode
+         1789436116.737  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeMergeManager
+         1789436116.738  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.safeareaview.ReactSafeAreaViewManager
+         1789436116.738  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$LinearGradientManager
+         1789436116.738  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeGaussianBlurManager
+         1789436116.739  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.progressbar.ReactProgressBarViewManager
+         1789436116.739  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.scroll.ReactHorizontalScrollViewManager
+         1789436116.740  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.text.ReactTextViewManager
+         1789436116.741  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeColorMatrixManager
+         1789436116.741  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.scroll.ReactHorizontalScrollContainerViewManager
+         1789436116.742  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$ClipPathViewManager
+         1789436116.743  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$SymbolManager
+         1789436116.743  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$PatternManager
+         1789436116.744  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeBlendManager
+         1789436116.744  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.view.ReactViewManager
+         1789436116.744  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.SvgViewManager
+         1789436116.745  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.switchview.ReactSwitchManager
+         1789436116.745  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$UseViewManager
+         1789436116.746  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$CircleViewManager
+         1789436116.746  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$TSpanViewManager
+         1789436116.747  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FilterManager
+         1789436116.747  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$MarkerManager
+         1789436116.749  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.modal.ReactModalHostManager
+         1789436116.750  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$ForeignObjectManager
+         1789436116.750  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$EllipseViewManager
+         1789436116.751  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$LineViewManager
+         1789436116.751  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeFloodManager
+         1789436116.752  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$GroupViewManager
+         1789436116.752  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$TextViewManager
+         1789436116.753  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$ImageViewManager
+         1789436116.753  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeCompositeManager
+         1789436116.754  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.image.ReactImageManager
+         1789436116.754  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$RadialGradientManager
+         1789436116.755  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$MaskManager
+         1789436116.755  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.unimplementedview.ReactUnimplementedViewManager
+         1789436116.756  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$RectViewManager
+         1789436116.756  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$TextPathViewManager
+         1789436116.757  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.scroll.ReactScrollViewManager
+         1789436116.757  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeOffsetManager
+         1789436116.758  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$PathViewManager
+         1789436116.758  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.drawer.ReactDrawerLayoutManager
+         1789436116.759  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.swiperefresh.SwipeRefreshLayoutManager
+         1789436116.759  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.textinput.ReactTextInputManager
+         1789436116.760  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.text.SelectableTextViewManager
+         1789436116.761  6437  6464 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.virtual.view.ReactVirtualViewManager
+         1789436116.768  6437  6464 I ReactNativeJS: Running "main"
+         1789436116.774  6437  6471 I TerminalDevice: event=device-info-read status=succeeded
+         1789436116.777  6437  6471 D nativeloader: Load /data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk!/lib/arm64-v8a/libmmkv.so using class loader ns clns-9 (caller=/data/app/~~cWdPpurC7tPHT0F2qTnD8Q==/com.anonymous.sampleterminal-HeJEOiQrbKN2Ug6w-Rf8Kg==/base.apk!classes2.dex): ok
+         1789436116.777  6437  6471 I MMKV    : current API level = 36, libc++_shared=0
+         1789436116.777  6437  6471 I MMKV    : <MMKV.cpp:182::initialize> version v2.4.2, page size 4096, arch arm64-v8a
+         1789436116.777  6437  6471 I MMKV    : <MMKV.cpp:193::initialize> armv8 AES instructions is supported
+         1789436116.777  6437  6471 I MMKV    : <MMKV.cpp:201::initialize> armv8 CRC32 instructions is supported
+         1789436116.777  6437  6471 I MMKV    : <MMKV.cpp:239::initializeMMKV> root dir: /data/data/com.anonymous.sampleterminal/files/mmkv
+         1789436116.777  6437  6471 I MMKV    : <MMKV_Android.cpp:383::enableDisableProcessMode> process mode check enable/disable: 0
+         1789436116.777  6437  6471 I MMKV    : Disable checkProcessMode()
+         1789436116.777  6437  6471 I MMKV    : <MemoryFile.cpp:103::open> open fd[121], flag 0x7, /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.v1.sample-terminal-android
+         1789436116.777  6437  6471 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x727cab7000], oldPtr [0x0], [/data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.v1.sample-terminal-android]
+         1789436116.777  6437  6471 I MMKV    : <MemoryFile.cpp:109::close> closing fd[121], /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.v1.sample-terminal-android
+         1789436116.777  6437  6471 I MMKV    : <MemoryFile.cpp:103::open> open fd[121], flag 0x7, /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.v1.sample-terminal-android.crc
+         1789436116.777  6437  6471 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x727cab6000], oldPtr [0x0], [/data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.v1.sample-terminal-android.crc]
+         1789436116.778  6437  6471 I MMKV    : <MemoryFile.cpp:103::open> open fd[122], flag 0x7, /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.v1.sample-terminal-android
+         1789436116.778  6437  6471 I MMKV    : <MemoryFile.cpp:109::close> closing fd[122], /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.v1.sample-terminal-android
+         1789436116.778  6437  6471 I MMKV    : <MMKV_IO.cpp:293::loadMetaInfoAndCheck> meta file [catering-v2s.terminal.state.v1.sample-terminal-android] has flag [0]
+         1789436116.778  6437  6471 I MMKV    : <MMKV_IO.cpp:96::loadFromFile> loading [catering-v2s.terminal.state.v1.sample-terminal-android] with 1651 actual size, file size 4096, InterProcess 0, meta info version:4
+         1789436116.778  6437  6471 I MMKV    : <MMKV_IO.cpp:101::loadFromFile> loading [catering-v2s.terminal.state.v1.sample-terminal-android] with crc 3338116455 sequence 1 version 4
+         1789436116.778  6437  6471 I MMKV    : <MMKV_IO.cpp:151::loadFromFile> loaded [catering-v2s.terminal.state.v1.sample-terminal-android] with 13 key-values
+         1789436116.778  6437  6471 I TerminalPersistKv: event=persist-kv operation=listKeys mode=plain status=succeeded
+         1789436116.779  6437  6471 I TerminalPersistKv: event=persist-kv operation=readMany mode=plain status=succeeded
+         1789436116.779  6437  6471 I MMKV    : <MemoryFile.cpp:103::open> open fd[122], flag 0x7, /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-terminal-android
+         1789436116.779  6437  6471 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x727cab5000], oldPtr [0x0], [/data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-terminal-android]
+         1789436116.779  6437  6471 I MMKV    : <MemoryFile.cpp:109::close> closing fd[122], /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-terminal-android
+         1789436116.779  6437  6471 I MMKV    : <MemoryFile.cpp:103::open> open fd[122], flag 0x7, /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-terminal-android.crc
+         1789436116.779  6437  6471 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x727aaa2000], oldPtr [0x0], [/data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-terminal-android.crc]
+         1789436116.780  6437  6471 I MMKV    : <MemoryFile.cpp:103::open> open fd[123], flag 0x7, /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-terminal-android
+         1789436116.780  6437  6471 I MMKV    : <MemoryFile.cpp:109::close> closing fd[123], /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-terminal-android
+         1789436116.780  6437  6471 I MMKV    : <MMKV_IO.cpp:293::loadMetaInfoAndCheck> meta file [catering-v2s.terminal.state.protected.v1.sample-terminal-android] has flag [0]
+         1789436116.780  6437  6471 I MMKV    : <MMKV_IO.cpp:96::loadFromFile> loading [catering-v2s.terminal.state.protected.v1.sample-terminal-android] with 59 actual size, file size 4096, InterProcess 0, meta info version:4
+         1789436116.780  6437  6471 I MMKV    : <MMKV_IO.cpp:101::loadFromFile> loading [catering-v2s.terminal.state.protected.v1.sample-terminal-android] with crc 4109864708 sequence 1 version 4
+         1789436116.780  6437  6471 I MMKV    : <MMKV_IO.cpp:151::loadFromFile> loaded [catering-v2s.terminal.state.protected.v1.sample-terminal-android] with 1 key-values
+         1789436116.780  6437  6471 I TerminalPersistKv: event=persist-kv operation=listKeys mode=protected status=succeeded
+         1789436116.780  6437  6471 I TerminalPersistKv: event=persist-kv operation=readMany mode=protected status=succeeded
+         1789436116.783  6437  6464 W ReactNativeJS: { timestamp: 1789436116783,
+         1789436116.783  6437  6464 W ReactNativeJS:   level: 'warn',
+         1789436116.783  6437  6464 W ReactNativeJS:   category: 'display-context.power-bridge',
+         1789436116.783  6437  6464 W ReactNativeJS:   event: 'power-bridge.subscription-unavailable',
+         1789436116.783  6437  6464 W ReactNativeJS:   message: 'Power status subscription was unavailable',
+         1789436116.783  6437  6464 W ReactNativeJS:   scope: 
+         1789436116.783  6437  6464 W ReactNativeJS:    { moduleName: 'platform-ports',
+         1789436116.783  6437  6464 W ReactNativeJS:      layer: 'kernel',
+         1789436116.783  6437  6464 W ReactNativeJS:      subsystem: undefined,
+         1789436116.783  6437  6464 W ReactNativeJS:      component: undefined },
+         1789436116.783  6437  6464 W ReactNativeJS:   context: 
+         1789436116.783  6437  6464 W ReactNativeJS:    { requestId: undefined,
+         1789436116.783  6437  6464 W ReactNativeJS:      commandId: undefined,
+         1789436116.783  6437  6464 W ReactNativeJS:      commandName: undefined,
+         1789436116.783  6437  6464 W ReactNativeJS:      sessionId: undefined,
+         1789436116.783  6437  6464 W ReactNativeJS:      connectionId: undefined,
+         1789436116.783  6437  6464 W ReactNativeJS:      nodeId: 'nod_mu2028fb_7x7i4u9ryfo7hp9i',
+         1789436116.783  6437  6464 W ReactNativeJS:      peerNodeId: undefined },
+         1789436116.783  6437  6464 W ReactNativeJS:   data: 
+         1789436116.783  6437  6464 W ReactNativeJS:    { status: 'unavailable',
+         1789436116.783  6437  6464 W ReactNativeJS:      capability: 'subscribePowerStatus',
+         1789436116.783  6437  6464 W ReactNativeJS:      reason: 'ADAPTER_NOT_INJECTED' },
+         1789436116.783  6437  6464 W ReactNativeJS:   error: undefined,
+         1789436116.783  6437  6464 W ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789436116.783  6437  6437 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789436116.785  6437  6471 I TerminalDevice: event=display-info-entry displayIndex=0 displayId=0 name=Built-in_Screen state=2 flags=16515 rotation=0 appWidthPx=720 appHeightPx=1280 densityDpi=320 density=2.0 scaledDensity=2.0 realWidthPx=720 realHeightPx=1280 modeWidthPx=720 modeHeightPx=1280
+         1789436116.785  6437  6471 I TerminalDevice: event=display-info-read status=succeeded displayCount=1
+         1789436116.788  6437  6464 I ReactNativeJS: { timestamp: 1789436116786,
+         1789436116.788  6437  6464 I ReactNativeJS:   level: 'info',
+         1789436116.788  6437  6464 I ReactNativeJS:   category: 'startup.runtime-facts',
+         1789436116.788  6437  6464 I ReactNativeJS:   event: 'sample.runtime-facts-resolved',
+         1789436116.788  6437  6464 I ReactNativeJS:   message: 'Sample runtime facts resolved',
+         1789436116.788  6437  6464 I ReactNativeJS:   scope: 
+         1789436116.788  6437  6464 I ReactNativeJS:    { moduleName: 'platform-ports',
+         1789436116.788  6437  6464 I ReactNativeJS:      layer: 'kernel',
+         1789436116.788  6437  6464 I ReactNativeJS:      subsystem: undefined,
+         1789436116.788  6437  6464 I ReactNativeJS:      component: undefined },
+         1789436116.788  6437  6464 I ReactNativeJS:   context: undefined,
+         1789436116.788  6437  6464 I ReactNativeJS:   data: 
+         1789436116.788  6437  6464 I ReactNativeJS:    { source: 'ui.base.console-assembly.createConsoleAssembly',
+         1789436116.788  6437  6464 I ReactNativeJS:      appName: 'sample-console',
+         1789436116.788  6437  6464 I ReactNativeJS:      debugEnabled: false,
+         1789436116.788  6437  6464 I ReactNativeJS:      debugSource: 'default',
+         1789436116.788  6437  6464 I ReactNativeJS:      deviceIdentityAvailable: true,
+         1789436116.788  6437  6464 I ReactNativeJS:      capabilityDescriptorCount: 10 },
+         1789436116.788  6437  6464 I ReactNativeJS:   error: undefined,
+         1789436116.788  6437  6464 I ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789436116.791  6437  6464 W HWUI    : Image decoding logging dropped!
+         1789436116.791  6437  6464 W HWUI    : Image decoding logging dropped!
+         1789436116.801   233   233 I logd    : logdr: UID=2000 GID=2000 PID=6477 n tail=0 logMask=99 pid=0 start=0ns deadline=0ns
+         1789436116.808  6437  6437 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789436116.809  6437  6464 I ReactNativeJS: { timestamp: 1789436116808,
+         1789436116.809  6437  6464 I ReactNativeJS:   level: 'info',
+         1789436116.809  6437  6464 I ReactNativeJS:   category: 'startup.ready-candidate',
+         1789436116.809  6437  6464 I ReactNativeJS:   event: 'startup.ready-candidate',
+         1789436116.809  6437  6464 I ReactNativeJS:   message: 'Resolved PRIMARY screen part completed its first layout',
+         1789436116.809  6437  6464 I ReactNativeJS:   scope: 
+         1789436116.809  6437  6464 I ReactNativeJS:    { moduleName: 'platform-ports',
+         1789436116.809  6437  6464 I ReactNativeJS:      layer: 'kernel',
+         1789436116.809  6437  6464 I ReactNativeJS:      subsystem: undefined,
+         1789436116.809  6437  6464 I ReactNativeJS:      component: undefined },
+         1789436116.809  6437  6464 I ReactNativeJS:   context: undefined,
+         1789436116.809  6437  6464 I ReactNativeJS:   data: 
+         1789436116.809  6437  6464 I ReactNativeJS:    { surfaceKey: 'PRIMARY',
+         1789436116.809  6437  6464 I ReactNativeJS:      displayIndex: 0,
+         1789436116.809  6437  6464 I ReactNativeJS:      displayMode: 'PRIMARY',
+         1789436116.809  6437  6464 I ReactNativeJS:      containerKey: 'main',
+         1789436116.809  6437  6464 I ReactNativeJS:      partKey: 'sample.auth.login',
+         1789436116.809  6437  6464 I ReactNativeJS:      layoutWidth: 360,
+         1789436116.809  6437  6464 I ReactNativeJS:      layoutHeight: 640,
+         1789436116.809  6437  6464 I ReactNativeJS:      hostWidth: 360,
+         1789436116.809  6437  6464 I ReactNativeJS:      hostHeight: 640,
+         1789436116.809  6437  6464 I ReactNativeJS:      source: 'ui-base-render.ScreenReadyBoundary' },
+         1789436116.809  6437  6464 I ReactNativeJS:   error: undefined,
+         1789436116.809  6437  6464 I ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789436116.811  6437  6464 I ReactNativeJS: { timestamp: 1789436116811,
+         1789436116.811  6437  6464 I ReactNativeJS:   level: 'info',
+         1789436116.811  6437  6464 I ReactNativeJS:   category: 'startup.ready',
+         1789436116.811  6437  6464 I ReactNativeJS:   event: 'startup.ready',
+         1789436116.811  6437  6464 I ReactNativeJS:   message: 'Primary surface readiness accepted by sample console',
+         1789436116.811  6437  6464 I ReactNativeJS:   scope: 
+         1789436116.811  6437  6464 I ReactNativeJS:    { moduleName: 'platform-ports',
+         1789436116.811  6437  6464 I ReactNativeJS:      layer: 'kernel',
+         1789436116.811  6437  6464 I ReactNativeJS:      subsystem: undefined,
+         1789436116.811  6437  6464 I ReactNativeJS:      component: undefined },
+         1789436116.811  6437  6464 I ReactNativeJS:   context: undefined,
+         1789436116.811  6437  6464 I ReactNativeJS:   data: 
+         1789436116.811  6437  6464 I ReactNativeJS:    { surfaceKey: 'PRIMARY',
+         1789436116.811  6437  6464 I ReactNativeJS:      displayIndex: 0,
+         1789436116.811  6437  6464 I ReactNativeJS:      readyPartKey: 'sample.auth.login',
+         1789436116.811  6437  6464 I ReactNativeJS:      writer: 'ui.base.console-assembly' },
+         1789436116.811  6437  6464 I ReactNativeJS:   error: undefined,
+         1789436116.811  6437  6464 I ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789436116.811  6437  6464 I ReactNativeJS: { timestamp: 1789436116811,
+         1789436116.811  6437  6464 I ReactNativeJS:   level: 'info',
+         1789436116.811  6437  6464 I ReactNativeJS:   category: 'startup.complete',
+         1789436116.811  6437  6464 I ReactNativeJS:   event: 'startup.complete',
+         1789436116.811  6437  6464 I ReactNativeJS:   message: 'Terminal startup completed',
+         1789436116.811  6437  6464 I ReactNativeJS:   scope: 
+         1789436116.811  6437  6464 I ReactNativeJS:    { moduleName: 'platform-ports',
+         1789436116.811  6437  6464 I ReactNativeJS:      layer: 'kernel',
+         1789436116.811  6437  6464 I ReactNativeJS:      subsystem: undefined,
+         1789436116.811  6437  6464 I ReactNativeJS:      component: undefined },
+         1789436116.811  6437  6464 I ReactNativeJS:   context: undefined,
+         1789436116.811  6437  6464 I ReactNativeJS:   data: 
+         1789436116.811  6437  6464 I ReactNativeJS:    { startupRunId: 'run_mu2028fb_7o0eorhge764amxw',
+         1789436116.811  6437  6464 I ReactNativeJS:      appName: 'sample-console',
+         1789436116.811  6437  6464 I ReactNativeJS:      surfaceProvenance: { surfaceKey: 'PRIMARY', displayIndex: 0, surfaceForm: 'mobile' },
+         1789436116.811  6437  6464 I ReactNativeJS:      writer: 'ui.base.console-assembly' },
+         1789436116.811  6437  6464 I ReactNativeJS:   error: undefined,
+         1789436116.811  6437  6464 I ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789436116.813  6437  6464 I ReactNativeJS: { timestamp: 1789436116813,
+         1789436116.813  6437  6464 I ReactNativeJS:   level: 'info',
+         1789436116.813  6437  6464 I ReactNativeJS:   category: 'startup.ready-hidden',
+         1789436116.813  6437  6464 I ReactNativeJS:   event: 'startup.ready-hidden',
+         1789436116.813  6437  6464 I ReactNativeJS:   message: 'Native loading hidden after resolved PRIMARY screen layout',
+         1789436116.813  6437  6464 I ReactNativeJS:   scope: 
+         1789436116.813  6437  6464 I ReactNativeJS:    { moduleName: 'platform-ports',
+         1789436116.813  6437  6464 I ReactNativeJS:      layer: 'kernel',
+         1789436116.813  6437  6464 I ReactNativeJS:      subsystem: undefined,
+         1789436116.813  6437  6464 I ReactNativeJS:      component: undefined },
+         1789436116.813  6437  6464 I ReactNativeJS:   context: undefined,
+         1789436116.813  6437  6464 I ReactNativeJS:   data: 
+         1789436116.813  6437  6464 I ReactNativeJS:    { surfaceKey: 'PRIMARY',
+         1789436116.813  6437  6464 I ReactNativeJS:      displayIndex: 0,
+         1789436116.813  6437  6464 I ReactNativeJS:      displayMode: 'PRIMARY',
+         1789436116.813  6437  6464 I ReactNativeJS:      partKey: 'sample.auth.login',
+         1789436116.813  6437  6464 I ReactNativeJS:      source: 'ui-base-render.ScreenReadyBoundary' },
+         1789436116.813  6437  6464 I ReactNativeJS:   error: undefined,
+         1789436116.813  6437  6464 I ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789436116.815  1091  1201 V WindowManagerShell: Transition animation finished (aborted=false), notifying core (#180) android.os.BinderProxy@4ed376a@0
+         1789436116.816   681   706 V WindowManager: Finish Transition (#180): created at 09-15 10:35:16.481 collect-started=0.031ms request-sent=5.788ms started=8.512ms ready=28.241ms sent=29.209ms commit=20.884ms finished=334.724ms
+         1789436116.817  1091  1201 V WindowManagerShell: Track 0 became idle
+         1789436116.817  1091  1201 V WindowManagerShell: All active transition animations finished
+         1789436116.816  1414  1414 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+         1789436116.825  6483  6483 W dumpsys : Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: window
+         1789436116.831  1414  1414 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+         1789436116.855   681   706 I ActivityTaskManager: Displayed com.anonymous.sampleterminal/.MainActivity for user 0: +374ms
+         1789436116.855  6486  6486 W dumpsys : Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: activity
+         1789436116.856  1414  1414 D BaseDepthController: setSurface:
+         1789436116.856  1414  1414 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+         1789436116.856  1414  1414 D BaseDepthController: 	mBaseSurface: null
+         1789436116.856  1414  1414 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+         1789436116.859  1414  1414 D StateManager: goToState - fromState: Normal, toState: Normal, partial trace:
+         1789436116.859  1414  1414 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 43e00d9cd0eb17b3d9dd30fc1741b1c71445c4c0f7c8c9b81300265c86c5b873:4)
+         1789436116.859  1414  1414 D StateManager: 	at com.android.launcher3.statemanager.StateManager.moveToRestState(go/retraceme 43e00d9cd0eb17b3d9dd30fc1741b1c71445c4c0f7c8c9b81300265c86c5b873:1)
+         1789436116.859  1414  1414 D StateManager: 	at com.android.launcher3.statemanager.StatefulActivity.onStop(go/retraceme 43e00d9cd0eb17b3d9dd30fc1741b1c71445c4c0f7c8c9b81300265c86c5b873:34)
+         1789436116.859  1414  1414 D StatsLog: LAUNCHER_ONSTOP
+         1789436116.860   681  2209 I AppWidgetServiceImpl: setAppWidgetHidden() 0
+         1789436116.860  1414  1414 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+         1789436116.861  6437  6437 D SplashScreenView: Building from parcel drawable: android.graphics.drawable.BitmapDrawable@af5f0e5
+         1789436116.861  6437  6437 D SplashScreenView: Build android.window.SplashScreenView{8fa66b V.E...... ......ID 0,0-0,0}
+         1789436116.861  6437  6437 D SplashScreenView: Icon: view: androidx.appcompat.widget.AppCompatImageView{3a0a5c8 V.ED..... ......I. 0,0-0,0 #1020542 android:id/splashscreen_icon_view} drawable: android.graphics.drawable.BitmapDrawable@af5f0e5 size: 384
+         1789436116.861  6437  6437 D SplashScreenView: Branding: view: android.view.View{e99b661 G.ED..... ......I. 0,0-0,0 #1020541 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+         1789436116.866   681  1055 D BackgroundInstallControlService: Package event received: 0
+         1789436116.866  6437  6437 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789436116.870   457   498 I netd    : tetherGetStats() -> {[]} <0.54ms>
+         1789436116.884   681   813 I ImeTracker: com.anonymous.sampleterminal:49cab74a: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+         1789436116.884   589   589 W IPCThreadState: Sending oneway calls to frozen process.
+         1789436116.885  6437  6437 D InsetsController: hide(ime(), fromIme=false)
+         1789436116.885  6437  6437 I ImeTracker: com.anonymous.sampleterminal:49cab74a: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+         1789436116.886   681  2209 I ImeTracker: system_server:b715eee3: onRequestHide at ORIGIN_SERVER reason IME_REQUESTED_CHANGED_LISTENER fromUser false
+         1789436116.887   681   709 I ImeTracker: system_server:b715eee3: onCancelled at PHASE_SERVER_SHOULD_HIDE
+         1789436116.901  1091  1238 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda13@a1fb9c5
+         1789436116.902   681  2204 D CoreBackPreview: Window{1a0af8d u0 Splash Screen com.anonymous.sampleterminal}: Setting back callback null
+         1789436116.919  2419  2434 W gle.android.tts: Reducing the number of considered missed Gc histogram windows from 5564 to 100
+         1789436117.132  6437  6476 W InteractionJankMonitor: Initializing without READ_DEVICE_CONFIG permission. enabled=true, interval=1, missedFrameThreshold=3, frameTimeThreshold=64, package=com.anonymous.sampleterminal

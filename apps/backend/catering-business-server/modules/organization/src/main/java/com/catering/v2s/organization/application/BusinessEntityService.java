@@ -112,7 +112,7 @@ public class BusinessEntityService
         BusinessEntityCommandReceiptService receipts = suppliedReceipts == null
                 ? new BusinessEntityCommandReceiptService(jdbc, time)
                 : suppliedReceipts;
-        BusinessEntityTaskReadService reads = new BusinessEntityTaskReadService(jdbc, nodes);
+        BusinessEntityTaskReadService reads = new BusinessEntityTaskReadService(jdbc, definitions, nodes);
         BusinessBrandService brand = new BusinessBrandService(jdbc, time, definitions, receipts, reads);
         BusinessTenantService tenant = new BusinessTenantService(jdbc, time, definitions, receipts, reads);
         HeadCompanyService headCompany = new HeadCompanyService(jdbc, time, definitions, receipts, reads);
@@ -1111,6 +1111,30 @@ public class BusinessEntityService
         return reads.pageBrands(workspaceUuid, groupWorkspaceKey, queryText, status, sort, direction, page, pageSize);
     }
 
+    public BrandPage pageBrands(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String queryText,
+            String status,
+            String sort,
+            String direction,
+            int page,
+            int pageSize,
+            String extensionFilters,
+            String definitionRevision) {
+        return reads.pageBrands(
+                workspaceUuid,
+                groupWorkspaceKey,
+                queryText,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                extensionFilters,
+                definitionRevision);
+    }
+
     public EntityPage pageEntities(
             String entityType,
             UUID workspaceUuid,
@@ -1137,6 +1161,38 @@ public class BusinessEntityService
                 direction,
                 page,
                 pageSize);
+    }
+
+    public EntityPage pageEntities(
+            String entityType,
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String name,
+            String code,
+            String legalName,
+            String unifiedSocialCreditCode,
+            String status,
+            String sort,
+            String direction,
+            int page,
+            int pageSize,
+            String extensionFilters,
+            String definitionRevision) {
+        return reads.pageEntities(
+                entityType,
+                workspaceUuid,
+                groupWorkspaceKey,
+                name,
+                code,
+                legalName,
+                unifiedSocialCreditCode,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                extensionFilters,
+                definitionRevision);
     }
 
     public BusinessEntityPage pageBusinessEntities(
@@ -1167,6 +1223,38 @@ public class BusinessEntityService
                 pageSize);
     }
 
+    public BusinessEntityPage pageBusinessEntities(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String entityType,
+            String name,
+            String code,
+            String legalName,
+            String unifiedSocialCreditCode,
+            String status,
+            String sort,
+            String direction,
+            int page,
+            int pageSize,
+            String extensionFilters,
+            String definitionRevision) {
+        return reads.pageBusinessEntities(
+                workspaceUuid,
+                groupWorkspaceKey,
+                entityType,
+                name,
+                code,
+                legalName,
+                unifiedSocialCreditCode,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                extensionFilters,
+                definitionRevision);
+    }
+
     public BusinessEntityPageItem requireBusinessEntity(
             UUID workspaceUuid, String groupWorkspaceKey, UUID entityId) {
         return reads.requireBusinessEntity(workspaceUuid, groupWorkspaceKey, entityId);
@@ -1181,13 +1269,28 @@ public class BusinessEntityService
 
     public record HeadCompanyBrandAuthorization(UUID brandId, long authorizedAtEpochMillis) {}
 
-    public record BrandPage(List<OrganizationEntityReadback> items, long total, int page, int pageSize) {}
+    public record BrandPage(
+            List<OrganizationEntityReadback> items, long total, int page, int pageSize, Long definitionRevision) {
+        public BrandPage(List<OrganizationEntityReadback> items, long total, int page, int pageSize) {
+            this(items, total, page, pageSize, null);
+        }
+    }
 
-    public record EntityPage(List<OrganizationEntityReadback> items, long total, int page, int pageSize) {}
+    public record EntityPage(
+            List<OrganizationEntityReadback> items, long total, int page, int pageSize, Long definitionRevision) {
+        public EntityPage(List<OrganizationEntityReadback> items, long total, int page, int pageSize) {
+            this(items, total, page, pageSize, null);
+        }
+    }
 
     public record BusinessEntityPageItem(String entityType, OrganizationEntityReadback entity) {}
 
-    public record BusinessEntityPage(List<BusinessEntityPageItem> items, long total, int page, int pageSize) {}
+    public record BusinessEntityPage(
+            List<BusinessEntityPageItem> items, long total, int page, int pageSize, Long definitionRevision) {
+        public BusinessEntityPage(List<BusinessEntityPageItem> items, long total, int page, int pageSize) {
+            this(items, total, page, pageSize, null);
+        }
+    }
 
     public static class OrganizationNotFoundException extends RuntimeException {
         public OrganizationNotFoundException() {}

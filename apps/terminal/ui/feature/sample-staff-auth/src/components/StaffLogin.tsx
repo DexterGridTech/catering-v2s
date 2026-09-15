@@ -17,7 +17,7 @@ import {
 import {InputScrollArea, useInputField, useInputSnapshot} from '@catering-v2s/ui-base-input'
 import {loginCommand} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {authSystemFailureObservedCommand} from '../features/commands/commands'
-import {classifyRequestResult} from './requestOutcome'
+import {classifyRequestResult} from '@catering-v2s/ui-base-render'
 import {operatorNameVariable} from '../features/variables/variables'
 
 const operatorNameFieldId = 'sample.auth.login:operator-name'

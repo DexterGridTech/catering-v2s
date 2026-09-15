@@ -120,6 +120,10 @@ try {
       'require',
       source => `${source}\nconst uiPackage = require('@catering-v2s/ui-base-render')\nvoid uiPackage\n`,
     ],
+    [
+      'import-equals',
+      source => `${source}\nimport uiPackage = require('@catering-v2s/ui-base-render')\nvoid uiPackage\n`,
+    ],
   ]
   for (const [label, mutate] of reverseDirectionMutations) {
     withMutation(
@@ -284,6 +288,118 @@ try {
       assertVector(report, ['p-5a-direction'])
       assert.match(rule(report, 'p-5a-direction').error, /reverse dependency adapter->ui/)
       console.log(`TERMINAL_LAYERING_RED_P5A_ADAPTER_UI=${rule(report, 'p-5a-direction').status}`)
+    },
+  )
+
+  const assemblyBaseFile = packageFixture(
+    'apps/terminal/assembly/base/android',
+    'export const baseProbe = 1\n',
+  )
+  const samePlatformAdapterFile = packageFixture(
+    'apps/terminal/adapter/android/native-loading',
+    'export const nativeLoadingProbe = 1\n',
+  )
+  const crossPlatformAdapterFile = packageFixture(
+    'apps/terminal/adapter/electron/native-loading',
+    'export const nativeLoadingProbe = 1\n',
+  )
+  const devHostRoot = path.dirname(path.dirname(devHostFile))
+  const devHostPackageJson = path.join(devHostRoot, 'package.json')
+  const devHostTsconfig = path.join(devHostRoot, 'tsconfig.json')
+  const devHostRootConfig = path.join(devHostRoot, 'metro.config.cjs')
+  fs.writeFileSync(devHostTsconfig, '{}\n')
+  fs.writeFileSync(devHostRootConfig, 'module.exports = {}\n')
+
+  withMutation(
+    assemblyBaseFile,
+    source => `${source}\nimport '@catering-v2s/adapter-android-native-loading'\n`,
+    report => {
+      assertVector(report)
+      console.log('TERMINAL_LAYERING_ALLOWED_ASSEMBLY_BASE_SAME_PLATFORM_ADAPTER=PASS')
+    },
+  )
+  withMutation(
+    assemblyBaseFile,
+    source => `${source}\nimport '@catering-v2s/adapter-electron-native-loading'\n`,
+    report => {
+      assertVector(report)
+      console.log('TERMINAL_LAYERING_ALLOWED_ASSEMBLY_BASE_CROSS_PLATFORM_DELEGATED_TO_SKELETON=PASS')
+    },
+  )
+
+  const baseFeatureMutations = [
+    [
+      'value-import',
+      source => `${source}\nimport '@catering-v2s/ui-feature-fixture-auth'\n`,
+    ],
+    [
+      'type-only-import',
+      source => `${source}\nimport type {StateJsonValue} from '@catering-v2s/ui-feature-fixture-auth'\nvoid (0 as unknown as StateJsonValue)\n`,
+    ],
+    [
+      're-export',
+      source => `${source}\nexport {hostProbe as featureProbe} from '@catering-v2s/ui-feature-fixture-auth'\n`,
+    ],
+    [
+      'dynamic-import',
+      source => `${source}\nconst featurePackage = import('@catering-v2s/ui-feature-fixture-auth')\nvoid featurePackage\n`,
+    ],
+    [
+      'require',
+      source => `${source}\nconst featurePackage = require('@catering-v2s/ui-feature-fixture-auth')\nvoid featurePackage\n`,
+    ],
+    [
+      'import-equals',
+      source => `${source}\nimport featurePackage = require('@catering-v2s/ui-feature-fixture-auth')\nvoid featurePackage\n`,
+    ],
+    [
+      'relative-import',
+      source => `${source}\nimport '../../../feature/fixture-auth/src/index'\n`,
+    ],
+  ]
+  for (const [label, mutate] of baseFeatureMutations) {
+    withMutation(
+      devHostFile,
+      mutate,
+      report => {
+        assertVector(report)
+        console.log(`TERMINAL_LAYERING_ALLOWED_BASE_FEATURE_${label.toUpperCase().replaceAll('-', '_')}_DELEGATED_TO_SKELETON=PASS`)
+      },
+    )
+  }
+  withMutation(
+    devHostRootConfig,
+    source => `${source}\nconst featurePackage = require('@catering-v2s/ui-feature-fixture-auth')\nvoid featurePackage\n`,
+    report => {
+      assertVector(report)
+      console.log('TERMINAL_LAYERING_ALLOWED_BASE_FEATURE_ROOT_CONFIG_DELEGATED_TO_SKELETON=PASS')
+    },
+  )
+  withMutation(
+    devHostPackageJson,
+    source => `${JSON.stringify({
+      ...JSON.parse(source),
+      dependencies: {'@catering-v2s/ui-feature-fixture-auth': 'workspace:*'},
+    }, null, 2)}\n`,
+    report => {
+      assertVector(report)
+      console.log('TERMINAL_LAYERING_ALLOWED_BASE_FEATURE_PACKAGE_DELEGATED_TO_SKELETON=PASS')
+    },
+  )
+  withMutation(
+    devHostTsconfig,
+    source => `${JSON.stringify({references: [{path: '../../feature/fixture-auth'}]}, null, 2)}\n`,
+    report => {
+      assertVector(report)
+      console.log('TERMINAL_LAYERING_ALLOWED_BASE_FEATURE_TSCONFIG_REFERENCE_DELEGATED_TO_SKELETON=PASS')
+    },
+  )
+  withMutation(
+    devHostTsconfig,
+    source => `${JSON.stringify({compilerOptions: {paths: {'@feature/*': ['../../feature/fixture-auth/src/*']}}}, null, 2)}\n`,
+    report => {
+      assertVector(report)
+      console.log('TERMINAL_LAYERING_ALLOWED_BASE_FEATURE_TSCONFIG_PATH_DELEGATED_TO_SKELETON=PASS')
     },
   )
 

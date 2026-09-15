@@ -2,8 +2,11 @@ import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {createElement, cloneElement, type ReactElement} from 'react'
 import {TextInput} from 'react-native'
 import {describe, expect, it} from 'vitest'
-import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort} from '@catering-v2s/kernel-base-platform-ports'
+import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort, NativeLoadingCapability} from '@catering-v2s/ui-base-test-support'
+import {createRequestId} from '@catering-v2s/kernel-base-contracts'
 import type {CommandDispatchResult, Runtime} from '@catering-v2s/kernel-base-runtime'
+import {createDisplayContextModule} from '@catering-v2s/kernel-base-display-context'
+import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {
   createRendererCatalog,
   createRenderRuntimeFacts,
@@ -11,11 +14,12 @@ import {
 } from '@catering-v2s/ui-base-render'
 import {InputSurfaceFrame} from '@catering-v2s/ui-base-input'
 import type {RenderProviderProps} from '@catering-v2s/ui-base-render'
-import {createUiCatalog} from '@catering-v2s/kernel-base-ui-state'
+import {createUiCatalog, createUiStateModule, selectLayers} from '@catering-v2s/kernel-base-ui-state'
 import {loginCommand} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {
   sampleStaffAuthAssembly,
 } from '../src/index'
+import {createSampleStaffAuthModule} from '../src/application/module'
 import {AuthSystemNotice} from '../src/components/AuthSystemNotice'
 import {StaffLogin} from '../src/components/StaffLogin'
 import {
@@ -24,9 +28,15 @@ import {
   authSystemFailureObservedCommand,
 } from '../src/features/commands/commands'
 import {operatorNameVariable} from '../src/features/variables/variables'
+import {createTestRuntime} from '../../../../kernel/feature/sample-staff-session/test/support'
+import {releaseRuntimeForTest} from '../../../../kernel/base/runtime/src/testing'
 
 type RuntimeStateRoot = ReturnType<Runtime['getState']>
-const RenderProvider = ActualRenderProvider as unknown as (props: Omit<RenderProviderProps, 'runtimeFacts'> & Readonly<{
+const nativeLoadingCapability: NativeLoadingCapability = Object.freeze({
+  targetPhysicalSurface: Object.freeze({surfaceKey: 'PRIMARY', displayIndex: 0}),
+  hideOnce: async reason => Object.freeze({hidden: true, alreadyHidden: false, reason}),
+})
+const RenderProvider = ActualRenderProvider as unknown as (props: Omit<RenderProviderProps, 'runtimeFacts' | 'nativeLoadingCapability'> & Readonly<{
   readonly runtimeFacts?: RenderProviderProps['runtimeFacts']
 }>) => ReactElement | null
 type TestInstanceQuery = Readonly<{
@@ -83,6 +93,7 @@ const mount = (
         deviceIdentity: {available: false, deviceId: null},
         platformPortCapabilities: [],
       }),
+      nativeLoadingCapability,
     }))
   })
   const frames = renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'})
@@ -312,5 +323,36 @@ describe('sample staff auth UI feature', () => {
 
     expectTextValue(renderer, 'sample.auth.system-notice:message', '操作没有完成，请重试')
     act(() => { renderer.unmount() })
+  })
+
+  it('treats a repeated system failure observation as an idempotent existing notice', async () => {
+    const catalog = createUiCatalog(sampleStaffAuthAssembly.parts.map(part => part.catalogEntry))
+    const loggerEvents: LogEvent[] = []
+    const runtime = createTestRuntime([
+      createDisplayContextModule(),
+      createUiStateModule({catalog, variables: sampleStaffAuthAssembly.variables, surfaceForm: 'mobile'}),
+      createSampleStaffSessionModule(),
+      createSampleStaffAuthModule(),
+    ], undefined, undefined, loggerEvents)
+    try {
+      await runtime.start()
+      const first = await runtime.dispatchCommand(authSystemFailureObservedCommand, {operation: 'login'}, {requestId: createRequestId()})
+      const second = await runtime.dispatchCommand(authSystemFailureObservedCommand, {operation: 'login'}, {requestId: createRequestId()})
+      expect(first.status).toBe('completed')
+      expect(second.status).toBe('completed')
+      expect(selectLayers(runtime.getState(), 'PRIMARY')).toEqual([
+        expect.objectContaining({
+          layerId: 'sample.auth.system-notice',
+          partKey: 'sample.auth.system-notice',
+          persistence: 'ephemeral',
+        }),
+      ])
+      expect(loggerEvents.some(event => event.event === 'ui-state.layer.duplicate-rejected')).toBe(false)
+      expect(runtime.journal.list().some(event =>
+        event.kind === 'command.completed' && event.status === 'error' && event.commandName === 'kernel.base.ui-state.open-layer',
+      )).toBe(false)
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
   })
 })

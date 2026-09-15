@@ -1,18 +1,23 @@
 import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime'
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
 import type {UiVariableDeclaration} from '@catering-v2s/kernel-base-ui-state'
-import {createSampleStaffAuthModule} from '../application/module'
-import {parts} from '../parts/parts'
+import {createFeatureAssembly, type FeatureAssembly} from '@catering-v2s/ui-base-feature-assembly'
+import {createSampleStaffAuthModuleInput} from '../application/module'
+import {layerDismissals, parts} from '../parts/parts'
 import {variables} from '../features/variables/variables'
 
-export type StaffAuthAssembly = Readonly<{
-  readonly parts: typeof parts
-  readonly variables: readonly UiVariableDeclaration<StateJsonValue>[]
-  readonly createModule: () => RuntimeModule
-}>
+export type StaffAuthAssembly = FeatureAssembly<
+  typeof parts,
+  readonly UiVariableDeclaration<StateJsonValue>[]
+> & Readonly<{readonly layerDismissals: typeof layerDismissals}>
 
-export const sampleStaffAuthAssembly: StaffAuthAssembly = Object.freeze({
+const featureAssembly = createFeatureAssembly({
   parts,
   variables,
-  createModule: createSampleStaffAuthModule,
+  createModule: createSampleStaffAuthModuleInput,
+})
+
+export const sampleStaffAuthAssembly: StaffAuthAssembly = Object.freeze({
+  ...featureAssembly,
+  layerDismissals,
 })

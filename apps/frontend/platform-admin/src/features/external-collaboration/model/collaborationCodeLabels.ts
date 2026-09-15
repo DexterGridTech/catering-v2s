@@ -21,6 +21,7 @@ export const capabilityClassLabels = {
   INVENTORY_SYNC: '库存',
   TAKEAWAY_DELIVERY: '外卖配送',
   ORDER_SYNC: '订单同步',
+  DINE_IN: '到店点餐',
 } satisfies Record<CapabilityClass, string>;
 
 export const groupBuyMappingDirectionLabels = {
@@ -51,6 +52,7 @@ export const providerBusinessScopeLabels = {
   TAKEAWAY: '外卖',
   GROUP_BUY: '团购',
   ORDER_SYNC: '订单同步',
+  DINE_IN: '到店点餐',
   MEMBER_BENEFIT: '用户与权益',
 } satisfies Record<ProviderBusinessScope, string>;
 

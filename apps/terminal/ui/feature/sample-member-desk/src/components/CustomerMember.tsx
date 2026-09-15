@@ -23,7 +23,7 @@ import {
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
 import {deskSystemFailureObservedCommand, memberSubmissionWithdrawnCommand} from '../features/commands/commands'
-import {classifyRequestResult} from './requestOutcome'
+import {classifyRequestResult} from '@catering-v2s/ui-base-render'
 import {InputScrollArea} from '@catering-v2s/ui-base-input'
 
 export type CustomerMemberProps = Readonly<{

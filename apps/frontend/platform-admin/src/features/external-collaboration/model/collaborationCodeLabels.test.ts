@@ -18,6 +18,7 @@ import {
 describe('platform collaboration code labels', () => {
   it('covers every generated collaboration enum member exactly once', () => {
     expect(Object.keys(capabilityClassLabels).sort()).toEqual([
+      'DINE_IN',
       'GROUP_BUY',
       'INVENTORY_SYNC',
       'MASTER_DATA_SYNC',
@@ -45,6 +46,7 @@ describe('platform collaboration code labels', () => {
       'STORE',
     ]);
     expect(Object.keys(providerBusinessScopeLabels).sort()).toEqual([
+      'DINE_IN',
       'GROUP_BUY',
       'MEMBER_BENEFIT',
       'ORDER_SYNC',

@@ -145,7 +145,7 @@ runMutation('F_A2_TOKEN', 'primitives', [[
 
 runMutation('F_A3A', 'integration', [[
   'apps/terminal/ui/integration/sample-wallpaper-console/src/assembly/assembly.tsx',
-  source => replaceExactly(source, '          <WallpaperBackground />', '          {null}', 'F-A3a secondary wallpaper'),
+  source => replaceExactly(source, '    renderChildren: () => <WallpaperBackground />', '    renderChildren: () => null', 'F-A3a secondary wallpaper'),
 ]])
 
 runMutation('F_A3B', 'integration', [[
@@ -174,9 +174,9 @@ runMutation('F_A7B', 'integration', [[
 ]])
 
 runAdmissionMutation('F_A9', 'integration', [[
-  'apps/terminal/ui/integration/sample-wallpaper-console/src/assembly/assembly.tsx',
+  'apps/terminal/ui/base/console-assembly/src/foundations/consoleAssembly.tsx',
   source => replaceExactly(
-    replaceExactly(source, "if (displayMode === 'SECONDARY' && !('SECONDARY' in declarations)) {", 'if (false) {', 'F-A9 display index guard'),
+    replaceExactly(source, "if (displayMode === 'SECONDARY' && assembly.surfaceDeclarations.SECONDARY === undefined) {", 'if (false) {', 'F-A9 display index guard'),
     'if (declaredSize === undefined) {', 'if (false) {', 'F-A9 declared size guard',
   ),
 ]], 'mobile-assembly-guard')

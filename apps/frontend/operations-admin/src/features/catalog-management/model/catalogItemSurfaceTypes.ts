@@ -14,6 +14,7 @@ export type CatalogItemDrawerProps = {
   onCopy?: (source: {itemCode: string; targetShapeKey?: string}) => void;
   onSaved?: () => void;
   onClose: () => void;
+  onAfterOpenChange?: (visible: boolean) => void;
 };
 
 export type CatalogManifest = Pick<

@@ -8,7 +8,7 @@ import type {
   LogWriteResult,
   LoggerPort,
 } from '@catering-v2s/kernel-base-platform-ports'
-import type {Runtime} from '@catering-v2s/kernel-base-runtime'
+import {defineCommand, type Runtime} from '@catering-v2s/kernel-base-runtime'
 import {
   createRendererCatalog,
   bindSurfaceHostIdentity,
@@ -19,6 +19,7 @@ import {
   SurfaceFocusBoundaryContext,
   SurfaceRoot,
   calculateSurfaceHostGeometry,
+  dispatchWithRequestId,
   type SurfaceHostSnapshot,
   type SurfaceHostMeasurementSource,
   type SurfaceHostSource,
@@ -312,6 +313,112 @@ describe('render surface hosts', () => {
     act(() => host.emit(null))
     expect(findByTestID(renderer, 'ui-base-render:surface-host-pending')).toBeDefined()
     expect(renderer.root.findAll(node => node.props.testID === 'ui-base-render:surface-host-canvas')).toHaveLength(0)
+    renderer.unmount()
+  })
+
+  it('turns an explicit PRIMARY host-unavailable terminal fact into the failure page', async () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const identity = Object.freeze({
+      surfaceKey: 'PRIMARY' as const,
+      displayIndex: 0 as const,
+      surfaceForm: 'laptop' as const,
+      displayMode: 'PRIMARY' as const,
+    })
+    let availability: 'pending' | 'ready' | 'unavailable' = 'pending'
+    let current: SurfaceHostSnapshot | null = null
+    const snapshotListeners = new Set<(snapshot: SurfaceHostSnapshot | null) => void>()
+    const availabilityListeners = new Set<(next: typeof availability) => void>()
+    const host: SurfaceHostSource = {
+      getSnapshot: () => current,
+      subscribe: listener => {
+        snapshotListeners.add(listener)
+        return () => snapshotListeners.delete(listener)
+      },
+      getAvailability: () => availability,
+      subscribeAvailability: listener => {
+        availabilityListeners.add(listener)
+        return () => availabilityListeners.delete(listener)
+      },
+      getSurfaceIdentity: () => identity,
+    }
+    const hiddenReasons: string[] = []
+    const nativeLoadingCapability = {
+      targetPhysicalSurface: {surfaceKey: 'PRIMARY' as const, displayIndex: 0 as const},
+      hideOnce: async (reason: string) => {
+        hiddenReasons.push(reason)
+        return {hidden: true, alreadyHidden: false, reason}
+      },
+    }
+    source.setRoot(rootWithContent(emptyContent()))
+    source.setStatus('started')
+
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        ...unusedRenderProviderBindings,
+        nativeLoadingCapability,
+      },
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        canvas: {width: 960, height: 540},
+        surfaceHostSource: host,
+      }),
+    ))
+
+    expect(findByTestID(renderer, 'ui-base-render:surface-host-pending')).toBeDefined()
+    act(() => {
+      availability = 'unavailable'
+      current = null
+      for (const listener of [...availabilityListeners]) listener(availability)
+      for (const listener of [...snapshotListeners]) listener(current)
+    })
+    await act(async () => undefined)
+
+    expect(findByTestID(renderer, 'ui-base-render:surface-host-failure')).toBeDefined()
+    expect(findByTestID(renderer, 'ui.base.render:startup-failure')).toBeDefined()
+    expect(hiddenReasons).toEqual(['startup-failure'])
+    renderer.unmount()
+  })
+
+  it('turns an empty PRIMARY container into the failure page after runtime and host are resolved', async () => {
+    const source = createSource()
+    const {logger, events} = createLogger()
+    const host = createHostSource(hostSnapshot(960, 540))
+    const nativeLoadingCapability = {
+      targetPhysicalSurface: {surfaceKey: 'PRIMARY' as const, displayIndex: 0 as const},
+      hideOnce: async (reason: string) => ({hidden: true, alreadyHidden: false, reason}),
+    }
+    source.setRoot(rootWithContent(emptyContent()))
+    source.setStatus('started')
+
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        ...unusedRenderProviderBindings,
+        nativeLoadingCapability,
+      },
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        canvas: {width: 960, height: 540},
+        surfaceHostSource: host,
+      }),
+    ))
+
+    await act(async () => undefined)
+    expect(findByTestID(renderer, 'ui-base-render:fallback:container-empty')).toBeDefined()
+    expect(findByTestID(renderer, 'ui.base.render:startup-failure')).toBeDefined()
+    expect(events.some(event => event.event === 'startup.failure-page-visible')).toBe(true)
     renderer.unmount()
   })
 
@@ -679,6 +786,10 @@ describe('render surface hosts', () => {
     source.setStatus('started')
 
     const dispatches: string[] = []
+    const featureDismissCommand = defineCommand<Readonly<Record<string, never>>>('ui.feature.test', {
+      name: 'dismiss-layer',
+      visibility: 'public',
+    })
     const dispatchCommand: RenderProviderProps['dispatchCommand'] = async command => {
       dispatches.push(command.definition.commandName)
       throw new Error('test dispatch rejection')
@@ -692,7 +803,21 @@ describe('render surface hosts', () => {
 
     const renderer = mount(createElement(
       RenderProvider,
-      {...unusedRenderProviderBindings, stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, dispatchCommand},
+      {
+        ...unusedRenderProviderBindings,
+        stateSource: source.stateSource,
+        uiCatalog,
+        rendererCatalog,
+        logger,
+        dispatchCommand,
+        layerDismissals: {
+          'dismissible-layer-part': ({dispatchCommand: dispatch}) => dispatchWithRequestId({
+            dispatchCommand: dispatch,
+            definition: featureDismissCommand,
+            payload: {},
+          }),
+        },
+      },
       createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
     ))
     await act(async () => {
@@ -701,12 +826,12 @@ describe('render surface hosts', () => {
       onPress()
       await Promise.resolve()
     })
-    expect(dispatches).toEqual(['kernel.base.ui-state.close-layer'])
+    expect(dispatches).toEqual(['ui.feature.test.dismiss-layer'])
     await act(async () => {
       expect(backHandlers[0]!({type: 'hardwareBackPress', timeStamp: 0})).toBe(true)
       await Promise.resolve()
     })
-    expect(dispatches).toEqual(['kernel.base.ui-state.close-layer', 'kernel.base.ui-state.close-layer'])
+    expect(dispatches).toEqual(['ui.feature.test.dismiss-layer', 'ui.feature.test.dismiss-layer'])
     renderer.unmount()
     addBackHandler.mockRestore()
   })
@@ -982,6 +1107,113 @@ describe('render surface hosts', () => {
       renderer.update(render(missingRendererCatalog))
     })
     expect(missingRendererEvents()).toHaveLength(2)
+    renderer.unmount()
+  })
+
+  it('hides native loading only after the real PRIMARY part and host geometry lay out', async () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const host = createHostSource(hostSnapshot(800, 600))
+    const defined = part({partKey: 'ready-part', rendererKey: 'ready-renderer', component: Screen})
+    const hiddenReasons: string[] = []
+    const readyParts: string[] = []
+    const lifecycle: string[] = []
+    const nativeLoadingCapability = {
+      targetPhysicalSurface: {surfaceKey: 'PRIMARY' as const, displayIndex: 0 as const},
+      hideOnce: async (reason: string) => {
+        lifecycle.push('hide')
+        hiddenReasons.push(reason)
+        return {hidden: true, alreadyHidden: false, reason}
+      },
+    }
+    source.setRoot(rootWithContent({
+      contentSets: {
+        PRIMARY: {containers: {root: {partKey: 'ready-part'}}, layers: []},
+        SECONDARY: {containers: {}, layers: []},
+      },
+    }))
+    source.setStatus('started')
+
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([defined.catalogEntry]),
+        rendererCatalog: createRendererCatalog([defined.rendererBinding]),
+        logger,
+        ...unusedRenderProviderBindings,
+        nativeLoadingCapability,
+        onPrimarySurfaceReady: ({partKey}) => {
+          lifecycle.push('ready-callback')
+          readyParts.push(partKey)
+        },
+      },
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        canvas: {width: 960, height: 540},
+        surfaceHostSource: host,
+      }),
+    ))
+
+    expect(hiddenReasons).toEqual([])
+    const boundary = findByTestID(renderer, 'ui-base-render:screen-ready-boundary')
+    await act(async () => {
+      boundary.props.onLayout({nativeEvent: {layout: {width: 800, height: 600}}})
+    })
+    expect(hiddenReasons).toEqual(['startup-ready'])
+    expect(readyParts).toEqual(['ready-part'])
+    expect(lifecycle).toEqual(['ready-callback', 'hide'])
+    renderer.unmount()
+  })
+
+  it('does not treat an outer root or a fallback branch as rendered readiness', async () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const host = createHostSource(hostSnapshot(800, 600))
+    const defined = part({partKey: 'missing-renderer-part', rendererKey: 'missing-renderer', component: Screen})
+    const hiddenReasons: string[] = []
+    const nativeLoadingCapability = {
+      targetPhysicalSurface: {surfaceKey: 'PRIMARY' as const, displayIndex: 0 as const},
+      hideOnce: async (reason: string) => {
+        hiddenReasons.push(reason)
+        return {hidden: true, alreadyHidden: false, reason}
+      },
+    }
+    source.setRoot(rootWithContent({
+      contentSets: {
+        PRIMARY: {containers: {root: {partKey: 'missing-renderer-part'}}, layers: []},
+        SECONDARY: {containers: {}, layers: []},
+      },
+    }))
+    source.setStatus('started')
+
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([defined.catalogEntry]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        ...unusedRenderProviderBindings,
+        nativeLoadingCapability,
+      },
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        canvas: {width: 960, height: 540},
+        surfaceHostSource: host,
+      }),
+    ))
+
+    const root = findByTestID(renderer, 'ui-base-render:surface-root')
+    await act(async () => {
+      root.props.onLayout({nativeEvent: {layout: {width: 800, height: 600}}})
+    })
+    expect(hiddenReasons).toEqual(['startup-failure'])
+    expect(renderer.root.findByProps({testID: 'ui-base-render:fallback:missing-renderer'})).toBeDefined()
+    expect(renderer.root.findByProps({testID: 'ui.base.render:startup-failure'})).toBeDefined()
+    expect(renderer.root.findAllByProps({testID: 'ui-base-render:screen-ready-boundary'})).toHaveLength(0)
     renderer.unmount()
   })
 })

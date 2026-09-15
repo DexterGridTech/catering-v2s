@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {FormalSeedFailure, createProjectScopeSelector, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateCatalogInventorySeedPrerequisite, validateFormalSeedStaticInputs, validateThreeStateSeedCoverage, invocationKeyForTest} from './owner-command-seed-executor.mjs';
+import {FormalSeedFailure, createProjectScopeSelector, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateCatalogInventorySeedPrerequisite, validateExtensionDefinitionRevisionChangeCoverage, validateExtensionDefinitionSeedCoverage, validateFormalSeedStaticInputs, validateThreeStateSeedCoverage, invocationKeyForTest} from './owner-command-seed-executor.mjs';
 import {loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById} from '../test/seed-report.mjs';
 
 const generatedRegistry = loadGeneratedOperationRegistry(new URL('../../apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json', import.meta.url));
+const FLAT_EXTENSION_HOST_TYPES = new Set(['BRAND', 'TENANT', 'HEAD_COMPANY', 'STORE', 'CONTRACT']);
 
 const fixture = {
   profile: {id: 'r5-full', version: 1},
@@ -42,6 +43,26 @@ const fixture = {
       headCompanies: [{key: 'head-enabled', status: 'ENABLED'}, {key: 'head-disabled', status: 'DISABLED'}, {key: 'head-voided', status: 'VOIDED'}],
       stores: [{key: 'store-a', status: 'ENABLED'}, {key: 'store-disabled', status: 'DISABLED'}, {key: 'store-voided', status: 'VOIDED'}],
     },
+    extensionDefinitions: [
+      {key: 'ext-brand', hostType: 'BRAND', fields: [
+        {key: 'textOff', label: '文本未展示未搜索', type: 'TEXT', listDisplay: false, searchable: false, required: false, options: [], status: 'ENABLED'},
+        {key: 'textList', label: '文本列表', type: 'TEXT', listDisplay: true, searchable: false, required: false, options: [], status: 'ENABLED'},
+        {key: 'textSearch', label: '文本搜索', type: 'TEXT', listDisplay: false, searchable: true, required: false, options: [], status: 'ENABLED'},
+        {key: 'textBoth', label: '文本列表搜索', type: 'TEXT', listDisplay: true, searchable: true, required: false, options: [], status: 'ENABLED'},
+        {key: 'number', label: '数字字段', type: 'NUMBER', listDisplay: false, searchable: true, required: false, options: [], status: 'ENABLED'},
+        {key: 'date', label: '日期字段', type: 'DATE', listDisplay: false, searchable: true, required: false, options: [], status: 'ENABLED'},
+        {key: 'boolean', label: '布尔字段', type: 'BOOLEAN', listDisplay: false, searchable: true, required: false, options: [], status: 'ENABLED'},
+        {key: 'select', label: '选择字段', type: 'SELECT', listDisplay: true, searchable: true, required: false, options: ['选项一', '选项二'], status: 'ENABLED'},
+        {key: 'disabled', label: '停用字段', type: 'TEXT', listDisplay: false, searchable: false, required: false, options: [], status: 'DISABLED'},
+      ]},
+      ...['TENANT', 'HEAD_COMPANY', 'STORE', 'CONTRACT', 'COMMERCIAL_GROUP', 'REGION', 'PROJECT'].map((hostType, index) => ({
+        hostType,
+        fields: [{key: `field${index}`, label: '树或平面字段', type: 'TEXT', listDisplay: FLAT_EXTENSION_HOST_TYPES.has(hostType) ? true : null, searchable: FLAT_EXTENSION_HOST_TYPES.has(hostType) ? false : null, required: false, options: [], status: 'ENABLED'}],
+      })),
+    ],
+    extensionDefinitionRevisionChanges: [
+      {definitionKey: 'ext-brand', fieldKey: 'textOff', displaySuffix: '（已更新）'},
+    ],
   },
   executionPlan: {invitationPlans: [
     {invitationKey: 'pending', mobile: '13800000002', roleKey: 'role-store', nodeKey: 'store-a'},
@@ -236,12 +257,45 @@ test('formal seed catalog principals match the catalog seed login assignments an
   assert.equal(roles.some((role) => role.actionCapabilityKeys.includes('EDIT_CATALOG_LIBRARY')), false);
 });
 
-test('formal seed preserves administrator-defined extension keys and refuses partial values', () => {
-  const definition = {fields: [{key: 'brandLevel', label: '品牌等级'}, {key: 'brandOrigin', label: '品牌来源'}]};
-  const ownerReadback = {definitions: [{key: 'brandLevel', label: '品牌等级'}, {key: 'brandOrigin', label: '品牌来源'}]};
-  assert.deepEqual(resolveExtensionValues(definition, ownerReadback, {brandLevel: '核心品牌', brandOrigin: '直营'}), {brandLevel: '核心品牌', brandOrigin: '直营'});
-  assert.throws(() => resolveExtensionValues(definition, ownerReadback, {brandLevel: '核心品牌'}), code('SEED_EXTENSION_VALUES_DECLARATION_INVALID'));
-  assert.throws(() => resolveExtensionValues(definition, {definitions: [{key: 'brandLevel', label: '品牌等级'}]}, {brandLevel: '核心品牌', brandOrigin: '直营'}), code('SEED_EXTENSION_OWNER_READBACK_INVALID'));
+test('formal seed preserves administrator-defined keys and handles typed optional values', () => {
+  const definition = {fields: [
+    {key: 'brandLevel', label: '品牌等级', type: 'TEXT', listDisplay: true, searchable: true, required: false, options: [], status: 'ENABLED'},
+    {key: 'priority', label: '优先级', type: 'NUMBER', listDisplay: false, searchable: true, required: false, options: [], status: 'ENABLED'},
+    {key: 'startDate', label: '开始日期', type: 'DATE', listDisplay: false, searchable: true, required: false, options: [], status: 'ENABLED'},
+    {key: 'active', label: '是否启用', type: 'BOOLEAN', listDisplay: true, searchable: false, required: false, options: [], status: 'ENABLED'},
+    {key: 'origin', label: '品牌来源', type: 'SELECT', listDisplay: true, searchable: false, required: false, options: ['直营', '联营'], status: 'ENABLED'},
+  ]};
+  const ownerReadback = {definitions: definition.fields.map((field) => ({key: field.key, type: field.type, listDisplay: field.listDisplay, searchable: field.searchable, required: field.required, options: field.options, status: field.status}))};
+  assert.deepEqual(resolveExtensionValues(definition, ownerReadback, {brandLevel: '核心品牌', origin: '直营'}), {brandLevel: '核心品牌', origin: '直营'});
+  assert.deepEqual(resolveExtensionValues(definition, ownerReadback, {brandLevel: '核心品牌', priority: 2, startDate: '2026-09-15', active: true, origin: '直营'}), {brandLevel: '核心品牌', priority: 2, startDate: '2026-09-15', active: true, origin: '直营'});
+  assert.deepEqual(resolveExtensionValues(definition, ownerReadback, {brandLevel: '核心品牌'}), {brandLevel: '核心品牌'});
+  assert.deepEqual(resolveExtensionValues(definition, ownerReadback, {brandLevel: null}), {brandLevel: null});
+  assert.throws(() => resolveExtensionValues(definition, ownerReadback, {priority: '2'}), code('SEED_EXTENSION_VALUE_TYPE_INVALID'));
+  assert.throws(() => resolveExtensionValues(definition, {definitions: ownerReadback.definitions.slice(0, 4)}, {brandLevel: '核心品牌'}), code('SEED_EXTENSION_OWNER_READBACK_INVALID'));
+});
+
+test('formal seed fixture covers all extension types, flag combinations, disabled and N/A hosts', async () => {
+  const fixturePath = new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url);
+  const actual = JSON.parse(await import('node:fs/promises').then((fs) => fs.readFile(fixturePath, 'utf8')));
+  const coverage = validateExtensionDefinitionSeedCoverage(actual);
+  assert.equal(coverage.hostCount, 8);
+  assert.equal(coverage.typeCount, 5);
+  assert.equal(coverage.flagCount, 4);
+  assert.ok(coverage.disabledFieldCount >= 1);
+});
+
+test('formal seed changes and reads back one definition revision after owner values exist', async () => {
+  const fixturePath = new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url);
+  const actual = JSON.parse(await import('node:fs/promises').then((fs) => fs.readFile(fixturePath, 'utf8')));
+  assert.deepEqual(validateExtensionDefinitionRevisionChangeCoverage(actual), {
+    changeCount: 1,
+    definitionKeys: ['ext-brand'],
+  });
+  const source = await import('node:fs/promises').then((fs) => fs.readFile(new URL('./owner-command-seed-executor.mjs', import.meta.url), 'utf8'));
+  assert.ok(source.indexOf('for (const change of fixture.stableFixtures.extensionDefinitionRevisionChanges)') > source.indexOf('for (const contract of fixture.stableFixtures.contracts)'));
+  assert.match(source, /expectedVersion: requireValue\(current\?\.revision, 'SEED_EXTENSION_REVISION'\)/);
+  assert.match(source, /extension-revision-read-\$\{change\.definitionKey\}/);
+  assert.match(source, /SEED_EXTENSION_REVISION_CHANGE_READBACK_INVALID/);
 });
 
 test('formal seed defines and reads back every extension host before creating owner facts', async () => {
@@ -253,8 +307,10 @@ test('formal seed defines and reads back every extension host before creating ow
   assert.match(source, /resolveExtensionValues\(definitionFixture, ids\.extensionDefinition/);
   assert.match(source, /assertExtensionValueReadback\(created, extensionValues\)/);
   assert.ok(source.indexOf('for (const definition of fixture.stableFixtures.extensionDefinitions)') < source.indexOf('for (const group of fixture.stableFixtures.organization.commercialGroups)'));
-  assert.match(source, /definitions: definition\.fields\.map\(\(field, displayOrder\) => \(\{[\s\S]*status: 'ENABLED',[\s\S]*displayOrder\}\)\)/);
+  assert.match(source, /definitions: definition\.fields\.map\(\(field, displayOrder\) => \(\{[\s\S]*type: field\.type,[\s\S]*status: field\.status,[\s\S]*displayOrder: field\.displayOrder/);
   assert.match(source, /function extensionSubmission\(values\)[\s\S]*valueJson: JSON\.stringify\(value\)[\s\S]*mode: 'SET'/);
   assert.equal((source.match(/extensionValues: extensionSubmission\(extensionValues\)/g) ?? []).length, 7);
   assert.match(source, /initializeCommercialGroup[\s\S]*body: \{groupCode: group\.code, groupName: group\.name, extensionValues,/);
+  assert.match(source, /extensionValuesFor\(group\.workspace, 'COMMERCIAL_GROUP', group\.extensionValues\)/);
+  assert.doesNotMatch(source, /extensionValuesFor\(group\.workspace, 'COMMERCIAL_GROUP', group\.extensionValues \?\? \{\}\)/);
 });

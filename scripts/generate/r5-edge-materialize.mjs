@@ -130,6 +130,22 @@ function inlineMissingReferences(value, knownComponents, sourceSchemas, renames,
 function addRequired(schema, names) {
   schema.required = [...new Set([...(schema.required || []), ...names])];
 }
+function addNestedProperties(schema, additions, components, sourceSchemas) {
+  for (const [parent, properties] of Object.entries(additions || {})) {
+    let nested = schema.properties?.[parent];
+    if (nested?.$ref?.startsWith("#/components/schemas/")) {
+      const name = nested.$ref.slice("#/components/schemas/".length);
+      const resolved = components.get(name) || sourceSchemas.get(name);
+      if (!resolved) fail("R5_EDGE_NESTED_PROPERTY_PARENT_UNRESOLVED", parent);
+      nested = clone(resolved);
+      schema.properties[parent] = nested;
+    }
+    if (!nested || typeof nested !== "object" || !nested.properties || typeof nested.properties !== "object") {
+      fail("R5_EDGE_NESTED_PROPERTY_PARENT_UNRESOLVED", parent);
+    }
+    nested.properties = { ...nested.properties, ...clone(properties) };
+  }
+}
 function addEnumValues(schema, propertyName, values) {
   if (Array.isArray(schema)) {
     for (const item of schema) addEnumValues(item, propertyName, values);
@@ -288,6 +304,7 @@ function materializeComponents(catalog, placement) {
     if (override.required) next.required = clone(override.required);
     if (override.requiredAdditions) addRequired(next, override.requiredAdditions);
     if (override.properties) next.properties = { ...(next.properties || {}), ...clone(override.properties) };
+    if (override.nestedPropertyAdditions) addNestedProperties(next, override.nestedPropertyAdditions, components, sourceSchemas);
     if (override.requiredNestedReferences) {
       next.properties = { ...(next.properties || {}) };
       for (const rule of override.requiredNestedReferences) next.properties[rule.property] = clone(rule);

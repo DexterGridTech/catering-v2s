@@ -24,6 +24,16 @@ import {wireUuid} from './http/wireUuid';
 import {MOBILE_PATTERN} from './validation/mobilePattern';
 import {collectCursorPages, mergeCursorCandidateItems} from './list/useCursorCandidates';
 import {updateCursorStack} from './list/useCursorStack';
+import {
+  createExtensionFilterRecoveryState,
+  createExtensionFilterStaleRecoveryGate,
+  isExtensionDefinitionRevisionAtLeast,
+} from './extension/staleRecovery';
+import {
+  ExtensionFilterInvalidSummary,
+  formatExtensionFilterInvalidFields,
+  readExtensionFilterInvalidFields,
+} from './extension/invalidFilter';
 import {CursorPagination} from './list/cursorPagination';
 import {createContentIdempotencyKey, digestFileContent} from './behavior/contentIdempotencyKey';
 import {
@@ -35,6 +45,92 @@ import {
 } from './list/usePageQuery';
 
 describe('admin UI foundation contract and lifecycle primitives', () => {
+  it('claims stale extension recovery once per scope while allowing a new scope', () => {
+    const gate = createExtensionFilterStaleRecoveryGate();
+    expect(gate.claim('brand:aurora', 2)).toBe(true);
+    expect(gate.claim('brand:aurora', 2)).toBe(false);
+    expect(gate.claim('brand:aurora', 3)).toBe(false);
+    expect(gate.claim('tenant:aurora', 2)).toBe(true);
+    expect(gate.claim('brand:aurora')).toBe(false);
+    expect(gate.claim('brand:aurora')).toBe(false);
+  });
+
+  it('requires a usable definition revision at or above the stale lower bound', () => {
+    expect(isExtensionDefinitionRevisionAtLeast({revision: 2}, 2)).toBe(true);
+    expect(isExtensionDefinitionRevisionAtLeast({revision: 3}, 2)).toBe(true);
+    expect(isExtensionDefinitionRevisionAtLeast({revision: 1}, 2)).toBe(false);
+    expect(isExtensionDefinitionRevisionAtLeast(undefined, 2)).toBe(false);
+    expect(isExtensionDefinitionRevisionAtLeast({revision: 2}, undefined)).toBe(false);
+  });
+
+  it('keeps the stale lower bound for manual retry and drops late callbacks after invalidation', () => {
+    const recovery = createExtensionFilterRecoveryState();
+    recovery.enterScope('organization:brand');
+    recovery.rememberStaleRevision('organization:brand', 7);
+
+    const automatic = recovery.begin('organization:brand', 7);
+    expect(automatic.expectedRevision).toBe(7);
+    recovery.invalidate('organization:brand');
+    expect(recovery.isCurrent(automatic)).toBe(false);
+
+    const manual = recovery.begin('organization:brand');
+    expect(manual.expectedRevision).toBe(7);
+    expect(recovery.isCurrent(manual)).toBe(true);
+
+    recovery.rememberStaleRevision('organization:brand', 8);
+    const retryAfterAnotherStale = recovery.begin('organization:brand');
+    expect(retryAfterAnotherStale.expectedRevision).toBe(8);
+    expect(recovery.isCurrent(manual)).toBe(false);
+
+    recovery.enterScope('organization:tenant');
+    expect(recovery.isCurrent(retryAfterAnotherStale)).toBe(false);
+  });
+
+  it('sanitizes invalid extension-filter details and maps them to field-scoped feedback', () => {
+    const invalidFields = readExtensionFilterInvalidFields({
+      invalidFields: [
+        {fieldKey: 'brandLevel', reason: 'FIELD_DISABLED', expectedType: 'TEXT'},
+        {fieldKey: 'missingKey', reason: 'UNKNOWN_FIELD_KEY'},
+      ],
+    });
+    expect(invalidFields).toEqual([
+      {fieldKey: 'brandLevel', reason: 'FIELD_DISABLED', expectedType: 'TEXT'},
+      {fieldKey: 'missingKey', reason: 'UNKNOWN_FIELD_KEY', expectedType: undefined},
+    ]);
+    expect(formatExtensionFilterInvalidFields(invalidFields, [{key: 'brandLevel', label: '品牌等级'}])).toEqual([
+      '品牌等级：字段已停用',
+      '筛选条件：字段不存在或已被移除',
+    ]);
+    const reasonLabels: Record<string, string> = {
+      DEFINITION_REVISION_REQUIRED: '缺少字段配置版本，请刷新字段配置',
+      DEFINITION_REVISION_INVALID: '字段配置版本无效，请刷新字段配置',
+      PERCENT_DECODE_INVALID: '筛选参数编码无效，请重试',
+      QUERY_TOO_LONG: '筛选条件过长，请减少条件后重试',
+      NUMBER_INVALID: '数字格式不正确',
+      DATE_INVALID: '日期格式不正确',
+      BOOLEAN_INVALID: '布尔值格式不正确',
+    };
+    const unscoped = readExtensionFilterInvalidFields({
+      invalidFields: Object.keys(reasonLabels).map(reason => ({reason})),
+    });
+    expect(unscoped?.every(field => field.fieldKey === '')).toBe(true);
+    expect(formatExtensionFilterInvalidFields(unscoped, undefined)).toEqual(
+      Object.values(reasonLabels).map(label => `筛选条件：${label}`),
+    );
+    const markup = renderToStaticMarkup(
+      createElement(ExtensionFilterInvalidSummary, {
+        invalidFields,
+        definitions: [{key: 'brandLevel', label: '品牌等级'}],
+        testIdPrefix: 'extension-invalid-summary',
+        onClear: () => undefined,
+      }),
+    );
+    expect(markup).toContain('品牌等级：字段已停用');
+    expect(markup).toContain('清理失效筛选');
+    expect(markup).toContain('extension-invalid-summary-clear');
+    expect(markup).not.toContain('brandLevel');
+  });
+
   it('renders unknown closed-set values visibly and reports them as not actionable', () => {
     const labels = {ENABLED: '启用', DISABLED: '停用'} as const;
     expect(closedCodeLabel(labels, 'MYSTERY')).toBe('当前状态无法识别');

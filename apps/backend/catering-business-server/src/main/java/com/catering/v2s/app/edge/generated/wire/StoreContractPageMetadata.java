@@ -9,5 +9,6 @@ public record StoreContractPageMetadata(
     Long pageSize,
     Long total,
     StoreContractSortKey sort,
-    StoreContractSortDirection direction
+    StoreContractSortDirection direction,
+    Long definitionRevision
 ) {}

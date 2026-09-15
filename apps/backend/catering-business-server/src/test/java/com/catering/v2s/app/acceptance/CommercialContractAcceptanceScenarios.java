@@ -1,6 +1,7 @@
 package com.catering.v2s.app.acceptance;
 
 import static com.catering.v2s.app.acceptance.BackendAcceptanceTest.*;
+import static com.catering.v2s.app.acceptance.ExtensionAcceptanceScenarios.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -102,6 +103,139 @@ final class CommercialContractAcceptanceScenarios {
             }
         }
         assertEquals(expectedContractNos, actualContractNos, "BUSINESS: contract pages cover the complete set");
+    }
+
+    @AcceptanceScenario(
+            id = "contract.extension-filtered-list",
+            module = "CONTRACT",
+            operation = "getOperationsContracts")
+    void operationsContractExtensionFilteredList(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        BackendAcceptanceTest.Fixture fixture = host.fixture("PROJECT", Set.of("BC-CONTRACT-CREATE"));
+        host.ensurePlatformAdministrator();
+        BackendAcceptanceTest.Session platform = host.platformLogin(context);
+        replaceDefinition(
+                context,
+                fixture.groupWorkspaceKey(),
+                platform.cookie(),
+                "CONTRACT",
+                typedFlatFieldsFor("contractFilter"));
+        host.completeInvitation(context, fixture);
+        BackendAcceptanceTest.Session operations = host.login(context, fixture);
+        createFilteredContract(context, fixture, operations, "A", "contractFilter", "match-value");
+        createFilteredContract(context, fixture, operations, "B", "contractFilter", "match-value");
+        createFilteredContract(context, fixture, operations, "C", "contractFilter", "different-value");
+        String requestBase = "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/contracts"
+                + "?expectedContextVersion=" + operations.contextVersion()
+                + "&phaseName=Opening&pageSize=1&extensionFilters="
+                + filterWire(typedFilterSpecs("contractFilter", "match-value"))
+                + "&definitionRevision=1";
+        Response page = context.get(
+                OPERATIONS_CONTRACT_LIST,
+                requestBase + "&page=1",
+                operations.cookie(),
+                Set.of(200));
+        assertContractExtensionPage(page, 1, "contractFilter", "operations contract list");
+        Response secondPage = context.get(
+                OPERATIONS_CONTRACT_LIST,
+                requestBase + "&page=2",
+                operations.cookie(),
+                Set.of(200));
+        assertContractExtensionPage(secondPage, 2, "contractFilter", "operations contract list");
+        assertNotEquals(
+                page.json().path("items").get(0).path("id").asText(),
+                secondPage.json().path("items").get(0).path("id").asText(),
+                "BUSINESS: operations contract pages do not repeat an item");
+    }
+
+    @AcceptanceScenario(
+            id = "contract.platform-extension-filtered-list",
+            module = "CONTRACT",
+            operation = "getPlatformContractOverviewPage")
+    void platformContractExtensionFilteredList(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        BackendAcceptanceTest.Fixture fixture = host.fixture("PROJECT", Set.of("BC-CONTRACT-CREATE"));
+        host.ensurePlatformAdministrator();
+        BackendAcceptanceTest.Session platform = host.platformLogin(context);
+        replaceDefinition(
+                context,
+                fixture.groupWorkspaceKey(),
+                platform.cookie(),
+                "CONTRACT",
+                typedFlatFieldsFor("contractFilter"));
+        host.completeInvitation(context, fixture);
+        BackendAcceptanceTest.Session operations = host.login(context, fixture);
+        createFilteredContract(context, fixture, operations, "A", "contractFilter", "match-value");
+        createFilteredContract(context, fixture, operations, "B", "contractFilter", "match-value");
+        createFilteredContract(context, fixture, operations, "C", "contractFilter", "different-value");
+        String requestBase = "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey() + "/contract-overview"
+                + "?phaseName=Opening&pageSize=1&extensionFilters="
+                + filterWire(typedFilterSpecs("contractFilter", "match-value"))
+                + "&definitionRevision=1";
+        Response page = context.get(
+                PLATFORM_CONTRACT_OVERVIEW_PAGE,
+                requestBase + "&page=1",
+                platform.cookie(),
+                Set.of(200));
+        assertContractExtensionPage(page, 1, "contractFilter", "platform contract overview");
+        Response secondPage = context.get(
+                PLATFORM_CONTRACT_OVERVIEW_PAGE,
+                requestBase + "&page=2",
+                platform.cookie(),
+                Set.of(200));
+        assertContractExtensionPage(secondPage, 2, "contractFilter", "platform contract overview");
+        assertNotEquals(
+                page.json().path("items").get(0).path("contractRef").path("code").asText(),
+                secondPage.json().path("items").get(0).path("contractRef").path("code").asText(),
+                "BUSINESS: platform contract pages do not repeat an item");
+    }
+
+    private void createFilteredContract(
+            BackendAcceptanceTest.ScenarioContext context,
+            BackendAcceptanceTest.Fixture fixture,
+            BackendAcceptanceTest.Session operations,
+            String suffix,
+            String fieldPrefix,
+            String textValue)
+            throws Exception {
+        context.post(
+                OPERATIONS_CONTRACT_CREATE,
+                "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/contracts",
+                operations.cookie(),
+                Map.of(
+                        "storeId",
+                        fixture.storeId().toString(),
+                        "phaseName",
+                        "Opening",
+                        "contractNo",
+                        "ACCEPT-FILTER-CONTRACT-" + suffix,
+                        "effectiveFrom",
+                        "2026-01-01",
+                        "effectiveTo",
+                        "2026-12-31",
+                        "note",
+                        "extension-filter",
+                        "items",
+                        List.of(Map.of("code", "FILTER-ITEM", "name", "Filter item")),
+                        "extensionValues",
+                        typedExtensionValues(fieldPrefix, textValue)),
+                Set.of(201));
+    }
+
+    private static void assertContractExtensionPage(Response page, int expectedPage, String fieldPrefix, String label) {
+        JsonNode metadata = page.json().path("metadata");
+        assertEquals(expectedPage, metadata.path("page").asInt(), "BUSINESS: " + label + " preserves page identity");
+        assertEquals(1, metadata.path("pageSize").asInt(), "BUSINESS: " + label + " preserves page size");
+        assertEquals(2, metadata.path("total").asInt(), "BUSINESS: " + label + " totals the core and extension matches");
+        assertEquals(1, page.json().path("items").size(), "BUSINESS: " + label + " keeps one filtered contract per page");
+        assertEquals(
+                1,
+                metadata.path("definitionRevision").asLong(),
+                "BUSINESS: " + label + " returns the definition revision used by the owner");
+        JsonNode values = page.json().path("items").get(0).path("extensionValues");
+        assertEquals("match-value", values.path(fieldPrefix + "Text").asText(), "BUSINESS: " + label + " returns TEXT raw value");
+        assertEquals(12.5, values.path(fieldPrefix + "Number").asDouble(), "BUSINESS: " + label + " returns NUMBER raw value");
+        assertEquals("2026-09-15", values.path(fieldPrefix + "Date").asText(), "BUSINESS: " + label + " returns DATE raw value");
+        assertTrue(values.path(fieldPrefix + "Boolean").asBoolean(), "BUSINESS: " + label + " returns BOOLEAN raw value");
+        assertEquals("直营", values.path(fieldPrefix + "Select").asText(), "BUSINESS: " + label + " returns SELECT raw value");
     }
 
     @AcceptanceScenario(

@@ -4,6 +4,7 @@ import {
   AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  formatTypedExtensionValue,
   testId,
   useDetailDrawer,
   useOverlayLock,
@@ -65,13 +66,6 @@ function catalogActionLabel(actionKey: AdminActionCapabilityKey) {
   const label = adminCatalog.actions.find(action => action.actionKey === actionKey)?.actionLabel;
   if (!label) throw new Error('ADMIN_CATALOG_BUSINESS_ENTITY_ACTION_MISSING');
   return label;
-}
-
-function displayValue(value: unknown) {
-  if (value === undefined || value === null || value === '') return '—';
-  if (typeof value === 'string' || typeof value === 'number') return String(value);
-  if (typeof value === 'boolean') return value ? '是' : '否';
-  return JSON.stringify(value);
 }
 
 function displayTime(value: number) {
@@ -281,7 +275,7 @@ export function BusinessEntityDetailDrawer({
               ...enabledDefinitions.map(definition => ({
                 key: `extension-${definition.key}`,
                 label: definition.label,
-                children: displayValue(selected.extensionValues[definition.key]),
+                children: formatTypedExtensionValue(selected.extensionValues[definition.key], definition),
               })),
             ]}
           />

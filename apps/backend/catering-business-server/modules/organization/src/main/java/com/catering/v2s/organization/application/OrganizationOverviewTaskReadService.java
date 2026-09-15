@@ -5,6 +5,7 @@ import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.organization.application.persistence.OrganizationOverviewTaskReadPersistence;
 import com.catering.v2s.organization.api.OperationsStoreCommandApi;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -90,6 +91,12 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
         return persistence.platformHierarchyTree(workspaceUuid, key);
     }
 
+    public static final class QueryValidationException extends IllegalArgumentException {
+        public QueryValidationException(String message) {
+            super(message);
+        }
+    }
+
     public record Query(
             String type,
             String name,
@@ -104,7 +111,9 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
             UUID headCompanyId,
             String sort,
             String direction,
-            UUID scopeNodeId) {
+            UUID scopeNodeId,
+            String extensionFilters,
+            String definitionRevision) {
         public Query(
                 String type,
                 String name,
@@ -132,6 +141,8 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                     null,
                     sort,
                     direction,
+                    null,
+                    null,
                     null);
         }
 
@@ -163,7 +174,9 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                     null,
                     sort,
                     direction,
-                    scopeNodeId);
+                    scopeNodeId,
+                    null,
+                    null);
         }
 
         public static Query empty() {
@@ -181,6 +194,8 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                     null,
                     "UPDATED_AT",
                     SORT_DIRECTION_DESC,
+                    null,
+                    null,
                     null);
         }
 
@@ -191,10 +206,12 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                     : direction;
             if (!List.of("NAME", "CODE", "UPDATED_AT").contains(safeSort)
                     || !List.of("ASC", "DESC").contains(safeDirection)
-                    || (status != null && !List.of("ENABLED", "DISABLED").contains(status))
+                    || !validStatus(category, status)
                     || (source != null && !List.of("MANUAL", "SYSTEM").contains(source)))
-                throw new IllegalArgumentException("invalid overview query");
+                throw new QueryValidationException("invalid overview query");
             if ("HIERARCHY".equals(category)) {
+                if (extensionFilters != null && !extensionFilters.isBlank())
+                    throw new QueryValidationException("extension filters are not applicable to hierarchy");
                 if (type != null
                                 && !List.of(
                                                 com.catering.v2s.organization.api.OrganizationNodeTypes.REGION,
@@ -202,7 +219,7 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                                         .contains(type)
                         || brandId != null
                         || tenantId != null
-                        || headCompanyId != null) throw new IllegalArgumentException("invalid hierarchy query");
+                        || headCompanyId != null) throw new QueryValidationException("invalid hierarchy query");
             } else if ("BUSINESS_ENTITY".equals(category)) {
                 if (type != null
                                 && !List.of(
@@ -213,17 +230,17 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                         || projectId != null
                         || brandId != null
                         || tenantId != null
-                        || headCompanyId != null) throw new IllegalArgumentException("invalid entity query");
+                        || headCompanyId != null) throw new QueryValidationException("invalid entity query");
             } else if (com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.STORE.equals(category)) {
                 if (type != null
                         && !com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.STORE.equals(type))
-                    throw new IllegalArgumentException("invalid store query");
-            } else throw new IllegalArgumentException("unsupported overview category");
+                    throw new QueryValidationException("invalid store query");
+            } else throw new QueryValidationException("unsupported overview category");
             if (!"BUSINESS_ENTITY".equals(category) && (legalName != null || unifiedSocialCreditCode != null))
-                throw new IllegalArgumentException("invalid overview query");
+                throw new QueryValidationException("invalid overview query");
             if ("BUSINESS_ENTITY".equals(category)
                     && ("BRAND".equals(type) && (legalName != null || unifiedSocialCreditCode != null)))
-                throw new IllegalArgumentException("invalid brand legal query");
+                throw new QueryValidationException("invalid brand legal query");
             return new Query(
                     type,
                     name,
@@ -238,7 +255,16 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                     headCompanyId,
                     safeSort,
                     safeDirection,
-                    scopeNodeId);
+                    scopeNodeId,
+                    extensionFilters,
+                    definitionRevision);
+        }
+
+        private static boolean validStatus(String category, String status) {
+            if (status == null) return true;
+            if (com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.STORE.equals(category))
+                return List.of("ENABLED", "DISABLED", "VOIDED").contains(status);
+            return List.of("ENABLED", "DISABLED").contains(status);
         }
     }
 
@@ -273,7 +299,19 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
             int pageSize,
             long total,
             String sort,
-            String direction) {}
+            String direction,
+            Long definitionRevision) {
+        public Metadata(
+                String groupWorkspaceKey,
+                String category,
+                int page,
+                int pageSize,
+                long total,
+                String sort,
+                String direction) {
+            this(groupWorkspaceKey, category, page, pageSize, total, sort, direction, null);
+        }
+    }
 
     public record Item(
             UUID id,
@@ -297,7 +335,59 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
             Reference headCompany,
             List<String> unresolvedReferences,
             List<ExtensionDisplayField> extensionFields,
-            String alias) {}
+            String alias,
+            Map<String, String> extensionValues,
+            long extensionRuleRevision) {
+        public Item(
+                UUID id,
+                String groupWorkspaceKey,
+                String category,
+                String type,
+                String code,
+                String name,
+                List<Reference> path,
+                String status,
+                String source,
+                long version,
+                long createdAt,
+                long updatedAt,
+                String notes,
+                String legalName,
+                String unifiedSocialCreditCode,
+                Reference project,
+                Reference brand,
+                Reference tenant,
+                Reference headCompany,
+                List<String> unresolvedReferences,
+                List<ExtensionDisplayField> extensionFields,
+                String alias) {
+            this(
+                    id,
+                    groupWorkspaceKey,
+                    category,
+                    type,
+                    code,
+                    name,
+                    path,
+                    status,
+                    source,
+                    version,
+                    createdAt,
+                    updatedAt,
+                    notes,
+                    legalName,
+                    unifiedSocialCreditCode,
+                    project,
+                    brand,
+                    tenant,
+                    headCompany,
+                    unresolvedReferences,
+                    extensionFields,
+                    alias,
+                    Map.of(),
+                    0L);
+        }
+    }
 
     public record PlatformManagementBaseDetail(Item item, java.util.Map<String, String> extensionValues) {}
 

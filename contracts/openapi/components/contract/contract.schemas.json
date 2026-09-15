@@ -18,7 +18,8 @@
           "tenantResolutionStatus",
           "projectRef",
           "items",
-          "extensionFields"
+          "extensionValues",
+          "extensionRuleRevision"
         ],
         "properties": {
           "contractRef": {
@@ -220,27 +221,15 @@
               "$ref": "#/components/schemas/StoreContractItem"
             }
           },
-          "extensionFields": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": [
-                "name"
-              ],
-              "properties": {
-                "name": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 120
-                },
-                "value": {
-                  "type": "string",
-                  "nullable": true,
-                  "maxLength": 4000
-                }
-              }
-            }
+          "extensionValues": {
+            "type": "object",
+            "nullable": false,
+            "additionalProperties": true
+          },
+          "extensionRuleRevision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
@@ -295,6 +284,12 @@
               },
               "direction": {
                 "$ref": "#/components/schemas/StoreContractSortDirection"
+              },
+              "definitionRevision": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0,
+                "nullable": true
               }
             }
           },
@@ -804,6 +799,12 @@
               },
               "direction": {
                 "$ref": "#/components/schemas/StoreContractSortDirection"
+              },
+              "definitionRevision": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0,
+                "nullable": true
               }
             }
           },

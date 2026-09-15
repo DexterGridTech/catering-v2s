@@ -31,10 +31,8 @@ const expectedTestPackages = [
   '@catering-v2s/ui-feature-sample-wallpaper-picker',
   '@catering-v2s/ui-integration-sample-console',
   '@catering-v2s/ui-integration-sample-wallpaper-console',
-  '@catering-v2s/adapter-android-app-control',
   '@catering-v2s/adapter-android-device',
   '@catering-v2s/adapter-android-dual-screen',
-  '@catering-v2s/adapter-android-logger',
   '@catering-v2s/adapter-android-persist-kv',
 ].sort();
 const realTestPackages = [
@@ -61,10 +59,7 @@ const realTestPackages = [
   '@catering-v2s/adapter-android-device',
   '@catering-v2s/adapter-android-persist-kv',
 ].sort();
-const noTestPackages = [
-  '@catering-v2s/adapter-android-app-control',
-  '@catering-v2s/adapter-android-logger',
-].sort();
+const noTestPackages = [].sort();
 const marker = (kind, packageName) => `TERMINAL_PACKAGE_TEST=PASS kind=${kind} package=${packageName}`;
 const validMarkerLines = [
   ...realTestPackages.map(packageName => marker('REAL_TESTS', packageName)),

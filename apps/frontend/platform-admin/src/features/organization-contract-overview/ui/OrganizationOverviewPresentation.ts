@@ -1,8 +1,9 @@
 import type {ExtensionDefinition, JsonValue} from '../../../app/api/generated/platform-edge';
+import {formatTypedExtensionValue} from '@catering-v2s/admin-ui-foundation';
 
 export function organizationOverviewExtensionItems(
   definition: ExtensionDefinition | undefined,
-  values: Record<string, JsonValue> | undefined,
+  values: Record<string, JsonValue> | null | undefined,
 ) {
   return (definition?.definitions ?? [])
     .filter(field => field.status !== 'DISABLED')
@@ -10,12 +11,6 @@ export function organizationOverviewExtensionItems(
     .map(field => ({
       key: `extension-${field.key}`,
       label: field.label,
-      children: extensionValue(values?.[field.key], field.displaySuffix),
+      children: formatTypedExtensionValue(values?.[field.key], field),
     }));
-}
-
-function extensionValue(value: JsonValue | undefined, suffix?: string | null) {
-  if (value === undefined || value === null || value === '') return '—';
-  const display = typeof value === 'boolean' ? (value ? '是' : '否') : String(value);
-  return suffix ? `${display}${suffix}` : display;
 }

@@ -1,6 +1,8 @@
 package com.catering.v2s.extension.application.persistence;
 
 import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.audit.contract.AuditChange;
+import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import java.util.List;
 import java.util.UUID;
@@ -96,6 +98,20 @@ public class ExtensionDefinitionPersistence {
                 result -> result.next()
                         ? new PreStateRow(result.getString(1), result.getLong(2))
                         : null);
+    }
+
+    /** Reads immutable owner audit facts needed to keep generated field identities monotonic after deletion. */
+    public List<AuditChange> findDefinitionHistoryChanges(
+            UUID workspaceUuid, String groupWorkspaceKey, String hostType) {
+        return jdbc.query(
+                        ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_SELECT_DEFINITION_HISTORY_CHANGES,
+                        (row, ignored) -> AuditChangeJson.read(row.getString(1)),
+                        workspaceUuid,
+                        groupWorkspaceKey,
+                        hostType)
+                .stream()
+                .flatMap(List::stream)
+                .toList();
     }
 
     public void writeAudit(

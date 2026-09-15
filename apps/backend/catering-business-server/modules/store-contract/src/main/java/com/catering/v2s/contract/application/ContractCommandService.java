@@ -12,6 +12,7 @@ import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.api.ExtensionHostTypes;
 import com.catering.v2s.extension.api.ExtensionSubmission;
+import com.catering.v2s.extension.api.ExtensionValueSemantics;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.StoreContractLookup;
@@ -1151,7 +1152,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
             return switch (field.fieldType()) {
                 case "TEXT" -> json.isTextual();
                 case "NUMBER" -> json.isNumber();
-                case "DATE" -> json.isTextual() && json.asText().matches("\\d{4}-\\d{2}-\\d{2}");
+                case "DATE" -> json.isTextual() && ExtensionValueSemantics.isCanonicalDate(json.asText());
                 case "BOOLEAN" -> json.isBoolean();
                 case "SELECT" -> json.isTextual() && field.options().contains(json.asText());
                 default -> false;

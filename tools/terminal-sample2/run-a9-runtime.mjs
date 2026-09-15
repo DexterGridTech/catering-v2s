@@ -77,8 +77,8 @@ const mutations = [
     path.join(assemblyRoot, 'App.tsx'),
     source => replaceExactly(
       source,
-      'return createSurfaceForDisplayIndex(assembly, displayIndex)',
-      'return createSurfaceForDisplayIndex(assembly, 1)',
+      'renderSurface={(assembly, nextDisplayIndex) => createSurfaceForDisplayIndex(assembly, nextDisplayIndex)}',
+      'renderSurface={(assembly, _nextDisplayIndex) => createSurfaceForDisplayIndex(assembly, 1)}',
       'A9 App display index mutation',
     ),
   ],
@@ -152,7 +152,9 @@ try {
       writeReadback('a9-restored-metro-filtered.log', filteredMetroLog(restoredLog))
     }
     runAdb(['shell', 'am', 'force-stop', packageName], 'final package cleanup')
-    runAdb(['reverse', '--remove', `tcp:${port}`], 'final adb reverse cleanup')
+    if (state.process !== null) {
+      runAdb(['reverse', '--remove', `tcp:${port}`], 'final adb reverse cleanup')
+    }
     if (!(await stopMetro(state))) throw new Error('Metro cleanup did not terminate')
     const pidResult = spawnSync('adb', ['-s', serial, 'shell', 'pidof', packageName], {
       cwd: repositoryRoot,

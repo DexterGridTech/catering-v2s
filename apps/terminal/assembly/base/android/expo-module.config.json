@@ -1,0 +1,6 @@
+{
+  "platforms": ["android"],
+  "android": {
+    "modules": ["com.catering.v2s.terminal.assembly.base.android.TerminalNativeLoadingModule"]
+  }
+}

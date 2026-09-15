@@ -1,5 +1,6 @@
 import {Button, Modal, Space} from 'antd';
 import {testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {extensionTestIds} from '../../../app/automation/extensionTestIds';
 
 type Props = {outcome?: 'saved' | 'conflict'; onClose: () => void; onViewLatest: () => void};
 
@@ -18,7 +19,7 @@ export function ExtensionDefinitionSaveModal({outcome, onClose, onViewLatest}: P
       footer={
         conflict ? (
           <Space>
-            <Button onClick={onClose} {...testId('extension-definition-conflict-cancel')}>
+            <Button onClick={onClose} {...testId(extensionTestIds.conflictCancel)}>
               取消
             </Button>
             <Button
@@ -27,7 +28,7 @@ export function ExtensionDefinitionSaveModal({outcome, onClose, onViewLatest}: P
                 onViewLatest();
                 onClose();
               }}
-              {...testId('extension-definition-view-latest')}
+              {...testId(extensionTestIds.viewLatest)}
             >
               查看最新配置
             </Button>
@@ -36,9 +37,9 @@ export function ExtensionDefinitionSaveModal({outcome, onClose, onViewLatest}: P
       }
       okText="确认"
       cancelButtonProps={conflict ? undefined : {style: {display: 'none'}}}
-      okButtonProps={testId('extension-definition-save-confirm')}
+      okButtonProps={testId(extensionTestIds.saveConfirm)}
       destroyOnHidden
-      {...testId('extension-definition-save-result')}
+      {...testId(extensionTestIds.saveResult)}
     >
       <p>{conflict ? '字段配置已变化，请查看最新配置后重试。' : '字段配置已更新。'}</p>
     </Modal>

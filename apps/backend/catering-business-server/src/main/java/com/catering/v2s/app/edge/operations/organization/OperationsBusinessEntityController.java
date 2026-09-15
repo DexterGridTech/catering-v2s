@@ -228,7 +228,9 @@ public final class OperationsBusinessEntityController {
             @RequestParam(required = false, defaultValue = "NAME") String sort,
             @RequestParam(required = false, defaultValue = "ASC") String direction,
             @RequestParam(required = false, defaultValue = "1") int page,
-            @RequestParam(required = false, defaultValue = "20") int pageSize) {
+            @RequestParam(required = false, defaultValue = "20") int pageSize,
+            @RequestParam(required = false) String extensionFilters,
+            @RequestParam(required = false) String definitionRevision) {
         WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion);
         BusinessEntityService.BrandPage values = reads.brands(
                 session.workspaceUuid(),
@@ -238,7 +240,9 @@ public final class OperationsBusinessEntityController {
                 sort,
                 direction,
                 page,
-                pageSize);
+                pageSize,
+                extensionFilters,
+                definitionRevision);
         return new BrandPage(
                 new BrandPageMetadata(
                         groupWorkspaceKey,
@@ -246,7 +250,8 @@ public final class OperationsBusinessEntityController {
                         (long) values.pageSize(),
                         (long) values.total(),
                         sortKey(sort),
-                        sortDirection(direction)),
+                        sortDirection(direction),
+                        values.definitionRevision()),
                 values.items().stream().map(BusinessEntityWireMapper::brand).toList());
     }
 
@@ -263,7 +268,9 @@ public final class OperationsBusinessEntityController {
             @RequestParam(required = false, defaultValue = "NAME") String sort,
             @RequestParam(required = false, defaultValue = "ASC") String direction,
             @RequestParam(required = false, defaultValue = "1") int page,
-            @RequestParam(required = false, defaultValue = "20") int pageSize) {
+            @RequestParam(required = false, defaultValue = "20") int pageSize,
+            @RequestParam(required = false) String extensionFilters,
+            @RequestParam(required = false) String definitionRevision) {
         WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion);
         BusinessEntityService.EntityPage values = reads.tenants(
                 session.workspaceUuid(),
@@ -276,7 +283,9 @@ public final class OperationsBusinessEntityController {
                 sort,
                 direction,
                 page,
-                pageSize);
+                pageSize,
+                extensionFilters,
+                definitionRevision);
         return new TenantPage(
                 new TenantPageMetadata(
                         groupWorkspaceKey,
@@ -284,7 +293,8 @@ public final class OperationsBusinessEntityController {
                         (long) values.pageSize(),
                         (long) values.total(),
                         sortKey(sort),
-                        sortDirection(direction)),
+                        sortDirection(direction),
+                        values.definitionRevision()),
                 values.items().stream().map(BusinessEntityWireMapper::tenant).toList());
     }
 
@@ -301,7 +311,9 @@ public final class OperationsBusinessEntityController {
             @RequestParam(required = false, defaultValue = "NAME") String sort,
             @RequestParam(required = false, defaultValue = "ASC") String direction,
             @RequestParam(required = false, defaultValue = "1") int page,
-            @RequestParam(required = false, defaultValue = "20") int pageSize) {
+            @RequestParam(required = false, defaultValue = "20") int pageSize,
+            @RequestParam(required = false) String extensionFilters,
+            @RequestParam(required = false) String definitionRevision) {
         WorkspaceSessionReadback session = context(request, groupWorkspaceKey, expectedContextVersion);
         BusinessEntityService.EntityPage values = reads.headCompanies(
                 session.workspaceUuid(),
@@ -314,7 +326,9 @@ public final class OperationsBusinessEntityController {
                 sort,
                 direction,
                 page,
-                pageSize);
+                pageSize,
+                extensionFilters,
+                definitionRevision);
         return new HeadCompanyPage(
                 new HeadCompanyPageMetadata(
                         groupWorkspaceKey,
@@ -322,7 +336,8 @@ public final class OperationsBusinessEntityController {
                         (long) values.pageSize(),
                         (long) values.total(),
                         sortKey(sort),
-                        sortDirection(direction)),
+                        sortDirection(direction),
+                        values.definitionRevision()),
                 values.items().stream()
                         .map(BusinessEntityWireMapper::headCompanySummary)
                         .toList());

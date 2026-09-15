@@ -1,5 +1,5 @@
 import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime'
-import {dependencyModuleNames} from '../dependencies'
+import {runtimeModuleDependencyNames} from '../dependencies'
 import {createSelectionActor} from '../features/actors/actors'
 import {confirmWallpaperCommand, selectWallpaperCommand} from '../features/commands/commands'
 import {wallpaperErrorDefinitions} from '../foundations/errors'
@@ -13,7 +13,7 @@ export const createSampleWallpaperModule = (): RuntimeModule => {
   return Object.freeze({
     moduleName,
     kind: moduleKind,
-    dependencies: dependencyModuleNames.map(name => ({moduleName: name})),
+    dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
     errorDefinitions: wallpaperErrorDefinitions,
     commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,

@@ -1,4 +1,4 @@
-import {definePart} from '@catering-v2s/ui-base-render'
+import {definePart, type RenderLayerDismissal} from '@catering-v2s/ui-base-render'
 import {CustomerMember} from '../components/CustomerMember'
 import {CustomerWelcome} from '../components/CustomerWelcome'
 import {DiscardConfirm} from '../components/DiscardConfirm'
@@ -8,6 +8,7 @@ import {RegistryNotice} from '../components/RegistryNotice'
 import {DeskSystemNotice} from '../components/DeskSystemNotice'
 import {WaitingConfirm} from '../components/WaitingConfirm'
 import {WithdrawConfirm} from '../components/WithdrawConfirm'
+import {dispatchDeskSystemFailureDismissal} from '../foundations/systemFailureDismissal'
 
 const main = ['main'] as const
 const primary = ['PRIMARY'] as const
@@ -114,6 +115,11 @@ export const systemNoticePart = definePart({
   description: '向店员说明登记链路的基础设施失败，并允许继续操作',
   component: DeskSystemNotice,
   layerTier: 'alert',
+})
+
+export const layerDismissals: Readonly<Record<string, RenderLayerDismissal>> = Object.freeze({
+  [systemNoticePart.catalogEntry.partKey]: ({dispatchCommand}) =>
+    dispatchDeskSystemFailureDismissal(dispatchCommand),
 })
 
 export const customerWelcomePart = definePart({

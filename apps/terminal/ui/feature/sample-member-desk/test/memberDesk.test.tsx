@@ -2,8 +2,12 @@ import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {createElement, cloneElement, type ReactElement} from 'react'
 import {TextInput} from 'react-native'
 import {describe, expect, it} from 'vitest'
-import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort} from '@catering-v2s/kernel-base-platform-ports'
+import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort, NativeLoadingCapability} from '@catering-v2s/ui-base-test-support'
+import {createRequestId} from '@catering-v2s/kernel-base-contracts'
 import type {CommandDispatchResult, Runtime} from '@catering-v2s/kernel-base-runtime'
+import {createDisplayContextModule} from '@catering-v2s/kernel-base-display-context'
+import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session'
+import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry'
 import {
   createRendererCatalog,
   createRenderRuntimeFacts,
@@ -11,8 +15,9 @@ import {
 } from '@catering-v2s/ui-base-render'
 import {InputSurfaceFrame} from '@catering-v2s/ui-base-input'
 import type {RenderProviderProps} from '@catering-v2s/ui-base-render'
-import {createUiCatalog} from '@catering-v2s/kernel-base-ui-state'
+import {createUiCatalog, createUiStateModule, selectLayers} from '@catering-v2s/kernel-base-ui-state'
 import {sampleMemberDeskAssembly} from '../src/index'
+import {createSampleMemberDeskModule} from '../src/application/module'
 import {CustomerMember} from '../src/components/CustomerMember'
 import {DeskSystemNotice} from '../src/components/DeskSystemNotice'
 import {MemberList} from '../src/components/MemberList'
@@ -24,9 +29,15 @@ import {
   submitMemberCommand,
 } from '@catering-v2s/kernel-feature-sample-member-registry'
 import {deskSystemFailureObservedCommand} from '../src/features/commands/commands'
+import {createTestRuntime} from '../../../../kernel/feature/sample-member-registry/test/support'
+import {releaseRuntimeForTest} from '../../../../kernel/base/runtime/src/testing'
 
 type RuntimeStateRoot = ReturnType<Runtime['getState']>
-const RenderProvider = ActualRenderProvider as unknown as (props: Omit<RenderProviderProps, 'runtimeFacts'> & Readonly<{
+const nativeLoadingCapability: NativeLoadingCapability = Object.freeze({
+  targetPhysicalSurface: Object.freeze({surfaceKey: 'PRIMARY', displayIndex: 0}),
+  hideOnce: async reason => Object.freeze({hidden: true, alreadyHidden: false, reason}),
+})
+const RenderProvider = ActualRenderProvider as unknown as (props: Omit<RenderProviderProps, 'runtimeFacts' | 'nativeLoadingCapability'> & Readonly<{
   readonly runtimeFacts?: RenderProviderProps['runtimeFacts']
 }>) => ReactElement | null
 type TestInstanceQuery = Readonly<{
@@ -98,6 +109,7 @@ const mount = (
         deviceIdentity: {available: false, deviceId: null},
         platformPortCapabilities: [],
       }),
+      nativeLoadingCapability,
     }))
   })
   const frames = renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'})
@@ -741,5 +753,37 @@ describe('sample member desk UI feature', () => {
       data: {failure: 'promise-rejected'},
     }))
     act(() => { renderer.unmount() })
+  })
+
+  it('treats a repeated system failure observation as an idempotent existing notice', async () => {
+    const catalog = createUiCatalog(sampleMemberDeskAssembly.parts.map(part => part.catalogEntry))
+    const loggerEvents: LogEvent[] = []
+    const runtime = createTestRuntime([
+      createDisplayContextModule(),
+      createUiStateModule({catalog, variables: [], surfaceForm: 'mobile'}),
+      createSampleStaffSessionModule(),
+      createSampleMemberRegistryModule(),
+      createSampleMemberDeskModule(),
+    ], undefined, loggerEvents)
+    try {
+      await runtime.start()
+      const first = await runtime.dispatchCommand(deskSystemFailureObservedCommand, {operation: 'submit-member'}, {requestId: createRequestId()})
+      const second = await runtime.dispatchCommand(deskSystemFailureObservedCommand, {operation: 'submit-member'}, {requestId: createRequestId()})
+      expect(first.status).toBe('completed')
+      expect(second.status).toBe('completed')
+      expect(selectLayers(runtime.getState(), 'PRIMARY')).toEqual([
+        expect.objectContaining({
+          layerId: 'sample.desk.system-notice',
+          partKey: 'sample.desk.system-notice',
+          persistence: 'ephemeral',
+        }),
+      ])
+      expect(loggerEvents.some(event => event.event === 'ui-state.layer.duplicate-rejected')).toBe(false)
+      expect(runtime.journal.list().some(event =>
+        event.kind === 'command.completed' && event.status === 'error' && event.commandName === 'kernel.base.ui-state.open-layer',
+      )).toBe(false)
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
   })
 })

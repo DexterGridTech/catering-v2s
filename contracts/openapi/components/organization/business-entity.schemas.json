@@ -161,6 +161,12 @@
               },
               "direction": {
                 "$ref": "#/components/schemas/BusinessEntitySortDirection"
+              },
+              "definitionRevision": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0,
+                "nullable": true
               }
             }
           },
@@ -454,6 +460,12 @@
               },
               "direction": {
                 "$ref": "#/components/schemas/BusinessEntitySortDirection"
+              },
+              "definitionRevision": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0,
+                "nullable": true
               }
             }
           },
@@ -659,6 +671,12 @@
               },
               "direction": {
                 "$ref": "#/components/schemas/BusinessEntitySortDirection"
+              },
+              "definitionRevision": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0,
+                "nullable": true
               }
             }
           },

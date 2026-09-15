@@ -9,6 +9,7 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*",
     "typescript": "~6.0.3"
   }
 }

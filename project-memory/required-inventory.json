@@ -457,7 +457,12 @@
         "INDEPENDENT_SUBAGENT_REQUIRED",
         "BLIND_REVIEW_FIRST",
         "AUTHOR_INTAKE_ONLY",
-        "SUBAGENT_INPUT_CHECKLIST_REQUIRED"
+        "SUBAGENT_INPUT_CHECKLIST_REQUIRED",
+        "SUBAGENT_ADVERSARIAL_REVIEW_TWO_ROUND_LIMIT",
+        "DEXTER_RELAYED_CODEX_CLAUDE_REVIEW_NOT_ROUND_LIMITED",
+        "IMPLEMENTATION_RECONCILIATION_NOT_ROUND_LIMITED",
+        "IMPLEMENTATION_REVIEW_AGAINST_DESIGN_NOT_ROUND_LIMITED",
+        "MAIN_AGENT_REVIEW_FALLBACK_AFTER_REPEATED_SUBAGENT_FAILURE"
       ],
       "assertionSources": [
         {
@@ -479,10 +484,36 @@
           "assertionKey": "SUBAGENT_INPUT_CHECKLIST_REQUIRED",
           "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
           "anchor": "## 2. 独立、盲审与最小输入"
+        },
+        {
+          "assertionKey": "SUBAGENT_ADVERSARIAL_REVIEW_TWO_ROUND_LIMIT",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 1. 裁决"
+        },
+        {
+          "assertionKey": "DEXTER_RELAYED_CODEX_CLAUDE_REVIEW_NOT_ROUND_LIMITED",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 1. 裁决"
+        },
+        {
+          "assertionKey": "IMPLEMENTATION_RECONCILIATION_NOT_ROUND_LIMITED",
+          "path": "doc/platform/review-standard.md",
+          "anchor": "### 实施步骤级独立对账 · 在下一步骤前完成"
+        },
+        {
+          "assertionKey": "IMPLEMENTATION_REVIEW_AGAINST_DESIGN_NOT_ROUND_LIMITED",
+          "path": "doc/platform/review-standard.md",
+          "anchor": "### 动作 2 · 与本批设计文档逐条对账"
+        },
+        {
+          "assertionKey": "MAIN_AGENT_REVIEW_FALLBACK_AFTER_REPEATED_SUBAGENT_FAILURE",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 6. 2026-09-15 Dexter 补充裁决：重复失败后的主 agent 接管"
         }
       ],
       "sourceRefs": [
-        "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md"
+        "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+        "doc/platform/review-standard.md"
       ]
     },
     {
@@ -711,7 +742,8 @@
         "IMPLEMENTATION_CODE_REVIEW_SAME_STANDARD",
         "ADVERSARIAL_FINDING_DIALECTICAL_INTAKE",
         "INDEPENDENT_SUBAGENT_ADVERSARIAL_REVIEW",
-        "CODEX_ADVERSARIAL_REVIEW_MAX_TWO_ROUNDS"
+        "CODEX_ADVERSARIAL_REVIEW_MAX_TWO_ROUNDS",
+        "MAIN_AGENT_REVIEW_FALLBACK_AFTER_REPEATED_SUBAGENT_FAILURE"
       ],
       "assertionSources": [
         {
@@ -763,6 +795,11 @@
           "assertionKey": "CODEX_ADVERSARIAL_REVIEW_MAX_TWO_ROUNDS",
           "path": "doc/decisions/2026-07-24-v2s-solution-reasonableness-review-policy.md",
           "anchor": "## 10. 2026-07-25 独立子 agent 修订"
+        },
+        {
+          "assertionKey": "MAIN_AGENT_REVIEW_FALLBACK_AFTER_REPEATED_SUBAGENT_FAILURE",
+          "path": "doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md",
+          "anchor": "## 6. 2026-09-15 Dexter 补充裁决：重复失败后的主 agent 接管"
         }
       ],
       "sourceRefs": [

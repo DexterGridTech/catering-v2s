@@ -16,9 +16,23 @@ public record ExtensionDefinitionReadback(
             String fieldKey,
             String label,
             String fieldType,
+            Boolean listDisplay,
+            Boolean searchable,
             boolean required,
             List<String> options,
             String status,
             int displayOrder,
-            String displaySuffix) {}
+            String displaySuffix) {
+        public Field(
+                String fieldKey,
+                String label,
+                String fieldType,
+                boolean required,
+                List<String> options,
+                String status,
+                int displayOrder,
+                String displaySuffix) {
+            this(fieldKey, label, fieldType, false, false, required, options, status, displayOrder, displaySuffix);
+        }
+    }
 }

@@ -1,5 +1,6 @@
 import type {RenderProviderProps} from '../src/index'
 import {createRenderRuntimeFacts, resolveDebugMode} from '../src/index'
+import type {NativeLoadingCapability} from '@catering-v2s/kernel-base-platform-ports'
 
 const runtimeFacts: RenderProviderProps['runtimeFacts'] = createRenderRuntimeFacts({
   environmentMode: 'TEST',
@@ -17,9 +18,15 @@ const selectUiVariable: RenderProviderProps['selectUiVariable'] = (_root, declar
 
 const selectSurfaceForm: RenderProviderProps['selectSurfaceForm'] = () => 'laptop'
 
+export const nativeLoadingCapability: NativeLoadingCapability = Object.freeze({
+  targetPhysicalSurface: Object.freeze({surfaceKey: 'PRIMARY', displayIndex: 0}),
+  hideOnce: async reason => Object.freeze({hidden: true, alreadyHidden: false, reason}),
+})
+
 export const unusedRenderProviderBindings = Object.freeze({
   dispatchCommand,
   selectUiVariable,
   selectSurfaceForm,
   runtimeFacts,
+  nativeLoadingCapability,
 })

@@ -1,0 +1,36 @@
+         1789164744.623  5069  5069 I TerminalDualScreen: event=primary-activity-configuration displayIndex=0 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=1280 screenHeightDp=800 smallestWidthDp=800 orientation=2 resourceWidthPx=2560 resourceHeightPx=1600
+         1789164744.633  5069  5069 I TerminalDualScreen: event=secondary-react-surface-context displayIndex=1 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=962 screenHeightDp=541 smallestWidthDp=541 orientation=2 resourceWidthPx=1280 resourceHeightPx=720
+         1789164744.633  5069  5069 I TerminalDualScreen: event=secondary-react-surface-created displayId=2 surfaceDensityDpi=320 surfaceDensity=2.0 surfaceWidthPx=0 surfaceHeightPx=0
+         1789164744.641  5069  5069 I TerminalDualScreen: event=secondary-start-requested displayId=2 displayCount=2
+         1789164744.651  5069  5069 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=320 density=2.0 logicalWidth=640.0 logicalHeight=360.0
+         1789164744.651  5069  5069 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789164744.664  5069  5098 I ExpoModulesCore: ✅ AppContext was initialized
+         1789164744.691  5069  5069 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789164744.699  5069  5069 I TerminalDualScreen: event=secondary-presentation-window-post-create displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789164744.699  5069  5069 I TerminalDualScreen: event=secondary-presentation-window-post-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789164744.699  5069  5069 I TerminalDualScreen: event=secondary-react-surface-post-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=320 density=2.0 logicalWidth=640.0 logicalHeight=360.0
+         1789164744.701  5069  5069 I TerminalDualScreen: event=primary-window-post-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789164744.702  5069  5069 I TerminalDualScreen: event=secondary-start-completed
+         1789164744.709  5069  5100 I ExpoModulesCore: ✅ JSI interop was installed
+         1789164744.729  5069  5100 I ExpoModulesCore: ✅ Constants were exported
+         1789164744.819  5069  5069 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789164744.820  5069  5069 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=320 density=2.0 logicalWidth=640.0 logicalHeight=360.0
+         1789164744.820  5069  5069 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789164744.847  5069  5069 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=320 density=2.0 logicalWidth=640.0 logicalHeight=360.0
+         1789164744.847  5069  5069 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789164744.871  5069  5069 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789164744.878  5069  5100 I ReactNativeJS:   category: 'startup.ready-candidate',
+         1789164744.878  5069  5100 I ReactNativeJS:   event: 'startup.ready-candidate',
+         1789164744.883  5069  5100 I ReactNativeJS:   category: 'startup.ready',
+         1789164744.883  5069  5100 I ReactNativeJS:   event: 'startup.ready',
+         1789164744.889  5069  5100 I ReactNativeJS:   category: 'startup.complete',
+         1789164744.889  5069  5100 I ReactNativeJS:   event: 'startup.complete',
+         1789164744.910  5069  5100 I ReactNativeJS:   category: 'startup.ready-hidden',
+         1789164744.910  5069  5100 I ReactNativeJS:   event: 'startup.ready-hidden',
+         1789164744.976  5069  5069 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789164745.409  5069  5069 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789164745.741  5148  5148 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789164745.745  5148  5148 I AndroidRuntime: Using default boot image
+         1789164745.745  5148  5148 I AndroidRuntime: Leaving lock profiling enabled
+         1789164745.796  5148  5148 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789164746.815  5148  5148 D AndroidRuntime: Shutting down VM

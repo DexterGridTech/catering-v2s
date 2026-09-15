@@ -1,5 +1,6 @@
 import {NameCodeText} from '@catering-v2s/admin-ui-foundation';
 import {createElement} from 'react';
+import {extensionQueryValues} from './extensionList';
 import type {
   OrganizationOverviewCategory,
   OrganizationOverviewSortDirection,
@@ -7,6 +8,7 @@ import type {
   OrganizationOverviewSource,
   OrganizationOverviewStatus,
   OrganizationOverviewType,
+  ExtensionDefinition,
 } from '../../../app/api/generated/platform-edge';
 
 export type OrganizationTab = {
@@ -26,6 +28,7 @@ export type OrganizationFilters = {
   brandId?: string;
   tenantId?: string;
   headCompanyId?: string;
+  extensionFilterValues?: Record<string, unknown>;
 };
 export type OrganizationFilterOption = {
   kind: 'PROJECT' | 'BRAND' | 'TENANT' | 'HEAD_COMPANY';
@@ -55,7 +58,13 @@ export function updateOrganizationTabQueryState(
 
 /** The owner only permits reference candidates for STORE; retain no invalid ids across category changes. */
 export function filtersForOrganizationTab(tab: OrganizationTab, current: OrganizationFilters): OrganizationFilters {
-  const common = {name: current.name, code: current.code, status: current.status, source: current.source};
+  const common = {
+    name: current.name,
+    code: current.code,
+    status: current.status,
+    source: current.source,
+    extensionFilterValues: current.extensionFilterValues,
+  };
   if (tab.category === 'STORE')
     return {
       ...common,
@@ -77,11 +86,14 @@ export function organizationOverviewQuery(
   pageSize: number,
   sort: OrganizationOverviewSortKey,
   direction: OrganizationOverviewSortDirection,
+  definition?: ExtensionDefinition,
 ) {
+  const {extensionFilterValues, ...ownerFilters} = filtersForOrganizationTab(tab, current);
   return {
     category: tab.category,
     type: tab.type,
-    ...filtersForOrganizationTab(tab, current),
+    ...ownerFilters,
+    ...extensionQueryValues(definition, extensionFilterValues),
     sort,
     direction,
     page,

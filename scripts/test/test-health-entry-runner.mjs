@@ -39,6 +39,7 @@ const nodeTestFiles = Object.freeze([
   'scripts/test/catalog-inventory-rtk-tag-generation.test.mjs',
   'scripts/test/catalog-p3-model-migration.test.mjs',
   'scripts/test/catalog-inventory-seed-identity.test.mjs',
+  'scripts/test/extension-field-contract-structure.test.mjs',
   'scripts/test/frontend-idempotency-boundary.test.mjs',
   'scripts/test/frontend-transport-cache-lifecycle.test.mjs',
   'scripts/test/managed-run-summary.test.mjs',

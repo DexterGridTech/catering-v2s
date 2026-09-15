@@ -12,6 +12,8 @@ export type LedgerError = Readonly<{
   message: string
   category: AppError['category']
   severity: AppError['severity']
+  /** Only bounded, non-sensitive machine-readable details survive ledger normalization. */
+  details?: Readonly<Record<string, string | number | boolean | null>>
 }>
 
 export type ActorExecutionStatus =

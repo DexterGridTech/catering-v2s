@@ -4,6 +4,7 @@ import {
   AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  formatTypedExtensionValue,
   NameCodeText,
   testId,
   useDetailDrawer,
@@ -15,6 +16,10 @@ import type {ExtensionDefinition, JsonValue, OrganizationStore} from '../../../a
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {operationsDetailDrawerTestIds} from '../../../app/automation/operationsDetailDrawerTestIds';
+import {
+  organizationStoreStatusLabels,
+  toggleOrganizationStoreStatus,
+} from '../../organization-structure/model/organizationStatus';
 
 type Props = {
   store?: OrganizationStore;
@@ -34,10 +39,7 @@ function extensionItems(definition: ExtensionDefinition | undefined, values: Rec
     .map(field => ({
       key: `extension-${field.key}`,
       label: field.label,
-      children:
-        values?.[field.key] === undefined || values[field.key] === null || values[field.key] === ''
-          ? '—'
-          : String(values[field.key]),
+      children: formatTypedExtensionValue(values?.[field.key], field),
     }));
 }
 
@@ -79,6 +81,7 @@ export function StoreDetailDrawer({
     else closeLatest();
   }, [closeLatest, latestStore.currentData, openLatest]);
   const selected = latestTarget;
+  const statusTarget = selected ? toggleOrganizationStoreStatus(selected.status) : undefined;
   const loading = Boolean(store) && (latestStore.isFetching || definition.isFetching);
   const problem = latestStore.error ? '门店详情暂时无法获取，请关闭后重新进入。' : undefined;
   const definitionWarning = definition.error ? '扩展字段暂时无法获取，当前仅显示已确认的基础资料。' : undefined;
@@ -101,7 +104,7 @@ export function StoreDetailDrawer({
             ),
             onClick: onAudit,
           },
-          ...(canEdit
+          ...(canEdit && selected.status !== 'VOIDED'
             ? [
                 {
                   key: 'edit',
@@ -114,13 +117,13 @@ export function StoreDetailDrawer({
                 },
               ]
             : []),
-          ...(canTransition
+          ...(canTransition && statusTarget
             ? [
                 {
                   key: 'status',
                   label: (
                     <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.store.status}>
-                      {selected.status === 'ENABLED' ? '停用' : '启用'}
+                      {statusTarget === 'DISABLED' ? '停用' : '启用'}
                     </AdminDetailActionLabel>
                   ),
                   onClick: () => closeThen(onStatus),
@@ -200,7 +203,7 @@ export function StoreDetailDrawer({
                 '未设置'
               ),
             },
-            {key: 'status', label: '状态', children: selected.status === 'ENABLED' ? '启用' : '停用'},
+            {key: 'status', label: '状态', children: organizationStoreStatusLabels[selected.status]},
             {key: 'notes', label: '备注', children: selected.notes ?? '—'},
             ...extensionItems(definition.currentData, selected.extensionValues),
           ]}

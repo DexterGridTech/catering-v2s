@@ -1,0 +1,157 @@
+{
+  "runId": "sample2-frozen-mobile-1789474277923",
+  "tool": "tools/terminal-sample2/run-sample2-frozen-journey.mjs",
+  "packageName": "com.catering.v2s.terminal.samplewallpaper",
+  "activity": "com.catering.v2s.terminal.samplewallpaper/.MainActivity",
+  "serial": "emulator-5556",
+  "shape": "mobile",
+  "startedAt": "2026-09-15T12:11:17.923Z",
+  "business": "NOT_RUN",
+  "cleanup": "PASS",
+  "firstFailure": "picker-after-login: confirm control missing",
+  "lastKnownGood": "anonymous-login",
+  "brokenBoundary": "anonymous-login",
+  "apkBinding": {
+    "installMode": "install-release",
+    "local": {
+      "path": "apps/terminal/assembly/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk",
+      "exists": true,
+      "bytes": 88329653,
+      "sha256": "65242127eef6df56fa48fe0ffa042e171bbffeea2024fe76cbf66e0c7f2d4b1b"
+    },
+    "installed": {
+      "paths": [
+        "/data/app/~~rmUPgKdEyDCSrOkhaSY4bw==/com.catering.v2s.terminal.samplewallpaper-F2hTWayUQqmSY29coOacHA==/base.apk"
+      ],
+      "path": "/data/app/~~rmUPgKdEyDCSrOkhaSY4bw==/com.catering.v2s.terminal.samplewallpaper-F2hTWayUQqmSY29coOacHA==/base.apk",
+      "bytes": 88329653,
+      "sha256": "65242127eef6df56fa48fe0ffa042e171bbffeea2024fe76cbf66e0c7f2d4b1b"
+    }
+  },
+  "steps": [
+    {
+      "name": "anonymous",
+      "timestamp": "2026-09-15T12:11:25.182Z",
+      "expectedPrimaryPartKey": "sample.auth.login",
+      "expectedBusinessState": {
+        "observedBackgroundAssetId": "none",
+        "backgroundPresent": false,
+        "confirmEnabled": false
+      },
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "ui-base-render:layer-stack",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": null
+        },
+        {
+          "id": "w1",
+          "node": null
+        },
+        {
+          "id": "w2",
+          "node": null
+        },
+        {
+          "id": "w3",
+          "node": null
+        }
+      ],
+      "backgroundPresent": false,
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 720,
+          "height": 1280,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": null,
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 720,
+          "height": 1280
+        },
+        "surfaceSecondary": null
+      }
+    }
+  ],
+  "display": {
+    "ids": [
+      0
+    ],
+    "displays": [
+      {
+        "id": 0,
+        "name": "Built-in Screen",
+        "width": 720,
+        "height": 1280,
+        "uniqueId": "local:4619827259835644672",
+        "flags": [
+          "FLAG_SECURE",
+          "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+          "FLAG_TRUSTED"
+        ]
+      }
+    ],
+    "selectedPrimaryDisplayId": 0,
+    "selectedPrimaryName": "Built-in Screen",
+    "selectedPrimaryUniqueId": "local:4619827259835644672",
+    "selectedPrimaryWidth": 720,
+    "selectedPrimaryHeight": 1280,
+    "selectedSecondaryDisplayId": null,
+    "selectedSecondaryName": null,
+    "selectedSecondaryUniqueId": null,
+    "selectedSecondaryWidth": null,
+    "selectedSecondaryHeight": null,
+    "hasSecondary": false
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "primaryDisplays": [
+      {
+        "id": "4619827259835644672",
+        "name": "EMU_display_0",
+        "width": 720,
+        "height": 1280
+      }
+    ],
+    "virtualIds": [],
+    "virtualDisplays": [],
+    "selectedPrimarySurfaceId": "4619827259835644672",
+    "selectedPrimarySurfaceName": "EMU_display_0",
+    "selectedPrimarySurfaceWidth": 720,
+    "selectedPrimarySurfaceHeight": 1280,
+    "selectedSecondarySurfaceId": null,
+    "selectedSecondarySurfaceName": null
+  },
+  "finishedAt": "2026-09-15T12:12:03.651Z"
+}

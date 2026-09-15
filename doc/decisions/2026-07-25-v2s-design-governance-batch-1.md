@@ -216,6 +216,6 @@ implementation-ready 的依据、不得再次运行其 Claude handoff，也不�
 从下一个 `REVIEW_CYCLE_ID + REVIEW_TARGET + 批准范围` 起，`REVIEW_TARGET=DESIGN` 与
 `REVIEW_TARGET=IMPLEMENTATION` 的每一轮对抗审查必须由与作者会话不同、fresh 上下文的独立子
 agent 执行。作者会话仅可在独立 verdict 形成后进行辩证 intake、逐条 reopen 与处置；不得以作者
-自审代写或取代该 verdict。两轮上限和第二轮 `SELF_DECIDED` 收口规则不变，但其依据是独立子
-agent 的 findings 与作者处置证据。详见
+自审代写或取代该 verdict。`REVIEW_TARGET=DESIGN` 的两轮上限和第二轮 `SELF_DECIDED` 收口规则不变，但其依据是独立子
+agent 的 findings 与作者处置证据；2026-09-14 起 IMPLEMENTATION 审查不设轮次上限，但必须依据详设文档。详见
 `doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md`。

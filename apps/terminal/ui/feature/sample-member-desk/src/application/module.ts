@@ -1,5 +1,5 @@
-import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime'
-import {dependencyModuleNames} from '../dependencies'
+import {createFeatureAssemblyModule, type CreateFeatureAssemblyModuleInput} from '@catering-v2s/ui-base-feature-assembly'
+import {runtimeModuleDependencyNames} from '../dependencies'
 import {
   deskSystemFailureDismissedCommand,
   deskSystemFailureObservedCommand,
@@ -32,11 +32,7 @@ const commands = [
   deskSystemFailureDismissedCommand,
 ] as const
 
-const runtimeModuleDependencies = dependencyModuleNames.filter(
-  name => name !== 'ui.base.render' && name !== 'ui.base.primitives' && name !== 'ui.base.input',
-)
-
-export const createSampleMemberDeskModule = (): RuntimeModule => {
+export const createSampleMemberDeskModuleInput = (): CreateFeatureAssemblyModuleInput => {
   const actors = [
     createDeskNavigationActor(),
     createDeskFormActor(),
@@ -46,17 +42,13 @@ export const createSampleMemberDeskModule = (): RuntimeModule => {
     createDeskNoticeActor(),
     createDeskSystemNoticeActor(),
   ] as const
-  return Object.freeze({
+  return {
     moduleName,
     kind: moduleKind,
-    // UI toolkit package edges are not runtime modules and must not enter the
-    // runtime module graph. The package dependency list remains complete.
-    dependencies: runtimeModuleDependencies.map(name => ({moduleName: name})),
-    commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
+    dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
     commandDefinitions: commands,
-    actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
-    slices: [],
-    stateSlices: [],
-  })
+  }
 }
+
+export const createSampleMemberDeskModule = () => createFeatureAssemblyModule(createSampleMemberDeskModuleInput())

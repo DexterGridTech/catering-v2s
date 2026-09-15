@@ -37,16 +37,23 @@ validate() {
   target="$(sed -n 's/^REVIEW_TARGET=//p' "$file" | head -1)"
   [[ "$target" == "DESIGN" || "$target" == "IMPLEMENTATION" ]] ||
     fail "REVIEW_TARGET_MISSING_OR_INVALID"
-  local cycle round round_limit final_decision
+  local cycle round round_limit final_decision round_limit_output=""
   cycle="$(sed -n 's/^REVIEW_CYCLE_ID=//p' "$file" | head -1)"
   round="$(sed -n 's/^REVIEW_ROUND=//p' "$file" | head -1)"
   round_limit="$(sed -n 's/^REVIEW_ROUND_LIMIT=//p' "$file" | head -1)"
   final_decision="$(sed -n 's/^ROUND_FINAL_DECISION=//p' "$file" | head -1)"
   [[ "$cycle" =~ ^[A-Z0-9][A-Z0-9._-]*$ ]] || fail "REVIEW_CYCLE_ID_MISSING_OR_INVALID"
-  [[ "$round" == "1" || "$round" == "2" ]] || fail "REVIEW_ROUND_MISSING_OR_EXCEEDS_TWO"
-  [[ "$round_limit" == "2" ]] || fail "REVIEW_ROUND_LIMIT_MUST_EQUAL_TWO"
-  if [[ "$round" == "2" && "$final_decision" != "SELF_DECIDED" ]]; then
-    fail "ROUND_TWO_MUST_SELF_DECIDE"
+  if [[ "$target" == "DESIGN" ]]; then
+    [[ "$round" == "1" || "$round" == "2" ]] || fail "REVIEW_ROUND_MISSING_OR_EXCEEDS_TWO"
+    [[ "$round_limit" == "2" ]] || fail "REVIEW_ROUND_LIMIT_MUST_EQUAL_TWO"
+    if [[ "$round" == "2" && "$final_decision" != "SELF_DECIDED" ]]; then
+      fail "ROUND_TWO_MUST_SELF_DECIDE"
+    fi
+    round_limit_output=$'REVIEW_ROUND_LIMIT=2\n'
+  else
+    [[ "$round" =~ ^[1-9][0-9]*$ ]] || fail "REVIEW_ROUND_MISSING_OR_INVALID"
+    [[ -z "$round_limit" ]] || fail "IMPLEMENTATION_REVIEW_ROUND_LIMIT_NOT_ALLOWED"
+    [[ -z "$final_decision" ]] || fail "IMPLEMENTATION_ROUND_FINAL_DECISION_NOT_ALLOWED"
   fi
 
   local heading
@@ -108,8 +115,8 @@ validate() {
       fail "IMPLEMENTATION_BUSINESS_BEHAVIOR_RECHECK_MISSING"
   fi
 
-  printf 'CODEX_SELF_REVIEW=PASS\nREVIEW_TARGET=%s\nREVIEW_CYCLE_ID=%s\nREVIEW_ROUND=%s\nREVIEW_ROUND_LIMIT=2\nFILE=%s\n' \
-    "$target" "$cycle" "$round" "${file#"$root_dir"/}"
+  printf 'CODEX_SELF_REVIEW=PASS\nREVIEW_TARGET=%s\nREVIEW_CYCLE_ID=%s\nREVIEW_ROUND=%s\n%sFILE=%s\n' \
+    "$target" "$cycle" "$round" "$round_limit_output" "${file#"$root_dir"/}"
 }
 
 self_test() {
@@ -149,9 +156,7 @@ EOF
   cat > "$good_implementation" <<'EOF'
 REVIEW_TARGET=IMPLEMENTATION
 REVIEW_CYCLE_ID=SELF-TEST-IMPLEMENTATION
-REVIEW_ROUND=2
-REVIEW_ROUND_LIMIT=2
-ROUND_FINAL_DECISION=SELF_DECIDED
+REVIEW_ROUND=3
 ## 用户任务
 业务用户要完成明确的用户任务。
 ## Dexter 立场
@@ -199,7 +204,6 @@ EOF
 REVIEW_TARGET=IMPLEMENTATION
 REVIEW_CYCLE_ID=SELF-TEST-CLOSURE-ONLY
 REVIEW_ROUND=1
-REVIEW_ROUND_LIMIT=2
 ## 闭环核验
 代码、测试、报告和 evidence 全部完整。
 ## 结论
@@ -229,7 +233,9 @@ owner、contract、evidence 与 cleanup 已核验。
 VERDICT=GO
 EOF
 
-  grep -v '^ROUND_FINAL_DECISION=' "$good_implementation" > "$round_two_no_decision"
+  sed 's/^REVIEW_ROUND=1$/REVIEW_ROUND=2/' "$good" > "$round_two_no_decision"
+  local implementation_round_limit="$temp_dir/implementation-round-limit.md"
+  { cat "$good_implementation"; printf 'REVIEW_ROUND_LIMIT=2\n'; } > "$implementation_round_limit"
 
   validate "$good" >/dev/null
   validate "$good_implementation" >/dev/null
@@ -245,7 +251,10 @@ EOF
   if (validate "$round_two_no_decision") >/dev/null 2>&1; then
     fail "RED_FIXTURE_ROUND_TWO_WITHOUT_SELF_DECISION_DID_NOT_FAIL"
   fi
-  printf 'CODEX_SELF_REVIEW_SELF_TEST=PASS\nDESIGN_TARGET=PASS\nIMPLEMENTATION_TARGET=PASS\nRED_FIXTURE_CLOSURE_ONLY=PASS\nRED_FIXTURE_BLIND_FINDING_ACCEPTANCE=PASS\nRED_FIXTURE_ROUND_THREE=PASS\nRED_FIXTURE_ROUND_TWO_WITHOUT_SELF_DECISION=PASS\n'
+  if (validate "$implementation_round_limit") >/dev/null 2>&1; then
+    fail "RED_FIXTURE_IMPLEMENTATION_ROUND_LIMIT_DID_NOT_FAIL"
+  fi
+  printf 'CODEX_SELF_REVIEW_SELF_TEST=PASS\nDESIGN_TARGET=PASS\nIMPLEMENTATION_TARGET=PASS\nRED_FIXTURE_CLOSURE_ONLY=PASS\nRED_FIXTURE_BLIND_FINDING_ACCEPTANCE=PASS\nRED_FIXTURE_ROUND_THREE=PASS\nRED_FIXTURE_ROUND_TWO_WITHOUT_SELF_DECISION=PASS\nRED_FIXTURE_IMPLEMENTATION_ROUND_LIMIT=PASS\n'
 }
 
 case "${1:-}" in

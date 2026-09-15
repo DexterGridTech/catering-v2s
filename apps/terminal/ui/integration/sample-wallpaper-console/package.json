@@ -42,6 +42,7 @@
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*",
     "@catering-v2s/kernel-feature-sample-wallpaper": "workspace:*",
     "@catering-v2s/ui-base-admin-shell": "workspace:*",
+    "@catering-v2s/ui-base-console-assembly": "workspace:*",
     "@catering-v2s/ui-base-input": "workspace:*",
     "@catering-v2s/ui-base-primitives": "workspace:*",
     "@catering-v2s/ui-base-render": "workspace:*",

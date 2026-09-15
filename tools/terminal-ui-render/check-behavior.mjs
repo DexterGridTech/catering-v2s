@@ -159,8 +159,8 @@ const mutations = Object.freeze([
     testName: 'resolves screen and layer through both catalogs and orders layers by tier/time/id',
     apply: sandbox => replaceOnce(
       path.join(sandbox.renderRoot, 'src/components/resolvePart.ts'),
-      'const entry = input.uiCatalog.byPartKey[input.placement.partKey]',
-      'const entry = undefined',
+      '  const entry = input.uiCatalog.byPartKey[input.placement.partKey]',
+      '  const entry = undefined',
     ),
   },
   {
@@ -199,8 +199,8 @@ const mutations = Object.freeze([
     testName: 'reports missing catalog, missing renderer, and invalid props on screen and layer paths',
     apply: sandbox => replaceOnce(
       path.join(sandbox.renderRoot, 'src/components/resolvePart.ts'),
-      "return createElement(RenderFallback, {reason: 'missing-renderer', key: input.elementKey})",
-      'return null',
+      "      node: createElement(RenderFallback, {reason: 'missing-renderer', key: input.elementKey}),",
+      '      node: null,',
     ),
   },
   {
@@ -209,8 +209,8 @@ const mutations = Object.freeze([
     testName: 'reports missing catalog, missing renderer, and invalid props on screen and layer paths',
     apply: sandbox => replaceOnce(
       path.join(sandbox.renderRoot, 'src/components/resolvePart.ts'),
-      "return createElement(RenderFallback, {reason: 'invalid-props', key: input.elementKey})",
-      'return createElement(binding.component, {})',
+      "      node: createElement(RenderFallback, {reason: 'invalid-props', key: input.elementKey}),",
+      '      node: createElement(binding.component, {}),',
     ),
   },
   {

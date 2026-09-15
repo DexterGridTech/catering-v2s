@@ -1,0 +1,1432 @@
+{
+  "runId": "sample2-frozen-dual-1789476303664",
+  "tool": "tools/terminal-sample2/run-sample2-frozen-journey.mjs",
+  "packageName": "com.catering.v2s.terminal.samplewallpaper",
+  "activity": "com.catering.v2s.terminal.samplewallpaper/.MainActivity",
+  "serial": "emulator-5554",
+  "shape": "dual",
+  "startedAt": "2026-09-15T12:45:03.664Z",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "firstFailure": null,
+  "lastKnownGood": "confirmed-w3-restored-without-pending",
+  "brokenBoundary": null,
+  "apkBinding": {
+    "installMode": "install-release",
+    "local": {
+      "path": "apps/terminal/assembly/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk",
+      "exists": true,
+      "bytes": 88329713,
+      "sha256": "0388b6f77b49841104cdd867103ceb641326b66279bc32af62f0e6021e8045dd"
+    },
+    "installed": {
+      "paths": [
+        "/data/app/~~3TPgGN3INXqYSR5xUAdIOQ==/com.catering.v2s.terminal.samplewallpaper-8ahMOo_TETP5T96siJIC6w==/base.apk"
+      ],
+      "path": "/data/app/~~3TPgGN3INXqYSR5xUAdIOQ==/com.catering.v2s.terminal.samplewallpaper-8ahMOo_TETP5T96siJIC6w==/base.apk",
+      "bytes": 88329713,
+      "sha256": "0388b6f77b49841104cdd867103ceb641326b66279bc32af62f0e6021e8045dd"
+    }
+  },
+  "steps": [
+    {
+      "name": "anonymous",
+      "timestamp": "2026-09-15T12:45:12.797Z",
+      "expectedPrimaryPartKey": "sample.auth.login",
+      "expectedSecondaryPartKey": "sample.wallpaper-console.waiting",
+      "expectedBusinessState": {
+        "observedBackgroundAssetId": "none",
+        "backgroundPresent": false,
+        "confirmEnabled": false
+      },
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "ui-base-render:layer-stack",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": null
+        },
+        {
+          "id": "w1",
+          "node": null
+        },
+        {
+          "id": "w2",
+          "node": null
+        },
+        {
+          "id": "w3",
+          "node": null
+        }
+      ],
+      "backgroundPresent": false,
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    },
+    {
+      "name": "picker-after-login",
+      "timestamp": "2026-09-15T12:45:52.509Z",
+      "expectedPrimaryPartKey": "sample.wallpaper.picker",
+      "expectedSecondaryPartKey": "sample.wallpaper-console.welcome",
+      "expectedBusinessState": {
+        "selectedWallpaperId": "none",
+        "confirmedWallpaperId": "none",
+        "observedEffectiveWallpaperId": "none",
+        "observedConfirmedWallpaperId": "none",
+        "observedBackgroundAssetId": "none",
+        "backgroundPresent": false,
+        "confirmEnabled": false
+      },
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.wallpaper.picker",
+        "sample.wallpaper.picker:title",
+        "sample.wallpaper.picker:options:scroll",
+        "sample.wallpaper.picker:options",
+        "sample.wallpaper.picker:options:none:card",
+        "sample.wallpaper.picker:options:none",
+        "sample.wallpaper.picker:options:none:label",
+        "sample.wallpaper.picker:options:w1:card",
+        "sample.wallpaper.picker:options:w1",
+        "sample.wallpaper.picker:options:w1:thumbnail",
+        "sample.wallpaper.picker:options:w1:label",
+        "sample.wallpaper.picker:options:w2:card",
+        "sample.wallpaper.picker:options:w2",
+        "sample.wallpaper.picker:options:w2:thumbnail",
+        "sample.wallpaper.picker:options:w2:label",
+        "sample.wallpaper.picker:options:w3:card",
+        "sample.wallpaper.picker:options:w3",
+        "sample.wallpaper.picker:options:w3:thumbnail",
+        "sample.wallpaper.picker:options:w3:label",
+        "sample.wallpaper.picker:confirm"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": {
+            "tag": "<node index=\"2\" text=\"\" resource-id=\"sample.wallpaper.picker:options:none\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"无壁纸\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"true\" bounds=\"[82,154][2478,202]\">",
+            "left": 82,
+            "top": 154,
+            "right": 2478,
+            "bottom": 202,
+            "selected": true,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w1",
+          "node": {
+            "tag": "<node index=\"5\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w1\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"山景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,358][2478,406]\">",
+            "left": 82,
+            "top": 358,
+            "right": 2478,
+            "bottom": 406,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w2",
+          "node": {
+            "tag": "<node index=\"9\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w2\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"湖景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,778][2478,826]\">",
+            "left": 82,
+            "top": 778,
+            "right": 2478,
+            "bottom": 826,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w3",
+          "node": {
+            "tag": "<node index=\"13\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w3\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"海滩\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,1198][2478,1246]\">",
+            "left": 82,
+            "top": 1198,
+            "right": 2478,
+            "bottom": 1246,
+            "selected": false,
+            "enabled": true
+          }
+        }
+      ],
+      "backgroundPresent": false,
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    },
+    {
+      "name": "w1-pending",
+      "timestamp": "2026-09-15T12:46:04.326Z",
+      "expectedPrimaryPartKey": "sample.wallpaper.picker",
+      "expectedSecondaryPartKey": "sample.wallpaper-console.welcome",
+      "expectedBusinessState": {
+        "selectedWallpaperId": "w1",
+        "confirmedWallpaperId": "none",
+        "observedEffectiveWallpaperId": "w1",
+        "observedBackgroundAssetId": "none",
+        "backgroundPresent": false,
+        "confirmEnabled": true
+      },
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.wallpaper.picker",
+        "sample.wallpaper.picker:title",
+        "sample.wallpaper.picker:options:scroll",
+        "sample.wallpaper.picker:options",
+        "sample.wallpaper.picker:options:none:card",
+        "sample.wallpaper.picker:options:none",
+        "sample.wallpaper.picker:options:none:label",
+        "sample.wallpaper.picker:options:w1:card",
+        "sample.wallpaper.picker:options:w1",
+        "sample.wallpaper.picker:options:w1:thumbnail",
+        "sample.wallpaper.picker:options:w1:label",
+        "sample.wallpaper.picker:options:w2:card",
+        "sample.wallpaper.picker:options:w2",
+        "sample.wallpaper.picker:options:w2:thumbnail",
+        "sample.wallpaper.picker:options:w2:label",
+        "sample.wallpaper.picker:options:w3:card",
+        "sample.wallpaper.picker:options:w3",
+        "sample.wallpaper.picker:options:w3:thumbnail",
+        "sample.wallpaper.picker:options:w3:label",
+        "sample.wallpaper.picker:confirm"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": {
+            "tag": "<node index=\"2\" text=\"\" resource-id=\"sample.wallpaper.picker:options:none\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"无壁纸\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,154][2478,202]\">",
+            "left": 82,
+            "top": 154,
+            "right": 2478,
+            "bottom": 202,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w1",
+          "node": {
+            "tag": "<node index=\"5\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w1\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"山景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"true\" bounds=\"[82,358][2478,406]\">",
+            "left": 82,
+            "top": 358,
+            "right": 2478,
+            "bottom": 406,
+            "selected": true,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w2",
+          "node": {
+            "tag": "<node index=\"9\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w2\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"湖景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,778][2478,826]\">",
+            "left": 82,
+            "top": 778,
+            "right": 2478,
+            "bottom": 826,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w3",
+          "node": {
+            "tag": "<node index=\"13\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w3\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"海滩\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,1198][2478,1246]\">",
+            "left": 82,
+            "top": 1198,
+            "right": 2478,
+            "bottom": 1246,
+            "selected": false,
+            "enabled": true
+          }
+        }
+      ],
+      "backgroundPresent": false,
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    },
+    {
+      "name": "w1-confirmed",
+      "timestamp": "2026-09-15T12:46:18.368Z",
+      "expectedPrimaryPartKey": "sample.wallpaper.picker",
+      "expectedSecondaryPartKey": "sample.wallpaper-console.welcome",
+      "expectedBusinessState": {
+        "selectedWallpaperId": "w1",
+        "confirmedWallpaperId": "w1",
+        "observedEffectiveWallpaperId": "w1",
+        "observedConfirmedWallpaperId": "w1",
+        "observedBackgroundAssetId": "w1",
+        "backgroundPresent": true,
+        "confirmEnabled": false
+      },
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.wallpaper.picker",
+        "sample.wallpaper.background",
+        "sample.wallpaper.picker:title",
+        "sample.wallpaper.picker:options:scroll",
+        "sample.wallpaper.picker:options",
+        "sample.wallpaper.picker:options:none:card",
+        "sample.wallpaper.picker:options:none",
+        "sample.wallpaper.picker:options:none:label",
+        "sample.wallpaper.picker:options:w1:card",
+        "sample.wallpaper.picker:options:w1",
+        "sample.wallpaper.picker:options:w1:thumbnail",
+        "sample.wallpaper.picker:options:w1:label",
+        "sample.wallpaper.picker:options:w2:card",
+        "sample.wallpaper.picker:options:w2",
+        "sample.wallpaper.picker:options:w2:thumbnail",
+        "sample.wallpaper.picker:options:w2:label",
+        "sample.wallpaper.picker:options:w3:card",
+        "sample.wallpaper.picker:options:w3",
+        "sample.wallpaper.picker:options:w3:thumbnail",
+        "sample.wallpaper.picker:options:w3:label",
+        "sample.wallpaper.picker:confirm"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": {
+            "tag": "<node index=\"2\" text=\"\" resource-id=\"sample.wallpaper.picker:options:none\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"无壁纸\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,120][2478,74]\">",
+            "left": 82,
+            "top": 120,
+            "right": 2478,
+            "bottom": 74,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w1",
+          "node": {
+            "tag": "<node index=\"5\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w1\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"山景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"true\" bounds=\"[82,230][2478,278]\">",
+            "left": 82,
+            "top": 230,
+            "right": 2478,
+            "bottom": 278,
+            "selected": true,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w2",
+          "node": {
+            "tag": "<node index=\"9\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w2\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"湖景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,650][2478,698]\">",
+            "left": 82,
+            "top": 650,
+            "right": 2478,
+            "bottom": 698,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w3",
+          "node": {
+            "tag": "<node index=\"13\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w3\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"海滩\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,1070][2478,1118]\">",
+            "left": 82,
+            "top": 1070,
+            "right": 2478,
+            "bottom": 1118,
+            "selected": false,
+            "enabled": true
+          }
+        }
+      ],
+      "backgroundPresent": true,
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    },
+    {
+      "name": "w2-pending",
+      "timestamp": "2026-09-15T12:46:30.285Z",
+      "expectedPrimaryPartKey": "sample.wallpaper.picker",
+      "expectedSecondaryPartKey": "sample.wallpaper-console.welcome",
+      "expectedBusinessState": {
+        "selectedWallpaperId": "w2",
+        "confirmedWallpaperId": "w1",
+        "observedEffectiveWallpaperId": "w2",
+        "observedBackgroundAssetId": "w1",
+        "backgroundPresent": true,
+        "confirmEnabled": true
+      },
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.wallpaper.picker",
+        "sample.wallpaper.background",
+        "sample.wallpaper.picker:title",
+        "sample.wallpaper.picker:options:scroll",
+        "sample.wallpaper.picker:options",
+        "sample.wallpaper.picker:options:none:card",
+        "sample.wallpaper.picker:options:none",
+        "sample.wallpaper.picker:options:none:label",
+        "sample.wallpaper.picker:options:w1:card",
+        "sample.wallpaper.picker:options:w1",
+        "sample.wallpaper.picker:options:w1:thumbnail",
+        "sample.wallpaper.picker:options:w1:label",
+        "sample.wallpaper.picker:options:w2:card",
+        "sample.wallpaper.picker:options:w2",
+        "sample.wallpaper.picker:options:w2:thumbnail",
+        "sample.wallpaper.picker:options:w2:label",
+        "sample.wallpaper.picker:options:w3:card",
+        "sample.wallpaper.picker:options:w3",
+        "sample.wallpaper.picker:options:w3:thumbnail",
+        "sample.wallpaper.picker:options:w3:label",
+        "sample.wallpaper.picker:confirm"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": {
+            "tag": "<node index=\"2\" text=\"\" resource-id=\"sample.wallpaper.picker:options:none\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"无壁纸\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,154][2478,202]\">",
+            "left": 82,
+            "top": 154,
+            "right": 2478,
+            "bottom": 202,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w1",
+          "node": {
+            "tag": "<node index=\"5\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w1\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"山景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,358][2478,406]\">",
+            "left": 82,
+            "top": 358,
+            "right": 2478,
+            "bottom": 406,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w2",
+          "node": {
+            "tag": "<node index=\"9\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w2\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"湖景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"true\" bounds=\"[82,778][2478,826]\">",
+            "left": 82,
+            "top": 778,
+            "right": 2478,
+            "bottom": 826,
+            "selected": true,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w3",
+          "node": {
+            "tag": "<node index=\"13\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w3\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"海滩\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,1198][2478,1246]\">",
+            "left": 82,
+            "top": 1198,
+            "right": 2478,
+            "bottom": 1246,
+            "selected": false,
+            "enabled": true
+          }
+        }
+      ],
+      "backgroundPresent": true,
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    },
+    {
+      "name": "w2-confirmed",
+      "timestamp": "2026-09-15T12:46:44.692Z",
+      "expectedPrimaryPartKey": "sample.wallpaper.picker",
+      "expectedSecondaryPartKey": "sample.wallpaper-console.welcome",
+      "expectedBusinessState": {
+        "selectedWallpaperId": "w2",
+        "confirmedWallpaperId": "w2",
+        "observedEffectiveWallpaperId": "w2",
+        "observedConfirmedWallpaperId": "w2",
+        "observedBackgroundAssetId": "w2",
+        "backgroundPresent": true,
+        "confirmEnabled": false
+      },
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.wallpaper.picker",
+        "sample.wallpaper.background",
+        "sample.wallpaper.picker:title",
+        "sample.wallpaper.picker:options:scroll",
+        "sample.wallpaper.picker:options",
+        "sample.wallpaper.picker:options:none:card",
+        "sample.wallpaper.picker:options:none",
+        "sample.wallpaper.picker:options:none:label",
+        "sample.wallpaper.picker:options:w1:card",
+        "sample.wallpaper.picker:options:w1",
+        "sample.wallpaper.picker:options:w1:thumbnail",
+        "sample.wallpaper.picker:options:w1:label",
+        "sample.wallpaper.picker:options:w2:card",
+        "sample.wallpaper.picker:options:w2",
+        "sample.wallpaper.picker:options:w2:thumbnail",
+        "sample.wallpaper.picker:options:w2:label",
+        "sample.wallpaper.picker:options:w3:card",
+        "sample.wallpaper.picker:options:w3",
+        "sample.wallpaper.picker:options:w3:thumbnail",
+        "sample.wallpaper.picker:options:w3:label",
+        "sample.wallpaper.picker:confirm"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": {
+            "tag": "<node index=\"2\" text=\"\" resource-id=\"sample.wallpaper.picker:options:none\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"无壁纸\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,120][2478,74]\">",
+            "left": 82,
+            "top": 120,
+            "right": 2478,
+            "bottom": 74,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w1",
+          "node": {
+            "tag": "<node index=\"5\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w1\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"山景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,230][2478,278]\">",
+            "left": 82,
+            "top": 230,
+            "right": 2478,
+            "bottom": 278,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w2",
+          "node": {
+            "tag": "<node index=\"9\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w2\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"湖景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"true\" bounds=\"[82,650][2478,698]\">",
+            "left": 82,
+            "top": 650,
+            "right": 2478,
+            "bottom": 698,
+            "selected": true,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w3",
+          "node": {
+            "tag": "<node index=\"13\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w3\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"海滩\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,1070][2478,1118]\">",
+            "left": 82,
+            "top": 1070,
+            "right": 2478,
+            "bottom": 1118,
+            "selected": false,
+            "enabled": true
+          }
+        }
+      ],
+      "backgroundPresent": true,
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    },
+    {
+      "name": "w3-pending-before-restart",
+      "timestamp": "2026-09-15T12:46:56.793Z",
+      "expectedPrimaryPartKey": "sample.wallpaper.picker",
+      "expectedSecondaryPartKey": "sample.wallpaper-console.welcome",
+      "expectedBusinessState": {
+        "selectedWallpaperId": "w3",
+        "confirmedWallpaperId": "w2",
+        "observedEffectiveWallpaperId": "w3",
+        "observedBackgroundAssetId": "w2",
+        "backgroundPresent": true,
+        "confirmEnabled": true
+      },
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.wallpaper.picker",
+        "sample.wallpaper.background",
+        "sample.wallpaper.picker:title",
+        "sample.wallpaper.picker:options:scroll",
+        "sample.wallpaper.picker:options",
+        "sample.wallpaper.picker:options:none:card",
+        "sample.wallpaper.picker:options:none",
+        "sample.wallpaper.picker:options:none:label",
+        "sample.wallpaper.picker:options:w1:card",
+        "sample.wallpaper.picker:options:w1",
+        "sample.wallpaper.picker:options:w1:thumbnail",
+        "sample.wallpaper.picker:options:w1:label",
+        "sample.wallpaper.picker:options:w2:card",
+        "sample.wallpaper.picker:options:w2",
+        "sample.wallpaper.picker:options:w2:thumbnail",
+        "sample.wallpaper.picker:options:w2:label",
+        "sample.wallpaper.picker:options:w3:card",
+        "sample.wallpaper.picker:options:w3",
+        "sample.wallpaper.picker:options:w3:thumbnail",
+        "sample.wallpaper.picker:options:w3:label",
+        "sample.wallpaper.picker:confirm"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": {
+            "tag": "<node index=\"2\" text=\"\" resource-id=\"sample.wallpaper.picker:options:none\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"无壁纸\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,154][2478,202]\">",
+            "left": 82,
+            "top": 154,
+            "right": 2478,
+            "bottom": 202,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w1",
+          "node": {
+            "tag": "<node index=\"5\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w1\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"山景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,358][2478,406]\">",
+            "left": 82,
+            "top": 358,
+            "right": 2478,
+            "bottom": 406,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w2",
+          "node": {
+            "tag": "<node index=\"9\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w2\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"湖景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,778][2478,826]\">",
+            "left": 82,
+            "top": 778,
+            "right": 2478,
+            "bottom": 826,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w3",
+          "node": {
+            "tag": "<node index=\"13\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w3\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"海滩\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"true\" bounds=\"[82,1198][2478,1246]\">",
+            "left": 82,
+            "top": 1198,
+            "right": 2478,
+            "bottom": 1246,
+            "selected": true,
+            "enabled": true
+          }
+        }
+      ],
+      "backgroundPresent": true,
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    },
+    {
+      "name": "w3-pending-after-restart",
+      "timestamp": "2026-09-15T12:47:06.724Z",
+      "expectedPrimaryPartKey": "sample.wallpaper.picker",
+      "expectedSecondaryPartKey": "sample.wallpaper-console.welcome",
+      "expectedBusinessState": {
+        "selectedWallpaperId": "w3",
+        "confirmedWallpaperId": "w2",
+        "observedEffectiveWallpaperId": "w3",
+        "observedBackgroundAssetId": "w2",
+        "backgroundPresent": true,
+        "confirmEnabled": true
+      },
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "sample.wallpaper.background",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.wallpaper.picker",
+        "ui-base-render:layer-stack",
+        "sample.wallpaper.picker:title",
+        "sample.wallpaper.picker:options:scroll",
+        "sample.wallpaper.picker:options",
+        "sample.wallpaper.picker:options:none:card",
+        "sample.wallpaper.picker:options:none",
+        "sample.wallpaper.picker:options:none:label",
+        "sample.wallpaper.picker:options:w1:card",
+        "sample.wallpaper.picker:options:w1",
+        "sample.wallpaper.picker:options:w1:thumbnail",
+        "sample.wallpaper.picker:options:w1:label",
+        "sample.wallpaper.picker:options:w2:card",
+        "sample.wallpaper.picker:options:w2",
+        "sample.wallpaper.picker:options:w2:thumbnail",
+        "sample.wallpaper.picker:options:w2:label",
+        "sample.wallpaper.picker:options:w3:card",
+        "sample.wallpaper.picker:options:w3",
+        "sample.wallpaper.picker:options:w3:thumbnail",
+        "sample.wallpaper.picker:options:w3:label",
+        "sample.wallpaper.picker:confirm"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": {
+            "tag": "<node index=\"2\" text=\"\" resource-id=\"sample.wallpaper.picker:options:none\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"无壁纸\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,154][2478,202]\">",
+            "left": 82,
+            "top": 154,
+            "right": 2478,
+            "bottom": 202,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w1",
+          "node": {
+            "tag": "<node index=\"5\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w1\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"山景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,358][2478,406]\">",
+            "left": 82,
+            "top": 358,
+            "right": 2478,
+            "bottom": 406,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w2",
+          "node": {
+            "tag": "<node index=\"9\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w2\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"湖景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,778][2478,826]\">",
+            "left": 82,
+            "top": 778,
+            "right": 2478,
+            "bottom": 826,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w3",
+          "node": {
+            "tag": "<node index=\"13\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w3\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"海滩\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"true\" bounds=\"[82,1198][2478,1246]\">",
+            "left": 82,
+            "top": 1198,
+            "right": 2478,
+            "bottom": 1246,
+            "selected": true,
+            "enabled": true
+          }
+        }
+      ],
+      "backgroundPresent": true,
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    },
+    {
+      "name": "w3-confirmed",
+      "timestamp": "2026-09-15T12:47:21.262Z",
+      "expectedPrimaryPartKey": "sample.wallpaper.picker",
+      "expectedSecondaryPartKey": "sample.wallpaper-console.welcome",
+      "expectedBusinessState": {
+        "selectedWallpaperId": "w3",
+        "confirmedWallpaperId": "w3",
+        "observedEffectiveWallpaperId": "w3",
+        "observedConfirmedWallpaperId": "w3",
+        "observedBackgroundAssetId": "w3",
+        "backgroundPresent": true,
+        "confirmEnabled": false
+      },
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "sample.wallpaper.background",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.wallpaper.picker",
+        "ui-base-render:layer-stack",
+        "sample.wallpaper.picker:title",
+        "sample.wallpaper.picker:options:scroll",
+        "sample.wallpaper.picker:options",
+        "sample.wallpaper.picker:options:none:card",
+        "sample.wallpaper.picker:options:none",
+        "sample.wallpaper.picker:options:none:label",
+        "sample.wallpaper.picker:options:w1:card",
+        "sample.wallpaper.picker:options:w1",
+        "sample.wallpaper.picker:options:w1:thumbnail",
+        "sample.wallpaper.picker:options:w1:label",
+        "sample.wallpaper.picker:options:w2:card",
+        "sample.wallpaper.picker:options:w2",
+        "sample.wallpaper.picker:options:w2:thumbnail",
+        "sample.wallpaper.picker:options:w2:label",
+        "sample.wallpaper.picker:options:w3:card",
+        "sample.wallpaper.picker:options:w3",
+        "sample.wallpaper.picker:options:w3:thumbnail",
+        "sample.wallpaper.picker:options:w3:label",
+        "sample.wallpaper.picker:confirm"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": {
+            "tag": "<node index=\"2\" text=\"\" resource-id=\"sample.wallpaper.picker:options:none\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"无壁纸\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,120][2478,74]\">",
+            "left": 82,
+            "top": 120,
+            "right": 2478,
+            "bottom": 74,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w1",
+          "node": {
+            "tag": "<node index=\"5\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w1\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"山景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,230][2478,278]\">",
+            "left": 82,
+            "top": 230,
+            "right": 2478,
+            "bottom": 278,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w2",
+          "node": {
+            "tag": "<node index=\"9\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w2\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"湖景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,650][2478,698]\">",
+            "left": 82,
+            "top": 650,
+            "right": 2478,
+            "bottom": 698,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w3",
+          "node": {
+            "tag": "<node index=\"13\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w3\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"海滩\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"true\" bounds=\"[82,1070][2478,1118]\">",
+            "left": 82,
+            "top": 1070,
+            "right": 2478,
+            "bottom": 1118,
+            "selected": true,
+            "enabled": true
+          }
+        }
+      ],
+      "backgroundPresent": true,
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    },
+    {
+      "name": "w3-confirmed-after-restart",
+      "timestamp": "2026-09-15T12:47:31.348Z",
+      "expectedPrimaryPartKey": "sample.wallpaper.picker",
+      "expectedSecondaryPartKey": "sample.wallpaper-console.welcome",
+      "expectedBusinessState": {
+        "selectedWallpaperId": "w3",
+        "confirmedWallpaperId": "w3",
+        "observedEffectiveWallpaperId": "w3",
+        "observedConfirmedWallpaperId": "w3",
+        "observedBackgroundAssetId": "w3",
+        "backgroundPresent": true,
+        "confirmEnabled": false
+      },
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "sample.wallpaper.background",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.wallpaper.picker",
+        "ui-base-render:layer-stack",
+        "sample.wallpaper.picker:title",
+        "sample.wallpaper.picker:options:scroll",
+        "sample.wallpaper.picker:options",
+        "sample.wallpaper.picker:options:none:card",
+        "sample.wallpaper.picker:options:none",
+        "sample.wallpaper.picker:options:none:label",
+        "sample.wallpaper.picker:options:w1:card",
+        "sample.wallpaper.picker:options:w1",
+        "sample.wallpaper.picker:options:w1:thumbnail",
+        "sample.wallpaper.picker:options:w1:label",
+        "sample.wallpaper.picker:options:w2:card",
+        "sample.wallpaper.picker:options:w2",
+        "sample.wallpaper.picker:options:w2:thumbnail",
+        "sample.wallpaper.picker:options:w2:label",
+        "sample.wallpaper.picker:options:w3:card",
+        "sample.wallpaper.picker:options:w3",
+        "sample.wallpaper.picker:options:w3:thumbnail",
+        "sample.wallpaper.picker:options:w3:label",
+        "sample.wallpaper.picker:confirm"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": {
+            "tag": "<node index=\"2\" text=\"\" resource-id=\"sample.wallpaper.picker:options:none\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"无壁纸\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,154][2478,202]\">",
+            "left": 82,
+            "top": 154,
+            "right": 2478,
+            "bottom": 202,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w1",
+          "node": {
+            "tag": "<node index=\"5\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w1\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"山景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,358][2478,406]\">",
+            "left": 82,
+            "top": 358,
+            "right": 2478,
+            "bottom": 406,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w2",
+          "node": {
+            "tag": "<node index=\"9\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w2\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"湖景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,778][2478,826]\">",
+            "left": 82,
+            "top": 778,
+            "right": 2478,
+            "bottom": 826,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w3",
+          "node": {
+            "tag": "<node index=\"13\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w3\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"海滩\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"true\" bounds=\"[82,1198][2478,1246]\">",
+            "left": 82,
+            "top": 1198,
+            "right": 2478,
+            "bottom": 1246,
+            "selected": true,
+            "enabled": true
+          }
+        }
+      ],
+      "backgroundPresent": true,
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    }
+  ],
+  "display": {
+    "ids": [
+      0,
+      2
+    ],
+    "displays": [
+      {
+        "id": 0,
+        "name": "Built-in Screen",
+        "width": 2560,
+        "height": 1600,
+        "uniqueId": "local:4619827259835644672",
+        "flags": [
+          "FLAG_SECURE",
+          "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+          "FLAG_TRUSTED"
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Emulator 2D Display",
+        "width": 1280,
+        "height": 720,
+        "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+        "flags": [
+          "FLAG_PRESENTATION",
+          "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+          "FLAG_TRUSTED"
+        ]
+      }
+    ],
+    "selectedPrimaryDisplayId": 0,
+    "selectedPrimaryName": "Built-in Screen",
+    "selectedPrimaryUniqueId": "local:4619827259835644672",
+    "selectedPrimaryWidth": 2560,
+    "selectedPrimaryHeight": 1600,
+    "selectedSecondaryDisplayId": 2,
+    "selectedSecondaryName": "Emulator 2D Display",
+    "selectedSecondaryUniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+    "selectedSecondaryWidth": 1280,
+    "selectedSecondaryHeight": 720,
+    "hasSecondary": true
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "primaryDisplays": [
+      {
+        "id": "4619827259835644672",
+        "name": "EMU_display_0",
+        "width": 2560,
+        "height": 1600
+      }
+    ],
+    "virtualIds": [
+      "11529215047789101945"
+    ],
+    "virtualDisplays": [
+      {
+        "id": "11529215047789101945",
+        "name": "Emulator 2D Display",
+        "width": null,
+        "height": null
+      }
+    ],
+    "selectedPrimarySurfaceId": "4619827259835644672",
+    "selectedPrimarySurfaceName": "EMU_display_0",
+    "selectedPrimarySurfaceWidth": 2560,
+    "selectedPrimarySurfaceHeight": 1600,
+    "selectedSecondarySurfaceId": "11529215047789101945",
+    "selectedSecondarySurfaceName": "Emulator 2D Display"
+  },
+  "finishedAt": "2026-09-15T12:47:31.501Z"
+}

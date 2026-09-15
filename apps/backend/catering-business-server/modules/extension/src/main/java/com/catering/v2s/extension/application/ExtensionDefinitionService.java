@@ -8,6 +8,7 @@ import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.api.ExtensionHostTypes;
 import com.catering.v2s.extension.api.ExtensionSubmission;
+import com.catering.v2s.extension.api.ExtensionValueSemantics;
 import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence;
 import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence.DefinitionRow;
 import com.catering.v2s.extension.application.persistence.ExtensionDefinitionPersistence.PreStateRow;
@@ -108,7 +109,7 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                 row.hostType(),
                 row.revision(),
                 row.updatedAtEpochMillis(),
-                readFields(row.definitionsJson()),
+                readFields(row.definitionsJson(), row.hostType()),
                 workspaceStatus,
                 blockers(workspaceStatus));
     }
@@ -213,7 +214,7 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
             List<Field> fields,
             AuditActor actor) {
         validateHost(hostType);
-        List<Field> normalized = normalize(fields);
+        List<Field> normalized = normalize(hostType, fields);
         ExtensionDefinitionPreState before =
                 loadExtensionDefinitionPreState(workspaceUuid, groupWorkspaceKey, hostType);
         Long existing = before == null ? null : before.revision();
@@ -261,7 +262,9 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
     private ExtensionDefinitionPreState loadExtensionDefinitionPreState(
             UUID workspaceUuid, String groupWorkspaceKey, String hostType) {
         PreStateRow row = persistence.findPreState(workspaceUuid, groupWorkspaceKey, hostType);
-        return row == null ? null : new ExtensionDefinitionPreState(row.revision(), readFields(row.definitionsJson()));
+        return row == null
+                ? null
+                : new ExtensionDefinitionPreState(row.revision(), readFields(row.definitionsJson(), hostType));
     }
 
     @Transactional
@@ -273,7 +276,8 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
             List<Field> fields,
             AuditActor actor,
             String idempotencyKey) {
-        List<Field> normalized = normalize(fields);
+        validateHost(hostType);
+        List<Field> normalized = normalize(hostType, fields);
         return receipts.execute(
                 idempotencyKey,
                 workspaceUuid,
@@ -306,7 +310,8 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                 hostType,
                 draftRequest(hostType, expectedVersion, fields),
                 () -> {
-                    Set<String> assignedKeys = new java.util.LinkedHashSet<>();
+                    Set<String> assignedKeys = new java.util.LinkedHashSet<>(historicalGeneratedFieldKeys(
+                            persistence.findDefinitionHistoryChanges(workspaceUuid, groupWorkspaceKey, hostType)));
                     for (DraftField field : fields) {
                         if (field.fieldKey() != null && !field.fieldKey().isBlank()) assignedKeys.add(field.fieldKey());
                     }
@@ -324,6 +329,8 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                                 key,
                                 field.label(),
                                 field.fieldType(),
+                                field.listDisplay(),
+                                field.searchable(),
                                 field.required(),
                                 field.options(),
                                 field.status(),
@@ -332,6 +339,26 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                     }
                     return replace(workspaceUuid, groupWorkspaceKey, hostType, expectedVersion, ownerFields, actor);
                 });
+    }
+
+    private static Set<String> historicalGeneratedFieldKeys(List<AuditChange> changes) {
+        Set<String> keys = new java.util.LinkedHashSet<>();
+        for (AuditChange change : changes) {
+            if (!"fieldDefinitions".equals(change.fieldKey())) continue;
+            reserveGeneratedFieldKeys(change.beforeValue(), keys);
+            reserveGeneratedFieldKeys(change.afterValue(), keys);
+        }
+        return keys;
+    }
+
+    private static void reserveGeneratedFieldKeys(String summary, Set<String> keys) {
+        if (summary == null || summary.isBlank()) return;
+        for (String description : summary.split(";", -1)) {
+            int separator = description.indexOf('|');
+            if (separator <= 0) continue;
+            String key = description.substring(0, separator);
+            if (key.matches("field_[0-9]+")) keys.add(key);
+        }
     }
 
     private static String draftRequest(String hostType, long expectedVersion, List<DraftField> fields) {
@@ -343,6 +370,8 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
             requestPart(value, field.fieldKey());
             requestPart(value, field.label());
             requestPart(value, field.fieldType());
+            requestPart(value, field.listDisplay());
+            requestPart(value, field.searchable());
             requestPart(value, field.required());
             if (field.options() == null) requestPart(value, null);
             else {
@@ -404,9 +433,29 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
 
     private static String describe(Object value) {
         if (value instanceof Field field)
-            return field.fieldKey() + "|" + field.label() + "|" + field.fieldType() + "|" + field.required();
+            return field.fieldKey()
+                    + "|"
+                    + field.label()
+                    + "|"
+                    + field.fieldType()
+                    + "|"
+                    + field.listDisplay()
+                    + "|"
+                    + field.searchable()
+                    + "|"
+                    + field.required();
         if (value instanceof ExtensionDefinitionReadback.Field field)
-            return field.fieldKey() + "|" + field.label() + "|" + field.fieldType() + "|" + field.required();
+            return field.fieldKey()
+                    + "|"
+                    + field.label()
+                    + "|"
+                    + field.fieldType()
+                    + "|"
+                    + field.listDisplay()
+                    + "|"
+                    + field.searchable()
+                    + "|"
+                    + field.required();
         throw new IllegalArgumentException("unknown extension field");
     }
 
@@ -418,7 +467,8 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
         if (!HOST_TYPES.contains(value)) throw new DefinitionInvalidException();
     }
 
-    private static List<Field> normalize(List<Field> fields) {
+    private static List<Field> normalize(String hostType, List<Field> fields) {
+        validateHost(hostType);
         if (fields == null
                 || fields.stream().anyMatch(java.util.Objects::isNull)
                 || fields.stream().map(Field::fieldKey).distinct().count() != fields.size())
@@ -454,7 +504,19 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                     || options.stream().distinct().count() != options.size()
                     || ("SELECT".equals(type) && options.isEmpty())
                     || (!"SELECT".equals(type) && !options.isEmpty())) throw new DefinitionInvalidException();
-            normalized.add(new Field(key, label, type, field.required(), List.copyOf(options), status, order, suffix));
+            if (!validDisplayFlags(hostType, field.listDisplay(), field.searchable()))
+                throw new DefinitionInvalidException();
+            normalized.add(new Field(
+                    key,
+                    label,
+                    type,
+                    normalizedFlag(hostType, field.listDisplay()),
+                    normalizedFlag(hostType, field.searchable()),
+                    field.required(),
+                    List.copyOf(options),
+                    status,
+                    order,
+                    suffix));
         }
         if (normalized.stream().map(Field::displayOrder).distinct().count() != normalized.size())
             throw new DefinitionInvalidException();
@@ -466,21 +528,49 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
             String fieldKey,
             String label,
             String fieldType,
+            Boolean listDisplay,
+            Boolean searchable,
             boolean required,
             List<String> options,
             String status,
             Integer displayOrder,
-            String displaySuffix) {}
+            String displaySuffix) {
+        public Field(
+                String fieldKey,
+                String label,
+                String fieldType,
+                boolean required,
+                List<String> options,
+                String status,
+                Integer displayOrder,
+                String displaySuffix) {
+            this(fieldKey, label, fieldType, false, false, required, options, status, displayOrder, displaySuffix);
+        }
+    }
 
     public record DraftField(
             String fieldKey,
             String label,
             String fieldType,
+            Boolean listDisplay,
+            Boolean searchable,
             boolean required,
             List<String> options,
             String status,
             Integer displayOrder,
-            String displaySuffix) {}
+            String displaySuffix) {
+        public DraftField(
+                String fieldKey,
+                String label,
+                String fieldType,
+                boolean required,
+                List<String> options,
+                String status,
+                Integer displayOrder,
+                String displaySuffix) {
+            this(fieldKey, label, fieldType, false, false, required, options, status, displayOrder, displaySuffix);
+        }
+    }
 
     private record ExtensionDefinitionPreState(long revision, List<ExtensionDefinitionReadback.Field> fields) {}
 
@@ -491,6 +581,8 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
             node.put("key", field.fieldKey());
             node.put("label", field.label());
             node.put("type", field.fieldType());
+            if (field.listDisplay() != null) node.put("listDisplay", field.listDisplay());
+            if (field.searchable() != null) node.put("searchable", field.searchable());
             node.put("required", field.required());
             node.putPOJO("options", field.options());
             node.put("status", field.status());
@@ -616,7 +708,7 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
         }
     }
 
-    private static List<ExtensionDefinitionReadback.Field> readFields(String source) {
+    private static List<ExtensionDefinitionReadback.Field> readFields(String source, String hostType) {
         try {
             JsonNode values = JSON.readTree(source);
             if (!values.isArray()) throw new DefinitionInvalidException();
@@ -630,10 +722,15 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                 if (statusNode == null || statusNode.isNull() || !statusNode.isTextual()) {
                     throw new DefinitionInvalidException();
                 }
+                Boolean listDisplay = normalizedFlag(hostType, readDisplayFlag(value.get("listDisplay")));
+                Boolean searchable = normalizedFlag(hostType, readDisplayFlag(value.get("searchable")));
+                if (!validDisplayFlags(hostType, listDisplay, searchable)) throw new DefinitionInvalidException();
                 fields.add(new ExtensionDefinitionReadback.Field(
                         value.path("key").asText(),
                         value.path("label").asText(),
                         value.path("type").asText(),
+                        listDisplay,
+                        searchable,
                         value.path("required").asBoolean(),
                         List.copyOf(options),
                         statusNode.asText(),
@@ -649,6 +746,25 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
         }
     }
 
+    private static Boolean readDisplayFlag(JsonNode value) {
+        if (value == null || value.isNull() || value.isMissingNode()) return null;
+        if (!value.isBoolean()) throw new DefinitionInvalidException();
+        return value.booleanValue();
+    }
+
+    private static boolean validDisplayFlags(String hostType, Boolean listDisplay, Boolean searchable) {
+        if (isFlatHost(hostType)) return true;
+        return listDisplay == null && searchable == null;
+    }
+
+    private static Boolean normalizedFlag(String hostType, Boolean value) {
+        return isFlatHost(hostType) ? Boolean.TRUE.equals(value) : null;
+    }
+
+    private static boolean isFlatHost(String hostType) {
+        return ExtensionHostTypes.FLAT_VALUES.contains(hostType);
+    }
+
     private static boolean isJsonNull(String value) {
         return value == null || "null".equals(value.trim());
     }
@@ -660,7 +776,7 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
             return switch (field.fieldType()) {
                 case "TEXT" -> json.isTextual();
                 case "NUMBER" -> json.isNumber();
-                case "DATE" -> json.isTextual() && json.asText().matches("\\d{4}-\\d{2}-\\d{2}");
+                case "DATE" -> json.isTextual() && ExtensionValueSemantics.isCanonicalDate(json.asText());
                 case "BOOLEAN" -> json.isBoolean();
                 case "SELECT" -> json.isTextual() && field.options().contains(json.asText());
                 default -> false;

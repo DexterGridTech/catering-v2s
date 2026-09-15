@@ -624,3 +624,16 @@ business 与 cleanup分别报告。任何未授权/未执行项写 `NOT_RUN_NO_A
 3. 修改共享 sales-menu specification presenter 与 draft/front 两张表：移除独立商品形态列，将中文商品形态放到首列编码下方，普通商品选项逐项展示。
 4. 更新 static/unit/backend owner tests 与当前详设/IA/requirements 文档；执行本步骤 `逐代码与详设对账`，逐项检查字段来源、列顺序、空值、SKU/选项优先级、无 N+1。
 5. 只运行最小静态/单元/编译 proof；动态 DEV/浏览器验证必须另按当前授权执行。验证必须保留 ordinary-with-options 的正例和 empty-options 的反例。
+
+### 14.6 2026-09-15 编辑销售项关联商品入口执行项
+
+本增补复用现有 Catalog 商品详情 surface，不新增后端实现单元：
+
+1. 在销售项编辑 Drawer 标题操作区加入“查看商品”，以 owner detail readback 的 `itemCode` 为唯一目标，并登记
+   `salesMenuTestIds.itemViewProduct`；未读回时不可点击。
+2. 由 `SalesMenuPage` 持有商品详情目标与触发点，`SalesMenuTaskSurfaces` 通过 `CatalogItemDrawer` router 以
+   `initialMode='view'` 组装现有商品详情；传当前门店 scope、只读权限边界，销售项编辑 Drawer 保持打开。
+3. 让既有 `CatalogItemViewDrawer` 暴露可选的关闭完成回调，关闭后恢复入口焦点；商品详情读取、错误和重试继续由
+   Catalog owner surface 负责。
+4. 执行 focused static/unit/typecheck proof，并按需求 §11.3、IA §13、交互 §11、详设 §14.6 逐代码对账；本增补
+   不自动执行 DEV、reset、seed、browser L2 或动态后端验收。

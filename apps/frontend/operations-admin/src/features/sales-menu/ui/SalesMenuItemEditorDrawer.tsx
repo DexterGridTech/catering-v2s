@@ -59,6 +59,7 @@ export function SalesMenuItemEditorDrawer({
   onSaved,
   onDelete,
   onClosedFocus,
+  onViewProduct,
 }: {
   item?: SalesMenuDraftItemView;
   open: boolean;
@@ -75,6 +76,7 @@ export function SalesMenuItemEditorDrawer({
   onSaved: () => void;
   onDelete: (item: SalesMenuDraftItemView, beforeDelete?: () => Promise<boolean>) => void;
   onClosedFocus: () => void;
+  onViewProduct: (itemCode: string, trigger: HTMLElement) => void;
 }) {
   const detailRequest = useMemo(
     () =>
@@ -472,6 +474,13 @@ export function SalesMenuItemEditorDrawer({
       keyboard={!lifecycle.submitting}
       extra={
         <Space>
+          <Button
+            onClick={event => detail && onViewProduct(detail.itemCode, event.currentTarget)}
+            disabled={!detail || saving || closing}
+            {...testId(salesMenuTestIds.itemViewProduct)}
+          >
+            查看商品
+          </Button>
           <Button
             danger
             icon={<DeleteOutlined />}

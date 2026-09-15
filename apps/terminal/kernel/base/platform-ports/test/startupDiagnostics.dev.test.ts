@@ -35,6 +35,15 @@ const startupEventsFrom = (calls: readonly unknown[][]): LogEvent[] => calls
     && event.category.startsWith('startup.'))
 
 describe('platform-ports startup diagnostics', () => {
+  it.skipIf(!__DEV__)('allocates a distinct runtime-scoped startup id for each tracker', () => {
+    const first = createPlatformPorts({environmentMode: 'DEV', bindings: bindings()})
+    const second = createPlatformPorts({environmentMode: 'DEV', bindings: bindings()})
+
+    expect(first.startupRunId).toBeDefined()
+    expect(second.startupRunId).toBeDefined()
+    expect(first.startupRunId).not.toBe(second.startupRunId)
+  })
+
   it.skipIf(!__DEV__)('keeps descriptors private and emits one correlated startup sequence in dev', () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
     try {
@@ -65,12 +74,11 @@ describe('platform-ports startup diagnostics', () => {
         'startup.parts',
         'startup.surfaces',
         'startup.surfaces',
-        'startup.complete',
       ])
       const runIds = new Set(events.map(event => event.data?.startupRunId))
       expect(runIds.size).toBe(1)
-      expect(events.map(event => event.data?.sequence)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
-      expect(events.at(-1)?.data).toMatchObject({phase: 'complete', groupCount: 6})
+      expect(events.map(event => event.data?.sequence)).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+      expect(events.some(event => event.category === 'startup.complete')).toBe(false)
       const portsEvent = events[0]
       expect(portsEvent.data).toMatchObject({portCount: 10, descriptorStatus: 'complete'})
       const descriptors = portsEvent.data?.descriptors

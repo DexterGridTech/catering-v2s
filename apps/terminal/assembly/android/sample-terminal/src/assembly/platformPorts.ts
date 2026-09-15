@@ -1,44 +1,15 @@
-import {
-  consoleLoggerBinding,
-  createPlatformPorts,
-  unavailableAppControlPort,
-  unavailableConnectorPort,
-  unavailableHotUpdatePort,
-  unavailableLogUploadPort,
-  unavailableScriptPort,
-  unavailableTopologyHostPort,
-} from '@catering-v2s/kernel-base-platform-ports'
-import {createAndroidDevicePort} from '@catering-v2s/adapter-android-device'
-import {createAndroidSurfaceHostSource} from '@catering-v2s/adapter-android-dual-screen'
-import {createAndroidPersistKvPort} from '@catering-v2s/adapter-android-persist-kv'
+import {createAndroidPlatformBinding} from '@catering-v2s/assembly-base-android'
 import {createSampleAssembly, type SurfaceForm} from '@catering-v2s/ui-integration-sample-console'
 
 const persistenceKey = 'sample-terminal-android'
-
-const platformPorts = createPlatformPorts({
-  environmentMode: 'DEV',
-  bindings: {
-    logger: consoleLoggerBinding,
-    persistKv: createAndroidPersistKvPort(persistenceKey, 'plain'),
-    persistSecure: createAndroidPersistKvPort(persistenceKey, 'protected'),
-    device: createAndroidDevicePort(),
-    appControl: unavailableAppControlPort,
-    script: unavailableScriptPort,
-    connector: unavailableConnectorPort,
-    hotUpdate: unavailableHotUpdatePort,
-    logUpload: unavailableLogUploadPort,
-    topologyHost: unavailableTopologyHostPort,
-  },
-})
+const androidPlatform = createAndroidPlatformBinding(persistenceKey)
+export const nativeLoadingCapability = androidPlatform.nativeLoadingCapability
+export const nativeLoadingLogger = androidPlatform.platformPorts.logger
 
 export const createSampleTerminalAssembly = (input: Readonly<{readonly surfaceForm: SurfaceForm}>) => {
   return createSampleAssembly({
-    platformPorts,
+    ...androidPlatform,
     persistenceKey,
     surfaceForm: input.surfaceForm,
-    surfaceHostSourcesByDisplayIndex: {
-      0: createAndroidSurfaceHostSource({surfaceKey: 'PRIMARY', displayIndex: 0}),
-      1: createAndroidSurfaceHostSource({surfaceKey: 'SECONDARY', displayIndex: 1}),
-    },
   })
 }

@@ -16,11 +16,11 @@
 ## 结构
 
 ```text
-App.tsx                         Expo React 根组件；等待 assembly 后按 displayIndex 呈现 surface
+App.tsx                         Expo React 根组件；等待 assembly 后按 displayIndex 呈现 surface，注入 render-owned failure page
 src/index.ts                    包元数据公开面：moduleName 与依赖模块名
 src/moduleName.ts               本 assembly 的固定 moduleName
-src/dependencies.ts             Android adapter 与 sample-console 的模块依赖列表
-src/assembly/platformPorts.ts   Android binding、platform ports 与 sample assembly 的组装接缝
+src/dependencies.ts             Android base、render 与 sample-console 的模块依赖列表
+src/assembly/platformPorts.ts   Android binding、logger 与 sample assembly 的组装接缝
 android/                        Expo 原生工程与 Android 构建配置
 app.json                        Expo 应用配置
 ```
@@ -42,8 +42,9 @@ registerRootComponent(App)
 
 `App` 的真实公开入口是默认导出的 React 组件；Expo 会传入可选的 `displayIndex`（`0 | 1`），
 组件再调用内部的 `createSampleTerminalAssembly({surfaceForm})` 和
-`createSurfaceForDisplayIndex()` 完成对应 surface 的呈现。库消费者不应绕过 `App` 自己创建
-第二个 React host、runtime 或 store。
+`createSurfaceForDisplayIndex()` 完成对应 surface 的呈现；assembly 被拒绝时只把失败事实
+交给来自 `ui.base.render` 的 `StandaloneStartupFailurePage`，不在 App 自绘失败 UI 或调用
+splash。库消费者不应绕过 `App` 自己创建第二个 React host、runtime 或 store。
 
 `App` 是唯一保留 `surfaceForm='laptop'` 默认值的外层入口；它把解析后的形态显式传给
 `createSampleTerminalAssembly`，Android wrapper 与 sample-console assembly 不再各自兜底。

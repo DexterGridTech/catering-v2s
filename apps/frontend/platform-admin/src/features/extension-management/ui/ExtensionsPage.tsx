@@ -15,6 +15,7 @@ import type {ExtensionDefinition, ExtensionEntityCatalogPage} from '../../../app
 import {ExtensionDefinitionEditDrawer} from './ExtensionDefinitionEditDrawer';
 import {ExtensionDefinitionSaveModal} from './ExtensionDefinitionSaveModal';
 import {PlatformAuditHistoryModal, type PlatformAuditTarget} from '../../audit-history';
+import {extensionTestIds} from '../../../app/automation/extensionTestIds';
 
 type ExtensionCatalogItem = ExtensionEntityCatalogPage['items'][number];
 type DefinitionField = ExtensionDefinition['definitions'][number];
@@ -131,7 +132,7 @@ function ExtensionsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}
                     label: row.displayName,
                     onClick: () => selectCategory(row),
                   }))}
-                  {...testId('extension-category-selector')}
+                  {...testId(extensionTestIds.categorySelector)}
                 />
               )}
             </Card>
@@ -151,14 +152,14 @@ function ExtensionsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}
                           displayName: selected.displayName,
                         })
                       }
-                      {...testId('extension-definition-audit-history')}
+                      {...testId(extensionTestIds.definitionAuditHistory)}
                     >
                       操作历史
                     </Button>
                     <Button
                       type="primary"
                       onClick={() => setEditingDefinition(definition)}
-                      {...testId('extension-definition-edit')}
+                      {...testId(extensionTestIds.definitionEdit)}
                     >
                       编辑字段
                     </Button>
@@ -189,7 +190,7 @@ function ExtensionsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}
                   title={`暂时无法获取${selected.displayName}字段配置`}
                   description={definitionProblem.detail}
                   action={
-                    <Button size="small" onClick={reloadCurrent} {...testId('extension-definition-retry')}>
+                    <Button size="small" onClick={reloadCurrent} {...testId(extensionTestIds.definitionRetry)}>
                       重试
                     </Button>
                   }
@@ -199,7 +200,7 @@ function ExtensionsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}
                   <Typography.Paragraph type="secondary" style={{margin: '0 0 16px'}}>
                     最后更新：{configurationTime(definition!.updatedAt)}
                   </Typography.Paragraph>
-                  <div {...testId('extension-definition-table')}>
+                  <div {...testId(extensionTestIds.definitionTable)}>
                     <ProTable<DefinitionField>
                       size="small"
                       rowKey="key"
@@ -211,6 +212,14 @@ function ExtensionsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}
                       columns={[
                         {title: '字段名称', dataIndex: 'label'},
                         {title: '字段类型', render: (_, row) => fieldTypeLabel(row.type)},
+                        {
+                          title: '是否列表展示',
+                          render: (_, row) => (row.listDisplay === null ? '不适用' : row.listDisplay ? '是' : '否'),
+                        },
+                        {
+                          title: '是否可搜索',
+                          render: (_, row) => (row.searchable === null ? '不适用' : row.searchable ? '是' : '否'),
+                        },
                         {title: '是否必填', render: (_, row) => (row.required ? '是' : '否')},
                         {title: '是否启用', render: (_, row) => fieldStatusLabel(row.status)},
                         {

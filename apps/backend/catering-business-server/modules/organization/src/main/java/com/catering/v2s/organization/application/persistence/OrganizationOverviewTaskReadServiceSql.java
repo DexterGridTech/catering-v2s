@@ -252,7 +252,7 @@ public final class OrganizationOverviewTaskReadServiceSql {
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONTINUATION_ANCESTRY_DEPTH_PATH_CODES_ARRAY_AGG_NAME = "BY depth DESC) AS path_codes, array_agg(name ORDER BY depth DESC) AS path_names FROM ancestry ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_GROUP_BY_TARGET_ID = "GROUP BY target_id) ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_SELECT_TARGET_CODE_NAME_STATUS = "SELECT target.id, target.code, target.name, target.status, target.version, ";
-    public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONTINUATION_TARGET_ALTERNATE_C = "target.created_at_epoch_millis, target.updated_at_epoch_millis, target.notes, ";
+    public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONTINUATION_TARGET_ALTERNATE_C = "target.extension_rule_revision, target.created_at_epoch_millis, target.updated_at_epoch_millis, target.notes, target.extension_values, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONTINUATION_TARGET_PROJECT_ID_PROJECT_CODE_PROJECT_NAME = "target.project_id, target.project_code, target.project_name, target.brand_id, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONTINUATION_TARGET_BRAND_CODE_BRAND_NAME_TENANT_ID = "target.brand_code, target.brand_name, target.tenant_id, target.tenant_code, target.tenant_name, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONTINUATION_TARGET_HEAD_ID_HEAD_CODE_HEAD_NAME = "target.head_id, target.head_code, target.head_name, paths.path_ids, paths.path_codes, ";
@@ -281,7 +281,7 @@ public final class OrganizationOverviewTaskReadServiceSql {
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONTINUATION_HEAD_COMPANY_CODE_NAME_WORKSPACE_UUID = "'HEAD_COMPANY', id, code, name FROM organization.head_company WHERE workspace_uuid=? AND ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_OPTIONS_KIND_CODE = "group_workspace_key=?) options ORDER BY kind, code";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_SELECT_CODE_NAME_STATUS_VERSION = "SELECT s.id, s.code, s.name, s.status, s.version, s.created_at_epoch_millis, ";
-    public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONTINUATION_UPDATED_AT_EPOCH_MILLIS_NOTES_PROJECT_ID_CODE = "s.updated_at_epoch_millis, s.notes, p.id AS project_id, p.code AS project_code, p.name AS ";
+    public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONTINUATION_UPDATED_AT_EPOCH_MILLIS_NOTES_PROJECT_ID_CODE = "s.updated_at_epoch_millis, s.extension_rule_revision, s.extension_values::text, s.notes, p.id AS project_id, p.code AS project_code, p.name AS ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONTINUATION_PROJECT_NAME = "project_name, ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONTINUATION_BRAND_ID_CODE_BRAND_CODE_NAME_ALTERNATE_A = "b.id AS brand_id, b.code AS brand_code, b.name AS brand_name, t.id AS tenant_id, t.code AS ";
     public static final String ORGANIZATION_OVERVIEW_TASK_READ_SERVICE_CONTINUATION_TENANT_CODE = "tenant_code, ";

@@ -6,6 +6,14 @@ import {moduleName} from '../../moduleName'
 export type WallpaperPickerCommandPayload = Readonly<{readonly wallpaperId: WallpaperId}> & StateJsonValue
 export type EmptyPayload = Readonly<Record<string, never>> & StateJsonValue
 
+export type WallpaperSystemOperation = 'select' | 'confirm'
+export type WallpaperSystemFailurePhase = 'before-write' | 'after-write' | 'unknown-write-phase'
+
+export type WallpaperSystemFailurePayload = Readonly<{
+  readonly operation: WallpaperSystemOperation
+  readonly phase: WallpaperSystemFailurePhase
+}> & StateJsonValue
+
 export const wallpaperOptionSelectedCommand = defineCommand<WallpaperPickerCommandPayload>(moduleName, {
   name: 'wallpaper-option-selected',
   visibility: 'public',
@@ -13,5 +21,15 @@ export const wallpaperOptionSelectedCommand = defineCommand<WallpaperPickerComma
 
 export const confirmWallpaperRequestedCommand = defineCommand<EmptyPayload>(moduleName, {
   name: 'wallpaper-confirm-requested',
+  visibility: 'public',
+})
+
+export const wallpaperSystemFailureObservedCommand = defineCommand<WallpaperSystemFailurePayload>(moduleName, {
+  name: 'wallpaper-system-failure-observed',
+  visibility: 'public',
+})
+
+export const wallpaperSystemFailureDismissedCommand = defineCommand<EmptyPayload>(moduleName, {
+  name: 'wallpaper-system-failure-dismissed',
   visibility: 'public',
 })

@@ -1,0 +1,594 @@
+{
+  "runId": "sample1-frozen-mobile-normal-1789471759922",
+  "tool": "tools/terminal-sample2/run-sample1-frozen-journey.mjs",
+  "packageName": "com.anonymous.sampleterminal",
+  "activity": "com.anonymous.sampleterminal/.MainActivity",
+  "serial": "emulator-5556",
+  "shape": "mobile",
+  "journeyCase": "normal",
+  "age": "37",
+  "startedAt": "2026-09-15T11:29:19.922Z",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "firstFailure": null,
+  "lastKnownGood": "S1-11",
+  "brokenBoundary": null,
+  "apkBinding": {
+    "installMode": "install-release",
+    "local": {
+      "path": "apps/terminal/assembly/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk",
+      "exists": true,
+      "bytes": 87920433,
+      "sha256": "9fe47967bb5824ee63e19f565af7a3218d3d116f3cbf31472b62dc21eec04077"
+    },
+    "installed": {
+      "paths": [
+        "/data/app/~~F72pd8qNvApHMuQNx6avhg==/com.anonymous.sampleterminal-cZ3bv4pP4UtCbG-R_Sd0IQ==/base.apk"
+      ],
+      "path": "/data/app/~~F72pd8qNvApHMuQNx6avhg==/com.anonymous.sampleterminal-cZ3bv4pP4UtCbG-R_Sd0IQ==/base.apk",
+      "bytes": 87920433,
+      "sha256": "9fe47967bb5824ee63e19f565af7a3218d3d116f3cbf31472b62dc21eec04077"
+    }
+  },
+  "steps": [
+    {
+      "name": "s1-01-anonymous",
+      "timestamp": "2026-09-15T11:29:26.315Z",
+      "expectedPrimaryIds": [
+        "sample.auth.login"
+      ],
+      "expectedPrimaryTexts": [
+        "店员登录"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "ui-base-render:layer-stack",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ],
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 720,
+          "height": 1280,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": null,
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 720,
+          "height": 1280
+        },
+        "surfaceSecondary": null
+      }
+    },
+    {
+      "name": "s1-02-invalid-login",
+      "timestamp": "2026-09-15T11:30:51.527Z",
+      "expectedPrimaryIds": [
+        "sample.auth.login",
+        "sample.auth.notice",
+        "sample.auth.notice:title",
+        "sample.auth.notice:message",
+        "sample.auth.notice:dismiss"
+      ],
+      "expectedPrimaryTexts": [
+        "登录失败",
+        "工号或密码不正确"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "ui-base-render:layer-stack",
+        "ui-base-render:layer-backdrop",
+        "ui-base-render:layer:sample.auth.notice",
+        "sample.auth.notice",
+        "sample.auth.notice:title",
+        "sample.auth.notice:message",
+        "sample.auth.notice:actions",
+        "sample.auth.notice:dismiss",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ],
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 720,
+          "height": 1280,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": null,
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 720,
+          "height": 1280
+        },
+        "surfaceSecondary": null
+      }
+    },
+    {
+      "name": "s1-03-member-list",
+      "timestamp": "2026-09-15T11:32:11.613Z",
+      "expectedPrimaryIds": [
+        "sample.desk.member-list"
+      ],
+      "expectedPrimaryTexts": [
+        "已登记会员"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.desk.member-list",
+        "sample.desk.member-list:title",
+        "sample.desk.member-list:scroll",
+        "sample.desk.member-list:empty",
+        "sample.desk.member-list:actions",
+        "sample.desk.member-list:empty-action",
+        "sample.desk.member-list:logout"
+      ],
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 720,
+          "height": 1280,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": null,
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 720,
+          "height": 1280
+        },
+        "surfaceSecondary": null
+      }
+    },
+    {
+      "name": "s1-04-member-form",
+      "timestamp": "2026-09-15T11:32:19.908Z",
+      "expectedPrimaryIds": [
+        "sample.desk.member-form"
+      ],
+      "expectedPrimaryTexts": [
+        "新增会员"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.desk.member-form",
+        "sample.desk.member-form:title",
+        "sample.desk.member-form:scroll",
+        "sample.desk.member-form:name-label",
+        "sample.desk.member-form:name",
+        "sample.desk.member-form:phone-label",
+        "sample.desk.member-form:phone",
+        "sample.desk.member-form:keyboard-alpha-probe-label",
+        "sample.desk.member-form:keyboard-alpha-probe",
+        "sample.desk.member-form:keyboard-alpha-probe-notice",
+        "sample.desk.member-form:keyboard-financial-probe-label",
+        "sample.desk.member-form:keyboard-financial-probe",
+        "sample.desk.member-form:keyboard-financial-probe-notice",
+        "sample.desk.member-form:actions",
+        "sample.desk.member-form:submit",
+        "sample.desk.member-form:cancel"
+      ],
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 720,
+          "height": 1280,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": null,
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 720,
+          "height": 1280
+        },
+        "surfaceSecondary": null
+      }
+    },
+    {
+      "name": "s1-05-customer-confirm",
+      "timestamp": "2026-09-15T11:33:15.710Z",
+      "expectedPrimaryIds": [
+        "sample.desk.customer-member"
+      ],
+      "expectedPrimaryTexts": [
+        "请确认登记",
+        "Alice",
+        "01012345678"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.desk.customer-member",
+        "sample.desk.customer-member:scroll",
+        "sample.desk.customer-member:title",
+        "sample.desk.customer-member:name",
+        "sample.desk.customer-member:phone",
+        "sample.desk.customer-member:age-label",
+        "sample.desk.customer-member:age",
+        "sample.desk.customer-member:actions",
+        "sample.desk.customer-member:confirm",
+        "sample.desk.customer-member:reject",
+        "sample.desk.customer-member:hand-back"
+      ],
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 720,
+          "height": 1280,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": null,
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 720,
+          "height": 1280
+        },
+        "surfaceSecondary": null
+      }
+    },
+    {
+      "name": "s1-06-confirmed",
+      "timestamp": "2026-09-15T11:33:32.629Z",
+      "expectedPrimaryIds": [
+        "sample.desk.member-list",
+        "sample.desk.member-list:row"
+      ],
+      "expectedPrimaryTexts": [
+        "已登记会员",
+        "Alice",
+        "01012345678"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.desk.member-list",
+        "sample.desk.member-list:title",
+        "sample.desk.member-list:scroll",
+        "sample.desk.member-list:row",
+        "sample.desk.member-list:row:content",
+        "sample.desk.member-list:actions",
+        "sample.desk.member-list:add",
+        "sample.desk.member-list:logout"
+      ],
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 720,
+          "height": 1280,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": null,
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 720,
+          "height": 1280
+        },
+        "surfaceSecondary": null
+      }
+    },
+    {
+      "name": "s1-06-authenticated-cold-restart",
+      "timestamp": "2026-09-15T11:33:37.853Z",
+      "expectedPrimaryIds": [
+        "sample.desk.member-list",
+        "sample.desk.member-list:row"
+      ],
+      "expectedPrimaryTexts": [
+        "已登记会员",
+        "Alice",
+        "01012345678"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.desk.member-list",
+        "ui-base-render:layer-stack",
+        "sample.desk.member-list:title",
+        "sample.desk.member-list:scroll",
+        "sample.desk.member-list:row",
+        "sample.desk.member-list:row:content",
+        "sample.desk.member-list:actions",
+        "sample.desk.member-list:add",
+        "sample.desk.member-list:logout"
+      ],
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 720,
+          "height": 1280,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": null,
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 720,
+          "height": 1280
+        },
+        "surfaceSecondary": null
+      }
+    },
+    {
+      "name": "s1-12-logout",
+      "timestamp": "2026-09-15T11:33:44.179Z",
+      "expectedPrimaryIds": [
+        "sample.auth.login"
+      ],
+      "expectedPrimaryTexts": [
+        "店员登录"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ],
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 720,
+          "height": 1280,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": null,
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 720,
+          "height": 1280
+        },
+        "surfaceSecondary": null
+      }
+    },
+    {
+      "name": "s1-11-cold-restart-anonymous",
+      "timestamp": "2026-09-15T11:33:49.288Z",
+      "expectedPrimaryIds": [
+        "sample.auth.login"
+      ],
+      "expectedPrimaryTexts": [
+        "店员登录"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "ui-base-render:layer-stack",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ],
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 720,
+          "height": 1280,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": null,
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 720,
+          "height": 1280
+        },
+        "surfaceSecondary": null
+      }
+    }
+  ],
+  "display": {
+    "ids": [
+      0
+    ],
+    "displays": [
+      {
+        "id": 0,
+        "name": "Built-in Screen",
+        "width": 720,
+        "height": 1280,
+        "uniqueId": "local:4619827259835644672",
+        "flags": [
+          "FLAG_SECURE",
+          "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+          "FLAG_TRUSTED"
+        ]
+      }
+    ],
+    "selectedPrimaryDisplayId": 0,
+    "selectedPrimaryName": "Built-in Screen",
+    "selectedPrimaryUniqueId": "local:4619827259835644672",
+    "selectedPrimaryWidth": 720,
+    "selectedPrimaryHeight": 1280,
+    "selectedSecondaryDisplayId": null,
+    "selectedSecondaryName": null,
+    "selectedSecondaryUniqueId": null,
+    "selectedSecondaryWidth": null,
+    "selectedSecondaryHeight": null,
+    "hasSecondary": false
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "primaryDisplays": [
+      {
+        "id": "4619827259835644672",
+        "name": "EMU_display_0",
+        "width": 720,
+        "height": 1280
+      }
+    ],
+    "virtualIds": [],
+    "virtualDisplays": [],
+    "selectedPrimarySurfaceId": "4619827259835644672",
+    "selectedPrimarySurfaceName": "EMU_display_0",
+    "selectedPrimarySurfaceWidth": 720,
+    "selectedPrimarySurfaceHeight": 1280,
+    "selectedSecondarySurfaceId": null,
+    "selectedSecondarySurfaceName": null
+  },
+  "finishedAt": "2026-09-15T11:33:49.401Z"
+}

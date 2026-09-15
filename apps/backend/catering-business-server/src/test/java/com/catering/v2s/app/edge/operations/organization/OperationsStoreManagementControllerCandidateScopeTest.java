@@ -65,7 +65,18 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                         List.of()));
 
         fixture.controller.list(
-                fixture.request, KEY, fixture.session.contextVersion(), "门店", "STORE-01", null, null, null, 2, 20);
+                fixture.request,
+                KEY,
+                fixture.session.contextVersion(),
+                "门店",
+                "STORE-01",
+                null,
+                null,
+                null,
+                2,
+                20,
+                null,
+                null);
 
         verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
         verify(fixture.overview)
@@ -86,7 +97,10 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                                 null,
                                 null,
                                 null,
-                                scopedProjectId),
+                                null,
+                                scopedProjectId,
+                                null,
+                                null),
                         2,
                         20);
     }
@@ -115,7 +129,18 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                         List.of()));
 
         fixture.controller.list(
-                fixture.request, KEY, fixture.session.contextVersion(), null, null, null, null, null, 1, 20);
+                fixture.request,
+                KEY,
+                fixture.session.contextVersion(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                1,
+                20,
+                null,
+                null);
 
         verify(fixture.overview)
                 .page(
@@ -124,7 +149,7 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                         "STORE",
                         new OrganizationOverviewTaskReadService.Query(
                                 "STORE", null, null, null, null, null, null, projectId, null, null, null, null,
-                                projectId),
+                                null, projectId, null, null),
                         1,
                         20);
         verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);
@@ -151,7 +176,18 @@ class OperationsStoreManagementControllerCandidateScopeTest {
         assertThrows(
                 WorkspaceAuthenticationService.SessionInvalidException.class,
                 () -> fixture.controller.list(
-                        fixture.request, KEY, session.contextVersion(), null, null, null, null, null, 1, 20));
+                        fixture.request,
+                        KEY,
+                        session.contextVersion(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        1,
+                        20,
+                        null,
+                        null));
 
         verifyNoInteractions(fixture.overview);
         verify(fixture.user).resolveSelectedProjectScope(session, null);
@@ -190,7 +226,9 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                 OrganizationStoreSortKey.CODE,
                 OrganizationStoreSortDirection.ASC,
                 1,
-                20);
+                20,
+                null,
+                null);
 
         verify(fixture.overview)
                 .page(
@@ -198,8 +236,8 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                         KEY,
                         "STORE",
                         new OrganizationOverviewTaskReadService.Query(
-                                "STORE", null, null, null, null, null, null, projectId, null, null, "CODE", "ASC",
-                                projectId),
+                                "STORE", null, null, null, null, null, null, projectId, null, null, null, "CODE", "ASC",
+                                projectId, null, null),
                         1,
                         20);
         verify(fixture.user).resolveSelectedProjectScope(fixture.session, null);

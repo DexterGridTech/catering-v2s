@@ -72,6 +72,14 @@ internal fun requestedOrientationForSurfaceForm(surfaceForm: String): Int = when
   else -> error("unsupported surface form: $surfaceForm")
 }
 
+/**
+ * The splash-covered Activity is PRIMARY only on Android's default physical
+ * display.  Launching that Activity on a presentation display is a topology
+ * failure, not a second meaning of the PRIMARY surface.
+ */
+internal fun isPrimaryActivitySurface(surfaceIndex: Int, displayId: Int?): Boolean =
+  surfaceIndex == 0 && displayId == Display.DEFAULT_DISPLAY
+
 internal data class SurfaceLaunchOptions(
   val displayIndex: Int,
   val displayCount: Int,
@@ -198,6 +206,14 @@ internal fun areSurfaceDensitiesUsable(
 internal sealed class TerminalSurfaceHostEvent {
   data class Ready(val snapshot: TerminalSurfaceHostSnapshot) : TerminalSurfaceHostEvent()
 
+  data class RecoverableRemoval(
+    val surfaceKey: String,
+    val generation: Long,
+    val displayId: Int?,
+    val windowIdentity: String,
+    val reason: String,
+  ) : TerminalSurfaceHostEvent()
+
   data class Unavailable(
     val surfaceKey: String,
     val generation: Long,
@@ -225,10 +241,10 @@ internal fun shouldReuseStableHostContext(
   return previousSnapshot.stableWidthPx == widthPx && previousSnapshot.stableHeightPx == heightPx
 }
 
-internal data class TerminalSurfaceHostRemovalResult(
+internal data class SurfaceHostRemovalResult(
   val shouldClear: Boolean,
   val snapshotToKeep: TerminalSurfaceHostSnapshot?,
-  val unavailable: TerminalSurfaceHostEvent.Unavailable?,
+  val recoverable: TerminalSurfaceHostEvent.RecoverableRemoval?,
 )
 
 internal fun resolveSurfaceHostRemoval(
@@ -236,18 +252,18 @@ internal fun resolveSurfaceHostRemoval(
   ownerMatches: Boolean,
   nextGeneration: Long,
   reason: String,
-): TerminalSurfaceHostRemovalResult {
+): SurfaceHostRemovalResult {
   if (currentSnapshot == null || !ownerMatches) {
-    return TerminalSurfaceHostRemovalResult(
+    return SurfaceHostRemovalResult(
       shouldClear = false,
       snapshotToKeep = currentSnapshot,
-      unavailable = null,
+      recoverable = null,
     )
   }
-  return TerminalSurfaceHostRemovalResult(
-    shouldClear = true,
-    snapshotToKeep = null,
-    unavailable = TerminalSurfaceHostEvent.Unavailable(
+  return SurfaceHostRemovalResult(
+    shouldClear = false,
+    snapshotToKeep = currentSnapshot,
+    recoverable = TerminalSurfaceHostEvent.RecoverableRemoval(
       surfaceKey = currentSnapshot.surfaceKey,
       generation = nextGeneration,
       displayId = currentSnapshot.displayId,
@@ -270,6 +286,7 @@ internal object TerminalSurfaceHostRegistry {
 
   private val lock = Any()
   private val entries = mutableMapOf<Int, Entry>()
+  private val unavailableEntries = mutableMapOf<Int, TerminalSurfaceHostEvent.Unavailable>()
   private val generationCounters = mutableMapOf<Int, Long>()
   private var publisher: ((TerminalSurfaceHostEvent) -> Unit)? = null
 
@@ -284,6 +301,41 @@ internal object TerminalSurfaceHostRegistry {
   fun snapshot(surfaceKey: String): TerminalSurfaceHostSnapshot? {
     val surfaceIndex = surfaceIndexForKey(surfaceKey) ?: return null
     return synchronized(lock) { entries[surfaceIndex]?.snapshot }
+  }
+
+  fun event(surfaceKey: String): TerminalSurfaceHostEvent? {
+    val surfaceIndex = surfaceIndexForKey(surfaceKey) ?: return null
+    return synchronized(lock) {
+      unavailableEntries[surfaceIndex]
+        ?: entries[surfaceIndex]?.snapshot?.let(TerminalSurfaceHostEvent::Ready)
+    }
+  }
+
+  fun markUnavailable(
+    surfaceIndex: Int,
+    displayId: Int?,
+    windowIdentity: String,
+    reason: String,
+  ) {
+    val surfaceKey = surfaceKeyForIndex(surfaceIndex) ?: return
+    val event = synchronized(lock) {
+      val current = unavailableEntries[surfaceIndex]
+      if (current?.reason == reason && current.displayId == displayId && current.windowIdentity == windowIdentity) {
+        null
+      } else {
+        val next = TerminalSurfaceHostEvent.Unavailable(
+          surfaceKey = surfaceKey,
+          generation = nextGenerationLocked(surfaceIndex),
+          displayId = displayId,
+          windowIdentity = windowIdentity,
+          reason = reason,
+        )
+        entries.remove(surfaceIndex)
+        unavailableEntries[surfaceIndex] = next
+        next
+      }
+    }
+    publish(event)
   }
 
   fun captureWindow(
@@ -366,7 +418,7 @@ internal object TerminalSurfaceHostRegistry {
         surfaceKey = surfaceKey,
         generation = generation,
         displayId = displayId,
-        isHostPrimaryDisplay = surfaceIndex == PRIMARY_INDEX,
+        isHostPrimaryDisplay = isPrimaryActivitySurface(surfaceIndex, displayId),
         windowIdentity = windowIdentity,
         orientation = orientation,
         stableWidthLogical = stableWidthLogical,
@@ -386,6 +438,7 @@ internal object TerminalSurfaceHostRegistry {
       if (previousSnapshot == next) {
         null
       } else {
+        unavailableEntries.remove(surfaceIndex)
         entries[surfaceIndex] = Entry(window, next)
         TerminalSurfaceHostEvent.Ready(next)
       }
@@ -405,9 +458,7 @@ internal object TerminalSurfaceHostRegistry {
         nextGeneration = nextGenerationLocked(surfaceIndex),
         reason = reason,
       )
-      if (!removal.shouldClear) return@synchronized null
-      entries.remove(surfaceIndex)
-      removal.unavailable
+      removal.recoverable
     }
     publish(event)
   }
@@ -434,6 +485,12 @@ internal object TerminalSurfaceHostRegistry {
             "source=android-display-context measurementContext=owner-decorView-layout",
         )
       }
+      is TerminalSurfaceHostEvent.RecoverableRemoval -> Log.i(
+        LOG_TAG,
+        "event=surface-host-snapshot-recovering surfaceKey=${event.surfaceKey} " +
+          "generation=${event.generation} displayId=${event.displayId ?: -1} " +
+          "windowIdentity=${event.windowIdentity} reason=${event.reason}",
+      )
       is TerminalSurfaceHostEvent.Unavailable -> Log.i(
         LOG_TAG,
         "event=surface-host-snapshot-unavailable surfaceKey=${event.surfaceKey} " +
@@ -501,10 +558,22 @@ internal class TerminalDualScreenActivityHandler :
     val snapshot = readDisplaySnapshot(activity) ?: return null
     val host = delegate.reactHost ?: run {
       log("primary-host-unavailable")
+      TerminalSurfaceHostRegistry.markUnavailable(
+        surfaceIndex = 0,
+        displayId = activity.window.decorView.display?.displayId,
+        windowIdentity = "primary",
+        reason = "primary-host-unavailable",
+      )
       return null
     }
     val mainComponentName = delegate.mainComponentName ?: run {
       log("primary-component-unavailable")
+      TerminalSurfaceHostRegistry.markUnavailable(
+        surfaceIndex = 0,
+        displayId = activity.window.decorView.display?.displayId,
+        windowIdentity = "primary",
+        reason = "primary-component-unavailable",
+      )
       return null
     }
 
@@ -551,6 +620,12 @@ internal class TerminalDualScreenActivityHandler :
     val displayManager = activity.getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
       ?: run {
         log("display-manager-unavailable")
+        TerminalSurfaceHostRegistry.markUnavailable(
+          surfaceIndex = 0,
+          displayId = activity.window.decorView.display?.displayId,
+          windowIdentity = "primary",
+          reason = "display-manager-unavailable",
+        )
         return null
       }
     return try {
@@ -561,6 +636,12 @@ internal class TerminalDualScreenActivityHandler :
       when (val selection = readDisplaySnapshotSelection { displays.map { it.displayId } }) {
         is DisplaySnapshotReadResult.Unavailable -> {
           log(selection.reason)
+          TerminalSurfaceHostRegistry.markUnavailable(
+            surfaceIndex = 0,
+            displayId = activity.window.decorView.display?.displayId,
+            windowIdentity = "primary",
+            reason = selection.reason,
+          )
           null
         }
         is DisplaySnapshotReadResult.Ready -> {
@@ -578,6 +659,12 @@ internal class TerminalDualScreenActivityHandler :
       }
     } catch (_error: Throwable) {
       log("display-snapshot-failed")
+      TerminalSurfaceHostRegistry.markUnavailable(
+        surfaceIndex = 0,
+        displayId = activity.window.decorView.display?.displayId,
+        windowIdentity = "primary",
+        reason = "display-snapshot-failed",
+      )
       null
     }
   }

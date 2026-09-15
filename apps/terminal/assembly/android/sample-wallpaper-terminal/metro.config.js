@@ -1,17 +1,10 @@
-const path = require('node:path')
-const Module = require('node:module')
+import path from 'node:path'
+import {fileURLToPath} from 'node:url'
+import {createMetroConfig} from '@catering-v2s/assembly-base-android/config'
 
-const terminalNodeModules = path.resolve(__dirname, '../../../node_modules')
-process.env.NODE_PATH = [terminalNodeModules, process.env.NODE_PATH].filter(Boolean).join(path.delimiter)
-Module._initPaths()
+const appDir = path.dirname(fileURLToPath(import.meta.url))
 
-const {getDefaultConfig} = require('expo/metro-config')
-const {withNativeWind} = require('nativewind/metro')
-
-const config = getDefaultConfig(__dirname)
-
-module.exports = withNativeWind(config, {
-  input: require.resolve('@catering-v2s/ui-integration-sample-wallpaper-console/theme/global.css'),
-  configPath: './tailwind.config.cjs',
-  inlineRem: 16,
+export default createMetroConfig({
+  appDir,
+  globalCssPath: '@catering-v2s/ui-integration-sample-wallpaper-console/theme/global.css',
 })

@@ -8,5 +8,6 @@ public record OrganizationStorePageMetadata(
     Long pageSize,
     Long total,
     OrganizationStoreSortKey sort,
-    OrganizationStoreSortDirection direction
+    OrganizationStoreSortDirection direction,
+    Long definitionRevision
 ) {}

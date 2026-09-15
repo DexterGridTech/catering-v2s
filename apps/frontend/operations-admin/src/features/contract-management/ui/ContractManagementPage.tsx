@@ -1,20 +1,28 @@
 import {Alert, Button} from 'antd';
-import {ProTable, type ProColumns} from '@ant-design/pro-components';
+import {ProTable, type ProColumns, type ProFormInstance} from '@ant-design/pro-components';
 import {
   adminListState,
   contextScopedQueryArgs,
+  createExtensionFilterRecoveryState,
   createPageQueryIdentity,
   EllipsisTooltip,
+  ExtensionFilterInvalidSummary,
+  clearInvalidExtensionFilterFields,
+  isExtensionDefinitionRevisionAtLeast,
+  reconcileExtensionFilterValues,
   NameCodeText,
   ValidityStatus,
   testId,
+  useExtensionFilterInvalidFocus,
+  useExtensionFilterStaleRecovery,
   useDetailDrawer,
   useOverlayLock,
   usePageQuery,
 } from '@catering-v2s/admin-ui-foundation';
-import {useMemo, useState} from 'react';
-import {operationsRtk} from '../../../app/api/OperationsTransport';
+import {useEffect, useMemo, useRef, useState} from 'react';
+import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import type {
+  ExtensionDefinition,
   StoreContract,
   StoreContractSortDirection,
   StoreContractSortKey,
@@ -30,6 +38,11 @@ import {ContractEditDrawer} from './ContractEditDrawer';
 import {ContractInvalidateModal} from './ContractInvalidateModal';
 import {useContractStoreCandidates} from './useContractStoreCandidates';
 import {useOrganizationCandidates} from '../../../app/queries/useOrganizationCandidates';
+import {extensionListAndSearchColumns, extensionQueryValues} from '../../extension-fields/model/extensionList';
+import {
+  extensionListInvalidSummaryTestId,
+  extensionListRecoveryNoticeTestId,
+} from '../../../app/automation/extensionListTestIds';
 
 type ContractFilters = {
   storeId?: string;
@@ -39,6 +52,7 @@ type ContractFilters = {
   status?: 'VALID' | 'INVALID';
   dateFrom?: string;
   dateTo?: string;
+  extensionFilterValues?: Record<string, unknown>;
 };
 
 const contractPage = adminCatalog.operationsPages.find(
@@ -55,6 +69,11 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<StoreContract>();
   const [invalidating, setInvalidating] = useState<StoreContract>();
+  const [extensionRecoveryNotice, setExtensionRecoveryNotice] = useState(false);
+  const [extensionRecoveryInProgress, setExtensionRecoveryInProgress] = useState(false);
+  const [extensionRecoveryFailed, setExtensionRecoveryFailed] = useState(false);
+  const extensionRecoveryBlocked = extensionRecoveryInProgress || extensionRecoveryFailed;
+  const filterFormRef = useRef<ProFormInstance | undefined>(undefined);
   const detail = useDetailDrawer<StoreContract>();
   useOverlayLock(detail.isOpen || createOpen || Boolean(editing) || Boolean(invalidating));
   const projectId = queryContext.scopeRef;
@@ -74,13 +93,40 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
   );
   const pagination = usePageQuery({queryIdentity, initialPageSize: 10});
   const {page, pageSize} = pagination;
+  const definitionRequest = useMemo(
+    () =>
+      operationsAdminRtkRequest.getOperationsContractExtensionDefinition(
+        {groupWorkspaceKey: queryContext.groupWorkspaceKey},
+        {query: {expectedContextVersion: queryContext.expectedContextVersion}},
+      ),
+    [queryContext.expectedContextVersion, queryContext.groupWorkspaceKey],
+  );
+  const definitionQuery = operationsRtk.useGetOperationsContractExtensionDefinitionQuery(definitionRequest, {
+    skip: !projectId,
+  });
+  const recoveryScopeKey = `operations-contract:${queryContext.groupWorkspaceKey}:${queryContext.scopeRef ?? ''}:${projectId ?? ''}`;
+  const extensionRecoveryState = useRef<ReturnType<typeof createExtensionFilterRecoveryState> | undefined>(undefined);
+  if (!extensionRecoveryState.current) extensionRecoveryState.current = createExtensionFilterRecoveryState();
+  extensionRecoveryState.current.enterScope(recoveryScopeKey);
+  useEffect(() => {
+    extensionRecoveryState.current?.enterScope(recoveryScopeKey);
+    setExtensionRecoveryNotice(false);
+    setExtensionRecoveryInProgress(false);
+    setExtensionRecoveryFailed(false);
+    return () => extensionRecoveryState.current?.invalidate(recoveryScopeKey);
+  }, [recoveryScopeKey]);
+  const extensionQuery = useMemo(
+    () => extensionQueryValues(definitionQuery.currentData, filters.extensionFilterValues),
+    [definitionQuery.currentData, filters.extensionFilterValues],
+  );
 
   const query = useMemo(() => {
-    const {tenantId, ...restFilters} = filters;
+    const {tenantId, extensionFilterValues: _extensionFilterValues, ...restFilters} = filters;
     return contextScopedQueryArgs(
       {
         ...restFilters,
         ...(tenantId ? {tenantId: wireUuid(tenantId)} : {}),
+        ...extensionQuery,
         sort,
         direction,
         page,
@@ -88,13 +134,66 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
       },
       queryContext,
     );
-  }, [direction, filters, page, pageSize, queryContext, sort]);
+  }, [direction, extensionQuery, filters, page, pageSize, queryContext, sort]);
   const listRequest = useMemo(
     () =>
       operationsAdminRtkRequest.getOperationsContracts({groupWorkspaceKey: queryContext.groupWorkspaceKey}, {query}),
     [query, queryContext.groupWorkspaceKey],
   );
-  const list = operationsRtk.useGetOperationsContractsQuery(listRequest, {skip: !projectId});
+  const list = operationsRtk.useGetOperationsContractsQuery(listRequest, {
+    skip: !projectId || extensionRecoveryBlocked,
+  });
+  const listProblem = list.error ? operationsProblemOf(list.error) : undefined;
+  const definitionProblem = definitionQuery.error ? operationsProblemOf(definitionQuery.error) : undefined;
+  const listDataFailed = Boolean(list.error) || Boolean(definitionQuery.error) || extensionRecoveryFailed;
+  if (listProblem?.errorCode === 'EXTENSION_DEFINITION_REVISION_STALE') {
+    extensionRecoveryState.current!.rememberStaleRevision(recoveryScopeKey, listProblem.currentDefinitionRevision);
+  }
+  const recoverExtensionFilters = () => {
+    const recovery = extensionRecoveryState.current!.begin(recoveryScopeKey, listProblem?.currentDefinitionRevision);
+    const isCurrentRecovery = () => extensionRecoveryState.current!.isCurrent(recovery);
+    const previousFields = definitionQuery.currentData?.definitions;
+    const previousValues = filters.extensionFilterValues;
+    const failRecovery = () => {
+      if (!isCurrentRecovery()) return;
+      setExtensionRecoveryInProgress(false);
+      setExtensionRecoveryFailed(true);
+    };
+    setExtensionRecoveryNotice(false);
+    setExtensionRecoveryFailed(false);
+    setExtensionRecoveryInProgress(true);
+    void definitionQuery
+      .refetch()
+      .then(result => {
+        if (!isCurrentRecovery()) return;
+        const definition = result.data;
+        if (!definition || !isExtensionDefinitionRevisionAtLeast(definition, recovery.expectedRevision)) {
+          failRecovery();
+          return;
+        }
+        const retained = reconcileExtensionFilterValues(
+          filterFormRef.current,
+          previousFields,
+          definition.definitions,
+          previousValues,
+        );
+        setFilters(current => {
+          const {extensionFilterValues: _extensionFilterValues, ...coreFilters} = current;
+          return Object.keys(retained).length ? {...coreFilters, extensionFilterValues: retained} : coreFilters;
+        });
+        pagination.setPage(1);
+        setExtensionRecoveryNotice(true);
+        setExtensionRecoveryInProgress(false);
+        setExtensionRecoveryFailed(false);
+      })
+      .catch(failRecovery);
+  };
+  useExtensionFilterStaleRecovery({
+    scopeKey: recoveryScopeKey,
+    stale: listProblem?.errorCode === 'EXTENSION_DEFINITION_REVISION_STALE',
+    staleRevision: listProblem?.currentDefinitionRevision,
+    recover: recoverExtensionFilters,
+  });
   const candidates = useContractStoreCandidates({open: Boolean(projectId), queryContext});
   const tenantCandidates = useOrganizationCandidates({
     open: Boolean(projectId),
@@ -111,13 +210,24 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
   // Missing project context is rendered once by OperationsDataScopeContextBar.
   // Keeping only actual query failures here prevents a second, inconsistent
   // required-scope alert inside the CRUD page.
-  const problem = list.error
-    ? '合同列表暂时无法获取，请重试。'
-    : tenantCandidates.error
+  const extensionDefinitionProblem = definitionProblem
+    ? {title: '暂时无法获取合同字段配置', detail: '请重试。'}
+    : undefined;
+  const extensionRecoveryProblem = extensionRecoveryFailed
+    ? {title: '暂时无法获取合同字段配置', detail: '请重试。'}
+    : undefined;
+  const queryProblem = extensionRecoveryProblem ?? listProblem ?? extensionDefinitionProblem;
+  const invalidFilterProblem = listProblem?.errorCode === 'EXTENSION_FILTER_INVALID' ? listProblem : undefined;
+  const invalidFilterProblemRef = useRef<HTMLDivElement | null>(null);
+  useExtensionFilterInvalidFocus(invalidFilterProblemRef, invalidFilterProblem?.invalidFields);
+  const problem =
+    queryProblem?.detail ??
+    (tenantCandidates.error
       ? '经营租户候选暂时无法获取，请重试。'
       : candidates.error
         ? '门店候选暂时无法获取，请重试后再筛选或创建合同。'
-        : undefined;
+        : undefined);
+  const problemTitle = queryProblem?.title ?? '合同页面暂时不可用';
 
   const columns = useMemo<ProColumns<StoreContract>[]>(
     () => [
@@ -174,6 +284,10 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
           </span>
         ),
       },
+      ...extensionListAndSearchColumns<StoreContract>(
+        definitionQuery.currentData as ExtensionDefinition | undefined,
+        'operations-contract-filter-extension',
+      ),
       {
         title: '状态',
         dataIndex: 'status',
@@ -249,6 +363,7 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
       tenantCandidates.isFetching,
       tenantCandidates.items,
       tenantCandidates.onPopupScroll,
+      definitionQuery.currentData,
     ],
   );
 
@@ -256,43 +371,87 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
     detail.open(contract);
   };
 
-  const retry = candidates.error
-    ? () => void candidates.refetch()
-    : tenantCandidates.error
-      ? () => void tenantCandidates.refetch()
-      : list.error
-        ? () => void list.refetch()
-        : undefined;
+  const retry = extensionRecoveryFailed
+    ? () => recoverExtensionFilters()
+    : candidates.error
+      ? () => void candidates.refetch()
+      : tenantCandidates.error
+        ? () => void tenantCandidates.refetch()
+        : listProblem
+          ? listProblem.errorCode === 'EXTENSION_DEFINITION_REVISION_STALE'
+            ? () => recoverExtensionFilters()
+            : () => void list.refetch()
+          : definitionProblem
+            ? () => void definitionQuery.refetch()
+            : undefined;
   return (
     <>
-      {problem && (
+      {extensionRecoveryNotice && (
         <Alert
-          type="error"
+          type="info"
           showIcon
-          title="合同页面暂时不可用"
-          description={problem}
-          action={
-            retry ? (
-              <Button onClick={retry} {...testId('operations-contract-page-retry')}>
-                重试
-              </Button>
-            ) : undefined
-          }
+          closable
+          title="筛选条件已按最新字段配置更新"
+          onClose={() => setExtensionRecoveryNotice(false)}
+          {...testId(extensionListRecoveryNoticeTestId('operations-contract'))}
           style={{marginBottom: 16}}
         />
+      )}
+      {problem && (
+        <div
+          ref={invalidFilterProblemRef}
+          tabIndex={invalidFilterProblem?.invalidFields?.length ? -1 : undefined}
+          style={{outline: 'none'}}
+        >
+          <Alert
+            type="error"
+            showIcon
+            title={problemTitle}
+            description={
+              invalidFilterProblem ? (
+                <>
+                  <div>{invalidFilterProblem.detail}</div>
+                  <ExtensionFilterInvalidSummary
+                    invalidFields={invalidFilterProblem.invalidFields}
+                    definitions={definitionQuery.currentData?.definitions}
+                    onClear={() =>
+                      clearInvalidExtensionFilterFields(
+                        filterFormRef.current,
+                        definitionQuery.currentData?.definitions,
+                        invalidFilterProblem.invalidFields,
+                      )
+                    }
+                    testIdPrefix={extensionListInvalidSummaryTestId('operations-contract')}
+                  />
+                </>
+              ) : (
+                problem
+              )
+            }
+            action={
+              retry ? (
+                <Button onClick={retry} {...testId('operations-contract-page-retry')}>
+                  重试
+                </Button>
+              ) : undefined
+            }
+            style={{marginBottom: 16}}
+          />
+        </div>
       )}
       <ProTable<StoreContract>
         size="small"
         aria-label={contractPageTitle}
+        formRef={filterFormRef}
         rowKey="id"
         options={false}
         {...adminListState({
-          loading: list.isFetching,
-          failed: Boolean(list.error),
+          loading: list.isFetching || extensionRecoveryInProgress,
+          failed: listDataFailed,
           emptyText: projectId ? '暂无合同' : '请先选择项目',
           testIdPrefix: 'operations-contract-list',
         })}
-        dataSource={list.currentData?.items ?? []}
+        dataSource={listDataFailed ? [] : (list.currentData?.items ?? [])}
         columns={columns}
         search={{
           labelWidth: 'auto',
@@ -308,7 +467,11 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
             <Button
               key="reset"
               onClick={() => {
+                extensionRecoveryState.current?.invalidate(recoveryScopeKey);
                 searchConfig.form?.resetFields();
+                setExtensionRecoveryNotice(false);
+                setExtensionRecoveryInProgress(false);
+                setExtensionRecoveryFailed(false);
                 setFilters({});
                 pagination.setPage(1);
                 setTenantSearch('');
@@ -320,6 +483,10 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
           ],
         }}
         onSubmit={values => {
+          extensionRecoveryState.current?.invalidate(recoveryScopeKey);
+          setExtensionRecoveryNotice(false);
+          setExtensionRecoveryInProgress(false);
+          setExtensionRecoveryFailed(false);
           const dateRange = values.dateRange as string[] | undefined;
           setFilters({
             storeId: values.storeId,
@@ -329,6 +496,7 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
             status: values.status,
             dateFrom: dateRange?.[0],
             dateTo: dateRange?.[1],
+            extensionFilterValues: values.extensionFilterValues as Record<string, unknown>,
           });
           pagination.setPage(1);
         }}

@@ -29,10 +29,19 @@ import {
   memberRegistrationRetryRequestedCommand,
   memberSubmissionWithdrawnCommand,
 } from '../../../../ui/feature/sample-member-desk/src/features/commands/commands'
-import {createSampleAssembly, createSurfaceForDisplayIndex} from '../src'
+import {createSampleAssembly as createProductionSampleAssembly, createSurfaceForDisplayIndex} from '../src'
 import {createSampleDefinedParts} from '../src/assembly/assembly'
 import {adminTestIds} from '@catering-v2s/ui-base-admin-shell'
-import {createTestPlatformPorts} from './support'
+import {createTestPlatformPorts, type TestPlatformPorts} from './support'
+
+type TestSampleAssemblyInput = Omit<Parameters<typeof createProductionSampleAssembly>[0], 'platformPorts' | 'nativeLoadingCapability'> & Readonly<{
+  readonly platformPorts: TestPlatformPorts
+}>
+
+const createSampleAssembly = (input: TestSampleAssemblyInput) => createProductionSampleAssembly({
+  ...input,
+  nativeLoadingCapability: input.platformPorts.nativeLoadingCapability,
+})
 
 const LANDSCAPE_PRIMARY_FRAME = {width: 1280, height: 800} as const
 const LANDSCAPE_SECONDARY_FRAME = {width: 960, height: 540} as const
@@ -237,6 +246,64 @@ const findTextInput = (renderer: ReactTestRenderer, testID: string): TextInputTe
 }
 
 describe('sample-console real assembly', () => {
+  it('does not reuse a platform-port run id for separate console writers', async () => {
+    const firstEvents: LogEvent[] = []
+    const secondEvents: LogEvent[] = []
+    const sharedPlatformRunId = 'platform-port-run-id-shared-by-two-clients'
+    const firstAssembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts({
+        events: firstEvents,
+        startupRunId: sharedPlatformRunId,
+      }),
+      persistenceKey: `sample-console-writer-run-id-first-${Date.now()}`,
+      surfaceForm: 'mobile',
+      surfaceHostSourcesByDisplayIndex: {0: createHostSource(true, PORTRAIT_PRIMARY_FRAME)},
+    })
+    const secondAssembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts({
+        events: secondEvents,
+        startupRunId: sharedPlatformRunId,
+      }),
+      persistenceKey: `sample-console-writer-run-id-second-${Date.now()}`,
+      surfaceForm: 'mobile',
+      surfaceHostSourcesByDisplayIndex: {0: createHostSource(true, PORTRAIT_PRIMARY_FRAME)},
+    })
+    let firstRenderer: ReactTestRenderer | undefined
+    let secondRenderer: ReactTestRenderer | undefined
+    try {
+      firstRenderer = mount(createSurfaceForDisplayIndex(firstAssembly, 0), PORTRAIT_PRIMARY_FRAME)
+      secondRenderer = mount(createSurfaceForDisplayIndex(secondAssembly, 0), PORTRAIT_PRIMARY_FRAME)
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)) })
+      for (const renderer of [firstRenderer, secondRenderer]) {
+        const boundaries = renderer.root.findAllByProps({testID: 'ui-base-render:screen-ready-boundary'})
+        act(() => {
+          for (const boundary of boundaries) {
+            ;(boundary.props.onLayout as (event: unknown) => void)({
+              nativeEvent: {layout: {width: PORTRAIT_PRIMARY_FRAME.width, height: PORTRAIT_PRIMARY_FRAME.height}},
+            })
+          }
+        })
+      }
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)) })
+      const readStartupRunId = (events: readonly LogEvent[]): string => {
+        const complete = events.find(event => event.event === 'startup.complete')
+        const startupRunId = complete?.data?.startupRunId
+        if (typeof startupRunId !== 'string') throw new Error('missing startup.complete run id')
+        return startupRunId
+      }
+      const firstRunId = readStartupRunId(firstEvents)
+      const secondRunId = readStartupRunId(secondEvents)
+      expect(firstRunId).not.toBe(sharedPlatformRunId)
+      expect(secondRunId).not.toBe(sharedPlatformRunId)
+      expect(secondRunId).not.toBe(firstRunId)
+    } finally {
+      if (firstRenderer !== undefined) act(() => { firstRenderer!.unmount() })
+      if (secondRenderer !== undefined) act(() => { secondRenderer!.unmount() })
+      releaseRuntimeForTest(firstAssembly.runtime)
+      releaseRuntimeForTest(secondAssembly.runtime)
+    }
+  })
+
   it('exposes the injected sample section through the same catalog projection', () => {
     const context = {
       displayMode: 'PRIMARY' as const,
@@ -843,17 +910,15 @@ describe('sample-console real assembly', () => {
       expect(assembly.runtime.status).toBe('started')
       expect(assembly.runtime.descriptors.map(descriptor => descriptor.moduleName)).toEqual(expect.arrayContaining([
         'kernel.base.runtime',
-        'kernel.base.contracts',
-        'kernel.base.platform-ports',
-        'kernel.base.state',
         'kernel.base.display-context',
         'kernel.base.ui-state',
         'kernel.feature.sample-staff-session',
         'kernel.feature.sample-member-registry',
         'ui.feature.sample-staff-auth',
         'ui.feature.sample-member-desk',
+        'ui.integration.sample-console',
       ]))
-      expect(assembly.runtime.descriptors).toHaveLength(10)
+      expect(assembly.runtime.descriptors).toHaveLength(8)
     } finally {
       releaseRuntimeForTest(assembly.runtime)
     }

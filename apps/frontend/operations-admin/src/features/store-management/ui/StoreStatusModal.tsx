@@ -4,6 +4,7 @@ import {useEffect, useState} from 'react';
 import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import type {OrganizationStore} from '../../../app/api/generated/operations-edge';
 import type {OperationsPageProps} from '../../../app/routing/model';
+import {toggleOrganizationStoreStatus} from '../../organization-structure/model/organizationStatus';
 
 type Props = {
   store?: OrganizationStore;
@@ -23,14 +24,15 @@ export function StoreStatusModal({store, queryContext, onClose, onUpdated, onPro
     setSubmitting(false);
     setProblem(undefined);
   }, [lifecycle, store]);
+  const targetStatus = store ? toggleOrganizationStoreStatus(store.status) : undefined;
   const submit = async () => {
-    if (!store || submitting) return;
+    if (!store || !targetStatus || submitting) return;
     setSubmitting(true);
     try {
       const updated = await operationsClient.transitionOperationsOrganizationStoreStatus(
         {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeId: store.id},
         {
-          body: {targetStatus: store.status === 'ENABLED' ? 'DISABLED' : 'ENABLED', expectedVersion: store.revision},
+          body: {targetStatus, expectedVersion: store.revision},
           headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()},
         },
       );
@@ -44,10 +46,10 @@ export function StoreStatusModal({store, queryContext, onClose, onUpdated, onPro
       setSubmitting(false);
     }
   };
-  const action = store?.status === 'ENABLED' ? '停用' : '启用';
+  const action = targetStatus === 'DISABLED' ? '停用' : targetStatus === 'ENABLED' ? '启用' : undefined;
   return (
     <Modal
-      title={store ? `确认${action}“${store.name}”？` : '确认状态操作'}
+      title={store && action ? `确认${action}“${store.name}”？` : '状态操作不可用'}
       open={Boolean(store)}
       destroyOnHidden
       onCancel={submitting ? undefined : onClose}
@@ -61,6 +63,7 @@ export function StoreStatusModal({store, queryContext, onClose, onUpdated, onPro
           key="confirm"
           type="primary"
           loading={submitting}
+          disabled={!targetStatus}
           onClick={() => void submit()}
           {...testId('operations-store-status-confirm')}
         >
@@ -70,7 +73,7 @@ export function StoreStatusModal({store, queryContext, onClose, onUpdated, onPro
       {...testId('operations-store-status-modal')}
     >
       {problem && <Alert type="error" showIcon title="状态操作未完成" description={problem} />}
-      <p>此操作仅改变门店资料可用状态。</p>
+      <p>{action ? '此操作仅改变门店资料可用状态。' : '已作废门店不可变更状态。'}</p>
     </Modal>
   );
 }

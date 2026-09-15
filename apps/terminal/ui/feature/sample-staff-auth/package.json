@@ -14,6 +14,7 @@
     "@catering-v2s/kernel-base-state": "workspace:*",
     "@catering-v2s/kernel-base-ui-state": "workspace:*",
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*",
+    "@catering-v2s/ui-base-feature-assembly": "workspace:*",
     "@catering-v2s/ui-base-input": "workspace:*",
     "@catering-v2s/ui-base-primitives": "workspace:*",
     "@catering-v2s/ui-base-render": "workspace:*"
@@ -23,6 +24,7 @@
     "react-native": "0.86.3"
   },
   "devDependencies": {
+    "@catering-v2s/ui-base-test-support": "workspace:*",
     "@types/react": "~19.2.2",
     "react": "19.2.3",
     "react-native": "0.86.3",

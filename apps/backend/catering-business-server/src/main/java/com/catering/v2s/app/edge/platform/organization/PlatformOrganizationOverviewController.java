@@ -30,6 +30,9 @@ import com.catering.v2s.organization.application.OrganizationOverviewTaskReadSer
 import com.catering.v2s.organization.application.StoreCandidateTaskReadService;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
 import java.util.UUID;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,6 +42,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview")
 public final class PlatformOrganizationOverviewController {
+    private static final ObjectMapper JSON = new ObjectMapper();
     private final PlatformSessionResolver sessions;
     private final WorkspaceAdministrationService workspaces;
     private final OrganizationOverviewTaskReadService overview;
@@ -77,29 +81,37 @@ public final class PlatformOrganizationOverviewController {
             @RequestParam(defaultValue = "UPDATED_AT") String sort,
             @RequestParam(defaultValue = "DESC") String direction,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "50") int pageSize) {
+            @RequestParam(defaultValue = "50") int pageSize,
+            @RequestParam(required = false) String extensionFilters,
+            @RequestParam(required = false) String definitionRevision) {
         var workspace = sessions.requireRead(request).requireEnabledSelectedWorkspace(workspaces, groupWorkspaceKey);
-        return page(overview.platformOverviewTaskPage(
-                workspace.workspaceUuid(),
-                groupWorkspaceKey,
-                category,
-                new OrganizationOverviewTaskReadService.Query(
-                        type,
-                        name,
-                        code,
-                        legalName,
-                        unifiedSocialCreditCode,
-                        status,
-                        source,
-                        uuid(projectId),
-                        uuid(brandId),
-                        uuid(tenantId),
-                        uuid(headCompanyId),
-                        sort,
-                        direction,
-                        null),
-                page,
-                pageSize));
+        try {
+            return page(overview.platformOverviewTaskPage(
+                    workspace.workspaceUuid(),
+                    groupWorkspaceKey,
+                    category,
+                    new OrganizationOverviewTaskReadService.Query(
+                            type,
+                            name,
+                            code,
+                            legalName,
+                            unifiedSocialCreditCode,
+                            status,
+                            source,
+                            uuid(projectId),
+                            uuid(brandId),
+                            uuid(tenantId),
+                            uuid(headCompanyId),
+                            sort,
+                            direction,
+                            null,
+                            extensionFilters,
+                            definitionRevision),
+                    page,
+                    pageSize));
+        } catch (OrganizationOverviewTaskReadService.QueryValidationException failure) {
+            throw new InvalidEdgeRequestException("invalid platform organization overview query", failure);
+        }
     }
 
     @GetMapping("/candidates")
@@ -189,7 +201,8 @@ public final class PlatformOrganizationOverviewController {
                         value.metadata().total(),
                         OrganizationOverviewSortKey.valueOf(value.metadata().sort()),
                         OrganizationOverviewSortDirection.valueOf(
-                                value.metadata().direction())),
+                                value.metadata().direction()),
+                        value.metadata().definitionRevision()),
                 value.items().stream()
                         .map(PlatformOrganizationOverviewController::item)
                         .toList(),
@@ -206,6 +219,7 @@ public final class PlatformOrganizationOverviewController {
     }
 
     private static OrganizationOverviewItem item(OrganizationOverviewTaskReadService.Item value) {
+        boolean hierarchy = "HIERARCHY".equals(value.category());
         return new OrganizationOverviewItem(
                 value.id().toString(),
                 value.groupWorkspaceKey(),
@@ -230,9 +244,25 @@ public final class PlatformOrganizationOverviewController {
                 value.alias(),
                 value.legalName(),
                 value.unifiedSocialCreditCode(),
-                value.extensionFields().stream()
-                        .map(field -> new OrganizationOverviewItemExtensionFieldsItem(field.name(), field.value()))
-                        .toList());
+                hierarchy
+                        ? value.extensionFields().stream()
+                                .map(field -> new OrganizationOverviewItemExtensionFieldsItem(field.name(), field.value()))
+                                .toList()
+                        : null,
+                hierarchy ? null : extensionValues(value.extensionValues()),
+                hierarchy ? null : value.extensionRuleRevision());
+    }
+
+    private static JsonNode extensionValues(java.util.Map<String, String> values) {
+        ObjectNode result = JSON.createObjectNode();
+        values.forEach((key, encodedValue) -> {
+            try {
+                result.set(key, JSON.readTree(encodedValue));
+            } catch (Exception failure) {
+                throw new IllegalStateException("organization owner emitted invalid extension JSON", failure);
+            }
+        });
+        return result;
     }
 
     private static OrganizationOverviewItemPathItem pathItem(OrganizationOverviewTaskReadService.Reference value) {

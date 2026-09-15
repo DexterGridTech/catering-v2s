@@ -3,6 +3,7 @@ import {
   closeLayerCommand,
   createUiVariableWrite,
   openLayerCommand,
+  selectLayers,
   setUiVariablesCommand,
   showScreenCommand,
 } from '@catering-v2s/kernel-base-ui-state'
@@ -78,11 +79,15 @@ export const createAuthNoticeActor = (): ActorDefinition => defineActor(moduleNa
 
 export const createAuthSystemNoticeActor = (): ActorDefinition => defineActor(moduleName, 'auth-system-notice', [
   onCommand(authSystemFailureObservedCommand, async context => {
+    const hasNotice = selectLayers(context.getState(), primary)
+      .some(layer => layer.layerId === 'sample.auth.system-notice')
+    if (hasNotice) return null
     await context.dispatchCommand(openLayerCommand, {
       displayMode: primary,
       layerId: 'sample.auth.system-notice',
       partKey: 'sample.auth.system-notice',
       props: {operation: context.command.payload.operation},
+      persistence: 'ephemeral',
     })
     return null
   }),

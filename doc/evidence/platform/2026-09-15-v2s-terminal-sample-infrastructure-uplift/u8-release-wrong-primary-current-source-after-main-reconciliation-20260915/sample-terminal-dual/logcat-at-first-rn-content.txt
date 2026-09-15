@@ -1,0 +1,1168 @@
+--------- beginning of main
+         1789171107.814   571   584 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/LatinIMEGooglePrebuilt/LatinIMEGooglePrebuilt.apk' with 1 weak references
+         1789171107.814   571   584 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/GoogleTTS/GoogleTTS.apk' with 1 weak references
+         1789171107.814   571   584 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/InputDevices/InputDevices.apk' with 1 weak references
+         1789171107.814   571   584 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/app/AccessibilityMenu/AccessibilityMenu.apk' with 1 weak references
+         1789171107.814   571   584 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/talkback/talkback.apk' with 1 weak references
+         1789171107.815   571   584 W system_server: ApkAssets: Deleting an ApkAssets object '/vendor/overlay/EmulatorTalkBackOverlay/EmulatorTalkBackOverlay.apk' with 1 weak references
+         1789171107.815   571   584 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/PrebuiltGmsCore/PrebuiltGmsCore.apk' with 1 weak references
+         1789171107.815   571   584 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/PrebuiltGmail/PrebuiltGmail.apk' with 1 weak references
+         1789171107.815   571   584 W system_server: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/PlayBooksPrebuilt/PlayBooksPrebuilt.apk' with 1 weak references
+--------- beginning of system
+         1789171107.915   571   926 I ActivityManager: Force stopping com.anonymous.sampleterminal appid=10213 user=0: from pid 7230
+         1789171107.915   571   926 I AppsFilter: interaction: PackageSetting{95c71f3 com.anonymous.posdesktop/10212} -> PackageSetting{a07edbf com.anonymous.sampleterminal/10213} BLOCKED
+         1789171107.915   571   926 I AppsFilter: interaction: PackageSetting{bcc553f com.impos2.adapter.dev/10230} -> PackageSetting{a07edbf com.anonymous.sampleterminal/10213} BLOCKED
+         1789171107.915   571   926 I AppsFilter: interaction: PackageSetting{5b3ae0c com.impos2.mixcretailrn84v2/10231} -> PackageSetting{a07edbf com.anonymous.sampleterminal/10213} BLOCKED
+         1789171107.915   571   926 I AppsFilter: interaction: PackageSetting{5d0f355 com.impos2.mixccateringassemblyrn84/10218} -> PackageSetting{a07edbf com.anonymous.sampleterminal/10213} BLOCKED
+         1789171107.915   571   926 I AppsFilter: interaction: PackageSetting{cd9b16a com.impos2.mixcretailrn84/10234} -> PackageSetting{a07edbf com.anonymous.sampleterminal/10213} BLOCKED
+         1789171107.915   571   926 I AppsFilter: interaction: PackageSetting{6f39ef8 com.next.mixccateringassemblyrn84/10219} -> PackageSetting{a07edbf com.anonymous.sampleterminal/10213} BLOCKED
+         1789171107.915   571   926 I AppsFilter: interaction: PackageSetting{bfa6fd1 com.impos2.posadapter/10229} -> PackageSetting{a07edbf com.anonymous.sampleterminal/10213} BLOCKED
+         1789171107.917   571   762 I AppWidgetServiceImpl: Received broadcast: android.intent.action.PACKAGE_RESTARTED on user 0
+         1789171107.917   571   762 I AppWidgetServiceImpl: Updating package stopped masked state for uid 10213 package com.anonymous.sampleterminal isStopped true
+         1789171108.015   571   926 W ActivityTaskManager: callingPackage for (uid=2000, pid=7243) has no WPC
+         1789171108.015   571   926 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE
+         1789171108.015   571   926 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE
+         1789171108.015   571   926 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_ORIENTATION_OVERRIDE
+         1789171108.016   571   926 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10213, packageName = null, attributionTag = null, token = android.os.Binder@f75b2a2, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+         1789171108.016   571   926 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES
+         1789171108.016   571   926 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE
+         1789171108.018   571   926 W InputDispatcher: Focused display #2 does not have a focused window.
+         1789171108.018   571   926 E InputDispatcher: But another display has a focused window
+         1789171108.018   571   926 E InputDispatcher:   FocusedWindows:
+         1789171108.018   571   926 E InputDispatcher:     displayId=0, name='74952b1 com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity'
+         1789171108.020   571   926 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=com.anonymous.sampleterminal/.MainActivity} with LAUNCH_SINGLE_TASK from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+         1789171108.021   825   863 V WindowManagerShell: Transition requested (#708): android.os.BinderProxy@b04bc5b TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=1216 displayId=2 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=com.anonymous.sampleterminal/.MainActivity } baseActivity=ComponentInfo{com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity} topActivity=ComponentInfo{com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity} origActivity=null realActivity=ComponentInfo{com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity} numActivities=1 lastActiveTime=654324569 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@bca1cf8} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{9b215d1 com.anonymous.sampleterminal.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=true isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= falseisLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false topActivityEligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=1280 topActivityLetterboxHeight=720 isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false cameraCompatTaskInfo=CameraCompatTaskInfo { cameraCompatControlState=hidden freeformCameraCompatMode=inactive}}}, pipTask = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 708 }
+         1789171108.021   825   863 D ShellDesktopMode: DesktopTaskRepo: visibleTaskCount= 0
+         1789171108.021   571   594 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10213, packageName = null, attributionTag = null, token = android.os.Binder@f75b2a2, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+         1789171108.023   571   641 I AppsFilter: interaction: PackageSetting{95c71f3 com.anonymous.posdesktop/10212} -> PackageSetting{c825ef2 com.anonymous.sampleterminal/10213} BLOCKED
+         1789171108.023   571   641 I AppsFilter: interaction: PackageSetting{bcc553f com.impos2.adapter.dev/10230} -> PackageSetting{c825ef2 com.anonymous.sampleterminal/10213} BLOCKED
+         1789171108.023   571   641 I AppsFilter: interaction: PackageSetting{5b3ae0c com.impos2.mixcretailrn84v2/10231} -> PackageSetting{c825ef2 com.anonymous.sampleterminal/10213} BLOCKED
+         1789171108.023   571   641 I AppsFilter: interaction: PackageSetting{5d0f355 com.impos2.mixccateringassemblyrn84/10218} -> PackageSetting{c825ef2 com.anonymous.sampleterminal/10213} BLOCKED
+         1789171108.023   571   641 I AppsFilter: interaction: PackageSetting{cd9b16a com.impos2.mixcretailrn84/10234} -> PackageSetting{c825ef2 com.anonymous.sampleterminal/10213} BLOCKED
+         1789171108.023   571   641 I AppsFilter: interaction: PackageSetting{6f39ef8 com.next.mixccateringassemblyrn84/10219} -> PackageSetting{c825ef2 com.anonymous.sampleterminal/10213} BLOCKED
+         1789171108.023   571   641 I AppsFilter: interaction: PackageSetting{bfa6fd1 com.impos2.posadapter/10229} -> PackageSetting{c825ef2 com.anonymous.sampleterminal/10213} BLOCKED
+         1789171108.024  1041  1041 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=1216, baseIntent=Intent { flg=0x10000000 cmp=com.anonymous.sampleterminal/.MainActivity }
+         1789171108.024  1041  1041 I TopTaskTracker: onTaskMovedToFront: (removing top task on home display) taskId=940, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+         1789171108.025   419   419 I BpBinder: onLastStrongRef automatically unlinking death recipients: 
+         1789171108.026   571   762 I AppWidgetServiceImpl: Received broadcast: android.intent.action.PACKAGE_UNSTOPPED on user 0
+         1789171108.026   571   762 I AppWidgetServiceImpl: Updating package stopped masked state for uid 10213 package com.anonymous.sampleterminal isStopped false
+         1789171108.033   825   895 D SplashScreenView: Build android.window.SplashScreenView{280ae09 V.E...... ......ID 0,0-0,0}
+         1789171108.033   825   895 D SplashScreenView: Icon: view: android.widget.ImageView{9c7080e V.ED..... ......I. 0,0-0,0 #1020504 android:id/splashscreen_icon_view} drawable: com.android.wm.shell.startingsurface.SplashscreenIconDrawableFactory$ImmobileIconDrawable@706e22f size: 384
+         1789171108.033   825   895 D SplashScreenView: Branding: view: android.view.View{632d03c G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+         1789171108.040   369   369 D Zygote  : Forked child process 7246
+         1789171108.040   571   604 I ActivityManager: Start proc 7246:com.anonymous.sampleterminal/u0a213 for next-top-activity {com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity}
+         1789171108.045   571   641 D CoreBackPreview: Window{1bb3b5 u0 Splash Screen com.anonymous.sampleterminal}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@1f422d8, mPriority=0, mIsAnimationCallback=false}
+         1789171108.053  7246  7246 I .sampleterminal: Using CollectorTypeCMC GC.
+         1789171108.056  7246  7246 E .sampleterminal: Not starting debugger since process cannot load the jdwp agent.
+         1789171108.059  7246  7246 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+         1789171108.101  7246  7246 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+         1789171108.101  7246  7246 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.sidecar.jar
+         1789171108.102   825  6680 V WindowManagerShell: onTransitionReady(transaction=2452426493388)
+         1789171108.102   571   591 V WindowManager: Sent Transition (#708) createdAt=09-12 08:58:28.016 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=1216 displayId=2 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=com.anonymous.sampleterminal/.MainActivity } baseActivity=ComponentInfo{com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity} topActivity=ComponentInfo{com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity} origActivity=null realActivity=ComponentInfo{com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity} numActivities=1 lastActiveTime=654324569 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{46874f0 Task{3008266 #1216 type=standard A=10213:com.anonymous.sampleterminal}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{5bb1a69 com.anonymous.sampleterminal.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=true isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= falseisLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false topActivityEligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=1280 topActivityLetterboxHeight=720 isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false cameraCompatTaskInfo=CameraCompatTaskInfo { cameraCompatControlState=hidden freeformCameraCompatMode=inactive}}}, pipTask = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 708 }
+         1789171108.102   825   863 V WindowManagerShell: onTransitionReady (#708) android.os.BinderProxy@b04bc5b: {id=708 t=OPEN f=0x0 trk=0 r=[2@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@511ef72} m=OPEN f=NONE leash=Surface(name=Task=1216)/@0x79ae827 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 1280, 720) d=2 taskParent=-1},{WCT{android.window.IWindowContainerToken$Stub$Proxy@3c3dfc3} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=959)/@0x4daead4 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 1280, 720) d=2 taskParent=-1}]}
+         1789171108.102   571   591 V WindowManager:     startWCT=WindowContainerTransaction { changes = {} hops = [] errorCallbackToken=null taskFragmentOrganizer=null }
+         1789171108.102   571   591 V WindowManager:     info={id=708 t=OPEN f=0x0 trk=0 r=[2@Point(0, 0)] c=[
+         1789171108.102   571   591 V WindowManager:         {WCT{RemoteToken{46874f0 Task{3008266 #1216 type=standard A=10213:com.anonymous.sampleterminal}}} m=OPEN f=NONE leash=Surface(name=Task=1216)/@0xa0c68a2 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 1280, 720) d=2 taskParent=-1},
+         1789171108.102   571   591 V WindowManager:         {WCT{RemoteToken{59276ec Task{a0e687e #959 type=home}}} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=959)/@0x40ff9f2 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 1280, 720) d=2 taskParent=-1}
+         1789171108.102   571   591 V WindowManager:     ]}
+         1789171108.104  7246  7246 D nativeloader: Configuring clns-7 for other apk /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/lib/arm64:/data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.anonymous.sampleterminal
+         1789171108.105   571  1509 W UserManagerService: Requested status bar icon for non-badged user 0
+         1789171108.108  7246  7246 V GraphicsEnvironment: Currently set values for:
+         1789171108.108  7246  7246 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[]
+         1789171108.108  7246  7246 V GraphicsEnvironment:   angle_gl_driver_selection_values=[]
+         1789171108.108  7246  7246 V GraphicsEnvironment: Global.Settings values are invalid: number of packages: 0, number of values: 0
+         1789171108.108  7246  7246 V GraphicsEnvironment: Neither updatable production driver nor prerelease driver is supported.
+         1789171108.108   825   863 V WindowManagerShell: Playing animation for (#708) android.os.BinderProxy@b04bc5b@0
+         1789171108.108   825   863 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultMixedHandler@da28c9b
+         1789171108.108   825   863 V WindowManagerShell:  try handler com.android.wm.shell.keyguard.KeyguardTransitionHandler@fef4838
+         1789171108.108   825   863 V WindowManagerShell:  try handler com.android.wm.shell.pip.PipTransition@4330011
+         1789171108.108   825   863 V WindowManagerShell:  try handler com.android.wm.shell.activityembedding.ActivityEmbeddingController@1e26576
+         1789171108.108   825   863 V WindowManagerShell:  try handler com.android.wm.shell.splitscreen.StageCoordinator@7935777
+         1789171108.108   825   863 V WindowManagerShell:  try handler com.android.wm.shell.desktopmode.DesktopTasksController@b6cafe4
+         1789171108.108   825   863 V WindowManagerShell:  try handler com.android.wm.shell.recents.RecentsTransitionHandler@9368c4d
+         1789171108.108   825   863 V ShellRecents: RecentsTransitionHandler.startAnimation: no controller found
+         1789171108.108   825   863 V WindowManagerShell:  try handler com.android.wm.shell.transition.RemoteTransitionHandler@b876302
+         1789171108.108   825   863 V WindowManagerShell: Transition doesn't have explicit remote, search filters for match for {id=708 t=OPEN f=0x0 trk=0 r=[2@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@511ef72} m=OPEN f=NONE leash=Surface(name=Task=1216)/@0x79ae827 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 1280, 720) d=2 taskParent=-1},{WCT{android.window.IWindowContainerToken$Stub$Proxy@3c3dfc3} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=959)/@0x4daead4 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 1280, 720) d=2 taskParent=-1}]}
+         1789171108.108   825   863 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=undefined independent=true modes=[OPEN,TO_FRONT] flags=IN_TASK_WITH_EMBEDDED_ACTIVITY mustBeTask=false order=ANY topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity} launchCookie=null},{atype=undefined independent=true modes=[CLOSE,TO_BACK] flags=IN_TASK_WITH_EMBEDDED_ACTIVITY mustBeTask=false order=ANY topActivity=null launchCookie=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@e6823e, appThread = android.app.IApplicationThread$Stub$Proxy@7c8889f, debugName = OverlaySwipeBack }}
+         1789171108.109   825   863 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=dream independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null},{atype=home independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@3fccdec, appThread = android.app.IApplicationThread$Stub$Proxy@9e9c5b5, debugName = LauncherToDream }}
+         1789171108.109   825   863 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity} launchCookie=null},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@1c4844a, appThread = android.app.IApplicationThread$Stub$Proxy@c370fbb, debugName = QuickstepLaunchHome }}
+         1789171108.109   825   863 V WindowManagerShell:  Delegate animation for (#708) to null
+         1789171108.109   825   863 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultTransitionHandler@2d5f805
+         1789171108.109   825   863 V WindowManagerShell: start default transition animation, info = {id=708 t=OPEN f=0x0 trk=0 r=[2@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@511ef72} m=OPEN f=NONE leash=Surface(name=Task=1216)/@0x79ae827 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 1280, 720) d=2 taskParent=-1},{WCT{android.window.IWindowContainerToken$Stub$Proxy@3c3dfc3} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=959)/@0x4daead4 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 1280, 720) d=2 taskParent=-1}]}
+         1789171108.109   825   863 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@72ad0b1 animAttr=0x13 type=OPEN isEntrance=false
+         1789171108.109   825   863 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@feac6ed animAttr=0x12 type=OPEN isEntrance=true
+         1789171108.110   825   863 V WindowManagerShell:  animated by com.android.wm.shell.transition.DefaultTransitionHandler@2d5f805
+         1789171108.119  7246  7246 W SoLoader: Initializing SoLoader: 0
+         1789171108.119  7246  7246 W SoLoader: Recording new base apk path: /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk
+         1789171108.119  7246  7246 W SoLoader: Previously recorded 0 base apk paths.
+         1789171108.120  7246  7246 I SoLoader: Preparing SO source: DirectorySoSource[root = /vendor/lib64 flags = 2]
+         1789171108.120  7246  7246 I SoLoader: Preparing SO source: DirectorySoSource[root = /system/lib64 flags = 2]
+         1789171108.120  7246  7246 I SoLoader: Preparing SO source: DirectApkSoSource[root = [/data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk!/lib/arm64-v8a]]
+         1789171108.121  7246  7246 I SoLoader: Preparing SO source: ApplicationSoSource[DirectorySoSource[root = /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/lib/arm64 flags = 0]]
+         1789171108.121  7246  7246 I SoLoader: init finish: 4 SO sources prepared
+         1789171108.121  7246  7246 W SoLoader: SoLoader initialized: 8
+         1789171108.124  7246  7246 D nativeloader: Load /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk!/lib/arm64-v8a/libc++_shared.so using ns clns-7 from class loader (caller=/data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk): ok
+         1789171108.124  7246  7246 D nativeloader: Load /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk!/lib/arm64-v8a/libjsi.so using ns clns-7 from class loader (caller=/data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk): ok
+         1789171108.129  7246  7246 D nativeloader: Load /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk!/lib/arm64-v8a/libfbjni.so using ns clns-7 from class loader (caller=/data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk): ok
+         1789171108.131  7246  7246 D nativeloader: Load /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk!/lib/arm64-v8a/libreactnative.so using ns clns-7 from class loader (caller=/data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk): ok
+         1789171108.131  7246  7246 D jni_lib_merge: Entering merged library JNI_OnLoad.
+         1789171108.131  7246  7246 D jni_lib_merge: Preparing 13 pre-merged libs (including stub)
+         1789171108.131  7246  7246 D jni_lib_merge: Preparing to register libfabricjni_so.  onload_func: 0x77aa40e5e8
+         1789171108.131  7246  7246 D jni_lib_merge: Preparing to register libreact_devsupportjni_so.  onload_func: 0x77aa4e2c4c
+         1789171108.131  7246  7246 D jni_lib_merge: Preparing to register libreact_featureflagsjni_so.  onload_func: 0x77aa4ff068
+         1789171108.131  7246  7246 D jni_lib_merge: Preparing to register libreact_newarchdefaults_so.  onload_func: 0x77aa542dd4
+         1789171108.131  7246  7246 D jni_lib_merge: Preparing to register libreact_tracingjni_so.  onload_func: 0x77aa62d9c0
+         1789171108.131  7246  7246 D jni_lib_merge: Preparing to register libreactnativeblob_so.  onload_func: 0x77aa632c54
+         1789171108.131  7246  7246 D jni_lib_merge: Preparing to register libreactnativejni_so.  onload_func: 0x77aa63ec58
+         1789171108.131  7246  7246 D jni_lib_merge: Preparing to register libreactnativejni_common_so.  onload_func: 0x77aa641b1c
+         1789171108.131  7246  7246 D jni_lib_merge: Preparing to register librninstance_so.  onload_func: 0x77aa667164
+         1789171108.131  7246  7246 D jni_lib_merge: Preparing to register libturbomodulejsijni_so.  onload_func: 0x77aa712580
+         1789171108.131  7246  7246 D jni_lib_merge: Preparing to register libuimanagerjni_so.  onload_func: 0x77aa718f94
+         1789171108.131  7246  7246 D jni_lib_merge: Preparing to register libyoga_so.  onload_func: 0x77aa72056c
+         1789171108.131  7246  7246 D jni_lib_merge: About to register 12 actual methods.
+         1789171108.133  7246  7246 D nativeloader: Load /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk!/lib/arm64-v8a/libreact_codegen_rnsvg.so using ns clns-7 from class loader (caller=/data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk): ok
+         1789171108.134  7246  7246 D jni_lib_merge: Entering merged library JNI_OnLoad.
+         1789171108.134  7246  7246 D jni_lib_merge: Preparing 13 pre-merged libs (including stub)
+         1789171108.134  7246  7246 D jni_lib_merge: Preparing to register libfabricjni_so.  onload_func: 0x77aa40e5e8
+         1789171108.134  7246  7246 D jni_lib_merge: Preparing to register libreact_devsupportjni_so.  onload_func: 0x77aa4e2c4c
+         1789171108.134  7246  7246 D jni_lib_merge: Preparing to register libreact_featureflagsjni_so.  onload_func: 0x77aa4ff068
+         1789171108.134  7246  7246 D jni_lib_merge: Preparing to register libreact_newarchdefaults_so.  onload_func: 0x77aa542dd4
+         1789171108.134  7246  7246 D jni_lib_merge: Preparing to register libreact_tracingjni_so.  onload_func: 0x77aa62d9c0
+         1789171108.134  7246  7246 D jni_lib_merge: Preparing to register libreactnativeblob_so.  onload_func: 0x77aa632c54
+         1789171108.134  7246  7246 D jni_lib_merge: Preparing to register libreactnativejni_so.  onload_func: 0x77aa63ec58
+         1789171108.134  7246  7246 D jni_lib_merge: Preparing to register libreactnativejni_common_so.  onload_func: 0x77aa641b1c
+         1789171108.134  7246  7246 D jni_lib_merge: Preparing to register librninstance_so.  onload_func: 0x77aa667164
+         1789171108.134  7246  7246 D jni_lib_merge: Preparing to register libturbomodulejsijni_so.  onload_func: 0x77aa712580
+         1789171108.134  7246  7246 D jni_lib_merge: Preparing to register libuimanagerjni_so.  onload_func: 0x77aa718f94
+         1789171108.134  7246  7246 D jni_lib_merge: Preparing to register libyoga_so.  onload_func: 0x77aa72056c
+         1789171108.134  7246  7246 D jni_lib_merge: About to register 12 actual methods.
+         1789171108.135  7246  7246 D nativeloader: Load /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk!/lib/arm64-v8a/libappmodules.so using ns clns-7 from class loader (caller=/data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk): ok
+         1789171108.141   571   926 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ENABLE_FAKE_FOCUS
+         1789171108.154  7246  7246 D AppCompatDelegate: Checking for metadata for AppLocalesMetadataHolderService : Service not found
+         1789171108.164   825   825 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 1
+         1789171108.166   825   825 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 1
+         1789171108.167   825   825 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 1
+         1789171108.168  1347  1347 I GsaVoiceInteractionSrv: (REDACTED) O received %s
+         1789171108.168  1326  1326 W MediaProvider: WorkProfileOwnerApps cache is empty
+         1789171108.170  1326  1326 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@d1f3ce1[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+         1789171108.170  1326  1326 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@d1f3ce1[Locked by thread main]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+         1789171108.170  1326  1326 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@d1f3ce1[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+         1789171108.171  1347  1347 I GsaVoiceInteractionSrv: (REDACTED) O received %s
+         1789171108.171  1347  1347 I GsaVoiceInteractionSrv: (REDACTED) O received %s
+         1789171108.174   571   926 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_IGNORE_REQUESTED_ORIENTATION
+         1789171108.174   571   926 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED
+         1789171108.176  1336  1959 I AiAiTextClassifier: [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+         1789171108.176   825   863 V WindowManagerShell: Transition requested (#709): android.os.BinderProxy@4204821 TransitionRequestInfo { type = CHANGE, triggerTask = null, pipTask = null, remoteTransition = null, displayChange = DisplayChange { displayId = 2, startAbsBounds = null, endAbsBounds = null, startRotation = 0, endRotation = 1, physicalDisplayChanged = false }, flags = 0, debugId = 709 }
+         1789171108.177   571   622 D BrightnessThermalClamper: Thermal status observer already started
+         1789171108.177   571   926 I WindowManager: Override config changes=20000480 {0.0 ?mcc0mnc ?localeList ?layoutDir sw541dp w541dp h962dp 213dpi lrg long port ?uimode ?night finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 720, 1280) mAppBounds=Rect(0, 0 - 720, 1280) mMaxBounds=Rect(0, 0 - 720, 1280) mDisplayRotation=ROTATION_90 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_90} ?fontWeightAdjustment} for displayId=2
+         1789171108.182   571   641 D ActivityManager: sync unfroze 6525 com.google.android.gms for 6
+         1789171108.184   571   926 W ImageReader_JNI: Unable to acquire a buffer item, very likely client tried to acquire more than maxImages buffers
+         1789171108.186  6525  6525 D ActivityThread: Package [com.anonymous.sampleterminal] reported as REPLACED, but missing application info. Assuming REMOVED.
+         1789171108.188   825   825 D DisplayRepository: combining enabled=[0, 2], connectedExternalDisplayIds=[], ignored=[]
+         1789171108.190   571   571 W WindowTokenClientController: Can't find attached WindowTokenClient for android.window.WindowTokenClient@145cec3
+         1789171108.192   571   926 W OptProp : Cannot read opt property android.window.PROPERTY_CAMERA_COMPAT_ALLOW_REFRESH
+         1789171108.195  7246  7246 I TerminalDualScreen: event=surface-form-decision surfaceForm=mobile smallestScreenWidthDp=541 thresholdDp=581 source=configuration.smallestScreenWidthDp diagnostic=none
+         1789171108.196   571   594 I InputManager-JNI: Viewport [0] to add: local:4619827259835644672, isActive: true
+         1789171108.196   571   594 I InputManager-JNI: Viewport [1] to add: virtual:com.android.emulator.multidisplay:1234562, isActive: true
+         1789171108.198  7246  7246 I TerminalDualScreen: event=display-snapshot-entry displayIndex=0 displayId=0 name=Built-in_Screen state=2 flags=16515 rotation=0 refreshRate=60.000004 appWidthPx=2560 appHeightPx=1600 appDensityDpi=320 appDensity=2.0 appScaledDensity=2.0 appXdpi=320.0 appYdpi=320.0 realWidthPx=2560 realHeightPx=1600 modeWidthPx=2560 modeHeightPx=1600
+         1789171108.198  7246  7246 I TerminalDualScreen: event=display-snapshot-entry displayIndex=1 displayId=2 name=Emulator_2D_Display state=2 flags=16584 rotation=0 refreshRate=60.0 appWidthPx=1280 appHeightPx=720 appDensityDpi=213 appDensity=1.3312501 appScaledDensity=1.3312501 appXdpi=213.0 appYdpi=213.0 realWidthPx=1280 realHeightPx=720 modeWidthPx=1280 modeHeightPx=720
+         1789171108.198  7246  7246 I TerminalDualScreen: event=display-snapshot-read displayCount=2 secondaryDisplayId=2
+         1789171108.199   571   682 I InputReader: Reconfiguring input devices, changes=DISPLAY_INFO
+         1789171108.199   571   682 I InputReader: Touch device 'virtio_input_multi_touch_4' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+         1789171108.199   571   682 I InputReader: Touch device 'virtio_input_multi_touch_5' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+         1789171108.199   571   682 I InputReader: Touch device 'virtio_input_multi_touch_6' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+         1789171108.199   571   682 I InputReader: Touch device 'virtio_input_multi_touch_7' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+         1789171108.199   571   682 I InputReader: Touch device 'virtio_input_multi_touch_8' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+         1789171108.199   571   682 I InputReader: Touch device 'virtio_input_multi_touch_10' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+         1789171108.199   571   682 I InputReader: Touch device 'virtio_input_multi_touch_11' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+         1789171108.199   571   682 I InputReader: Touch device 'virtio_input_multi_touch_9' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+         1789171108.199   571   682 I InputReader: Touch device 'virtio_input_multi_touch_3' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+         1789171108.200  7272  7272 W BpBinder: Linking to death on android.gui.ISurfaceComposer but there are no threads (yet?) listening to incoming transactions. See ProcessState::startThreadPool and ProcessState::setThreadPoolMaxThreadCount. Generally you should setup the binder threadpool before other initialization steps.
+         1789171108.200  7272  7272 W ProcessState: Extra binder thread started, but 0 threads requested. Do not use *startThreadPool when zero threads are requested.
+         1789171108.204   825   863 V ShellDragAndDrop: Display changed: 2
+         1789171108.204   164   164 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+         1789171108.204  7272  7276 I Gralloc4: mapper 4.x is not supported
+         1789171108.205   825   825 D DisplayRepository: combining enabled=[0, 2], connectedExternalDisplayIds=[], ignored=[]
+         1789171108.205   571  3326 E WindowManager: Update wallpaper offsets before the system is ready. Aborting
+         1789171108.206   571  3326 E WindowManager: Update wallpaper offsets before the system is ready. Aborting
+         1789171108.206  7246  7246 I TerminalDualScreen: event=primary-activity-configuration displayIndex=0 densityDpi=213 density=1.3312501 scaledDensity=1.3312501 fontScale=1.0 screenWidthDp=962 screenHeightDp=541 smallestWidthDp=541 orientation=2 resourceWidthPx=1280 resourceHeightPx=720
+         1789171108.206  7246  7246 I TerminalDualScreen: event=secondary-target-display displayIndex=1 displayId=2 name=Emulator_2D_Display state=2 flags=16584 rotation=0 refreshRate=60.0 appWidthPx=1280 appHeightPx=720 appDensityDpi=213 appDensity=1.3312501 appScaledDensity=1.3312501 appXdpi=213.0 appYdpi=213.0 realWidthPx=1280 realHeightPx=720 modeWidthPx=1280 modeHeightPx=720
+         1789171108.206  7246  7246 I TerminalDualScreen: event=secondary-target-metrics displayId=2 widthPx=1280 heightPx=720 densityDpi=213 density=1.3312501 scaledDensity=1.3312501 hardwareDensityDpi=213 hardwareDensity=1.3312501 renderDensityDpi=320 renderDensity=2.0 renderDensitySource=react-native.DisplayMetricsHolder.screen
+--------- beginning of kernel
+         1789171108.203   163   163 I servicemanager: Caller(pid=7272,uid=2000,sid=u:r:shell:s0) Could not find android.hardware.graphics.allocator.IAllocator/default in the VINTF manifest. No alternative instances declared in VINTF.
+         1789171108.207   571   912 I WindowManager: finishDrawing of orientation change: Window{89d0aeb u0 com.android.systemui.wallpapers.ImageWallpaper} 13ms
+         1789171108.219  7246  7246 I TerminalDualScreen: event=presentation-context-before-surface displayIndex=1 densityDpi=213 density=1.3312501 scaledDensity=1.3312501 fontScale=1.0 screenWidthDp=541 screenHeightDp=962 smallestWidthDp=541 orientation=1 resourceWidthPx=720 resourceHeightPx=1280
+         1789171108.219  7246  7246 I TerminalDualScreen: event=secondary-surface-context-input displayIndex=1 densityDpi=213 density=1.3312501 scaledDensity=1.3312501 fontScale=1.0 screenWidthDp=541 screenHeightDp=962 smallestWidthDp=541 orientation=1 resourceWidthPx=720 resourceHeightPx=1280
+         1789171108.219  7246  7246 I TerminalDualScreen: event=secondary-surface-context-normalized hardwareTargetDensityDpi=213 renderDensityDpi=320 renderDensitySource=react-native.DisplayMetricsHolder.screen
+         1789171108.219  1336  1959 I AiAiTextClassifier: [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+         1789171108.219  7246  7246 I TerminalDualScreen: event=secondary-surface-context-output displayIndex=1 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=541 screenHeightDp=962 smallestWidthDp=541 orientation=1 resourceWidthPx=720 resourceHeightPx=1280
+         1789171108.220  1336  1959 I AiAiTextClassifier: [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+         1789171108.220  1336  1959 I AiAiTextClassifier: [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+         1789171108.220  1336  1959 I AiAiTextClassifier: [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+         1789171108.221  1336  1959 I AiAiTextClassifier: [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+         1789171108.221  1336  1959 I AiAiTextClassifier: [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+         1789171108.221  1336  1959 I AiAiTextClassifier: [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+         1789171108.221  1336  1959 I AiAiTextClassifier: [VisualCortexAdapter]: provideRegistration: Registered Prominent Screen Entities for updates.
+         1789171108.222  7246  7246 I TerminalDualScreen: event=secondary-react-surface-context displayIndex=1 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=541 screenHeightDp=962 smallestWidthDp=541 orientation=1 resourceWidthPx=720 resourceHeightPx=1280
+         1789171108.222  7246  7246 I TerminalDualScreen: event=secondary-react-surface-created displayId=2 surfaceDensityDpi=320 surfaceDensity=2.0 surfaceWidthPx=0 surfaceHeightPx=0
+         1789171108.223  7246  7246 I TerminalDualScreen: event=presentation-display displayIndex=1 displayId=2 name=Emulator_2D_Display state=2 flags=16584 rotation=0 refreshRate=60.0 appWidthPx=1280 appHeightPx=720 appDensityDpi=213 appDensity=1.3312501 appScaledDensity=1.3312501 appXdpi=213.0 appYdpi=213.0 realWidthPx=1280 realHeightPx=720 modeWidthPx=1280 modeHeightPx=720
+         1789171108.223  7246  7246 I TerminalDualScreen: event=presentation-window-configuration displayIndex=1 densityDpi=213 density=1.3312501 scaledDensity=1.3312501 fontScale=1.0 screenWidthDp=541 screenHeightDp=962 smallestWidthDp=541 orientation=1 resourceWidthPx=720 resourceHeightPx=1280
+         1789171108.225  7246  7246 W HWUI    : Unknown dataspace 0
+         1789171108.236 14512  7280 I Fitness : FitCleanupIntentOperation received Intent android.intent.action.PACKAGE_REMOVED [CONTEXT service_id=17 ]
+         1789171108.238   571  1509 W WindowManager: Failed looking up window session=Session{11f1468 7246:u0a10213} callers=com.android.server.wm.WindowManagerService.windowForClientLocked:6311 com.android.server.wm.Session.updateRequestedVisibleTypes:755 android.view.IWindowSession$Stub.onTransact:1078 
+         1789171108.240   571  1517 I WindowManager: finishDrawing of orientation change: Window{f768708 u0 NavigationBar2} 47ms
+         1789171108.241   571  1517 I WindowManager: finishDrawing of orientation change: Window{1bb3b5 u0 Splash Screen com.anonymous.sampleterminal} 48ms
+         1789171108.243   825  2373 V WindowManagerShell: onTransitionReady(transaction=2452426493406)
+         1789171108.243   825   863 V WindowManagerShell: onTransitionReady (#709) android.os.BinderProxy@4204821: {id=709 t=CHANGE f=0x0 trk=0 r=[2@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@a8ffef7} m=CHANGE f=NONE p=WCT{android.window.IWindowContainerToken$Stub$Proxy@9090164} leash=Surface(name=Task=1216)/@0x7f3c315 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 720, 1280) d=2 r=0->1:-1 taskParent=-1},{WCT{android.window.IWindowContainerToken$Stub$Proxy@e9a3fcd} m=CHANGE f=NONE p=WCT{android.window.IWindowContainerToken$Stub$Proxy@cabd082} leash=Surface(name=DefaultTaskDisplayArea)/@0xf78a62a sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 720, 1280) d=2 r=0->1:-1},{null m=CHANGE f=IS_WALLPAPER p=WCT{android.window.IWindowContainerToken$Stub$Proxy@53b9393} leash=Surface(name=WallpaperWindowToken{2ce9ad token=android.os.Binder@cb6a6c4})/@0x77bbc1b sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 720, 1280) d=2 r=0->1:-1},{WCT{android.window.IWindowContainerToken$Stub$Proxy@806cfd0} m=CHANGE f=IS_DISPLAY leash=Surface(name=WindowedMagnification:0:31)/@0xae181b8 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 720, 1280) d=2 r=0->1:-1 snapshot=Surface(name=RotationLayer)/@0x3da7b91}]}
+         1789171108.244   825   863 V WindowManagerShell: Transition (#709) android.os.BinderProxy@4204821@0 ready while (#708) android.os.BinderProxy@b04bc5b@0 is still animating. Notify the animating transition in case they can be merged
+         1789171108.245  1456  1811 W SearchServiceCore: Abort, client detached.
+         1789171108.245  1456  1811 W SearchServiceCore: Abort, client detached.
+         1789171108.245   571   591 V WindowManager: Sent Transition (#709) createdAt=09-12 08:58:28.175 via request=TransitionRequestInfo { type = CHANGE, triggerTask = null, pipTask = null, remoteTransition = null, displayChange = DisplayChange { displayId = 2, startAbsBounds = null, endAbsBounds = null, startRotation = 0, endRotation = 1, physicalDisplayChanged = false }, flags = 0, debugId = 709 }
+         1789171108.245   571   591 V WindowManager:     startWCT=WindowContainerTransaction { changes = {} hops = [] errorCallbackToken=null taskFragmentOrganizer=null }
+         1789171108.245   571   591 V WindowManager:     info={id=709 t=CHANGE f=0x0 trk=0 r=[2@Point(0, 0)] c=[
+         1789171108.245   571   591 V WindowManager:         {WCT{RemoteToken{46874f0 Task{3008266 #1216 type=standard A=10213:com.anonymous.sampleterminal}}} m=CHANGE f=NONE p=WCT{RemoteToken{620bab5 DefaultTaskDisplayArea@225874165}} leash=Surface(name=Task=1216)/@0xa0c68a2 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 720, 1280) d=2 r=0->1:-1 taskParent=-1},
+         1789171108.245   571   591 V WindowManager:         {WCT{RemoteToken{620bab5 DefaultTaskDisplayArea@225874165}} m=CHANGE f=NONE p=WCT{RemoteToken{ae0abe8 Display{#2 state=ON size=720x1280 ROTATION_90}}} leash=Surface(name=DefaultTaskDisplayArea)/@0xd1868fd sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 720, 1280) d=2 r=0->1:-1},
+         1789171108.245   571   591 V WindowManager:         {null m=CHANGE f=IS_WALLPAPER p=WCT{RemoteToken{ae0abe8 Display{#2 state=ON size=720x1280 ROTATION_90}}} leash=Surface(name=WallpaperWindowToken{2ce9ad token=android.os.Binder@cb6a6c4})/@0x44e5154 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 720, 1280) d=2 r=0->1:-1},
+         1789171108.245   571   591 V WindowManager:         {WCT{RemoteToken{ae0abe8 Display{#2 state=ON size=720x1280 ROTATION_90}}} m=CHANGE f=IS_DISPLAY leash=Surface(name=WindowedMagnification:0:31)/@0xdcbfd82 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 720, 1280) d=2 r=0->1:-1}
+         1789171108.245   571   591 V WindowManager:     ]}
+         1789171108.247   825   863 V WindowManagerShell: Transition animation finished (aborted=false), notifying core (#708) android.os.BinderProxy@b04bc5b@0
+         1789171108.250   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.250   825   825 W SysUiState: java.lang.Throwable
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.setWindowState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:14)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.statusbar.CommandQueue$H.handleMessage(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:213)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:107)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.250   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.250   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.250   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.250   825   825 W SysUiState: java.lang.Throwable
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.setWindowState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:14)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.statusbar.CommandQueue$H.handleMessage(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:213)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:107)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.250   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.250   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.250   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.250   825   825 W SysUiState: java.lang.Throwable
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.setWindowState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:14)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.statusbar.CommandQueue$H.handleMessage(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:213)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:107)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.250   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.250   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.250   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.250   825   825 W SysUiState: java.lang.Throwable
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.setWindowState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:14)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.statusbar.CommandQueue$H.handleMessage(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:213)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:107)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.250   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.250   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.250   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.250   825   825 W SysUiState: java.lang.Throwable
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.setWindowState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:14)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.statusbar.CommandQueue$H.handleMessage(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:213)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:107)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.250   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.250   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.250   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.250   825   825 W SysUiState: java.lang.Throwable
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.onSystemBarAttributesChanged(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:81)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.statusbar.CommandQueue$H.handleMessage(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:226)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:107)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.250   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.250   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.250   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.250   825   825 W SysUiState: java.lang.Throwable
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.onSystemBarAttributesChanged(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:81)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.statusbar.CommandQueue$H.handleMessage(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:226)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:107)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.250   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.250   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.250   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.250   825   825 W SysUiState: java.lang.Throwable
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.onSystemBarAttributesChanged(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:81)
+         1789171108.250   825   825 W SysUiState: 	at com.android.systemui.statusbar.CommandQueue$H.handleMessage(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:226)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:107)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.250   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.250   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.250   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.250   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.251   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.251   825   825 W SysUiState: java.lang.Throwable
+         1789171108.251   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.251   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.251   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.onSystemBarAttributesChanged(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:81)
+         1789171108.251   825   825 W SysUiState: 	at com.android.systemui.statusbar.CommandQueue$H.handleMessage(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:226)
+         1789171108.251   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:107)
+         1789171108.251   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.251   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.251   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.251   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.251   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.251   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.251   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.251   825   825 W SysUiState: java.lang.Throwable
+         1789171108.251   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.251   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.251   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.onSystemBarAttributesChanged(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:81)
+         1789171108.251   825   825 W SysUiState: 	at com.android.systemui.statusbar.CommandQueue$H.handleMessage(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:226)
+         1789171108.251   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:107)
+         1789171108.251   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.251   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.251   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.251   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.251   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.251   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.251  7246  7246 W unknown:BridgelessReact: ReactHost{0}.startSurface(surfaceId = 0): Schedule
+         1789171108.251  7246  7246 W unknown:BridgelessReact: ReactHost{0}.attachSurface(surfaceId = 0)
+         1789171108.251  7246  7307 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask()
+         1789171108.251  7246  7307 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Start
+         1789171108.251  7246  7307 W unknown:BridgelessReact: ReactHost{0}.getJSBundleLoader()
+         1789171108.251  7246  7246 I TerminalDualScreen: event=secondary-start-requested displayId=2 displayCount=2
+         1789171108.251  7246  7307 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Creating BridgelessReactContext
+         1789171108.251   571   591 V WindowManager: Finish Transition (#708): created at 09-12 08:58:28.016 collect-started=0.047ms request-sent=3.639ms started=4.776ms ready=78.329ms sent=83.593ms finished=233.773ms
+         1789171108.251  7246  7307 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Creating ReactInstance
+         1789171108.251  7246  7246 W unknown:BridgelessReact: ReactHost{0}.startSurface(surfaceId = 0): Schedule
+         1789171108.251  7246  7246 W unknown:BridgelessReact: ReactHost{0}.attachSurface(surfaceId = 0)
+         1789171108.252  1041  1041 D VRI[SecondaryDisplayLauncher]: visibilityChanged oldVisibility=true newVisibility=false
+         1789171108.253   825   863 V WindowManagerShell: Playing animation for (#709) android.os.BinderProxy@4204821@0
+         1789171108.253   825   863 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultMixedHandler@da28c9b
+         1789171108.253   825   863 V WindowManagerShell:  try handler com.android.wm.shell.keyguard.KeyguardTransitionHandler@fef4838
+         1789171108.253   825   863 V WindowManagerShell:  try handler com.android.wm.shell.pip.PipTransition@4330011
+         1789171108.253   825   863 V WindowManagerShell:  try handler com.android.wm.shell.activityembedding.ActivityEmbeddingController@1e26576
+         1789171108.253   825   863 V WindowManagerShell:  try handler com.android.wm.shell.splitscreen.StageCoordinator@7935777
+         1789171108.253   825   863 V WindowManagerShell:  try handler com.android.wm.shell.desktopmode.DesktopTasksController@b6cafe4
+         1789171108.253   825   863 V WindowManagerShell:  try handler com.android.wm.shell.recents.RecentsTransitionHandler@9368c4d
+         1789171108.253   825   863 V ShellRecents: RecentsTransitionHandler.startAnimation: no controller found
+         1789171108.253   825   863 V WindowManagerShell:  try handler com.android.wm.shell.transition.RemoteTransitionHandler@b876302
+         1789171108.253   825   863 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultTransitionHandler@2d5f805
+         1789171108.253   825   863 V WindowManagerShell: start default transition animation, info = {id=709 t=CHANGE f=0x0 trk=0 r=[2@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@a8ffef7} m=CHANGE f=NONE p=WCT{android.window.IWindowContainerToken$Stub$Proxy@9090164} leash=Surface(name=Task=1216)/@0x7f3c315 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 720, 1280) d=2 r=0->1:-1 taskParent=-1},{WCT{android.window.IWindowContainerToken$Stub$Proxy@e9a3fcd} m=CHANGE f=NONE p=WCT{android.window.IWindowContainerToken$Stub$Proxy@cabd082} leash=Surface(name=DefaultTaskDisplayArea)/@0xf78a62a sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 720, 1280) d=2 r=0->1:-1},{null m=CHANGE f=IS_WALLPAPER p=WCT{android.window.IWindowContainerToken$Stub$Proxy@53b9393} leash=Surface(name=WallpaperWindowToken{2ce9ad token=android.os.Binder@cb6a6c4})/@0x77bbc1b sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 720, 1280) d=2 r=0->1:-1},{WCT{android.window.IWindowContainerToken$Stub$Proxy@806cfd0} m=CHANGE f=IS_DISPLAY leash=Surface(name=WindowedMagnification:0:31)/@0xae181b8 sb=Rect(0, 0 - 1280, 720) eb=Rect(0, 0 - 720, 1280) d=2 r=0->1:-1 snapshot=Surface(name=RotationLayer)/@0x3da7b91}]}
+         1789171108.253   825   863 V WindowManagerShell: Display is changing, resolve the animation hint.
+         1789171108.253   825   863 V WindowManagerShell:   task 1216 isn't requesting seamless, so not seamless.
+         1789171108.253   825   863 V WindowManagerShell:   wallpaper is participating but isn't seamless.
+         1789171108.253  1456  1811 W SearchServiceCore: Abort, client detached.
+         1789171108.254   571  1509 W UserManagerService: Requested status bar icon for non-badged user 0
+         1789171108.255   571  1514 W UserManagerService: Requested status bar icon for non-badged user 0
+         1789171108.256  7246  7246 W unknown:BridgelessReact: ReactHost{0}.onHostResume(activity)
+         1789171108.256  7246  7246 W unknown:BridgelessReact: ReactHost{0}.ReactContext.onHostResume()
+         1789171108.256   571  1514 W UserManagerService: Requested status bar icon for non-badged user 0
+         1789171108.256   825   863 V WindowManagerShell:  animated by com.android.wm.shell.transition.DefaultTransitionHandler@2d5f805
+         1789171108.257  6525  7306 I Auth    : [SupervisedAccountIntentOperation] onHandleIntent(): android.intent.action.PACKAGE_ADDED
+         1789171108.257  6525  7306 I Auth    : [SupervisedAccountIntentOperation] This operation is disabled
+         1789171108.258  7246  7307 D nativeloader: Load /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk!/lib/arm64-v8a/libhermesvm.so using ns clns-7 from class loader (caller=/data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk): ok
+         1789171108.258  6525  7303 V Backup  : [PhotosPackagedAddedIO] Flag is disabled.
+         1789171108.258  7246  7307 D nativeloader: Load /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk!/lib/arm64-v8a/libhermestooling.so using ns clns-7 from class loader (caller=/data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk): ok
+         1789171108.258  7246  7307 D jni_lib_merge: Entering merged library JNI_OnLoad.
+         1789171108.258  7246  7307 D jni_lib_merge: Preparing 4 pre-merged libs (including stub)
+         1789171108.258  7246  7307 D jni_lib_merge: Preparing to register libhermes_executor_so.  onload_func: 0x78315dceec
+         1789171108.258  7246  7307 D jni_lib_merge: Preparing to register libhermesinstancejni_so.  onload_func: 0x78315e469c
+         1789171108.258  7246  7307 D jni_lib_merge: Preparing to register libjsijniprofiler_so.  onload_func: 0x78315e4f44
+         1789171108.258  7246  7307 D jni_lib_merge: About to register 3 actual methods.
+         1789171108.267  7246  7246 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789171108.267  7246  7267 I EGL_emulation: Opening libGLESv1_CM_emulation.so
+         1789171108.267  7246  7267 I EGL_emulation: Opening libGLESv2_emulation.so
+         1789171108.268  7246  7246 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789171108.268  7246  7246 I TerminalDualScreen: event=surface-host-snapshot-ready surfaceKey=SECONDARY generation=1 displayId=2 windowIdentity=secondary orientation=portrait stableWidthPx=720 stableHeightPx=1280 currentWidthPx=720 currentHeightPx=1280 stableWidthLogical=360.0 stableHeightLogical=640.0 currentWidthLogical=360.0 currentHeightLogical=640.0 hardwareDensityDpi=213 hardwareDensity=1.3312501 hardwareScaledDensity=1.3312501 surfaceDensityDpi=320 surfaceDensity=2.0 source=android-display-context measurementContext=owner-decorView-layout
+         1789171108.268   571  1509 D CoreBackPreview: Window{52b2cac u0 com.anonymous.sampleterminal}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@ecfb7ae, mPriority=0, mIsAnimationCallback=false}
+         1789171108.271  7246  7267 W HWUI    : Failed to choose config with EGL_SWAP_BEHAVIOR_PRESERVED, retrying without...
+         1789171108.271  7246  7267 W HWUI    : Failed to initialize 101010-2 format, error = EGL_SUCCESS
+         1789171108.273  6525  7299 W SQLiteLog: (28) double-quoted string literal: "com.anonymous.sampleterminal"
+         1789171108.287   163   163 I servicemanager: Caller(pid=7246,uid=10213,sid=u:r:untrusted_app:s0:c213,c256,c512,c768) Could not find android.hardware.graphics.allocator.IAllocator/default in the VINTF manifest. No alternative instances declared in VINTF.
+         1789171108.296   164   164 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+         1789171108.296  7246  7267 I Gralloc4: mapper 4.x is not supported
+         1789171108.297  7246  7307 I ExpoModulesCore: ✅ AppContext was initialized
+         1789171108.314   571   912 D CoreBackPreview: Window{59491b0 u0 com.anonymous.sampleterminal/com.anonymous.sampleterminal.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@c56c76a, mPriority=0, mIsAnimationCallback=false}
+         1789171108.315  7246  7307 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Loading JS Bundle
+         1789171108.318  7246  7307 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): DevSupportManager.onNewReactContextCreated()
+         1789171108.318  7246  7307 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask()
+         1789171108.318  7246  7307 W unknown:BridgelessReact: ReactHost{0}.startSurface(surfaceId = 0): Execute
+         1789171108.321  7246  7246 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789171108.321  7246  7246 I TerminalDualScreen: event=surface-host-snapshot-ready surfaceKey=PRIMARY generation=1 displayId=2 windowIdentity=primary orientation=portrait stableWidthPx=720 stableHeightPx=1280 currentWidthPx=720 currentHeightPx=1280 stableWidthLogical=540.8450413639423 stableHeightLogical=961.5022957581195 currentWidthLogical=540.8450413639423 currentHeightLogical=961.5022957581195 hardwareDensityDpi=213 hardwareDensity=1.3312501 hardwareScaledDensity=1.3312501 surfaceDensityDpi=213 surfaceDensity=1.3312501 source=android-display-context measurementContext=owner-decorView-layout
+         1789171108.323  7246  7307 W unknown:BridgelessReact: ReactHost{0}.startSurface(surfaceId = 0): Execute
+         1789171108.323  7246  7246 I TerminalDualScreen: event=secondary-presentation-window-post-create displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789171108.323  7246  7246 I TerminalDualScreen: event=secondary-presentation-window-post-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789171108.323  7246  7246 I TerminalDualScreen: event=secondary-react-surface-post-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789171108.327  7246  7246 I TerminalDualScreen: event=primary-window-post-layout displayIndex=0 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789171108.327  7246  7246 W unknown:BridgelessReact: ReactHost{0}.ReactContext.onHostResume()
+         1789171108.327  7246  7246 W unknown:BridgelessReact: ReactHost{0}.getOrCreateReactInstanceTask(): Executing ReactInstanceEventListeners
+         1789171108.328  7246  7246 I TerminalDualScreen: event=secondary-start-completed
+         1789171108.332  7246  7309 D nativeloader: Load /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk!/lib/arm64-v8a/libworklets.so using ns clns-7 from class loader (caller=/data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk): ok
+         1789171108.333  7246  7309 D nativeloader: Load /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk!/lib/arm64-v8a/libexpo-modules-core.so using ns clns-7 from class loader (caller=/data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk): ok
+         1789171108.333  7246  7309 W BridgelessReactContext: [WARNING] Bridgeless doesn't support CatalystInstance. Accessing an API that's not part of the new architecture is not encouraged usage.
+         1789171108.336  7246  7309 I ExpoModulesCore: ✅ JSI interop was installed
+         1789171108.344  7246  7309 I ExpoModulesCore: ✅ Constants were exported
+         1789171108.349  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class expo.modules.kotlin.views.GroupViewManagerWrapper
+         1789171108.350  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.uimanager.LayoutShadowNode
+         1789171108.351  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.swmansion.reanimated.view.REASharedTransitionBoundaryManager
+         1789171108.352  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$DefsViewManager
+         1789171108.353  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.VirtualViewManager$RenderableShadowNode
+         1789171108.353  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeMergeManager
+         1789171108.355  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.safeareaview.ReactSafeAreaViewManager
+         1789171108.356  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$LinearGradientManager
+         1789171108.356  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeGaussianBlurManager
+         1789171108.357  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.progressbar.ReactProgressBarViewManager
+         1789171108.357  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.scroll.ReactHorizontalScrollViewManager
+         1789171108.358  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.text.ReactTextViewManager
+         1789171108.360  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeColorMatrixManager
+         1789171108.361  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.scroll.ReactHorizontalScrollContainerViewManager
+         1789171108.361  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$ClipPathViewManager
+         1789171108.361  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$SymbolManager
+         1789171108.363  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$PatternManager
+         1789171108.363  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeBlendManager
+         1789171108.364  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.view.ReactViewManager
+         1789171108.364  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.SvgViewManager
+         1789171108.365  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.switchview.ReactSwitchManager
+         1789171108.365  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$UseViewManager
+         1789171108.366  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$CircleViewManager
+         1789171108.367  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$TSpanViewManager
+         1789171108.368  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FilterManager
+         1789171108.369  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$MarkerManager
+         1789171108.369  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.modal.ReactModalHostManager
+         1789171108.370  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$ForeignObjectManager
+         1789171108.371  6525  6560 I Icing   : IndexChimeraService.getServiceInterface callingPackage=com.google.android.gms componentName=AppsCorpus serviceId=36
+         1789171108.372  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$EllipseViewManager
+         1789171108.372  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$LineViewManager
+         1789171108.372  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeFloodManager
+         1789171108.373  6525  6525 D BoundBrokerSvc: onBind: Intent { act=com.google.android.gms.feedback.internal.IFeedbackService dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+         1789171108.373  6525  6525 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.gms.feedback.internal.IFeedbackService dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+         1789171108.373  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$GroupViewManager
+         1789171108.373  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$TextViewManager
+         1789171108.374  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$ImageViewManager
+         1789171108.377  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeCompositeManager
+         1789171108.378  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.image.ReactImageManager
+         1789171108.379  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$RadialGradientManager
+         1789171108.383  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$MaskManager
+         1789171108.385  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.unimplementedview.ReactUnimplementedViewManager
+         1789171108.386  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$RectViewManager
+         1789171108.386  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$TextPathViewManager
+         1789171108.387  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.scroll.ReactScrollViewManager
+         1789171108.387  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$FeOffsetManager
+         1789171108.388  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.horcrux.svg.RenderableViewManager$PathViewManager
+         1789171108.388  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.drawer.ReactDrawerLayoutManager
+         1789171108.389  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.swiperefresh.SwipeRefreshLayoutManager
+         1789171108.389  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.textinput.ReactTextInputManager
+         1789171108.392  7246  7246 I TerminalDualScreen: event=secondary-presentation-focus displayIndex=1 displayId=2 hasFocus=true
+         1789171108.393  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.text.SelectableTextViewManager
+         1789171108.394  7246  7309 W unknown:ViewManagerPropertyUpdater: Could not find generated setter for class com.facebook.react.views.virtual.view.ReactVirtualViewManager
+         1789171108.396   571   691 I ImeTracker: com.anonymous.sampleterminal:d2ae3379: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+         1789171108.396   571   691 I ImeTracker: com.anonymous.sampleterminal:d2ae3379: onCancelled at PHASE_SERVER_SHOULD_HIDE
+         1789171108.398   571   691 W InputManager-JNI: Input channel object '2003c3b InputMethod (client)' was disposed without first being removed with the input manager!
+         1789171108.401  1248  1248 I GoogleInputMethodService: GoogleInputMethodService.onDestroy():1509 
+         1789171108.405  1248  1248 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157 
+         1789171108.407  1248  1248 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+         1789171108.409  7246  7246 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789171108.411   571  1509 W WindowManager: Failed looking up window session=Session{f5835ba 1248:u0a10158} callers=com.android.server.wm.WindowManagerService.removeClientToken:2058 com.android.server.wm.Session.remove:274 android.view.IWindowSession$Stub.onTransact:685 
+         1789171108.414  1248  1248 I GoogleInputMethodService: GoogleInputMethodService.clearInputMethodServiceData():1613 clearInputMethodServiceData for onDestroy
+         1789171108.417  1248  1248 I GoogleInputMethodService: GoogleInputMethodService.discardAllKeyboardViewAndInputView():1818 discardAllKeyboardViewAndInputView()
+         1789171108.418  7246  7309 I ReactNativeJS: Running "main"
+         1789171108.418  1248  1248 I KeyboardModeManager: KeyboardModeManager.setInputViewKeyboardViewHolderProvider():625 setInputView() : supportsOneHandedMode=false supportsSplitMode=true
+         1789171108.418  1248  1248 I NormalModeController: NormalModeController.getKeyboardBodyViewHolderPaddingBottom():104 currentPrimeKeyboardType:SOFT systemPaddingBottom:-1
+         1789171108.418  1248  1248 I KeyboardModeManager: KeyboardModeManager.setInputViewKeyboardViewHolderProvider():613 setInputView() : supportsOneHandedMode=false, supportSplitMode=true
+         1789171108.418  1248  1248 I InputMethodEntryManager: InputMethodEntryManager.notifyCurrentInputMethodEntryOnContextChanged():521 notifyCurrentInputMethodEntryOnContextChanged()
+         1789171108.418  1248  1248 I InputMethodEntryManager: InputMethodEntryManager.notifyCurrentInputMethodEntryOnContextChanged():542 Notify current input method entry changed on context change
+         1789171108.420   368   368 I netd    : tetherGetStats() -> {[]} <0.29ms>
+         1789171108.423  1248  1248 I SystemSubtypesReportModule: SystemSubtypesReportModule$3.onCurrentInputMethodEntryChanged():136 entry: en-US, source: UNSPECIFIED
+         1789171108.423  1248  1248 I KeyboardThemeProvider: KeyboardThemeProvider.reset():40 Reset keyboard theme
+         1789171108.423  1248  1248 I KeyboardContextProvider: KeyboardContextProvider.setBaseContextAndInvalidKeyboardContextCache():88 setBaseContextAndInvalidKeyboardContextCache(): null
+         1789171108.424  1248  1248 I DeviceModeMonitor: DeviceModeMonitor.calculateDeviceMode():76 Get device mode tablet_large by screen size and smallestScreenWidthDp: 800
+         1789171108.424  1248  1248 I HardKeyTracker: HardKeyTracker.unregisterKeySequence():183 Unregister key sequence lnk{labelResId=2132019809, callback=jjt@fba91bb, lastModifier=2, keyCodes=[47], actions=[0]}
+         1789171108.425  1248  1248 I HardKeyTracker: HardKeyTracker.unregisterKeySequence():183 Unregister key sequence lnk{labelResId=0, callback=jwl@3d1686d, lastModifier=0, keyCodes=[204], actions=[0]}
+         1789171108.426  1248  1583 I SP      : Registering emoticon_content_description.2022081613, url: https://www.gstatic.com/android/keyboard/emoticon_content_desc/202208161305/superpacks_manifest.json, constraints: W:*:*:*, flags: bg, requested: 2022081613, current: -1
+         1789171108.430  1248  1248 I OnDevicePackDownloadModule: OnDevicePackDownloadModule.onDestroy():95 onDestroy()
+         1789171108.431  7246  7309 I ReactNativeJS: Running "main"
+         1789171108.433  1248  1248 I NewS3RecognizerModule: NewS3RecognizerModule.onDestroy():21 onDestroy [news3]
+         1789171108.435  1248  1248 I HardKeyTracker: HardKeyTracker.unregisterKeySequence():183 Unregister key sequence lnk{labelResId=2132019800, callback=gnd@1490001, lastModifier=0, keyCodes=[57, 57], actions=[1, 0]}
+         1789171108.436  1248  1248 I HardKeyTracker: HardKeyTracker.unregisterKeySequence():183 Unregister key sequence lnk{labelResId=0, callback=gnd@c1ee494, lastModifier=0, keyCodes=[58, 58], actions=[1, 0]}
+         1789171108.436  1248  1248 I AbstractOpenableExtension: AbstractOpenableExtension.maybeDestroyExistingKeyboardGroupManager():538 Destroy existing keyboard group manager in fvq
+         1789171108.437  1248  1248 I EmojifyExtensionImpl: EmojifyExtensionImpl.onDestroy():605 Destroying Emojify extension ehb@3c2590e.
+         1789171108.437  1248  1248 I AbstractOpenableExtension: AbstractOpenableExtension.maybeDestroyExistingKeyboardGroupManager():538 Destroy existing keyboard group manager in fxu
+         1789171108.440  1248  7337 I JapaneseMozcExtension: JapaneseMozcExtension.onDestroyServiceInternal():81 onDestroyServiceInternal()
+         1789171108.440  1248  1248 W WindowTokenClientController: Can't find attached WindowTokenClient for android.window.WindowTokenClient@2069256
+         1789171108.440  7246  7328 I TerminalDevice: event=device-info-read status=succeeded
+         1789171108.444  7246  7246 E ThemeUtils: View class com.facebook.react.views.text.ReactTextView is an AppCompat widget that can only be used with a Theme.AppCompat theme (or descendant).
+         1789171108.445  1248  1248 D WindowTokenClient: Only apply configuration update to Resources because shouldReportConfigChange is false. context=com.android.inputmethod.latin.LatinIME@de71c, config={1.0 ?mcc0mnc [en_US] ldltr sw800dp w1280dp h800dp 320dpi xlrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 2560, 1600) mAppBounds=Rect(0, 0 - 2560, 1600) mMaxBounds=Rect(0, 0 - 2560, 1600) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} s.214 fontWeightAdjustment=0}, display ID=0
+         1789171108.445  1248  1248 D WindowTokenClient: android.window.WindowTokenClient.onConfigurationChanged:161 android.window.WindowTokenClientController.onWindowContextTokenAttached:197 android.window.WindowTokenClientController.attachToDisplayArea:116 android.window.WindowContextController.attachToDisplayArea:108 android.window.WindowProviderService.attachBaseContext:218 
+         1789171108.445  1248  1248 I GoogleInputMethodService: GoogleInputMethodService.onCreate():1025 
+         1789171108.447  7246  7246 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789171108.447  7246  7246 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789171108.449  1248  1248 I WindowMetricsNotification: WindowMetricsNotification.notify():106 WindowMetricsNotification{bounds=Rect(0, 48 - 2560, 1600), insets=Rect(0, 0 - 0, 0), densityDpi=320, smallestScreenWidthDp=800, displayWidth=2560, displayHeight=1600, xdpi=320.0, ydpi=320.0}; DisplayMetrics{density=2.0, width=2560, height=1600, scaledDensity=2.0, xdpi=320.0, ydpi=320.0}
+         1789171108.449  1248  1248 I WindowMetricsHelper: WindowMetricsHelper.predictAndNotify():140 Window metrics predicted.
+         1789171108.449  1248  1248 I InputMethodEntryManager: InputMethodEntryManager.notifyCurrentInputMethodEntryOnContextChanged():521 notifyCurrentInputMethodEntryOnContextChanged()
+         1789171108.449  1248  1248 I InputMethodEntryManager: InputMethodEntryManager.notifyCurrentInputMethodEntryOnContextChanged():542 Notify current input method entry changed on context change
+         1789171108.449  1248  1248 I KeyboardContextProvider: KeyboardContextProvider.setBaseContextAndInvalidKeyboardContextCache():88 setBaseContextAndInvalidKeyboardContextCache(): com.android.inputmethod.latin.LatinIME@de71c
+         1789171108.449  6525  6735 I Icing   : IndexChimeraService.getServiceInterface callingPackage=com.google.android.gms componentName=null serviceId=30
+         1789171108.451  1248  1248 E GoogleInputMethodService: GoogleInputMethodService.getAppEditorInfo():2810 App EditorInfo should never be null.
+         1789171108.452  1248  1248 I StyledKeyboardThemeBuilder: StyledKeyboardThemeBuilder.build():132 Pref: [], themeName: [silk:], darkMode: [false], cacheKey: [overlay_builtin_dynamic_color_light_base.binarypb:dynamic-gm3-light-fffefbff-ff495d92-88aedfe362701b9d56ce578190f21130]
+         1789171108.453  1248  1248 I KeyboardThemeProvider: KeyboardThemeProvider.applyKeyboardTheme():27 Apply keyboard theme: theme_border_stylesheet_noshadow_pgsans_pillkey_silkpopup_light_tablet_large_keyboard_width_tablet_small_navredesign_768_overlay_builtin_dynamic_color_light_base.binarypb:dynamic-gm3-light-fffefbff-ff495d92-88aedfe362701b9d56ce578190f21130_land
+         1789171108.453  1248  1248 I KeyboardContextProvider: KeyboardContextProvider$KeyboardContextCache.createKeyboardContext():173 createKeyboardContext(): en-US, jgg@d5e3be4(com.android.inputmethod.latin.LatinIME@de71c), {1.0 ?mcc0mnc [en_US] ldltr sw800dp w1280dp h800dp 320dpi xlrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 2560, 1600) mAppBounds=Rect(0, 0 - 2560, 1600) mMaxBounds=Rect(0, 0 - 2560, 1600) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} s.214 fontWeightAdjustment=0}
+         1789171108.454  7246  7328 D nativeloader: Load /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk!/lib/arm64-v8a/libmmkv.so using ns clns-7 from class loader (caller=/data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk!classes2.dex): ok
+         1789171108.454  7246  7328 I MMKV    : current API level = 35, libc++_shared=0
+         1789171108.454  7246  7328 I MMKV    : <MMKV.cpp:182::initialize> version v2.4.2, page size 4096, arch arm64-v8a
+         1789171108.454  7246  7328 I MMKV    : <MMKV.cpp:193::initialize> armv8 AES instructions is supported
+         1789171108.454  7246  7328 I MMKV    : <MMKV.cpp:201::initialize> armv8 CRC32 instructions is supported
+         1789171108.454  7246  7328 I MMKV    : <MMKV.cpp:239::initializeMMKV> root dir: /data/data/com.anonymous.sampleterminal/files/mmkv
+         1789171108.454  7246  7328 I MMKV    : <MMKV_Android.cpp:383::enableDisableProcessMode> process mode check enable/disable: 0
+         1789171108.454  7246  7328 I MMKV    : Disable checkProcessMode()
+         1789171108.454  7246  7328 I MMKV    : <MemoryFile.cpp:103::open> open fd[134], flag 0x7, /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.v1.sample-terminal-android
+         1789171108.454  7246  7328 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x7b02e75000], oldPtr [0x0], [/data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.v1.sample-terminal-android]
+         1789171108.454  7246  7328 I MMKV    : <MemoryFile.cpp:109::close> closing fd[134], /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.v1.sample-terminal-android
+         1789171108.455  7246  7328 I MMKV    : <MemoryFile.cpp:103::open> open fd[134], flag 0x7, /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.v1.sample-terminal-android.crc
+         1789171108.455  7246  7328 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x7b02e74000], oldPtr [0x0], [/data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.v1.sample-terminal-android.crc]
+         1789171108.455  1248  1248 I KeyboardHeightUtil: KeyboardHeightUtil.calculateMaxKeyboardBodyHeight():45 leave 214 height for app when ime window height:1552, header height:96 and isFullscreenMode:false, so the max keyboard body height is:1242
+         1789171108.455  1248  1248 I KeyboardHeightUtil: KeyboardHeightUtil.calculateMaxKeyboardBodyHeight():45 leave 214 height for app when ime window height:1552, header height:96 and isFullscreenMode:false, so the max keyboard body height is:1242
+         1789171108.455  7246  7328 I MMKV    : <MemoryFile.cpp:103::open> open fd[135], flag 0x7, /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.v1.sample-terminal-android
+         1789171108.455  7246  7328 I MMKV    : <MemoryFile.cpp:109::close> closing fd[135], /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.v1.sample-terminal-android
+         1789171108.455  7246  7328 I MMKV    : <MMKV_IO.cpp:293::loadMetaInfoAndCheck> meta file [catering-v2s.terminal.state.v1.sample-terminal-android] has flag [0]
+         1789171108.455  7246  7328 I MMKV    : <MMKV_IO.cpp:96::loadFromFile> loading [catering-v2s.terminal.state.v1.sample-terminal-android] with 1827 actual size, file size 4096, InterProcess 0, meta info version:4
+         1789171108.455  7246  7328 I MMKV    : <MMKV_IO.cpp:101::loadFromFile> loading [catering-v2s.terminal.state.v1.sample-terminal-android] with crc 2427946444 sequence 1 version 4
+         1789171108.455  7246  7328 I MMKV    : <MMKV_IO.cpp:151::loadFromFile> loaded [catering-v2s.terminal.state.v1.sample-terminal-android] with 13 key-values
+         1789171108.455  1248  1248 I NormalModeController: NormalModeController.getKeyboardBodyViewHolderPaddingBottom():104 currentPrimeKeyboardType:SOFT systemPaddingBottom:-1
+         1789171108.455  7246  7328 I TerminalPersistKv: event=persist-kv operation=listKeys mode=plain status=succeeded
+         1789171108.455  1248  1248 I GoogleInputMethodService: GoogleInputMethodService.onCurrentInputMethodEntryChanged():3655 onCurrentInputMethodEntryChanged(): imeDefsChanged=false, initializedEntryChanged=true, keyboardContextChanged=true
+         1789171108.455  1248  1248 I GoogleInputMethodService: GoogleInputMethodService.clearInputMethodServiceData():1613 clearInputMethodServiceData for entryChange
+         1789171108.455  1248  1248 I KeyboardHeightUtil: KeyboardHeightUtil.calculateMaxKeyboardBodyHeight():45 leave 214 height for app when ime window height:1552, header height:96 and isFullscreenMode:false, so the max keyboard body height is:1242
+         1789171108.455  1248  1248 I KeyboardHeightUtil: KeyboardHeightUtil.calculateMaxKeyboardBodyHeight():45 leave 214 height for app when ime window height:1552, header height:96 and isFullscreenMode:false, so the max keyboard body height is:1242
+         1789171108.455  1248  1248 I KeyboardModeManager: KeyboardModeManager.onCurrentInputMethodEntryChanged():1133 Reload data for context change
+         1789171108.455  1248  1248 I GoogleInputMethodService: GoogleInputMethodService.initializeInputMethodServiceData():1382 initializeInputMethodServiceData for kct{languageTag=en-US, variant=qwerty, hasLocalizedResources=true, conditionCacheKey=_cache_additional_ime_defs_for_condition_change=false_cache_ime_defs_for_condition_change=false_device=tablet_device_size=large_enable_flick_symbols=false_enable_more_candidates_view_for_multilingual=false_enable_number_row=false_enable_preemptive_decode=true_enable_secondary_digits=true_enable_secondary_symbols=false_enable_show_foldable_layout_on_small_tablet=false_expressions=normal_four_or_more_letter_rows=false_keyboard_mode=normal_language=en-US_orientation=landscape_physical_keyboard=qwerty_rtl_layout=false_show_secondary_digits=true_show_suggestions=true_split_with_duplicate_keys=true_variant=qwerty, imeDef.stringId=ime_english_united_states, imeDef.className=com.google.android.apps.inputmethod.libs.latin5.LatinIme, imeDef.languageTag=en-US}
+         1789171108.455  1248  1248 E GoogleInputMethodService: GoogleInputMethodService.getAppEditorInfo():2810 App EditorInfo should never be null.
+         1789171108.455  1248  1248 I StyledKeyboardThemeBuilder: StyledKeyboardThemeBuilder.build():132 Pref: [], themeName: [silk:], darkMode: [false], cacheKey: [overlay_builtin_dynamic_color_light_base.binarypb:dynamic-gm3-light-fffefbff-ff495d92-88aedfe362701b9d56ce578190f21130]
+         1789171108.455  1248  1248 I KeyboardThemeProvider: KeyboardThemeProvider.applyKeyboardTheme():27 Apply keyboard theme: theme_border_stylesheet_noshadow_pgsans_pillkey_silkpopup_light_tablet_large_keyboard_width_tablet_extra_large_navredesign_768_overlay_builtin_dynamic_color_light_base.binarypb:dynamic-gm3-light-fffefbff-ff495d92-88aedfe362701b9d56ce578190f21130_land
+         1789171108.455  7246  7328 I TerminalPersistKv: event=persist-kv operation=readMany mode=plain status=succeeded
+         1789171108.456  7246  7328 I MMKV    : <MemoryFile.cpp:103::open> open fd[135], flag 0x7, /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-terminal-android
+         1789171108.456  7246  7328 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x7b02e73000], oldPtr [0x0], [/data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-terminal-android]
+         1789171108.456  7246  7328 I MMKV    : <MemoryFile.cpp:109::close> closing fd[135], /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-terminal-android
+         1789171108.456  7246  7328 I MMKV    : <MemoryFile.cpp:103::open> open fd[135], flag 0x7, /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-terminal-android.crc
+         1789171108.456  7246  7328 I MMKV    : <MemoryFile.cpp:250::mmapOrCleanup> mmap to address [0x7b02e72000], oldPtr [0x0], [/data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-terminal-android.crc]
+         1789171108.456  7246  7328 I MMKV    : <MemoryFile.cpp:103::open> open fd[136], flag 0x7, /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-terminal-android
+         1789171108.456  7246  7328 I MMKV    : <MemoryFile.cpp:109::close> closing fd[136], /data/data/com.anonymous.sampleterminal/files/mmkv/catering-v2s.terminal.state.protected.v1.sample-terminal-android
+         1789171108.456  7246  7328 I MMKV    : <MMKV_IO.cpp:293::loadMetaInfoAndCheck> meta file [catering-v2s.terminal.state.protected.v1.sample-terminal-android] has flag [0]
+         1789171108.456  7246  7328 I MMKV    : <MMKV_IO.cpp:96::loadFromFile> loading [catering-v2s.terminal.state.protected.v1.sample-terminal-android] with 59 actual size, file size 4096, InterProcess 0, meta info version:4
+         1789171108.456  7246  7328 I MMKV    : <MMKV_IO.cpp:101::loadFromFile> loading [catering-v2s.terminal.state.protected.v1.sample-terminal-android] with crc 4023862449 sequence 1 version 4
+         1789171108.456  7246  7328 I MMKV    : <MMKV_IO.cpp:151::loadFromFile> loaded [catering-v2s.terminal.state.protected.v1.sample-terminal-android] with 1 key-values
+         1789171108.456  7246  7328 I TerminalPersistKv: event=persist-kv operation=listKeys mode=protected status=succeeded
+         1789171108.456  7246  7328 I TerminalPersistKv: event=persist-kv operation=readMany mode=protected status=succeeded
+         1789171108.464  1248  1248 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+         1789171108.464  6525  6610 I Icing   : Usage reports ok 1, Failed Usage reports 0, indexed 0, rejected 0
+         1789171108.464  1248  1248 I SystemSubtypesReportModule: SystemSubtypesReportModule$4.onSetCurrentInputMethodSubtype():160 en_US
+         1789171108.465  1248  7339 I JapaneseMozcExtension: JapaneseMozcExtension.onCreateServiceInternal():76 onCreateServiceInternal()
+         1789171108.466  1248  1248 I DeviceModeMonitor: DeviceModeMonitor.calculateDeviceMode():76 Get device mode tablet_large by screen size and smallestScreenWidthDp: 800
+         1789171108.467  1248  1248 I HardKeyTracker: HardKeyTracker.registerKeySequence():139 Register key sequence lnk{labelResId=2132019809, callback=jjt@c4d7c44, lastModifier=2, keyCodes=[47], actions=[0]}
+         1789171108.467  1248  1248 I HardKeyTracker: HardKeyTracker.registerKeySequence():139 Register key sequence lnk{labelResId=0, callback=jwl@9c818b0, lastModifier=0, keyCodes=[204], actions=[0]}
+         1789171108.467  1248  7337 I NetworkInfoNotification: NetworkInfoNotification$Listener.onReceive():112 onNetworkLost: networkState = NO_CONNECTION, isAirplaneModeOn = false
+         1789171108.468  1248  7337 I NewS3RecognizerModule: NewS3RecognizerModule.onCreate():14 onCreate [news3]
+         1789171108.468  1248  7337 I EmojifyExtensionImpl: EmojifyExtensionImpl.onCreate():599 Creating Emojify extension ehb@2111779.
+         1789171108.468  1248  7337 I AbstractOpenableExtension: AbstractOpenableExtension.createKeyboardGroupManagerListenableFuture():120 Create keyboard group manager listenable future in fxu
+         1789171108.469  1248  7337 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():83 parseKeyboardGroupDef() 2132214040 -> 0_resource_name_obfuscated : WaitTime = 0 ms : RunTime = 0 ms
+         1789171108.469  7246  7246 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789171108.470  7246  7309 W ReactNativeJS: { timestamp: 1789171108470,
+         1789171108.470  7246  7309 W ReactNativeJS:   level: 'warn',
+         1789171108.470  7246  7309 W ReactNativeJS:   category: 'display-context.power-bridge',
+         1789171108.470  7246  7309 W ReactNativeJS:   event: 'power-bridge.subscription-unavailable',
+         1789171108.470  7246  7309 W ReactNativeJS:   message: 'Power status subscription was unavailable',
+         1789171108.470  7246  7309 W ReactNativeJS:   scope: 
+         1789171108.470  7246  7309 W ReactNativeJS:    { moduleName: 'platform-ports',
+         1789171108.470  7246  7309 W ReactNativeJS:      layer: 'kernel',
+         1789171108.470  7246  7309 W ReactNativeJS:      subsystem: undefined,
+         1789171108.470  7246  7309 W ReactNativeJS:      component: undefined },
+         1789171108.470  7246  7309 W ReactNativeJS:   context: 
+         1789171108.470  7246  7309 W ReactNativeJS:    { requestId: undefined,
+         1789171108.470  7246  7309 W ReactNativeJS:      commandId: undefined,
+         1789171108.470  7246  7309 W ReactNativeJS:      commandName: undefined,
+         1789171108.470  7246  7309 W ReactNativeJS:      sessionId: undefined,
+         1789171108.470  7246  7309 W ReactNativeJS:      connectionId: undefined,
+         1789171108.470  7246  7309 W ReactNativeJS:      nodeId: 'nod_mtxma6ov_6zep2k68wgtgny5y',
+         1789171108.470  7246  7309 W ReactNativeJS:      peerNodeId: undefined },
+         1789171108.470  7246  7309 W ReactNativeJS:   data: 
+         1789171108.470  7246  7309 W ReactNativeJS:    { status: 'unavailable',
+         1789171108.470  7246  7309 W ReactNativeJS:      capability: 'subscribePowerStatus',
+         1789171108.470  7246  7309 W ReactNativeJS:      reason: 'ADAPTER_NOT_INJECTED' },
+         1789171108.470  7246  7309 W ReactNativeJS:   error: undefined,
+         1789171108.470  7246  7309 W ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789171108.472   571   691 D InputMethodManagerService: Initializing Handwriting Spy
+         1789171108.472   571   691 W InputManager-JNI: Input channel object 'stylus-handwriting-event-receiver-0 (client)' was disposed without first being removed with the input manager!
+         1789171108.473  6525  6610 I Icing   : Usage reports ok 0, Failed Usage reports 0, indexed 0, rejected 0
+         1789171108.474  1248  1248 I AbstractOpenableExtension: AbstractOpenableExtension$3.onSuccess():552 KeyboardGroupManager destroyed in fvq.
+         1789171108.474  1248  1248 I AbstractOpenableExtension: AbstractOpenableExtension$3.onSuccess():552 KeyboardGroupManager destroyed in fxu.
+         1789171108.474  1248  1248 I ClipboardDataHandler: ClipboardDataHandler.updateScreenshotsContentObserver():268 Disable the feature of handling screenshots in the clipboard.
+         1789171108.475  1248  1583 I SP      : Scheduling job with delay of 0s for {m:b:u:l, bg}, 2 candidates
+         1789171108.479  1248  1582 I OnDevicePackDownloadModule: OnDevicePackDownloadModule.onCreate():60 onCreate()
+         1789171108.483  1248  6906 I NetworkInfoNotification: NetworkInfoNotification$Listener.onReceive():112 onNetworkLost: networkState = NO_CONNECTION, isAirplaneModeOn = false
+         1789171108.484   571  3333 E JobScheduler.JobStatus: App com.google.android.inputmethod.latin became active but still in NEVER bucket
+         1789171108.485  7246  7328 I TerminalDevice: event=display-info-entry displayIndex=0 displayId=0 name=Built-in_Screen state=2 flags=16515 rotation=1 appWidthPx=720 appHeightPx=1280 densityDpi=320 density=2.0 scaledDensity=2.0 realWidthPx=720 realHeightPx=1280 modeWidthPx=2560 modeHeightPx=1600
+         1789171108.485  7246  7328 I TerminalDevice: event=display-info-entry displayIndex=1 displayId=2 name=Emulator_2D_Display state=2 flags=16584 rotation=1 appWidthPx=720 appHeightPx=1280 densityDpi=213 density=1.3312501 scaledDensity=1.3312501 realWidthPx=720 realHeightPx=1280 modeWidthPx=1280 modeHeightPx=720
+         1789171108.485  7246  7328 I TerminalDevice: event=display-info-read status=succeeded displayCount=2
+         1789171108.485  1248  7339 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():83 parseKeyboardGroupDef() 2132214028 -> 0_resource_name_obfuscated : WaitTime = 0 ms : RunTime = 0 ms
+         1789171108.486  1248  1248 I AccessPointsListHolderController: AccessPointsListHolderController.removeAccessPoint():304 The access point textediting is not added
+         1789171108.486  1248  1248 I AccessPointsListHolderController: AccessPointsListHolderController.removeAccessPoint():304 The access point settings is not added
+         1789171108.486  1248  1248 I AccessPointsListHolderController: AccessPointsListHolderController.removeAccessPoint():304 The access point theme_setting is not added
+         1789171108.486   571  1502 E JobScheduler.JobStatus: App com.google.android.inputmethod.latin became active but still in NEVER bucket
+         1789171108.486  1248  1582 I Environment: Environment.isPackageInstalled():234 com.bitstrips.imoji is not installed
+         1789171108.486  1248  1582 W AndroidCreativeStickerFetcherFactory: AndroidCreativeStickerFetcherFactory.createFetcher():19 Empty host or api key
+         1789171108.487  1248  7337 I AbstractOpenableExtension: AbstractOpenableExtension.createKeyboardGroupManagerListenableFuture():120 Create keyboard group manager listenable future in fvq
+         1789171108.487  1248  1583 I SP      : Scheduling job with delay of 0s for {W:b:u:l, bg}, 2 candidates
+         1789171108.488   571  1502 E JobScheduler.JobStatus: App com.google.android.inputmethod.latin became active but still in NEVER bucket
+         1789171108.489   571  1502 E JobScheduler.JobStatus: App com.google.android.inputmethod.latin became active but still in NEVER bucket
+         1789171108.489  7246  7309 I ReactNativeJS: { timestamp: 1789171108489,
+         1789171108.489  7246  7309 I ReactNativeJS:   level: 'info',
+         1789171108.489  7246  7309 I ReactNativeJS:   category: 'startup.runtime-facts',
+         1789171108.489  7246  7309 I ReactNativeJS:   event: 'sample.runtime-facts-resolved',
+         1789171108.489  7246  7309 I ReactNativeJS:   message: 'Sample runtime facts resolved',
+         1789171108.489  7246  7309 I ReactNativeJS:   scope: 
+         1789171108.489  7246  7309 I ReactNativeJS:    { moduleName: 'platform-ports',
+         1789171108.489  7246  7309 I ReactNativeJS:      layer: 'kernel',
+         1789171108.489  7246  7309 I ReactNativeJS:      subsystem: undefined,
+         1789171108.489  7246  7309 I ReactNativeJS:      component: undefined },
+         1789171108.489  7246  7309 I ReactNativeJS:   context: undefined,
+         1789171108.489  7246  7309 I ReactNativeJS:   data: 
+         1789171108.489  7246  7309 I ReactNativeJS:    { source: 'ui.base.console-assembly.createConsoleAssembly',
+         1789171108.489  7246  7309 I ReactNativeJS:      appName: 'sample-console',
+         1789171108.489  7246  7309 I ReactNativeJS:      debugEnabled: false,
+         1789171108.489  7246  7309 I ReactNativeJS:      debugSource: 'default',
+         1789171108.489  7246  7309 I ReactNativeJS:      deviceIdentityAvailable: true,
+         1789171108.489  7246  7309 I ReactNativeJS:      capabilityDescriptorCount: 10 },
+         1789171108.489  7246  7309 I ReactNativeJS:   error: undefined,
+         1789171108.489  7246  7309 I ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789171108.490  1248  1248 I NetworkInfoNotification: NetworkInfoNotification$Listener.onReceive():112 onNetworkLost: networkState = NO_CONNECTION, isAirplaneModeOn = false
+         1789171108.491  1248  7339 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():83 parseKeyboardGroupDef() 2132214033 -> 0_resource_name_obfuscated : WaitTime = 4 ms : RunTime = 0 ms
+         1789171108.491  1248  1248 I AccessPointsListHolderController: AccessPointsListHolderController.removeAccessPoint():304 The access point one_handed is not added
+         1789171108.491  1248  7339 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():83 parseKeyboardGroupDef() 2132214034 -> 0_resource_name_obfuscated : WaitTime = 0 ms : RunTime = 0 ms
+         1789171108.491  1248  1248 I NetworkInfoNotification: NetworkInfoNotification$Listener.onReceive():112 onNetworkLost: networkState = NO_CONNECTION, isAirplaneModeOn = false
+         1789171108.492  1248  1248 I NetworkInfoNotification: NetworkInfoNotification$Listener.onReceive():112 onNetworkLost: networkState = NO_CONNECTION, isAirplaneModeOn = false
+         1789171108.497  1248  1248 I GoogleInputMethodService: GoogleInputMethodService$GoogleInputMethodImpl.attachToken():4209 
+         1789171108.499  1248  1583 I SP      : Scheduling: download registered, 0 started, 0 paused, 4 scheduled, 4 pending: manifests:next-word-predictor-20210507 * {m:b:u:l, bg}, manifests:sticker_pack_similarity-2020010921 * {W:b:u:l, bg}, manifests:emoji-2023020111 * {m:b:u:l, bg}, manifests:emoticon_content_description-2022081613 * {W:b:u:l, bg}
+         1789171108.499  1248  1583 I SuperpacksManagerImpl: SuperpacksManagerImpl$3$1.onFailure():588 emoticon_content_description.registerManifest() cancelled
+         1789171108.499  1248  1583 I SP      : Registering emoticon_content_description.2022081613, url: https://www.gstatic.com/android/keyboard/emoticon_content_desc/202208161305/superpacks_manifest.json, constraints: W:*:*:*, flags: bg, requested: 2022081613, current: -1
+         1789171108.499  1248  1583 I SP      : Registering emoticon_content_description.2022081613, url: https://www.gstatic.com/android/keyboard/emoticon_content_desc/202208161305/superpacks_manifest.json, constraints: W:*:*:*, flags: bg, requested: 2022081613, current: -1
+         1789171108.499  7246  7246 E ThemeUtils: View class com.facebook.react.views.text.ReactTextView is an AppCompat widget that can only be used with a Theme.AppCompat theme (or descendant).
+         1789171108.500  7246  7246 E ThemeUtils: View class com.facebook.react.views.text.ReactTextView is an AppCompat widget that can only be used with a Theme.AppCompat theme (or descendant).
+         1789171108.500  7246  7246 E ThemeUtils: View class com.facebook.react.views.text.ReactTextView is an AppCompat widget that can only be used with a Theme.AppCompat theme (or descendant).
+         1789171108.502  1248  1248 I SystemSubtypesReportModule: SystemSubtypesReportModule$3.onCurrentInputMethodEntryChanged():136 entry: en-US, source: UNSPECIFIED
+         1789171108.502  1248  1248 I SystemSubtypesReportModule: SystemSubtypesReportModule.switchToSubtypeByEntry():205 en-US
+         1789171108.504  1248  1248 D WindowTokenClient: Configuration not dispatch to IME because configuration is up to date. Current config={1.0 ?mcc0mnc [en_US] ldltr sw800dp w1280dp h800dp 320dpi xlrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 2560, 1600) mAppBounds=Rect(0, 0 - 2560, 1600) mMaxBounds=Rect(0, 0 - 2560, 1600) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} s.214 fontWeightAdjustment=0}, reported config={1.0 ?mcc0mnc [en_US] ldltr sw800dp w1280dp h800dp 320dpi xlrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 2560, 1600) mAppBounds=Rect(0, 0 - 2560, 1600) mMaxBounds=Rect(0, 0 - 2560, 1600) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} s.932 fontWeightAdjustment=0}, updated config={1.0 ?mcc0mnc [en_US] ldltr sw800dp w1280dp h800dp 320dpi xlrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 2560, 1600) mAppBounds=Rect(0, 0 - 2560, 1600) mMaxBounds=Rect(0, 0 - 2560, 1600) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} s.932 fontWeightAdjustment=0}, updated display ID=0
+         1789171108.504  1248  1248 D WindowTokenClient: Configuration not dispatch to IME because configuration is up to date. Current config={1.0 ?mcc0mnc [en_US] ldltr sw800dp w1280dp h800dp 320dpi xlrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 2560, 1600) mAppBounds=Rect(0, 0 - 2560, 1600) mMaxBounds=Rect(0, 0 - 2560, 1600) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} s.214 fontWeightAdjustment=0}, reported config={1.0 ?mcc0mnc [en_US] ldltr sw800dp w1280dp h800dp 320dpi xlrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 2560, 1600) mAppBounds=Rect(0, 0 - 2560, 1600) mMaxBounds=Rect(0, 0 - 2560, 1600) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} s.932 fontWeightAdjustment=0}, updated config={1.0 ?mcc0mnc [en_US] ldltr sw800dp w1280dp h800dp 320dpi xlrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 2560, 1600) mAppBounds=Rect(0, 0 - 2560, 1600) mMaxBounds=Rect(0, 0 - 2560, 1600) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} s.932 fontWeightAdjustment=0}, updated display ID=0
+         1789171108.504  1248  1248 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.anonymous.sampleterminal, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+         1789171108.506  1248  1248 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+         1789171108.506  1248  1248 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+         1789171108.507   571  1509 W PackageConfigPersister: App-specific configuration not found for packageName: com.anonymous.sampleterminal and userId: 0
+         1789171108.507  1248  1248 I HardKeyTracker: HardKeyTracker.registerKeySequence():139 Register key sequence lnk{labelResId=2132019800, callback=gnd@ba595c0, lastModifier=0, keyCodes=[57, 57], actions=[1, 0]}
+         1789171108.507  1248  1248 I HardKeyTracker: HardKeyTracker.registerKeySequence():139 Register key sequence lnk{labelResId=0, callback=gnd@bd0089f, lastModifier=0, keyCodes=[58, 58], actions=[1, 0]}
+         1789171108.507  7246  7309 E ReactNativeJS: [TerminalDualScreen] surface host event rejected surfaceKey=PRIMARY reason=identity-or-generation-fence
+         1789171108.511  7246  7311 E unknown:ReactNative: console.error: [TerminalDualScreen] surface host event rejected surfaceKey=PRIMARY reason=identity-or-generation-fence, stack:
+         1789171108.511  7246  7311 E unknown:ReactNative: SyntheticError@1:483163
+         1789171108.511  7246  7311 E unknown:ReactNative: reactConsoleErrorHandler@1:482954
+         1789171108.511  7246  7311 E unknown:ReactNative: apply@1:1443631
+         1789171108.511  7246  7311 E unknown:ReactNative: anonymous@1:1579363
+         1789171108.511  1248  1583 I SP      : Scheduling job with delay of 0s for {m:b:u:l, bg}, 2 candidates
+         1789171108.516  7246  7246 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789171108.518  7246  7246 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789171108.518  7246  7246 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789171108.531   571  1502 E JobScheduler.JobStatus: App com.google.android.inputmethod.latin became active but still in NEVER bucket
+         1789171108.531  1248  1583 I SP      : Scheduling job with delay of 0s for {W:b:u:l, bg}, 2 candidates
+         1789171108.533   571  1502 E JobScheduler.JobStatus: App com.google.android.inputmethod.latin became active but still in NEVER bucket
+         1789171108.534  1248  1583 I SP      : Scheduling: download registered, 0 started, 0 paused, 4 scheduled, 4 pending: manifests:next-word-predictor-20210507 * {m:b:u:l, bg}, manifests:sticker_pack_similarity-2020010921 * {W:b:u:l, bg}, manifests:emoji-2023020111 * {m:b:u:l, bg}, manifests:emoticon_content_description-2022081613 * {W:b:u:l, bg}
+         1789171108.534  1248  1583 I SuperpacksManagerImpl: SuperpacksManagerImpl$3$1.onFailure():588 emoticon_content_description.registerManifest() cancelled
+         1789171108.534  1248  1583 I SuperpacksManagerImpl: SuperpacksManagerImpl$3$1.onFailure():588 emoticon_content_description.registerManifest() cancelled
+         1789171108.548  7246  7309 E ReactNativeJS: { timestamp: 1789171108548,
+         1789171108.548  7246  7309 E ReactNativeJS:   level: 'error',
+         1789171108.548  7246  7309 E ReactNativeJS:   category: 'startup.failure-page',
+         1789171108.548  7246  7309 E ReactNativeJS:   event: 'startup.failure-page-visible',
+         1789171108.548  7246  7309 E ReactNativeJS:   message: '请重启终端，如仍失败请联系管理员',
+         1789171108.548  7246  7309 E ReactNativeJS:   scope: 
+         1789171108.548  7246  7309 E ReactNativeJS:    { moduleName: 'platform-ports',
+         1789171108.548  7246  7309 E ReactNativeJS:      layer: 'kernel',
+         1789171108.548  7246  7309 E ReactNativeJS:      subsystem: undefined,
+         1789171108.548  7246  7309 E ReactNativeJS:      component: undefined },
+         1789171108.548  7246  7309 E ReactNativeJS:   context: undefined,
+         1789171108.548  7246  7309 E ReactNativeJS:   data: 
+         1789171108.548  7246  7309 E ReactNativeJS:    { reason: 'surface-host-unavailable',
+         1789171108.548  7246  7309 E ReactNativeJS:      failureStage: 'startup',
+         1789171108.548  7246  7309 E ReactNativeJS:      errorName: 'UnknownError',
+         1789171108.548  7246  7309 E ReactNativeJS:      errorCode: 'surface-host-unavailable:UnknownError',
+         1789171108.548  7246  7309 E ReactNativeJS:      fallbackReason: null,
+         1789171108.548  7246  7309 E ReactNativeJS:      hideResult: 'hidden',
+         1789171108.548  7246  7309 E ReactNativeJS:      surfaceKey: 'PRIMARY',
+         1789171108.548  7246  7309 E ReactNativeJS:      displayIndex: 0 },
+         1789171108.548  7246  7309 E ReactNativeJS:   error: undefined,
+         1789171108.548  7246  7309 E ReactNativeJS:   security: { containsSensitiveRaw: false, maskingMode: 'masked' } }
+         1789171108.548   825   863 V WindowManagerShell: Transition animation finished (aborted=false), notifying core (#709) android.os.BinderProxy@4204821@0
+         1789171108.549  7246  7311 E unknown:ReactNative: console.error: {"timestamp":1789171108548,"level":"error","category":"startup.failure-page","event":"startup.failure-page-visible","message":"请重启终端，如仍失败请联系管理员","scope":{"moduleName":"platform-ports","layer":"kernel"},"data":{"reason":"surface-host-unavailable","failureStage":"startup","errorName":"UnknownError","errorCode":"surface-host-unavailable:UnknownError","fallbackReason":null,"hideResult":"hidden","surfaceKey":"PRIMARY","displayIndex":0},"security":{"containsSensitiveRaw":false,"maskingMode":"masked"}}, stack:
+         1789171108.549  7246  7311 E unknown:ReactNative: SyntheticError@1:483163
+         1789171108.549  7246  7311 E unknown:ReactNative: reactConsoleErrorHandler@1:482954
+         1789171108.549  7246  7311 E unknown:ReactNative: sendToConsole@1:966255
+         1789171108.549  7246  7311 E unknown:ReactNative: write@1:1347633
+         1789171108.549  7246  7311 E unknown:ReactNative: error@1:1347781
+         1789171108.549  7246  7311 E unknown:ReactNative: anonymous@1:1570749
+         1789171108.550   571   591 V WindowManager: Finish Transition (#709): created at 09-12 08:58:28.175 collect-started=0.01ms request-sent=0.028ms started=28.05ms ready=28.209ms sent=67.865ms finished=375.817ms
+         1789171108.553   825   863 V WindowManagerShell: Track 0 became idle
+         1789171108.553   825   863 V WindowManagerShell: All active transition animations finished
+         1789171108.571   571   591 I ActivityTaskManager: Displayed com.anonymous.sampleterminal/.MainActivity for user 0: +553ms
+         1789171108.572  7246  7246 D SplashScreenView: Building from parcel drawable: android.graphics.drawable.BitmapDrawable@904a09b
+         1789171108.573  7246  7246 D SplashScreenView: Build android.window.SplashScreenView{7753411 V.E...... ......ID 0,0-0,0}
+         1789171108.573  7246  7246 D SplashScreenView: Icon: view: androidx.appcompat.widget.AppCompatImageView{8ea8976 V.ED..... ......I. 0,0-0,0 #1020504 android:id/splashscreen_icon_view} drawable: android.graphics.drawable.BitmapDrawable@904a09b size: 384
+         1789171108.573  7246  7246 D SplashScreenView: Branding: view: android.view.View{902ab77 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+         1789171108.576  7246  7246 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789171108.590 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~XUfSlExHhVK4k61mswuKBg==/com.catering.v2s.terminal.samplewallpaper-x4S6Je-RkfqHB8GTg_dLAg==/base.apk' with 1 weak references
+         1789171108.590 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/YouTube/YouTube.apk' with 1 weak references
+         1789171108.591 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/overlay/DisplayCutoutEmulationCorner/DisplayCutoutEmulationCornerOverlay.apk' with 1 weak references
+         1789171108.591 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.extservices/priv-app/GoogleExtServices@350820300/GoogleExtServices.apk' with 1 weak references
+         1789171108.591 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/AndroidMediaShell/AndroidMediaShell.apk' with 1 weak references
+         1789171108.591 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~3N3vn8w5y8ccHDq5787iUQ==/com.impos2.posadapter-DxY_tj3LXZX-sctZUEAa_g==/base.apk' with 1 weak references
+         1789171108.591 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/overlay/DisplayCutoutEmulationDouble/DisplayCutoutEmulationDoubleOverlay.apk' with 1 weak references
+         1789171108.591 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/TelephonyProvider/TelephonyProvider.apk' with 1 weak references
+         1789171108.591 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/TelephonyProvider__tablet__auto_generated_characteristics_rro.apk' with 1 weak references
+         1789171108.591 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/CarrierLocation/CarrierLocation.apk' with 1 weak references
+         1789171108.591 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/DynamicSystemInstallationService/DynamicSystemInstallationService.apk' with 1 weak references
+         1789171108.591 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/Velvet/Velvet.apk' with 1 weak references
+         1789171108.591 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/CalendarProvider/CalendarProvider.apk' with 1 weak references
+         1789171108.591 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/GoogleOneTimeInitializer/GoogleOneTimeInitializer.apk' with 1 weak references
+         1789171108.591 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/GoogleExtShared/GoogleExtShared.apk' with 1 weak references
+         1789171108.591 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~7j2oy_3qQiLgLrpX0OB6eQ==/com.next.mixccateringassemblyrn84-2DMT5Vk8-YurK8UDu48EoA==/base.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/CastAuthPrebuilt/CastAuthPrebuilt.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/DockSetup/DockSetup.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/DockSetup__sdk_gtablet_arm64__auto_generated_rro_product.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/ExternalStorageProvider/ExternalStorageProvider.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/HTMLViewer/HTMLViewer.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/CompanionDeviceManager/CompanionDeviceManager.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/CompanionDeviceManager__tablet__auto_generated_characteristics_rro.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/DownloadProvider/DownloadProvider.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/messaging/messaging.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/SoundPickerPrebuilt/SoundPickerPrebuilt.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.mediaprovider/priv-app/MediaProviderGoogle@350820300/MediaProviderGoogle.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~1qd8kn6EP6Xkj2Sxunl3gw==/com.impos2.mixcretailassemblyrn84-og100iHlhCV6Kow_V1wIBQ==/base.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/DownloadProviderUi/DownloadProviderUi.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.wifi/app/OsuLoginGoogle@350820300/OsuLoginGoogle.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/PacProcessor/PacProcessor.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/SimAppDialog/SimAppDialog.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.adservices/priv-app/AdServicesApkGoogle@350820260/AdServicesApkGoogle.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/overlay/DisplayCutoutEmulationHole/DisplayCutoutEmulationHoleOverlay.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/overlay/DisplayCutoutEmulationTall/DisplayCutoutEmulationTallOverlay.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/CertInstaller/CertInstaller.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/talkback/talkback.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/vendor/overlay/EmulatorTalkBackOverlay/EmulatorTalkBackOverlay.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~rFQc-cti5_t1792yOFjNcA==/com.anonymous.sampleterminal-WnyLe8rbeuWSf_Y15hrmnA==/base.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/overlay/NavigationBarMode3Button/NavigationBarMode3ButtonOverlay.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/HotwordEnrollmentXGoogleFUSIONPro/HotwordEnrollmentXGoogleFUSIONPro.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Camera2/Camera2.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/EasterEgg/EasterEgg.apk' with 1 weak references
+         1789171108.592 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/MtpService/MtpService.apk' with 1 weak references
+         1789171108.593 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.nfcservices/priv-app/NfcNciApexGoogle@AE3A.240806.046.T1/NfcNciApexGoogle.apk' with 1 weak references
+         1789171108.593 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/Stk/Stk.apk' with 1 weak references
+         1789171108.593 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/TheFlippinApp/TheFlippinApp.apk' with 1 weak references
+         1789171108.593 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/PrebuiltDeskClockGoogle/PrebuiltDeskClockGoogle.apk' with 1 weak references
+         1789171108.593 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/overlay/NavigationBarMode2Button/NavigationBarMode2ButtonOverlay.apk' with 1 weak references
+         1789171108.593 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/DevicePersonalizationPrebuiltPixelTablet2023-aiai_20240329.00_RC16/DevicePersonalizationPrebuiltPixelTablet2023-aiai_20240329.00_RC16.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/PrebuiltGmail/PrebuiltGmail.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~nQsa2q86KwKnft4F4UFHRw==/com.impos2.mixcretailrn84-XalgpTe7Iu_hGdaeMct8gg==/base.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.permission/priv-app/GooglePermissionController@350820360/GooglePermissionController.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/GooglePermissionControllerOverlay.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.btservices/app/BluetoothGoogle@342010060/BluetoothGoogle.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/SettingsProvider/SettingsProvider.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/vendor/overlay/SettingsProvider__sdk_gtablet_arm64__auto_generated_rro_vendor.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/LargeScreenSettingsProviderOverlay.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/SettingsProvider__sdk_gtablet_arm64__auto_generated_rro_product.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/TitanSettingsProviderOverlay.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/PrintSpooler/PrintSpooler.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/HotwordEnrollmentOKGoogleFUSIONPro/HotwordEnrollmentOKGoogleFUSIONPro.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/BasicDreams/BasicDreams.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/DeviceIntelligenceNetworkPrebuilt-astrea_20240329.00_RC02/DeviceIntelligenceNetworkPrebuilt-astrea_20240329.00_RC02.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/InputDevices/InputDevices.apk' with 1 weak references
+         1789171108.595 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.devicelock/priv-app/DeviceLockControllerGoogle@AE3A.240806.046.T1/DeviceLockControllerGoogle.apk' with 1 weak references
+         1789171108.596 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/BuiltInPrintService/BuiltInPrintService.apk' with 1 weak references
+         1789171108.596 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/CaptivePortalLoginGoogle/CaptivePortalLoginGoogle.apk' with 1 weak references
+         1789171108.596 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/MusicFX/MusicFX.apk' with 1 weak references
+         1789171108.596 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Drive/Drive.apk' with 1 weak references
+         1789171108.596 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Maps/Maps.apk' with 1 weak references
+         1789171108.596 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/ModuleMetadataGoogle/ModuleMetadataGoogle.apk' with 1 weak references
+         1789171108.596 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/overlay/DisplayCutoutEmulationEmu01/DisplayCutoutEmulationEmu01Overlay.apk' with 1 weak references
+         1789171108.596 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/AvatarPickerGoogle/AvatarPickerGoogle.apk' with 1 weak references
+         1789171108.596 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/KidsHomePrebuilt/KidsHomePrebuilt.apk' with 1 weak references
+         1789171108.596 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/MarkupGoogle_v2/MarkupGoogle_v2.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/NetworkStackGoogle/NetworkStackGoogle.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.rkpd/priv-app/rkpdapp.google@350820300/rkpdapp.google.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/GoogleContacts/GoogleContacts.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/Telecom/Telecom.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/KeyChain/KeyChain.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~jwwipswfUo6k7ZtZC8X7aA==/com.android.chrome-NMopD1rBq8HOO9jbTqHd9w==/Chrome.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~JXob4Tig8lkoK6grnIoRDQ==/com.google.android.trichromelibrary_636771932-v7-OhOMBuMGJ9HOdFxznSA==/TrichromeLibrary.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/Dialer/Dialer.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/GooglePackageInstaller/GooglePackageInstaller.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/PixelThemesStub/PixelThemesStub.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/GoogleServicesFramework/GoogleServicesFramework.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/TagGoogle/TagGoogle.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/GoogleTTS/GoogleTTS.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/CallLogBackup/CallLogBackup.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/PartnerSetupPrebuilt/PartnerSetupPrebuilt.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/CameraExtensionsProxy/CameraExtensionsProxy.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/NexusWallpapersStubPrebuilt2018/NexusWallpapersStubPrebuilt2018.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/PixelWallpapers2023Tablet/PixelWallpapers2023Tablet.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/NexusLauncherRelease/NexusLauncherRelease.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '/product/overlay/TitanNexusLauncherOverlay.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/app/CarrierDefaultApp/CarrierDefaultApp.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/CredentialManager/CredentialManager.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /product/overlay/FontNotoSerifSource/FontNotoSerifSourceOverlay.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/DeviceAsWebcam/DeviceAsWebcam.apk' with 1 weak references
+         1789171108.597 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /apex/com.android.permission/priv-app/GoogleSafetyCenterResources@350820360/GoogleSafetyCenterResources.apk' with 1 weak references
+         1789171108.598 32643 32649 W .apps.wellbeing: ApkAssets: Deleting an ApkAssets object '<empty> and /system/priv-app/IntentResolver/IntentResolver.apk' with 1 weak references
+         1789171108.610   825   894 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@def971a
+         1789171108.615   571  1514 W InputManager-JNI: Input channel object '1bb3b5 Splash Screen com.anonymous.sampleterminal (client)' was disposed without first being removed with the input manager!
+         1789171108.616   571  1516 W WindowManager: Failed looking up window session=Session{55086a3 825:u0a10186} callers=com.android.server.wm.WindowManagerService.windowForClientLocked:6311 com.android.server.wm.Session.setOnBackInvokedCallbackInfo:1020 android.view.IWindowSession$Stub.onTransact:1199 
+         1789171108.616   571  1516 I WindowManager: setOnBackInvokedCallback(): No window state for package:com.android.systemui
+         1789171108.636  7246  7336 W InteractionJankMonitor: Initializing without READ_DEVICE_CONFIG permission. enabled=true, interval=1, missedFrameThreshold=3, frameTimeThreshold=64, package=com.anonymous.sampleterminal
+         1789171108.647  7341  7341 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789171108.651  7341  7341 I AndroidRuntime: Using default boot image
+         1789171108.651  7341  7341 I AndroidRuntime: Leaving lock profiling enabled
+         1789171108.652  7341  7341 I app_process: Core platform API reporting enabled, enforcing=false
+         1789171108.652  7341  7341 I app_process: Using CollectorTypeCMC GC.
+         1789171108.686  7341  7341 D nativeloader: InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+         1789171108.691  7341  7341 D nativeloader: Load libicu_jni.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+         1789171108.691  7341  7341 D app_process: u_setTimeZoneFilesDirectory("/apex/com.android.tzdata/etc/tz/versioned/8/icu") succeeded. 
+         1789171108.691  7341  7341 D app_process: I18n APEX ICU file found: /apex/com.android.i18n/etc/icu/icudt75l.dat
+         1789171108.691  7341  7341 D nativeloader: Load libjavacore.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+         1789171108.692  7341  7341 D nativeloader: Load libopenjdk.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+         1789171108.694  7341  7341 W app_process: ClassLoaderContext shared library size mismatch. Expected=2, found=0 (PCL[]{PCL[/system/framework/android.test.base.jar*724373495]#PCL[/system/framework/android.test.mock.jar*1452759902]} | PCL[])
+         1789171108.695  7341  7341 W app_process: ClassLoaderContext classpath size mismatch. expected=0, found=1 (PCL[]{PCL[/system/framework/android.test.runner.jar*2496447986]#PCL[/system/framework/android.test.base.jar*724373495]} | PCL[/system/framework/android.test.runner.jar*2496447986])
+         1789171108.706  7341  7341 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+         1789171108.706  7341  7341 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789171108.708  7341  7341 D UiAutomationConnection: Created on user UserHandle{0}
+         1789171108.708  7341  7341 I UiAutomation: Initialized for user 0 on display 0
+         1789171108.708  7341  7341 W UiAutomation: Created with deprecatead constructor, assumes DEFAULT_DISPLAY
+         1789171108.709   571  1514 D AccessibilityManagerService: changeCurrentUserForTestAutomationIfNeededLocked(0): ignoring because device doesn't support visible background users
+         1789171108.709   571  1514 I UiAutomationManager: Registering UiTestAutomationService (id=com.android.server.accessibility/UiAutomation, flags=0x0) when called by user 0
+         1789171108.710   571  1514 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+         1789171108.710  1336  2896 I AiAiEcho: Settings changed for uri: content://settings/secure/accessibility_enabled
+         1789171108.711   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.711   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.711   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.711   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.711   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.711   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.711   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.711   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.711   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.711   571   571 D BatterySaverPolicy: accessibility changed to true, updating policy.
+         1789171108.711  1336  1726 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789171108.711  1336  1726 I AiAiEcho: EchoTargets: 
+         1789171108.711  1336  1726 I AiAiEcho: Filtered by AiAi flag check: 
+         1789171108.711  1336  1726 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.711  7341  7354 V UiAutomation: Init UiAutomation@24e2cb3[id=2474, displayId=0, flags=0]
+         1789171108.711  1336  1726 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.712   571  1514 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+         1789171108.712  1336  2896 I AiAiEcho: Settings changed for uri: content://settings/secure/accessibility_enabled
+         1789171108.712   571  1509 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171108.712  1456  1617 I A       : NGA Sync: beginOnDataPresent
+         1789171108.712  1456  1617 I A       : (REDACTED) NGA Sync: isNgaSyncEnabled: %s; enableFileGroupPopulator: %s; requiresMddAssets: %s
+         1789171108.713   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.713   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.713  1456  1617 I A       : (REDACTED) Flag controlled groups: %s
+         1789171108.713  1456  1617 I A       : (REDACTED) Required groups: %s
+         1789171108.713  1456  1617 I A       : (REDACTED) Missing groups: %s
+         1789171108.713  1456  1617 I A       : NGA Sync: endOnDataPresent
+         1789171108.713  1456  1617 I A       : (REDACTED) NGA Sync: isNgaSyncEnabled: %s; enableFileGroupPopulator: %s; requiresMddAssets: %s
+         1789171108.713  1456  1617 I A       : NGA disabled due to forced update requirement.
+         1789171108.715  1336  1726 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789171108.715   571  1502 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171108.715  1336  1726 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789171108.715  1336  1726 I AiAiEcho: EchoTargets: 
+         1789171108.715  1336  1726 I AiAiEcho: Filtered by AiAi flag check: 
+         1789171108.715  1336  1726 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.715  1336  1726 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.715  1336  1726 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789171108.715  1336  1726 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789171108.715  1336  1726 I AiAiEcho: EchoTargets: 
+         1789171108.715  1336  1726 I AiAiEcho: Filtered by AiAi flag check: 
+         1789171108.715  1336  1726 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.715  1336  1726 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.715  1336  1726 I AiAiSmartspace: #weatherSecondaryCardTwiddler: don't change weather for the dream surface
+         1789171108.715  1336  1726 I AiAiEcho: #weatherTwiddler: don't change weather for the dream surface
+         1789171108.715  1336  1726 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789171108.715  1336  1726 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789171108.715  1336  1726 I AiAiEcho: EchoTargets: 
+         1789171108.715  1336  1726 I AiAiEcho: Filtered by AiAi flag check: 
+         1789171108.715  1336  1726 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.715  1336  1726 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.715  1336  1726 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789171108.715   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.715   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.715   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.715  1336  1726 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789171108.715  1336  1726 I AiAiEcho: EchoTargets: 
+         1789171108.715  1336  1726 I AiAiEcho: Filtered by AiAi flag check: 
+         1789171108.715  1336  1726 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.715   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171108.715  1336  1726 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.715  1336  1726 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789171108.715  1336  1726 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789171108.715  1336  1726 I AiAiEcho: EchoTargets: 
+         1789171108.715  1336  1726 I AiAiEcho: Filtered by AiAi flag check: 
+         1789171108.715  1336  1726 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.715  1336  1726 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.715  1336  1726 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789171108.715  1336  1726 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789171108.715  1336  1726 I AiAiEcho: EchoTargets: 
+         1789171108.715  1336  1726 I AiAiEcho: Filtered by AiAi flag check: 
+         1789171108.715  1336  1726 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.715  1336  1726 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.715  1336  1726 I AiAiSmartspace: #weatherSecondaryCardTwiddler: don't change weather for the dream surface
+         1789171108.715  1336  1726 I AiAiEcho: #weatherTwiddler: don't change weather for the dream surface
+         1789171108.715  1336  1726 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789171108.715  1336  1726 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789171108.715  1336  1726 I AiAiEcho: EchoTargets: 
+         1789171108.715  1336  1726 I AiAiEcho: Filtered by AiAi flag check: 
+         1789171108.715  1336  1726 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.715  1336  1726 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171108.715  1336  1726 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789171108.715  1336  1726 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface media_data_manager with targets# 0 (types=[])
+         1789171108.715  1336  1726 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+         1789171108.716  1336  1726 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface dream with targets# 0 (types=[])
+         1789171108.716  1336  1726 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+         1789171108.716  1336  1726 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface media_data_manager with targets# 0 (types=[])
+         1789171108.716  1336  1726 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+         1789171108.716  1336  1726 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface dream with targets# 0 (types=[])
+         1789171108.716  1336  1726 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+         1789171108.717   571  1502 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171108.717  1199  1224 D AccessibilitySourceService: enabled a11y services count 0
+         1789171108.717  1199  1224 D AccessibilitySourceService: a11y source sending 0 issue to sc
+         1789171108.717   571  1514 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171108.718   571  1514 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171108.718   571  1509 D SafetySourceDataValidat: No cert check requested for package com.google.android.permissioncontroller
+         1789171108.718  1041  1041 D SsBaseTemplateCard: No text view can be set up
+         1789171108.719  1041  1041 D SsBaseTemplateCard: Passed-in item info is null
+         1789171108.719  1041  1041 D SsBaseTemplateCard: Passed-in item info is null
+         1789171108.719  1041  1041 D SsBaseTemplateCard: Passed-in item info is null
+         1789171108.719  1041  1041 I SsBaseTemplateCard: Secondary card pane is null
+         1789171108.719  1041  1041 D SsBaseTemplateCard: No text view can be set up
+         1789171108.719  1041  1041 D SsBaseTemplateCard: Passed-in item info is null
+         1789171108.719  1041  1041 D SsBaseTemplateCard: Passed-in item info is null
+         1789171108.719  1041  1041 D SsBaseTemplateCard: Passed-in item info is null
+         1789171108.719  1041  1041 I SsBaseTemplateCard: Secondary card pane is null
+         1789171108.720   571  1509 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171108.720   571  1502 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171108.721   571  1509 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171108.721   571  1502 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171108.721   825   825 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+         1789171108.721   825   825 D SsMediaDataProvider: Forwarding Smartspace updates []
+         1789171108.721   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.721   825   825 W SysUiState: java.lang.Throwable
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateAccessibilityStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:56)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar$2.updateAccessibilityServicesState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:3)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavBarHelper.updateA11yState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:113)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavBarHelper.onAccessibilityServicesStateChanged(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:1)
+         1789171108.721   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1.lambda$notifyServicesStateChanged$0(AccessibilityManager.java:471)
+         1789171108.721   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1.$r8$lambda$sKFmxL_04DhQEd--aGh39G_OBFk(Unknown Source:0)
+         1789171108.721   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Handler.handleCallback(Handler.java:959)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.721   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.721   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.721   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.721   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.721   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.721   825   825 W SysUiState: java.lang.Throwable
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateAccessibilityStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:56)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar$2.updateAccessibilityServicesState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:3)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavBarHelper.updateA11yState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:113)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavBarHelper.onAccessibilityServicesStateChanged(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:1)
+         1789171108.721   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1.lambda$notifyServicesStateChanged$0(AccessibilityManager.java:471)
+         1789171108.721   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1.$r8$lambda$sKFmxL_04DhQEd--aGh39G_OBFk(Unknown Source:0)
+         1789171108.721   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Handler.handleCallback(Handler.java:959)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.721   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.721   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.721   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.721   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.721   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.721   825   825 W SysUiState: java.lang.Throwable
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateAccessibilityStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:56)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar$2.updateAccessibilityServicesState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:3)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavBarHelper.updateA11yState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:113)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavBarHelper.onAccessibilityServicesStateChanged(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:1)
+         1789171108.721   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1.lambda$notifyServicesStateChanged$0(AccessibilityManager.java:471)
+         1789171108.721   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1.$r8$lambda$sKFmxL_04DhQEd--aGh39G_OBFk(Unknown Source:0)
+         1789171108.721   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Handler.handleCallback(Handler.java:959)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.721   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.721   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.721   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.721   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.721   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.721   825   825 W SysUiState: java.lang.Throwable
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateAccessibilityStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:56)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar$2.updateAccessibilityServicesState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:3)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavBarHelper.updateA11yState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:113)
+         1789171108.721   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavBarHelper.onAccessibilityServicesStateChanged(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:1)
+         1789171108.721   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1.lambda$notifyServicesStateChanged$0(AccessibilityManager.java:471)
+         1789171108.721   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1.$r8$lambda$sKFmxL_04DhQEd--aGh39G_OBFk(Unknown Source:0)
+         1789171108.721   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Handler.handleCallback(Handler.java:959)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.721   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.721   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.721   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.721   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.721   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.722   825   825 W SysUiState: Ignoring flag update for display: 2
+         1789171108.722   825   825 W SysUiState: java.lang.Throwable
+         1789171108.722   825   825 W SysUiState: 	at com.android.systemui.model.SysUiState.commitUpdate(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:16)
+         1789171108.722   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateSystemUiStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:95)
+         1789171108.722   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar.updateAccessibilityStateFlags(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:56)
+         1789171108.722   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavigationBar$2.updateAccessibilityServicesState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:3)
+         1789171108.722   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavBarHelper.updateA11yState(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:113)
+         1789171108.722   825   825 W SysUiState: 	at com.android.systemui.navigationbar.NavBarHelper.onAccessibilityServicesStateChanged(go/retraceme 56284941b3071bd6fb466b1ac54c198abec9fd51ac73c548a4f8ccae64dc4f36:1)
+         1789171108.722   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1.lambda$notifyServicesStateChanged$0(AccessibilityManager.java:471)
+         1789171108.722   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1.$r8$lambda$sKFmxL_04DhQEd--aGh39G_OBFk(Unknown Source:0)
+         1789171108.722   825   825 W SysUiState: 	at android.view.accessibility.AccessibilityManager$1$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+         1789171108.722   825   825 W SysUiState: 	at android.os.Handler.handleCallback(Handler.java:959)
+         1789171108.722   825   825 W SysUiState: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+         1789171108.722   825   825 W SysUiState: 	at android.os.Looper.loopOnce(Looper.java:232)
+         1789171108.722   825   825 W SysUiState: 	at android.os.Looper.loop(Looper.java:317)
+         1789171108.722   825   825 W SysUiState: 	at android.app.ActivityThread.main(ActivityThread.java:8705)
+         1789171108.722   825   825 W SysUiState: 	at java.lang.reflect.Method.invoke(Native Method)
+         1789171108.722   825   825 W SysUiState: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+         1789171108.722   825   825 W SysUiState: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+         1789171108.722   825   825 D SsMediaDataProvider: Forwarding Smartspace updates []
+         1789171108.722   825   825 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+         1789171108.774 14512 15336 I FontLog : Received query Noto Color Emoji Compat, URI content://com.google.android.gms.fonts [CONTEXT service_id=132 ]
+         1789171108.774 14512 15336 I FontLog : Query [emojicompat-emoji-font] resolved to {Noto Color Emoji Compat, wdth 100.0, wght 400, ital 0.0, bestEffort false} [CONTEXT service_id=132 ]
+         1789171108.777 14512 15336 I FontLog : Fetch {Noto Color Emoji Compat, wdth 100.0, wght 400, ital 0.0, bestEffort false} end status Status{statusCode=SUCCESS, resolution=null} [CONTEXT service_id=132 ]
+         1789171108.782 14512 15336 I FontLog : Pulling font file for id = 85, cache size = 4 [CONTEXT service_id=132 ]
+         1789171108.784 14512 15336 I FontLog : Pulling font file for id = 85, cache size = 4 [CONTEXT service_id=132 ]
+         1789171109.009  7246  7246 D SplashScreenView: remove starting view
+         1789171109.010  7246  7246 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=2 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=213 density=1.3312501 logicalWidth=540.84503 logicalHeight=961.5023
+         1789171109.015  1041  1468 D EGL_emulation: app_time_stats: avg=136.75ms min=5.35ms max=844.76ms count=9
+         1789171109.468  6525  6573 I Icing   : Indexing com.google.android.gms-apps from com.google.android.gms
+         1789171109.474  6525  6573 I Icing   : Indexing com.google.android.gms-internal.3p:MobileApplication from com.google.android.gms
+         1789171109.477  6525  6573 I Icing   : Indexing done com.google.android.gms-apps
+         1789171109.477  6525  6573 I Icing   : Indexing done com.google.android.gms-internal.3p:MobileApplication
+         1789171109.490  6525  6573 I Icing   : Indexing com.google.android.gms-apps from com.google.android.gms
+         1789171109.490  6525  6573 I Icing   : Indexing done com.google.android.gms-apps
+         1789171109.727  1326  4674 W MediaProvider: isAppCloneUserPair for user 0: false
+         1789171109.730  7341  7341 W AccessibilityNodeInfoDumper: Fetch time: 8ms
+         1789171109.731   571  1502 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+         1789171109.731   571  1502 D AccessibilityManagerService: restoreCurrentUserForTestAutomationIfNeededLocked(): ignoring because device doesn't support visible background users
+         1789171109.732   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171109.732   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171109.732   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171109.732   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171109.732   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171109.732   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171109.732  7341  7341 D AndroidRuntime: Shutting down VM
+         1789171109.733   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171109.733   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171109.733   571   571 W IPCThreadState: Sending oneway calls to frozen process.
+         1789171109.733   571   571 D BatterySaverPolicy: accessibility changed to false, updating policy.
+         1789171109.733  1336  2896 I AiAiEcho: Settings changed for uri: content://settings/secure/accessibility_enabled
+         1789171109.735   571  1509 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171109.736  1336  1726 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789171109.736  1336  1726 I AiAiEcho: EchoTargets: 
+         1789171109.736  1336  1726 I AiAiEcho: Filtered by AiAi flag check: 
+         1789171109.736  1336  1726 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171109.736  1336  1726 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171109.737  1336  1726 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789171109.737   571  1502 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171109.738  1456  1641 I A       : NGA Sync: beginOnDataPresent
+         1789171109.739  1336  1726 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface media_data_manager with targets# 0 (types=[])
+         1789171109.739   571  1502 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171109.739  1336  1726 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789171109.739  1336  1726 I AiAiEcho: EchoTargets: 
+         1789171109.739  1336  1726 I AiAiEcho: Filtered by AiAi flag check: 
+         1789171109.739  1336  1726 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171109.739  1336  1726 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171109.739  1336  1726 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789171109.739  1336  1726 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789171109.739  1336  1726 I AiAiEcho: EchoTargets: 
+         1789171109.739  1336  1726 I AiAiEcho: Filtered by AiAi flag check: 
+         1789171109.739  1336  1726 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171109.739  1336  1726 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171109.739  1336  1726 I AiAiSmartspace: #weatherSecondaryCardTwiddler: don't change weather for the dream surface
+         1789171109.739   571  1509 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171109.740  1336  1726 I AiAiEcho: #weatherTwiddler: don't change weather for the dream surface
+         1789171109.740   571  1509 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171109.740  1336  1726 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789171109.740  1336  1726 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1789171109.740  1336  1726 I AiAiEcho: EchoTargets: 
+         1789171109.740  1336  1726 I AiAiEcho: Filtered by AiAi flag check: 
+         1789171109.740  1336  1726 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171109.740  1336  1726 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+         1789171109.740  1336  1726 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1789171109.740  1336  1726 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+         1789171109.741   571  1514 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171109.741  1336  1726 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface dream with targets# 0 (types=[])
+         1789171109.741  1336  1726 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+         1789171109.741   571  1514 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171109.741   571  1514 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171109.741   571  1514 W WindowManager: Cannot find window which accessibility connection is added to
+         1789171109.743   825   825 D SsMediaDataProvider: Forwarding Smartspace updates []
+         1789171109.743  1456  1641 I A       : (REDACTED) NGA Sync: isNgaSyncEnabled: %s; enableFileGroupPopulator: %s; requiresMddAssets: %s
+         1789171109.743   825   825 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+         1789171109.743  1456  1641 I A       : (REDACTED) Flag controlled groups: %s
+         1789171109.743  1456  1641 I A       : (REDACTED) Required groups: %s
+         1789171109.743  1456  1641 I A       : (REDACTED) Missing groups: %s
+         1789171109.744  1456  1641 I A       : NGA Sync: endOnDataPresent
+         1789171109.744  1456  1641 I A       : (REDACTED) NGA Sync: isNgaSyncEnabled: %s; enableFileGroupPopulator: %s; requiresMddAssets: %s
+         1789171109.744  1456  1641 I A       : NGA disabled due to forced update requirement.
+         1789171109.744  1041  1041 D SsBaseTemplateCard: No text view can be set up
+         1789171109.744  1041  1041 D SsBaseTemplateCard: Passed-in item info is null
+         1789171109.744  1041  1041 D SsBaseTemplateCard: Passed-in item info is null
+         1789171109.744  1041  1041 D SsBaseTemplateCard: Passed-in item info is null
+         1789171109.744  1041  1041 I SsBaseTemplateCard: Secondary card pane is null
+         1789171110.669   169   169 I logd    : logdr: UID=2000 GID=2000 PID=7366 n tail=0 logMask=99 pid=0 start=0ns deadline=0ns

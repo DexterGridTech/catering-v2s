@@ -1,0 +1,16 @@
+         1789440867.643 11327 11327 I TerminalDualScreen: event=primary-activity-configuration displayIndex=0 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=360 screenHeightDp=640 smallestWidthDp=360 orientation=1 resourceWidthPx=720 resourceHeightPx=1280
+         1789440867.738 11327 11388 I ExpoModulesCore: ✅ AppContext was initialized
+         1789440867.751 11327 11327 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789440867.753 11327 11327 I TerminalDualScreen: event=primary-window-post-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789440867.767 11327 11389 I ExpoModulesCore: ✅ JSI interop was installed
+         1789440867.767 11327 11389 I ExpoModulesCore: ✅ Constants were exported
+         1789440867.818 11327 11327 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789440867.843 11327 11327 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789440867.844 11327 11389 I ReactNativeJS:   category: 'startup.ready-candidate',
+         1789440867.844 11327 11389 I ReactNativeJS:   event: 'startup.ready-candidate',
+         1789440867.847 11327 11389 I ReactNativeJS:   category: 'startup.ready',
+         1789440867.847 11327 11389 I ReactNativeJS:   event: 'startup.ready',
+         1789440867.848 11327 11389 I ReactNativeJS:   category: 'startup.complete',
+         1789440867.848 11327 11389 I ReactNativeJS:   event: 'startup.complete',
+         1789440867.853 11327 11389 I ReactNativeJS:   category: 'startup.ready-hidden',
+         1789440867.853 11327 11389 I ReactNativeJS:   event: 'startup.ready-hidden',

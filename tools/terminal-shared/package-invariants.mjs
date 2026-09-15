@@ -54,7 +54,7 @@ function validateInvariant(invariant, packageRoot, expectedPackageName) {
     fail(`package mismatch expected=${expectedPackageName} actual=${invariant.package}`);
   }
   validateOwned(invariant.owned, invariant.package);
-  for (const field of ['publicExports', 'moduleContextMembers', 'actorContextMembers', 'internalCommands', 'internalCommandDefinitions', 'portKeys']) {
+  for (const field of ['publicExports', 'moduleContextMembers', 'actorContextMembers', 'internalCommands', 'internalCommandDefinitions', 'portKeys', 'platformPortsKeys', 'platformPortsOptionalKeys']) {
     if (invariant[field] !== undefined) assertStringArray(invariant[field], `${invariant.package}.${field}`);
   }
   if (invariant.ledgerRecordShape !== undefined) {

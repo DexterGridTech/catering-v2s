@@ -1,0 +1,595 @@
+{
+  "runId": "sample1-frozen-dual-abandon-1789473726743",
+  "tool": "tools/terminal-sample2/run-sample1-frozen-journey.mjs",
+  "packageName": "com.anonymous.sampleterminal",
+  "activity": "com.anonymous.sampleterminal/.MainActivity",
+  "serial": "emulator-5554",
+  "shape": "dual",
+  "journeyCase": "abandon",
+  "age": "37",
+  "startedAt": "2026-09-15T12:02:06.743Z",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "firstFailure": null,
+  "lastKnownGood": "S1-09",
+  "brokenBoundary": null,
+  "apkBinding": {
+    "installMode": "install-release",
+    "local": {
+      "path": "apps/terminal/assembly/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk",
+      "exists": true,
+      "bytes": 87920433,
+      "sha256": "9fe47967bb5824ee63e19f565af7a3218d3d116f3cbf31472b62dc21eec04077"
+    },
+    "installed": {
+      "paths": [
+        "/data/app/~~5QoSamvFu1kfpuK3HYGLjA==/com.anonymous.sampleterminal-1aezH1Y1_OE0bQWJwmODag==/base.apk"
+      ],
+      "path": "/data/app/~~5QoSamvFu1kfpuK3HYGLjA==/com.anonymous.sampleterminal-1aezH1Y1_OE0bQWJwmODag==/base.apk",
+      "bytes": 87920433,
+      "sha256": "9fe47967bb5824ee63e19f565af7a3218d3d116f3cbf31472b62dc21eec04077"
+    }
+  },
+  "steps": [
+    {
+      "name": "s1-01-anonymous",
+      "timestamp": "2026-09-15T12:02:15.930Z",
+      "expectedPrimaryIds": [
+        "sample.auth.login"
+      ],
+      "expectedPrimaryTexts": [
+        "店员登录"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "ui-base-render:layer-stack",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ],
+      "expectedSecondary": {
+        "partKey": "sample.desk.customer-welcome",
+        "texts": [
+          "欢迎，请等待店员操作"
+        ]
+      },
+      "observedSecondaryPartKey": "sample.desk.customer-welcome",
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    },
+    {
+      "name": "s1-02-invalid-login",
+      "timestamp": "2026-09-15T12:03:43.510Z",
+      "expectedPrimaryIds": [
+        "sample.auth.login",
+        "sample.auth.notice",
+        "sample.auth.notice:title",
+        "sample.auth.notice:message",
+        "sample.auth.notice:dismiss"
+      ],
+      "expectedPrimaryTexts": [
+        "登录失败",
+        "工号或密码不正确"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "ui-base-render:layer-stack",
+        "ui-base-render:layer-backdrop",
+        "ui-base-render:layer:sample.auth.notice",
+        "sample.auth.notice",
+        "sample.auth.notice:title",
+        "sample.auth.notice:message",
+        "sample.auth.notice:actions",
+        "sample.auth.notice:dismiss",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ],
+      "expectedSecondary": {
+        "partKey": "sample.desk.customer-welcome",
+        "texts": [
+          "欢迎，请等待店员操作"
+        ]
+      },
+      "observedSecondaryPartKey": "sample.desk.customer-welcome",
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    },
+    {
+      "name": "s1-03-member-list",
+      "timestamp": "2026-09-15T12:05:05.978Z",
+      "expectedPrimaryIds": [
+        "sample.desk.member-list"
+      ],
+      "expectedPrimaryTexts": [
+        "已登记会员"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.desk.member-list",
+        "sample.desk.member-list:title",
+        "sample.desk.member-list:scroll",
+        "sample.desk.member-list:empty",
+        "sample.desk.member-list:actions",
+        "sample.desk.member-list:empty-action",
+        "sample.desk.member-list:logout"
+      ],
+      "expectedSecondary": {
+        "partKey": "sample.desk.customer-welcome",
+        "texts": [
+          "欢迎，请等待店员操作"
+        ]
+      },
+      "observedSecondaryPartKey": "sample.desk.customer-welcome",
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    },
+    {
+      "name": "s1-04-member-form",
+      "timestamp": "2026-09-15T12:05:16.378Z",
+      "expectedPrimaryIds": [
+        "sample.desk.member-form"
+      ],
+      "expectedPrimaryTexts": [
+        "新增会员"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.desk.member-form",
+        "sample.desk.member-form:title",
+        "sample.desk.member-form:scroll",
+        "sample.desk.member-form:name-label",
+        "sample.desk.member-form:name",
+        "sample.desk.member-form:phone-label",
+        "sample.desk.member-form:phone",
+        "sample.desk.member-form:keyboard-alpha-probe-label",
+        "sample.desk.member-form:keyboard-alpha-probe",
+        "sample.desk.member-form:keyboard-alpha-probe-notice",
+        "sample.desk.member-form:keyboard-financial-probe-label",
+        "sample.desk.member-form:keyboard-financial-probe",
+        "sample.desk.member-form:keyboard-financial-probe-notice",
+        "sample.desk.member-form:actions",
+        "sample.desk.member-form:submit",
+        "sample.desk.member-form:cancel"
+      ],
+      "expectedSecondary": {
+        "partKey": "sample.desk.customer-welcome",
+        "texts": [
+          "欢迎，请等待店员操作"
+        ]
+      },
+      "observedSecondaryPartKey": "sample.desk.customer-welcome",
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    },
+    {
+      "name": "s1-05-customer-confirm",
+      "timestamp": "2026-09-15T12:06:14.981Z",
+      "expectedPrimaryIds": [
+        "sample.desk.member-list",
+        "sample.desk.waiting-confirm"
+      ],
+      "expectedPrimaryTexts": [
+        "已提交，等待顾客确认",
+        "Alice",
+        "01012345678"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.desk.member-list",
+        "ui-base-render:layer-stack",
+        "ui-base-render:layer-backdrop",
+        "ui-base-render:layer:sample.desk.waiting-confirm",
+        "sample.desk.waiting-confirm",
+        "sample.desk.waiting-confirm:message",
+        "sample.desk.waiting-confirm:member-name",
+        "sample.desk.waiting-confirm:member-phone",
+        "sample.desk.waiting-confirm:actions",
+        "sample.desk.waiting-confirm:withdraw",
+        "sample.desk.member-list:title",
+        "sample.desk.member-list:scroll",
+        "sample.desk.member-list:empty",
+        "sample.desk.member-list:actions",
+        "sample.desk.member-list:empty-action",
+        "sample.desk.member-list:logout"
+      ],
+      "expectedSecondary": {
+        "partKey": "sample.desk.customer-member",
+        "texts": [
+          "请确认登记",
+          "Alice",
+          "01012345678"
+        ]
+      },
+      "observedSecondaryPartKey": "sample.desk.customer-member",
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    },
+    {
+      "name": "s1-09-abandoned",
+      "timestamp": "2026-09-15T12:06:29.961Z",
+      "expectedPrimaryIds": [
+        "sample.desk.member-list"
+      ],
+      "expectedPrimaryTexts": [
+        "已登记会员"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.desk.member-list",
+        "sample.desk.member-list:title",
+        "sample.desk.member-list:scroll",
+        "sample.desk.member-list:empty",
+        "sample.desk.member-list:actions",
+        "sample.desk.member-list:empty-action",
+        "sample.desk.member-list:logout"
+      ],
+      "expectedSecondary": {
+        "partKey": "sample.desk.customer-welcome",
+        "texts": [
+          "欢迎，请等待店员操作"
+        ]
+      },
+      "observedSecondaryPartKey": "sample.desk.customer-welcome",
+      "displayIdentity": {
+        "logicalPrimary": {
+          "id": 0,
+          "name": "Built-in Screen",
+          "width": 2560,
+          "height": 1600,
+          "uniqueId": "local:4619827259835644672",
+          "flags": [
+            "FLAG_SECURE",
+            "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "logicalSecondary": {
+          "id": 2,
+          "name": "Emulator 2D Display",
+          "width": 1280,
+          "height": 720,
+          "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+          "flags": [
+            "FLAG_PRESENTATION",
+            "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+            "FLAG_TRUSTED"
+          ]
+        },
+        "surfacePrimary": {
+          "id": "4619827259835644672",
+          "name": "EMU_display_0",
+          "width": 2560,
+          "height": 1600
+        },
+        "surfaceSecondary": {
+          "id": "11529215047789101945",
+          "name": "Emulator 2D Display",
+          "width": null,
+          "height": null
+        }
+      }
+    }
+  ],
+  "display": {
+    "ids": [
+      0,
+      2
+    ],
+    "displays": [
+      {
+        "id": 0,
+        "name": "Built-in Screen",
+        "width": 2560,
+        "height": 1600,
+        "uniqueId": "local:4619827259835644672",
+        "flags": [
+          "FLAG_SECURE",
+          "FLAG_SUPPORTS_PROTECTED_BUFFERS",
+          "FLAG_TRUSTED"
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Emulator 2D Display",
+        "width": 1280,
+        "height": 720,
+        "uniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+        "flags": [
+          "FLAG_PRESENTATION",
+          "FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS",
+          "FLAG_TRUSTED"
+        ]
+      }
+    ],
+    "selectedPrimaryDisplayId": 0,
+    "selectedPrimaryName": "Built-in Screen",
+    "selectedPrimaryUniqueId": "local:4619827259835644672",
+    "selectedPrimaryWidth": 2560,
+    "selectedPrimaryHeight": 1600,
+    "selectedSecondaryDisplayId": 2,
+    "selectedSecondaryName": "Emulator 2D Display",
+    "selectedSecondaryUniqueId": "virtual:com.android.emulator.multidisplay:1234562",
+    "selectedSecondaryWidth": 1280,
+    "selectedSecondaryHeight": 720,
+    "hasSecondary": true
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "primaryDisplays": [
+      {
+        "id": "4619827259835644672",
+        "name": "EMU_display_0",
+        "width": 2560,
+        "height": 1600
+      }
+    ],
+    "virtualIds": [
+      "11529215047789101945"
+    ],
+    "virtualDisplays": [
+      {
+        "id": "11529215047789101945",
+        "name": "Emulator 2D Display",
+        "width": null,
+        "height": null
+      }
+    ],
+    "selectedPrimarySurfaceId": "4619827259835644672",
+    "selectedPrimarySurfaceName": "EMU_display_0",
+    "selectedPrimarySurfaceWidth": 2560,
+    "selectedPrimarySurfaceHeight": 1600,
+    "selectedSecondarySurfaceId": "11529215047789101945",
+    "selectedSecondarySurfaceName": "Emulator 2D Display"
+  },
+  "finishedAt": "2026-09-15T12:06:30.103Z"
+}

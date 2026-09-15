@@ -1,0 +1,204 @@
+{
+  "runId": "sample1-frozen-dual-normal-1789445414299",
+  "tool": "tools/terminal-sample2/run-sample1-frozen-journey.mjs",
+  "packageName": "com.anonymous.sampleterminal",
+  "activity": "com.anonymous.sampleterminal/.MainActivity",
+  "serial": "emulator-5554",
+  "shape": "dual",
+  "journeyCase": "normal",
+  "startedAt": "2026-09-15T04:10:14.299Z",
+  "business": "NOT_RUN",
+  "cleanup": "PASS",
+  "firstFailure": "UI resource did not reach expected state: sample.desk.member-list\nong-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[0,0][1280,720]\" /><node index=\"1\" text=\"\" resource-id=\"ui-base-render:layer-stack\" class=\"android.view.ViewGroup\" package=\"com.anonymous.sampleterminal\" content-desc=\"\" checkable=\"false\" checked=\"false\" clickable=\"false\" enabled=\"true\" focusable=\"false\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[0,0][1280,720]\" /><node index=\"2\" text=\"\" resource-id=\"ui-base-render:screen-ready-boundary\" class=\"android.view.ViewGroup\" package=\"com.anonymous.sampleterminal\" content-desc=\"\" checkable=\"false\" checked=\"false\" clickable=\"false\" enabled=\"true\" focusable=\"false\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[0,0][1280,720]\" /><node index=\"3\" text=\"\" resource-id=\"sample.desk.customer-welcome\" class=\"android.view.ViewGroup\" package=\"com.anonymous.sampleterminal\" content-desc=\"\" checkable=\"false\" checked=\"false\" clickable=\"false\" enabled=\"true\" focusable=\"false\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[0,0][1280,720]\" /><node index=\"4\" text=\"欢迎，请等待店员操作\" resource-id=\"sample.desk.customer-welcome:message\" class=\"android.widget.TextView\" package=\"com.anonymous.sampleterminal\" content-desc=\"\" checkable=\"false\" checked=\"false\" clickable=\"false\" enabled=\"true\" focusable=\"false\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[547,341][733,379]\" /></node></node></node></node></node></node></node></hierarchy>",
+  "lastKnownGood": "S1-05",
+  "brokenBoundary": "S1-05",
+  "steps": [
+    {
+      "name": "s1-01-anonymous",
+      "timestamp": "2026-09-15T04:10:19.844Z",
+      "expectedPrimaryIds": [
+        "sample.auth.login"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "ui-base-render:layer-stack",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ],
+      "secondaryExpectation": "sample.desk.customer-welcome:message = 欢迎，请等待店员操作"
+    },
+    {
+      "name": "s1-02-invalid-login",
+      "timestamp": "2026-09-15T04:11:45.387Z",
+      "expectedPrimaryIds": [
+        "sample.auth.login",
+        "sample.auth.notice",
+        "sample.auth.notice:title",
+        "sample.auth.notice:message",
+        "sample.auth.notice:dismiss"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "ui-base-render:layer-stack",
+        "ui-base-render:layer-backdrop",
+        "ui-base-render:layer:sample.auth.notice",
+        "sample.auth.notice",
+        "sample.auth.notice:title",
+        "sample.auth.notice:message",
+        "sample.auth.notice:actions",
+        "sample.auth.notice:dismiss",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ],
+      "secondaryExpectation": "sample.desk.customer-welcome:message unchanged"
+    },
+    {
+      "name": "s1-03-member-list",
+      "timestamp": "2026-09-15T04:13:05.023Z",
+      "expectedPrimaryIds": [
+        "sample.desk.member-list"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.desk.member-list",
+        "sample.desk.member-list:title",
+        "sample.desk.member-list:scroll",
+        "sample.desk.member-list:empty",
+        "sample.desk.member-list:actions",
+        "sample.desk.member-list:empty-action",
+        "sample.desk.member-list:logout"
+      ],
+      "secondaryExpectation": "sample.desk.customer-welcome:message = 欢迎，请等待店员操作"
+    },
+    {
+      "name": "s1-04-member-form",
+      "timestamp": "2026-09-15T04:13:13.347Z",
+      "expectedPrimaryIds": [
+        "sample.desk.member-form"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.desk.member-form",
+        "sample.desk.member-form:title",
+        "sample.desk.member-form:scroll",
+        "sample.desk.member-form:name-label",
+        "sample.desk.member-form:name",
+        "sample.desk.member-form:phone-label",
+        "sample.desk.member-form:phone",
+        "sample.desk.member-form:keyboard-alpha-probe-label",
+        "sample.desk.member-form:keyboard-alpha-probe",
+        "sample.desk.member-form:keyboard-alpha-probe-notice",
+        "sample.desk.member-form:keyboard-financial-probe-label",
+        "sample.desk.member-form:keyboard-financial-probe",
+        "sample.desk.member-form:keyboard-financial-probe-notice",
+        "sample.desk.member-form:actions",
+        "sample.desk.member-form:submit",
+        "sample.desk.member-form:cancel"
+      ],
+      "secondaryExpectation": "sample.desk.customer-welcome:message unchanged"
+    },
+    {
+      "name": "s1-05-customer-confirm",
+      "timestamp": "2026-09-15T04:14:09.374Z",
+      "expectedPrimaryIds": [
+        "sample.desk.member-list",
+        "sample.desk.waiting-confirm"
+      ],
+      "observedPrimaryIds": [
+        "com.anonymous.sampleterminal:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.desk.member-list",
+        "ui-base-render:layer-stack",
+        "ui-base-render:layer-backdrop",
+        "ui-base-render:layer:sample.desk.waiting-confirm",
+        "sample.desk.waiting-confirm",
+        "sample.desk.waiting-confirm:message",
+        "sample.desk.waiting-confirm:member-name",
+        "sample.desk.waiting-confirm:member-phone",
+        "sample.desk.waiting-confirm:actions",
+        "sample.desk.waiting-confirm:withdraw",
+        "sample.desk.member-list:title",
+        "sample.desk.member-list:scroll",
+        "sample.desk.member-list:empty",
+        "sample.desk.member-list:actions",
+        "sample.desk.member-list:empty-action",
+        "sample.desk.member-list:logout"
+      ],
+      "secondaryExpectation": "secondary screenshot is the customer-member confirmation Presentation"
+    }
+  ],
+  "display": {
+    "ids": [
+      0,
+      2
+    ],
+    "hasSecondary": true
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": [
+      "11529215047789101945"
+    ]
+  },
+  "finishedAt": "2026-09-15T04:14:32.131Z"
+}

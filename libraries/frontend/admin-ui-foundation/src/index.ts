@@ -14,6 +14,37 @@ export {AdminErrorBoundary} from './behavior/AdminErrorBoundary';
 export type {RefreshSignal} from './behavior/refreshSignal';
 export {createRefreshSignal, useRefreshVersion} from './behavior/refreshSignal';
 export {testId} from './automation/testId';
+export {
+  clearInvalidExtensionFilterFields,
+  extensionFilterFormName,
+  extensionFilterFormPath,
+  FLAT_EXTENSION_HOST_TYPES,
+  formatTypedExtensionValue,
+  isFlatExtensionHost,
+  orderTypedExtensionFields,
+  reconcileExtensionFilterValues,
+  serializeExtensionFilters,
+  type ExtensionFilterForm,
+  type ExtensionFilterDefinitionField,
+  type ExtensionFilterQueryValues,
+  type ExtensionFilterWire,
+  type TypedExtensionField,
+  type TypedExtensionFieldType,
+} from './extension/typedExtension';
+export {
+  createExtensionFilterStaleRecoveryGate,
+  createExtensionFilterRecoveryState,
+  isExtensionDefinitionRevisionAtLeast,
+  useExtensionFilterStaleRecovery,
+} from './extension/staleRecovery';
+export type {ExtensionFilterRecoveryToken, ExtensionFilterStaleRecoveryOptions} from './extension/staleRecovery';
+export {
+  ExtensionFilterInvalidSummary,
+  formatExtensionFilterInvalidFields,
+  readExtensionFilterInvalidFields,
+  useExtensionFilterInvalidFocus,
+} from './extension/invalidFilter';
+export type {ExtensionFilterDefinitionLabel, ExtensionFilterInvalidField} from './extension/invalidFilter';
 export {OverlayLockProvider, useDirtyFormLock, useOverlayLock, useShellInteractionLock} from './overlay/overlayLock';
 export {useDetailDrawer} from './list/useDetailDrawer';
 export type {

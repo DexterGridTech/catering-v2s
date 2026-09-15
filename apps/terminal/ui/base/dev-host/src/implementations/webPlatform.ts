@@ -45,8 +45,7 @@ export const createWebDevicePort = (
       completedAt: nowTimestampMs(),
     }),
   }
-  if (__DEV__) {
-    Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
+  Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
     value: Object.freeze({
       port: 'device',
       capabilities: Object.freeze([
@@ -62,7 +61,6 @@ export const createWebDevicePort = (
     writable: false,
     configurable: false,
     })
-  }
   return Object.freeze(port)
 }
 

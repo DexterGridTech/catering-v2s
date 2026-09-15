@@ -1,0 +1,13 @@
+{
+  "runId": "u8-1789437506565",
+  "tool": "tools/terminal-sample2/run-u8-release-cold-start.mjs",
+  "mode": "record-only-release-cold-start",
+  "failureMode": "wrong-primary-display",
+  "startedAt": "2026-09-15T01:58:26.565Z",
+  "phoneSerial": "emulator-5556",
+  "dualSerial": "emulator-5554",
+  "profiles": [
+    "sample-wallpaper-terminal"
+  ],
+  "build": "SKIPPED_BY_EXPLICIT_OPTION"
+}

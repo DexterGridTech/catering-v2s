@@ -1,0 +1,37 @@
+{
+  "runId": "u8-1789436453663",
+  "tool": "tools/terminal-sample2/run-u8-release-cold-start.mjs",
+  "mode": "record-only-release-cold-start",
+  "failureMode": "wrong-primary-display",
+  "startedAt": "2026-09-15T01:40:53.663Z",
+  "phoneSerial": "emulator-5556",
+  "dualSerial": "emulator-5554",
+  "profiles": [
+    "sample-terminal"
+  ],
+  "build": "SKIPPED_BY_EXPLICIT_OPTION",
+  "finishedAt": "2026-09-15T01:41:35.344Z",
+  "business": "FAIL",
+  "cleanup": "PASS",
+  "firstFailure": "wrong-primary-display did not render the startup failure page",
+  "records": [
+    {
+      "runId": "sample-terminal-mobile-1789436454449",
+      "app": "sample-terminal",
+      "serial": "emulator-5556",
+      "shape": "mobile",
+      "business": "PASS",
+      "cleanup": "PASS",
+      "firstFailure": null
+    },
+    {
+      "runId": "sample-terminal-dual-1789436460002",
+      "app": "sample-terminal",
+      "serial": "emulator-5554",
+      "shape": "dual",
+      "business": "NOT_RUN",
+      "cleanup": "PASS",
+      "firstFailure": "wrong-primary-display did not render the startup failure page"
+    }
+  ]
+}

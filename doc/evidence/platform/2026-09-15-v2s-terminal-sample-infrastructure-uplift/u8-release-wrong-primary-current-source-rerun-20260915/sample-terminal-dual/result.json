@@ -1,0 +1,77 @@
+{
+  "runId": "sample-terminal-dual-1789478705295",
+  "app": "sample-terminal",
+  "packageName": "com.anonymous.sampleterminal",
+  "serial": "emulator-5554",
+  "shape": "dual",
+  "failureMode": "wrong-primary-display",
+  "startedAt": "2026-09-15T13:25:05.295Z",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "firstFailure": null,
+  "display": {
+    "ids": [
+      0,
+      2
+    ],
+    "hasSecondary": true
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": [
+      "11529215047789101945"
+    ]
+  },
+  "timeline": [
+    {
+      "event": "failure-injection-selected",
+      "failureMode": "wrong-primary-display",
+      "activityDisplayId": 2,
+      "expectedPrimaryDisplayId": 0
+    },
+    {
+      "event": "before-launch",
+      "timestamp": "2026-09-15T13:25:05.592Z",
+      "splashVisible": false,
+      "packagePid": ""
+    },
+    {
+      "event": "after-launch-before-ready-poll",
+      "timestamp": "2026-09-15T13:25:06.107Z",
+      "millisecondsSinceLaunch": 491,
+      "splashVisible": true
+    },
+    {
+      "event": "ready-or-failure-observed",
+      "timestamp": "2026-09-15T13:25:10.190Z",
+      "millisecondsSinceLaunch": 4574,
+      "readyCandidate": false,
+      "readyHidden": false,
+      "startupComplete": false,
+      "failurePage": true,
+      "splashVisible": false,
+      "splashVisibleBeforeReady": true,
+      "preReadyCaptured": true
+    },
+    {
+      "event": "settled",
+      "timestamp": "2026-09-15T13:25:13.791Z",
+      "splashVisible": false,
+      "packagePid": "27878",
+      "secondarySurfaceObserved": true,
+      "primaryUiHasRnContent": false
+    },
+    {
+      "event": "startup-failure-order",
+      "failurePage": true,
+      "provenFailureAfterSplash": true,
+      "readyEventsAbsent": true,
+      "uiFailureIdentity": true,
+      "failurePageLogObserved": true,
+      "failureSurface": "11529215047789101945"
+    }
+  ],
+  "finishedAt": "2026-09-15T13:25:13.887Z"
+}

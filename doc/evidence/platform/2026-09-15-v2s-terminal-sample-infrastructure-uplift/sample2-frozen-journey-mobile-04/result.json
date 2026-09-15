@@ -1,0 +1,159 @@
+{
+  "runId": "sample2-frozen-mobile-1789439046782",
+  "tool": "tools/terminal-sample2/run-sample2-frozen-journey.mjs",
+  "packageName": "com.catering.v2s.terminal.samplewallpaper",
+  "activity": "com.catering.v2s.terminal.samplewallpaper/.MainActivity",
+  "serial": "emulator-5556",
+  "shape": "mobile",
+  "startedAt": "2026-09-15T02:24:06.782Z",
+  "business": "NOT_RUN",
+  "cleanup": "PASS",
+  "firstFailure": "UI resource did not reach expected state: sample.wallpaper.picker:options:w1\nget.TextView\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"\" checkable=\"false\" checked=\"false\" clickable=\"false\" enabled=\"true\" focusable=\"false\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,1038][638,1078]\" drawing-order=\"16\" hint=\"\" /><node index=\"16\" text=\"\" resource-id=\"sample.wallpaper.picker:confirm\" class=\"android.widget.Button\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"确认壁纸\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"false\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[48,1136][176,1232]\" drawing-order=\"17\" hint=\"\"><node index=\"0\" text=\"确认\" resource-id=\"\" class=\"android.widget.TextView\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"\" checkable=\"false\" checked=\"false\" clickable=\"false\" enabled=\"true\" focusable=\"false\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[80,1160][144,1208]\" drawing-order=\"1\" hint=\"\" /></node></node></node></node></node></node></node></node></node></node></node></node></node></hierarchy>",
+  "lastKnownGood": "picker-after-login",
+  "brokenBoundary": "picker-after-login",
+  "steps": [
+    {
+      "name": "anonymous",
+      "timestamp": "2026-09-15T02:24:12.949Z",
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:screen-ready-boundary",
+        "sample.auth.login",
+        "ui-base-render:layer-stack",
+        "sample.auth.login:scroll",
+        "sample.auth.login:title",
+        "sample.auth.login:operator-name-label",
+        "sample.auth.login:operator-name",
+        "sample.auth.login:passcode-label",
+        "sample.auth.login:passcode",
+        "sample.auth.login:submit"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": null
+        },
+        {
+          "id": "w1",
+          "node": null
+        },
+        {
+          "id": "w2",
+          "node": null
+        },
+        {
+          "id": "w3",
+          "node": null
+        }
+      ],
+      "backgroundPresent": false
+    },
+    {
+      "name": "picker-after-login",
+      "timestamp": "2026-09-15T02:24:27.571Z",
+      "resourceIds": [
+        "com.catering.v2s.terminal.samplewallpaper:id/action_bar_root",
+        "android:id/content",
+        "ui-base-render:surface-root",
+        "ui-base-render:surface-host-viewport",
+        "ui-base-render:surface-host-canvas",
+        "ui.base.input:surface-frame",
+        "ui.base.input:surface-content",
+        "terminal.admin:launcher",
+        "ui-base-render:screen-container",
+        "ui-base-render:layer-stack",
+        "ui-base-render:screen-ready-boundary",
+        "sample.wallpaper.picker",
+        "sample.wallpaper.picker:title",
+        "sample.wallpaper.picker:options:scroll",
+        "sample.wallpaper.picker:options",
+        "sample.wallpaper.picker:options:none:card",
+        "sample.wallpaper.picker:options:none",
+        "sample.wallpaper.picker:options:none:label",
+        "sample.wallpaper.picker:options:w1:card",
+        "sample.wallpaper.picker:options:w1",
+        "sample.wallpaper.picker:options:w1:thumbnail",
+        "sample.wallpaper.picker:options:w1:label",
+        "sample.wallpaper.picker:options:w2:card",
+        "sample.wallpaper.picker:options:w2",
+        "sample.wallpaper.picker:options:w2:thumbnail",
+        "sample.wallpaper.picker:options:w2:label",
+        "sample.wallpaper.picker:options:w3:card",
+        "sample.wallpaper.picker:options:w3",
+        "sample.wallpaper.picker:options:w3:thumbnail"
+      ],
+      "selected": [
+        {
+          "id": "none",
+          "node": {
+            "tag": "<node index=\"2\" text=\"\" resource-id=\"sample.wallpaper.picker:options:none\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"无壁纸\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"true\" bounds=\"[82,154][638,202]\" drawing-order=\"3\" hint=\"\">",
+            "left": 82,
+            "top": 154,
+            "right": 638,
+            "bottom": 202,
+            "selected": true,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w1",
+          "node": {
+            "tag": "<node index=\"5\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w1\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"山景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,358][638,406]\" drawing-order=\"6\" hint=\"\">",
+            "left": 82,
+            "top": 358,
+            "right": 638,
+            "bottom": 406,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w2",
+          "node": {
+            "tag": "<node index=\"9\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w2\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"湖景\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,778][638,826]\" drawing-order=\"10\" hint=\"\">",
+            "left": 82,
+            "top": 778,
+            "right": 638,
+            "bottom": 826,
+            "selected": false,
+            "enabled": true
+          }
+        },
+        {
+          "id": "w3",
+          "node": {
+            "tag": "<node index=\"13\" text=\"\" resource-id=\"sample.wallpaper.picker:options:w3\" class=\"android.widget.RadioButton\" package=\"com.catering.v2s.terminal.samplewallpaper\" content-desc=\"海滩\" checkable=\"false\" checked=\"false\" clickable=\"true\" enabled=\"true\" focusable=\"true\" focused=\"false\" scrollable=\"false\" long-clickable=\"false\" password=\"false\" selected=\"false\" bounds=\"[82,1198][638,1232]\" drawing-order=\"14\" hint=\"\">",
+            "left": 82,
+            "top": 1198,
+            "right": 638,
+            "bottom": 1232,
+            "selected": false,
+            "enabled": true
+          }
+        }
+      ],
+      "backgroundPresent": false
+    }
+  ],
+  "display": {
+    "ids": [
+      0
+    ],
+    "hasSecondary": false
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": []
+  },
+  "finishedAt": "2026-09-15T02:24:49.281Z"
+}

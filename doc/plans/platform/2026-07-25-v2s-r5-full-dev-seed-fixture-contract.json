@@ -175,6 +175,13 @@
     }
   },
   "stableFixtures": {
+    "extensionDefinitionRevisionChanges": [
+      {
+        "definitionKey": "ext-brand",
+        "fieldKey": "brandLevel",
+        "displaySuffix": "（已更新）"
+      }
+    ],
     "platformAdmins": [
       {"key": "pa-bootstrap", "login": "root", "displayName": "平台超级管理员", "builtIn": true, "status": "ENABLED", "channel": "DEV_BOOTSTRAP_SQL"},
       {"key": "pa-support", "login": "r5-support", "displayName": "平台支持管理员", "status": "ENABLED", "channel": "createPlatformAdmin"},
@@ -192,14 +199,34 @@
       {"key": "asset-expired", "usage": "GROUP_WORKSPACE_LOGO", "workspace": null, "status": "CLEANUP_PENDING"}
     ],
     "extensionDefinitions": [
-      {"key": "ext-brand", "workspace": "gw-aurora", "hostType": "BRAND", "fields": [{"key": "brandLevel", "label": "品牌等级"}, {"key": "brandOrigin", "label": "品牌来源"}]},
-      {"key": "ext-tenant", "workspace": "gw-aurora", "hostType": "TENANT", "fields": [{"key": "industryCode", "label": "行业编码"}]},
-      {"key": "ext-head-company", "workspace": "gw-aurora", "hostType": "HEAD_COMPANY", "fields": [{"key": "registrationRegion", "label": "注册地区"}]},
-      {"key": "ext-store", "workspace": "gw-aurora", "hostType": "STORE", "fields": [{"key": "floorLabel", "label": "所在楼层"}, {"key": "openingHours", "label": "营业时段"}]},
-      {"key": "ext-contract", "workspace": "gw-aurora", "hostType": "CONTRACT", "fields": [{"key": "settlementMode", "label": "结算方式"}]},
-      {"key": "ext-commercial-group", "workspace": "gw-aurora", "hostType": "COMMERCIAL_GROUP", "fields": [{"key": "groupTier", "label": "集团层级"}]},
-      {"key": "ext-region", "workspace": "gw-aurora", "hostType": "REGION", "fields": [{"key": "regionGrade", "label": "大区等级"}]},
-      {"key": "ext-project", "workspace": "gw-aurora", "hostType": "PROJECT", "fields": [{"key": "projectCategory", "label": "项目分类"}]}
+      {"key": "ext-brand", "workspace": "gw-aurora", "hostType": "BRAND", "fields": [
+        {"key": "brandLevel", "label": "品牌等级", "type": "TEXT", "listDisplay": true, "searchable": true, "required": false, "options": [], "status": "ENABLED"},
+        {"key": "brandOrigin", "label": "品牌来源", "type": "SELECT", "listDisplay": true, "searchable": false, "required": false, "options": ["直营", "联营"], "status": "ENABLED"},
+        {"key": "legacyTag", "label": "历史标记", "type": "TEXT", "listDisplay": false, "searchable": false, "required": false, "options": [], "status": "DISABLED"}
+      ]},
+      {"key": "ext-tenant", "workspace": "gw-aurora", "hostType": "TENANT", "fields": [
+        {"key": "industryCode", "label": "行业编码", "type": "SELECT", "listDisplay": false, "searchable": true, "required": false, "options": ["餐饮服务", "烘焙零售", "历史经营"], "status": "ENABLED"},
+        {"key": "tenantPriority", "label": "经营优先级", "type": "NUMBER", "listDisplay": true, "searchable": true, "required": false, "options": [], "status": "ENABLED"}
+      ]},
+      {"key": "ext-head-company", "workspace": "gw-aurora", "hostType": "HEAD_COMPANY", "fields": [
+        {"key": "registrationRegion", "label": "注册地区", "type": "TEXT", "listDisplay": true, "searchable": false, "required": false, "options": [], "status": "ENABLED"},
+        {"key": "establishedDate", "label": "成立日期", "type": "DATE", "listDisplay": false, "searchable": true, "required": false, "options": [], "status": "ENABLED"}
+      ]},
+      {"key": "ext-store", "workspace": "gw-aurora", "hostType": "STORE", "fields": [
+        {"key": "floorLabel", "label": "所在楼层", "type": "TEXT", "listDisplay": true, "searchable": true, "required": false, "options": [], "status": "ENABLED"},
+        {"key": "openingHours", "label": "营业时段", "type": "TEXT", "listDisplay": false, "searchable": false, "required": false, "options": [], "status": "ENABLED"},
+        {"key": "is24Hour", "label": "是否全天营业", "type": "BOOLEAN", "listDisplay": true, "searchable": true, "required": false, "options": [], "status": "ENABLED"},
+        {"key": "storeArea", "label": "门店面积", "type": "NUMBER", "listDisplay": false, "searchable": true, "required": false, "options": [], "status": "ENABLED"}
+      ]},
+      {"key": "ext-contract", "workspace": "gw-aurora", "hostType": "CONTRACT", "fields": [
+        {"key": "settlementMode", "label": "结算方式", "type": "SELECT", "listDisplay": true, "searchable": true, "required": false, "options": ["月结", "预付", "历史结算", "到期结算"], "status": "ENABLED"},
+        {"key": "signedDate", "label": "签署日期", "type": "DATE", "listDisplay": true, "searchable": false, "required": false, "options": [], "status": "ENABLED"},
+        {"key": "depositRate", "label": "保证金比例", "type": "NUMBER", "listDisplay": false, "searchable": true, "required": false, "options": [], "status": "ENABLED"},
+        {"key": "renewal", "label": "是否续签", "type": "BOOLEAN", "listDisplay": false, "searchable": false, "required": false, "options": [], "status": "ENABLED"}
+      ]},
+      {"key": "ext-commercial-group", "workspace": "gw-aurora", "hostType": "COMMERCIAL_GROUP", "fields": [{"key": "groupTier", "label": "集团层级", "type": "TEXT", "listDisplay": null, "searchable": null, "required": false, "options": [], "status": "ENABLED"}]},
+      {"key": "ext-region", "workspace": "gw-aurora", "hostType": "REGION", "fields": [{"key": "regionGrade", "label": "大区等级", "type": "TEXT", "listDisplay": null, "searchable": null, "required": false, "options": [], "status": "ENABLED"}]},
+      {"key": "ext-project", "workspace": "gw-aurora", "hostType": "PROJECT", "fields": [{"key": "projectCategory", "label": "项目分类", "type": "TEXT", "listDisplay": null, "searchable": null, "required": false, "options": [], "status": "ENABLED"}]}
     ],
     "organization": {
       "commercialGroups": [
@@ -226,18 +253,18 @@
       "brands": [
         {"key": "brand-tea", "code": "TEA", "name": "茶里", "status": "ENABLED", "extensionValues": {"brandLevel": "核心品牌", "brandOrigin": "直营"}},
         {"key": "brand-bake", "code": "BAKE", "name": "麦香", "status": "ENABLED", "extensionValues": {"brandLevel": "成长品牌", "brandOrigin": "联营"}},
-        {"key": "brand-disabled", "code": "OLD", "name": "旧品牌", "status": "DISABLED", "extensionValues": {"brandLevel": "历史品牌", "brandOrigin": "直营"}},
+        {"key": "brand-disabled", "code": "OLD", "name": "旧品牌", "status": "DISABLED", "extensionValues": {"brandLevel": "历史品牌", "brandOrigin": "直营", "legacyTag": null}},
         {"key": "brand-voided", "code": "VOID", "name": "作废品牌", "status": "VOIDED", "extensionValues": {"brandLevel": "历史品牌", "brandOrigin": "直营"}}
       ],
       "tenants": [
-        {"key": "tenant-a", "code": "TEN-A", "name": "极光餐饮一号", "status": "ENABLED", "extensionValues": {"industryCode": "餐饮服务"}},
-        {"key": "tenant-b", "code": "TEN-B", "name": "极光餐饮二号", "status": "ENABLED", "extensionValues": {"industryCode": "烘焙零售"}},
-        {"key": "tenant-disabled", "code": "TEN-X", "name": "停用经营主体", "status": "DISABLED", "extensionValues": {"industryCode": "历史经营"}},
+        {"key": "tenant-a", "code": "TEN-A", "name": "极光餐饮一号", "status": "ENABLED", "extensionValues": {"industryCode": "餐饮服务", "tenantPriority": 1}},
+        {"key": "tenant-b", "code": "TEN-B", "name": "极光餐饮二号", "status": "ENABLED", "extensionValues": {"industryCode": "烘焙零售", "tenantPriority": 2}},
+        {"key": "tenant-disabled", "code": "TEN-X", "name": "停用经营主体", "status": "DISABLED", "extensionValues": {"industryCode": "历史经营", "tenantPriority": 9}},
         {"key": "tenant-voided", "code": "TEN-V", "name": "作废经营主体", "status": "VOIDED", "extensionValues": {"industryCode": "历史经营"}}
       ],
       "headCompanies": [
-        {"key": "hc-a", "code": "HC-A", "name": "极光餐饮总公司", "status": "ENABLED", "extensionValues": {"registrationRegion": "上海"}},
-        {"key": "hc-b", "code": "HC-B", "name": "北辰餐饮总公司", "status": "ENABLED", "extensionValues": {"registrationRegion": "北京"}},
+        {"key": "hc-a", "code": "HC-A", "name": "极光餐饮总公司", "status": "ENABLED", "extensionValues": {"registrationRegion": "上海", "establishedDate": "2020-01-15"}},
+        {"key": "hc-b", "code": "HC-B", "name": "北辰餐饮总公司", "status": "ENABLED", "extensionValues": {"registrationRegion": "北京", "establishedDate": "2021-03-20"}},
         {"key": "hc-disabled", "code": "HC-X", "name": "停用总公司", "status": "DISABLED", "extensionValues": {"registrationRegion": "杭州"}},
         {"key": "hc-voided", "code": "HC-V", "name": "作废总公司", "status": "VOIDED", "extensionValues": {"registrationRegion": "历史"}}
       ],
@@ -248,11 +275,11 @@
         {"headCompany": "hc-disabled", "brand": "brand-tea"}
       ],
       "stores": [
-        {"key": "store-operating", "code": "S-OP", "name": "河畔茶里店", "project": "project-river", "tenant": "tenant-a", "brand": "brand-tea", "headCompany": "hc-a", "status": "ENABLED", "extensionValues": {"floorLabel": "一层", "openingHours": "08:00-22:00"}},
-        {"key": "store-preparing", "code": "S-PRE", "name": "河畔麦香筹备店", "project": "project-river", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-a", "status": "ENABLED", "extensionValues": {"floorLabel": "二层", "openingHours": "09:00-21:00"}},
-        {"key": "store-not-operating", "code": "S-NO", "name": "山景无合同店", "project": "project-hill", "tenant": "tenant-a", "brand": "brand-tea", "headCompany": "hc-a", "status": "ENABLED", "extensionValues": {"floorLabel": "地下一层", "openingHours": "10:00-20:00"}},
-        {"key": "store-disabled", "code": "S-DIS", "name": "山景停用店", "project": "project-hill", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-a", "status": "DISABLED", "extensionValues": {"floorLabel": "三层", "openingHours": "10:00-20:00"}},
-        {"key": "store-history", "code": "S-HIS", "name": "河畔历史合同店", "project": "project-river", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-b", "status": "ENABLED", "extensionValues": {"floorLabel": "一层", "openingHours": "07:30-21:30"}},
+        {"key": "store-operating", "code": "S-OP", "name": "河畔茶里店", "project": "project-river", "tenant": "tenant-a", "brand": "brand-tea", "headCompany": "hc-a", "status": "ENABLED", "extensionValues": {"floorLabel": "一层", "openingHours": "08:00-22:00", "is24Hour": false, "storeArea": 120}},
+        {"key": "store-preparing", "code": "S-PRE", "name": "河畔麦香筹备店", "project": "project-river", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-a", "status": "ENABLED", "extensionValues": {"floorLabel": "二层", "openingHours": "09:00-21:00", "is24Hour": false, "storeArea": 86}},
+        {"key": "store-not-operating", "code": "S-NO", "name": "山景无合同店", "project": "project-hill", "tenant": "tenant-a", "brand": "brand-tea", "headCompany": "hc-a", "status": "ENABLED", "extensionValues": {"floorLabel": "地下一层", "openingHours": "10:00-20:00", "is24Hour": true, "storeArea": 52}},
+        {"key": "store-disabled", "code": "S-DIS", "name": "山景停用店", "project": "project-hill", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-a", "status": "DISABLED", "extensionValues": {"floorLabel": "三层", "openingHours": "10:00-20:00", "is24Hour": false}},
+        {"key": "store-history", "code": "S-HIS", "name": "河畔历史合同店", "project": "project-river", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-b", "status": "ENABLED", "extensionValues": {"floorLabel": "一层", "openingHours": "07:30-21:30", "is24Hour": false, "storeArea": 110}},
         {"key": "store-voided", "code": "S-VOID", "name": "作废示范店", "project": "project-hill", "tenant": "tenant-a", "brand": "brand-tea", "headCompany": "hc-a", "status": "VOIDED", "extensionValues": {"floorLabel": "历史楼层", "openingHours": "不营业"}}
       ]
     },
@@ -315,11 +342,11 @@
       ]
     },
     "contracts": [
-      {"key": "contract-current-a", "contractNo": "R5-CUR-001", "store": "store-operating", "status": "ACTIVE", "effectiveFrom": "2026-07-01", "effectiveTo": "2026-08-31", "phaseNameSnapshot": "一期", "extensionValues": {"settlementMode": "月结"}, "items": [{"code": "SKU-TEA-01", "name": "招牌茶饮"}]},
-      {"key": "contract-current-b", "contractNo": "R5-CUR-002", "store": "store-operating", "status": "ACTIVE", "effectiveFrom": "2026-07-25", "effectiveTo": null, "extensionValues": {"settlementMode": "预付"}, "items": [{"code": "SKU-TEA-02", "name": "季节茶饮"}]},
-      {"key": "contract-future", "contractNo": "R5-FUT-001", "store": "store-preparing", "status": "ACTIVE", "effectiveFrom": "2026-08-01", "effectiveTo": "2026-12-31", "extensionValues": {"settlementMode": "月结"}, "items": [{"code": "SKU-BAKE-01", "name": "招牌面包"}]},
-      {"key": "contract-invalid", "contractNo": "R5-INV-001", "store": "store-history", "status": "INVALID", "effectiveFrom": "2026-05-01", "effectiveTo": "2026-06-30", "extensionValues": {"settlementMode": "历史结算"}, "items": [{"code": "SKU-HIS-01", "name": "历史商品"}]},
-      {"key": "contract-ended", "contractNo": "R5-END-001", "store": "store-history", "status": "ACTIVE", "effectiveFrom": "2026-01-01", "effectiveTo": "2026-07-24", "extensionValues": {"settlementMode": "到期结算"}, "items": [{"code": "SKU-HIS-02", "name": "到期商品"}]}
+      {"key": "contract-current-a", "contractNo": "R5-CUR-001", "store": "store-operating", "status": "ACTIVE", "effectiveFrom": "2026-07-01", "effectiveTo": "2026-08-31", "phaseNameSnapshot": "一期", "extensionValues": {"settlementMode": "月结", "signedDate": "2026-06-15", "depositRate": 0.2, "renewal": true}, "items": [{"code": "SKU-TEA-01", "name": "招牌茶饮"}]},
+      {"key": "contract-current-b", "contractNo": "R5-CUR-002", "store": "store-operating", "status": "ACTIVE", "effectiveFrom": "2026-07-25", "effectiveTo": null, "extensionValues": {"settlementMode": "预付", "signedDate": "2026-07-01", "depositRate": 0.1, "renewal": false}, "items": [{"code": "SKU-TEA-02", "name": "季节茶饮"}]},
+      {"key": "contract-future", "contractNo": "R5-FUT-001", "store": "store-preparing", "status": "ACTIVE", "effectiveFrom": "2026-08-01", "effectiveTo": "2026-12-31", "extensionValues": {"settlementMode": "月结", "signedDate": "2026-07-20", "depositRate": 0.15}, "items": [{"code": "SKU-BAKE-01", "name": "招牌面包"}]},
+      {"key": "contract-invalid", "contractNo": "R5-INV-001", "store": "store-history", "status": "INVALID", "effectiveFrom": "2026-05-01", "effectiveTo": "2026-06-30", "extensionValues": {"settlementMode": "历史结算", "signedDate": "2026-04-10", "renewal": false}, "items": [{"code": "SKU-HIS-01", "name": "历史商品"}]},
+      {"key": "contract-ended", "contractNo": "R5-END-001", "store": "store-history", "status": "ACTIVE", "effectiveFrom": "2026-01-01", "effectiveTo": "2026-07-24", "extensionValues": {"settlementMode": "到期结算", "depositRate": 0.05}, "items": [{"code": "SKU-HIS-02", "name": "到期商品"}]}
     ]
   },
   "expectedCounts": {

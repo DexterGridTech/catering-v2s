@@ -10,6 +10,7 @@ declare module 'react-test-renderer' {
     readonly root: {
       readonly findByProps: (props: Readonly<Record<string, unknown>>) => TestInstance
       readonly findAllByProps: (props: Readonly<Record<string, unknown>>) => readonly TestInstance[]
+      readonly findByType: (type: unknown) => TestInstance
       readonly findAll: (predicate: (instance: TestInstance) => boolean) => readonly TestInstance[]
       readonly findAllByType: (type: unknown) => readonly TestInstance[]
     }

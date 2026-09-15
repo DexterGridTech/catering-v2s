@@ -103,14 +103,14 @@ Codex 必须逐条完成：
 
 ## 8. Codex 对抗审查最多两轮
 
-`CODEX_ADVERSARIAL_REVIEW_MAX_TWO_ROUNDS` 防止审查变成无休止的自我对抗。对同一个 `REVIEW_CYCLE_ID + REVIEW_TARGET + 批准范围`：
+`CODEX_ADVERSARIAL_REVIEW_MAX_TWO_ROUNDS` 防止审查变成无休止的自我对抗。2026-09-14 起它只适用于 `REVIEW_TARGET=DESIGN`（agent 自己的需求、详设或实施计划）；实施完成后的 `REVIEW_TARGET=IMPLEMENTATION` 审查、实施过程中的对账与经 Dexter 中转的 Codex↔Claude review 不设轮次上限，见 `doc/decisions/2026-07-25-v2s-independent-subagent-adversarial-review-governance.md` 第 1 节。对同一个 DESIGN 的 `REVIEW_CYCLE_ID + REVIEW_TARGET + 批准范围`：
 
 1. Codex 对抗审查最多两轮。第一轮用于独立暴露盲点和补足信息；只有逐条辩证处置后仍有值得验证的实质不确定性，才进入第二轮定向复核；
 2. 第二轮是硬停止点。Codex 必须综合两轮 finding、owning source、反例、适用边界、成本与残余风险，自行给出 `GO / NO_GO / DEXTER_DECISION`，不得再召集第三个 Codex reviewer 或以“再确认一次”延长循环；
 3. 换 reviewer、换模型、改文件名、重算 hash、措辞调整或对同一方案做局部修订，都不重置轮次；
 4. 只有 `REVIEW_TARGET` 从 DESIGN 变为 IMPLEMENTATION，或 Dexter 实质改变产品 Journey、批准范围、授权边界，或 reviewed implementation/evidence 的目标发生实质变化，才可建立新的 `REVIEW_CYCLE_ID`；必须记录旧 cycle 与重置触发事实，不能用普通 finding 修复冒充新周期；
-5. 每份 Codex 自审必须声明 `REVIEW_CYCLE_ID`、`REVIEW_ROUND=1|2` 与 `REVIEW_ROUND_LIMIT=2`。第二轮还必须声明 `ROUND_FINAL_DECISION=SELF_DECIDED`，并把未决产品/权限事项直接交 Dexter，而不是继续内部审查；
-6. design 与 implementation 各自最多两轮；implementation target 不能借用 design 轮次豁免代码审查，也不能因代码反复修改无限重启 implementation 审查。
+5. 每份 DESIGN 审查产物必须声明 `REVIEW_CYCLE_ID`、`REVIEW_ROUND=1|2` 与 `REVIEW_ROUND_LIMIT=2`。第二轮还必须声明 `ROUND_FINAL_DECISION=SELF_DECIDED`，并把未决产品/权限事项直接交 Dexter，而不是继续内部审查；
+6. implementation 审查不设轮次上限，但必须依据详设文档，且不能借用 design 轮次豁免代码审查（Dexter 2026-09-14 修订）。
 
 两轮上限限制的是 Codex 自身对抗循环，不削弱必需的一手资料查证、测试、Claude 独立评审或 Dexter 裁决；它要求 Codex 在信息已足够时承担决策责任。
 
@@ -134,6 +134,6 @@ Dexter 看图后，才可以写 implementation-facing design。
 替代：每一轮须由 fresh 独立子 agent 在未读作者自审材料前，以证伪目标为立场形成 findings 与
 verdict。作者只能在 verdict 后执行第 7 节的辩证 intake 与处置，不得代写 verdict。
 
-第 8 节的两轮上限、cycle 重置条件和第二轮 `ROUND_FINAL_DECISION=SELF_DECIDED` 保持不变；
+第 8 节的两轮上限（2026-09-14 起只适用于 `REVIEW_TARGET=DESIGN`）、cycle 重置条件和第二轮 `ROUND_FINAL_DECISION=SELF_DECIDED` 保持不变；
 其收口依据改为独立子 agent findings 加作者的可审计 disposition。缺少最小输入清单、盲审声明、
 `reviewerKind=INDEPENDENT_SUBAGENT` 或输入清单文件时，该轮无效。已收口 cycle 不追溯重开。

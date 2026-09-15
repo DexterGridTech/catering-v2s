@@ -7,3 +7,5 @@ import {moduleName as displayContext} from '@catering-v2s/kernel-base-display-co
 export const dependencyModuleNames = [contracts, platformPorts, state, runtime, displayContext] as const;
 
 export const devDependencyModuleNames = [] as const;
+
+export const runtimeModuleDependencyNames = [runtime, displayContext] as const;

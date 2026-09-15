@@ -41,7 +41,7 @@ catalog 缺失、renderer 缺失和非法 props 使用不同的 fallback 语义�
 
 ## 公共面
 
-当前公共面固定为 27 项：3 项基础包元数据导出、9 项类型/焦点协议、1 个焦点 context、4 个渲染组件、2 个 catalog 工厂、7 个 hook
+当前公共面固定为 29 项：3 项基础包元数据导出、9 项类型/焦点协议、1 个焦点 context、5 个渲染组件、2 个 catalog 工厂、7 个 hook
 与 1 个 request helper，其中包括 `SurfaceFocusBoundaryContext`、`SurfaceRootContentFrame`、
 `useSurfaceFocusBoundary`、`useDispatchCommand`、`useUiVariable`、`dispatchWithRequestId`、
 `useRequestInFlight` 与 `useTrackedRequest`。焦点协议只允许 `suspend` 与 `restore` 两个 phase；
@@ -50,6 +50,10 @@ render 只发出生命周期事件，不读取 input 的 active field 或 keyboa
 `SurfaceRoot` 可选接收 `renderContentFrame({content})`。默认路径仍将 assembly children、
 `ScreenContainer` 与 `LayerStack` 放在一个 `flex: 1` content subtree；frame consumer 可以把这个
 content subtree 与自己的底部 sibling 放入同一 surface frame，而不让 render 反向依赖 input。
+当 assembly 在 `RenderProvider`/`SurfaceRoot` 建立前被拒绝时，App 只能把失败原因与物理
+`displayIndex` 交给 `StandaloneStartupFailurePage`；该页面仍由本包拥有固定 failure testID、
+文案与 alert 语义，并只对物理 PRIMARY 调用注入的 `NativeLoadingCapability.hideOnce('startup-failure')`。
+App 不得自绘第二套失败页或自行决定 splash 收起时机。
 测试接缝与内部 fallback/诊断实现不进入 `src/index.ts` 或 package publicExports。
 
 ## 目录与测试

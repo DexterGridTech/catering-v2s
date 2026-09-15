@@ -7,5 +7,6 @@ public record TenantPageMetadata(
     Long pageSize,
     Long total,
     BusinessEntitySortKey sort,
-    BusinessEntitySortDirection direction
+    BusinessEntitySortDirection direction,
+    Long definitionRevision
 ) {}

@@ -4,6 +4,7 @@ import {
   AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  formatTypedExtensionValue,
   NameCodeText,
   testId,
   ValidityStatus,
@@ -12,7 +13,7 @@ import {
 } from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
-import type {JsonValue, StoreContract} from '../../../app/api/generated/operations-edge';
+import type {StoreContract} from '../../../app/api/generated/operations-edge';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import {OperationsAuditHistoryModal} from '../../audit-history';
@@ -75,7 +76,7 @@ export function ContractDetailDrawer({
     .map(field => ({
       key: `extension-${field.key}`,
       label: field.label,
-      children: valueOf(selected?.extensionValues?.[field.key]),
+      children: formatTypedExtensionValue(selected?.extensionValues?.[field.key], field),
     }));
   const closeThen = (next: (value: StoreContract) => void) => {
     if (!latest.target) return;
@@ -220,8 +221,4 @@ export function ContractDetailDrawer({
       />
     </>
   );
-}
-
-function valueOf(value: JsonValue | undefined) {
-  return value === undefined || value === null || value === '' ? '—' : String(value);
 }

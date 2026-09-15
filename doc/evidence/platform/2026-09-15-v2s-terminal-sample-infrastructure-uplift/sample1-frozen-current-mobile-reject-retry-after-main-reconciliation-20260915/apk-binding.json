@@ -1,0 +1,17 @@
+{
+  "installMode": "install-release",
+  "local": {
+    "path": "apps/terminal/assembly/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk",
+    "exists": true,
+    "bytes": 87920433,
+    "sha256": "9fe47967bb5824ee63e19f565af7a3218d3d116f3cbf31472b62dc21eec04077"
+  },
+  "installed": {
+    "paths": [
+      "/data/app/~~rDUM20zFsDKJlOO8NubHOg==/com.anonymous.sampleterminal-pmrbKIQdIPQV9ozYacrT_Q==/base.apk"
+    ],
+    "path": "/data/app/~~rDUM20zFsDKJlOO8NubHOg==/com.anonymous.sampleterminal-pmrbKIQdIPQV9ozYacrT_Q==/base.apk",
+    "bytes": 87920433,
+    "sha256": "9fe47967bb5824ee63e19f565af7a3218d3d116f3cbf31472b62dc21eec04077"
+  }
+}

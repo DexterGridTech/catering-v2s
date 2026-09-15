@@ -1,0 +1,21 @@
+{
+  "name": "@catering-v2s/ui-base-feature-assembly",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
+  },
+  "dependencies": {
+    "@catering-v2s/kernel-base-contracts": "workspace:*",
+    "@catering-v2s/kernel-base-runtime": "workspace:*",
+    "@catering-v2s/kernel-base-state": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vitest": "4.1.10"
+  }
+}

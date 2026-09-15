@@ -14,12 +14,15 @@ import {
 } from './PlatformApi';
 import {platformStore} from '../state/PlatformStore';
 import {platformProblemFeedback, isPlatformProblemCode, type ProblemFeedback} from './platformProblemFeedback';
+import {readExtensionFilterInvalidFields, type ExtensionFilterInvalidField} from '@catering-v2s/admin-ui-foundation';
 
 export type PlatformApiProblem = ProblemFeedback & {
   type: string;
   status: number;
   errorCode: EdgeProblemCode | 'NETWORK_ERROR';
   correlationId: string;
+  currentDefinitionRevision?: number;
+  invalidFields?: ExtensionFilterInvalidField[];
   /** Contract fields are retained for diagnostics, never rendered by UI. */
   contractTitle?: string;
   contractDetail?: string;
@@ -109,6 +112,7 @@ function problem(error: unknown): PlatformApiProblem {
       detail?: unknown;
       errorCode?: unknown;
       correlationId?: unknown;
+      details?: unknown;
     };
     const errorCode = isPlatformProblemCode(value.errorCode) ? value.errorCode : 'PLATFORM_COMMON_RESULT_UNKNOWN';
     const feedback = platformProblemFeedback(errorCode);
@@ -118,6 +122,9 @@ function problem(error: unknown): PlatformApiProblem {
       status: typeof value.status === 'number' ? value.status : (responseStatus ?? 0),
       errorCode,
       correlationId: typeof value.correlationId === 'string' ? value.correlationId : '',
+      currentDefinitionRevision: readCurrentDefinitionRevision(value.details),
+      invalidFields:
+        errorCode === 'EXTENSION_FILTER_INVALID' ? readExtensionFilterInvalidFields(value.details) : undefined,
       contractTitle: typeof value.title === 'string' ? value.title : undefined,
       contractDetail: typeof value.detail === 'string' ? value.detail : undefined,
     };
@@ -138,6 +145,12 @@ function problem(error: unknown): PlatformApiProblem {
     errorCode: 'NETWORK_ERROR',
     correlationId: '',
   };
+}
+
+function readCurrentDefinitionRevision(details: unknown): number | undefined {
+  if (typeof details !== 'object' || details === null) return undefined;
+  const revision = (details as {currentDefinitionRevision?: unknown}).currentDefinitionRevision;
+  return typeof revision === 'number' && Number.isSafeInteger(revision) && revision >= 0 ? revision : undefined;
 }
 
 function transportResponseStatus(error: unknown): number | undefined {

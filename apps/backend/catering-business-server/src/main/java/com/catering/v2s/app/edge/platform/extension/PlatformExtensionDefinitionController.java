@@ -97,7 +97,9 @@ public final class PlatformExtensionDefinitionController {
             return new ExtensionDefinitionService.DraftField(
                     value.key(),
                     value.label(),
-                    value.type(),
+                    value.type().name(),
+                    value.listDisplay(),
+                    value.searchable(),
                     value.required(),
                     value.options(),
                     value.status(),

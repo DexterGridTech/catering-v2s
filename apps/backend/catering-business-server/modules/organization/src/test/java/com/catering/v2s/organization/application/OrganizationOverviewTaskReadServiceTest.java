@@ -6,12 +6,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.catering.v2s.organization.api.BusinessEntityTypes;
+import com.catering.v2s.organization.api.OrganizationEntityReadback;
+import com.catering.v2s.organization.api.OrganizationNodeReadback;
+import com.catering.v2s.organization.api.OrganizationNodeTypes;
 import java.sql.ResultSet;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -37,35 +43,155 @@ class OrganizationOverviewTaskReadServiceTest {
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
-    void platformOverviewPageUsesOneTypedCteProjectionForEveryCategory() throws Exception {
+    void platformOverviewPageUsesOwnerBoundedQueriesForHierarchyAndBusinessEntity() {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
-        ResultSet rows = mock(ResultSet.class);
-        when(rows.next()).thenReturn(true);
-        when(rows.getLong(1)).thenReturn(0L);
-        when(rows.getLong(2)).thenReturn(0L);
-        when(rows.getString(3)).thenReturn("[]");
-        when(rows.getString(4)).thenReturn("[]");
-        when(jdbc.query(anyString(), any(PreparedStatementSetter.class), any(ResultSetExtractor.class)))
-                .thenAnswer(invocation -> ((ResultSetExtractor) invocation.getArgument(2)).extractData(rows));
-        OrganizationOverviewTaskReadService service = new OrganizationOverviewTaskReadService(jdbc);
+        OrganizationHierarchyService hierarchy = mock(OrganizationHierarchyService.class);
+        BusinessEntityService entities = mock(BusinessEntityService.class);
+        when(jdbc.query(anyString(), any(RowMapper.class), any(Object[].class))).thenReturn(List.of());
+        when(hierarchy.page(any(UUID.class), anyString(), any(OrganizationHierarchyService.HierarchyQuery.class)))
+                .thenReturn(new OrganizationHierarchyService.HierarchyPage(1, 20, 0L, "UPDATED_AT", "DESC", List.of()));
+        when(entities.pageBusinessEntities(
+                        any(UUID.class),
+                        anyString(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        anyString(),
+                        anyString(),
+                        anyInt(),
+                        anyInt(),
+                        any(),
+                        any()))
+                .thenReturn(new BusinessEntityService.BusinessEntityPage(List.of(), 0L, 1, 20));
+        OrganizationOverviewTaskReadService service = new OrganizationOverviewTaskReadService(
+                jdbc, null, entities, hierarchy, null);
 
-        for (String category : List.of("HIERARCHY", "BUSINESS_ENTITY", "STORE")) {
-            var page = service.platformOverviewTaskPage(
-                    UUID.randomUUID(),
-                    "organization-test",
-                    category,
-                    new OrganizationOverviewTaskReadService.Query(
-                            null, null, null, null, null, null, null, null, null, null, "UPDATED_AT", "DESC"),
-                    1,
-                    20);
-            assertEquals(0L, page.metadata().total());
-        }
+        var hierarchyPage = service.platformOverviewTaskPage(
+                UUID.randomUUID(), "organization-test", "HIERARCHY", OrganizationOverviewTaskReadService.Query.empty(), 1, 20);
+        var businessEntityPage = service.platformOverviewTaskPage(
+                UUID.randomUUID(), "organization-test", "BUSINESS_ENTITY", OrganizationOverviewTaskReadService.Query.empty(), 1, 20);
 
-        verify(jdbc, org.mockito.Mockito.times(3))
-                .query(
-                        org.mockito.ArgumentMatchers.contains("WITH RECURSIVE params"),
-                        any(PreparedStatementSetter.class),
-                        any(ResultSetExtractor.class));
+        assertEquals(0L, hierarchyPage.metadata().total());
+        assertEquals(0L, businessEntityPage.metadata().total());
+        verify(hierarchy).page(any(UUID.class), anyString(), any(OrganizationHierarchyService.HierarchyQuery.class));
+        verify(entities).pageBusinessEntities(
+                any(UUID.class),
+                anyString(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                anyString(),
+                anyString(),
+                anyInt(),
+                anyInt(),
+                any(),
+                any());
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void platformOverviewSystemSourceReturnsNoBusinessEntityOrHierarchyRows() {
+        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+        OrganizationHierarchyService hierarchy = mock(OrganizationHierarchyService.class);
+        BusinessEntityService entities = mock(BusinessEntityService.class);
+        UUID workspaceUuid = UUID.randomUUID();
+        OrganizationNodeReadback hierarchyNode = new OrganizationNodeReadback(
+                UUID.randomUUID(),
+                workspaceUuid,
+                "organization-test",
+                null,
+                OrganizationNodeTypes.REGION,
+                "R-1",
+                "Region",
+                null,
+                "ENABLED",
+                1L,
+                1L,
+                2L,
+                List.of());
+        OrganizationEntityReadback brand = new OrganizationEntityReadback(
+                UUID.randomUUID(),
+                BusinessEntityTypes.BRAND,
+                workspaceUuid,
+                "organization-test",
+                "B-1",
+                "Brand",
+                null,
+                null,
+                "ENABLED",
+                1L,
+                null,
+                null,
+                null,
+                0L,
+                1L,
+                2L,
+                Map.of());
+        when(jdbc.query(anyString(), any(RowMapper.class), any(Object[].class))).thenReturn(List.of());
+        when(hierarchy.page(any(UUID.class), anyString(), any(OrganizationHierarchyService.HierarchyQuery.class)))
+                .thenReturn(new OrganizationHierarchyService.HierarchyPage(
+                        1,
+                        20,
+                        1L,
+                        "UPDATED_AT",
+                        "DESC",
+                        List.of(new OrganizationHierarchyService.HierarchyPageItem(hierarchyNode, List.of()))));
+        when(entities.pageBusinessEntities(
+                        any(UUID.class),
+                        anyString(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        anyString(),
+                        anyString(),
+                        anyInt(),
+                        anyInt(),
+                        any(),
+                        any()))
+                .thenReturn(new BusinessEntityService.BusinessEntityPage(
+                        List.of(new BusinessEntityService.BusinessEntityPageItem(BusinessEntityTypes.BRAND, brand)),
+                        1L,
+                        1,
+                        20,
+                        4L));
+        OrganizationOverviewTaskReadService service = new OrganizationOverviewTaskReadService(
+                jdbc, null, entities, hierarchy, null);
+        OrganizationOverviewTaskReadService.Query systemSource = new OrganizationOverviewTaskReadService.Query(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "SYSTEM",
+                null,
+                null,
+                null,
+                null,
+                "UPDATED_AT",
+                "DESC",
+                null,
+                null,
+                null);
+
+        var hierarchyPage = service.platformOverviewTaskPage(
+                workspaceUuid, "organization-test", "HIERARCHY", systemSource, 1, 20);
+        var businessEntityPage = service.platformOverviewTaskPage(
+                workspaceUuid, "organization-test", "BUSINESS_ENTITY", systemSource, 1, 20);
+
+        assertEquals(0L, hierarchyPage.metadata().total());
+        assertTrue(hierarchyPage.items().isEmpty());
+        assertEquals(0L, businessEntityPage.metadata().total());
+        assertTrue(businessEntityPage.items().isEmpty());
     }
 
     @Test
@@ -140,6 +266,50 @@ class OrganizationOverviewTaskReadServiceTest {
                                 + "target.extension_values, target.project_id, target.project_code, "
                                 + "target.project_name, target.brand_id, target.brand_code, target.brand_name, "
                                 + "target.tenant_id, target.tenant_code, target.tenant_name, target.head_id, "
-                                + "target.head_code, target.head_name, array_agg(ancestry.id")));
+                + "target.head_code, target.head_name, array_agg(ancestry.id")));
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void storeDetailProjectionIncludesExtensionValuesForItsRowMapper() {
+        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+        when(jdbc.query(anyString(), any(PreparedStatementSetter.class), any(ResultSetExtractor.class)))
+                .thenAnswer(invocation -> {
+                    ResultSet rows = mock(ResultSet.class);
+                    when(rows.next()).thenReturn(false);
+                    return ((ResultSetExtractor) invocation.getArgument(2)).extractData(rows);
+                });
+        OrganizationOverviewTaskReadService service = new OrganizationOverviewTaskReadService(jdbc);
+
+        assertThrows(
+                BusinessEntityService.OrganizationNotFoundException.class,
+                () -> service.detail(UUID.randomUUID(), "organization-test", "STORE", UUID.randomUUID()));
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbc).query(sqlCaptor.capture(), any(PreparedStatementSetter.class), any(ResultSetExtractor.class));
+        assertTrue(sqlCaptor.getValue().replaceAll("\\s+", " ").contains(
+                "target.extension_rule_revision, target.created_at_epoch_millis, target.updated_at_epoch_millis, "
+                        + "target.notes, target.extension_values, "
+                        + "target.project_id, target.project_code, target.project_name"));
+    }
+
+    @Test
+    void storeOverviewQueryAcceptsVoidedStoreStatus() {
+        var query = new OrganizationOverviewTaskReadService.Query(
+                null, null, null, null, null, "VOIDED", null, null, null, null, "UPDATED_AT", "DESC");
+
+        var validated = query.validated(com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.STORE);
+
+        assertEquals("VOIDED", validated.status());
+    }
+
+    @Test
+    void hierarchyOverviewQueryStillRejectsVoidedStatus() {
+        var query = new OrganizationOverviewTaskReadService.Query(
+                null, null, null, null, null, "VOIDED", null, null, null, null, "UPDATED_AT", "DESC");
+
+        assertThrows(
+                OrganizationOverviewTaskReadService.QueryValidationException.class,
+                () -> query.validated("HIERARCHY"));
     }
 }

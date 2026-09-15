@@ -1,0 +1,19 @@
+Display 4619827259835644672
+    port=0
+    connectionType=Internal
+    colorModes=
+        ColorMode::NATIVE
+    deviceProductInfo={name="EMU_display_0", manufacturerPnpId=GGL, productId=1, manufactureWeek=27, manufactureYear=2006, relativeAddress=[]}
+    name="EMU_display_0"
+    powerMode=On
+    optimizationPolicy=optimizeForPerformance
+    renderRate=60.00 Hz
+    activeMode={id=0, hwcId=0, resolution=720x1280, vsyncRate=60.00 Hz, dpi=320.00x320.00, group=0, vrrConfig=N/A, supportedHdrTypes=SYSTEM}
+    displayModes=
+        {id=0, hwcId=0, resolution=720x1280, vsyncRate=60.00 Hz, dpi=320.00x320.00, group=0, vrrConfig=N/A, supportedHdrTypes=SYSTEM}
+    displayManagerPolicy={defaultModeId=0, allowGroupSwitching=false, primaryRanges={physical=[0.00 Hz, inf Hz], render=[0.00 Hz, 60.00 Hz]}, appRequestRanges={physical=[0.00 Hz, inf Hz], render=[0.00 Hz, inf Hz]} idleScreenConfig=nullptr}
+    frameRateOverrideConfig=Enabled
+    idleTimer=
+        interval=nullopt
+        controller=Platform
+

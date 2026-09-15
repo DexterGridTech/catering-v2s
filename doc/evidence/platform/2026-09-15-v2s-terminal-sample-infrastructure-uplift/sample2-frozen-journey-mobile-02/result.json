@@ -1,0 +1,28 @@
+{
+  "runId": "sample2-frozen-mobile-1789438940394",
+  "tool": "tools/terminal-sample2/run-sample2-frozen-journey.mjs",
+  "packageName": "com.catering.v2s.terminal.samplewallpaper",
+  "activity": "com.catering.v2s.terminal.samplewallpaper/.MainActivity",
+  "serial": "emulator-5556",
+  "shape": "mobile",
+  "startedAt": "2026-09-15T02:22:20.394Z",
+  "business": "NOT_RUN",
+  "cleanup": "FAIL",
+  "firstFailure": "anonymous-primary screenshot is empty",
+  "lastKnownGood": null,
+  "brokenBoundary": "before-first-known-good",
+  "steps": [],
+  "display": {
+    "ids": [
+      0
+    ],
+    "hasSecondary": false
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": []
+  },
+  "finishedAt": "2026-09-15T02:22:26.625Z"
+}

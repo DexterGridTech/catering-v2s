@@ -1,19 +1,26 @@
-import {ProTable} from '@ant-design/pro-components';
+import {ProTable, type ProFormInstance} from '@ant-design/pro-components';
 import {Alert, Button, Card, Descriptions, Empty, Input, Space, Spin, Tabs, Tag, Tree} from 'antd';
 import {
   adminHierarchyCollator,
   adminListState,
+  clearInvalidExtensionFilterFields,
   contextScopedQueryArgs,
+  createExtensionFilterRecoveryState,
   createPageQueryIdentity,
+  ExtensionFilterInvalidSummary,
+  isExtensionDefinitionRevisionAtLeast,
+  reconcileExtensionFilterValues,
   NameCodeText,
   testId,
   ValidityStatus,
+  useExtensionFilterInvalidFocus,
+  useExtensionFilterStaleRecovery,
   useAsyncGenerationGuard,
   useDetailDrawer,
   useOverlayLock,
   usePageQuery,
 } from '@catering-v2s/admin-ui-foundation';
-import {useMemo, useState, type ReactNode} from 'react';
+import {useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {WorkspaceScope} from '../../../app/state/WorkspaceScope';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {PLATFORM_ADMIN_OPERATION_IDS} from '../../../app/api/generated/platform-edge';
@@ -43,6 +50,11 @@ import {
 import {PlatformAuditHistoryModal, type PlatformAuditTarget} from '../../audit-history';
 import {organizationOverviewExtensionItems} from './OrganizationOverviewPresentation';
 import {usePlatformOrganizationCandidates} from '../../../app/queries/usePlatformOrganizationCandidates';
+import {extensionListAndSearchColumns, extensionQueryValues} from './extensionList';
+import {
+  extensionListInvalidSummaryTestId,
+  extensionListRecoveryNoticeTestId,
+} from '../../../app/automation/extensionListTestIds';
 
 type ContractFilters = {
   contractNo?: string;
@@ -51,6 +63,19 @@ type ContractFilters = {
   tenantId?: string;
   itemCode?: string;
   status?: StoreContractStatus;
+  extensionFilterValues?: Record<string, unknown>;
+};
+
+type ExtensionRecoveryFlags = {
+  scopeKey: string;
+  inProgress: boolean;
+  failed: boolean;
+};
+
+const EMPTY_EXTENSION_RECOVERY_FLAGS: ExtensionRecoveryFlags = {
+  scopeKey: '',
+  inProgress: false,
+  failed: false,
 };
 
 const organizationTabs: OrganizationTab[] = [
@@ -161,6 +186,20 @@ function PlatformReadForWorkspace({
   const [contractFilters, setContractFilters] = useState<ContractFilters>({});
   const [contractStoreSearch, setContractStoreSearch] = useState('');
   const [contractTenantSearch, setContractTenantSearch] = useState('');
+  const [extensionRecoveryNoticeScope, setExtensionRecoveryNoticeScope] = useState<string>();
+  const [organizationExtensionRecoveryFlags, setOrganizationExtensionRecoveryFlags] =
+    useState<ExtensionRecoveryFlags>(EMPTY_EXTENSION_RECOVERY_FLAGS);
+  const [contractExtensionRecoveryFlags, setContractExtensionRecoveryFlags] =
+    useState<ExtensionRecoveryFlags>(EMPTY_EXTENSION_RECOVERY_FLAGS);
+  const organizationFilterFormRef = useRef<ProFormInstance | undefined>(undefined);
+  const contractFilterFormRef = useRef<ProFormInstance | undefined>(undefined);
+  const invalidFilterProblemRef = useRef<HTMLDivElement | null>(null);
+  const organizationRecoveryState = useRef<ReturnType<typeof createExtensionFilterRecoveryState> | undefined>(
+    undefined,
+  );
+  if (!organizationRecoveryState.current) organizationRecoveryState.current = createExtensionFilterRecoveryState();
+  const contractRecoveryState = useRef<ReturnType<typeof createExtensionFilterRecoveryState> | undefined>(undefined);
+  if (!contractRecoveryState.current) contractRecoveryState.current = createExtensionFilterRecoveryState();
   const [contractSort, setContractSort] = useState<StoreContractSortKey>('UPDATED_AT');
   const [contractDirection, setContractDirection] = useState<StoreContractSortDirection>('DESC');
   const [commandProblem, setProblem] = useState<PlatformApiProblem>();
@@ -177,6 +216,39 @@ function PlatformReadForWorkspace({
   const legalEntityTab = tab.category === 'BUSINESS_ENTITY' && (tab.type === 'TENANT' || tab.type === 'HEAD_COMPANY');
   const organizationTabState = organizationTabStates[tab.key] ?? defaultOrganizationTabQueryState;
   const context = useMemo(() => contextScopedQueryArgs({}, {groupWorkspaceKey}), [groupWorkspaceKey]);
+  const organizationRecoveryScopeKey = `platform-organization:${context.groupWorkspaceKey}:${tab.key}`;
+  const contractRecoveryScopeKey = `platform-contract:${context.groupWorkspaceKey}`;
+  organizationRecoveryState.current.enterScope(organizationRecoveryScopeKey);
+  contractRecoveryState.current.enterScope(contractRecoveryScopeKey);
+  const currentOrganizationRecoveryFlags =
+    organizationExtensionRecoveryFlags.scopeKey === organizationRecoveryScopeKey
+      ? organizationExtensionRecoveryFlags
+      : EMPTY_EXTENSION_RECOVERY_FLAGS;
+  const currentContractRecoveryFlags =
+    contractExtensionRecoveryFlags.scopeKey === contractRecoveryScopeKey
+      ? contractExtensionRecoveryFlags
+      : EMPTY_EXTENSION_RECOVERY_FLAGS;
+  const organizationExtensionRecoveryInProgress = currentOrganizationRecoveryFlags.inProgress;
+  const contractExtensionRecoveryInProgress = currentContractRecoveryFlags.inProgress;
+  const organizationExtensionRecoveryFailed = currentOrganizationRecoveryFlags.failed;
+  const contractExtensionRecoveryFailed = currentContractRecoveryFlags.failed;
+  const organizationExtensionRecoveryBlocked =
+    organizationExtensionRecoveryInProgress || organizationExtensionRecoveryFailed;
+  const contractExtensionRecoveryBlocked = contractExtensionRecoveryInProgress || contractExtensionRecoveryFailed;
+  useEffect(() => {
+    organizationRecoveryState.current?.enterScope(organizationRecoveryScopeKey);
+    setOrganizationExtensionRecoveryFlags({scopeKey: organizationRecoveryScopeKey, inProgress: false, failed: false});
+    setExtensionRecoveryNoticeScope(current =>
+      current?.startsWith('organization:') && current !== `organization:${tab.key}` ? undefined : current,
+    );
+    return () => organizationRecoveryState.current?.invalidate(organizationRecoveryScopeKey);
+  }, [organizationRecoveryScopeKey, tab.key]);
+  useEffect(() => {
+    contractRecoveryState.current?.enterScope(contractRecoveryScopeKey);
+    setContractExtensionRecoveryFlags({scopeKey: contractRecoveryScopeKey, inProgress: false, failed: false});
+    setExtensionRecoveryNoticeScope(current => (current === 'contracts' ? undefined : current));
+    return () => contractRecoveryState.current?.invalidate(contractRecoveryScopeKey);
+  }, [contractRecoveryScopeKey]);
   const organizationQueryIdentity = useMemo(
     () =>
       createPageQueryIdentity({
@@ -205,6 +277,28 @@ function PlatformReadForWorkspace({
     [context.groupWorkspaceKey, contractDirection, contractFilters, contractSort],
   );
   const contractPagination = usePageQuery({queryIdentity: contractQueryIdentity, initialPageSize: 10});
+  const organizationDefinitionRequest = useMemo(
+    () =>
+      platformAdminRtkRequest.getExtensionDefinition(
+        {groupWorkspaceKey: context.groupWorkspaceKey, entityType: tab.type ?? ''},
+        {},
+      ),
+    [context.groupWorkspaceKey, tab.type],
+  );
+  const contractDefinitionRequest = useMemo(
+    () =>
+      platformAdminRtkRequest.getExtensionDefinition(
+        {groupWorkspaceKey: context.groupWorkspaceKey, entityType: 'CONTRACT'},
+        {},
+      ),
+    [context.groupWorkspaceKey],
+  );
+  const organizationDefinitionQuery = platformRtk.useGetExtensionDefinitionQuery(organizationDefinitionRequest, {
+    skip: kind !== 'organization' || tab.category === 'HIERARCHY' || !tab.type,
+  });
+  const contractDefinitionQuery = platformRtk.useGetExtensionDefinitionQuery(contractDefinitionRequest, {
+    skip: kind !== 'contracts',
+  });
   const workspaceDetailRequest = useMemo(
     () => platformAdminRtkRequest.getPlatformGroupWorkspaceDetail({groupWorkspaceKey: context.groupWorkspaceKey}, {}),
     [context.groupWorkspaceKey],
@@ -221,6 +315,7 @@ function PlatformReadForWorkspace({
             organizationPagination.pageSize,
             organizationTabState.sort,
             organizationTabState.direction,
+            organizationDefinitionQuery.currentData,
           ),
         },
       ),
@@ -230,10 +325,11 @@ function PlatformReadForWorkspace({
       organizationPagination.pageSize,
       organizationTabState,
       tab,
+      organizationDefinitionQuery.currentData,
     ],
   );
   const contractRequest = useMemo(() => {
-    const {storeId, tenantId, ...restFilters} = contractFilters;
+    const {storeId, tenantId, extensionFilterValues: _extensionFilterValues, ...restFilters} = contractFilters;
     return platformAdminRtkRequest.getPlatformContractOverviewPage(
       {groupWorkspaceKey: context.groupWorkspaceKey},
       {
@@ -241,6 +337,7 @@ function PlatformReadForWorkspace({
           ...restFilters,
           ...(storeId ? {storeId: wireUuid(storeId)} : {}),
           ...(tenantId ? {tenantId: wireUuid(tenantId)} : {}),
+          ...extensionQueryValues(contractDefinitionQuery.currentData, contractFilters.extensionFilterValues),
           sort: contractSort,
           direction: contractDirection,
           page: contractPagination.page,
@@ -255,6 +352,7 @@ function PlatformReadForWorkspace({
     contractPagination.page,
     contractPagination.pageSize,
     contractSort,
+    contractDefinitionQuery.currentData,
   ]);
   const treeRequest = useMemo(
     () =>
@@ -270,7 +368,7 @@ function PlatformReadForWorkspace({
     [context.groupWorkspaceKey],
   );
   const organizationQuery = platformRtk.useGetPlatformOrganizationOverviewPageQuery(organizationRequest, {
-    skip: kind !== 'organization' || tab.category === 'HIERARCHY',
+    skip: kind !== 'organization' || tab.category === 'HIERARCHY' || organizationExtensionRecoveryBlocked,
   });
   const workspaceDetailQuery = platformRtk.useGetPlatformGroupWorkspaceDetailQuery(workspaceDetailRequest, {
     skip: kind !== 'organization' || tab.category !== 'HIERARCHY',
@@ -286,8 +384,146 @@ function PlatformReadForWorkspace({
     skip: kind !== 'organization' || tab.category !== 'HIERARCHY' || !workspaceIsInitialized,
   });
   const contractQuery = platformRtk.useGetPlatformContractOverviewPageQuery(contractRequest, {
-    skip: kind !== 'contracts',
+    skip: kind !== 'contracts' || contractExtensionRecoveryBlocked,
   });
+  const organizationListProblem = organizationQuery.error ? platformProblemOf(organizationQuery.error) : undefined;
+  const contractListProblem = contractQuery.error ? platformProblemOf(contractQuery.error) : undefined;
+  const invalidFilterProblem =
+    kind === 'contracts'
+      ? contractListProblem?.errorCode === 'EXTENSION_FILTER_INVALID'
+        ? contractListProblem
+        : undefined
+      : organizationListProblem?.errorCode === 'EXTENSION_FILTER_INVALID'
+        ? organizationListProblem
+        : undefined;
+  const invalidFilterDefinitions =
+    kind === 'contracts'
+      ? contractDefinitionQuery.currentData?.definitions
+      : organizationDefinitionQuery.currentData?.definitions;
+  useExtensionFilterInvalidFocus(invalidFilterProblemRef, invalidFilterProblem?.invalidFields);
+  if (organizationListProblem?.errorCode === 'EXTENSION_DEFINITION_REVISION_STALE') {
+    organizationRecoveryState.current!.rememberStaleRevision(
+      organizationRecoveryScopeKey,
+      organizationListProblem.currentDefinitionRevision,
+    );
+  }
+  if (contractListProblem?.errorCode === 'EXTENSION_DEFINITION_REVISION_STALE') {
+    contractRecoveryState.current!.rememberStaleRevision(
+      contractRecoveryScopeKey,
+      contractListProblem.currentDefinitionRevision,
+    );
+  }
+  const recoverOrganizationExtensionFilters = () => {
+    const recovery = organizationRecoveryState.current!.begin(
+      organizationRecoveryScopeKey,
+      organizationListProblem?.currentDefinitionRevision,
+    );
+    const isCurrentRecovery = () => organizationRecoveryState.current!.isCurrent(recovery);
+    const previousFields = organizationDefinitionQuery.currentData?.definitions;
+    const previousValues = organizationTabState.filters.extensionFilterValues;
+    const failRecovery = () => {
+      if (!isCurrentRecovery()) return;
+      setOrganizationExtensionRecoveryFlags({scopeKey: recovery.scopeKey, inProgress: false, failed: true});
+    };
+    setExtensionRecoveryNoticeScope(undefined);
+    setOrganizationExtensionRecoveryFlags({scopeKey: recovery.scopeKey, inProgress: true, failed: false});
+    void organizationDefinitionQuery
+      .refetch()
+      .then(result => {
+        if (!isCurrentRecovery()) return;
+        const definition = result.data;
+        if (!definition || !isExtensionDefinitionRevisionAtLeast(definition, recovery.expectedRevision)) {
+          failRecovery();
+          return;
+        }
+        const retained = reconcileExtensionFilterValues(
+          organizationFilterFormRef.current,
+          previousFields,
+          definition.definitions,
+          previousValues,
+        );
+        setOrganizationTabStates(current => {
+          const state = current[tab.key] ?? defaultOrganizationTabQueryState;
+          const {extensionFilterValues: _extensionFilterValues, ...coreFilters} = state.filters;
+          return updateOrganizationTabQueryState(current, tab.key, {
+            filters: Object.keys(retained).length ? {...coreFilters, extensionFilterValues: retained} : coreFilters,
+          });
+        });
+        organizationPagination.setPage(1);
+        setExtensionRecoveryNoticeScope(`organization:${tab.key}`);
+        setOrganizationExtensionRecoveryFlags({scopeKey: recovery.scopeKey, inProgress: false, failed: false});
+      })
+      .catch(failRecovery);
+  };
+  useExtensionFilterStaleRecovery({
+    scopeKey: organizationRecoveryScopeKey,
+    stale:
+      kind === 'organization' &&
+      tab.category !== 'HIERARCHY' &&
+      organizationListProblem?.errorCode === 'EXTENSION_DEFINITION_REVISION_STALE',
+    staleRevision: organizationListProblem?.currentDefinitionRevision,
+    recover: recoverOrganizationExtensionFilters,
+  });
+  const recoverContractExtensionFilters = () => {
+    const recovery = contractRecoveryState.current!.begin(
+      contractRecoveryScopeKey,
+      contractListProblem?.currentDefinitionRevision,
+    );
+    const isCurrentRecovery = () => contractRecoveryState.current!.isCurrent(recovery);
+    const previousFields = contractDefinitionQuery.currentData?.definitions;
+    const previousValues = contractFilters.extensionFilterValues;
+    const failRecovery = () => {
+      if (!isCurrentRecovery()) return;
+      setContractExtensionRecoveryFlags({scopeKey: recovery.scopeKey, inProgress: false, failed: true});
+    };
+    setExtensionRecoveryNoticeScope(undefined);
+    setContractExtensionRecoveryFlags({scopeKey: recovery.scopeKey, inProgress: true, failed: false});
+    void contractDefinitionQuery
+      .refetch()
+      .then(result => {
+        if (!isCurrentRecovery()) return;
+        const definition = result.data;
+        if (!definition || !isExtensionDefinitionRevisionAtLeast(definition, recovery.expectedRevision)) {
+          failRecovery();
+          return;
+        }
+        const retained = reconcileExtensionFilterValues(
+          contractFilterFormRef.current,
+          previousFields,
+          definition.definitions,
+          previousValues,
+        );
+        setContractFilters(current => {
+          const {extensionFilterValues: _extensionFilterValues, ...coreFilters} = current;
+          return Object.keys(retained).length ? {...coreFilters, extensionFilterValues: retained} : coreFilters;
+        });
+        contractPagination.setPage(1);
+        setExtensionRecoveryNoticeScope('contracts');
+        setContractExtensionRecoveryFlags({scopeKey: recovery.scopeKey, inProgress: false, failed: false});
+      })
+      .catch(failRecovery);
+  };
+  useExtensionFilterStaleRecovery({
+    scopeKey: contractRecoveryScopeKey,
+    stale: kind === 'contracts' && contractListProblem?.errorCode === 'EXTENSION_DEFINITION_REVISION_STALE',
+    staleRevision: contractListProblem?.currentDefinitionRevision,
+    recover: recoverContractExtensionFilters,
+  });
+  const clearInvalidFilterFields = () => {
+    if (kind === 'contracts') {
+      clearInvalidExtensionFilterFields(
+        contractFilterFormRef.current,
+        contractDefinitionQuery.currentData?.definitions,
+        invalidFilterProblem?.invalidFields,
+      );
+      return;
+    }
+    clearInvalidExtensionFilterFields(
+      organizationFilterFormRef.current,
+      organizationDefinitionQuery.currentData?.definitions,
+      invalidFilterProblem?.invalidFields,
+    );
+  };
   const contractStoreCandidates = usePlatformOrganizationCandidates({
     open: kind === 'contracts',
     groupWorkspaceKey: context.groupWorkspaceKey,
@@ -362,13 +598,56 @@ function PlatformReadForWorkspace({
     (workspaceIsInitialized ? (hierarchyQuery.error ?? commercialGroupDefinitionQuery.error) : undefined);
   const queryError =
     kind === 'contracts'
-      ? contractQuery.error
+      ? (contractQuery.error ?? contractDefinitionQuery.error)
       : tab.category === 'HIERARCHY'
         ? hierarchyError
-        : organizationQuery.error;
-  const problem = queryError ? platformProblemOf(queryError) : commandProblem;
-  const organizationPage = organizationQuery.data;
-  const contractPage = contractQuery.data;
+        : (organizationQuery.error ?? organizationDefinitionQuery.error);
+  const extensionDefinitionProblem =
+    kind === 'contracts' && !contractListProblem && contractDefinitionQuery.error
+      ? {title: '暂时无法获取合同字段配置', detail: '请重试。'}
+      : kind === 'organization' &&
+          tab.category !== 'HIERARCHY' &&
+          !organizationListProblem &&
+          organizationDefinitionQuery.error
+        ? {title: `暂时无法获取${tab.label}字段配置`, detail: '请重试。'}
+        : undefined;
+  const extensionRecoveryProblem =
+    kind === 'contracts' && contractExtensionRecoveryFailed
+      ? {title: '暂时无法获取合同字段配置', detail: '请重试。'}
+      : kind === 'organization' && tab.category !== 'HIERARCHY' && organizationExtensionRecoveryFailed
+        ? {title: `暂时无法获取${tab.label}字段配置`, detail: '请重试。'}
+        : undefined;
+  const extensionRecoveryRetryAvailable =
+    Boolean(extensionRecoveryProblem) ||
+    (kind === 'contracts' && Boolean(contractListProblem || contractDefinitionQuery.error)) ||
+    (kind === 'organization' &&
+      tab.category !== 'HIERARCHY' &&
+      Boolean(organizationListProblem || organizationDefinitionQuery.error));
+  const retryExtensionRead = () => {
+    if (kind === 'contracts') {
+      if (extensionRecoveryProblem || contractListProblem?.errorCode === 'EXTENSION_DEFINITION_REVISION_STALE') {
+        void recoverContractExtensionFilters();
+      } else if (contractListProblem) {
+        void contractQuery.refetch();
+      } else if (contractDefinitionQuery.error) {
+        void contractDefinitionQuery.refetch();
+      }
+      return;
+    }
+    if (extensionRecoveryProblem || organizationListProblem?.errorCode === 'EXTENSION_DEFINITION_REVISION_STALE') {
+      void recoverOrganizationExtensionFilters();
+    } else if (organizationListProblem) {
+      void organizationQuery.refetch();
+    } else if (organizationDefinitionQuery.error) {
+      void organizationDefinitionQuery.refetch();
+    }
+  };
+  const problem =
+    extensionRecoveryProblem ??
+    extensionDefinitionProblem ??
+    (queryError ? platformProblemOf(queryError) : commandProblem);
+  const organizationPage = organizationQuery.currentData;
+  const contractPage = contractQuery.currentData;
   const hierarchyLoading =
     (workspaceDetailQuery.isLoading ||
       (workspaceIsInitialized && (hierarchyQuery.isLoading || commercialGroupDefinitionQuery.isLoading))) &&
@@ -430,14 +709,19 @@ function PlatformReadForWorkspace({
   const displayedHierarchyDetail =
     hierarchyNodeId === hierarchyRootProjection?.id ? hierarchyRootProjection : hierarchyDetail;
   const organizationListState = adminListState({
-    loading: organizationQuery.isLoading && !organizationPage && !organizationQuery.error,
-    failed: Boolean(organizationQuery.error),
+    loading:
+      organizationExtensionRecoveryInProgress ||
+      (organizationQuery.isFetching && !organizationPage && !organizationQuery.error),
+    failed:
+      Boolean(organizationQuery.error) ||
+      Boolean(organizationDefinitionQuery.error) ||
+      organizationExtensionRecoveryFailed,
     emptyText: `暂无${tab.label}`,
     testIdPrefix: 'platform-organization-list',
   });
   const contractListState = adminListState({
-    loading: contractQuery.isLoading && !contractPage && !contractQuery.error,
-    failed: Boolean(contractQuery.error),
+    loading: contractExtensionRecoveryInProgress || (contractQuery.isFetching && !contractPage && !contractQuery.error),
+    failed: Boolean(contractQuery.error) || Boolean(contractDefinitionQuery.error) || contractExtensionRecoveryFailed,
     emptyText: '暂无合同',
     testIdPrefix: 'platform-contract-list',
   });
@@ -445,34 +729,93 @@ function PlatformReadForWorkspace({
     setOrganizationTabStates(current => updateOrganizationTabQueryState(current, key, patch));
   };
   const submitOrganizationFilters = (next: OrganizationFilters) => {
+    organizationRecoveryState.current?.invalidate(organizationRecoveryScopeKey);
+    setOrganizationExtensionRecoveryFlags({scopeKey: organizationRecoveryScopeKey, inProgress: false, failed: false});
     updateOrganizationTabState(tab.key, {filters: filtersForOrganizationTab(tab, next)});
   };
   const resetOrganizationFilters = () => {
+    setExtensionRecoveryNoticeScope(undefined);
+    organizationRecoveryState.current?.invalidate(organizationRecoveryScopeKey);
+    setOrganizationExtensionRecoveryFlags({scopeKey: organizationRecoveryScopeKey, inProgress: false, failed: false});
     updateOrganizationTabState(tab.key, {filters: {}});
   };
   const submitContractFilters = (next: ContractFilters) => {
+    contractRecoveryState.current?.invalidate(contractRecoveryScopeKey);
+    setContractExtensionRecoveryFlags({scopeKey: contractRecoveryScopeKey, inProgress: false, failed: false});
     setContractFilters(next);
   };
   const resetContractFilters = () => {
+    setExtensionRecoveryNoticeScope(undefined);
+    contractRecoveryState.current?.invalidate(contractRecoveryScopeKey);
+    setContractExtensionRecoveryFlags({scopeKey: contractRecoveryScopeKey, inProgress: false, failed: false});
     setContractFilters({});
+  };
+  const changeOrganizationTab = (nextTab: string) => {
+    if (nextTab !== organizationTab) {
+      organizationDetailGeneration.invalidate();
+      organizationDetail.close();
+      setHierarchyDetail(undefined);
+      setHierarchyNodeId(undefined);
+    }
+    organizationRecoveryState.current?.invalidate(organizationRecoveryScopeKey);
+    setOrganizationExtensionRecoveryFlags({scopeKey: organizationRecoveryScopeKey, inProgress: false, failed: false});
+    setOrganizationTab(nextTab);
   };
   const hierarchyPage = kind === 'organization' && tab.category === 'HIERARCHY';
   return (
     <div className={hierarchyPage ? 'platform-master-detail-page' : undefined}>
-      {problem && (
+      {extensionRecoveryNoticeScope === (kind === 'contracts' ? 'contracts' : `organization:${tab.key}`) && (
         <Alert
-          type="error"
+          type="info"
           showIcon
-          title={problem.title}
-          description={problem.detail}
+          closable
+          title="筛选条件已按最新字段配置更新"
+          onClose={() => setExtensionRecoveryNoticeScope(undefined)}
+          {...testId(
+            extensionListRecoveryNoticeTestId(kind === 'contracts' ? 'platform-contract' : 'platform-organization'),
+          )}
           style={{marginBottom: 12}}
-          {...testId(`platform-${kind}-list-error`)}
         />
+      )}
+      {problem && (
+        <div
+          ref={invalidFilterProblemRef}
+          tabIndex={invalidFilterProblem?.invalidFields?.length ? -1 : undefined}
+          style={{outline: 'none'}}
+        >
+          <Alert
+            type="error"
+            showIcon
+            title={problem.title}
+            description={
+              <>
+                <div>{problem.detail}</div>
+                <ExtensionFilterInvalidSummary
+                  invalidFields={invalidFilterProblem?.invalidFields}
+                  definitions={invalidFilterDefinitions}
+                  onClear={clearInvalidFilterFields}
+                  testIdPrefix={extensionListInvalidSummaryTestId(
+                    kind === 'contracts' ? 'platform-contract' : 'platform-organization',
+                  )}
+                />
+              </>
+            }
+            action={
+              extensionRecoveryRetryAvailable ? (
+                <Button onClick={retryExtensionRead} {...testId(`platform-${kind}-extension-recovery-retry`)}>
+                  重试
+                </Button>
+              ) : undefined
+            }
+            style={{marginBottom: 12}}
+            {...testId(`platform-${kind}-list-error`)}
+          />
+        </div>
       )}
       {kind === 'organization' && (
         <Tabs
           activeKey={organizationTab}
-          onChange={setOrganizationTab}
+          onChange={changeOrganizationTab}
           items={organizationTabs.map(item => ({key: item.key, label: item.label}))}
           {...testId('platform-organization-tabs')}
         />
@@ -575,10 +918,15 @@ function PlatformReadForWorkspace({
           <ProTable<OrganizationOverviewItem>
             size="small"
             key={tab.key}
+            formRef={organizationFilterFormRef}
             rowKey="id"
             loading={organizationListState.loading}
             locale={organizationListState.locale}
-            dataSource={organizationPage?.items ?? []}
+            dataSource={
+              organizationQuery.error || organizationDefinitionQuery.error || organizationExtensionRecoveryFailed
+                ? []
+                : (organizationPage?.items ?? [])
+            }
             options={false}
             search={{
               labelWidth: 'auto',
@@ -616,7 +964,8 @@ function PlatformReadForWorkspace({
               ],
             }}
             form={{initialValues: organizationTabState.filters}}
-            onSubmit={value =>
+            onSubmit={value => {
+              setExtensionRecoveryNoticeScope(undefined);
               submitOrganizationFilters({
                 name: value.name?.trim() || undefined,
                 code: value.code?.trim() || undefined,
@@ -628,8 +977,9 @@ function PlatformReadForWorkspace({
                 brandId: value.brandId,
                 tenantId: value.tenantId,
                 headCompanyId: value.headCompanyId,
-              })
-            }
+                extensionFilterValues: value.extensionFilterValues as Record<string, unknown>,
+              });
+            }}
             pagination={
               organizationPage
                 ? {
@@ -718,21 +1068,6 @@ function PlatformReadForWorkspace({
                     },
                   ]
                 : []),
-              {
-                title: '状态',
-                dataIndex: 'status',
-                valueType: 'select',
-                valueEnum: {ENABLED: {text: '已启用'}, DISABLED: {text: '已停用'}},
-                fieldProps: {...testId('platform-organization-filter-status'), allowClear: true, placeholder: '全部'},
-                render: (_, row) => statusLabel(row.status),
-              },
-              {
-                title: '来源',
-                dataIndex: 'source',
-                valueType: 'select',
-                valueEnum: {MANUAL: {text: '人工维护'}, SYSTEM: {text: '系统生成'}},
-                fieldProps: {...testId('platform-organization-filter-source'), allowClear: true, placeholder: '全部'},
-              },
               ...(tab.category === 'STORE'
                 ? [
                     {
@@ -827,6 +1162,25 @@ function PlatformReadForWorkspace({
                 search: false,
                 render: (_: unknown, row: OrganizationOverviewItem) => row.notes || '—',
               },
+              ...extensionListAndSearchColumns<OrganizationOverviewItem>(
+                organizationDefinitionQuery.currentData,
+                `platform-organization-filter-extension-${tab.type?.toLowerCase() ?? 'unknown'}`,
+              ),
+              {
+                title: '状态',
+                dataIndex: 'status',
+                valueType: 'select',
+                valueEnum: {ENABLED: {text: '已启用'}, DISABLED: {text: '已停用'}},
+                fieldProps: {...testId('platform-organization-filter-status'), allowClear: true, placeholder: '全部'},
+                render: (_, row) => statusLabel(row.status),
+              },
+              {
+                title: '来源',
+                dataIndex: 'source',
+                valueType: 'select',
+                valueEnum: {MANUAL: {text: '人工维护'}, SYSTEM: {text: '系统生成'}},
+                fieldProps: {...testId('platform-organization-filter-source'), allowClear: true, placeholder: '全部'},
+              },
               {
                 key: 'updatedAt',
                 title: '更新时间',
@@ -844,9 +1198,14 @@ function PlatformReadForWorkspace({
           <ProTable<ContractOverviewItem>
             size="small"
             rowKey={row => row.contractRef.id}
+            formRef={contractFilterFormRef}
             loading={contractListState.loading}
             locale={contractListState.locale}
-            dataSource={contractPage?.items ?? []}
+            dataSource={
+              contractQuery.error || contractDefinitionQuery.error || contractExtensionRecoveryFailed
+                ? []
+                : (contractPage?.items ?? [])
+            }
             options={false}
             search={{
               labelWidth: 'auto',
@@ -882,7 +1241,8 @@ function PlatformReadForWorkspace({
               ],
             }}
             form={{initialValues: contractFilters}}
-            onSubmit={value =>
+            onSubmit={value => {
+              setExtensionRecoveryNoticeScope(undefined);
               submitContractFilters({
                 contractNo: value.contractNo?.trim() || undefined,
                 storeId: value.storeId,
@@ -890,8 +1250,9 @@ function PlatformReadForWorkspace({
                 tenantId: value.tenantId,
                 itemCode: value.itemCode?.trim() || undefined,
                 status: value.status,
-              })
-            }
+                extensionFilterValues: value.extensionFilterValues as Record<string, unknown>,
+              });
+            }}
             pagination={
               contractPage
                 ? {
@@ -1050,6 +1411,10 @@ function PlatformReadForWorkspace({
                 search: false,
                 render: (_, row) => String(row.items?.length ?? 0),
               },
+              ...extensionListAndSearchColumns<ContractOverviewItem>(
+                contractDefinitionQuery.currentData,
+                'platform-contract-filter-extension',
+              ),
               {
                 title: '状态',
                 dataIndex: 'status',
@@ -1075,6 +1440,7 @@ function PlatformReadForWorkspace({
         loading={organizationDetail.loading}
         problem={problem}
         item={organizationDetail.target}
+        definition={organizationDefinitionQuery.currentData}
         onClose={closeOrganizationDetail}
       />
       <ContractOverviewDetailDrawer
@@ -1082,6 +1448,7 @@ function PlatformReadForWorkspace({
         loading={contractDetail.loading}
         problem={problem}
         item={contractDetail.target}
+        definition={contractDefinitionQuery.currentData}
         onClose={closeContractDetail}
         onAudit={() =>
           contractDetail.target &&

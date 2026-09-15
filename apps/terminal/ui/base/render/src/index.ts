@@ -8,6 +8,8 @@ export type {
 } from './types/catalog';
 export type {
   RenderProviderProps,
+  RenderLayerDismissal,
+  RenderSurfaceReadyInput,
   SurfaceRootContentFrame,
   SurfaceRootProps,
 } from './types/props';
@@ -27,6 +29,7 @@ export type {
   SurfaceHostMeasurementSource,
   SurfaceHostIdentityRejection,
   SurfaceHostIdentityRejectionHandler,
+  SurfaceHostAvailability,
   SurfaceHostSize,
   SurfaceHostSnapshot,
   SurfaceHostSource,
@@ -47,12 +50,18 @@ export type {RenderContextValue} from './contexts/RenderContext';
 export {createRendererCatalog} from './foundations/createRendererCatalog';
 export {definePart} from './foundations/definePart';
 export {createCatalogContext} from './foundations/createCatalogContext';
+export {classifyRequestResult, isBusinessErrorCategory} from './foundations/requestOutcome';
+export type {RequestOutcome} from './foundations/requestOutcome';
 export {dispatchWithRequestId} from './foundations/dispatchWithRequestId';
 export {RenderProvider} from './components/RenderProvider';
 export {LayerStack} from './components/LayerStack';
 export {ScreenContainer} from './components/ScreenContainer';
+export {ScreenReadyBoundary, StandaloneStartupFailurePage, StartupFailurePage} from './components/ScreenReadyBoundary';
+export type {FailureStage, ScreenReadyBoundaryProps, StandaloneStartupFailurePageProps, StartupFailurePageProps} from './components/ScreenReadyBoundary';
+export {SystemFailureNotice} from './components/SystemFailureNotice';
+export type {SystemFailureNoticeProps} from './components/SystemFailureNotice';
 export {SurfaceRoot} from './components/SurfaceRoot';
-export {SurfaceHostController, useSurfaceHostSnapshot} from './components/SurfaceHostController';
+export {SurfaceHostController, useSurfaceHostAvailability, useSurfaceHostSnapshot} from './components/SurfaceHostController';
 export {useSurfaceDisplayMode} from './hooks/useSurfaceDisplayMode';
 export {useRenderLogger} from './hooks/useRenderLogger';
 export {useDispatchCommand} from './hooks/useDispatchCommand';

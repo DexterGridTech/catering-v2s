@@ -349,12 +349,161 @@ export function cleanupRemoteJavaRoot(host, remoteRoot) {
   remoteRootGuard(remoteRoot);
   remoteExec(host, ['set -euo pipefail', `root=${quote(remoteRoot)}`, 'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac', 'rm -rf -- "$root"', 'test ! -e "$root"'].join('\n'));
 }
+const cleanupMarker = (output, name) => {
+  const match = String(output).match(new RegExp(`${name}=([^\\n]*)`));
+  return match ? match[1] : null;
+};
+export function parseRemoteRootCleanupResult(remoteRoot, result) {
+  const output = `${result?.stdout ?? ''}\n${result?.stderr ?? ''}`;
+  const remoteRootAbsent = cleanupMarker(output, 'R5_REMOTE_ROOT_ABSENT') === 'true';
+  const activeProcessCount = cleanupMarker(output, 'REMOTE_ACTIVE_PROCESS_COUNT');
+  const unknownProcessCount = cleanupMarker(output, 'REMOTE_UNKNOWN_PROCESS_COUNT');
+  return Object.freeze({
+    status: result?.status === 0 && remoteRootAbsent ? 'PASS' : 'FAIL',
+    remoteRoot,
+    remoteRootPresent: cleanupMarker(output, 'R5_REMOTE_ROOT_PRESENT'),
+    remoteRootAbsent,
+    activeProcessCount,
+    activeProcessPids: cleanupMarker(output, 'REMOTE_ACTIVE_PROCESS_PIDS'),
+    unknownProcessCount,
+    unknownProcessPids: cleanupMarker(output, 'REMOTE_UNKNOWN_PROCESS_PIDS'),
+    failure: result?.status !== 0
+      ? unknownProcessCount && unknownProcessCount !== '0'
+        ? 'REMOTE_PROCESS_INSPECTION_UNAVAILABLE'
+        : compact(result?.stderr || result?.stdout)
+      : remoteRootAbsent ? null : 'REMOTE_ROOT_CLEANUP_READBACK_INVALID',
+  });
+}
+export function cleanupRemoteRootWithoutJavaControl(host, remoteRoot) {
+  remoteRootGuard(remoteRoot);
+  const result = remoteResult(host, [
+    'set -euo pipefail',
+    `root=${quote(remoteRoot)}`,
+    'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
+    'if test ! -e "$root"; then printf "%s\\n" R5_REMOTE_ROOT_ABSENT=true; exit 0; fi',
+    'if ! ps -eo pid=,args= > "$root/.process-table"; then exit 47; fi',
+    'active_process_count=0',
+    'active_process_pids=""',
+    'while read -r pid args; do',
+    '  test -n "$pid" || continue',
+    '  case "$args" in *"$root"*) active_process_count=$((active_process_count + 1)); active_process_pids="${active_process_pids}${pid}," ;; esac',
+    'done < "$root/.process-table"',
+    'unknown_process_count=0',
+    'unknown_process_pids=""',
+    'for proc in /proc/[0-9]*; do',
+    '  test -e "$proc/cwd" || continue',
+    '  pid="${proc##*/}"',
+    '  if ! cwd=$(readlink "$proc/cwd" 2>/dev/null); then unknown_process_count=$((unknown_process_count + 1)); unknown_process_pids="${unknown_process_pids}${pid},"; continue; fi',
+    '  case "$cwd" in',
+    '    "$root"|"$root"/*) case ",$active_process_pids," in *,"$pid,*) ;; *) active_process_count=$((active_process_count + 1)); active_process_pids="${active_process_pids}${pid}," ;; esac ;;',
+    '  esac',
+    'done',
+    'rm -f -- "$root/.process-table"',
+    'printf "%s\\n" "R5_REMOTE_ROOT_PRESENT=true" "REMOTE_ACTIVE_PROCESS_COUNT=$active_process_count" "REMOTE_ACTIVE_PROCESS_PIDS=${active_process_pids%,}" "REMOTE_UNKNOWN_PROCESS_COUNT=$unknown_process_count" "REMOTE_UNKNOWN_PROCESS_PIDS=${unknown_process_pids%,}"',
+    'if test "$active_process_count" -ne 0; then exit 45; fi',
+    'if test "$unknown_process_count" -ne 0; then exit 46; fi',
+    'rm -rf -- "$root"',
+    'test ! -e "$root"',
+    'printf "%s\\n" R5_REMOTE_ROOT_ABSENT=true',
+  ].join('\n'));
+  const detail = parseRemoteRootCleanupResult(remoteRoot, result);
+  if (detail.status !== 'PASS') {
+    const error = new Error(detail.failure || 'REMOTE_ROOT_CLEANUP_FAILED');
+    error.cleanupDetails = detail;
+    throw error;
+  }
+  return detail;
+}
 // Manifests written before canonical token admission preserve macOS's double
 // space before a single-digit day. Normalize the stored identity before every
 // comparison, while still rejecting a genuinely different process start time.
 const ownedStartToken = (value) => canonicalStartToken(value.startToken);
 const processIdentity = (value) => ({pid: value.pid, pgid: value.pgid ?? value.pid, startToken: ownedStartToken(value)});
 const cleanupStatusFromTree = (treeReadback) => evaluateCleanupReadback(treeReadback) ? 'PASS' : 'FAIL';
+const stopStatuses = (cleanupFailures, diagnosticFailures) => Object.freeze({
+  cleanup: cleanupFailures.length === 0 ? 'PASS' : 'FAIL',
+  diagnostics: diagnosticFailures.length === 0 ? 'PASS' : 'LOG_NOT_AVAILABLE',
+});
+export const shouldCollectRemoteLogAfterStop = (remoteJavaStopStatus) =>
+  ['STOPPED', 'ALREADY_STOPPED', 'NOT_RUN'].includes(remoteJavaStopStatus);
+export function collectStopDiagnostics({remoteJavaStopStatus, collectLog, refreshDiagnostics} = {}) {
+  const failures = [];
+  const tryDiagnostic = (operation) => {
+    if (typeof operation !== 'function') return;
+    try { operation(); } catch (error) { failures.push(error); }
+  };
+  if (shouldCollectRemoteLogAfterStop(remoteJavaStopStatus)) tryDiagnostic(collectLog);
+  tryDiagnostic(refreshDiagnostics);
+  return Object.freeze({failures: Object.freeze(failures), status: stopStatuses([], failures).diagnostics});
+}
+export function validateManagedRemoteJavaBinding(manifest) {
+  const control = validateRemoteJavaControl(manifest?.remoteJava);
+  if (control.runId !== manifest?.runId) throw new Error('R5_DEV_REMOTE_JAVA_RUN_ID_MISMATCH');
+  if (control.remoteRoot !== manifest?.remoteDiagnostic?.remoteRoot) throw new Error('R5_DEV_REMOTE_ROOT_BINDING_MISMATCH');
+  if (control.remoteRoot !== remoteDevRootFor(manifest?.runId)) throw new Error('R5_DEV_REMOTE_JAVA_DERIVED_ROOT_MISMATCH');
+  return control;
+}
+export function canCleanupRemoteJavaRoot({controlValid, remoteJavaStopStatus} = {}) {
+  return controlValid === true && ['STOPPED', 'ALREADY_STOPPED'].includes(remoteJavaStopStatus);
+}
+export function cleanupManagedRemoteJavaRoot({controlValid, remoteJavaStopStatus, cleanupRoot} = {}) {
+  if (!canCleanupRemoteJavaRoot({controlValid, remoteJavaStopStatus})) return false;
+  if (typeof cleanupRoot !== 'function') throw new Error('R5_DEV_REMOTE_ROOT_CLEANUP_CALLBACK_REQUIRED');
+  cleanupRoot();
+  return true;
+}
+export function cleanupManagedRemoteRootAfterStartFailure({rootMayExist, cleanupRoot} = {}) {
+  if (rootMayExist !== true) return false;
+  if (typeof cleanupRoot !== 'function') throw new Error('R5_DEV_REMOTE_ROOT_CLEANUP_CALLBACK_REQUIRED');
+  cleanupRoot();
+  return true;
+}
+export async function stopAndCleanupStartedRemoteJava({host, runId, remoteRoot, remoteJava, stop = stopRemoteJava, cleanup = () => cleanupRemoteJavaRoot(host, remoteRoot)} = {}) {
+  const failures = [];
+  let control = null;
+  let stopStatus = 'NOT_RUN';
+  try {
+    control = validateManagedRemoteJavaBinding({runId, remoteJava, remoteDiagnostic: {remoteRoot}});
+  } catch (error) {
+    failures.push(error);
+  }
+  if (control) {
+    try {
+      stopStatus = await stop(host, control);
+    } catch (error) {
+      failures.push(error);
+    }
+  }
+  let cleanupStatus = 'NOT_RUN';
+  if (control) {
+    try {
+      const cleaned = cleanupManagedRemoteJavaRoot({controlValid: true, remoteJavaStopStatus: stopStatus, cleanupRoot: cleanup});
+      cleanupStatus = cleaned ? 'PASS' : 'FAIL';
+      if (!cleaned) failures.push(new Error('R5_DEV_REMOTE_ROOT_CLEANUP_SKIPPED_UNSTOPPED'));
+    } catch (error) {
+      cleanupStatus = 'FAIL';
+      failures.push(error);
+    }
+  } else {
+    cleanupStatus = 'FAIL';
+    failures.push(new Error('R5_DEV_REMOTE_ROOT_CLEANUP_SKIPPED_UNVERIFIED'));
+  }
+  return Object.freeze({controlValid: control !== null, stopStatus, cleanupStatus, failures: Object.freeze(failures)});
+}
+export function buildManagedDevCleanupReceipt({cleanupStatus, localProcessStatus, remoteJavaControlStatus, remoteJavaStopStatus, remoteJavaRootCleanupStatus, failedProcessCount = 0} = {}) {
+  const remoteJavaStopped = ['STOPPED', 'ALREADY_STOPPED'].includes(remoteJavaStopStatus);
+  return Object.freeze({
+    status: cleanupStatus,
+    failedProcessCount,
+    localProcess: localProcessStatus,
+    remoteJavaControl: remoteJavaControlStatus,
+    remoteJava: remoteJavaControlStatus === 'NOT_APPLICABLE'
+      ? 'NOT_APPLICABLE'
+      : remoteJavaControlStatus === 'PASS' && remoteJavaStopped ? 'PASS' : 'FAIL',
+    remoteJavaStop: remoteJavaStopStatus,
+    remoteJavaRoot: remoteJavaRootCleanupStatus,
+  });
+}
 const terminalManifestPathFor = (runId) => path.join(runtime, `terminal-${runId}.json`);
 const safeFailure = (error) => String(error?.code || error?.message || 'R5_DEV_START_FAILED').replaceAll(/[^A-Za-z0-9_:. -]/g, '').slice(0, 256);
 const writeTerminalManifest = (base, fields) => {
@@ -632,13 +781,22 @@ async function start() {
   let processes = [];
   let remoteJava = null;
   let remoteJavaLogPath = null;
+  let remoteRootMayExist = false;
+  let lastKnownGood = 'REMOTE_RESOURCE_PREFLIGHT';
+  let brokenBoundary = 'REMOTE_SOURCE_SYNC';
   try {
+  remoteRootMayExist = true;
+  brokenBoundary = 'REMOTE_SOURCE_SYNC';
   await syncRemoteSource(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot);
+  lastKnownGood = 'REMOTE_SOURCE_SYNC';
   // The remote JVM only needs the public asset URL to build browser-facing
   // readbacks.  Establish the managed local ingress first so the selected
   // port (including alternate-port runs) is available to that configuration.
+  brokenBoundary = 'TUNNEL';
   const tunnel = await openTunnel(env, tunnelPorts);
   processes = [tunnel];
+  lastKnownGood = 'TUNNEL_READY';
+  brokenBoundary = 'REMOTE_JAVA_CONTROL';
   remoteJava = await startRemoteJava(env.environment.V2S_DEV_REMOTE_HOST, {
     runId,
     remoteRoot,
@@ -647,6 +805,8 @@ async function start() {
     catalogTestFaultsAdmitted,
     assetPublicBaseUrl: `http://127.0.0.1:${tunnelPorts.asset}`,
   });
+  lastKnownGood = 'REMOTE_JAVA_CONTROL_READY';
+  brokenBoundary = 'REMOTE_HOST_IDENTITY';
   if (remoteJava.bootId !== remoteResources.bootId) fail('REMOTE_HOST_REBOOTED_DURING_START');
   const commands = [
     {name: 'platform-admin', command: 'yarn', args: ['--cwd', path.join(root, 'apps/frontend/platform-admin'), 'vite', '--host', '0.0.0.0'], port: 5174, env: {VITE_PLATFORM_GATEWAY_PROXY_TARGET: `http://127.0.0.1:${tunnelPorts.http}`}},
@@ -663,40 +823,77 @@ async function start() {
     const withIdentity = {...value, pgid: Number(run('ps', ['-o', 'pgid=', '-p', String(value.pid)]).trim()), startToken: startToken(value.pid)};
     return {...withIdentity, tree: snapshotProcessTree(processIdentity(withIdentity))};
   });
+  lastKnownGood = 'PROCESS_IDENTITIES';
+  brokenBoundary = 'REMOTE_READINESS';
   const remoteReadiness = await waitForRemoteBusinessReady(env.environment.V2S_DEV_REMOTE_HOST, remoteJava, readinessProgressPath);
+  lastKnownGood = 'REMOTE_READINESS';
+  brokenBoundary = 'VITE_READINESS';
   const viteReadiness = {};
   for (const value of processes.filter((entry) => entry.name === 'platform-admin' || entry.name === 'operations-admin')) {
     value.runtimeIdentity = await waitForLocalViteReady(value, value.port, `${value.name}-runtime`);
     viteReadiness[value.name] = value.runtimeIdentity;
   }
+  lastKnownGood = 'VITE_READINESS';
+  brokenBoundary = 'LOG_COLLECTION';
   remoteJavaLogPath = path.join(remoteEvidenceDirectory, 'business-server.log');
   collectRemoteLog(env.environment.V2S_DEV_REMOTE_HOST, remoteJava, remoteJavaLogPath);
+  lastKnownGood = 'LOG_COLLECTION';
+  brokenBoundary = 'MANIFEST_WRITE';
   const readiness = {remoteJava: remoteReadiness, vite: viteReadiness, tunnel: {httpPort: tunnelPorts.http, assetPort: tunnelPorts.asset, listenerOwner: tunnel.pid}};
   writeFileSync(manifestPath, JSON.stringify({kind: 'r5-dev-run-manifest', createdAtEpochMillis: Date.now(), runId, topology: {java: 'REMOTE_TRUSTED_HOST', database: 'REMOTE_LOCALHOST', tunnel: 'HTTP_AND_ASSET_ONLY'}, portLock, tunnelPorts, localHttpBaseUrl: `http://127.0.0.1:${tunnelPorts.http}`, remoteHttpBaseUrl: `http://127.0.0.1:${env.environment.V2S_DEV_REMOTE_HTTP_PORT}`, assetBaseUrl: `http://127.0.0.1:${tunnelPorts.asset}`, seedEventsPath, dbOperationsPath, statementDictionaryPath, remoteDiagnostic: {kind: 'REMOTE_SSH_PULL', remoteRoot}, diagnosticProtocol, database: env.environment.V2S_DEV_DATABASE_URL, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, remoteResources, credentialsFile: credential.target, freshDatabase: provision.freshDatabase, otpDebugExposure, catalogTestFaultAdmission: {requested: catalogFaultFlag === 'true', effective: catalogTestFaultsAdmitted}, readinessProgressPath, remoteJava: {...remoteJava, localLogPath: remoteJavaLogPath}, processes, readiness}, null, 2) + '\n');
   process.stdout.write(`R5_DEV_START=PASS; MANIFEST=${manifestPath}; PROCESSES=${processes.map((value) => `${value.name}:${value.pid}`).join(',')}\n`);
   } catch (error) {
     let cleanupStatus = 'PASS';
+    let localProcessStatus = 'PASS';
     let remoteJavaLogStatus = remoteJava ? 'PENDING' : 'NOT_APPLICABLE';
+    let remoteJavaStopStatus = remoteJava ? 'NOT_RUN' : 'NOT_APPLICABLE';
+    let remoteJavaRootCleanupStatus = remoteJava || !remoteRootMayExist ? 'NOT_RUN' : 'NOT_APPLICABLE';
+    let remoteJavaControlStatus = remoteJava ? 'FAIL' : 'NOT_APPLICABLE';
+    let remoteRootCleanupEvidence = {status: remoteJava || !remoteRootMayExist ? 'NOT_APPLICABLE' : 'NOT_RUN', remoteRoot};
     if (remoteJava) {
       remoteJavaLogPath = path.join(remoteEvidenceDirectory, 'business-server.log');
+      let managedRemoteJavaControl = null;
       try {
-        collectRemoteLog(env.environment.V2S_DEV_REMOTE_HOST, remoteJava, remoteJavaLogPath);
+        managedRemoteJavaControl = validateManagedRemoteJavaBinding({runId, remoteJava, remoteDiagnostic: {remoteRoot}});
+        remoteJavaControlStatus = 'PASS';
+        collectRemoteLog(env.environment.V2S_DEV_REMOTE_HOST, managedRemoteJavaControl, remoteJavaLogPath);
         remoteJavaLogStatus = 'PASS';
       } catch {
         remoteJavaLogStatus = 'FAIL';
       }
+      const remoteJavaCleanup = await stopAndCleanupStartedRemoteJava({
+        host: env.environment.V2S_DEV_REMOTE_HOST,
+        runId,
+        remoteRoot,
+        remoteJava,
+      });
+      remoteJavaStopStatus = remoteJavaCleanup.stopStatus;
+      remoteJavaRootCleanupStatus = remoteJavaCleanup.cleanupStatus;
+      if (remoteJavaCleanup.cleanupStatus !== 'PASS') cleanupStatus = 'FAIL';
+    } else if (remoteRootMayExist) {
+      try {
+        const cleaned = cleanupManagedRemoteRootAfterStartFailure({
+          rootMayExist: true,
+          cleanupRoot: () => {
+            remoteRootCleanupEvidence = cleanupRemoteRootWithoutJavaControl(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot);
+            return remoteRootCleanupEvidence;
+          },
+        });
+        remoteJavaRootCleanupStatus = cleaned ? 'PASS' : 'FAIL';
+        if (!cleaned) cleanupStatus = 'FAIL';
+      } catch (error) {
+        remoteRootCleanupEvidence = error.cleanupDetails ?? {status: 'FAIL', remoteRoot, failure: safeFailure(error)};
+        remoteJavaRootCleanupStatus = 'FAIL';
+        cleanupStatus = 'FAIL';
+      }
     }
     for (const value of [...processes].reverse()) {
       if (Number.isInteger(value.pid) && typeof value.startToken === 'string') {
-        try { await stopOwnedProcess(value); } catch { cleanupStatus = 'FAIL'; }
+        try { await stopOwnedProcess(value); } catch { cleanupStatus = 'FAIL'; localProcessStatus = 'FAIL'; }
       }
     }
-    if (remoteJava) {
-      try { await stopRemoteJava(env.environment.V2S_DEV_REMOTE_HOST, remoteJava); } catch { cleanupStatus = 'FAIL'; }
-    }
-    try { cleanupRemoteJavaRoot(env.environment.V2S_DEV_REMOTE_HOST, remoteRoot); } catch { cleanupStatus = 'FAIL'; }
-    const terminal = writeTerminalManifest({kind: 'r5-dev-run-manifest', runId, readinessProgressPath, remoteJava, remoteJavaLogPath, processes}, {
-      firstFailure: safeFailure(error), lastKnownGood: processes.length > 0 ? 'PROCESS_IDENTITIES' : 'REMOTE_SOURCE_SYNC', brokenBoundary: 'START', business: {status: 'FAIL'}, cleanup: {status: cleanupStatus, remoteJava: cleanupStatus === 'PASS' ? 'PASS' : 'FAIL'}, diagnostics: {remoteJavaLogStatus, remoteJavaLogPath},
+    const terminal = writeTerminalManifest({kind: 'r5-dev-run-manifest', runId, readinessProgressPath, remoteJava, remoteJavaLogPath, remoteDiagnostic: {kind: 'REMOTE_SSH_PULL', remoteRoot}, remoteHostTrust: {host: env.environment.V2S_DEV_REMOTE_HOST, fingerprint: env.environment.V2S_DEV_REMOTE_HOST_SHA256, allowlistVersion: env.environment.V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION, maintainer: env.environment.V2S_DEV_REMOTE_HOST_MAINTAINER, rotatedAt: env.environment.V2S_DEV_REMOTE_HOST_ROTATED_AT}, processes}, {
+      firstFailure: safeFailure(error), lastKnownGood, brokenBoundary, business: {status: 'FAIL'}, cleanup: buildManagedDevCleanupReceipt({cleanupStatus, localProcessStatus, remoteJavaControlStatus, remoteJavaStopStatus, remoteJavaRootCleanupStatus}), cleanupEvidence: {remoteRoot: remoteRootCleanupEvidence}, diagnostics: {remoteJavaLogStatus, remoteJavaLogPath},
     });
     releasePortLock(portLock); throw error;
   }
@@ -706,28 +903,63 @@ async function stop() {
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   if (manifest.kind !== 'r5-dev-run-manifest' || !Array.isArray(manifest.processes) || !manifest.remoteJava || !manifest.remoteHostTrust?.host) fail('MANIFEST_INVALID');
   const failures = [];
+  const localProcessFailures = [];
+  const diagnosticFailures = [];
+  let firstFailure = null;
+  const recordFailure = (bucket, error) => {
+    bucket.push(error);
+    firstFailure ??= error;
+  };
   for (const value of [...manifest.processes].reverse()) {
     try { await stopOwnedProcess(value); }
-    catch (error) { failures.push(error); }
+    catch (error) { recordFailure(localProcessFailures, error); failures.push(error); firstFailure ??= error; }
   }
+  let managedRemoteJavaControl = null;
+  let remoteJavaControlStatus = 'FAIL';
+  try { managedRemoteJavaControl = validateManagedRemoteJavaBinding(manifest); remoteJavaControlStatus = 'PASS'; }
+  catch (error) { failures.push(error); firstFailure ??= error; }
   let remoteJavaStopStatus = 'NOT_RUN';
-  try { remoteJavaStopStatus = await stopRemoteJava(manifest.remoteHostTrust.host, manifest.remoteJava); }
-  catch (error) { failures.push(error); }
-  if (remoteJavaStopStatus !== 'ALREADY_STOPPED') {
-    try {
-      collectRemoteLog(manifest.remoteHostTrust.host, manifest.remoteJava, manifest.remoteJava.localLogPath ?? path.join(runtime, 'dev', manifest.runId, 'business-server.log'));
-    } catch (error) { failures.push(error); }
+  if (managedRemoteJavaControl) {
+    try { remoteJavaStopStatus = await stopRemoteJava(manifest.remoteHostTrust.host, managedRemoteJavaControl); }
+    catch (error) { failures.push(error); firstFailure ??= error; }
+    const diagnosticResult = collectStopDiagnostics({
+      remoteJavaStopStatus,
+      collectLog: () => collectRemoteLog(
+        manifest.remoteHostTrust.host,
+        managedRemoteJavaControl,
+        managedRemoteJavaControl.localLogPath ?? path.join(runtime, 'dev', manifest.runId, 'business-server.log'),
+      ),
+      refreshDiagnostics: () => refreshManagedDiagnosticFiles(manifest),
+    });
+    for (const error of diagnosticResult.failures) recordFailure(diagnosticFailures, error);
+  } else {
+    recordFailure(diagnosticFailures, new Error('R5_DEV_REMOTE_JAVA_CONTROL_UNVERIFIED'));
   }
-  try { refreshManagedDiagnosticFiles(manifest); }
-  catch (error) { failures.push(error); }
-  try { cleanupRemoteJavaRoot(manifest.remoteHostTrust.host, manifest.remoteJava.remoteRoot); }
-  catch (error) { failures.push(error); }
-  const cleanupStatus = failures.length === 0 ? 'PASS' : 'FAIL';
+  let remoteJavaRootCleanupStatus = 'NOT_RUN';
+  try {
+    const cleaned = cleanupManagedRemoteJavaRoot({
+      controlValid: managedRemoteJavaControl !== null,
+      remoteJavaStopStatus,
+      cleanupRoot: () => cleanupRemoteJavaRoot(manifest.remoteHostTrust.host, managedRemoteJavaControl.remoteRoot),
+    });
+    remoteJavaRootCleanupStatus = cleaned ? 'PASS' : 'FAIL';
+    if (!cleaned) { const error = new Error('R5_DEV_REMOTE_ROOT_CLEANUP_SKIPPED_UNVERIFIED'); failures.push(error); firstFailure ??= error; }
+  } catch (error) { remoteJavaRootCleanupStatus = 'FAIL'; failures.push(error); firstFailure ??= error; }
+  const statuses = stopStatuses(failures, diagnosticFailures);
   const terminal = writeTerminalManifest(manifest, {
-    firstFailure: failures.length === 0 ? null : safeFailure(failures[0]),
+    firstFailure: firstFailure === null ? null : safeFailure(firstFailure),
     lastKnownGood: failures.length === 0 ? 'REMOTE_AND_LOCAL_PROCESS_EXIT' : 'PROCESS_IDENTITIES',
-    brokenBoundary: failures.length === 0 ? null : 'MANAGED_CLEANUP',
-    business: {status: 'PASS'}, cleanup: {status: cleanupStatus, failedProcessCount: failures.length, remoteJava: cleanupStatus === 'PASS' ? 'PASS' : 'FAIL', remoteJavaStop: remoteJavaStopStatus},
+    brokenBoundary: firstFailure === null ? null : failures.length === 0 ? 'DIAGNOSTIC_COLLECTION' : 'MANAGED_CLEANUP',
+    business: {status: 'PASS'},
+    cleanup: buildManagedDevCleanupReceipt({
+      cleanupStatus: statuses.cleanup,
+      localProcessStatus: localProcessFailures.length === 0 ? 'PASS' : 'FAIL',
+      remoteJavaControlStatus,
+      remoteJavaStopStatus,
+      remoteJavaRootCleanupStatus,
+      failedProcessCount: failures.length,
+    }),
+    diagnostics: {status: statuses.diagnostics, failedCount: diagnosticFailures.length, firstFailure: diagnosticFailures.length === 0 ? null : safeFailure(diagnosticFailures[0])},
   });
   if (failures.length > 0) fail(`R5_DEV_STOP_CLEANUP_FAILED:${failures.map((error) => error.message).join('|')}`);
   const lockPath = manifest.portLock ?? path.join(runtime, 'managed-port-lock');
@@ -743,6 +975,63 @@ if (isMain && mode === '--self-test') {
   remoteJavaSelfTest();
   const syntheticManifest = {kind: 'r5-dev-run-manifest', firstFailure: null, lastKnownGood: 'TREE_SNAPSHOT', brokenBoundary: null, business: 'PASS', cleanup: 'PENDING', processes: [{pid: 10, pgid: 10, startToken: 'root', tree: [{pid: 10, pgid: 10}, {pid: 11, pgid: 10}]}]};
   if (cleanupStatusFromTree(syntheticManifest.processes[0].tree) !== 'FAIL' || cleanupStatusFromTree([]) !== 'PASS') fail('R5_DEV_RUNNER_CLEANUP_TREE_RED_NOT_DETECTED');
+  if (stopStatuses([], [new Error('LOG_NOT_AVAILABLE')]).cleanup !== 'PASS' || stopStatuses([], [new Error('LOG_NOT_AVAILABLE')]).diagnostics !== 'LOG_NOT_AVAILABLE') fail('R5_DEV_RUNNER_DIAGNOSTIC_FAILURE_SCOPE_NOT_SEPARATED');
+  if (stopStatuses([new Error('PROCESS_REMAINS')], []).cleanup !== 'FAIL') fail('R5_DEV_RUNNER_RESOURCE_CLEANUP_RED_NOT_DETECTED');
+  let cleanupCalls = 0;
+  if (cleanupManagedRemoteJavaRoot({controlValid: false, remoteJavaStopStatus: 'STOPPED', cleanupRoot: () => { cleanupCalls += 1; }})) {
+    fail('R5_DEV_RUNNER_UNVERIFIED_ROOT_CLEANUP_NOT_BLOCKED');
+  }
+  if (cleanupCalls !== 0 || cleanupManagedRemoteJavaRoot({controlValid: true, remoteJavaStopStatus: 'NOT_RUN', cleanupRoot: () => { cleanupCalls += 1; }})) {
+    fail('R5_DEV_RUNNER_UNSTOPPED_ROOT_CLEANUP_NOT_BLOCKED');
+  }
+  if (!cleanupManagedRemoteJavaRoot({controlValid: true, remoteJavaStopStatus: 'ALREADY_STOPPED', cleanupRoot: () => { cleanupCalls += 1; }}) || cleanupCalls !== 1) {
+    fail('R5_DEV_RUNNER_VERIFIED_ROOT_CLEANUP_NOT_ALLOWED');
+  }
+  const startFailureRunId = 'r5-dev-1789419999999-70098-1d53aa6c-cd00-444d-8f9a-125f6ee68081';
+  const startFailureRemoteRoot = `/tmp/${startFailureRunId}`;
+  let startFailureCleanupCalls = 0;
+  const startFailureCleanup = await stopAndCleanupStartedRemoteJava({
+    host: 'catering-remote-dev',
+    runId: startFailureRunId,
+    remoteRoot: startFailureRemoteRoot,
+    remoteJava: {
+      schemaVersion: 1,
+      kind: REMOTE_JAVA_CONTROL_KIND,
+      runId: startFailureRunId,
+      remoteRoot: startFailureRemoteRoot,
+      pid: 101,
+      pgid: 101,
+      bootId: '0123456789abcdef0123456789abcdef',
+      processStartTicks: 2026,
+      commandSha256: 'a'.repeat(64),
+      phase: 'READY',
+      logPath: `${startFailureRemoteRoot}/results/business-server.log`,
+      phasePath: `${startFailureRemoteRoot}/results/phase.jsonl`,
+    },
+    stop: async () => { throw new Error('REMOTE_STOP_FAILED'); },
+    cleanup: () => { startFailureCleanupCalls += 1; },
+  });
+  if (!startFailureCleanup.controlValid || startFailureCleanup.stopStatus !== 'NOT_RUN' || startFailureCleanup.cleanupStatus !== 'FAIL' || startFailureCleanupCalls !== 0) {
+    fail('R5_DEV_RUNNER_START_FAILURE_ROOT_CLEANUP_NOT_BLOCKED');
+  }
+  let alreadyStoppedLogAttempts = 0;
+  const alreadyStoppedMissingLog = collectStopDiagnostics({
+    remoteJavaStopStatus: 'ALREADY_STOPPED',
+    collectLog: () => { alreadyStoppedLogAttempts += 1; throw new Error('REMOTE_LOG_MISSING'); },
+    refreshDiagnostics: () => {},
+  });
+  if (alreadyStoppedLogAttempts !== 1 || alreadyStoppedMissingLog.status !== 'LOG_NOT_AVAILABLE' || alreadyStoppedMissingLog.failures.length !== 1) {
+    fail('R5_DEV_RUNNER_ALREADY_STOPPED_LOG_FAILURE_NOT_RETAINED');
+  }
+  let alreadyStoppedExistingLogAttempts = 0;
+  const alreadyStoppedExistingLog = collectStopDiagnostics({
+    remoteJavaStopStatus: 'ALREADY_STOPPED',
+    collectLog: () => { alreadyStoppedExistingLogAttempts += 1; },
+    refreshDiagnostics: () => {},
+  });
+  if (alreadyStoppedExistingLogAttempts !== 1 || alreadyStoppedExistingLog.status !== 'PASS' || alreadyStoppedExistingLog.failures.length !== 0) {
+    fail('R5_DEV_RUNNER_ALREADY_STOPPED_LOG_SUCCESS_NOT_RETAINED');
+  }
   const processTable = [{pid: 10, ppid: 1, pgid: 10, startToken: 'root', command: 'runner'}, {pid: 11, ppid: 10, pgid: 10, startToken: 'child', command: 'child'}];
   const initialProcessTree = snapshotProcessTree({pid: 10, pgid: 10, startToken: 'root'}, [{pid: 10, ppid: 1, pgid: 10, startToken: 'root', command: 'runner'}]);
   const refreshedProcessTree = snapshotProcessTree({pid: 10, pgid: 10, startToken: 'root'}, processTable);

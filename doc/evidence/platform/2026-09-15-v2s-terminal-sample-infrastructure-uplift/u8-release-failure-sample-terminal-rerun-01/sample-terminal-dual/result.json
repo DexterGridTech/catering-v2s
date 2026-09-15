@@ -1,0 +1,67 @@
+{
+  "runId": "sample-terminal-dual-1789436460002",
+  "app": "sample-terminal",
+  "packageName": "com.anonymous.sampleterminal",
+  "serial": "emulator-5554",
+  "shape": "dual",
+  "failureMode": "wrong-primary-display",
+  "startedAt": "2026-09-15T01:41:00.002Z",
+  "business": "NOT_RUN",
+  "cleanup": "PASS",
+  "firstFailure": "wrong-primary-display did not render the startup failure page",
+  "display": {
+    "ids": [
+      0,
+      2
+    ],
+    "hasSecondary": true
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": [
+      "11529215047789101945"
+    ]
+  },
+  "timeline": [
+    {
+      "event": "failure-injection-selected",
+      "failureMode": "wrong-primary-display",
+      "activityDisplayId": 2,
+      "expectedPrimaryDisplayId": 0
+    },
+    {
+      "event": "before-launch",
+      "timestamp": "2026-09-15T01:41:00.529Z",
+      "splashVisible": false,
+      "packagePid": ""
+    },
+    {
+      "event": "after-launch-before-ready-poll",
+      "timestamp": "2026-09-15T01:41:00.989Z",
+      "millisecondsSinceLaunch": 436,
+      "splashVisible": true
+    },
+    {
+      "event": "ready-or-failure-observed",
+      "timestamp": "2026-09-15T01:41:31.282Z",
+      "millisecondsSinceLaunch": 30729,
+      "readyCandidate": false,
+      "readyHidden": false,
+      "startupComplete": false,
+      "failurePage": false,
+      "splashVisible": false,
+      "splashVisibleBeforeReady": false,
+      "preReadyCaptured": true
+    },
+    {
+      "event": "settled",
+      "timestamp": "2026-09-15T01:41:35.262Z",
+      "splashVisible": false,
+      "packagePid": "",
+      "secondarySurfaceObserved": true
+    }
+  ],
+  "finishedAt": "2026-09-15T01:41:35.344Z"
+}

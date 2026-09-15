@@ -1,12 +1,14 @@
 package com.catering.v2s.app.edge.platform.organization;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.app.edge.platform.session.PlatformSessionResolver;
+import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
@@ -114,7 +116,9 @@ class PlatformOrganizationOverviewControllerTest {
                 "UPDATED_AT",
                 "DESC",
                 1,
-                20);
+                20,
+                null,
+                null);
 
         verify(overview)
                 .platformOverviewTaskPage(
@@ -135,8 +139,63 @@ class PlatformOrganizationOverviewControllerTest {
                                 null,
                                 "UPDATED_AT",
                                 "DESC",
+                                null,
+                                null,
                                 null),
                         1,
-                        20);
+                20);
+    }
+
+    @Test
+    void hierarchyExtensionFiltersBecomeControlledEdgeValidation() {
+        PlatformSessionResolver sessions = mock(PlatformSessionResolver.class);
+        PlatformSessionResolver.PlatformReadSessionFacts readFacts =
+                mock(PlatformSessionResolver.PlatformReadSessionFacts.class);
+        PlatformSessionResolver.EnabledSelectedWorkspaceFact workspace =
+                mock(PlatformSessionResolver.EnabledSelectedWorkspaceFact.class);
+        WorkspaceAdministrationService workspaces = mock(WorkspaceAdministrationService.class);
+        OrganizationOverviewTaskReadService overview = mock(OrganizationOverviewTaskReadService.class);
+        EdgeRequestContext request = mock(EdgeRequestContext.class);
+        UUID workspaceId = UUID.randomUUID();
+        when(sessions.requireRead(request)).thenReturn(readFacts);
+        when(readFacts.requireEnabledSelectedWorkspace(workspaces, "organization-test"))
+                .thenReturn(workspace);
+        when(workspace.workspaceUuid()).thenReturn(workspaceId);
+        when(overview.platformOverviewTaskPage(any(), any(), any(), any(), any(Integer.class), any(Integer.class)))
+                .thenThrow(new OrganizationOverviewTaskReadService.QueryValidationException(
+                        "extension filters are not applicable to hierarchy"));
+        PlatformOrganizationOverviewController controller = new PlatformOrganizationOverviewController(
+                sessions,
+                workspaces,
+                overview,
+                mock(StoreCandidateTaskReadService.class),
+                mock(ExtensionDefinitionService.class));
+
+        InvalidEdgeRequestException failure = assertThrows(
+                InvalidEdgeRequestException.class,
+                () -> controller.page(
+                        request,
+                        "organization-test",
+                        "HIERARCHY",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        "UPDATED_AT",
+                        "DESC",
+                        1,
+                        20,
+                        "encoded-filter",
+                        "1"));
+
+        assertEquals("invalid platform organization overview query", failure.getMessage());
+        assertEquals(OrganizationOverviewTaskReadService.QueryValidationException.class, failure.getCause().getClass());
     }
 }

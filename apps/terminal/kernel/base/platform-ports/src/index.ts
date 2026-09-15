@@ -129,6 +129,11 @@ export type {
   TopologyHostPort,
 } from './types/topologyHost';
 export type {
+  NativeLoadingCapability,
+  NativeLoadingHideResult,
+  NativeLoadingTarget,
+} from './types/nativeLoading';
+export type {
   LoggerConsoleBinding,
   LoggerSinkBinding,
   LoggerBinding,

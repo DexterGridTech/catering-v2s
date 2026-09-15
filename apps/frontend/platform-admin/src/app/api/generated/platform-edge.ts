@@ -441,7 +441,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 24,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -455,7 +455,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 6,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -469,7 +469,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 8,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -483,7 +483,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 16,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -497,7 +497,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 16,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -511,7 +511,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 19,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -540,7 +540,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 18,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -554,7 +554,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 21,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -568,7 +568,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 4,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -582,7 +582,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 7,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -596,7 +596,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 7,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -610,7 +610,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 5,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -624,25 +624,11 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 6,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
   "getPlatformContractOverviewDetail": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getPlatformContractOverviewPage": {
     "kind": "FIXED",
     "max": 6,
     "measurementScenarioIds": [
@@ -652,7 +638,21 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 6,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
+      }
+    ]
+  },
+  "getPlatformContractOverviewPage": {
+    "kind": "FIXED",
+    "max": 9,
+    "measurementScenarioIds": [
+      "performance.normal-path"
+    ],
+    "history": [
+      {
+        "from": null,
+        "to": 9,
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -666,7 +666,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 7,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -680,7 +680,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 4,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -694,7 +694,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 6,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -708,7 +708,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 6,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -722,7 +722,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 7,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -736,7 +736,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 6,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -750,7 +750,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 6,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -764,21 +764,21 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 8,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
   "getPlatformOrganizationOverviewPage": {
     "kind": "FIXED",
-    "max": 6,
+    "max": 11,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 6,
-        "reason": "current managed acceptance program maximum"
+        "to": 11,
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -792,7 +792,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 7,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -806,7 +806,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 6,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -820,7 +820,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 6,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -834,7 +834,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 7,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -848,7 +848,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 7,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -862,7 +862,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 7,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -876,7 +876,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 8,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -890,7 +890,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 7,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -904,7 +904,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 6,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -918,7 +918,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 6,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -932,7 +932,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 16,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -946,7 +946,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 6,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -960,7 +960,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 4,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -974,7 +974,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 11,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1003,7 +1003,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 9,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1017,7 +1017,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 19,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1031,7 +1031,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 20,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1045,7 +1045,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 17,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1059,7 +1059,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 18,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1073,7 +1073,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 14,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1087,7 +1087,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 14,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1101,7 +1101,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 13,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1115,7 +1115,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 17,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1129,7 +1129,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 19,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1143,7 +1143,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 17,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1157,7 +1157,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 19,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1171,7 +1171,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 20,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1185,7 +1185,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 20,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1199,7 +1199,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 19,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1213,7 +1213,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 15,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1227,7 +1227,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 18,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1241,7 +1241,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 21,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1255,7 +1255,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 19,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1269,7 +1269,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 13,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   },
@@ -1283,7 +1283,7 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
       {
         "from": null,
         "to": 13,
-        "reason": "current managed acceptance program maximum"
+        "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
   }
@@ -1360,7 +1360,9 @@ export const EDGE_PROBLEM_CODES = [
   "COMMERCIAL_GROUP_ALREADY_INITIALIZED",
   "DELETE_NOT_ALLOWED",
   "EXTENSION_DEFINITION_INVALID",
+  "EXTENSION_DEFINITION_REVISION_STALE",
   "EXTENSION_DEFINITION_VERSION_CONFLICT",
+  "EXTENSION_FILTER_INVALID",
   "EXTERNAL_OWNER_ID_MISMATCH",
   "GROUP_WORKSPACE_NOT_FOUND",
   "IDEMPOTENCY_CONFLICT",
@@ -1502,10 +1504,8 @@ export type ContractOverviewItem = {
   resolutionStatus: "RESOLVED" | "UNRESOLVED";
 };
   items: Array<StoreContractItem>;
-  extensionFields: Array<{
-  name: string;
-  value?: (string) | null;
-}>;
+  extensionValues: Record<string, JsonValue>;
+  extensionRuleRevision: number;
 };
 
 export type ContractOverviewPage = {
@@ -1516,6 +1516,7 @@ export type ContractOverviewPage = {
   total: number;
   sort: StoreContractSortKey;
   direction: StoreContractSortDirection;
+  definitionRevision?: (number) | null;
 };
   items: Array<ContractOverviewItem>;
   itemsSourceStatus: "AVAILABLE" | "UNAVAILABLE";
@@ -1539,7 +1540,9 @@ export type ExtensionDefinition = {
   definitions: Array<{
   key: string;
   label: string;
-  type: "TEXT" | "NUMBER" | "DATE" | "BOOLEAN" | "SELECT";
+  type: ExtensionFieldType;
+  listDisplay: (boolean) | null;
+  searchable: (boolean) | null;
   required: boolean;
   options: Array<string>;
   status: "ENABLED" | "DISABLED";
@@ -1561,7 +1564,9 @@ export type ExtensionDefinitionUpdateRequest = {
   definitions: Array<{
   key?: string;
   label: string;
-  type: "TEXT" | "NUMBER" | "DATE" | "BOOLEAN" | "SELECT";
+  type: ExtensionFieldType;
+  listDisplay: (boolean) | null;
+  searchable: (boolean) | null;
   required: boolean;
   options: Array<string>;
   status: "ENABLED" | "DISABLED";
@@ -1581,6 +1586,16 @@ export type ExtensionEntityCatalogPage = {
 };
 
 export type ExtensionEntityType = "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "CONTRACT" | "COMMERCIAL_GROUP" | "REGION" | "PROJECT";
+
+export type ExtensionFieldType = "TEXT" | "NUMBER" | "DATE" | "BOOLEAN" | "SELECT";
+
+export type ExtensionFilter = {
+  fieldKey: string;
+  type: ExtensionFieldType;
+  value: string;
+};
+
+export type ExtensionFilterQuery = string;
 
 export type ExternalCapability = {
   capabilityClass: "MASTER_DATA_SYNC" | "MEMBER_BENEFIT" | "GROUP_BUY" | "TAKEAWAY" | "DINE_IN" | "INVENTORY_SYNC" | "TAKEAWAY_DELIVERY" | "ORDER_SYNC";
@@ -1807,10 +1822,12 @@ export type OrganizationOverviewItem = {
   alias?: (string) | null;
   legalName?: (string) | null;
   unifiedSocialCreditCode?: (string) | null;
-  extensionFields?: Array<{
+  extensionFields?: (Array<{
   name: string;
   value?: (string) | null;
-}>;
+}>) | null;
+  extensionValues?: (Record<string, JsonValue>) | null;
+  extensionRuleRevision?: (number) | null;
 };
 
 export type OrganizationOverviewPage = {
@@ -1822,6 +1839,7 @@ export type OrganizationOverviewPage = {
   total: number;
   sort: OrganizationOverviewSortKey;
   direction: OrganizationOverviewSortDirection;
+  definitionRevision?: (number) | null;
 };
   items: Array<OrganizationOverviewItem>;
   itemsSourceStatus: "AVAILABLE" | "UNAVAILABLE";
@@ -2529,6 +2547,8 @@ export type FaceOperationContracts = {
     direction?: StoreContractSortDirection;
     page?: number;
     pageSize?: number;
+    extensionFilters?: ExtensionFilterQuery;
+    definitionRevision?: number;
   };
     queryRequired: false;
     headers: Record<string, never>;
@@ -2676,6 +2696,8 @@ export type FaceOperationContracts = {
     direction?: OrganizationOverviewSortDirection;
     page?: number;
     pageSize?: number;
+    extensionFilters?: ExtensionFilterQuery;
+    definitionRevision?: number;
   };
     queryRequired: true;
     headers: Record<string, never>;

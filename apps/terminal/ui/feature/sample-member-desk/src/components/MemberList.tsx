@@ -16,7 +16,7 @@ import {
 } from '@catering-v2s/ui-base-primitives'
 import {deskSystemFailureObservedCommand, memberFormOpenedCommand} from '../features/commands/commands'
 import {MemberRow} from './MemberRow'
-import {classifyRequestResult} from './requestOutcome'
+import {classifyRequestResult} from '@catering-v2s/ui-base-render'
 import {InputScrollArea} from '@catering-v2s/ui-base-input'
 
 export const MemberList = () => {

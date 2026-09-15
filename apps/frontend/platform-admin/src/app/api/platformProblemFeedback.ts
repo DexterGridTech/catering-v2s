@@ -8,6 +8,8 @@ export type ProblemFeedback = {title: string; detail: string};
  * is intentionally a typecheck failure.
  */
 export const PLATFORM_PROBLEM_FEEDBACK: Record<EdgeProblemCode, ProblemFeedback> = {
+  EXTENSION_DEFINITION_REVISION_STALE: {title: '字段配置已变化', detail: '请刷新字段配置后重新查询。'},
+  EXTENSION_FILTER_INVALID: {title: '扩展字段筛选无效', detail: '请检查扩展字段筛选条件后重试。'},
   ADAPTER_UNBIND_REQUIRED: {title: '需要外部解除授权', detail: '请先完成外部平台解除授权后重试。'},
   AUTHORIZATION_REQUIRED: {title: '需要外部授权', detail: '当前绑定由外部授权流程管理。'},
   BINDING_EDIT_NOT_ALLOWED: {title: '绑定不可编辑', detail: '当前绑定状态不支持手工修改。'},

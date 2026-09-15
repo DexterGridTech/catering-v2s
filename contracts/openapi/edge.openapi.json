@@ -674,6 +674,15 @@
       "ExtensionDefinitionUpdateRequest": {
         "$ref": "./components/extension/extension.schemas.json#/components/schemas/ExtensionDefinitionUpdateRequest"
       },
+      "ExtensionFieldType": {
+        "$ref": "./components/extension/extension.schemas.json#/components/schemas/ExtensionFieldType"
+      },
+      "ExtensionFilter": {
+        "$ref": "./components/extension/extension.schemas.json#/components/schemas/ExtensionFilter"
+      },
+      "ExtensionFilterQuery": {
+        "$ref": "./components/extension/extension.schemas.json#/components/schemas/ExtensionFilterQuery"
+      },
       "ExtensionEntityCatalogPage": {
         "$ref": "./components/extension/extension.schemas.json#/components/schemas/ExtensionEntityCatalogPage"
       },

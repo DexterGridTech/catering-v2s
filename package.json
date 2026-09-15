@@ -15,6 +15,7 @@
     "apps/terminal/ui/feature/*",
     "apps/terminal/ui/integration/*",
     "apps/terminal/adapter/android/*",
+    "apps/terminal/assembly/base/*",
     "apps/terminal/assembly/android/*"
   ],
   "devDependencies": {

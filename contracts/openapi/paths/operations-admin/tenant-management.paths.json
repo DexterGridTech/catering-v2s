@@ -17,6 +17,8 @@
         "x-page-key": "OPERATIONS-TENANT",
         "x-idempotency-policy": "FORBIDDEN",
         "x-error-codes": [
+          "EXTENSION_DEFINITION_REVISION_STALE",
+          "EXTENSION_FILTER_INVALID",
           "PLATFORM_COMMON_ACCESS_DENIED",
           "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
           "PLATFORM_COMMON_CONTEXT_STALE",
@@ -126,6 +128,24 @@
               "type": "integer",
               "minimum": 1,
               "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "extensionFilters",
+            "required": false,
+            "schema": {
+              "$ref": "../../components/extension/extension.schemas.json#/components/schemas/ExtensionFilterQuery"
+            }
+          },
+          {
+            "in": "query",
+            "name": "definitionRevision",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
             }
           }
         ],

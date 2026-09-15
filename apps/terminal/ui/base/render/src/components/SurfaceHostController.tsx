@@ -5,6 +5,7 @@ import {useRenderContext} from '../contexts/RenderContext'
 import {
   calculateSurfaceHostGeometry,
   type SurfaceCanvasDeclaration,
+  type SurfaceHostAvailability,
   type SurfaceHostGeometry,
   type SurfaceHostSnapshot,
   type SurfaceHostSource,
@@ -19,6 +20,8 @@ export type SurfaceHostControllerProps = Readonly<{
 
 const subscribeToNothing = (_listener: (snapshot: SurfaceHostSnapshot | null) => void): (() => void) => () => undefined
 const readNoSnapshot = (): null => null
+const subscribeToNoAvailability = (_listener: (availability: SurfaceHostAvailability) => void): (() => void) => () => undefined
+const readNoAvailability = (): undefined => undefined
 
 export const useSurfaceHostSnapshot = (
   source: SurfaceHostSource | undefined,
@@ -27,6 +30,15 @@ export const useSurfaceHostSnapshot = (
   const getSnapshot = source?.getSnapshot ?? readNoSnapshot
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
   return source === undefined ? undefined : snapshot
+}
+
+export const useSurfaceHostAvailability = (
+  source: SurfaceHostSource | undefined,
+): SurfaceHostAvailability | undefined => {
+  const subscribe = source?.subscribeAvailability ?? subscribeToNoAvailability
+  const getSnapshot = source?.getAvailability ?? readNoAvailability
+  const availability = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+  return source?.getAvailability === undefined ? undefined : availability
 }
 
 const staticGeometryOf = (canvas: SurfaceCanvasDeclaration): SurfaceHostGeometry => Object.freeze({
@@ -53,6 +65,8 @@ export const SurfaceHostController = ({canvas, source, snapshot: controlledSnaps
   }, [controlledSnapshot, source])
 
   const snapshot = controlledSnapshot === undefined ? internalSnapshot : controlledSnapshot
+  const explicitAvailability = useSurfaceHostAvailability(source)
+  const availability = explicitAvailability ?? (snapshot === null ? 'pending' : 'ready')
 
   const geometry = useMemo(
     () => source === undefined
@@ -86,6 +100,13 @@ export const SurfaceHostController = ({canvas, source, snapshot: controlledSnaps
   }, [canvas.height, canvas.width, geometry, logger, source])
 
   if (geometry === null) {
+    if (availability === 'unavailable') {
+      return (
+        <View testID="ui-base-render:surface-host-failure" style={styles.viewport}>
+          {children}
+        </View>
+      )
+    }
     return (
       <View
         testID="ui-base-render:surface-host-pending"

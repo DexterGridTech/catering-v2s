@@ -170,7 +170,7 @@
           {
             "from": null,
             "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -296,7 +296,7 @@
           {
             "from": null,
             "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -436,7 +436,7 @@
           {
             "from": null,
             "to": 20,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -603,7 +603,7 @@
           {
             "from": null,
             "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -781,7 +781,7 @@
           {
             "from": null,
             "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -1125,7 +1125,7 @@
           {
             "from": null,
             "to": 44,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -1327,7 +1327,7 @@
           {
             "from": null,
             "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -1490,7 +1490,7 @@
           {
             "from": null,
             "to": 15,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -1653,7 +1653,7 @@
           {
             "from": null,
             "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -1840,7 +1840,7 @@
           {
             "from": null,
             "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -1966,7 +1966,7 @@
           {
             "from": null,
             "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -2121,7 +2121,7 @@
           {
             "from": null,
             "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -2292,7 +2292,7 @@
           {
             "from": null,
             "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -2463,7 +2463,7 @@
           {
             "from": null,
             "to": 14,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -2650,7 +2650,7 @@
           {
             "from": null,
             "to": 15,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -2776,7 +2776,7 @@
           {
             "from": null,
             "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -2945,7 +2945,7 @@
           {
             "from": null,
             "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -3116,7 +3116,7 @@
           {
             "from": null,
             "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -3317,7 +3317,7 @@
           {
             "from": null,
             "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -3454,7 +3454,7 @@
           {
             "from": null,
             "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -3610,7 +3610,7 @@
           {
             "from": null,
             "to": 14,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -3814,7 +3814,7 @@
           {
             "from": null,
             "to": 31,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -3953,7 +3953,7 @@
           {
             "from": null,
             "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -4133,7 +4133,7 @@
           {
             "from": null,
             "to": 16,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -4271,7 +4271,7 @@
           {
             "from": null,
             "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -4482,7 +4482,7 @@
           {
             "from": null,
             "to": 21,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -4745,7 +4745,7 @@
           {
             "from": null,
             "to": 48,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -4882,7 +4882,7 @@
           {
             "from": null,
             "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -5027,7 +5027,7 @@
           {
             "from": null,
             "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -5150,7 +5150,7 @@
           {
             "from": null,
             "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -5273,7 +5273,7 @@
           {
             "from": null,
             "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -5410,7 +5410,7 @@
           {
             "from": null,
             "to": 17,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -5533,7 +5533,7 @@
           {
             "from": null,
             "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -5665,7 +5665,7 @@
           {
             "from": null,
             "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -5824,7 +5824,7 @@
           {
             "from": null,
             "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -5983,7 +5983,7 @@
           {
             "from": null,
             "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -6150,7 +6150,7 @@
           {
             "from": null,
             "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -6317,7 +6317,7 @@
           {
             "from": null,
             "to": 18,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -6472,7 +6472,7 @@
           {
             "from": null,
             "to": 18,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -6649,7 +6649,7 @@
           {
             "from": null,
             "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -6776,7 +6776,7 @@
           {
             "from": null,
             "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -7096,7 +7096,7 @@
           {
             "from": null,
             "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -7251,7 +7251,7 @@
           {
             "from": null,
             "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -7406,7 +7406,7 @@
           {
             "from": null,
             "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -7523,7 +7523,7 @@
           {
             "from": null,
             "to": 10,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -7698,7 +7698,7 @@
           {
             "from": null,
             "to": 17,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -7874,7 +7874,7 @@
           {
             "from": null,
             "to": 21,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -7991,7 +7991,7 @@
           {
             "from": null,
             "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -8162,7 +8162,7 @@
           {
             "from": null,
             "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -8345,7 +8345,7 @@
           {
             "from": null,
             "to": 15,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -8508,7 +8508,7 @@
           {
             "from": null,
             "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -8671,7 +8671,7 @@
           {
             "from": null,
             "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -8854,7 +8854,7 @@
           {
             "from": null,
             "to": 14,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -9017,7 +9017,7 @@
           {
             "from": null,
             "to": 14,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -9126,7 +9126,7 @@
           {
             "from": null,
             "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -9243,7 +9243,7 @@
           {
             "from": null,
             "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -9360,7 +9360,7 @@
           {
             "from": null,
             "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
+            "reason": "current managed acceptance program maximum"
           }
         ]
       }
@@ -9465,5 +9465,5 @@
       "digest": "04be8368bd8477c454654136a6510c0d8106f1e9902af70988a59237d944518c"
     }
   },
-  "contractDigest": "571eb98fc52f525c6dc22bb97d1a4350b53c600301382078d7ca435becc83136"
+  "contractDigest": "f06b010557489aa05a0b1294053e66583e3640a2f5b5863f5688c66e9bdfb685"
 }

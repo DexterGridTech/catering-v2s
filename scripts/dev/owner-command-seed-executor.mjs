@@ -36,6 +36,11 @@ const GROUP_SEED_CAPABILITIES = Object.freeze([
   'BC-ORG-REGION-STATUS', 'BC-ORG-STORE-CREATE', 'BC-ORG-STORE-STATUS', 'BC-ORG-TENANT-CREATE',
   'BC-ORG-TENANT-STATUS',
 ]);
+const EXTENSION_HOST_TYPES = new Set([
+  'BRAND', 'TENANT', 'HEAD_COMPANY', 'STORE', 'CONTRACT', 'COMMERCIAL_GROUP', 'REGION', 'PROJECT',
+]);
+const FLAT_EXTENSION_HOST_TYPES = new Set(['BRAND', 'TENANT', 'HEAD_COMPANY', 'STORE', 'CONTRACT']);
+const EXTENSION_FIELD_TYPES = new Set(['TEXT', 'NUMBER', 'DATE', 'BOOLEAN', 'SELECT']);
 
 export class FormalSeedFailure extends Error {
   constructor(code) { super(code); this.code = code; }
@@ -66,6 +71,78 @@ export function validateThreeStateSeedCoverage(fixture) {
     ['workspaceIam.roles', workspaceIam?.roles],
     ['workspaceIam.accounts', workspaceIam?.accounts],
   ]) requireThreeStateCoverage(entries, label);
+}
+
+/**
+ * The formal seed must exercise the same definition shape that the feature
+ * exposes.  This is intentionally a fixture-level gate: a runtime seed must
+ * never silently turn NUMBER/DATE/BOOLEAN/SELECT back into TEXT or make a
+ * tree-only host look like a flat list host.
+ */
+export function validateExtensionDefinitionSeedCoverage(fixture) {
+  const definitions = fixture?.stableFixtures?.extensionDefinitions;
+  if (!Array.isArray(definitions) || definitions.length !== 8) fail('SEED_EXTENSION_DEFINITION_SET_INVALID');
+  const seenHosts = new Set();
+  const typeCoverage = new Set();
+  const flagCoverage = new Set();
+  let disabledFieldCount = 0;
+  for (const definition of definitions) {
+    if (!definition || !EXTENSION_HOST_TYPES.has(definition.hostType) || seenHosts.has(definition.hostType)) {
+      fail('SEED_EXTENSION_DEFINITION_HOST_INVALID');
+    }
+    seenHosts.add(definition.hostType);
+    if (!Array.isArray(definition.fields) || definition.fields.length === 0) fail(`SEED_EXTENSION_FIELDS_INVALID:${definition.hostType}`);
+    const keys = new Set();
+    for (const field of definition.fields) {
+      if (!field || typeof field.key !== 'string' || !/^[a-z][A-Za-z0-9_]{0,79}$/.test(field.key) || keys.has(field.key)
+        || typeof field.label !== 'string' || !field.label || !EXTENSION_FIELD_TYPES.has(field.type)
+        || !['ENABLED', 'DISABLED'].includes(field.status) || typeof field.required !== 'boolean') {
+        fail(`SEED_EXTENSION_FIELD_INVALID:${definition.hostType}`);
+      }
+      keys.add(field.key);
+      typeCoverage.add(field.type);
+      const options = field.options ?? [];
+      if (!Array.isArray(options) || (field.type === 'SELECT' && options.length === 0)
+        || (field.type !== 'SELECT' && options.length > 0) || options.some((value) => typeof value !== 'string' || !value)) {
+        fail(`SEED_EXTENSION_FIELD_OPTIONS_INVALID:${definition.hostType}:${field.key}`);
+      }
+      if (field.status === 'DISABLED') disabledFieldCount += 1;
+      if (FLAT_EXTENSION_HOST_TYPES.has(definition.hostType)) {
+        if (typeof field.listDisplay !== 'boolean' || typeof field.searchable !== 'boolean') {
+          fail(`SEED_EXTENSION_FLAGS_INVALID:${definition.hostType}:${field.key}`);
+        }
+        flagCoverage.add(`${field.listDisplay ? 'LIST' : 'NO_LIST'}:${field.searchable ? 'SEARCH' : 'NO_SEARCH'}`);
+      } else if (field.listDisplay !== null || field.searchable !== null) {
+        fail(`SEED_EXTENSION_NA_FLAGS_INVALID:${definition.hostType}:${field.key}`);
+      }
+    }
+  }
+  for (const hostType of EXTENSION_HOST_TYPES) if (!seenHosts.has(hostType)) fail(`SEED_EXTENSION_HOST_MISSING:${hostType}`);
+  for (const type of EXTENSION_FIELD_TYPES) if (!typeCoverage.has(type)) fail(`SEED_EXTENSION_TYPE_COVERAGE_MISSING:${type}`);
+  for (const flags of ['NO_LIST:NO_SEARCH', 'LIST:NO_SEARCH', 'NO_LIST:SEARCH', 'LIST:SEARCH']) {
+    if (!flagCoverage.has(flags)) fail(`SEED_EXTENSION_FLAG_COVERAGE_MISSING:${flags}`);
+  }
+  if (disabledFieldCount === 0) fail('SEED_EXTENSION_DISABLED_FIELD_MISSING');
+  return Object.freeze({hostCount: seenHosts.size, typeCount: typeCoverage.size, flagCount: flagCoverage.size, disabledFieldCount});
+}
+
+export function validateExtensionDefinitionRevisionChangeCoverage(fixture) {
+  const definitions = fixture?.stableFixtures?.extensionDefinitions;
+  const changes = fixture?.stableFixtures?.extensionDefinitionRevisionChanges;
+  if (!Array.isArray(definitions) || !Array.isArray(changes) || changes.length === 0) {
+    fail('SEED_EXTENSION_REVISION_CHANGE_FIXTURE_MISSING');
+  }
+  const definitionsByKey = new Map(definitions.map((definition) => [definition.key, definition]));
+  const seen = new Set();
+  for (const change of changes) {
+    const definition = definitionsByKey.get(change?.definitionKey);
+    const field = definition?.fields?.find((entry) => entry.key === change?.fieldKey);
+    if (!definition || !field || seen.has(change.definitionKey) || typeof change.displaySuffix !== 'string' || !change.displaySuffix.trim()) {
+      fail('SEED_EXTENSION_REVISION_CHANGE_FIXTURE_INVALID');
+    }
+    seen.add(change.definitionKey);
+  }
+  return Object.freeze({changeCount: changes.length, definitionKeys: [...seen]});
 }
 const defaultSeedLogoBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X+0JXwAAAABJRU5ErkJggg==', 'base64');
 
@@ -198,6 +275,8 @@ export function resolveInvitationCreationPlan(fixture) {
 export function validateFormalSeedStaticInputs({fixture, registry}) {
   if (fixture?.profile?.id !== 'r5-full' || fixture?.profile?.version !== 1) fail('SEED_PROFILE_CONTRACT_INVALID');
   validateThreeStateSeedCoverage(fixture);
+  validateExtensionDefinitionSeedCoverage(fixture);
+  validateExtensionDefinitionRevisionChangeCoverage(fixture);
   const groupRole = fixture?.stableFixtures?.workspaceIam?.roles?.find((entry) => entry.key === 'role-group');
   if (!groupRole || GROUP_SEED_CAPABILITIES.some((capability) => !groupRole.actionCapabilityKeys?.includes(capability))) {
     const missing = GROUP_SEED_CAPABILITIES.find((capability) => !groupRole?.actionCapabilityKeys?.includes(capability)) ?? 'role-group';
@@ -339,7 +418,7 @@ export function resolveExtensionValues(definitionFixture, ownerReadback, fixture
     keys.add(field.key);
   }
   const fixtureKeys = Object.keys(fixtureValues);
-  if (fixtureKeys.length !== declared.length || fixtureKeys.some((key) => !keys.has(key))) throw new FormalSeedFailure('SEED_EXTENSION_VALUES_DECLARATION_INVALID');
+  if (fixtureKeys.some((key) => !keys.has(key))) throw new FormalSeedFailure('SEED_EXTENSION_VALUES_DECLARATION_INVALID');
   const ownerFields = ownerReadback?.definitions;
   if (!Array.isArray(ownerFields) || ownerFields.length !== declared.length) throw new FormalSeedFailure('SEED_EXTENSION_OWNER_READBACK_INVALID');
   const ownerByKey = new Map();
@@ -347,10 +426,34 @@ export function resolveExtensionValues(definitionFixture, ownerReadback, fixture
     if (!field?.key || ownerByKey.has(field.key)) throw new FormalSeedFailure('SEED_EXTENSION_OWNER_READBACK_INVALID');
     ownerByKey.set(field.key, field);
   }
-  return Object.fromEntries(declared.map((field) => {
+  const result = {};
+  for (const field of declared) {
     if (!ownerByKey.has(field.key)) throw new FormalSeedFailure('SEED_EXTENSION_OWNER_READBACK_INVALID');
-    return [field.key, fixtureValues[field.key]];
-  }));
+    const owner = ownerByKey.get(field.key);
+    const expectedType = field.type ?? 'TEXT';
+    if (field.type !== undefined && owner.type !== expectedType) throw new FormalSeedFailure('SEED_EXTENSION_OWNER_READBACK_INVALID');
+    if (field.listDisplay !== undefined && owner.listDisplay !== field.listDisplay) throw new FormalSeedFailure('SEED_EXTENSION_OWNER_READBACK_INVALID');
+    if (field.searchable !== undefined && owner.searchable !== field.searchable) throw new FormalSeedFailure('SEED_EXTENSION_OWNER_READBACK_INVALID');
+    if (field.status !== undefined && owner.status !== field.status) throw new FormalSeedFailure('SEED_EXTENSION_OWNER_READBACK_INVALID');
+    if (field.required !== undefined && owner.required !== field.required) throw new FormalSeedFailure('SEED_EXTENSION_OWNER_READBACK_INVALID');
+    if (field.options !== undefined && JSON.stringify(owner.options ?? []) !== JSON.stringify(field.options ?? [])) throw new FormalSeedFailure('SEED_EXTENSION_OWNER_READBACK_INVALID');
+    if (!Object.hasOwn(fixtureValues, field.key)) {
+      if (field.required === true) throw new FormalSeedFailure('SEED_EXTENSION_VALUES_DECLARATION_INVALID');
+      continue;
+    }
+    const value = fixtureValues[field.key];
+    if (value === null || value === undefined) {
+      result[field.key] = null;
+      continue;
+    }
+    if (expectedType === 'TEXT' && typeof value !== 'string') throw new FormalSeedFailure('SEED_EXTENSION_VALUE_TYPE_INVALID');
+    if (expectedType === 'NUMBER' && (typeof value !== 'number' || !Number.isFinite(value))) throw new FormalSeedFailure('SEED_EXTENSION_VALUE_TYPE_INVALID');
+    if (expectedType === 'DATE' && (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value))) throw new FormalSeedFailure('SEED_EXTENSION_VALUE_TYPE_INVALID');
+    if (expectedType === 'BOOLEAN' && typeof value !== 'boolean') throw new FormalSeedFailure('SEED_EXTENSION_VALUE_TYPE_INVALID');
+    if (expectedType === 'SELECT' && (typeof value !== 'string' || !(field.options ?? []).includes(value))) throw new FormalSeedFailure('SEED_EXTENSION_VALUE_TYPE_INVALID');
+    result[field.key] = value;
+  }
+  return result;
 }
 
 /**
@@ -360,7 +463,7 @@ export function resolveExtensionValues(definitionFixture, ownerReadback, fixture
  * SET carries canonical JSON text, and CLEAR is never inferred from null.
  */
 function extensionSubmission(values) {
-  return Object.entries(values).map(([fieldKey, value]) => ({
+  return Object.entries(values).filter(([, value]) => value !== null && value !== undefined).map(([fieldKey, value]) => ({
     fieldKey,
     valueJson: JSON.stringify(value),
     mode: 'SET',
@@ -370,8 +473,8 @@ function extensionSubmission(values) {
 function assertExtensionValueReadback(created, expectedValues) {
   const actual = created?.json?.extensionValues;
   const actualKeys = actual && typeof actual === 'object' ? Object.keys(actual).sort() : [];
-  const expectedKeys = Object.keys(expectedValues).sort();
-  if (actualKeys.length !== expectedKeys.length || actualKeys.some((key, index) => key !== expectedKeys[index] || actual[key] !== expectedValues[key])) {
+  const expectedPresentKeys = Object.entries(expectedValues).filter(([, value]) => value !== null && value !== undefined).map(([key]) => key).sort();
+  if (actualKeys.length !== expectedPresentKeys.length || actualKeys.some((key, index) => key !== expectedPresentKeys[index] || actual[key] !== expectedValues[key])) {
     throw new FormalSeedFailure('SEED_EXTENSION_VALUE_READBACK_INVALID');
   }
 }
@@ -476,7 +579,7 @@ async function executeFormalSeed() {
     for (const definition of fixture.stableFixtures.extensionDefinitions) {
       const key = fixture.stableFixtures.groupWorkspaces.find((entry) => entry.key === definition.workspace).groupWorkspaceKey;
       const before = await request(`extension-read-${definition.key}`, 'getExtensionDefinition', {groupWorkspaceKey: key, entityType: definition.hostType}, {cookie: platformCookie});
-      const updated = await request(`extension-${definition.key}`, 'replaceExtensionDefinition', {groupWorkspaceKey: key, entityType: definition.hostType}, {cookie: platformCookie, body: {expectedVersion: requireValue(before.json?.revision, 'SEED_EXTENSION_REVISION'), definitions: definition.fields.map((field, displayOrder) => ({key: requireValue(field?.key, 'SEED_EXTENSION_DEFINITION_FIXTURE_INVALID'), label: requireValue(field?.label, 'SEED_EXTENSION_DEFINITION_FIXTURE_INVALID'), type: 'TEXT', required: false, options: [], status: 'ENABLED', displayOrder}))}});
+      const updated = await request(`extension-${definition.key}`, 'replaceExtensionDefinition', {groupWorkspaceKey: key, entityType: definition.hostType}, {cookie: platformCookie, body: {expectedVersion: requireValue(before.json?.revision, 'SEED_EXTENSION_REVISION'), definitions: definition.fields.map((field, displayOrder) => ({key: requireValue(field?.key, 'SEED_EXTENSION_DEFINITION_FIXTURE_INVALID'), label: requireValue(field?.label, 'SEED_EXTENSION_DEFINITION_FIXTURE_INVALID'), type: field.type, listDisplay: FLAT_EXTENSION_HOST_TYPES.has(definition.hostType) ? field.listDisplay : null, searchable: FLAT_EXTENSION_HOST_TYPES.has(definition.hostType) ? field.searchable : null, required: field.required, options: field.options ?? [], status: field.status, displayOrder: field.displayOrder ?? displayOrder, displaySuffix: field.displaySuffix ?? null}))}});
       ids.extensionDefinition[`${definition.workspace}:${definition.hostType}`] = updated.json;
     }
     const extensionValuesFor = (workspace, hostType, fixtureValues) => {
@@ -541,12 +644,12 @@ async function executeFormalSeed() {
     // The remaining implementation continues through generated owner operations;
     // every created id is retained only in memory and verified by later owner reads.
     for (const region of fixture.stableFixtures.organization.regions) {
-      const extensionValues = extensionValuesFor('gw-aurora', 'REGION', region.extensionValues);
+      const extensionValues = extensionValuesFor('gw-aurora', 'REGION', region.extensionValues ?? {});
       const created = await request(`region-${region.key}`, 'createOperationsOrganizationRegion', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: region.code, name: region.name, extensionValues: extensionSubmission(extensionValues)}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.REGION += 1; ids.region[region.key] = created.json;
     }
     for (const project of fixture.stableFixtures.organization.projects) {
       const parent = fixture.stableFixtures.organization.regions.find((entry) => entry.key === project.parent);
-      const extensionValues = extensionValuesFor('gw-aurora', 'PROJECT', project.extensionValues);
+      const extensionValues = extensionValuesFor('gw-aurora', 'PROJECT', project.extensionValues ?? {});
       const created = await request(`project-${project.key}`, 'createOperationsOrganizationProject', {groupWorkspaceKey: aurora, regionId: requireValue(ids.region[parent.key]?.id, 'SEED_REGION_ID')}, {cookie: operationsCookie, expected: [201], body: {code: project.code, name: project.name, phases: project.phases.map((name) => ({name})), extensionValues: extensionSubmission(extensionValues)}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.PROJECT += 1; ids.project[project.key] = created.json;
     }
     for (const brand of fixture.stableFixtures.organization.brands) { const extensionValues = extensionValuesFor('gw-aurora', 'BRAND', brand.extensionValues); const created = await request(`brand-${brand.key}`, 'createOperationsOrganizationBrand', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: brand.code, name: brand.name, extensionValues: extensionSubmission(extensionValues)}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.BRAND += 1; ids.brand[brand.key] = created.json; }
@@ -640,6 +743,32 @@ async function executeFormalSeed() {
         await selectProjectScope({projectRef: requireValue(ids.project[store.project]?.id, 'SEED_CONTRACT_PROJECT_ID'), stage: `project-select-contract-invalidate-${contract.key}`});
         await request(`contract-invalidate-${contract.key}`, 'invalidateOperationsContract', {groupWorkspaceKey: aurora, contractId: requireValue(created.json?.id, 'SEED_CONTRACT_ID')}, {cookie: operationsCookie, body: {expectedVersion: requireValue(created.json?.revision, 'SEED_CONTRACT_VERSION')}});
       }
+    }
+    for (const change of fixture.stableFixtures.extensionDefinitionRevisionChanges) {
+      const definition = fixture.stableFixtures.extensionDefinitions.find((entry) => entry.key === change.definitionKey);
+      const workspaceKey = fixture.stableFixtures.groupWorkspaces.find((entry) => entry.key === definition.workspace).groupWorkspaceKey;
+      const current = ids.extensionDefinition[`${definition.workspace}:${definition.hostType}`];
+      const nextDefinitions = definition.fields.map((field, displayOrder) => ({
+        key: requireValue(field?.key, 'SEED_EXTENSION_DEFINITION_FIXTURE_INVALID'),
+        label: requireValue(field?.label, 'SEED_EXTENSION_DEFINITION_FIXTURE_INVALID'),
+        type: field.type,
+        listDisplay: FLAT_EXTENSION_HOST_TYPES.has(definition.hostType) ? field.listDisplay : null,
+        searchable: FLAT_EXTENSION_HOST_TYPES.has(definition.hostType) ? field.searchable : null,
+        required: field.required,
+        options: field.options ?? [],
+        status: field.status,
+        displayOrder: field.displayOrder ?? displayOrder,
+        displaySuffix: field.key === change.fieldKey ? change.displaySuffix : field.displaySuffix ?? null,
+      }));
+      const changed = await request(`extension-revision-change-${change.definitionKey}`, 'replaceExtensionDefinition', {groupWorkspaceKey: workspaceKey, entityType: definition.hostType}, {cookie: platformCookie, body: {expectedVersion: requireValue(current?.revision, 'SEED_EXTENSION_REVISION'), definitions: nextDefinitions}});
+      if (changed.json?.revision !== Number(current?.revision) + 1 || changed.json?.definitions?.find((field) => field.key === change.fieldKey)?.displaySuffix !== change.displaySuffix) {
+        throw new FormalSeedFailure(`SEED_EXTENSION_REVISION_CHANGE_READBACK_INVALID:${change.definitionKey}`);
+      }
+      const readback = await request(`extension-revision-read-${change.definitionKey}`, 'getExtensionDefinition', {groupWorkspaceKey: workspaceKey, entityType: definition.hostType}, {cookie: platformCookie, idempotency: false});
+      if (readback.json?.revision !== changed.json?.revision || readback.json?.definitions?.find((field) => field.key === change.fieldKey)?.displaySuffix !== change.displaySuffix) {
+        throw new FormalSeedFailure(`SEED_EXTENSION_REVISION_CHANGE_READBACK_INVALID:${change.definitionKey}`);
+      }
+      ids.extensionDefinition[`${definition.workspace}:${definition.hostType}`] = readback.json;
     }
     // The public list face is intentionally a UI query surface.  Each invitation
     // is already read back by its lifecycle response, while account reads above

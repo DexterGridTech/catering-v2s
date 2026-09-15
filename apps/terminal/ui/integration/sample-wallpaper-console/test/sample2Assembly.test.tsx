@@ -29,14 +29,47 @@ import {
 } from '@catering-v2s/kernel-feature-sample-wallpaper'
 import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
 import {PrimitiveContainer, PrimitiveImage} from '@catering-v2s/ui-base-primitives'
-import {createSurfaceForDisplayIndex, createSampleWallpaperConsoleAssembly} from '../src'
+import {createSurfaceForDisplayIndex, createSampleWallpaperConsoleAssembly as createProductionSampleWallpaperConsoleAssembly} from '../src'
 import {wallpaperPickerTestIds} from '@catering-v2s/ui-feature-sample-wallpaper-picker'
-import {createTestPlatformPorts} from './support'
+import {createTestPlatformPorts, type TestPlatformPorts} from './support'
+
+type TestWallpaperConsoleAssemblyInput = Omit<Parameters<typeof createProductionSampleWallpaperConsoleAssembly>[0], 'platformPorts' | 'nativeLoadingCapability'> & Readonly<{
+  readonly platformPorts: TestPlatformPorts
+}>
+
+const createSampleWallpaperConsoleAssembly = (input: TestWallpaperConsoleAssemblyInput) => createProductionSampleWallpaperConsoleAssembly({
+  ...input,
+  nativeLoadingCapability: input.platformPorts.nativeLoadingCapability,
+})
+
+const PRIMARY_FRAME = {width: 360, height: 640} as const
+
+const createPrimaryHostSource = () => {
+  const snapshot = {
+    stableHostLogicalSize: PRIMARY_FRAME,
+    isHostPrimaryDisplay: true,
+  }
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: () => () => {},
+  }
+}
 
 const mount = (element: Parameters<typeof create>[0]): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined
   act(() => { renderer = create(element) })
   return renderer!
+}
+
+const measurePrimarySurface = (renderer: ReactTestRenderer): void => {
+  const frames = renderer.root.findAllByProps({testID: 'ui.base.input:surface-frame'})
+  act(() => {
+    for (const frame of frames) {
+      ;(frame.props.onLayout as (event: unknown) => void)({
+        nativeEvent: {layout: PRIMARY_FRAME},
+      })
+    }
+  })
 }
 
 const dispatchOptions = (displayMode: 'PRIMARY' | 'SECONDARY' = 'PRIMARY') => ({
@@ -76,6 +109,48 @@ describe('sample2 wallpaper console assembly', () => {
       if (mobilePrimary !== undefined) act(() => { mobilePrimary!.unmount() })
       releaseRuntimeForTest(laptop.runtime)
       releaseRuntimeForTest(mobile.runtime)
+    }
+  })
+
+  it('keeps one startup completion across a real-part navigation in one runtime', async () => {
+    const events: LogEvent[] = []
+    const assembly = await createSampleWallpaperConsoleAssembly({
+      platformPorts: createTestPlatformPorts({displayCount: 1, events}),
+      persistenceKey: `sample2-single-startup-completion-${Date.now()}`,
+      surfaceForm: 'mobile',
+      surfaceHostSourcesByDisplayIndex: {0: createPrimaryHostSource()},
+    })
+    let renderer: ReactTestRenderer | undefined
+    const layoutReadyBoundary = () => {
+      const boundaries = renderer!.root.findAllByProps({testID: 'ui-base-render:screen-ready-boundary'})
+      act(() => {
+        for (const boundary of boundaries) {
+          ;(boundary.props.onLayout as (event: unknown) => void)({
+            nativeEvent: {layout: PRIMARY_FRAME},
+          })
+        }
+      })
+    }
+    try {
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0))
+      measurePrimarySurface(renderer)
+      layoutReadyBoundary()
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)) })
+
+      await act(async () => {
+        const result = await assembly.runtime.dispatchCommand(loginSucceededCommand, {operatorName: 'Alice'}, dispatchOptions())
+        expect(result.status).toBe('completed')
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      expect(renderer.root.findByProps({testID: wallpaperPickerTestIds.root})).toBeDefined()
+      layoutReadyBoundary()
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)) })
+
+      expect(events.filter(event => event.event === 'startup.complete')).toHaveLength(1)
+      expect(events.some(event => event.event === 'startup.ready-failed')).toBe(false)
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
     }
   })
 

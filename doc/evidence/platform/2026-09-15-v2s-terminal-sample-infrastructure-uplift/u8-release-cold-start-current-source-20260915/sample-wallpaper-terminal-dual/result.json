@@ -1,0 +1,62 @@
+{
+  "runId": "sample-wallpaper-terminal-dual-1789464930531",
+  "app": "sample-wallpaper-terminal",
+  "packageName": "com.catering.v2s.terminal.samplewallpaper",
+  "serial": "emulator-5554",
+  "shape": "dual",
+  "failureMode": null,
+  "startedAt": "2026-09-15T09:35:30.531Z",
+  "business": "NOT_RUN",
+  "cleanup": "PASS",
+  "firstFailure": "startup ready timing record is incomplete",
+  "display": {
+    "ids": [
+      0,
+      2
+    ],
+    "hasSecondary": true
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": [
+      "11529215047789101945"
+    ]
+  },
+  "timeline": [
+    {
+      "event": "before-launch",
+      "timestamp": "2026-09-15T09:35:30.776Z",
+      "splashVisible": false,
+      "packagePid": ""
+    },
+    {
+      "event": "after-launch-before-ready-poll",
+      "timestamp": "2026-09-15T09:35:31.130Z",
+      "millisecondsSinceLaunch": 338,
+      "splashVisible": true
+    },
+    {
+      "event": "ready-or-failure-observed",
+      "timestamp": "2026-09-15T09:36:03.716Z",
+      "millisecondsSinceLaunch": 32924,
+      "readyCandidate": false,
+      "readyHidden": false,
+      "startupComplete": false,
+      "failurePage": false,
+      "splashVisible": false,
+      "splashVisibleBeforeReady": false,
+      "preReadyCaptured": true
+    },
+    {
+      "event": "settled",
+      "timestamp": "2026-09-15T09:36:08.785Z",
+      "splashVisible": false,
+      "packagePid": "",
+      "secondarySurfaceObserved": false,
+      "primaryUiHasRnContent": false
+    }
+  ],
+  "finishedAt": "2026-09-15T09:36:08.847Z"
+}

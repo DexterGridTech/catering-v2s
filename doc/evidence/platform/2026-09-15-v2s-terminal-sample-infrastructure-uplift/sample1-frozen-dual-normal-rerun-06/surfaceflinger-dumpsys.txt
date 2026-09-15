@@ -1,0 +1,21 @@
+Display 4619827259835644672
+    connectionType=Internal
+    colorModes=
+        ColorMode::NATIVE
+    deviceProductInfo={name="EMU_display_0", manufacturerPnpId=GGL, productId=1, manufactureWeek=27, manufactureYear=2006, relativeAddress=[]}
+    name="EMU_display_0"
+    powerMode=On
+    renderRate=60.00 Hz
+    activeMode={id=0, hwcId=0, resolution=2560x1600, vsyncRate=60.00 Hz, dpi=320.00x320.00, group=0, vrrConfig=N/A}
+    displayModes=
+        {id=0, hwcId=0, resolution=2560x1600, vsyncRate=60.00 Hz, dpi=320.00x320.00, group=0, vrrConfig=N/A}
+    displayManagerPolicy={defaultModeId=0, allowGroupSwitching=false, primaryRanges={physical=[0.00 Hz, inf Hz], render=[0.00 Hz, 60.00 Hz]}, appRequestRanges={physical=[0.00 Hz, inf Hz], render=[0.00 Hz, inf Hz]} idleScreenConfig=nullptr}
+    frameRateOverrideConfig=Enabled
+    idleTimer=
+        interval=nullopt
+        controller=Platform
+
+Virtual Display 11529215047789101945
+    name="Emulator 2D Display"
+    powerMode=On
+

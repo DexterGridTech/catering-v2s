@@ -5,7 +5,7 @@ import {createElement, type ReactElement} from 'react'
 import {createHash} from 'node:crypto'
 import {readFileSync} from 'node:fs'
 import {describe, expect, it, vi} from 'vitest'
-import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort} from '@catering-v2s/kernel-base-platform-ports'
+import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort, NativeLoadingCapability} from '@catering-v2s/ui-base-test-support'
 import type {CommandDispatchResult, Runtime} from '@catering-v2s/kernel-base-runtime'
 import {
   createRendererCatalog,
@@ -28,6 +28,7 @@ import {
   wallpaperPickerTestIds,
   sampleWallpaperPickerAssembly,
 } from '../src/index'
+import {WallpaperSystemNotice} from '../src/components/WallpaperSystemNotice'
 import expectedW1 from '../assets/w1.jpg'
 import expectedW2 from '../assets/w2.jpg'
 import expectedW3 from '../assets/w3.jpg'
@@ -46,6 +47,27 @@ const completed = (): CommandDispatchResult => ({
   commandId: 'cmd_test' as CommandDispatchResult['commandId'],
   status: 'completed',
   actorResults: [],
+})
+
+const resolvedSystemFailure = (): CommandDispatchResult => ({
+  requestId: null,
+  commandId: 'cmd_system_failure' as CommandDispatchResult['commandId'],
+  status: 'error',
+  actorResults: [{
+    actorKey: 'test.system-failure',
+    status: 'error',
+    startedAt: 1,
+    completedAt: 2,
+    result: null,
+    error: {
+      key: 'test.system-failure',
+      code: 'ERR_TEST_SYSTEM_FAILURE',
+      message: 'test system failure',
+      category: 'SYSTEM',
+      severity: 'MEDIUM',
+      details: {phase: 'before-write'},
+    },
+  }],
 })
 
 const logger = (): LoggerPort => {
@@ -71,6 +93,11 @@ const createStateSource = (root: RuntimeStateRoot) => ({
   subscribe: () => () => undefined,
 })
 
+const nativeLoadingCapability: NativeLoadingCapability = Object.freeze({
+  targetPhysicalSurface: Object.freeze({surfaceKey: 'PRIMARY', displayIndex: 0}),
+  hideOnce: async reason => Object.freeze({hidden: true, alreadyHidden: false, reason}),
+})
+
 const rootFor = (wallpaperId: 'none' | 'w1' | 'w2' | 'w3', pendingWallpaperId?: 'none' | 'w1' | 'w2' | 'w3') => Object.freeze({
   'kernel.feature.sample-wallpaper.selection': Object.freeze({wallpaperId, ...(pendingWallpaperId === undefined ? {} : {pendingWallpaperId})}),
 }) as RuntimeStateRoot
@@ -94,6 +121,7 @@ const renderProvider = (
     uiCatalog: createUiCatalog([]),
     rendererCatalog: createRendererCatalog([]),
     logger: logger(),
+    nativeLoadingCapability,
     runtimeFacts: {} as RenderProviderProps['runtimeFacts'],
     dispatchCommand,
     selectUiVariable: (_state, declaration) => declaration.defaultValue,
@@ -110,6 +138,7 @@ describe('sample wallpaper picker', () => {
   it('exports one assembly, one part and one asset map', () => {
     expect(sampleWallpaperPickerAssembly.parts.map(part => part.catalogEntry.partKey)).toEqual([
       'sample.wallpaper.picker',
+      'sample.wallpaper.system-notice',
     ])
     expect(Object.keys(assetsById)).toEqual(['none', 'w1', 'w2', 'w3'])
     expect(assetsById.none).toBeUndefined()
@@ -148,6 +177,7 @@ describe('sample wallpaper picker', () => {
     const selected = mount(renderProvider(rootFor('w3'), commandDispatch([]), createElement(WallpaperBackground)))
     const image = selected.root.findByProps({testID: 'sample.wallpaper.background'})
     expect(image.props.source).toBe(expectedW3)
+    expect(image.props.accessibilityLabel).toBe('当前壁纸：海滩')
     expect(image.props.layout).toBe('background')
     selected.unmount()
   })
@@ -188,6 +218,56 @@ describe('sample wallpaper picker', () => {
     expect(confirm.props.disabled).toBe(true)
     act(() => { confirm.props.onPress() })
     expect(calls).toHaveLength(1)
+    renderer.unmount()
+  })
+
+  it('consumes a resolved system failure at the select production entrance and observes it in this feature', async () => {
+    const calls: Array<Readonly<{name: string; payload: unknown}>> = []
+    const dispatch = (async command => {
+      calls.push({name: command.definition.commandName, payload: command.payload})
+      return command.definition.commandName === wallpaperOptionSelectedCommand.commandName
+        ? resolvedSystemFailure()
+        : completed()
+    }) as RenderProviderProps['dispatchCommand']
+    const renderer = mount(renderProvider(rootFor('w1'), dispatch, createElement(WallpaperPicker)))
+    const option = renderer.root.findByProps({testID: wallpaperOptionTestId('w2')})
+    await act(async () => { await option.props.onSelectedChange() })
+    expect(calls.map(call => call.name)).toEqual([
+      wallpaperOptionSelectedCommand.commandName,
+      'ui.feature.sample-wallpaper-picker.wallpaper-system-failure-observed',
+    ])
+    expect(calls[1]?.payload).toEqual({operation: 'select', phase: 'before-write'})
+    renderer.unmount()
+  })
+
+  it('consumes a rejected confirm dispatch and observes an unknown write phase without an unhandled rejection', async () => {
+    const calls: Array<Readonly<{name: string; payload: unknown}>> = []
+    const dispatch = (async command => {
+      calls.push({name: command.definition.commandName, payload: command.payload})
+      if (command.definition.commandName === confirmWallpaperRequestedCommand.commandName) {
+        throw new Error('test dispatch rejection')
+      }
+      return completed()
+    }) as RenderProviderProps['dispatchCommand']
+    const renderer = mount(renderProvider(rootFor('w1', 'w2'), dispatch, createElement(WallpaperPicker)))
+    const confirm = renderer.root.findByProps({testID: wallpaperPickerTestIds.confirm})
+    await act(async () => { await confirm.props.onPress() })
+    expect(calls.map(call => call.name)).toEqual([
+      confirmWallpaperRequestedCommand.commandName,
+      'ui.feature.sample-wallpaper-picker.wallpaper-system-failure-observed',
+    ])
+    expect(calls[1]?.payload).toEqual({operation: 'confirm', phase: 'unknown-write-phase'})
+    renderer.unmount()
+  })
+
+  it('keeps the picker notice copy truthful for a confirm write-after failure', () => {
+    const renderer = mount(renderProvider(
+      rootFor('w2'),
+      commandDispatch([]),
+      createElement(WallpaperSystemNotice, {operation: 'confirm', phase: 'after-write'}),
+    ))
+    expect(renderer.root.findAllByProps({testID: 'sample.wallpaper.system-notice:message'})
+      .some(node => node.children?.includes('壁纸已更换，但系统未能确认，无需重复操作'))).toBe(true)
     renderer.unmount()
   })
 

@@ -1,5 +1,5 @@
 import type {ReactNode} from 'react'
-import type {LoggerPort} from '@catering-v2s/kernel-base-platform-ports'
+import type {LoggerPort, NativeLoadingCapability} from '@catering-v2s/kernel-base-platform-ports'
 import type {
   CommandDispatchOptions,
   CommandDispatchResult,
@@ -37,6 +37,17 @@ type RenderDispatchCommand = <TPayload extends StateJsonValue>(
   options: RenderDispatchOptions,
 ) => Promise<CommandDispatchResult>
 
+/**
+ * A feature-owned dismissal intent for a layer.  Render owns the physical
+ * backdrop/back gesture, but it must not invent or bypass the feature command
+ * that owns the layer's state transition.
+ */
+export type RenderLayerDismissal = (input: Readonly<{
+  readonly dispatchCommand: RenderDispatchCommand
+  readonly displayMode: DisplayMode
+  readonly layerId: string
+}>) => void | Promise<unknown>
+
 type RenderUiVariableReader = <TValue extends StateJsonValue>(
   root: RenderStateRoot,
   declaration: UiVariableDeclaration<TValue>,
@@ -57,13 +68,29 @@ export type SurfaceRootContentFrame = Readonly<{
   readonly content: ReactNode
 }>
 
+export type RenderSurfaceReadyInput = Readonly<{
+  readonly surfaceKey: 'PRIMARY'
+  readonly displayIndex: 0
+  readonly displayMode: DisplayMode
+  readonly containerKey: ContainerKey
+  readonly partKey: string
+}>
+
 export type RenderProviderProps = Readonly<{
   readonly stateSource: RenderStateSource
   readonly uiCatalog: UiCatalog
   readonly rendererCatalog: RendererCatalog
   readonly logger: LoggerPort
+  /** Required bridge from a rendered terminal state to the native splash owner. */
+  readonly nativeLoadingCapability: NativeLoadingCapability
+  /** Integration-owned command bridge invoked only after the real primary part lays out. */
+  readonly onPrimarySurfaceReady?: (input: RenderSurfaceReadyInput) => void | Promise<void>
+  /** Run-scoped latch shared by the primary surface's successive providers. */
+  readonly getPrimarySurfaceReady?: () => boolean
   readonly runtimeFacts: RenderRuntimeFacts
   readonly dispatchCommand: RenderDispatchCommand
+  /** Feature-owned intents used by generic layer affordances. */
+  readonly layerDismissals?: Readonly<Record<string, RenderLayerDismissal>>
   readonly selectUiVariable: RenderUiVariableReader
   /** Required by SurfaceRoot; optional only for provider consumers that do not mount a surface. */
   readonly selectSurfaceForm?: RenderSurfaceFormReader

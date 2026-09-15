@@ -23,5 +23,7 @@ public record OrganizationOverviewItem(
     String alias,
     String legalName,
     String unifiedSocialCreditCode,
-    java.util.List<OrganizationOverviewItemExtensionFieldsItem> extensionFields
+    java.util.List<OrganizationOverviewItemExtensionFieldsItem> extensionFields,
+    tools.jackson.databind.JsonNode extensionValues,
+    Long extensionRuleRevision
 ) {}

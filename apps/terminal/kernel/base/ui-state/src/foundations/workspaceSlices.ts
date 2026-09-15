@@ -27,6 +27,7 @@ const displayModes: readonly DisplayMode[] = ['PRIMARY', 'SECONDARY']
 export type ContentHydrationDiagnosticReason =
   | 'unknown-part'
   | 'duplicate-layer-id'
+  | 'ephemeral-entry'
   | 'invalid-entry'
 
 export type ContentHydrationDiagnostic = Readonly<{
@@ -71,6 +72,11 @@ const readOptionalProps = (
   }
 }
 
+const readLayerPersistence = (value: unknown): 'durable' | 'ephemeral' | undefined => {
+  if (value === undefined || value === 'durable' || value === 'ephemeral') return value
+  return undefined
+}
+
 const hasInvalidOptionalProps = (record: Record<string, unknown>): boolean =>
   record.props !== undefined && readOptionalProps(record) === undefined
 
@@ -113,12 +119,14 @@ const readOpenLayerPayload = (value: unknown): Readonly<{
   layer: LayerEntry
 }> | undefined => {
   const record = readObject(value)
+  const persistence = record === undefined ? undefined : readLayerPersistence(record.persistence)
   if (record === undefined
     || !isDisplayMode(record.displayMode)
     || !isNonEmptyString(record.layerId)
     || !isNonEmptyString(record.partKey)
     || !isValidOpenedAt(record.openedAt)
-    || hasInvalidOptionalProps(record)) {
+    || hasInvalidOptionalProps(record)
+    || (record.persistence !== undefined && persistence === undefined)) {
     return undefined
   }
   const props = readOptionalProps(record)
@@ -127,6 +135,7 @@ const readOpenLayerPayload = (value: unknown): Readonly<{
     partKey: record.partKey,
     ...(props === undefined ? {} : {props}),
     openedAt: record.openedAt,
+    ...(persistence === undefined ? {} : {persistence}),
   })
   return Object.freeze({displayMode: record.displayMode, layer})
 }
@@ -242,6 +251,8 @@ const serializeContentEntries = (
 })
 
 const serializeLayer = (layer: LayerEntry): StateJsonObject | undefined => {
+  if (layer.persistence === 'ephemeral') return undefined
+  if (layer.persistence !== undefined && layer.persistence !== 'durable') return undefined
   if (!isNonEmptyString(layer.layerId)
     || !isNonEmptyString(layer.partKey)
     || !isValidOpenedAt(layer.openedAt)) {
@@ -259,6 +270,7 @@ const serializeLayer = (layer: LayerEntry): StateJsonObject | undefined => {
     partKey: layer.partKey,
     ...(layer.props === undefined ? {} : {props: layer.props}),
     openedAt: layer.openedAt,
+    ...(layer.persistence === undefined ? {} : {persistence: layer.persistence}),
   }
 }
 
@@ -325,6 +337,7 @@ const parseLayerEntry = (
   }>,
 ): LayerEntry | undefined => {
   const record = readObject(value)
+  const persistence = record === undefined ? undefined : readLayerPersistence(record.persistence)
   const identity = record === undefined
     ? Object.freeze({layerId: null, partKey: null})
     : diagnosticIdentity(record)
@@ -332,12 +345,22 @@ const parseLayerEntry = (
     || !isNonEmptyString(record.layerId)
     || !isNonEmptyString(record.partKey)
     || !isValidOpenedAt(record.openedAt)
-    || hasInvalidOptionalProps(record)) {
+    || hasInvalidOptionalProps(record)
+    || (record.persistence !== undefined && persistence === undefined)) {
     input.onHydrationDiagnostic(Object.freeze({
       workspace: input.workspace,
       displayMode: input.displayMode,
       ...identity,
       reason: 'invalid-entry' as const,
+    }))
+    return undefined
+  }
+  if (persistence === 'ephemeral') {
+    input.onHydrationDiagnostic(Object.freeze({
+      workspace: input.workspace,
+      displayMode: input.displayMode,
+      ...identity,
+      reason: 'ephemeral-entry' as const,
     }))
     return undefined
   }
@@ -347,6 +370,7 @@ const parseLayerEntry = (
     partKey: record.partKey,
     ...(props === undefined ? {} : {props}),
     openedAt: record.openedAt,
+    ...(persistence === undefined ? {} : {persistence}),
   })
 }
 

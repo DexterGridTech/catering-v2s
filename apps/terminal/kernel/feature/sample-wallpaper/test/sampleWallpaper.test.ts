@@ -17,9 +17,7 @@ describe('sample wallpaper owner module', () => {
     expect(module.moduleName).toBe('kernel.feature.sample-wallpaper')
     expect(module.kind).toBe('owner')
     expect(module.dependencies?.map(dependency => dependency.moduleName)).toEqual([
-      'kernel.base.contracts',
       'kernel.base.runtime',
-      'kernel.base.state',
     ])
     expect(module.commands?.map(command => [command.name, command.visibility])).toEqual([
       ['kernel.feature.sample-wallpaper.select-wallpaper', 'public'],

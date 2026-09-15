@@ -1,0 +1,17 @@
+         1789448849.332  3072  3072 I TerminalDualScreen: event=primary-activity-configuration displayIndex=0 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=360 screenHeightDp=640 smallestWidthDp=360 orientation=1 resourceWidthPx=720 resourceHeightPx=1280
+         1789448849.356  3072  3072 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789448849.357  3072  3072 I TerminalDualScreen: event=primary-window-post-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789448849.359  3072  3149 I ExpoModulesCore: ✅ AppContext was initialized
+         1789448849.379  3072  3160 I ExpoModulesCore: ✅ JSI interop was installed
+         1789448849.379  3072  3160 I ExpoModulesCore: ✅ Constants were exported
+         1789448849.436  3072  3072 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789448849.450  3072  3072 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789448849.455  3072  3160 I ReactNativeJS:   category: 'startup.ready-candidate',
+         1789448849.455  3072  3160 I ReactNativeJS:   event: 'startup.ready-candidate',
+         1789448849.457  3072  3160 I ReactNativeJS:   category: 'startup.ready',
+         1789448849.457  3072  3160 I ReactNativeJS:   event: 'startup.ready',
+         1789448849.458  3072  3160 I ReactNativeJS:   category: 'startup.complete',
+         1789448849.458  3072  3160 I ReactNativeJS:   event: 'startup.complete',
+         1789448849.459  3072  3160 I ReactNativeJS:   category: 'startup.ready-hidden',
+         1789448849.459  3072  3160 I ReactNativeJS:   event: 'startup.ready-hidden',
+         1789448849.535  3072  3072 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0

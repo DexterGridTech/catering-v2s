@@ -6,6 +6,8 @@ export type SurfaceHostSize = Readonly<{
   readonly height: number
 }>
 
+export type SurfaceHostAvailability = 'pending' | 'ready' | 'unavailable'
+
 export type SurfaceCanvasDeclaration = SurfaceHostSize
 
 export type SurfaceHostMeasurementSnapshot = Readonly<{
@@ -27,6 +29,9 @@ export type SurfaceHostIdentityRejectionHandler = (
 export type SurfaceHostMeasurementSource = Readonly<{
   readonly getSnapshot: () => SurfaceHostMeasurementSnapshot | null
   readonly subscribe: (listener: (snapshot: SurfaceHostMeasurementSnapshot | null) => void) => () => void
+  /** Optional terminal-status channel supplied by native host adapters. */
+  readonly getAvailability?: () => SurfaceHostAvailability
+  readonly subscribeAvailability?: (listener: (availability: SurfaceHostAvailability) => void) => () => void
 }>
 
 export type SurfaceIdentity = Readonly<{
@@ -43,6 +48,11 @@ export type SurfaceHostSnapshot = SurfaceHostMeasurementSnapshot & Readonly<{
 export type SurfaceHostSource = Readonly<{
   readonly getSnapshot: () => SurfaceHostSnapshot | null
   readonly subscribe: (listener: (snapshot: SurfaceHostSnapshot | null) => void) => () => void
+  /** Optional terminal-status channel supplied by native host adapters. */
+  readonly getAvailability?: () => SurfaceHostAvailability
+  readonly subscribeAvailability?: (listener: (availability: SurfaceHostAvailability) => void) => () => void
+  /** Identity remains known when an explicit unavailable event clears geometry. */
+  readonly getSurfaceIdentity?: () => SurfaceIdentity
 }>
 
 /**
@@ -86,6 +96,9 @@ export const bindSurfaceHostIdentity = (
   return Object.freeze({
     getSnapshot: () => enrich(source.getSnapshot()),
     subscribe: listener => source.subscribe(snapshot => listener(enrich(snapshot))),
+    ...(source.getAvailability === undefined ? {} : {getAvailability: source.getAvailability}),
+    ...(source.subscribeAvailability === undefined ? {} : {subscribeAvailability: source.subscribeAvailability}),
+    getSurfaceIdentity: () => frozenIdentity,
   })
 }
 

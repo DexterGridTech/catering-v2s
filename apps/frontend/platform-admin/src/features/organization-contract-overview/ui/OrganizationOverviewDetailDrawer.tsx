@@ -1,18 +1,21 @@
 import {Alert, Descriptions, Drawer} from 'antd';
 import {adminDrawerSurfaceProps, NameCodeText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
-import type {OrganizationOverviewItem} from '../../../app/api/generated/platform-edge';
+import type {ExtensionDefinition, OrganizationOverviewItem} from '../../../app/api/generated/platform-edge';
+import {organizationOverviewExtensionItems} from './OrganizationOverviewPresentation';
 
 export function OrganizationOverviewDetailDrawer({
   open,
   loading,
   problem,
   item,
+  definition,
   onClose,
 }: {
   open: boolean;
   loading: boolean;
   problem?: {title: string; detail: string};
   item?: OrganizationOverviewItem;
+  definition?: ExtensionDefinition;
   onClose: () => void;
 }) {
   useOverlayLock(open);
@@ -27,12 +30,7 @@ export function OrganizationOverviewDetailDrawer({
           : item?.type === 'STORE'
             ? '门店'
             : '组织';
-  const extensionItems =
-    item?.extensionFields?.map(field => ({
-      key: `extension-${field.name}`,
-      label: field.name,
-      children: field.value || '—',
-    })) ?? [];
+  const extensionItems = organizationOverviewExtensionItems(definition, item?.extensionValues);
   const businessEntityItems =
     item?.type === 'BRAND'
       ? [{key: 'alias', label: '别名', children: item.alias || '—'}]

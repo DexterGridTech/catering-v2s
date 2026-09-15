@@ -175,6 +175,11 @@ const uiTrace: Array<[string, keyof typeof traceSources, string[]]> = [
   ['UI-30', 'detail', ['title="销售项详情"', '<Descriptions', '适用约束']],
   ['UI-31', 'all', ['testIdPrefix={salesMenuTestIds.draftCursor}', 'testIdPrefix={salesMenuTestIds.logCursor}']],
   ['UI-32', 'detailGallery', ['<button', 'aria-pressed={active}', 'itemDetailMediaChoice(itemRef, assetRef)']],
+  [
+    'UI-33',
+    'editor',
+    ['查看商品', 'onViewProduct(detail.itemCode, event.currentTarget)', 'testId(salesMenuTestIds.itemViewProduct)'],
+  ],
 ];
 
 describe('sales menu IA static trace', () => {
@@ -373,6 +378,21 @@ describe('sales menu IA static trace', () => {
     expect(editorSource).toContain('disabled={!detail || mediaPending || closing}');
   });
 
+  it('opens the existing catalog detail surface without closing the sales-item editor', () => {
+    expect(testIdsSource).toContain("itemViewProduct: 'sales-menu-item-view-product'");
+    expect(editorSource).toContain('onViewProduct(detail.itemCode, event.currentTarget)');
+    expect(taskSurfacesSource).toContain(
+      "import {CatalogItemDrawer} from '../../catalog-management/ui/CatalogItemDrawer';",
+    );
+    expect(taskSurfacesSource).toContain('<CatalogItemDrawer {...catalogItem} />');
+    expect(pageSource).toContain('const [productDetailItemCode, setProductDetailItemCode] = useState<string>();');
+    expect(pageSource).toContain('onViewProduct: openProductDetail');
+    expect(pageSource).toContain("initialMode: 'view'");
+    expect(pageSource).toContain('canWriteCatalog: false');
+    expect(pageSource).toContain('onAfterOpenChange: productDetailAfterOpenChange');
+    expect(pageSource).toContain('clearProductDetailContext();');
+  });
+
   it('does not expose stale manager versions while the manager read model refreshes', () => {
     expect(managerSource).toContain(
       'const managerReadModelReady = !read.manager.query.isFetching && !read.manager.query.isError;',
@@ -476,9 +496,9 @@ describe('sales menu IA static trace', () => {
 
   it('centralizes sales-menu locators and records every approved UI trace item', () => {
     expect(source).not.toMatch(/testId\('sales-menu-/);
-    expect(uiTrace).toHaveLength(32);
+    expect(uiTrace).toHaveLength(33);
     for (const [requirement, segment, anchors] of uiTrace) {
-      expect(requirement).toMatch(/^UI-(0[1-9]|[12][0-9]|3[0-2])$/);
+      expect(requirement).toMatch(/^UI-(0[1-9]|[12][0-9]|3[0-3])$/);
       for (const anchor of anchors)
         expect(traceSources[segment], `${requirement} missing ${anchor} in ${segment}`).toContain(anchor);
     }

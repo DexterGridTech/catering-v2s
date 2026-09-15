@@ -3,6 +3,7 @@ import {
   adminListState,
   contextScopedQueryArgs,
   createPageQueryIdentity,
+  formatTypedExtensionValue,
   NameCodeText,
   testId,
   ValidityStatus,
@@ -23,6 +24,7 @@ import {adminCatalog, operationsPageDesignKeys} from '../../../app/catalog/gener
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import {FixedStoreContractDetailDrawer} from './FixedStoreContractDetailDrawer';
+import {organizationStoreStatusLabels} from '../../organization-structure/model/organizationStatus';
 
 const storeProfilePage = adminCatalog.operationsPages.find(
   page => page.pageDesignKey === operationsPageDesignKeys.PgStoreProfile,
@@ -41,11 +43,11 @@ function extensionItems(definition: ExtensionDefinition | undefined, values: Rec
   return (definition?.definitions ?? [])
     .filter(field => field.status !== 'DISABLED')
     .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0))
-    .map(field => ({key: `extension-${field.key}`, label: field.label, children: valueOf(values?.[field.key])}));
-}
-
-function valueOf(value: JsonValue | undefined) {
-  return value === undefined || value === null || value === '' ? '—' : String(value);
+    .map(field => ({
+      key: `extension-${field.key}`,
+      label: field.label,
+      children: formatTypedExtensionValue(values?.[field.key], field),
+    }));
 }
 
 function queryIssue(error: unknown, fallback: string) {
@@ -196,7 +198,7 @@ export function StoreProfilePage({queryContext}: OperationsPageProps) {
               '—'
             ),
           },
-          {key: 'status', label: '门店状态', children: store.status === 'ENABLED' ? '启用' : '停用'},
+          {key: 'status', label: '门店状态', children: organizationStoreStatusLabels[store.status]},
           ...extensionItems(definition.currentData, store.extensionValues),
         ]}
         {...testId('operations-store-profile-fields')}

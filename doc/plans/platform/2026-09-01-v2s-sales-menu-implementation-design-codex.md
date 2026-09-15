@@ -1077,3 +1077,22 @@ Catalog 与 SalesMenu 共同使用 operations-admin app 级 `AssetPreview`，其
 | Seed 按数组位置绑定 owner validator       | stage分母与owner readback身份耦合                 | r5-full多owner child stages                                                            | 仅一个不可变stage的单域runner         | exact order后按stage id建立map，owner validator只读对应id                                                                   | r5-complete-seed-executor.test.mjs 的换位/同数量错shape红测                       |
 | 把 INTERNAL 模板误当真实渠道              | template/instance与accessKind混淆                 | business-channel前置数据和菜单seed                                                     | 只测试模板候选的场景                  | business-channel owner plan显式生成INTERNAL channel实例并与EXTERNAL负例并存                                                 | business-channel seed plan/executor tests + sales-menu seed readback              |
 | 场景数量齐全却漏跑 operation              | 只保留数量/样例，没有成员到业务 oracle 的覆盖关系 | 本批 31 条受影响 HTTP operations、1 条复用 template read、15 个业务场景与18个 L2 cases | 纯内部 helper、非 HTTP synthetic data | 31 条受影响 operation 与 1 条复用 read 的 operation→acceptance/L2 合同 + actual completion event 回读；业务场景仍按闭环组织 | 详设 §11.1a、SM-05/SM-08/SM-12 closure review；不新增旧 provider/exact-set 控制面 |
+
+### 14.6 2026-09-15 编辑销售项关联商品入口增补
+
+本增补对应 Dexter 直接提出的 `UI-33`，不创建新的 Journey；业务判据来自需求 §11.3、IA §13、交互 §11，
+商品详情行为复用 `J-CATUI-02` 及 Catalog 详设的既有只读 surface。
+
+1. `SalesMenuItemEditorDrawer` 只消费 owner detail readback 的 `itemCode`，在标题操作区渲染“查看商品”与稳定
+   `salesMenuTestIds.itemViewProduct`；它不改变编辑 Drawer 的 `useDrawerFormLifecycle`、dirty、保存和删除路径。
+2. `SalesMenuPage` 持有 `productDetailItemCode` 和触发按钮焦点；`SalesMenuTaskSurfaces` 通过既有
+   `CatalogItemDrawer` router 渲染 `initialMode='view'` 的商品详情 surface。商品 surface 使用当前 STORE
+   `queryContext`、`canWriteCatalog=false`，因此不带出商品编辑、复制或生命周期操作。
+3. `CatalogItemViewDrawer` 仍是商品详情唯一 renderer 和 `getOperationsCatalogItem` owner read 的调用点；仅扩展
+   可选的 `onAfterOpenChange` 宿主回调，并显式声明只读 Drawer 的 `maskClosable`，用于在关闭完成后将焦点返回入口。
+4. 商品详情关闭只清除商品目标，不关闭编辑 Drawer；销售项编辑关闭、保存、删除或上下文失效时清除商品目标及
+   触发器引用，避免焦点回到已卸载节点。该入口不新增 API、generated 文件、数据库、owner command 或动态 L2 授权。
+
+实现与验证对账：sales-menu `SalesMenuPage.static.test.ts` 覆盖 `UI-33` 及父子 Drawer 接线；
+catalog `CatalogItemDrawer.test.tsx` 覆盖宿主关闭完成回调；operations-admin typecheck 与上述 focused tests
+是本增补的静态/单元 proof，browser L2、DEV、reset、seed 不由本增补自动授权。

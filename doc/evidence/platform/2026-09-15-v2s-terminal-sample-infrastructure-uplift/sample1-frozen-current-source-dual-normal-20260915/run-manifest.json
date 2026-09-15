@@ -1,0 +1,17 @@
+{
+  "tool": "tools/terminal-sample2/run-sample1-frozen-journey.mjs",
+  "mode": "record-only-sample1-frozen-journey",
+  "packageName": "com.anonymous.sampleterminal",
+  "serial": "emulator-5554",
+  "shape": "dual",
+  "journeyCase": "normal",
+  "age": "37",
+  "apk": "apps/terminal/assembly/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk",
+  "apkBinding": {
+    "path": "apps/terminal/assembly/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk",
+    "exists": true,
+    "bytes": 87920433,
+    "sha256": "e985891e238e72a7ff68af44e93b1b6d7629df375e6759a16c83a3b67d9f8c94"
+  },
+  "startedAt": "2026-09-15T13:31:03.738Z"
+}

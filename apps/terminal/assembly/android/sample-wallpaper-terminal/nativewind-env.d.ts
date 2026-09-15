@@ -1,1 +1,1 @@
-/// <reference types="nativewind/types" />
+/// <reference types="@catering-v2s/assembly-base-android/config/nativewind-env" />

@@ -1,4 +1,5 @@
-module.exports = {
+module.exports = require('@catering-v2s/assembly-base-android/config').createTailwindConfig({
+  appDir: __dirname,
   darkMode: 'class',
   content: [
     './App.tsx',
@@ -6,31 +7,4 @@ module.exports = {
     '../../../ui/integration/sample-wallpaper-console/src/**/*.{ts,tsx}',
     '../../../ui/base/primitives/src/**/*.{ts,tsx}',
   ],
-  presets: [require('nativewind/preset')],
-  theme: {
-    extend: {
-      colors: {
-        canvas: 'rgb(var(--color-canvas) / <alpha-value>)',
-        surface: 'rgb(var(--color-surface) / <alpha-value>)',
-        foreground: 'rgb(var(--color-foreground) / <alpha-value>)',
-        'muted-foreground': 'rgb(var(--color-muted-foreground) / <alpha-value>)',
-        border: 'rgb(var(--color-border) / <alpha-value>)',
-        action: 'rgb(var(--color-action) / <alpha-value>)',
-        'action-foreground': 'rgb(var(--color-action-foreground) / <alpha-value>)',
-        'ok-foreground': 'rgb(var(--color-ok-foreground) / <alpha-value>)',
-        'ok-background': 'rgb(var(--color-ok-background) / <alpha-value>)',
-        'ok-border': 'rgb(var(--color-ok-border) / <alpha-value>)',
-        'warn-foreground': 'rgb(var(--color-warn-foreground) / <alpha-value>)',
-        'warn-background': 'rgb(var(--color-warn-background) / <alpha-value>)',
-        'warn-border': 'rgb(var(--color-warn-border) / <alpha-value>)',
-        'error-foreground': 'rgb(var(--color-error-foreground) / <alpha-value>)',
-        'error-background': 'rgb(var(--color-error-background) / <alpha-value>)',
-        'error-border': 'rgb(var(--color-error-border) / <alpha-value>)',
-        'info-foreground': 'rgb(var(--color-info-foreground) / <alpha-value>)',
-        'info-background': 'rgb(var(--color-info-background) / <alpha-value>)',
-        'info-border': 'rgb(var(--color-info-border) / <alpha-value>)',
-      },
-    },
-  },
-  plugins: [],
-}
+})

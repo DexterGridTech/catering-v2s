@@ -7,6 +7,7 @@ import {
   resolveAliasedSymbol,
   resolveModuleNameExport,
 } from '../terminal-shared/typescript-analysis.mjs';
+import {collectImportedCapabilities} from '../terminal-shared/import-capabilities.mjs';
 
 const toolsDirectory = path.dirname(fileURLToPath(import.meta.url));
 export const repoRoot = path.resolve(toolsDirectory, '../..');
@@ -233,6 +234,54 @@ export function readAllSourceFiles(packageDirectory, relativeRoots = ['src']) {
   }
   for (const relativeRoot of relativeRoots) visit(path.join(packageDirectory, relativeRoot));
   return files.sort();
+}
+
+const boundarySourcePattern = /\.(?:ts|tsx|js|jsx|mjs|cjs)$/;
+
+function scriptKindForPath(filePath) {
+  if (filePath.endsWith('.tsx')) return ts.ScriptKind.TSX;
+  if (filePath.endsWith('.jsx')) return ts.ScriptKind.JSX;
+  if (/\.(?:js|mjs|cjs)$/.test(filePath)) return ts.ScriptKind.JS;
+  return ts.ScriptKind.TS;
+}
+
+function readBoundarySourceFilesFromDirectory(directory, result) {
+  if (!fs.existsSync(directory)) return;
+  for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+    if (['node_modules', '.git', 'build', 'dist', '.turbo', '.expo', '.runtime', '.gradle', '.kotlin', '.vite', 'coverage'].includes(entry.name)) continue;
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) readBoundarySourceFilesFromDirectory(entryPath, result);
+    else if (entry.isFile() && boundarySourcePattern.test(entry.name)) result.add(entryPath);
+  }
+}
+
+/**
+ * Read every source/config script in a package boundary that can express a
+ * workspace dependency.  This is deliberately broader than the graph's
+ * production import census: D-1 must also see type-only/re-export/dynamic/
+ * require/import-equals edges in tests, support code and root config files.
+ */
+export function readBoundarySourceFiles(packageDirectory) {
+  const result = new Set();
+  readBoundarySourceFilesFromDirectory(packageDirectory, result);
+  return [...result].sort();
+}
+
+export function collectBoundaryImportCapabilities(packageDirectory) {
+  return readBoundarySourceFiles(packageDirectory).flatMap(filePath => {
+    const sourceFile = ts.createSourceFile(
+      filePath,
+      fs.readFileSync(filePath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+      scriptKindForPath(filePath),
+    );
+    return collectImportedCapabilities(sourceFile).map(capability => ({
+      ...capability,
+      filePath,
+      sourceFile,
+    }));
+  });
 }
 
 export function collectPackageRootImports(filePath) {

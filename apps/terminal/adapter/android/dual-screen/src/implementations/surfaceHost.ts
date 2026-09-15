@@ -24,8 +24,19 @@ export type AndroidSurfaceHostSnapshot = Readonly<{
   }>
 }>
 
+type AndroidSurfaceHostRecoverableRemovalEvent = Readonly<{
+  readonly available: false
+  readonly status: 'recovering'
+  readonly surfaceKey: 'PRIMARY' | 'SECONDARY'
+  readonly generation: number
+  readonly displayId: number | null
+  readonly windowIdentity: 'primary' | 'secondary'
+  readonly reason: string
+}>
+
 type AndroidSurfaceHostUnavailableEvent = Readonly<{
   readonly available: false
+  readonly status: 'unavailable'
   readonly surfaceKey: 'PRIMARY' | 'SECONDARY'
   readonly generation: number
   readonly displayId: number | null
@@ -35,11 +46,13 @@ type AndroidSurfaceHostUnavailableEvent = Readonly<{
 
 type AndroidSurfaceHostReadyEvent = AndroidSurfaceHostSnapshot & Readonly<{readonly available: true}>
 
-type AndroidSurfaceHostEvent = AndroidSurfaceHostReadyEvent | AndroidSurfaceHostUnavailableEvent
+type AndroidSurfaceHostEvent = AndroidSurfaceHostReadyEvent
+  | AndroidSurfaceHostRecoverableRemovalEvent
+  | AndroidSurfaceHostUnavailableEvent
 
 type NativeDualScreenModule = Readonly<{
   readonly addListener: (eventName: string) => unknown
-  readonly getSurfaceHostSnapshot: (surfaceKey: string) => Promise<AndroidSurfaceHostSnapshot | null>
+  readonly getSurfaceHostSnapshot: (surfaceKey: string) => Promise<unknown | null>
 }>
 
 type SurfaceHostSourceState = Readonly<{
@@ -51,12 +64,15 @@ type SurfaceHostSourceState = Readonly<{
 type SurfaceHostAcceptance = Readonly<{
   readonly accepted: boolean
   readonly state: SurfaceHostSourceState
+  readonly eventKind: 'ready' | 'recoverable-removal' | 'unavailable' | 'ignored'
 }>
 
 export type AndroidSurfaceHostMeasurementSnapshot = Readonly<{
   readonly stableHostLogicalSize: Readonly<{readonly width: number; readonly height: number}>
   readonly isHostPrimaryDisplay: boolean
 }>
+
+export type AndroidSurfaceHostAvailability = 'pending' | 'ready' | 'unavailable'
 
 const eventName = 'onSurfaceHostChanged'
 
@@ -119,6 +135,18 @@ const isReadyEvent = (value: unknown): value is AndroidSurfaceHostReadyEvent => 
 const isUnavailableEvent = (value: unknown): value is AndroidSurfaceHostUnavailableEvent =>
   isRecord(value) &&
   value.available === false &&
+  value.status === 'unavailable' &&
+  isSurfaceKey(value.surfaceKey) &&
+  isNonNegativeInteger(value.generation) &&
+  (value.displayId === null || isNonNegativeInteger(value.displayId)) &&
+  isWindowIdentity(value.windowIdentity) &&
+  typeof value.reason === 'string' &&
+  value.reason.length > 0
+
+const isRecoverableRemovalEvent = (value: unknown): value is AndroidSurfaceHostRecoverableRemovalEvent =>
+  isRecord(value) &&
+  value.available === false &&
+  value.status === 'recovering' &&
   isSurfaceKey(value.surfaceKey) &&
   isNonNegativeInteger(value.generation) &&
   (value.displayId === null || isNonNegativeInteger(value.displayId)) &&
@@ -127,10 +155,17 @@ const isUnavailableEvent = (value: unknown): value is AndroidSurfaceHostUnavaila
   value.reason.length > 0
 
 const isKnownSurfaceHostEvent = (value: unknown): value is AndroidSurfaceHostEvent =>
-  isReadyEvent(value) || isUnavailableEvent(value)
+  isReadyEvent(value) || isRecoverableRemovalEvent(value) || isUnavailableEvent(value)
 
 const isForeignSurfaceHostEvent = (surfaceKey: 'PRIMARY' | 'SECONDARY', value: unknown): boolean =>
   isKnownSurfaceHostEvent(value) && value.surfaceKey !== surfaceKey
+
+const isPhysicalIdentityMismatch = (
+  value: unknown,
+  expectedDisplayIndex: 0 | 1 | undefined,
+): boolean => isReadyEvent(value)
+  && expectedDisplayIndex !== undefined
+  && value.isHostPrimaryDisplay !== (expectedDisplayIndex === 0)
 
 const withoutAvailability = (event: AndroidSurfaceHostReadyEvent): AndroidSurfaceHostSnapshot => {
   const {available: _available, ...snapshot} = event
@@ -161,23 +196,29 @@ export const acceptAndroidSurfaceHostEvent = ({
   value,
   expectedDisplayIndex,
 }: AndroidSurfaceHostEventInput): SurfaceHostAcceptance => {
-  if (!isReadyEvent(value) && !isUnavailableEvent(value)) return {accepted: false, state}
+  if (!isReadyEvent(value) && !isRecoverableRemovalEvent(value) && !isUnavailableEvent(value)) {
+    return {accepted: false, state, eventKind: 'ignored'}
+  }
   if (value.surfaceKey !== surfaceKey || value.windowIdentity !== expectedWindowIdentity(surfaceKey)) {
-    return {accepted: false, state}
+    return {accepted: false, state, eventKind: 'ignored'}
   }
   if (
     expectedDisplayIndex !== undefined
     && isReadyEvent(value)
     && value.isHostPrimaryDisplay !== (expectedDisplayIndex === 0)
-  ) return {accepted: false, state}
-  if (value.generation < state.generation) return {accepted: false, state}
+  ) return {accepted: false, state, eventKind: 'ignored'}
+  if (value.generation < state.generation) return {accepted: false, state, eventKind: 'ignored'}
   if (state.displayId !== null && value.displayId !== null && value.displayId !== state.displayId) {
-    return {accepted: false, state}
+    return {accepted: false, state, eventKind: 'ignored'}
+  }
+  if (isRecoverableRemovalEvent(value)) {
+    return {accepted: true, state, eventKind: 'recoverable-removal'}
   }
   if (isUnavailableEvent(value)) {
     return {
       accepted: true,
       state: Object.freeze({generation: value.generation, displayId: null, snapshot: null}),
+      eventKind: 'unavailable',
     }
   }
   return {
@@ -187,6 +228,7 @@ export const acceptAndroidSurfaceHostEvent = ({
       displayId: value.displayId,
       snapshot: withoutAvailability(value),
     }),
+    eventKind: 'ready',
   }
 }
 
@@ -213,6 +255,14 @@ export const createAndroidSurfaceHostSource = (input: AndroidSurfaceHostSourceIn
   let current: AndroidSurfaceHostSnapshot | null = null
   let hasAcceptedEvent = false
   let emitter: LegacyEventEmitter | null = null
+  let availability: AndroidSurfaceHostAvailability = 'pending'
+  const availabilityListeners = new Set<(next: AndroidSurfaceHostAvailability) => void>()
+
+  const setAvailability = (next: AndroidSurfaceHostAvailability) => {
+    if (availability === next) return
+    availability = next
+    for (const listener of [...availabilityListeners]) listener(next)
+  }
 
   const getEmitter = () => {
     if (emitter === null) emitter = new LegacyEventEmitter(getNativeModule())
@@ -227,14 +277,24 @@ export const createAndroidSurfaceHostSource = (input: AndroidSurfaceHostSourceIn
     if (isForeignSurfaceHostEvent(surfaceKey, value)) return
     const result = acceptAndroidSurfaceHostEvent({surfaceKey, state, value, expectedDisplayIndex: displayIndex})
     if (!result.accepted) {
+      if (isPhysicalIdentityMismatch(value, displayIndex)) {
+        // A matching surface event that proves this host is on the wrong
+        // physical display is terminal for this bound source. Leaving the
+        // source pending would keep the native splash forever and would not
+        // allow the render-owned R-S7 failure page to take over.
+        setAvailability('unavailable')
+        listener?.(null)
+      }
       console.error(
         `[TerminalDualScreen] surface host event rejected surfaceKey=${surfaceKey} reason=identity-or-generation-fence`,
       )
       return
     }
     state = result.state
+    if (result.eventKind === 'recoverable-removal') return
     current = state.snapshot
     hasAcceptedEvent = true
+    setAvailability(isUnavailableEvent(value) ? 'unavailable' : 'ready')
     listener?.(toMeasurementSnapshot(current))
   }
 
@@ -248,9 +308,10 @@ export const createAndroidSurfaceHostSource = (input: AndroidSurfaceHostSourceIn
       const subscription = getEmitter().addListener(eventName, update) as EventSubscription
       void getNativeModule().getSurfaceHostSnapshot(surfaceKey).then((snapshot) => {
         if (!active || snapshot === null || hasAcceptedEvent) return
-        apply({...snapshot, available: true}, listener)
+        apply(snapshot, listener)
       }).catch((error: unknown) => {
         const errorName = error instanceof Error ? error.name : 'UnknownError'
+        setAvailability('unavailable')
         console.error(
           `[TerminalDualScreen] surface host snapshot unavailable surfaceKey=${surfaceKey} error=${errorName}`,
         )
@@ -259,6 +320,11 @@ export const createAndroidSurfaceHostSource = (input: AndroidSurfaceHostSourceIn
         active = false
         subscription.remove()
       }
+    },
+    getAvailability: () => availability,
+    subscribeAvailability: (listener: (next: AndroidSurfaceHostAvailability) => void) => {
+      availabilityListeners.add(listener)
+      return () => availabilityListeners.delete(listener)
     },
   })
 }

@@ -122,7 +122,7 @@ PY
 
 步骤 reviewer 必须从当前步骤的 RECALL、IA/交互工件/implementation-facing 详设、owning source、当前实现和 focused proof 提取事实，再以证伪为目标逐条比较：行为、形态、动作、关系、位置、用户可见文案、限制、状态/控制、失败/恢复、可访问性/焦点、数据来源/失效边界。输出只能是当前步骤的 `MATCHED` 或逐项 `OPEN`，并指向精确 source/design 位置；不得用“整体看起来一致”、静态通过或后续 L2 代替。
 
-`OPEN` 时，主 agent 必须先按同根范围修复，再由另一 fresh 独立子 agent 复查后才能开始下一步骤。该步骤级对账是实施过程的质量闸，不是整批 `REVIEW_TARGET=IMPLEMENTATION` verdict：不写 `GO`/`NO-GO`，不消耗正式对抗 review 的两轮上限，也不能替代最后的整批独立 review。
+`OPEN` 时，主 agent 必须先按同根范围修复，再由另一 fresh 独立子 agent 复查后才能开始下一步骤。该步骤级对账是实施过程的质量闸，不是整批 `REVIEW_TARGET=IMPLEMENTATION` verdict：不写 `GO`/`NO-GO`，本身不设轮次上限，也不能替代最后的整批独立 review。
 
 ### 动作 3 · 同族全集扫描
 

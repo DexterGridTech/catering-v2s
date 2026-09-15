@@ -5,3 +5,4 @@ import {moduleName as platformPorts} from '@catering-v2s/kernel-base-platform-po
 
 export const dependencyModuleNames = [contracts, runtime, state] as const
 export const devDependencyModuleNames = [platformPorts] as const
+export const runtimeModuleDependencyNames = [runtime] as const

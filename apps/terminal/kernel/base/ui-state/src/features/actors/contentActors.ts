@@ -118,17 +118,23 @@ type NormalizedOpenLayerPayload = Readonly<{
   layerId: string
   partKey: string
   props?: StateJsonValue
+  persistence: 'durable' | 'ephemeral'
 }>
 
 const normalizeOpenLayerPayload = (value: unknown): NormalizedOpenLayerPayload => {
   const commandName = 'open-layer'
   const record = requireRecord(value, commandName)
   const props = readOptionalProps(record, commandName)
+  const persistence = record.persistence === undefined ? 'durable' : record.persistence
+  if (persistence !== 'durable' && persistence !== 'ephemeral') {
+    throw new Error(`[ui-state] ${commandName}.persistence must be durable or ephemeral`)
+  }
   return Object.freeze({
     displayMode: requireDisplayMode(record.displayMode, commandName),
     layerId: requireString(record, 'layerId', commandName),
     partKey: requireString(record, 'partKey', commandName),
     ...(props === undefined ? {} : {props}),
+    persistence,
   })
 }
 

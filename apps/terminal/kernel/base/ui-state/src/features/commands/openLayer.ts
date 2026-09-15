@@ -8,6 +8,7 @@ type OpenLayerPayload = Readonly<{
   readonly layerId: string
   readonly partKey: string
   readonly props?: StateJsonValue
+  readonly persistence?: 'durable' | 'ephemeral'
 }>
 
 export const openLayerCommand = defineCommand<OpenLayerPayload>(moduleName, {

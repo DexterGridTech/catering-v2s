@@ -25,7 +25,7 @@ import {
 } from '../src/index'
 import {createModuleUiVariableFactory, createUiCatalog, type UiVariableDeclaration} from '@catering-v2s/kernel-base-ui-state'
 import {createRenderSnapshotReader} from '../src/foundations/createRenderSnapshotReader'
-import {unusedRenderProviderBindings} from './renderProviderBindings'
+import {nativeLoadingCapability, unusedRenderProviderBindings} from './renderProviderBindings'
 
 ;(globalThis as {IS_REACT_ACT_ENVIRONMENT?: boolean}).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -510,6 +510,7 @@ describe('render runtime snapshot seam', () => {
           uiCatalog: createUiCatalog([]),
           rendererCatalog: createRendererCatalog([]),
           logger,
+          nativeLoadingCapability,
           runtimeFacts: createRenderRuntimeFacts({
             environmentMode: 'TEST',
             debugMode: resolveDebugMode({}),

@@ -31,6 +31,7 @@ export const salesMenuTestIds = {
   candidateAdd: 'sales-menu-candidate-add',
   candidateSubmit: 'sales-menu-candidate-submit',
   itemEditor: 'sales-menu-item-editor',
+  itemViewProduct: 'sales-menu-item-view-product',
   itemDelete: 'sales-menu-item-delete',
   itemClose: 'sales-menu-item-close',
   itemDiscardConfirm: 'sales-menu-item-discard-confirm',

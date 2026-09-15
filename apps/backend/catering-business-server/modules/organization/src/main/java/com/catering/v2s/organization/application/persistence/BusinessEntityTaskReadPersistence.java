@@ -5,6 +5,7 @@ import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.api.OrganizationOwnerApi;
 import com.catering.v2s.organization.api.StoreContractLookup.StoreContractContext;
+import com.catering.v2s.extension.api.ExtensionFilterQuery;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -348,6 +349,38 @@ public class BusinessEntityTaskReadPersistence {
             int page,
             int pageSize,
             boolean brandQueryText) {
+        return pageBusinessEntities(
+                workspaceUuid,
+                groupWorkspaceKey,
+                entityType,
+                name,
+                code,
+                legalName,
+                unifiedSocialCreditCode,
+                status,
+                sort,
+                direction,
+                page,
+                pageSize,
+                brandQueryText,
+                ExtensionFilterQuery.Prepared.empty());
+    }
+
+    public PageData pageBusinessEntities(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String entityType,
+            String name,
+            String code,
+            String legalName,
+            String unifiedSocialCreditCode,
+            String status,
+            String sort,
+            String direction,
+            int page,
+            int pageSize,
+            boolean brandQueryText,
+            ExtensionFilterQuery.Prepared extensionFilter) {
         String type = entityType == null ? null : normalizeEntityType(entityType);
         if (page < 1 || pageSize < 1 || pageSize > 100) throw new IllegalArgumentException("invalid page");
         String order = switch (Objects.requireNonNullElse(sort, "NAME")) {
@@ -404,12 +437,18 @@ public class BusinessEntityTaskReadPersistence {
                     + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_LOWER_CREDIT_CODE_LIKE_TEXT
                     + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONTINUATION_TEXT_ENTITY_TYPE;
         }
+        ExtensionFilterQuery.Prepared filters = extensionFilter == null
+                ? ExtensionFilterQuery.Prepared.empty()
+                : extensionFilter;
+        String extensionPredicate = filters.isEmpty() ? "" : " AND " + filters.predicate("entities.extension_values");
+        parameters.addAll(filters.parameters());
         String rows = businessEntityRowsSql();
         Long total = jdbc.queryForObject(
                 BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_SELECT_COUNT_FROM
                         + rows
                         + BusinessEntityTaskReadServiceSql.ENTITY_WHERE_SUFFIX
-                        + predicate,
+                        + predicate
+                        + extensionPredicate,
                 Long.class,
                 parameters.toArray());
         List<Object> pageParameters = new ArrayList<>(parameters);
@@ -422,6 +461,7 @@ public class BusinessEntityTaskReadPersistence {
                         + rows
                         + BusinessEntityTaskReadServiceSql.ENTITY_WHERE_SUFFIX
                         + predicate
+                        + extensionPredicate
                         + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_ORDER_BY
                         + order
                         + BusinessEntityTaskReadServiceSql.SQL_SPACE
@@ -502,19 +542,19 @@ public class BusinessEntityTaskReadPersistence {
     private static String businessEntityRowsSql() {
         return BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME_ALTERNATE_D
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONTINUATION_CREDIT_CODE_ALIAS_REMARK_VARCHAR
-                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONTINUATION_CREATED_AT_EPOCH_MILLIS
+                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONTINUATION_CREATED_AT_EPOCH_MILLIS_EXTENSION_VALUES
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_FROM_CLAUSE_ALTERNATE_B
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_ALTERNATIVE_BRAND_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONTINUATION_REMARK_VARCHAR_NOTES_STATUS
-                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_UPDATE_TENANT
+                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_UPDATE_TENANT_EXTENSION_VALUES
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_WHERE
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_ALTERNATE_C
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONTINUATION_CODE_NAME_LEGAL_NAME_CREDIT_CODE
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONTINUATION_STATUS
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONTINUATION_VERSION_ALTERNATE_B
-                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONTINUATION_HEAD_COMPANY_EXTENSION_VALUES_TEXT_ENTITY_TYPE
+                + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONTINUATION_HEAD_COMPANY_EXTENSION_VALUES_ENTITY_TYPE
                 + BusinessEntityTaskReadServiceSql.BUSINESS_ENTITY_TASK_READ_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_B;
     }
 

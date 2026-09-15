@@ -201,17 +201,41 @@ export const fullPerformanceWorkload = ({task, operation, verificationMode, regi
   });
 };
 
+export const remoteResourceCleanupStatus = ({
+  remoteGradleStatus,
+  containerQueryStatus,
+  volumeQueryStatus,
+  afterContainerQueryStatus,
+  afterVolumeQueryStatus,
+  containerCleanup,
+  volumeCleanup,
+} = {}) =>
+  remoteGradleStatus !== undefined &&
+  containerQueryStatus === 'PASS' &&
+  volumeQueryStatus === 'PASS' &&
+  afterContainerQueryStatus === 'PASS' &&
+  afterVolumeQueryStatus === 'PASS' &&
+  containerCleanup === 'PASS' &&
+  volumeCleanup === 'PASS'
+    ? 'PASS'
+    : 'FAIL';
+
+export const canonicalBackendAcceptanceOperation = (operation, extensionScaleProof = false) =>
+  extensionScaleProof && operation === 'typed-filter-validation-and-recovery'
+    ? 'extension.typed-filter-validation-and-recovery'
+    : operation;
+
 export const backendAcceptanceEnvironment = (
   runId,
   operation = 'all',
   verificationMode = 'ACCEPTANCE',
   batchCardinality = null,
-) =>
-  runId === null
-    ? operation === 'all'
-      ? []
-      : ['export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY']
-    : [
+  extensionScaleProof = false,
+) => {
+  if (extensionScaleProof && runId === null) throw new Error('EXTENSION_SCALE_PROOF_REQUIRES_BACKEND_ACCEPTANCE');
+  const effectiveOperation = canonicalBackendAcceptanceOperation(operation, extensionScaleProof);
+  if (runId === null) return effectiveOperation === 'all' ? [] : ['export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY'];
+  return [
         'export V2S_RUNTIME_ENVIRONMENT=non-production',
         'export V2S_DEV_PROFILE=backend-acceptance',
         `export V2S_DEV_NAMESPACE=${quote(`v2s-backend-acceptance-${sha256(runId).slice(0, 16)}`)}`,
@@ -222,22 +246,29 @@ export const backendAcceptanceEnvironment = (
         'export V2S_DB_OPERATIONS_EVENTS="$root/results/db-operation-events.jsonl"',
         'export V2S_DB_OPERATIONS_HMAC_KEY="$(od -An -N32 -tx1 /dev/urandom | tr -d \' \\n\')"',
         'export V2S_DB_STATEMENT_DICTIONARY="$root/results/statement-dictionary.json"',
-        `export V2S_BACKEND_ACCEPTANCE_OPERATION=${quote(operation)}`,
+        `export V2S_BACKEND_ACCEPTANCE_OPERATION=${quote(effectiveOperation)}`,
         `export V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE=${quote(verificationMode)}`,
-        ...(operation === 'all' ? [] : ['export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY']),
+        ...(effectiveOperation === 'all' ? [] : ['export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY']),
         ...(batchCardinality === null || batchCardinality === undefined || batchCardinality === ''
           ? []
           : [`export V2S_BACKEND_ACCEPTANCE_BATCH_CARDINALITY=${quote(batchCardinality)}`]),
+        ...(extensionScaleProof
+          ? [
+              'export V2S_EXTENSION_SCALE_PROOF=true',
+              'export V2S_EXTENSION_SCALE_EVIDENCE="$root/results/extension-scale-evidence.json"',
+            ]
+          : []),
         // The complete exact-set workload needs the existing P2 normal recipes.
         // They cannot remain caller-selected diagnostics: coverage-only probes
         // deliberately do not satisfy the normal performance denominator.
-        ...(operation === 'all' ? ['export V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF=true'] : []),
+        ...(effectiveOperation === 'all' ? ['export V2S_BACKEND_P2_CONNECTION_SCOPE_PROOF=true'] : []),
         // A managed whole-suite run is the canonical generated-operation measurement workload.
         // Its non-scenario coverage fixture must therefore be enabled by the runner itself,
         // never by a caller-controlled diagnostic switch.
-        ...(operation === 'all' ? ['export V2S_BACKEND_PERFORMANCE_OPERATION_COVERAGE=true'] : []),
+        ...(effectiveOperation === 'all' ? ['export V2S_BACKEND_PERFORMANCE_OPERATION_COVERAGE=true'] : []),
         'export CATERING_OTP_DEBUG_CODE_EXPOSURE=true',
       ];
+};
 
 /**
  * A complete backend-acceptance run is the only run whose event denominator is the full generated operation set.
@@ -497,6 +528,7 @@ export function validateInvocationArguments(argumentsList) {
   if (typeof task !== 'string' || !/^:[a-z0-9:-]+:test$/.test(task)) throw new Error('TASK_MUST_BE_A_SINGLE_TEST_TASK');
   const gradleArguments = [];
   let productionMutationId;
+  let extensionScaleProof = false;
   for (let index = 0; index < extraArguments.length; ) {
     if (extraArguments[index] === '--tests') {
       if (typeof extraArguments[index + 1] !== 'string' || extraArguments[index + 1].trim() === '') {
@@ -513,10 +545,17 @@ export function validateInvocationArguments(argumentsList) {
       index += 2;
       continue;
     }
+    if (extraArguments[index] === '--extension-scale-proof') {
+      if (extensionScaleProof) throw new Error('EXTENSION_SCALE_PROOF_DUPLICATE');
+      extensionScaleProof = true;
+      index += 1;
+      continue;
+    }
     throw new Error('FOCUSED_TEST_SELECTOR_REQUIRED');
   }
   const invocation = {task, extraArguments: Object.freeze(gradleArguments)};
   if (productionMutationId !== undefined) invocation.productionMutationId = productionMutationId;
+  if (extensionScaleProof) invocation.extensionScaleProof = true;
   return Object.freeze(invocation);
 }
 
@@ -919,14 +958,14 @@ const atomicWrite = (target, value) => {
   renameSync(temporary, target);
 };
 
-const remotePreflight = () => {
-  const result = remoteResult(
-    script(
-      'set -euo pipefail',
-      'docker ps -aq --filter label=org.testcontainers=true | sed "s/^/CONTAINER\\t/" || true',
-      'docker volume ls -q --filter label=org.testcontainers=true | sed "s/^/VOLUME\\t/" || true',
-    ),
+export const remotePreflightScript = () =>
+  script(
+    'set -euo pipefail',
+    'docker ps -aq --filter label=org.testcontainers=true | sed "s/^/CONTAINER\\t/"',
+    'docker volume ls -q --filter label=org.testcontainers=true | sed "s/^/VOLUME\\t/"',
   );
+
+export const parseRemotePreflightResult = result => {
   if (result.status !== 0) throw new Error('REMOTE_RESOURCE_PREFLIGHT_UNAVAILABLE');
   const rows = String(result.stdout)
     .trim()
@@ -938,6 +977,8 @@ const remotePreflight = () => {
   if (containers.length || volumes.length) throw new Error('REMOTE_TESTCONTAINERS_STALE_RESOURCE');
   return {containers, volumes, observedAt: now()};
 };
+
+const remotePreflight = () => parseRemotePreflightResult(remoteResult(remotePreflightScript()));
 
 const waitForClose = child =>
   new Promise(resolve => {
@@ -1128,10 +1169,18 @@ const streamRemoteRun = body =>
     activeRemoteSshChild = child;
     let stdoutTail = '';
     let stderrTail = '';
+    let stdoutMarkerRemainder = '';
+    const stdoutMarkers = {};
     const appendTail = (prior, chunk) => `${prior}${chunk}`.slice(-32_768);
+    const captureMarkers = chunk => {
+      const lines = `${stdoutMarkerRemainder}${chunk}`.split(/\r?\n/);
+      stdoutMarkerRemainder = lines.pop() ?? '';
+      Object.assign(stdoutMarkers, parseRunnerMarkers(lines.join('\n')));
+    };
     child.stdout.setEncoding('utf8').on('data', chunk => {
       process.stdout.write(chunk);
       stdoutTail = appendTail(stdoutTail, chunk);
+      captureMarkers(chunk);
     });
     child.stderr.setEncoding('utf8').on('data', chunk => {
       process.stderr.write(chunk);
@@ -1140,11 +1189,24 @@ const streamRemoteRun = body =>
     child.stdin.end(body);
     child.once('error', error => {
       if (activeRemoteSshChild === child) activeRemoteSshChild = null;
-      resolve({status: -1, stdoutTail, stderrTail: appendTail(stderrTail, error.message)});
+      captureMarkers('\n');
+      resolve({
+        status: -1,
+        stdoutTail,
+        stderrTail: appendTail(stderrTail, error.message),
+        markers: Object.freeze({...stdoutMarkers}),
+      });
     });
     child.once('close', (status, signal) => {
       if (activeRemoteSshChild === child) activeRemoteSshChild = null;
-      resolve({status: status ?? -1, signal, stdoutTail, stderrTail});
+      captureMarkers('\n');
+      resolve({
+        status: status ?? -1,
+        signal,
+        stdoutTail,
+        stderrTail,
+        markers: Object.freeze({...stdoutMarkers}),
+      });
     });
   });
 
@@ -1161,18 +1223,118 @@ const collectArtifacts = (remoteResults, directory) => {
   if (result.status !== 0) throw new Error(`ARTIFACT_COLLECTION_FAILED:${compact(result.stderr || result.stdout)}`);
 };
 
-const cleanupRemoteWorkspace = remoteRoot => {
-  const result = remoteResult(
-    script(
-      'set -euo pipefail',
-      `root=${quote(remoteRoot)}`,
-      'case "$root" in /tmp/r5-tc-[0-9]*-[0-9]*) ;; *) exit 64 ;; esac',
-      'rm -rf -- "$root"',
-      'test ! -e "$root"',
-    ),
+const testcontainersRemoteRootPattern = /^\/tmp\/r5-tc-[0-9]+-[0-9]+$/;
+const cleanupMarker = (output, name) => output.match(new RegExp(`(?:^|\\n)${name}=([^\\r\\n]+)`))?.[1]?.trim() ?? null;
+const cleanupRemoteWorkspaceScript = remoteRoot =>
+  script(
+    'set -uo pipefail',
+    `root=${quote(remoteRoot)}`,
+    'case "$root" in /tmp/r5-tc-[0-9]*-[0-9]*) ;; *) printf "REMOTE_CLEANUP_FAILURE=ROOT_IDENTITY_INVALID\\n"; exit 64 ;; esac',
+    'if ! container_ids="$(docker ps -aq --filter label=org.testcontainers=true | sort)"; then printf "REMOTE_CLEANUP_FAILURE=CONTAINER_QUERY_FAILED\\n"; exit 70; fi',
+    'if ! volume_ids="$(docker volume ls -q --filter label=org.testcontainers=true | sort)"; then printf "REMOTE_CLEANUP_FAILURE=VOLUME_QUERY_FAILED\\n"; exit 71; fi',
+    'container_count=0; test -z "$container_ids" || container_count="$(printf "%s\\n" "$container_ids" | wc -l | tr -d " ")"',
+    'volume_count=0; test -z "$volume_ids" || volume_count="$(printf "%s\\n" "$volume_ids" | wc -l | tr -d " ")"',
+    'active_process_count=0; active_process_pids=""',
+    'for proc in /proc/[0-9]*; do',
+    '  test -e "$proc/cwd" || continue',
+    '  pid="${proc##*/}"',
+    '  cwd="$(readlink "$proc/cwd" 2>/dev/null || true)"',
+    '  case "$cwd" in "$root"|"$root"/*) active_process_count=$((active_process_count + 1)); active_process_pids="${active_process_pids}${pid}," ;; esac',
+    'done',
+    'while IFS= read -r process_record; do',
+    '  pid="${process_record%% *}"',
+    '  command_line="${process_record#* }"',
+    '  case "$command_line" in *"$root"*) active_process_count=$((active_process_count + 1)); active_process_pids="${active_process_pids}${pid}," ;; esac',
+    'done < <(ps -eo pid=,args=)',
+    'printf "REMOTE_ROOT_PRESENT=%s\\n" "$([ -e "$root" ] && echo true || echo false)"',
+    'printf "REMOTE_ACTIVE_PROCESS_COUNT=%s\\n" "$active_process_count"',
+    'printf "REMOTE_ACTIVE_PROCESS_PIDS=%s\\n" "${active_process_pids%,}"',
+    'printf "REMOTE_TESTCONTAINERS_CONTAINER_COUNT=%s\\n" "$container_count"',
+    'printf "REMOTE_TESTCONTAINERS_VOLUME_COUNT=%s\\n" "$volume_count"',
+    'test "$container_count" = 0 || { printf "REMOTE_CLEANUP_FAILURE=CONTAINERS_REMAIN\\n"; exit 72; }',
+    'test "$volume_count" = 0 || { printf "REMOTE_CLEANUP_FAILURE=VOLUMES_REMAIN\\n"; exit 73; }',
+    'test "$active_process_count" = 0 || { printf "REMOTE_CLEANUP_FAILURE=REMOTE_PROCESSES_REMAIN\\n"; exit 74; }',
+    'if test ! -e "$root"; then printf "REMOTE_ROOT_ABSENT=true\\n"; exit 0; fi',
+    'if ! rm -rf -- "$root"; then printf "REMOTE_CLEANUP_FAILURE=ROOT_DELETE_FAILED\\n"; exit 75; fi',
+    'if test -e "$root"; then printf "REMOTE_CLEANUP_FAILURE=ROOT_READBACK_PRESENT\\n"; exit 76; fi',
+    'printf "REMOTE_ROOT_ABSENT=true\\n"',
   );
-  return result.status === 0 ? 'PASS' : 'FAIL';
-};
+
+export function cleanupRemoteWorkspaceDetailed(remoteRoot, execute = remoteResult) {
+  if (!testcontainersRemoteRootPattern.test(String(remoteRoot ?? ''))) throw new Error('REMOTE_TESTCONTAINERS_ROOT_IDENTITY_INVALID');
+  const result = execute(cleanupRemoteWorkspaceScript(remoteRoot));
+  const output = `${result?.stdout ?? ''}\n${result?.stderr ?? ''}`;
+  return Object.freeze({
+    status: result?.status === 0 && cleanupMarker(output, 'REMOTE_ROOT_ABSENT') === 'true' ? 'PASS' : 'FAIL',
+    remoteRoot,
+    remoteRootPresent: cleanupMarker(output, 'REMOTE_ROOT_PRESENT'),
+    remoteRootAbsent: cleanupMarker(output, 'REMOTE_ROOT_ABSENT') === 'true',
+    activeProcessCount: cleanupMarker(output, 'REMOTE_ACTIVE_PROCESS_COUNT'),
+    activeProcessPids: cleanupMarker(output, 'REMOTE_ACTIVE_PROCESS_PIDS'),
+    testcontainersContainerCount: cleanupMarker(output, 'REMOTE_TESTCONTAINERS_CONTAINER_COUNT'),
+    testcontainersVolumeCount: cleanupMarker(output, 'REMOTE_TESTCONTAINERS_VOLUME_COUNT'),
+    failure: result?.status === 0 ? null : cleanupMarker(output, 'REMOTE_CLEANUP_FAILURE') ?? compact(result?.stderr || result?.stdout),
+  });
+}
+
+const cleanupRemoteWorkspace = remoteRoot => cleanupRemoteWorkspaceDetailed(remoteRoot).status;
+
+export function validateCleanupRecoveryTarget(manifest, {expectedHost = remoteHost} = {}) {
+  if (!manifest || manifest.schemaVersion !== 1 || manifest.kind !== 'r5-managed-testcontainers-run') {
+    throw new Error('CLEANUP_RECOVERY_MANIFEST_INVALID');
+  }
+  if (!/^r5-tc-[0-9]+-[0-9]+$/.test(manifest.runId) || manifest.status !== 'FAIL' || typeof manifest.finishedAt !== 'string' || manifest.finishedAt.trim() === '') {
+    throw new Error('CLEANUP_RECOVERY_MANIFEST_NOT_TERMINAL');
+  }
+  if (manifest.remote?.hostAlias !== expectedHost || manifest.remote?.hostTrust?.host !== expectedHost) {
+    throw new Error('CLEANUP_RECOVERY_REMOTE_HOST_MISMATCH');
+  }
+  if (manifest.remote?.root !== `/tmp/${manifest.runId}` || manifest.remote?.stagingRoot !== `${manifest.remote.root}/workspace`) {
+    throw new Error('CLEANUP_RECOVERY_REMOTE_ROOT_MISMATCH');
+  }
+  if (!['PASS', 'FAIL', 'NOT_RUN', 'NOT_APPLICABLE'].includes(manifest.business)) {
+    throw new Error('CLEANUP_RECOVERY_BUSINESS_STATUS_INVALID');
+  }
+  if (typeof manifest.firstFailure !== 'string' || manifest.firstFailure.trim() === '') {
+    throw new Error('CLEANUP_RECOVERY_FIRST_FAILURE_MISSING');
+  }
+  if (typeof manifest.lastKnownGood !== 'string' || manifest.lastKnownGood.trim() === '') {
+    throw new Error('CLEANUP_RECOVERY_LAST_KNOWN_GOOD_MISSING');
+  }
+  if (typeof manifest.brokenBoundary !== 'string' || manifest.brokenBoundary.trim() === '') {
+    throw new Error('CLEANUP_RECOVERY_BROKEN_BOUNDARY_MISSING');
+  }
+  if (manifest.cleanup?.status === 'PASS') throw new Error('CLEANUP_RECOVERY_ALREADY_CLOSED');
+  return manifest;
+}
+
+export function recoverRemoteWorkspaceCleanup({manifestPath: sourceManifestPath, expectedHost = remoteHost} = {}) {
+  const sourcePath = path.resolve(String(sourceManifestPath ?? ''));
+  const relative = path.relative(evidence, sourcePath);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative) || !relative.endsWith('/run-manifest.json')) {
+    throw new Error('CLEANUP_RECOVERY_MANIFEST_PATH_OUTSIDE_EVIDENCE');
+  }
+  const manifest = validateCleanupRecoveryTarget(JSON.parse(readFileSync(sourcePath, 'utf8')), {expectedHost});
+  const expectedPath = path.join(evidence, manifest.runId, 'run-manifest.json');
+  if (sourcePath !== expectedPath) throw new Error('CLEANUP_RECOVERY_MANIFEST_PATH_RUN_ID_MISMATCH');
+  const cleanup = cleanupRemoteWorkspaceDetailed(manifest.remote.root);
+  const recoveryPath = path.join(path.dirname(sourcePath), 'cleanup-recovery.json');
+  const recovery = {
+    schemaVersion: 1,
+    kind: 'r5-managed-testcontainers-cleanup-recovery',
+    recoveredAt: now(),
+    sourceManifest: path.relative(root, sourcePath),
+    runId: manifest.runId,
+    remote: {hostAlias: expectedHost, root: manifest.remote.root},
+    cleanup,
+    business: manifest.business,
+    originalFirstFailure: manifest.firstFailure,
+    originalLastKnownGood: manifest.lastKnownGood,
+    originalBrokenBoundary: manifest.brokenBoundary,
+  };
+  writeFileSync(recoveryPath, `${JSON.stringify(recovery, null, 2)}\n`, {mode: 0o600});
+  return Object.freeze({...recovery, recoveryPath});
+}
 
 export const runScript = ({
   remoteRoot,
@@ -1195,6 +1357,7 @@ export const runScript = ({
     backendAcceptanceOperation,
     verificationMode,
     process.env.V2S_BACKEND_ACCEPTANCE_BATCH_CARDINALITY ?? null,
+    invocation.extensionScaleProof === true,
   );
   const mutationLines =
     productionMutation === null
@@ -1276,8 +1439,13 @@ export const runScript = ({
     `cache=${quote(remoteDependencyCache)}`,
     `task=${quote(invocation.task)}`,
     'log_file="$results/gradle.log"',
-    'docker ps -aq --filter label=org.testcontainers=true | sort > "$root/before-container-ids"',
-    'docker volume ls -q --filter label=org.testcontainers=true | sort > "$root/before-volume-ids"',
+    'container_query_status=PASS',
+    'if ! docker ps -aq --filter label=org.testcontainers=true | sort > "$root/before-container-ids"; then container_query_status=FAIL; fi',
+    'volume_query_status=PASS',
+    'if ! docker volume ls -q --filter label=org.testcontainers=true | sort > "$root/before-volume-ids"; then volume_query_status=FAIL; fi',
+    'printf "REMOTE_TESTCONTAINERS_CONTAINER_QUERY=%s\\n" "$container_query_status"',
+    'printf "REMOTE_TESTCONTAINERS_VOLUME_QUERY=%s\\n" "$volume_query_status"',
+    'if test "$container_query_status" != PASS || test "$volume_query_status" != PASS; then printf "REMOTE_TESTCONTAINERS_QUERY_FAILURE=true\\n"; exit 70; fi',
     'set +e',
     '(',
     '  set -euo pipefail',
@@ -1349,8 +1517,11 @@ export const runScript = ({
     'cleanup_attempts=0',
     'while :; do',
     '  cleanup_attempts=$((cleanup_attempts + 1))',
-    '  docker ps -aq --filter label=org.testcontainers=true | sort > "$root/after-container-ids"',
-    '  docker volume ls -q --filter label=org.testcontainers=true | sort > "$root/after-volume-ids"',
+    '  after_container_query_status=PASS',
+    '  if ! docker ps -aq --filter label=org.testcontainers=true | sort > "$root/after-container-ids"; then after_container_query_status=FAIL; fi',
+    '  after_volume_query_status=PASS',
+    '  if ! docker volume ls -q --filter label=org.testcontainers=true | sort > "$root/after-volume-ids"; then after_volume_query_status=FAIL; fi',
+    '  if test "$after_container_query_status" != PASS || test "$after_volume_query_status" != PASS; then break; fi',
     '  if cmp -s "$root/before-container-ids" "$root/after-container-ids" && cmp -s "$root/before-volume-ids" "$root/after-volume-ids"; then',
     '    break',
     '  fi',
@@ -1359,8 +1530,10 @@ export const runScript = ({
     '  fi',
     '  sleep 1',
     'done',
-    'container_cleanup=FAIL; cmp -s "$root/before-container-ids" "$root/after-container-ids" && container_cleanup=PASS',
-    'volume_cleanup=FAIL; cmp -s "$root/before-volume-ids" "$root/after-volume-ids" && volume_cleanup=PASS',
+    'printf "REMOTE_TESTCONTAINERS_AFTER_CONTAINER_QUERY=%s\\n" "$after_container_query_status"',
+    'printf "REMOTE_TESTCONTAINERS_AFTER_VOLUME_QUERY=%s\\n" "$after_volume_query_status"',
+    'container_cleanup=FAIL; if test "$after_container_query_status" = PASS && cmp -s "$root/before-container-ids" "$root/after-container-ids"; then container_cleanup=PASS; fi',
+    'volume_cleanup=FAIL; if test "$after_volume_query_status" = PASS && cmp -s "$root/before-volume-ids" "$root/after-volume-ids"; then volume_cleanup=PASS; fi',
     'printf "REMOTE_GRADLE_STATUS=%s\\n" "$gradle_status"',
     'printf "REMOTE_TESTCONTAINERS_CLEANUP_ATTEMPTS=%s\\n" "$cleanup_attempts"',
     'printf "REMOTE_TESTCONTAINERS_CONTAINERS=%s\\n" "$container_cleanup"',
@@ -1371,6 +1544,33 @@ export const runScript = ({
 };
 
 const marker = (output, name) => output.match(new RegExp(`(?:^|\\n)${name}=([^\\r\\n]+)`))?.[1]?.trim();
+
+const RUNNER_MARKER_NAMES = new Set([
+  'REMOTE_GRADLE_STATUS',
+  'REMOTE_TESTCONTAINERS_CONTAINER_QUERY',
+  'REMOTE_TESTCONTAINERS_VOLUME_QUERY',
+  'REMOTE_TESTCONTAINERS_AFTER_CONTAINER_QUERY',
+  'REMOTE_TESTCONTAINERS_AFTER_VOLUME_QUERY',
+  'REMOTE_TESTCONTAINERS_CONTAINERS',
+  'REMOTE_TESTCONTAINERS_VOLUMES',
+  'REMOTE_EVIDENCE_ARCHIVE_STATUS',
+  'R5_TEST_MUTATION_STATUS',
+  'R5_TEST_MUTATION_ID',
+  'R5_TEST_MUTATION_REPLACE_COUNT',
+  'R5_TEST_MUTATION_SOURCE_BEFORE_SHA256',
+  'R5_TEST_MUTATION_SOURCE_AFTER_SHA256',
+  'R5_TEST_MUTATION_STAGING_SNAPSHOT_SHA256',
+  'R5_TEST_MUTATION_FAILURE',
+]);
+
+export const parseRunnerMarkers = output => {
+  const markers = {};
+  for (const line of String(output ?? '').split(/\r?\n/)) {
+    const match = line.match(/^([A-Z][A-Z0-9_]*)=([^\r\n]*)$/);
+    if (match && RUNNER_MARKER_NAMES.has(match[1])) markers[match[1]] = match[2].trim();
+  }
+  return Object.freeze(markers);
+};
 
 const execute = async () => {
   const invocation = validateInvocationArguments(process.argv.slice(2));
@@ -1397,7 +1597,10 @@ const execute = async () => {
     invocation.extraArguments.includes(backendAcceptanceSelector)
       ? `backend-acceptance-${runId}`
       : null;
-  const backendAcceptanceOperation = process.env.V2S_BACKEND_ACCEPTANCE_OPERATION ?? 'all';
+  const backendAcceptanceOperation = canonicalBackendAcceptanceOperation(
+    process.env.V2S_BACKEND_ACCEPTANCE_OPERATION ?? 'all',
+    invocation.extensionScaleProof === true,
+  );
   const verificationMode = process.env.V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE ?? 'ACCEPTANCE';
   const requestedMutation =
     invocation.productionMutationId === undefined ? null : resolveProductionMutation(invocation.productionMutationId);
@@ -1588,10 +1791,15 @@ const execute = async () => {
     collectArtifacts(remoteResults, directory);
     const gradleLog = readFileSync(path.join(directory, 'gradle.log'), 'utf8');
     const actualExecution = classifyGradleTestExecution(gradleLog, invocation.task);
-    const remoteGradleStatus = marker(remoteRun.stdoutTail, 'REMOTE_GRADLE_STATUS');
-    const containers = marker(remoteRun.stdoutTail, 'REMOTE_TESTCONTAINERS_CONTAINERS');
-    const volumes = marker(remoteRun.stdoutTail, 'REMOTE_TESTCONTAINERS_VOLUMES');
-    const archiveStatus = marker(remoteRun.stdoutTail, 'REMOTE_EVIDENCE_ARCHIVE_STATUS');
+    const runnerMarker = name => remoteRun.markers?.[name] ?? marker(remoteRun.stdoutTail, name);
+    const remoteGradleStatus = runnerMarker('REMOTE_GRADLE_STATUS');
+    const containerQueryStatus = runnerMarker('REMOTE_TESTCONTAINERS_CONTAINER_QUERY');
+    const volumeQueryStatus = runnerMarker('REMOTE_TESTCONTAINERS_VOLUME_QUERY');
+    const afterContainerQueryStatus = runnerMarker('REMOTE_TESTCONTAINERS_AFTER_CONTAINER_QUERY');
+    const afterVolumeQueryStatus = runnerMarker('REMOTE_TESTCONTAINERS_AFTER_VOLUME_QUERY');
+    const containers = runnerMarker('REMOTE_TESTCONTAINERS_CONTAINERS');
+    const volumes = runnerMarker('REMOTE_TESTCONTAINERS_VOLUMES');
+    const archiveStatus = runnerMarker('REMOTE_EVIDENCE_ARCHIVE_STATUS');
     const gradleFailureCode = firstGradleFailureCode(gradleLog);
     const executionPass = actualExecution.status === 'PASS' && remoteGradleStatus === '0';
     const executionFailure =
@@ -1616,25 +1824,35 @@ const execute = async () => {
       markLastKnownGood('REMOTE_TEST_EXECUTION');
     }
     manifest.cleanup = {
-      status: remoteGradleStatus !== undefined && containers === 'PASS' && volumes === 'PASS' ? 'PASS' : 'FAIL',
+      status: remoteResourceCleanupStatus({
+        remoteGradleStatus,
+        containerQueryStatus,
+        volumeQueryStatus,
+        afterContainerQueryStatus,
+        afterVolumeQueryStatus,
+        containerCleanup: containers,
+        volumeCleanup: volumes,
+      }),
       remoteProcess: remoteGradleStatus !== undefined ? 'PASS' : 'FAIL',
       remoteWorkspace: 'PENDING',
       testcontainersContainers: containers === 'PASS' ? 'PASS' : 'FAIL',
       testcontainersVolumes: volumes === 'PASS' ? 'PASS' : 'FAIL',
+      testcontainersContainerQuery: containerQueryStatus === 'PASS' && afterContainerQueryStatus === 'PASS' ? 'PASS' : 'FAIL',
+      testcontainersVolumeQuery: volumeQueryStatus === 'PASS' && afterVolumeQueryStatus === 'PASS' ? 'PASS' : 'FAIL',
     };
     if (requestedMutation !== null) {
-      const mutationStatus = marker(remoteRun.stdoutTail, 'R5_TEST_MUTATION_STATUS');
-      const mutationId = marker(remoteRun.stdoutTail, 'R5_TEST_MUTATION_ID');
-      const observedReplaceCount = marker(remoteRun.stdoutTail, 'R5_TEST_MUTATION_REPLACE_COUNT');
-      const sourceBeforeSha256 = marker(remoteRun.stdoutTail, 'R5_TEST_MUTATION_SOURCE_BEFORE_SHA256');
-      const sourceAfterSha256 = marker(remoteRun.stdoutTail, 'R5_TEST_MUTATION_SOURCE_AFTER_SHA256');
-      const stagingSnapshotHash = marker(remoteRun.stdoutTail, 'R5_TEST_MUTATION_STAGING_SNAPSHOT_SHA256');
+      const mutationStatus = runnerMarker('R5_TEST_MUTATION_STATUS');
+      const mutationId = runnerMarker('R5_TEST_MUTATION_ID');
+      const observedReplaceCount = runnerMarker('R5_TEST_MUTATION_REPLACE_COUNT');
+      const sourceBeforeSha256 = runnerMarker('R5_TEST_MUTATION_SOURCE_BEFORE_SHA256');
+      const sourceAfterSha256 = runnerMarker('R5_TEST_MUTATION_SOURCE_AFTER_SHA256');
+      const stagingSnapshotHash = runnerMarker('R5_TEST_MUTATION_STAGING_SNAPSHOT_SHA256');
       manifest.productionMutation.status = mutationStatus === 'PASS' ? 'PASS' : 'FAIL';
       manifest.productionMutation.observedReplaceCount = observedReplaceCount ?? null;
       manifest.productionMutation.sourceBeforeSha256 = sourceBeforeSha256 ?? null;
       manifest.productionMutation.sourceAfterSha256 = sourceAfterSha256 ?? null;
       manifest.productionMutation.stagingSnapshotHash = stagingSnapshotHash ?? null;
-      if (mutationStatus !== 'PASS') throw new Error(`PRODUCTION_MUTATION_NOT_APPLIED:${marker(remoteRun.stdoutTail, 'R5_TEST_MUTATION_FAILURE') ?? 'UNKNOWN'}`);
+      if (mutationStatus !== 'PASS') throw new Error(`PRODUCTION_MUTATION_NOT_APPLIED:${runnerMarker('R5_TEST_MUTATION_FAILURE') ?? 'UNKNOWN'}`);
       if (
         mutationId !== requestedMutation.id ||
         observedReplaceCount !== String(requestedMutation.replaceCount) ||
@@ -1864,7 +2082,19 @@ const execute = async () => {
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === new URL(import.meta.url).pathname;
-if (isMain)
+if (isMain && process.argv[2] === '--cleanup-run-manifest') {
+  try {
+    if (process.argv.length !== 4) throw new Error('CLEANUP_RECOVERY_MANIFEST_REQUIRED');
+    const recovery = recoverRemoteWorkspaceCleanup({manifestPath: process.argv[3]});
+    process.stdout.write(
+      `R5_TESTCONTAINERS_CLEANUP_RECOVERY=${recovery.cleanup.status}; RUN_ID=${recovery.runId}; EVIDENCE=${path.relative(root, recovery.recoveryPath)}; BUSINESS=${recovery.business}; REMOTE_ROOT_ABSENT=${recovery.cleanup.remoteRootAbsent}\n`,
+    );
+    if (recovery.cleanup.status !== 'PASS') process.exitCode = 2;
+  } catch (error) {
+    process.stderr.write(`R5_TESTCONTAINERS_CLEANUP_RECOVERY=FAIL; REASON=${compact(error.message)}\n`);
+    process.exitCode = 2;
+  }
+} else if (isMain)
   execute().catch(error => {
     process.stderr.write(`R5_REMOTE_TESTCONTAINERS=FAIL; REASON=${compact(error.message)}\n`);
     process.exitCode = 2;

@@ -266,7 +266,10 @@ try {
 
   withMutation(
     'src/types/props.ts',
-    source => source.replace('readonly displayMode: DisplayMode', 'readonly displayMode?: DisplayMode'),
+    source => source.replace(
+      'export type SurfaceRootProps = Readonly<{\n  readonly displayMode: DisplayMode',
+      'export type SurfaceRootProps = Readonly<{\n  readonly displayMode?: DisplayMode',
+    ),
     report => {
       console.log(`RENDER_STATIC_RED_PROPS=${rule(report, 'render-surface-props-required').status}`)
       assertVector(report, ['render-surface-props-required'])

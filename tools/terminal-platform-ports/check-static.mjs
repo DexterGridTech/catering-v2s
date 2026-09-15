@@ -149,7 +149,7 @@ function memberName(member) {
   return member.name && ts.isIdentifier(member.name) ? member.name.text : null;
 }
 
-function assertExactRequiredProperties(checker, indexSourceFile, typeName, expectedNames, {callable = false} = {}) {
+function assertExactRequiredProperties(checker, indexSourceFile, typeName, expectedNames, {callable = false, optionalNames = []} = {}) {
   const declaration = declaredInterface(checker, indexSourceFile, typeName);
   const symbol = resolveAliasedSymbol(checker, exportSymbol(checker, indexSourceFile, typeName));
   const type = checker.getDeclaredTypeOfSymbol(symbol);
@@ -168,8 +168,11 @@ function assertExactRequiredProperties(checker, indexSourceFile, typeName, expec
   )) {
     throw new Error(`${typeName} must not contain index, call, construct, or computed members`);
   }
+  const allowedOptionalNames = new Set(optionalNames);
   for (const property of type.getProperties()) {
-    if (property.flags & ts.SymbolFlags.Optional) throw new Error(`optional port member ${typeName}.${property.name}`);
+    if ((property.flags & ts.SymbolFlags.Optional) && !allowedOptionalNames.has(property.name)) {
+      throw new Error(`optional port member ${typeName}.${property.name}`);
+    }
     if (callable) {
       const declaration = property.valueDeclaration ?? property.declarations?.[0];
       const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration ?? indexSourceFile);
@@ -180,8 +183,12 @@ function assertExactRequiredProperties(checker, indexSourceFile, typeName, expec
 
 function runRequiredPortShape({checker, indexSourceFile, invariant}) {
   const expectedPortKeys = invariant.portKeys;
+  const expectedPlatformPortsKeys = invariant.platformPortsKeys ?? expectedPortKeys;
+  const platformPortsOptionalKeys = invariant.platformPortsOptionalKeys ?? [];
   const expectedPortMethods = invariant.portMethods;
-  assertExactRequiredProperties(checker, indexSourceFile, 'PlatformPorts', expectedPortKeys);
+  assertExactRequiredProperties(checker, indexSourceFile, 'PlatformPorts', expectedPlatformPortsKeys, {
+    optionalNames: platformPortsOptionalKeys,
+  });
   assertExactRequiredProperties(checker, indexSourceFile, 'PlatformPortBindings', expectedPortKeys);
   for (const [typeName, methods] of Object.entries(expectedPortMethods)) {
     assertExactRequiredProperties(checker, indexSourceFile, typeName, methods, {callable: true});

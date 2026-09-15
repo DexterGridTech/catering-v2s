@@ -6,3 +6,5 @@ import {moduleName as runtime} from '@catering-v2s/kernel-base-runtime';
 export const dependencyModuleNames = [contracts, platformPorts, state, runtime] as const;
 
 export const devDependencyModuleNames = [] as const;
+
+export const runtimeModuleDependencyNames = [runtime] as const;

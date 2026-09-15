@@ -8,20 +8,28 @@ import {resolveGradleCommand} from '../lib/gradle-runtime.mjs';
 import {BACKEND_PERFORMANCE_OPERATION_COUNTS} from '../policy/backend-performance-operation-counts.mjs';
 import {
   backendAcceptanceEnvironment,
+  canonicalBackendAcceptanceOperation,
   classifyGradleTestExecution,
   classifyManagedDevLifecycleCommand,
+  cleanupRemoteWorkspaceDetailed,
   firstGradleFailureCode,
   inspectManagedDevState,
   managedGradleHomeScript,
   parseAndValidateRunManifest,
+  parseRemotePreflightResult,
+  validateCleanupRecoveryTarget,
   acquireLocalRunLock,
   fullPerformanceWorkload,
   parseBackendAcceptanceResult,
   parseEvidenceArchiveIndex,
+  parseRunnerMarkers,
   hasArchivedEvidenceIndexEntries,
   readEvidenceArtifact,
   remoteGradleDistributionPath,
+  remoteResourceCleanupStatus,
+  remotePreflightScript,
   resolveGradleHome,
+  runScript,
   validateCleanupReceipt,
   validateEvidenceArchiveReceipt,
   validateGradleDistribution,
@@ -97,6 +105,146 @@ test('focused runner accepts one task with explicit selectors only', () => {
   });
   assert.throws(() => validateInvocationArguments(['--unsupported']), /TASK_MUST_BE_A_SINGLE_TEST_TASK/);
   assert.throws(() => validateInvocationArguments([task, '--stacktrace']), /FOCUSED_TEST_SELECTOR_REQUIRED/);
+  assert.deepEqual(validateInvocationArguments([task, '--tests', 'com.example.FocusedContainerTest', '--extension-scale-proof']), {
+    task,
+    extraArguments: ['--tests', 'com.example.FocusedContainerTest'],
+    extensionScaleProof: true,
+  });
+  assert.throws(
+    () => validateInvocationArguments([task, '--extension-scale-proof', '--extension-scale-proof']),
+    /EXTENSION_SCALE_PROOF_DUPLICATE/,
+  );
+});
+
+test('managed cleanup refuses a remote workspace while exact-run processes or resources remain', () => {
+  const runId = 'r5-tc-1789418414756-70098';
+  const remoteRoot = `/tmp/${runId}`;
+  const active = cleanupRemoteWorkspaceDetailed(remoteRoot, body => {
+    assert.match(body, /REMOTE_ACTIVE_PROCESS_COUNT/);
+    assert.match(body, /REMOTE_TESTCONTAINERS_CONTAINER_COUNT/);
+    return {
+      status: 74,
+      stdout: 'REMOTE_ROOT_PRESENT=true\nREMOTE_ACTIVE_PROCESS_COUNT=1\nREMOTE_ACTIVE_PROCESS_PIDS=101\nREMOTE_TESTCONTAINERS_CONTAINER_COUNT=0\nREMOTE_TESTCONTAINERS_VOLUME_COUNT=0\nREMOTE_CLEANUP_FAILURE=REMOTE_PROCESSES_REMAIN\n',
+      stderr: '',
+    };
+  });
+  assert.equal(active.status, 'FAIL');
+  assert.equal(active.remoteRootAbsent, false);
+  assert.equal(active.activeProcessCount, '1');
+  assert.match(active.failure, /REMOTE_PROCESSES_REMAIN/);
+
+  const clear = cleanupRemoteWorkspaceDetailed(remoteRoot, () => ({
+    status: 0,
+    stdout: 'REMOTE_ROOT_PRESENT=true\nREMOTE_ACTIVE_PROCESS_COUNT=0\nREMOTE_ACTIVE_PROCESS_PIDS=\nREMOTE_TESTCONTAINERS_CONTAINER_COUNT=0\nREMOTE_TESTCONTAINERS_VOLUME_COUNT=0\nREMOTE_ROOT_ABSENT=true\n',
+    stderr: '',
+  }));
+  assert.equal(clear.status, 'PASS');
+  assert.equal(clear.remoteRootAbsent, true);
+});
+
+test('normal-run cleanup cannot pass when before or after Docker queries fail', () => {
+  const pass = {
+    remoteGradleStatus: '0',
+    containerQueryStatus: 'PASS',
+    volumeQueryStatus: 'PASS',
+    afterContainerQueryStatus: 'PASS',
+    afterVolumeQueryStatus: 'PASS',
+    containerCleanup: 'PASS',
+    volumeCleanup: 'PASS',
+  };
+  assert.equal(remoteResourceCleanupStatus(pass), 'PASS');
+  assert.equal(remoteResourceCleanupStatus({...pass, containerQueryStatus: 'FAIL'}), 'FAIL');
+  assert.equal(remoteResourceCleanupStatus({...pass, volumeQueryStatus: 'FAIL'}), 'FAIL');
+  assert.equal(remoteResourceCleanupStatus({...pass, afterContainerQueryStatus: 'FAIL'}), 'FAIL');
+  assert.equal(remoteResourceCleanupStatus({...pass, afterVolumeQueryStatus: 'FAIL'}), 'FAIL');
+  assert.equal(remoteResourceCleanupStatus({...pass, containerCleanup: 'PASS', volumeCleanup: 'PASS', remoteGradleStatus: undefined}), 'FAIL');
+});
+
+test('normal-run remote script emits query status before deriving cleanup markers', () => {
+  const remoteScript = runScript({
+    remoteRoot: '/tmp/r5-tc-1789418414756-70098',
+    remoteWorkspace: '/tmp/r5-tc-1789418414756-70098/workspace',
+    remoteResults: '/tmp/r5-tc-1789418414756-70098/results',
+    distribution,
+    invocation: {extraArguments: []},
+    backendAcceptanceRunId: null,
+    backendAcceptanceOperation: 'all',
+    verificationMode: 'ACCEPTANCE',
+  });
+  assert.match(remoteScript, /if ! docker ps -aq --filter label=org\.testcontainers=true \| sort > \"\$root\/before-container-ids\"; then container_query_status=FAIL; fi/);
+  assert.match(remoteScript, /if test \"\$container_query_status\" != PASS \|\| test \"\$volume_query_status\" != PASS; then .*exit 70; fi/);
+  assert.match(remoteScript, /after_container_query_status=PASS/);
+  assert.match(remoteScript, /if test \"\$after_container_query_status\" != PASS \|\| test \"\$after_volume_query_status\" != PASS; then break; fi/);
+  assert.match(remoteScript, /container_cleanup=FAIL; if test \"\$after_container_query_status\" = PASS && cmp -s/);
+});
+
+test('runner marker parsing retains early cleanup markers beyond the stdout tail window', () => {
+  const output = [
+    'REMOTE_TESTCONTAINERS_CONTAINER_QUERY=PASS',
+    'REMOTE_TESTCONTAINERS_VOLUME_QUERY=PASS',
+    'x'.repeat(40_000),
+    'REMOTE_TESTCONTAINERS_AFTER_CONTAINER_QUERY=PASS',
+    'REMOTE_TESTCONTAINERS_AFTER_VOLUME_QUERY=PASS',
+    'REMOTE_TESTCONTAINERS_CONTAINERS=PASS',
+    'REMOTE_TESTCONTAINERS_VOLUMES=PASS',
+    'REMOTE_EVIDENCE_ARCHIVE_STATUS=0',
+  ].join('\n');
+  assert.deepEqual(parseRunnerMarkers(output), {
+    REMOTE_TESTCONTAINERS_CONTAINER_QUERY: 'PASS',
+    REMOTE_TESTCONTAINERS_VOLUME_QUERY: 'PASS',
+    REMOTE_TESTCONTAINERS_AFTER_CONTAINER_QUERY: 'PASS',
+    REMOTE_TESTCONTAINERS_AFTER_VOLUME_QUERY: 'PASS',
+    REMOTE_TESTCONTAINERS_CONTAINERS: 'PASS',
+    REMOTE_TESTCONTAINERS_VOLUMES: 'PASS',
+    REMOTE_EVIDENCE_ARCHIVE_STATUS: '0',
+  });
+});
+
+test('cleanup recovery binds the terminal manifest to its exact remote host and derived root', () => {
+  const runId = 'r5-tc-1789418414756-70098';
+  const manifest = {
+    schemaVersion: 1,
+    kind: 'r5-managed-testcontainers-run',
+    runId,
+    status: 'FAIL',
+    finishedAt: '2026-09-14T20:43:49.767Z',
+    business: 'NOT_RUN',
+    firstFailure: 'REMOTE_RUNNER_UNAVAILABLE:broken_pipe',
+    lastKnownGood: 'SOURCE_SYNC',
+    brokenBoundary: 'REMOTE_TEST_EXECUTION',
+    remote: {
+      hostAlias: 'catering-remote-dev',
+      hostTrust: {host: 'catering-remote-dev'},
+      root: `/tmp/${runId}`,
+      stagingRoot: `/tmp/${runId}/workspace`,
+    },
+    cleanup: {status: 'FAIL'},
+  };
+  assert.doesNotThrow(() => validateCleanupRecoveryTarget(manifest, {expectedHost: 'catering-remote-dev'}));
+  assert.throws(
+    () => validateCleanupRecoveryTarget({...manifest, remote: {...manifest.remote, root: '/tmp/r5-tc-1789418414756-70099'}}, {expectedHost: 'catering-remote-dev'}),
+    /CLEANUP_RECOVERY_REMOTE_ROOT_MISMATCH/,
+  );
+  assert.throws(
+    () => validateCleanupRecoveryTarget(manifest, {expectedHost: 'other-host'}),
+    /CLEANUP_RECOVERY_REMOTE_HOST_MISMATCH/,
+  );
+  assert.throws(
+    () => validateCleanupRecoveryTarget({...manifest, firstFailure: undefined}),
+    /CLEANUP_RECOVERY_FIRST_FAILURE_MISSING/,
+  );
+});
+
+test('remote resource preflight rejects Docker query failure instead of returning empty resources', () => {
+  assert.doesNotMatch(remotePreflightScript(), /\|\| true/);
+  assert.throws(
+    () => parseRemotePreflightResult({status: 1, stdout: '', stderr: 'docker unavailable'}),
+    /REMOTE_RESOURCE_PREFLIGHT_UNAVAILABLE/,
+  );
+  const empty = parseRemotePreflightResult({status: 0, stdout: '', stderr: ''});
+  assert.deepEqual(empty.containers, []);
+  assert.deepEqual(empty.volumes, []);
+  assert.match(empty.observedAt, /^\d{4}-\d{2}-\d{2}T/);
 });
 
 test('backend acceptance supplies every non-production server prerequisite and selection', () => {
@@ -138,6 +286,24 @@ test('backend acceptance supplies every non-production server prerequisite and s
   assert.match(
     backendAcceptanceEnvironment('backend-acceptance-run-12345678', 'all', 'CALIBRATION', '1').join('\n'),
     /V2S_BACKEND_ACCEPTANCE_BATCH_CARDINALITY='1'/,
+  );
+  const scaleEnvironment = backendAcceptanceEnvironment(
+    'backend-acceptance-run-scale',
+    'typed-filter-validation-and-recovery',
+    'ACCEPTANCE',
+    null,
+    true,
+  ).join('\n');
+  assert.equal(
+    canonicalBackendAcceptanceOperation('typed-filter-validation-and-recovery', true),
+    'extension.typed-filter-validation-and-recovery',
+  );
+  assert.match(scaleEnvironment, /V2S_BACKEND_ACCEPTANCE_OPERATION='extension\.typed-filter-validation-and-recovery'/);
+  assert.match(scaleEnvironment, /V2S_EXTENSION_SCALE_PROOF=true/);
+  assert.match(scaleEnvironment, /V2S_EXTENSION_SCALE_EVIDENCE=/);
+  assert.throws(
+    () => backendAcceptanceEnvironment(null, 'typed-filter-validation-and-recovery', 'ACCEPTANCE', null, true),
+    /EXTENSION_SCALE_PROOF_REQUIRES_BACKEND_ACCEPTANCE/,
   );
 });
 
