@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OperationsPasswordRecoveryCompletion(
-    String status,
-    Boolean sessionsRevoked
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) String status,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "sessionsRevoked", required = true) Boolean sessionsRevoked
 ) {}

@@ -165,7 +165,8 @@ class TransitionOperationsCatalogItemStatusOperationTest {
                         null));
         CatalogScopeLookup catalogScopes = mock(CatalogScopeLookup.class);
         CommandExecutionContextResolver resolver =
-                new CommandExecutionContextResolver(capabilities, catalogScopes, sessions);
+                new CommandExecutionContextResolver(
+                        capabilities, catalogScopes, sessions, (workspace, group, targetType, storeId) -> {});
         WorkspaceExecutionContext<CatalogAuthorizationScope> context = resolver.resolveCatalog(
                 "session",
                 token,

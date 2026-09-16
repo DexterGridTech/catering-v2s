@@ -15,15 +15,7 @@ export const extensionTestIds = {
 } as const;
 
 export type ExtensionDefinitionFieldControl =
-  | 'remove'
-  | 'label'
-  | 'type-display'
-  | 'type'
-  | 'list-display'
-  | 'searchable'
-  | 'required'
-  | 'status'
-  | 'option-add';
+  'remove' | 'label' | 'type-display' | 'type' | 'list-display' | 'searchable' | 'required' | 'status' | 'option-add';
 
 export type ExtensionDefinitionOptionControl = 'value' | 'remove';
 

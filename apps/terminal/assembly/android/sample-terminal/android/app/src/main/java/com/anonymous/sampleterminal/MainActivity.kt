@@ -2,6 +2,7 @@ package com.anonymous.sampleterminal
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -14,10 +15,36 @@ import com.catering.v2s.terminal.assembly.base.android.TerminalNativeLoadingRegi
 
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
+    Log.i(LOG_TAG, "event=activity.onCreate phase=start app=sample-terminal")
     TerminalNativeLoadingRegistry.registerApplication(application)
+    Log.i(LOG_TAG, "event=native.registry-application-registered app=sample-terminal")
+    // ReactRootView reports CONTENT_APPEARED when the initial loading
+    // fallback is attached.  Mark splash ownership before React starts so
+    // Expo cannot auto-hide the native splash before JS crosses the bridge.
+    SplashScreenManager.preventAutoHideCalled = true
+    Log.i(LOG_TAG, "event=expo.prevent-auto-hide-set app=sample-terminal value=${SplashScreenManager.preventAutoHideCalled}")
     SplashScreenManager.registerOnActivity(this)
-    TerminalNativeLoadingRegistry.registerOnActivity(this)
+    Log.i(LOG_TAG, "event=expo.activity-registered app=sample-terminal")
+    // The native overlay owns the visual hold until the real PRIMARY surface
+    // is ready; release Expo's content pre-draw gate so the overlay can draw
+    // when Android removes the system starting window.
+    SplashScreenManager.hide()
+    Log.i(LOG_TAG, "event=expo.content-gate-released-for-native-overlay app=sample-terminal")
+    TerminalNativeLoadingRegistry.registerOnActivity(
+      this,
+      R.color.colorPrimary,
+      R.drawable.splashscreen_logo,
+    )
+    Log.i(LOG_TAG, "event=native.activity-registered app=sample-terminal")
+    Log.i(LOG_TAG, "event=activity.onCreate phase=before-super app=sample-terminal")
     super.onCreate(null)
+    Log.i(LOG_TAG, "event=activity.onCreate phase=after-super app=sample-terminal")
+    TerminalNativeLoadingRegistry.attachLoadingOverlay(this)
+    Log.i(LOG_TAG, "event=native.loading-overlay-attached-after-super app=sample-terminal")
+  }
+
+  private companion object {
+    const val LOG_TAG = "TER-Splash"
   }
 
   /**

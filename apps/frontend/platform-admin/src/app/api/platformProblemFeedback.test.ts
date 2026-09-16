@@ -68,8 +68,6 @@ describe('platform Problem feedback contract', () => {
         },
       },
     });
-    expect(problem.invalidFields).toEqual([
-      {fieldKey: 'brandLevel', reason: 'TYPE_MISMATCH', expectedType: 'NUMBER'},
-    ]);
+    expect(problem.invalidFields).toEqual([{fieldKey: 'brandLevel', reason: 'TYPE_MISMATCH', expectedType: 'NUMBER'}]);
   });
 });

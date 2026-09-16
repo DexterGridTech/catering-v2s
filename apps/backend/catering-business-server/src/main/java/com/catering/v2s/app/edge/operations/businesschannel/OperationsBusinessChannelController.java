@@ -15,6 +15,7 @@ import com.catering.v2s.app.edge.generated.wire.BusinessChannelTemplateVisibleSt
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.BusinessChannelView;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingCreateRequest;
+import com.catering.v2s.app.edge.generated.wire.OwnerBindingDeleteRequest;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingView;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
@@ -426,7 +427,7 @@ public final class OperationsBusinessChannelController {
             @PathVariable String groupWorkspaceKey,
             @PathVariable UUID channelRef,
             @RequestHeader("Idempotency-Key") String idempotencyKey,
-            @RequestBody OwnerBindingUpdateRequest body) {
+            @RequestBody OwnerBindingDeleteRequest body) {
         if (body == null || body.expectedVersion() == null)
             throw new InvalidEdgeRequestException("expectedVersion is required");
         return ExternalCollaborationWireMapper.binding(coordinator.deleteOperationsBinding(

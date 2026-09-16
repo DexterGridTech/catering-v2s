@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuItemUpdateRequestSaleContentOrderOptionSelectionsItem(
-    java.util.UUID definitionRef,
-    java.util.List<java.util.UUID> selectedValueRefs
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "definitionRef", required = true) java.util.UUID definitionRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "selectedValueRefs", required = true) java.util.List<java.util.UUID> selectedValueRefs
 ) {}

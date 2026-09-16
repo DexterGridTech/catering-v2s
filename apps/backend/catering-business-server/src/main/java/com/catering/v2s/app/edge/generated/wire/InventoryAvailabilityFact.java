@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record InventoryAvailabilityFact(
-    String applicability,
-    String state,
-    String reason
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "applicability", required = true) String applicability,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "state", required = true) String state,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "reason", required = true) String reason
 ) {}

@@ -1,14 +1,13 @@
 import {useState} from 'react';
 import {View} from 'react-native';
 import {calculateVirtualKeyboardCellWidth} from '../foundations/keyboardHeight';
-import {useInputController, useInputDiagnostic, useInputKeyboardState} from '../contexts/context';
+import {useInputController, useInputKeyboardState} from '../contexts/context';
 import type {InputKeyboardProps} from '../types/types';
 import {VirtualKeyboard} from './VirtualKeyboard';
 
 export const InputKeyboard = ({placement}: InputKeyboardProps) => {
   const state = useInputKeyboardState();
   const controller = useInputController();
-  const onDiagnostic = useInputDiagnostic();
   const [parentWidth, setParentWidth] = useState<number | null>(null);
 
   if (!state.visible || state.keyboardPlacement !== placement) return null;
@@ -27,7 +26,6 @@ export const InputKeyboard = ({placement}: InputKeyboardProps) => {
       capsLock={state.capsLock}
       hasNextField={state.hasNextField}
       onKey={controller.handleKeyboardKey}
-      onDiagnostic={onDiagnostic ?? undefined}
     />
   );
   return isFieldPlacement ? (

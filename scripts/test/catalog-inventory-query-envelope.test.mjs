@@ -124,10 +124,16 @@ test('every catalog GET has exactly one source-owned transport envelope', () => 
 
 test('CP-B2 reference lifecycle validation distinguishes new bindings from existing relational facts', () => {
   const owner = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemService.java',
   );
   const definitionFacts = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemDefinitionFacts.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogItemDefinitionFacts.java',
+  );
+  const definitionFactsSql = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogItemDefinitionFactsSql.java',
+  );
+  const workbenchPersistence = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogWorkbenchReadPersistence.java',
   );
   const categoryStart = owner.indexOf('private void lockAndValidateCategoryRefs');
   const categoryEnd = owner.indexOf('private Set<UUID> categoryRefsFromSections', categoryStart);
@@ -146,7 +152,7 @@ test('CP-B2 reference lifecycle validation distinguishes new bindings from exist
   const dictionaryLockEnd = owner.indexOf('private void validateProductionTagRef', dictionaryEnd);
   assert.ok(dictionaryLockEnd > dictionaryEnd);
   const dictionaryLock = owner.slice(dictionaryEnd, dictionaryLockEnd);
-  assert.match(dictionaryLock, /!alreadyAttached && !"ENABLED"\.equals\(statuses\.get\(requestedKey\)\)/);
+  assert.match(dictionaryLock, /!alreadyAttached && !"ENABLED"\.equals\(statuses\.get\(requested\)\)/);
 
   const relationStart = owner.indexOf('private void validateCatalogRelationRefs');
   const relationEnd = owner.indexOf('private String skuRelationKey', relationStart);
@@ -165,26 +171,32 @@ test('CP-B2 reference lifecycle validation distinguishes new bindings from exist
   assert.match(save, /Set<UUID> submittedUnitRefs = unitReferences\(sections\)/);
   assert.match(save, /unitReferencesFromOwner\(dataNodeRef, brandRef, current\.ref\(\)\)/);
 
-  assert.match(definitionFacts, /definition\.value_type,definition\.status/);
+  assert.match(definitionFactsSql, /definition\.attribute_definition_ref,definition\.value_type,definition\.status,/);
   assert.match(definitionFacts, /requireBindableDefinition\(\s*definition\.status\(\),\s*existing\.containsKey/);
   assert.match(definitionFacts, /private static void requireBindableDefinition/);
 
-  const categoryCandidateStart = owner.indexOf('String cte = "WITH RECURSIVE category_tree');
-  const categoryCandidateEnd = owner.indexOf('StringBuilder matchingVisibility', categoryCandidateStart);
+  const categoryCandidateStart = workbenchPersistence.indexOf('String cte = CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_CTE_CATEGORY_TREE');
+  const categoryCandidateEnd = workbenchPersistence.indexOf('StringBuilder matchingVisibility', categoryCandidateStart);
   assert.ok(categoryCandidateStart >= 0 && categoryCandidateEnd > categoryCandidateStart);
-  const categoryCandidate = owner.slice(categoryCandidateStart, categoryCandidateEnd);
-  assert.match(categoryCandidate, /c\.status = 'ENABLED'/);
-  assert.match(categoryCandidate, /child\.status = 'ENABLED'/);
-  const categoryRedMutation = categoryCandidate.replace("c.status = 'ENABLED'", "c.status <> 'VOIDED'");
-  assert.throws(() => assert.match(categoryRedMutation, /c\.status = 'ENABLED'/), /did not match/);
+  const categoryCandidate = workbenchPersistence.slice(categoryCandidateStart, categoryCandidateEnd);
+  assert.match(workbenchPersistence, /CATALOG_WORKBENCH_READ_SERVICE_CONDITION_STATUS_ENABLED_PARENT_CATEGORY_REF/);
+  assert.match(workbenchPersistence, /CATALOG_WORKBENCH_READ_SERVICE_WHERE_CHILD_DATA_NODE_REF_BRAND_REF_STATUS/);
+  const categoryRedMutation = workbenchPersistence.replace(
+    'CATALOG_WORKBENCH_READ_SERVICE_CONDITION_STATUS_ENABLED_PARENT_CATEGORY_REF',
+    'CATALOG_WORKBENCH_READ_SERVICE_CONDITION_STATUS_VOIDED_PARENT_CATEGORY_REF',
+  );
+  assert.throws(() => assert.match(categoryRedMutation, /CATALOG_WORKBENCH_READ_SERVICE_CONDITION_STATUS_ENABLED_PARENT_CATEGORY_REF/), /did not match/);
 
-  const compositeCandidateStart = owner.indexOf('if ("COMPOSITE_COMPONENT".equals(candidateUsage))');
-  const compositeCandidateEnd = owner.indexOf('sql.append("), aggregate', compositeCandidateStart);
+  const compositeCandidateStart = workbenchPersistence.indexOf('if ("COMPOSITE_COMPONENT".equals(query.candidateUsage()))');
+  const compositeCandidateEnd = workbenchPersistence.indexOf('sql.append(CatalogWorkbenchReadServiceSql.CATALOG_WORKBENCH_READ_SERVICE_CLOSE_PAREN_FILTERED', compositeCandidateStart);
   assert.ok(compositeCandidateStart >= 0 && compositeCandidateEnd > compositeCandidateStart);
-  const compositeCandidate = owner.slice(compositeCandidateStart, compositeCandidateEnd);
-  assert.match(compositeCandidate, /i\.status='ENABLED' AND i\.code <> \?/);
-  const compositeRedMutation = compositeCandidate.replace("i.status='ENABLED'", "i.status <> 'VOIDED'");
-  assert.throws(() => assert.match(compositeRedMutation, /i\.status='ENABLED'/), /did not match/);
+  const compositeCandidate = workbenchPersistence.slice(compositeCandidateStart, compositeCandidateEnd);
+  assert.match(compositeCandidate, /CATALOG_WORKBENCH_READ_SERVICE_CONDITION_STATUS_ENABLED_CODE/);
+  const compositeRedMutation = compositeCandidate.replace(
+    'CATALOG_WORKBENCH_READ_SERVICE_CONDITION_STATUS_ENABLED_CODE',
+    'CATALOG_WORKBENCH_READ_SERVICE_CONDITION_STATUS_VOIDED_CODE',
+  );
+  assert.throws(() => assert.match(compositeRedMutation, /CATALOG_WORKBENCH_READ_SERVICE_CONDITION_STATUS_ENABLED_CODE/), /did not match/);
 });
 
 test('CP-B2 catalog lifecycle routes expose the four typed status commands', () => {
@@ -291,31 +303,35 @@ test('navigation allCount is a required owner statistic, never a browser aggrega
 
 test('navigation derives both all and uncategorized counts from its one scoped shape aggregate', () => {
   const owner = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogWorkbenchReadService.java',
+  );
+  const persistence = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogWorkbenchReadPersistence.java',
+  );
+  const navigationSql = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogWorkbenchReadServiceSql.java',
   );
   const navigation = owner.match(/private ObjectNode navigation\([\s\S]*?\n    \}/)?.[0] ?? '';
-  const navigationSql = navigation.replace(/"\s*\+\s*"/g, '');
 
   assert.notEqual(navigation, '');
-  assert.match(
-    navigationSql,
-    /COUNT\(\*\) FILTER \(WHERE NOT EXISTS \(SELECT 1 FROM catalog\.catalog_item_category relation WHERE relation\.item_ref=catalog_item\.item_ref\)\)/,
-  );
-  assert.match(navigation, /allCount\[0\] \+= result\.getLong\(2\)/);
-  assert.match(navigation, /uncategorizedCount\[0\] \+= result\.getLong\(8\)/);
-  assert.match(navigation, /data\.put\("allCount", allCount\[0\]\)/);
-  assert.match(navigation, /data\.put\("uncategorizedCount", uncategorizedCount\[0\]\)/);
-  assert.doesNotMatch(navigation, /jdbc\.queryForObject\(/);
+  assert.match(persistence, /readNavigationShapes\(/);
+  assert.match(navigationSql, /COUNT\(\*\) FILTER \(WHERE NOT EXISTS \(SELECT 1 FROM /);
+  assert.match(navigationSql, /catalog\.catalog_item_category relation WHERE relation\.item_ref=catalog_item\.item_ref/);
+  assert.match(navigation, /allCount\s*\+=\s*row\.count\(\)/);
+  assert.match(navigation, /uncategorizedCount\s*\+=\s*row\.uncategorizedCount\(\)/);
+  assert.match(navigation, /data\.put\("allCount", allCount\)/);
+  assert.match(navigation, /data\.put\("uncategorizedCount", uncategorizedCount\)/);
+  assert.doesNotMatch(navigation, /jdbc\.queryForObject\(|jdbc\.query\(/);
 
   const splitCountMutation = navigationSql.replace(
-    "_SYNC'), COUNT(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM ",
-    "_SYNC') ",
+    'COUNT(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM ',
+    'COUNT(*) ',
   );
   assert.throws(
     () =>
       assert.match(
         splitCountMutation,
-        /COUNT\(\*\) FILTER \(WHERE NOT EXISTS \(SELECT 1 FROM catalog\.catalog_item_category relation WHERE relation\.item_ref=catalog_item\.item_ref\)\)/,
+        /COUNT\(\*\) FILTER \(WHERE NOT EXISTS \(SELECT 1 FROM /,
       ),
     assert.AssertionError,
   );
@@ -358,7 +374,7 @@ test('CatalogItemDetail declares the material role that its owner actually retur
   const detailSchema = openApi.components.schemas.CatalogItemDetail;
   const edge = read('apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts');
   const owner = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemService.java',
   );
   const row = coverage.rows.find(entry => entry.model === 'CatalogItemDetail');
   const edgeDetail = edge.match(/export type CatalogItemDetail = \{[\s\S]*?\n\};/);
@@ -385,10 +401,13 @@ test('catalog attribute readbacks expose owner-resolved option labels without wi
   const saveAssignment =
     openApi.components.schemas.CatalogItemSaveReadback.properties.result.properties.item.properties.attributeAssignments.items;
   const owner = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemDefinitionFacts.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogItemDefinitionFacts.java',
+  );
+  const ownerSql = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogItemDefinitionFactsSql.java',
   );
   const saveOwner = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemService.java',
   );
 
   for (const schema of [detailAssignment, detailFacts, pageFacts]) {
@@ -404,7 +423,7 @@ test('catalog attribute readbacks expose owner-resolved option labels without wi
     ]);
   }
   assert.equal(saveAssignment.properties.selectedOptionNames, undefined);
-  assert.match(owner, /option_row\.name/);
+  assert.match(ownerSql, /option_row\.name/);
   assert.match(owner, /assignment\.withArray\("selectedOptionNames"\)\.add\(optionName\)/);
   assert.match(saveOwner, /private ArrayNode saveAttributeAssignments\(JsonNode value\)/);
   assert.match(saveOwner, /copy\.remove\("selectedOptionNames"\)/);
@@ -607,8 +626,17 @@ test('CatalogOwner detail and item-page consumers do not restore root-payload co
   const catalogOwner = read(
     'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
   );
+  const itemOwner = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemService.java',
+  );
+  const workbenchOwner = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogWorkbenchReadService.java',
+  );
   const inventoryOwner = read(
     'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java',
+  );
+  const inventoryTargetOwner = read(
+    'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryTargetService.java',
   );
   const strictDetailRead = 'JsonNode item = detail.path("data").path("item");';
   const strictItemPageRead = 'JsonNode catalogData = catalogPage.path("data");';
@@ -626,8 +654,9 @@ test('CatalogOwner detail and item-page consumers do not restore root-payload co
   for (const strictRead of [strictItemPageRead, strictAssetRead]) assert.ok(coordinator.includes(strictRead));
   assert.ok(coordinator.includes('JsonNode dataNode = root.path("data");'));
   assert.doesNotMatch(coordinator, forbiddenCatalogOwnerFallback);
-  assert.match(catalogOwner, /private ObjectNode items[\s\S]*?return envelope\(requestId, data\);/);
-  assert.match(catalogOwner, /private ObjectNode detail[\s\S]*?return envelope\(requestId, data\);/);
+  assert.match(catalogOwner, /readItems\([\s\S]*?workbenchReadService\.readItems\(/);
+  assert.match(workbenchOwner, /private ObjectNode items[\s\S]*?return envelope\(requestId, data\);/);
+  assert.match(itemOwner, /private ObjectNode detail[\s\S]*?return envelope\(requestId, data\);/);
 
   // The remaining data/root branches are source-backed counterexamples, not CatalogOwner HTTP detail/page consumers.
   for (const marker of [
@@ -636,8 +665,8 @@ test('CatalogOwner detail and item-page consumers do not restore root-payload co
     'NOT_APPLICABLE_WITH_REASON: InventoryOwnerService.references is a raw inventory task-read',
   ])
     assert.ok(coordinator.includes(marker), `missing source-backed counterexample: ${marker}`);
-  assert.match(inventoryOwner, /public JsonNode readCatalogInventoryDefinition[\s\S]*?return data;/);
-  assert.match(inventoryOwner, /private ObjectNode references[\s\S]*?return data;/);
+  assert.match(inventoryOwner, /public JsonNode readCatalogInventoryDefinition[\s\S]*?bomService\.readCatalogInventoryDefinition/);
+  assert.match(inventoryTargetOwner, /private ObjectNode references[\s\S]*?return data;/);
 
   const redMutation = coordinator.replace(
     strictAssetRead,
@@ -647,20 +676,23 @@ test('CatalogOwner detail and item-page consumers do not restore root-payload co
 });
 
 test('CatalogOwner parent-page summaries keep SQL placeholder and JSON array projection types closed', () => {
+  const persistence = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogWorkbenchReadPersistence.java',
+  );
   const owner = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogWorkbenchReadService.java',
   );
   const catalogTagProjection =
-    owner.match(/private Map<UUID, List<CatalogTagFact>> catalogTagFactsForItems\([\s\S]*?\n    \}/)?.[0] ?? '';
+    persistence.match(/public List<CatalogTagFactRow> readCatalogTagFacts\([\s\S]*?\n    \}/)?.[0] ?? '';
   const itemSummaryProjection = owner.match(/private ObjectNode itemSummary\([\s\S]*?\n    \}/)?.[0] ?? '';
 
   assert.notEqual(catalogTagProjection, '');
   assert.notEqual(itemSummaryProjection, '');
   assert.match(
     catalogTagProjection,
-    /String placeholders = String\.join\(",", Collections\.nCopies\(itemRefs\.size\(\), "\?"\)\);/,
+    /String placeholders = String\.join\([\s\S]*?Collections\.nCopies\(refs\.size\(\), CatalogWorkbenchReadServiceSql\.PARAMETER_PLACEHOLDER\)\);/,
   );
-  assert.match(catalogTagProjection, /\+ placeholders\n\s*\+ "\) ORDER BY/);
+  assert.match(catalogTagProjection, /\+ placeholders\n\s*\+ CatalogWorkbenchReadServiceSql\./);
   assert.doesNotMatch(catalogTagProjection, /placeholders\(itemRefs\)/);
   assert.match(itemSummaryProjection, /item\.set\("attributeFacts", arrayCopy\(sections\.path\("attributeAssignments"\)\)\);/);
   assert.match(itemSummaryProjection, /item\.set\("preparationFacts", preparationFacts\(/);
@@ -675,33 +707,36 @@ test('CatalogOwner parent-page summaries keep SQL placeholder and JSON array pro
   ]) assert.doesNotMatch(itemSummaryProjection, new RegExp(`\\b${retiredField}\\b`));
 
   const missingPlaceholderProjection = catalogTagProjection.replace(
-    'String placeholders = String.join(",", Collections.nCopies(itemRefs.size(), "?"));',
-    '',
+    'String placeholders = String.join(',
+    'String parameterPlaceholders = String.join(',
   );
   assert.throws(
     () =>
       assert.match(
         missingPlaceholderProjection,
-        /String placeholders = String\.join\(",", Collections\.nCopies\(itemRefs\.size\(\), "\?"\)\);/,
+        /String placeholders = String\.join\(/,
       ),
     assert.AssertionError,
   );
 });
 
 test('catalog item-page reuses the primary row unit snapshot instead of reading every item a second time', () => {
+  const workbenchSql = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogWorkbenchReadServiceSql.java',
+  );
   const owner = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogWorkbenchReadService.java',
   );
   const items = owner.match(/private ObjectNode items\([\s\S]*?\n    \}/)?.[0] ?? '';
   const summaryHydration = owner.match(/private List<ItemRow> hydrateItemSummaryFacts\([\s\S]*?\n    \}/)?.[0] ?? '';
 
   assert.notEqual(items, '');
   assert.notEqual(summaryHydration, '');
-  assert.match(items, /i\.sales_unit_ref, i\.sales_unit_code, i\.sales_unit_name, i\.sales_unit_dimension,/);
-  assert.match(items, /i\.base_measure_unit_ref, i\.base_measure_unit_code,[\s\S]*?i\.base_measure_unit_name,/);
-  assert.match(items, /'salesUnitSnapshot',CASE WHEN p\.sales_unit_ref IS NULL THEN NULL ELSE jsonb_build_object\(/);
+  assert.match(workbenchSql, /i\.sales_unit_ref, i\.sales_unit_code, i\.sales_unit_name, i\.sales_unit_dimension,/);
+  assert.match(workbenchSql, /i\.base_measure_unit_ref, i\.base_measure_unit_code,[\s\S]*?i\.base_measure_unit_name,/);
+  assert.match(workbenchSql, /'salesUnitSnapshot',CASE WHEN p\.sales_unit_ref IS NULL THEN NULL ELSE jsonb_build_object\(/);
   assert.match(
-    items,
+    workbenchSql,
     /'baseMeasureUnitSnapshot',CASE WHEN p\.base_measure_unit_ref IS NULL THEN NULL[\s\S]*?ELSE jsonb_build_object\(/,
   );
   assert.doesNotMatch(summaryHydration, /itemUnitRefsByItemRefs\(itemRefs\)/);
@@ -717,24 +752,35 @@ test('catalog item-page reuses the primary row unit snapshot instead of reading 
 });
 
 test('catalog hierarchy, production-tag navigation, and SKU page preserve their approved read-model boundaries', () => {
-  const owner = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
+  const categoryOwner = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogCategoryService.java',
+  );
+  const workbenchOwner = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogWorkbenchReadService.java',
+  );
+  const workbenchSql = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogWorkbenchReadServiceSql.java',
+  );
+  const itemOwner = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemService.java',
+  );
+  const itemSql = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogItemServiceSql.java',
   );
   const productionOwner = read(
     'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java',
   );
+  const productionSql = read(
+    'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/persistence/ProductionTagOwnerServiceSql.java',
+  );
   const moveCategory =
-    owner.match(
+    categoryOwner.match(
       /private ObjectNode moveCategory\([\s\S]*?return categoryCommand\(requestId, updated\);\n    \}/,
     )?.[0] ?? '';
   const navigation =
-    owner.match(/private ObjectNode navigation\([\s\S]*?ArrayNode tags = data\.putArray\("tags"\);/)?.[0] ?? '';
-  // Java formatting may split a SQL literal at any token boundary. Assert the
-  // reconstructed statement, rather than its incidental source-line layout.
-  const navigationSql = navigation.replace(/"\s*\+\s*"/g, '');
+    workbenchOwner.match(/private ObjectNode navigation\([\s\S]*?ArrayNode tags = data\.putArray\("tags"\);/)?.[0] ?? '';
   const skuPage =
-    owner.match(/private ObjectNode itemSkus\([\s\S]*?List<SkuCandidateRow> rows = jdbc\.query\(/)?.[0] ?? '';
-  const skuPageSql = skuPage.replace(/"\s*\+\s*"/g, '');
+    itemOwner.match(/private ObjectNode itemSkus\([\s\S]*?List<SkuCandidateRow> rows = persistence\.readSkuCandidates\(/)?.[0] ?? '';
   const navigationTags =
     productionOwner.match(
       /public List<ProductionTagOwnerApi\.ProductionTagNavigationReadback> readNavigationTags\([\s\S]*?\n    \}/,
@@ -751,43 +797,44 @@ test('catalog hierarchy, production-tag navigation, and SKU page preserve their 
   assert.match(moveCategory, /HIERARCHY_CYCLE/);
   assert.match(moveCategory, /assertCategoryMoveDepth\(/);
   assert.match(moveCategory, /lockCategoryHierarchy\(dataNodeRef, brandRef\);/);
-  assert.match(navigationSql, /category_subtree\(root_category_ref,category_ref\) AS/);
-  assert.match(navigationSql, /UNION SELECT subtree\.root_category_ref,child\.category_ref/);
-  assert.match(navigationSql, /COALESCE\(subtree_sizes\.subtree_size,1\)/);
-  assert.match(navigation, /\.put\("subtreeSize", subtreeSize\)/);
+  assert.match(workbenchSql, /category_subtree\(root_category_ref,/);
+  assert.match(workbenchSql, /subtree\.root_category_ref,child\.category_ref FROM category_subtree subtree JOIN/);
+  assert.match(workbenchSql, /COALESCE\(subtree_sizes\.subtree_size,1\)/);
+  assert.match(navigation, /\.put\("subtreeSize", row\.subtreeSize\(\)\)/);
   assert.doesNotMatch(navigation, /\.put\("subtreeSize", 1 \+ childCount\)/);
-  assert.match(
-    skuPageSql,
-    /WITH item_scope AS \(SELECT item_ref,preparation_profile FROM catalog\.catalog_item WHERE data_node_ref=\? AND brand_ref=\? AND code=\? AND status <> 'VOIDED'\), matching AS \(SELECT[\s\S]*?FROM catalog\.catalog_sku sku JOIN item_scope item ON item\.item_ref=sku\.item_ref\s+LEFT JOIN catalog\.unit_definition sales_unit/,
-  );
-  assert.match(skuPageSql, /EXISTS\(SELECT 1 FROM item_scope\) AS item_exists/);
+  assert.match(itemSql, /WITH item_scope AS \(SELECT item_ref,preparation_profile FROM /);
+  assert.match(itemSql, /catalog\.catalog_item WHERE data_node_ref=\? AND brand_ref=\? AND code=\? AND status <> 'VOIDED'\)/);
+  assert.match(itemSql, /FROM catalog\.catalog_sku sku JOIN item_scope item ON /);
+  assert.match(itemSql, /item\.item_ref=sku\.item_ref/);
+  assert.match(itemSql, /LEFT JOIN catalog\.unit_definition sales_unit/);
+  assert.match(itemSql, /EXISTS\(SELECT 1 FROM item_scope\) AS item_exists/);
   assert.doesNotMatch(skuPage, /List<UUID> itemRefs = jdbc\.query\(/);
-  assert.match(navigationTags, /status <> 'VOIDED'/);
+  assert.match(productionSql, /status <> 'VOIDED'/);
   assert.doesNotMatch(navigationTags, /status='ENABLED'/);
-  assert.match(skuPageSql, /item\.preparation_profile::text,sku\.preparation_override::text,production_tag\.ref/);
-  assert.match(skuPageSql, /catalog\.catalog_item_reference relation/);
+  assert.match(itemSql, /item\.preparation_profile::text,sku\.preparation_override::text,production_tag\.ref/);
+  assert.match(itemSql, /catalog\.catalog_item_reference relation/);
   assert.doesNotMatch(skuPage, /preparationFacts\.readItemProfiles/);
   assert.doesNotMatch(skuPage, /itemReferenceFacts\.readByItemRefs/);
 
   const depthGuardMutation = moveCategory.replaceAll('assertCategoryMoveDepth', 'staleCategoryMoveDepth');
   assert.throws(() => assert.match(depthGuardMutation, /assertCategoryMoveDepth\(/), assert.AssertionError);
-  const shallowStatsMutation = navigationSql.replace(
-    'UNION SELECT subtree.root_category_ref,child.category_ref',
-    'UNION SELECT child.category_ref,child.category_ref',
+  const shallowStatsMutation = workbenchSql.replace(
+    'subtree.root_category_ref,child.category_ref FROM category_subtree subtree JOIN',
+    'child.category_ref,child.category_ref FROM category_subtree subtree JOIN',
   );
   assert.throws(
-    () => assert.match(shallowStatsMutation, /UNION SELECT subtree\.root_category_ref,child\.category_ref/),
+    () => assert.match(shallowStatsMutation, /subtree\.root_category_ref,child\.category_ref FROM category_subtree subtree JOIN/),
     assert.AssertionError,
   );
-  const joinOrderMutation = skuPage.replace(
-    'JOIN item_scope item ON item.item_ref=sku.item_ref ',
-    'JOIN item_scope item ',
+  const joinOrderMutation = itemSql.replace(
+    'FROM catalog.catalog_sku sku JOIN item_scope item ON ',
+    'FROM catalog.catalog_sku sku JOIN item_scope item ',
   );
   assert.throws(
-    () => assert.match(joinOrderMutation, /JOIN item_scope item ON item\.item_ref=sku\.item_ref/),
+    () => assert.match(joinOrderMutation, /FROM catalog\.catalog_sku sku JOIN item_scope item ON /),
     assert.AssertionError,
   );
-  const disabledTagMutation = navigationTags.replace("status <> 'VOIDED'", "status='ENABLED'");
+  const disabledTagMutation = productionSql.replaceAll("status <> 'VOIDED'", "status='ENABLED'");
   assert.throws(() => assert.match(disabledTagMutation, /status <> 'VOIDED'/), assert.AssertionError);
 });
 
@@ -795,14 +842,23 @@ test('typed production-tag commands atomically claim their receipt, lock the fac
   const owner = read(
     'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java',
   );
+  const persistence = read(
+    'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/persistence/ProductionTagOwnerPersistence.java',
+  );
+  const sql = read(
+    'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/persistence/ProductionTagOwnerServiceSql.java',
+  );
   const p1 = read('scripts/generate/catalog-inventory-p1.mjs');
-  const existingMutation =
-    owner.match(/private ProductionTagCommandReadback mutateTypedExistingTag\([\s\S]*?\n    \}/)?.[0] ?? '';
-  const createMutation =
-    owner.match(/private ProductionTagCommandReadback createTypedTag\([\s\S]*?\n    \}/)?.[0] ?? '';
+  const existingMutation = sql;
+  const createMutation = sql;
 
   assert.notEqual(existingMutation, '');
   assert.notEqual(createMutation, '');
+  assert.match(owner, /persistence\.updateTypedTagName\(/);
+  assert.match(owner, /persistence\.updateTypedTagStatus\(/);
+  assert.match(owner, /persistence\.createTypedTag\(/);
+  assert.match(persistence, /ProductionTagOwnerServiceSql\.MUTATE_TYPED_TAG_PREFIX/);
+  assert.match(persistence, /ProductionTagOwnerServiceSql\.CREATE_TYPED_TAG/);
   assert.match(existingMutation, /WITH receipt_lock AS MATERIALIZED/);
   assert.match(existingMutation, /current_tag AS MATERIALIZED/);
   assert.match(existingMutation, /FOR UPDATE/);
@@ -823,17 +879,23 @@ test('typed production-tag commands atomically claim their receipt, lock the fac
 
 test('typed category update keeps version, receipt, write, and deletion readback in one owner statement', () => {
   const owner = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogCategoryService.java',
+  );
+  const persistence = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogCategoryPersistence.java',
+  );
+  const sql = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogCategoryServiceSql.java',
   );
   const typedEntry =
     owner.match(/public CatalogOwnerApi\.CategoryReadback updateCategory\([\s\S]*?\n    \}/)?.[0] ?? '';
-  const typedMutation =
-    owner.match(/private CatalogOwnerApi\.CategoryReadback updateTypedCategory\([\s\S]*?\n    \}/)?.[0] ?? '';
+  const typedMutation = sql;
 
   assert.notEqual(typedEntry, '');
   assert.notEqual(typedMutation, '');
   assert.match(typedEntry, /updateTypedCategory\(/);
   assert.doesNotMatch(typedEntry, /executeWrite\(/);
+  assert.match(persistence, /executeTypedUpdate\(/);
   assert.match(typedMutation, /WITH RECURSIVE receipt_lock AS MATERIALIZED/);
   assert.match(typedMutation, /current_category AS MATERIALIZED/);
   assert.match(typedMutation, /FOR UPDATE/);
@@ -841,27 +903,33 @@ test('typed category update keeps version, receipt, write, and deletion readback
   assert.match(typedMutation, /deletion_availability AS/);
   assert.match(typedMutation, /written_receipt AS/);
   assert.match(typedMutation, /NOT EXISTS \(SELECT 1 FROM prior_receipt\)/);
-  assert.match(typedMutation, /mapper\.readValue\(response, CatalogOwnerApi\.CategoryReadback\.class\)/);
+  assert.match(owner, /mapper\.readValue\(response, CatalogOwnerApi\.CategoryReadback\.class\)/);
 
-  const splitWriteMutation = typedMutation.replace('written_receipt AS', 'separate_receipt AS');
+  const splitWriteMutation = typedMutation.replaceAll('written_receipt AS', 'separate_receipt AS');
   assert.throws(() => assert.match(splitWriteMutation, /written_receipt AS/), assert.AssertionError);
 });
 
 test('typed category move owns hierarchy validation, sibling reorder, receipt, and readback in one owner statement', () => {
   const owner = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogCategoryService.java',
+  );
+  const persistence = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogCategoryPersistence.java',
+  );
+  const sql = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogCategoryServiceSql.java',
   );
   const p1 = read('scripts/generate/catalog-inventory-p1.mjs');
   const typedEntry =
     owner.match(/public CatalogOwnerApi\.CategoryReadback moveCategory\([\s\S]*?\n    \}/)?.[0] ?? '';
-  const typedMutation =
-    owner.match(/private CatalogOwnerApi\.CategoryReadback moveTypedCategory\([\s\S]*?\n    \}/)?.[0] ?? '';
+  const typedMutation = sql;
 
   assert.notEqual(typedEntry, '');
   assert.notEqual(typedMutation, '');
   assert.match(typedEntry, /moveTypedCategory\(/);
   assert.doesNotMatch(typedEntry, /executeWrite\(/);
   assert.doesNotMatch(typedEntry, /requireScope\(/);
+  assert.match(persistence, /executeTypedMove\(/);
   assert.match(typedMutation, /WITH RECURSIVE receipt_lock AS MATERIALIZED/);
   assert.match(typedMutation, /hierarchy_lock AS MATERIALIZED/);
   assert.match(typedMutation, /locked_categories AS MATERIALIZED/);
@@ -872,11 +940,11 @@ test('typed category move owns hierarchy validation, sibling reorder, receipt, a
   assert.match(typedMutation, /written_receipt AS/);
   assert.match(typedMutation, /NOT EXISTS \(SELECT 1 FROM prior_receipt\)/);
   assert.match(typedMutation, /CATEGORY_DEPTH_EXCEEDED/);
-  assert.match(typedMutation, /mapper\.readValue\(response, CatalogOwnerApi\.CategoryReadback\.class\)/);
+  assert.match(owner, /mapper\.readValue\(response, CatalogOwnerApi\.CategoryReadback\.class\)/);
   assert.match(p1, /const catalogBudgetProjection = projectedCatalogOperationMetadata\(catalogOperationMetadata\);/);
   assert.doesNotMatch(p1, /moveOperationsCatalogCategory:\s*\d+,/);
 
-  const missingHierarchyLock = typedMutation.replace('hierarchy_lock AS MATERIALIZED', 'hierarchy_guard AS MATERIALIZED');
+  const missingHierarchyLock = typedMutation.replaceAll('hierarchy_lock AS MATERIALIZED', 'hierarchy_guard AS MATERIALIZED');
   assert.throws(() => assert.match(missingHierarchyLock, /hierarchy_lock AS MATERIALIZED/), assert.AssertionError);
 });
 
@@ -888,7 +956,10 @@ test('catalog command context consumes one organization projection for task path
     'apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceCapabilityScopeResolver.java',
   );
   const taskPaths = read(
-    'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/OrganizationTaskPathService.java',
+    'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/persistence/OrganizationTaskPathPersistence.java',
+  );
+  const taskPathSql = read(
+    'apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/persistence/OrganizationTaskPathServiceSql.java',
   );
 
   assert.match(contexts, /capabilities\.resolveGeneratedCatalogOperation\(/);
@@ -898,8 +969,8 @@ test('catalog command context consumes one organization projection for task path
   assert.match(taskPaths, /headCompanyCatalogCommandScopeFacts\(/);
   assert.match(taskPaths, /STORE_PERSISTED_BRAND/);
   assert.match(taskPaths, /HEAD_COMPANY_BRAND_AUTHORIZATION/);
-  assert.match(taskPaths, /head_company_brand_authorization authorization_fact/);
-  assert.doesNotMatch(taskPaths, /head_company_brand_authorization authorization ON/);
+  assert.match(taskPathSql, /head_company_brand_authorization authorization_fact/);
+  assert.doesNotMatch(taskPathSql, /head_company_brand_authorization authorization ON/);
 
   const splitProjectionMutation = capabilities.replace(
     'taskPaths.resolveCatalogCommandScopeFacts(',
@@ -910,7 +981,7 @@ test('catalog command context consumes one organization projection for task path
     assert.AssertionError,
   );
 
-  const reservedAliasMutation = taskPaths.replace(
+  const reservedAliasMutation = taskPathSql.replace(
     'head_company_brand_authorization authorization_fact',
     'head_company_brand_authorization authorization',
   );
@@ -939,7 +1010,7 @@ test('shape-manifest payload revision has a distinct contract-wide name', () => 
   const schema = openApi.components.schemas.CatalogShapeManifestView;
   const edge = read('apps/frontend/operations-admin/src/app/api/generated/catalog-inventory-edge.ts');
   const owner = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogCopyService.java',
   );
   assert.ok(row);
   assert.deepEqual(row.required, readModel.required);
@@ -961,8 +1032,20 @@ test('owner typed Problems retain causes at every allowed parse or serialization
   const api = read(
     'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/api/CatalogOwnerApi.java',
   );
-  const owner = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
+  const itemOwner = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemService.java',
+  );
+  const workbenchOwner = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogWorkbenchReadService.java',
+  );
+  const dictionaryOwner = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogDictionaryService.java',
+  );
+  const categoryOwner = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogCategoryService.java',
+  );
+  const copyOwner = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogCopyService.java',
   );
   const coordinator = read(
     'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogInventoryCoordinator.java',
@@ -975,15 +1058,14 @@ test('owner typed Problems retain causes at every allowed parse or serialization
   );
   assert.match(api, /Problem\(String code, int status, String message, Throwable cause\)/);
   assert.match(api, /super\(message, cause\)/);
-  for (const boundary of [
-    '"catalog save request is invalid", failure',
-    'field + " must be a canonical JSON object", invalid',
-    '"copy reference plan is invalid", failure',
-    '"形态页签契约不可用", failure',
-    '"形态契约不可用", ex',
-    '"JSON payload is invalid", ex',
-  ])
-    assert.match(owner, new RegExp(boundary.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  const escaped = value => new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  assert.match(itemOwner, escaped('"catalog save request is invalid", failure'));
+  assert.match(workbenchOwner, escaped('field + " is not a valid UUID", failure'));
+  assert.match(copyOwner, escaped('"copy reference plan is invalid", failure'));
+  assert.match(itemOwner, escaped('"形态页签契约不可用", failure'));
+  assert.match(copyOwner, escaped('"形态契约不可用", ex'));
+  for (const source of [itemOwner, workbenchOwner, dictionaryOwner, categoryOwner, copyOwner])
+    assert.match(source, /"JSON payload is invalid", (?:failure|ex)/);
   for (const boundary of [
     '"owner copy readback is invalid", failure',
     '"商品库存规则保存后无法读取", failure',
@@ -1060,35 +1142,50 @@ test('catalog asset settlement makes one global batch judgment and leaves versio
   assert.equal(coordinator.includes('private void settleCatalogAssets'), false);
   assert.match(assetOwner, /Owner-local version read: callers never pre-read an asset merely to supply its CAS value/);
   assert.match(assetOwner, /CATALOG_ITEM_IMAGE_GLOBAL_RELEASE_OWNER_LOCAL_VERSION/);
-  assert.match(assetOwner, /Replay replay = findReceipt\(GLOBAL_RECEIPT_SCOPE, idempotencyKey\);/);
+  assert.match(assetOwner, /PlatformAssetPersistence\.Receipt replay = findReceipt\(GLOBAL_RECEIPT_SCOPE, idempotencyKey\);/);
   assert.match(assetOwner, /AssetReadback current = require\(assetRef\);/);
 });
 
 test('catalog detail reads preparation facts through one owner-local projection and reuses SKU timestamps', () => {
   const owner = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemService.java',
   );
   const preparationFacts = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogPreparationFacts.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogPreparationFacts.java',
+  );
+  const preparationSql = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogPreparationFactsSql.java',
   );
   const skuFacts = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogSkuFacts.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogSkuFacts.java',
+  );
+  const skuSql = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogSkuFactsSql.java',
   );
   const referenceFacts = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemReferenceFacts.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogItemReferenceFacts.java',
+  );
+  const referenceSql = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogItemReferenceFactsSql.java',
   );
   const unitFacts = read(
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogUnitDefinitionFacts.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogUnitDefinitionFacts.java',
+  );
+  const unitSql = read(
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogUnitDefinitionFactsSql.java',
   );
   const inventoryOwner = read(
     'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java',
   );
-  const referenceReplaceStart = referenceFacts.indexOf('void replace(UUID itemRef, JsonNode productionTagRef, JsonNode tagRefs)');
+  const inventoryBomOwner = read(
+    'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryBomService.java',
+  );
+  const referenceReplaceStart = referenceFacts.indexOf('public void replace(UUID itemRef, JsonNode productionTagRef, JsonNode tagRefs)');
   const referenceReplaceEnd = referenceFacts.indexOf('/** Inserts facts for freshly-created copy targets', referenceReplaceStart);
   assert.ok(referenceReplaceStart >= 0 && referenceReplaceEnd > referenceReplaceStart);
   const referenceReplace = referenceFacts.slice(referenceReplaceStart, referenceReplaceEnd);
   const detailStart = owner.indexOf('private List<ItemRow> hydrateDetailItemFacts');
-  const detailEnd = owner.indexOf('/** Adds the typed identification/preparation projection', detailStart);
+  const detailEnd = owner.indexOf('private void decoratePreparationFacts', detailStart);
 
   assert.ok(detailStart >= 0);
   assert.ok(detailEnd > detailStart);
@@ -1101,8 +1198,8 @@ test('catalog detail reads preparation facts through one owner-local projection 
   assert.doesNotMatch(detailHydrator, /preparationFacts\.readSkuOverrides\(/);
   assert.doesNotMatch(detailHydrator, /preparationFacts\.readOptionEffects\(/);
   assert.match(preparationFacts, /DetailReadback readDetailFacts\(Collection<UUID> itemRefs, Collection<UUID> skuRefs\)/);
-  assert.match(preparationFacts, /UNION ALL/);
-  assert.match(skuFacts, /sku\.updated_at_epoch_millis/);
+  assert.match(preparationSql, /UNION ALL/);
+  assert.match(skuSql, /sku\.updated_at_epoch_millis/);
   assert.match(skuFacts, /sku\.put\("updatedAt", result\.getLong\(33\)\);/);
   assert.doesNotMatch(owner, /skuUpdatedAtByRef/);
   assert.match(
@@ -1110,8 +1207,10 @@ test('catalog detail reads preparation facts through one owner-local projection 
     /private Set<UUID> existingProductionTagRef\(ItemRow current, ObjectNode request\)[\s\S]*?currentSections\.has\("productionTagRef"\)/,
   );
   assert.match(owner, /if \(ref\.isNull\(\)\) return Set\.of\(\);/);
-  assert.match(referenceReplace, /jdbc\.update\("DELETE FROM catalog\.catalog_item_reference WHERE item_ref=\?", itemRef\);/);
-  assert.match(referenceReplace, /jdbc\.batchUpdate\("INSERT INTO catalog\.catalog_item_reference\(item_ref,kind,ref\) VALUES\(\?,\?,\?\)", rows\);/);
+  assert.match(referenceReplace, /jdbc\.update\(CatalogItemReferenceFactsSql\.CATALOG_ITEM_REFERENCE_FACTS_DELETE_CATALOG_ITEM_REFERENCE_ITEM_REF_ALTERNATE_A, itemRef\);/);
+  assert.match(referenceReplace, /jdbc\.batchUpdate\(CatalogItemReferenceFactsSql\.CATALOG_ITEM_REFERENCE_FACTS_INSERT_INTO_CATALOG_ITEM_REFERENCE_ITEM_REF_KIND_REF, rows\);/);
+  assert.match(referenceSql, /DELETE FROM catalog\.catalog_item_reference WHERE item_ref=\?/);
+  assert.match(referenceSql, /INSERT INTO catalog\.catalog_item_reference\(item_ref,kind,ref\) VALUES\(\?,\?,\?\)/);
   assert.doesNotMatch(referenceReplace, /WITH deleted AS/);
   const saveCurrentStart = owner.indexOf('private ItemRow requireSaveCurrent');
   const saveCurrentEnd = owner.indexOf('private boolean saveContainsAnyField', saveCurrentStart);
@@ -1151,14 +1250,14 @@ test('catalog detail reads preparation facts through one owner-local projection 
   const requireAllEnd = unitFacts.indexOf('private void lock(UUID unitRef)', requireAllStart);
   assert.ok(requireAllStart >= 0 && requireAllEnd > requireAllStart);
   const requireAll = unitFacts.slice(requireAllStart, requireAllEnd);
-  assert.match(requireAll, /WITH unit_locks AS MATERIALIZED/);
-  assert.match(requireAll, /pg_advisory_xact_lock\(lock_key_one,lock_key_two\)/);
-  assert.match(requireAll, /FOR UPDATE/);
+  assert.match(unitSql, /WITH unit_locks AS MATERIALIZED/);
+  assert.match(unitSql, /pg_advisory_xact_lock\(lock_key_one,lock_key_two\)/);
+  assert.match(unitSql, /FOR UPDATE/);
   assert.doesNotMatch(requireAll, /ordered\.forEach\(this::lock\)/);
-  const inventoryRulesStart = inventoryOwner.indexOf('private JsonNode replaceCatalogInventoryRulesCore');
-  const inventoryRulesEnd = inventoryOwner.indexOf('private OwnerIdentity parseRuleOwner', inventoryRulesStart);
+  const inventoryRulesStart = inventoryBomOwner.indexOf('private JsonNode replaceCatalogInventoryRulesCore');
+  const inventoryRulesEnd = inventoryBomOwner.indexOf('private OwnerIdentity parseRuleOwner', inventoryRulesStart);
   assert.ok(inventoryRulesStart >= 0 && inventoryRulesEnd > inventoryRulesStart);
-  const inventoryRulesCore = inventoryOwner.slice(inventoryRulesStart, inventoryRulesEnd);
+  const inventoryRulesCore = inventoryBomOwner.slice(inventoryRulesStart, inventoryRulesEnd);
   assert.match(inventoryRulesCore, /lockCatalogItemRefs\(List\.of\(itemRef\)\)/);
   assert.doesNotMatch(inventoryRulesCore, /0x49565255/);
 
@@ -1171,9 +1270,10 @@ test('catalog detail reads preparation facts through one owner-local projection 
     /categorySummaryFactsForItems\(/,
   );
   const detailStartForNoRepeat = owner.indexOf('private ObjectNode detail(');
-  const detailEndForNoRepeat = owner.indexOf('private ObjectNode dictionary(', detailStartForNoRepeat);
-  assert.ok(detailStartForNoRepeat >= 0 && detailEndForNoRepeat > detailStartForNoRepeat);
-  const detailMethod = owner.slice(detailStartForNoRepeat, detailEndForNoRepeat);
+  const detailMethod = owner
+    .slice(detailStartForNoRepeat)
+    .match(/private ObjectNode detail\([\s\S]*?return envelope\(requestId, data\);\n    \}/)?.[0] ?? '';
+  assert.ok(detailStartForNoRepeat >= 0 && detailMethod.length > 0);
   assert.doesNotMatch(detailMethod, /categorySummaryFactsForItems\(/);
   assert.doesNotMatch(detailMethod, /compositeFacts\.readByItemRefs\(/);
   assert.match(detailMethod, /arrayCopy\(sections\.path\("compositeGroups"\)\)/);

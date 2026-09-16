@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record PublicInvitationOtpSendResponse(
-    String verificationId,
-    Long expiresAt,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "verificationId", required = true) String verificationId,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expiresAt", required = true) Long expiresAt,
     String debugVerificationCode
 ) {}

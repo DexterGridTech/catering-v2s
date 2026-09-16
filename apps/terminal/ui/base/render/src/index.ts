@@ -7,11 +7,15 @@ export type {
   RendererCatalog,
 } from './types/catalog';
 export type {
+  ContentFailureReason,
   RenderProviderProps,
   RenderLayerDismissal,
+  RenderFailure,
   RenderSurfaceReadyInput,
   SurfaceRootContentFrame,
   SurfaceRootProps,
+  SystemFailureReason,
+  TransitionFailureReason,
 } from './types/props';
 export type {
   DebugMode,

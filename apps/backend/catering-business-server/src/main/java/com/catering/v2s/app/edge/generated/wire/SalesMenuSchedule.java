@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuSchedule(
-    String kind,
-    String startLocalTime,
-    String endLocalTime
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "kind", required = true) String kind,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "startLocalTime", required = true) String startLocalTime,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "endLocalTime", required = true) String endLocalTime
 ) {}

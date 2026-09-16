@@ -149,8 +149,7 @@ function validatePolicy() {
   );
   const skuCaseFixture = fixture.caseFixtures?.['FIXTURE-SALES-MENU-SKU'];
   assert(
-    JSON.stringify(skuCaseFixture?.baselineCandidateFixtureIds) ===
-      JSON.stringify(['CANDIDATE-03', 'CANDIDATE-03']),
+    JSON.stringify(skuCaseFixture?.baselineCandidateFixtureIds) === JSON.stringify(['CANDIDATE-03', 'CANDIDATE-03']),
     'SALES_MENU_L2_REPEAT_SKU_ITEM_FIXTURE_INCOMPLETE',
   );
   assert(
@@ -163,13 +162,22 @@ function validatePolicy() {
     const referencedMenuFixtureIds = definition.menuFixtureId
       ? [definition.menuFixtureId]
       : (definition.menuFixtureIds ?? []);
-    assert(referencedMenuFixtureIds.length > 0, 'SALES_MENU_L2_CASE_MENU_REF_MISSING', row.fixtureRef);
-    for (const menuFixtureId of referencedMenuFixtureIds)
+    const menuIndependentCase = typeof definition.externalDineInProviderCode === 'string';
+    if (menuIndependentCase) {
       assert(
-        menuFixtureIds.has(menuFixtureId),
-        'SALES_MENU_L2_CASE_MENU_REF_INVALID',
-        `${row.fixtureRef}:${menuFixtureId}`,
+        definition.externalDineInProviderCode.length > 0,
+        'SALES_MENU_L2_EXTERNAL_PROVIDER_CODE_MISSING',
+        row.fixtureRef,
       );
+    } else {
+      assert(referencedMenuFixtureIds.length > 0, 'SALES_MENU_L2_CASE_MENU_REF_MISSING', row.fixtureRef);
+      for (const menuFixtureId of referencedMenuFixtureIds)
+        assert(
+          menuFixtureIds.has(menuFixtureId),
+          'SALES_MENU_L2_CASE_MENU_REF_INVALID',
+          `${row.fixtureRef}:${menuFixtureId}`,
+        );
+    }
     if (definition.sectionCount !== undefined)
       assert(
         Number.isInteger(definition.sectionCount) && definition.sectionCount > 0,

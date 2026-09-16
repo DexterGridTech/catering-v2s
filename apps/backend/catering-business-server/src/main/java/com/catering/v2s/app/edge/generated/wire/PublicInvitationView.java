@@ -2,16 +2,16 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record PublicInvitationView(
-    String invitationId,
-    String groupWorkspaceKey,
-    String operationsTitle,
-    String targetOrganizationType,
-    java.util.List<String> roleNames,
-    String maskedMobile,
-    WorkspaceInvitationStatus status,
-    Long expiresAt,
-    String workspaceName,
-    String nextStep,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "invitationId", required = true) String invitationId,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "groupWorkspaceKey", required = true) String groupWorkspaceKey,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "operationsTitle", required = true) String operationsTitle,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "targetOrganizationType", required = true) String targetOrganizationType,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "roleNames", required = true) java.util.List<String> roleNames,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "maskedMobile", required = true) String maskedMobile,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) WorkspaceInvitationStatus status,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expiresAt", required = true) Long expiresAt,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "workspaceName", required = true) String workspaceName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "nextStep", required = true) String nextStep,
     String logoUrl,
-    java.util.List<OrganizationPathNode> targetOrganizationPathNodes
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "targetOrganizationPathNodes", required = true) java.util.List<OrganizationPathNode> targetOrganizationPathNodes
 ) {}

@@ -1,5 +1,6 @@
 import {
   PrimitiveButton,
+  PrimitiveCenter,
   PrimitiveContainer,
   PrimitiveActions,
   PrimitiveHeading,
@@ -26,27 +27,29 @@ export const WithdrawConfirm = () => {
   })
 
   return (
-    <PrimitiveContainer testID="sample.desk.withdraw-confirm" layout="card">
-      <PrimitiveHeading testID="sample.desk.withdraw-confirm:title">撤回登记</PrimitiveHeading>
-      <PrimitiveText testID="sample.desk.withdraw-confirm:message">
-        撤回这次登记？
-      </PrimitiveText>
-      <PrimitiveActions testID="sample.desk.withdraw-confirm:actions">
-        <PrimitiveButton
-          testID="sample.desk.withdraw-confirm:keep"
-          accessibilityLabel="继续等待"
-          onPress={keepWaiting}
-        >
-          继续等待
-        </PrimitiveButton>
-        <PrimitiveButton
-          testID="sample.desk.withdraw-confirm:withdraw"
-          accessibilityLabel="撤回"
-          onPress={withdraw}
-        >
-          撤回
-        </PrimitiveButton>
-      </PrimitiveActions>
-    </PrimitiveContainer>
+    <PrimitiveCenter testID="sample.desk.withdraw-confirm" style={{flex: 1, minHeight: 0, padding: 24}}>
+      <PrimitiveContainer testID="sample.desk.withdraw-confirm:card" layout="card" bounded>
+        <PrimitiveHeading testID="sample.desk.withdraw-confirm:title">撤回登记</PrimitiveHeading>
+        <PrimitiveText testID="sample.desk.withdraw-confirm:message">
+          撤回这次登记？
+        </PrimitiveText>
+        <PrimitiveActions testID="sample.desk.withdraw-confirm:actions">
+          <PrimitiveButton
+            testID="sample.desk.withdraw-confirm:keep"
+            accessibilityLabel="继续等待"
+            onPress={keepWaiting}
+          >
+            继续等待
+          </PrimitiveButton>
+          <PrimitiveButton
+            testID="sample.desk.withdraw-confirm:withdraw"
+            accessibilityLabel="撤回"
+            onPress={withdraw}
+          >
+            撤回
+          </PrimitiveButton>
+        </PrimitiveActions>
+      </PrimitiveContainer>
+    </PrimitiveCenter>
   )
 }

@@ -11,6 +11,7 @@ export const adminTestIds = Object.freeze({
   shell: 'terminal.admin:shell',
   content: 'terminal.admin:content',
   password: 'terminal.admin:password',
+  passwordInput: 'terminal.admin:password-input',
   debugPassword: 'terminal.admin:debug-password',
   verify: 'terminal.admin:verify',
   close: 'terminal.admin:close',

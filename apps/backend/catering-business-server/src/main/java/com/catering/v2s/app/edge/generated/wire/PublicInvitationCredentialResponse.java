@@ -2,10 +2,10 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record PublicInvitationCredentialResponse(
-    String verificationGrant,
-    AccountPresenceStatus accountExists,
-    Boolean userNameReady,
-    Boolean loginNameReady,
-    Boolean passwordReady,
-    String nextStep
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "verificationGrant", required = true) String verificationGrant,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "accountExists", required = true) AccountPresenceStatus accountExists,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "userNameReady", required = true) Boolean userNameReady,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "loginNameReady", required = true) Boolean loginNameReady,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "passwordReady", required = true) Boolean passwordReady,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "nextStep", required = true) String nextStep
 ) {}

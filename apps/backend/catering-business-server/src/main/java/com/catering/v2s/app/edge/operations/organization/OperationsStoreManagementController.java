@@ -4,6 +4,7 @@ import com.catering.v2s.app.edge.extension.ExtensionSubmissionWireMapper;
 import com.catering.v2s.app.edge.generated.backendperformancem1.BackendPerformanceM1CommandExecutionBindings;
 import com.catering.v2s.app.edge.generated.wire.OrganizationStore;
 import com.catering.v2s.app.edge.generated.wire.OrganizationStoreCreateRequest;
+import com.catering.v2s.app.edge.generated.wire.OrganizationStoreOperatingRuleValues;
 import com.catering.v2s.app.edge.generated.wire.OrganizationStorePage;
 import com.catering.v2s.app.edge.generated.wire.OrganizationStorePageMetadata;
 import com.catering.v2s.app.edge.generated.wire.OrganizationStoreSortDirection;
@@ -26,11 +27,15 @@ import com.catering.v2s.organization.application.OrganizationOverviewTaskReadSer
 import com.catering.v2s.organization.application.operations.CreateOperationsOrganizationStoreOperation;
 import com.catering.v2s.organization.application.operations.TransitionOperationsOrganizationStoreStatusOperation;
 import com.catering.v2s.organization.application.operations.UpdateOperationsOrganizationStoreOperation;
+import com.catering.v2s.organization.domain.generated.StoreOperatingRuleCatalog;
+import com.catering.v2s.organization.domain.generated.StoreOperatingRuleCatalog.Values;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceUserService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -51,6 +56,7 @@ import tools.jackson.databind.JsonNode;
 @RestController
 @RequestMapping("/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores")
 public final class OperationsStoreManagementController {
+    private static final ObjectMapper JSON = new ObjectMapper();
     private final OperationsSessionResolver sessions;
     private final BusinessEntityService entities;
     private final OrganizationOverviewTaskReadService overview;
@@ -78,13 +84,13 @@ public final class OperationsStoreManagementController {
                 user,
                 capabilityScopes,
                 new OperationsOrganizationTaskReadService(entities, overview),
-                new CreateOperationsOrganizationStoreOperation(entities, overview, contracts),
-                new UpdateOperationsOrganizationStoreOperation(entities, overview, contracts),
-                new TransitionOperationsOrganizationStoreStatusOperation(entities, overview, contracts),
+                new CreateOperationsOrganizationStoreOperation(entities, overview, contracts, entities),
+                new UpdateOperationsOrganizationStoreOperation(entities, overview, contracts, entities),
+                new TransitionOperationsOrganizationStoreStatusOperation(entities, overview, contracts, entities),
                 BackendPerformanceM1CommandExecutionBindings.forStoreManagement(
-                        new CreateOperationsOrganizationStoreOperation(entities, overview, contracts),
-                        new TransitionOperationsOrganizationStoreStatusOperation(entities, overview, contracts),
-                        new UpdateOperationsOrganizationStoreOperation(entities, overview, contracts)));
+                        new CreateOperationsOrganizationStoreOperation(entities, overview, contracts, entities),
+                        new TransitionOperationsOrganizationStoreStatusOperation(entities, overview, contracts, entities),
+                        new UpdateOperationsOrganizationStoreOperation(entities, overview, contracts, entities)));
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -135,10 +141,14 @@ public final class OperationsStoreManagementController {
                 createSubmission(body.extensionValues()),
                 idempotencyKey,
                 actor(session),
-                requireCapability(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_STORE", projectPath)));
+                requireCapability(session, "REQ_CREATE_OPERATIONS_ORGANIZATION_STORE", projectPath),
+                ruleValues(body.operatingRuleSwitches())));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(StoreWireMapper.store(
-                        result.store(), result.organizationDetail(), result.contractDerivedStatus()));
+                        result.store(),
+                        result.organizationDetail(),
+                        result.contractDerivedStatus(),
+                        result.operatingRules().values()));
     }
 
     @GetMapping
@@ -186,6 +196,8 @@ public final class OperationsStoreManagementController {
                 entities.requireEntities(ServiceNodeTypes.STORE, session.workspaceUuid(), groupWorkspaceKey, storeIds);
         Map<UUID, String> statuses =
                 contracts.derivedStoreStatuses(session.workspaceUuid(), groupWorkspaceKey, storeIds);
+        Map<UUID, com.catering.v2s.organization.api.StoreOperatingRuleReadback> operatingRules =
+                entities.requireStoreOperatingRuleSwitches(session.workspaceUuid(), groupWorkspaceKey, storeIds);
         OrganizationStorePageMetadata metadata = new OrganizationStorePageMetadata(
                 groupWorkspaceKey,
                 null,
@@ -199,7 +211,11 @@ public final class OperationsStoreManagementController {
                 metadata,
                 result.items().stream()
                         .map(item ->
-                                StoreWireMapper.store(requiredStore(stores, item.id()), item, statuses.get(item.id())))
+                                StoreWireMapper.store(
+                                        requiredStore(stores, item.id()),
+                                        item,
+                                        statuses.get(item.id()),
+                                        requiredOperatingRules(operatingRules, item.id()).values()))
                         .toList());
     }
 
@@ -222,6 +238,8 @@ public final class OperationsStoreManagementController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody OrganizationStoreUpdateRequest body) {
         WorkspaceSessionReadback session = sessions.requireWorkspaceCommand(request, groupWorkspaceKey);
+        if (body.operatingRuleSwitches() == null)
+            throw new InvalidEdgeRequestException("operating rule switches are required");
         OrganizationTaskPathLookup.StoreProjectCommandFacts current =
                 user.resolveSelectedProjectScopeForStore(session, storeId);
         OrganizationTaskPathLookup.TaskPath projectPath = current.taskPath();
@@ -242,8 +260,10 @@ public final class OperationsStoreManagementController {
                 updateSubmission(body.extensionValues()),
                 idempotencyKey,
                 actor(session),
-                grant));
-        return StoreWireMapper.store(result.store(), result.organizationDetail(), result.contractDerivedStatus());
+                grant,
+                ruleValues(body.operatingRuleSwitches())));
+        return StoreWireMapper.store(
+                result.store(), result.organizationDetail(), result.contractDerivedStatus(), result.operatingRules().values());
     }
 
     @PostMapping("/{storeId}/status")
@@ -269,15 +289,20 @@ public final class OperationsStoreManagementController {
                         actor(session),
                         requireStatusTransitionCapability(
                                 session, "REQ_TRANSITION_OPERATIONS_ORGANIZATION_STORE_STATUS", projectPath)));
-        return StoreWireMapper.store(result.store(), result.organizationDetail(), result.contractDerivedStatus());
+        return StoreWireMapper.store(
+                result.store(), result.organizationDetail(), result.contractDerivedStatus(), result.operatingRules().values());
     }
 
     private OrganizationStore store(
             WorkspaceSessionReadback session, String key, OrganizationOverviewTaskReadService.Item detail) {
         OrganizationEntityReadback value =
                 entities.requireEntity(ServiceNodeTypes.STORE, session.workspaceUuid(), key, detail.id());
+        var operatingRules = entities.requireStoreOperatingRuleSwitches(session.workspaceUuid(), key, detail.id());
         return StoreWireMapper.store(
-                value, detail, contracts.derivedStoreStatus(session.workspaceUuid(), key, detail.id()));
+                value,
+                detail,
+                contracts.derivedStoreStatus(session.workspaceUuid(), key, detail.id()),
+                operatingRules.values());
     }
 
     private OrganizationOverviewTaskReadService.Item scopedReadStore(
@@ -299,6 +324,13 @@ public final class OperationsStoreManagementController {
             Map<UUID, OrganizationEntityReadback> stores, UUID storeId) {
         OrganizationEntityReadback value = stores.get(storeId);
         if (value == null) throw new IllegalStateException("paged store disappeared during readback");
+        return value;
+    }
+
+    private static com.catering.v2s.organization.api.StoreOperatingRuleReadback requiredOperatingRules(
+            Map<UUID, com.catering.v2s.organization.api.StoreOperatingRuleReadback> values, UUID storeId) {
+        var value = values.get(storeId);
+        if (value == null) throw new IllegalStateException("paged store operating rules disappeared during readback");
         return value;
     }
 
@@ -360,5 +392,11 @@ public final class OperationsStoreManagementController {
 
     private static ExtensionSubmission updateSubmission(JsonNode values) {
         return ExtensionSubmissionWireMapper.toSubmission(values);
+    }
+
+    private static Values ruleValues(OrganizationStoreOperatingRuleValues values) {
+        if (values == null) return null;
+        return StoreOperatingRuleCatalog.values(
+                JSON.convertValue(values, new TypeReference<Map<String, ?>>() {}), true);
     }
 }

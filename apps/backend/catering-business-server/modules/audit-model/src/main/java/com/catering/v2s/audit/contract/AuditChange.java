@@ -3,11 +3,31 @@ package com.catering.v2s.audit.contract;
 import java.util.Objects;
 
 /** A closed allowlisted field difference; values are display-safe scalar strings only. */
-public record AuditChange(String fieldKey, String beforeValue, String afterValue) {
+public record AuditChange(
+        String fieldKey,
+        String fieldLabelSnapshot,
+        AuditValueState beforeState,
+        String beforeValue,
+        AuditValueState afterState,
+        String afterValue) {
     public AuditChange {
         fieldKey = required(fieldKey, 120);
+        fieldLabelSnapshot = optional(fieldLabelSnapshot, 120);
         beforeValue = bounded(beforeValue);
         afterValue = bounded(afterValue);
+        validateState(beforeState, beforeValue, "before");
+        validateState(afterState, afterValue, "after");
+    }
+
+    /** Existing producers use the smallest constructor; null before/after are new-event lifecycle states. */
+    public AuditChange(String fieldKey, String beforeValue, String afterValue) {
+        this(
+                fieldKey,
+                null,
+                beforeValue == null ? AuditValueState.MISSING : AuditValueState.VALUE,
+                beforeValue,
+                afterValue == null ? AuditValueState.CLEARED : AuditValueState.VALUE,
+                afterValue);
     }
 
     private static String required(String value, int limit) {
@@ -17,9 +37,26 @@ public record AuditChange(String fieldKey, String beforeValue, String afterValue
         return normalized;
     }
 
+    private static String optional(String value, int limit) {
+        if (value == null || value.isBlank()) return null;
+        return required(value, limit);
+    }
+
     private static String bounded(String value) {
-        if (value != null && value.length() > 2000)
-            throw new IllegalArgumentException("audit display value is too long");
-        return value;
+        if (value == null) return null;
+        int limit = 2000;
+        if (value.codePointCount(0, value.length()) <= limit) return value;
+        String suffix = "…（已截断）";
+        int prefixCodePoints = limit - suffix.codePointCount(0, suffix.length());
+        int prefixEnd = value.offsetByCodePoints(0, prefixCodePoints);
+        return value.substring(0, prefixEnd) + suffix;
+    }
+
+    private static void validateState(AuditValueState state, String value, String side) {
+        if (state == null) return;
+        if (state == AuditValueState.VALUE && value == null)
+            throw new IllegalArgumentException(side + " VALUE state requires a value");
+        if (state != AuditValueState.VALUE && value != null)
+            throw new IllegalArgumentException(side + " non-VALUE state cannot carry a value");
     }
 }

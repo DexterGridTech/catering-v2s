@@ -4802,6 +4802,8 @@ final class SalesMenuAcceptanceScenarios {
         templateBody.put("orderKind", "TAKEAWAY");
         templateBody.put("dineInForm", null);
         templateBody.put("providerCode", null);
+        templateBody.put("storeVisibilityScope", null);
+        templateBody.put("visibleStoreRefs", List.of());
         BackendAcceptanceTest.Response template = context.post(
                 BUSINESS_CHANNEL_TEMPLATE_CREATE,
                 "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/business-channel-templates",

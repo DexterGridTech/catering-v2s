@@ -3,8 +3,7 @@ import {StyleSheet, Text, View, type LayoutChangeEvent} from 'react-native'
 import type {LoggerPort, NativeLoadingCapability} from '@catering-v2s/kernel-base-platform-ports'
 import {useRenderContext} from '../contexts/RenderContext'
 import {useSurfaceContext} from '../contexts/SurfaceContext'
-import type {RenderSurfaceReadyInput} from '../types/props'
-import type {RenderFallbackReason} from './resolvePart'
+import type {ContentFailureReason, RenderSurfaceReadyInput, SystemFailureReason} from '../types/props'
 
 const STARTUP_FAILURE_TEST_ID = 'ui.base.render:startup-failure'
 const RUNTIME_FAILURE_TEST_ID = 'ui.base.render:runtime-failure'
@@ -50,7 +49,7 @@ export type StartupFailurePageProps = Readonly<{
   readonly reason: string
   readonly failureStage?: FailureStage
   readonly errorName?: string
-  readonly fallbackReason?: RenderFallbackReason
+  readonly fallbackReason?: SystemFailureReason
 }>
 
 export type StandaloneStartupFailurePageProps = Readonly<{
@@ -200,7 +199,8 @@ export const StandaloneStartupFailurePage = ({
 }
 
 export type ScreenReadyBoundaryProps = Readonly<{
-  readonly partKey: string
+  readonly partKey: string | null
+  readonly contentFailure: ContentFailureReason | null
   readonly children?: ReactNode
 }>
 
@@ -208,7 +208,7 @@ export type ScreenReadyBoundaryProps = Readonly<{
  * Readiness is emitted only from the resolved real-part layout. Root mount,
  * host spinner, logical display mode, and every fallback branch are excluded.
  */
-export const ScreenReadyBoundary = ({partKey, children}: ScreenReadyBoundaryProps) => {
+export const ScreenReadyBoundary = ({partKey, contentFailure, children}: ScreenReadyBoundaryProps) => {
   const {
     logger,
     nativeLoadingCapability,
@@ -229,18 +229,22 @@ export const ScreenReadyBoundary = ({partKey, children}: ScreenReadyBoundaryProp
       displayIndex: 0,
       displayMode: surface.displayMode,
       containerKey: surface.containerKey,
-      partKey,
+      readyPartKey: partKey,
+      contentFailure,
     }
     logger.info({
       category: 'startup.ready-candidate',
       event: 'startup.ready-candidate',
-      message: 'Resolved PRIMARY screen part completed its first layout',
+      message: contentFailure === null
+        ? 'Resolved PRIMARY screen part completed its first layout'
+        : 'Visible PRIMARY content failure completed its first layout',
       data: {
         surfaceKey: readyInput.surfaceKey,
         displayIndex: readyInput.displayIndex,
         displayMode: readyInput.displayMode,
         containerKey: readyInput.containerKey,
-        partKey,
+        readyPartKey: readyInput.readyPartKey,
+        contentFailure: readyInput.contentFailure,
         layoutWidth: layoutRef.current.width,
         layoutHeight: layoutRef.current.height,
         hostWidth: surface.hostLogicalSize.width,
@@ -266,7 +270,8 @@ export const ScreenReadyBoundary = ({partKey, children}: ScreenReadyBoundaryProp
             surfaceKey: readyInput.surfaceKey,
             displayIndex: readyInput.displayIndex,
             displayMode: readyInput.displayMode,
-            partKey,
+            readyPartKey: readyInput.readyPartKey,
+            contentFailure: readyInput.contentFailure,
             source: 'ui-base-render.ScreenReadyBoundary',
           },
         })
@@ -276,11 +281,15 @@ export const ScreenReadyBoundary = ({partKey, children}: ScreenReadyBoundaryProp
           category: 'startup.failure-page',
           event: 'startup.ready-failed',
           message: 'Resolved PRIMARY screen could not complete startup readiness',
-          data: {partKey, errorName: readErrorName(error)},
+          data: {
+            readyPartKey: readyInput.readyPartKey,
+            contentFailure: readyInput.contentFailure,
+            errorName: readErrorName(error),
+          },
         })
         setFailure(readErrorName(error))
       })
-  }, [hasPrimarySurfaceReady, logger, nativeLoadingCapability, onPrimarySurfaceReady, partKey, surface.containerKey, surface.displayMode, surface.hostLogicalSize, target.matches])
+  }, [contentFailure, hasPrimarySurfaceReady, logger, nativeLoadingCapability, onPrimarySurfaceReady, partKey, surface.containerKey, surface.displayMode, surface.hostLogicalSize, target.matches])
 
   const onLayout = useCallback((event: LayoutChangeEvent) => {
     const layout = positiveLayout(event)

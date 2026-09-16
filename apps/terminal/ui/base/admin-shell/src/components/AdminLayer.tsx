@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react'
+import {useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode} from 'react'
 import {closeLayerCommand} from '@catering-v2s/kernel-base-ui-state'
 import {BUSINESS_FOCUS_SCOPE_ID, useInputController} from '@catering-v2s/ui-base-input'
 import {
@@ -14,7 +14,13 @@ import {
 import {AdminLogin} from './AdminLogin'
 import {AdminShell} from './AdminShell'
 
-export const AdminLayer = () => {
+type AuthenticatedRenderer = (input: Readonly<{readonly onClose: () => void}>) => ReactNode
+
+type AdminLayerFrameProps = Readonly<{
+  readonly renderAuthenticated: AuthenticatedRenderer
+}>
+
+const renderAdminLayer = ({renderAuthenticated}: AdminLayerFrameProps) => {
   const {runtimeFacts} = useRenderContext()
   const surface = useSurfaceContext()
   const dispatchCommand = useDispatchCommand()
@@ -25,7 +31,6 @@ export const AdminLayer = () => {
   const identity = surface.surfaceIdentity
   const surfaceKey = identity?.surfaceKey ?? null
   const displayIndex = identity?.displayIndex ?? null
-  const surfaceForm = identity?.surfaceForm ?? surface.surfaceForm
   const identityDisplayMode = identity?.displayMode ?? surface.displayMode
 
   useEffect(() => {
@@ -36,11 +41,13 @@ export const AdminLayer = () => {
         payload: {displayMode: identityDisplayMode, layerId: ADMIN_CONSOLE_LAYER_ID},
       }).catch(() => undefined)
     }
-  }, [displayIndex, identityDisplayMode, surfaceForm, surfaceKey])
+  }, [displayIndex, identityDisplayMode, surfaceKey])
 
   useLayoutEffect(() => {
     inputController.activateFocusScope(ADMIN_CONSOLE_FOCUS_SCOPE_ID)
-    return () => inputController.activateFocusScope(BUSINESS_FOCUS_SCOPE_ID)
+    return () => {
+      inputController.activateFocusScope(BUSINESS_FOCUS_SCOPE_ID)
+    }
   }, [inputController])
 
   const close = useCallback(() => {
@@ -56,10 +63,17 @@ export const AdminLayer = () => {
       <AdminLogin
         identity={runtimeFacts.deviceIdentity}
         debugMode={runtimeFacts.debugMode}
+        showAdminPassword={runtimeFacts.showAdminPassword}
         onAuthenticated={() => setAuthenticated(true)}
         onClose={close}
       />
     )
   }
-  return <AdminShell onClose={close} />
+  return <>{renderAuthenticated({onClose: close})}</>
 }
+
+export const AdminLayerFrame = renderAdminLayer
+
+export const AdminLayer = () => (
+  <AdminLayerFrame renderAuthenticated={({onClose}) => <AdminShell onClose={onClose} />} />
+)

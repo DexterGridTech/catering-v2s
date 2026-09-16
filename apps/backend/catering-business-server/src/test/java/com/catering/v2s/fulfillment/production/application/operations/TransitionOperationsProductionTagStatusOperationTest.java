@@ -102,7 +102,8 @@ class TransitionOperationsProductionTagStatusOperationTest {
                         new CatalogScopeLookup.CatalogBrandJudgment("BRAND", "TEST", "REVISION"),
                         null));
         CatalogScopeLookup scopes = mock(CatalogScopeLookup.class);
-        return new CommandExecutionContextResolver(capabilities, scopes, sessions)
+        return new CommandExecutionContextResolver(
+                        capabilities, scopes, sessions, (workspace, group, targetType, storeId) -> {})
                 .resolveCatalog(
                         "session",
                         token,

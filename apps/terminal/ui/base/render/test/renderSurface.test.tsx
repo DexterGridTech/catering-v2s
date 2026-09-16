@@ -26,7 +26,7 @@ import {
   type RenderProviderProps,
   type SurfaceHostIdentityRejection,
 } from '../src/index'
-import {createUiCatalog} from '@catering-v2s/kernel-base-ui-state'
+import {createUiCatalog, selectScreen} from '@catering-v2s/kernel-base-ui-state'
 import {createRenderPartDiagnosticReporter} from '../src/foundations/diagnostics'
 import {unusedRenderProviderBindings} from './renderProviderBindings'
 
@@ -138,6 +138,7 @@ const part = <TProps extends object>(input: Readonly<{
   readonly layerTier?: 'standard' | 'alert'
   readonly layerGuard?: 'dismissible' | 'decisive'
   readonly containerKeys?: readonly string[]
+  readonly surfaceForm?: readonly ('laptop' | 'mobile')[]
 }>) => definePart({
   partKey: input.partKey,
   rendererKey: input.rendererKey,
@@ -145,7 +146,7 @@ const part = <TProps extends object>(input: Readonly<{
   displayModes: ['PRIMARY', 'SECONDARY'] as const,
   workspaces: ['MAIN'] as const,
   instanceModes: ['MASTER'] as const,
-  surfaceForm: ['laptop', 'mobile'] as const,
+  surfaceForm: input.surfaceForm ?? ['laptop', 'mobile'] as const,
   title: input.partKey,
   description: input.partKey,
   component: input.component,
@@ -386,7 +387,7 @@ describe('render surface hosts', () => {
     renderer.unmount()
   })
 
-  it('turns an empty PRIMARY container into the failure page after runtime and host are resolved', async () => {
+  it('keeps an empty PRIMARY container as visible content failure without a system page', async () => {
     const source = createSource()
     const {logger, events} = createLogger()
     const host = createHostSource(hostSnapshot(960, 540))
@@ -417,8 +418,52 @@ describe('render surface hosts', () => {
 
     await act(async () => undefined)
     expect(findByTestID(renderer, 'ui-base-render:fallback:container-empty')).toBeDefined()
-    expect(findByTestID(renderer, 'ui.base.render:startup-failure')).toBeDefined()
-    expect(events.some(event => event.event === 'startup.failure-page-visible')).toBe(true)
+    const fallback = findByTestID(renderer, 'ui-base-render:fallback:container-empty')
+    expect(fallback.props.children).toContain('页面找不到')
+    expect(renderer.root.findAll(node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0)
+    expect(events.some(event => event.event === 'startup.failure-page-visible')).toBe(false)
+    expect(events).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        category: 'ui.base.render',
+        event: 'container-empty',
+        data: {
+          category: 'content',
+          reason: 'container-empty',
+          partKey: null,
+          displayMode: 'PRIMARY',
+          containerKey: 'root',
+          surfaceForm: 'laptop',
+        },
+      }),
+    ]))
+    renderer.unmount()
+  })
+
+  it('renders an integration default without writing a container record', () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const defined = part({partKey: 'default-screen-part', rendererKey: 'default-screen-renderer', component: Screen})
+    const root = rootWithContent(emptyContent())
+    source.setRoot(root)
+    source.setStatus('started')
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([defined.catalogEntry]),
+        rendererCatalog: createRendererCatalog([defined.rendererBinding]),
+        logger,
+        ...unusedRenderProviderBindings,
+      },
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        defaultContainerPartKeys: {root: defined.catalogEntry.partKey},
+      }),
+    ))
+
+    expect(renderer.root.findAllByType('render-screen')).toHaveLength(1)
+    expect(selectScreen(source.stateSource.getState(), 'PRIMARY', 'root')).toBeUndefined()
     renderer.unmount()
   })
 
@@ -618,7 +663,7 @@ describe('render surface hosts', () => {
     renderer.unmount()
   })
 
-  it('keeps runtime unavailable and container empty as distinct fallback facts', () => {
+  it('keeps transition and content failures as distinct typed fallback facts', () => {
     const source = createSource()
     const {logger} = createLogger()
     const uiCatalog = createUiCatalog([])
@@ -629,8 +674,8 @@ describe('render surface hosts', () => {
     )
     const unavailable = findFallbacks(renderer)
     expect(unavailable.map(item => item.props.testID)).toEqual([
-      'ui-base-render:fallback:runtime-unavailable',
-      'ui-base-render:fallback:runtime-unavailable',
+      'ui-base-render:fallback:runtime-not-started',
+      'ui-base-render:fallback:runtime-not-started',
     ])
 
     act(() => {
@@ -641,6 +686,43 @@ describe('render surface hosts', () => {
     const empty = findFallbacks(renderer)
     expect(empty.map(item => item.props.testID)).toContain('ui-base-render:fallback:container-empty')
     expect(empty.map(item => item.props.testID)).not.toContain('ui-base-render:fallback:runtime-unavailable')
+    renderer.unmount()
+  })
+
+  it('keeps runtime-not-started neutral on the target PRIMARY surface', () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const host = createHostSource(hostSnapshot(800, 600))
+    const hiddenReasons: string[] = []
+    const nativeLoadingCapability = {
+      targetPhysicalSurface: {surfaceKey: 'PRIMARY' as const, displayIndex: 0 as const},
+      hideOnce: async (reason: string) => {
+        hiddenReasons.push(reason)
+        return {hidden: true, alreadyHidden: false, reason}
+      },
+    }
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        ...unusedRenderProviderBindings,
+        nativeLoadingCapability,
+      },
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        canvas: {width: 960, height: 540},
+        surfaceHostSource: host,
+      }),
+    ))
+
+    expect(findByTestID(renderer, 'ui-base-render:fallback:runtime-not-started')).toBeDefined()
+    expect(renderer.root.findAll(node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0)
+    expect(renderer.root.findAll(node => node.props.testID === 'ui.base.render:runtime-failure')).toHaveLength(0)
+    expect(hiddenReasons).toEqual([])
     renderer.unmount()
   })
 
@@ -681,7 +763,8 @@ describe('render surface hosts', () => {
     ])
     const layerStack = findByTestID(renderer, 'ui-base-render:layer-stack')
     expect(findByTestID(renderer, 'ui-base-render:layer-backdrop')).toBeDefined()
-    expect(StyleSheet.flatten(layerStack.props.style)).toMatchObject({
+    const layerStackStyle = StyleSheet.flatten(layerStack.props.style)
+    expect(layerStackStyle).toMatchObject({
       position: 'absolute',
       top: 0,
       right: 0,
@@ -690,6 +773,9 @@ describe('render surface hosts', () => {
       zIndex: 1000,
       elevation: 1000,
     })
+    expect(layerStackStyle).not.toHaveProperty('alignItems')
+    expect(layerStackStyle).not.toHaveProperty('justifyContent')
+    expect(layerStackStyle).not.toHaveProperty('padding')
     expect(layerStack.props.pointerEvents).toBe('box-none')
     const layerSurfaces = renderer.root.findAll(node =>
       node.type === View
@@ -697,13 +783,17 @@ describe('render surface hosts', () => {
       && node.props.testID.startsWith('ui-base-render:layer:'),
     )
     expect(layerSurfaces).toHaveLength(4)
-    expect(StyleSheet.flatten(layerSurfaces[0]!.props.style)).toMatchObject({
+    const layerStyle = StyleSheet.flatten(layerSurfaces[0]!.props.style)
+    expect(layerStyle).toMatchObject({
       position: 'absolute',
       top: 0,
       right: 0,
       bottom: 0,
       left: 0,
     })
+    expect(layerStyle).not.toHaveProperty('alignItems')
+    expect(layerStyle).not.toHaveProperty('justifyContent')
+    expect(layerStyle).not.toHaveProperty('padding')
     renderer.unmount()
   })
 
@@ -989,17 +1079,37 @@ describe('render surface hosts', () => {
       expect.objectContaining({
         category: 'ui.base.render',
         event: 'missing-catalog-entry',
-        data: {partKey: 'missing-catalog-part', displayMode: 'PRIMARY'},
+        data: {
+          category: 'content',
+          reason: 'missing-catalog-entry',
+          partKey: 'missing-catalog-part',
+          displayMode: 'PRIMARY',
+          containerKey: 'root',
+          surfaceForm: 'laptop',
+        },
       }),
       expect.objectContaining({
         category: 'ui.base.render',
         event: 'missing-catalog-entry',
-        data: {partKey: 'missing-catalog-layer-part', displayMode: 'PRIMARY'},
+        data: {
+          category: 'content',
+          reason: 'missing-catalog-entry',
+          partKey: 'missing-catalog-layer-part',
+          displayMode: 'PRIMARY',
+          containerKey: null,
+          surfaceForm: 'laptop',
+        },
       }),
       expect.objectContaining({
         category: 'ui.base.render',
         event: 'missing-renderer',
-        data: {partKey: 'missing-renderer-part', displayMode: 'PRIMARY', rendererKey: 'not-installed'},
+        data: {
+          category: 'system',
+          reason: 'missing-renderer',
+          partKey: 'missing-renderer-part',
+          displayMode: 'PRIMARY',
+          rendererKey: 'not-installed',
+        },
       }),
     ]))
 
@@ -1022,12 +1132,28 @@ describe('render surface hosts', () => {
       expect.objectContaining({
         category: 'ui.base.render',
         event: 'invalid-props-shape',
-        data: {partKey: 'counted-part', displayMode: 'PRIMARY', valueType: 'string'},
+        data: {
+          category: 'content',
+          reason: 'invalid-props',
+          partKey: 'counted-part',
+          displayMode: 'PRIMARY',
+          containerKey: 'root',
+          surfaceForm: 'laptop',
+          valueType: 'string',
+        },
       }),
       expect.objectContaining({
         category: 'ui.base.render',
         event: 'invalid-props-shape',
-        data: {partKey: 'counted-layer-part', displayMode: 'PRIMARY', valueType: 'array'},
+        data: {
+          category: 'content',
+          reason: 'invalid-props',
+          partKey: 'counted-layer-part',
+          displayMode: 'PRIMARY',
+          containerKey: null,
+          surfaceForm: 'laptop',
+          valueType: 'array',
+        },
       }),
     ]))
 
@@ -1049,11 +1175,146 @@ describe('render surface hosts', () => {
       expect.objectContaining({
         category: 'ui.base.render',
         event: 'missing-renderer',
-        data: {partKey: 'screen-missing-renderer-part', displayMode: 'PRIMARY', rendererKey: 'screen-not-installed'},
+        data: {
+          category: 'system',
+          reason: 'missing-renderer',
+          partKey: 'screen-missing-renderer-part',
+          displayMode: 'PRIMARY',
+          rendererKey: 'screen-not-installed',
+        },
       }),
     ]))
     renderer.unmount()
     expect(businessCalls).toBe(0)
+  })
+
+  it('treats a missing catalog entry as visible content failure and PRIMARY readiness', async () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const host = createHostSource(hostSnapshot(800, 600))
+    const readyInputs: Array<Readonly<{readonly readyPartKey: string | null; readonly contentFailure: string | null}>> = []
+    const hiddenReasons: string[] = []
+    const nativeLoadingCapability = {
+      targetPhysicalSurface: {surfaceKey: 'PRIMARY' as const, displayIndex: 0 as const},
+      hideOnce: async (reason: string) => {
+        hiddenReasons.push(reason)
+        return {hidden: true, alreadyHidden: false, reason}
+      },
+    }
+    source.setRoot(rootWithContent({
+      contentSets: {
+        PRIMARY: {containers: {root: {partKey: 'missing-content-part'}}, layers: []},
+        SECONDARY: {containers: {}, layers: []},
+      },
+    }))
+    source.setStatus('started')
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        ...unusedRenderProviderBindings,
+        nativeLoadingCapability,
+        onPrimarySurfaceReady: input => {
+          readyInputs.push({readyPartKey: input.readyPartKey, contentFailure: input.contentFailure})
+        },
+      },
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        canvas: {width: 960, height: 540},
+        surfaceHostSource: host,
+      }),
+    ))
+
+    expect(findByTestID(renderer, 'ui-base-render:fallback:missing-catalog-entry').props.children).toContain('页面找不到')
+    expect(renderer.root.findAll(node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0)
+    const boundary = findByTestID(renderer, 'ui-base-render:screen-ready-boundary')
+    await act(async () => {
+      boundary.props.onLayout({nativeEvent: {layout: {width: 800, height: 600}}})
+    })
+    expect(readyInputs).toEqual([{readyPartKey: 'missing-content-part', contentFailure: 'missing-catalog-entry'}])
+    expect(hiddenReasons).toEqual(['startup-ready'])
+    renderer.unmount()
+  })
+
+  it('reports an incompatible catalog entry as visible content failure and PRIMARY ready', async () => {
+    const source = createSource()
+    const {logger, events} = createLogger()
+    const host = createHostSource(hostSnapshot(800, 600))
+    const incompatible = part({
+      partKey: 'incompatible-screen-part',
+      rendererKey: 'incompatible-screen-renderer',
+      component: Screen,
+      surfaceForm: ['mobile'],
+    })
+    const readyInputs: Array<Readonly<{
+      readonly readyPartKey: string | null
+      readonly contentFailure: string | null
+    }>> = []
+    const nativeLoadingCapability = {
+      targetPhysicalSurface: {surfaceKey: 'PRIMARY' as const, displayIndex: 0 as const},
+      hideOnce: async (reason: string) => ({hidden: true, alreadyHidden: false, reason}),
+    }
+    source.setRoot(rootWithContent({
+      contentSets: {
+        PRIMARY: {containers: {root: {partKey: incompatible.catalogEntry.partKey}}, layers: []},
+        SECONDARY: {containers: {}, layers: []},
+      },
+    }))
+    source.setStatus('started')
+
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([incompatible.catalogEntry]),
+        rendererCatalog: createRendererCatalog([incompatible.rendererBinding]),
+        logger,
+        ...unusedRenderProviderBindings,
+        nativeLoadingCapability,
+        onPrimarySurfaceReady: input => {
+          readyInputs.push({readyPartKey: input.readyPartKey, contentFailure: input.contentFailure})
+        },
+      },
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        canvas: {width: 960, height: 540},
+        surfaceHostSource: host,
+      }),
+    ))
+
+    const fallback = findByTestID(renderer, 'ui-base-render:fallback:incompatible-catalog-entry')
+    expect(fallback.props.children).toContain('页面找不到')
+    expect(fallback.props.children).toContain('incompatible-screen-part')
+    expect(fallback.props.children).toContain('laptop')
+    expect(renderer.root.findAll(node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0)
+    expect(events).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        event: 'incompatible-catalog-entry',
+        data: {
+          category: 'content',
+          reason: 'incompatible-catalog-entry',
+          partKey: 'incompatible-screen-part',
+          displayMode: 'PRIMARY',
+          containerKey: 'root',
+          surfaceForm: 'laptop',
+        },
+      }),
+    ]))
+
+    const boundary = findByTestID(renderer, 'ui-base-render:screen-ready-boundary')
+    await act(async () => {
+      boundary.props.onLayout({nativeEvent: {layout: {width: 800, height: 600}}})
+    })
+    expect(readyInputs).toEqual([{
+      readyPartKey: 'incompatible-screen-part',
+      contentFailure: 'incompatible-catalog-entry',
+    }])
+    renderer.unmount()
   })
 
   it('does not collide diagnostic identities when keys contain separators', () => {
@@ -1061,11 +1322,23 @@ describe('render surface hosts', () => {
     const reporter = createRenderPartDiagnosticReporter(logger)
     reporter.report({
       event: 'missing-renderer',
-      data: {partKey: 'part|PRIMARY', displayMode: 'PRIMARY', rendererKey: 'renderer'},
+      data: {
+        category: 'system',
+        reason: 'missing-renderer',
+        partKey: 'part|PRIMARY',
+        displayMode: 'PRIMARY',
+        rendererKey: 'renderer',
+      },
     })
     reporter.report({
       event: 'missing-renderer',
-      data: {partKey: 'part', displayMode: 'PRIMARY', rendererKey: 'PRIMARY|renderer'},
+      data: {
+        category: 'system',
+        reason: 'missing-renderer',
+        partKey: 'part',
+        displayMode: 'PRIMARY',
+        rendererKey: 'PRIMARY|renderer',
+      },
     })
     expect(events).toHaveLength(2)
   })
@@ -1116,7 +1389,7 @@ describe('render surface hosts', () => {
     const host = createHostSource(hostSnapshot(800, 600))
     const defined = part({partKey: 'ready-part', rendererKey: 'ready-renderer', component: Screen})
     const hiddenReasons: string[] = []
-    const readyParts: string[] = []
+    const readyParts: Array<string | null> = []
     const lifecycle: string[] = []
     const nativeLoadingCapability = {
       targetPhysicalSurface: {surfaceKey: 'PRIMARY' as const, displayIndex: 0 as const},
@@ -1143,9 +1416,9 @@ describe('render surface hosts', () => {
         logger,
         ...unusedRenderProviderBindings,
         nativeLoadingCapability,
-        onPrimarySurfaceReady: ({partKey}) => {
+        onPrimarySurfaceReady: ({readyPartKey}) => {
           lifecycle.push('ready-callback')
-          readyParts.push(partKey)
+          readyParts.push(readyPartKey)
         },
       },
       createElement(SurfaceRoot, {
@@ -1165,6 +1438,114 @@ describe('render surface hosts', () => {
     expect(readyParts).toEqual(['ready-part'])
     expect(lifecycle).toEqual(['ready-callback', 'hide'])
     renderer.unmount()
+  })
+
+  it('keeps a content failure ready before a later system failure uses the runtime variant', async () => {
+    const source = createSource()
+    const {logger, events} = createLogger()
+    const host = createHostSource(hostSnapshot(800, 600))
+    const defined = part({partKey: 'content-ready-part', rendererKey: 'content-ready-renderer', component: Screen})
+    const hiddenReasons: string[] = []
+    const readyInputs: Array<{
+      readonly readyPartKey: string | null
+      readonly contentFailure: string | null
+    }> = []
+    const nativeLoadingCapability = {
+      targetPhysicalSurface: {surfaceKey: 'PRIMARY' as const, displayIndex: 0 as const},
+      hideOnce: async (reason: string) => {
+        hiddenReasons.push(reason)
+        return {hidden: true, alreadyHidden: false, reason}
+      },
+    }
+    const uiCatalog = createUiCatalog([defined.catalogEntry])
+    const rendererCatalog = createRendererCatalog([defined.rendererBinding])
+    const render = (
+      currentRendererCatalog: ReturnType<typeof createRendererCatalog> = rendererCatalog,
+    ) => createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog,
+        rendererCatalog: currentRendererCatalog,
+        logger,
+        ...unusedRenderProviderBindings,
+        nativeLoadingCapability,
+        onPrimarySurfaceReady: input => {
+          readyInputs.push({
+            readyPartKey: input.readyPartKey,
+            contentFailure: input.contentFailure,
+          })
+        },
+      },
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        canvas: {width: 960, height: 540},
+        surfaceHostSource: host,
+      }),
+    )
+
+    source.setRoot(rootWithContent(emptyContent()))
+    source.setStatus('started')
+    const renderer = mount(render())
+    expect(findByTestID(renderer, 'ui-base-render:fallback:container-empty').props.children).toContain('页面找不到')
+    expect(renderer.root.findAll(node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0)
+
+    const contentBoundary = findByTestID(renderer, 'ui-base-render:screen-ready-boundary')
+    await act(async () => {
+      contentBoundary.props.onLayout({nativeEvent: {layout: {width: 800, height: 600}}})
+    })
+    expect(readyInputs).toEqual([{
+      readyPartKey: null,
+      contentFailure: 'container-empty',
+    }])
+    expect(hiddenReasons).toEqual(['startup-ready'])
+
+    act(() => {
+      source.setRoot(rootWithContent({
+        contentSets: {
+          PRIMARY: {containers: {root: {partKey: 'content-ready-part'}}, layers: []},
+          SECONDARY: {containers: {}, layers: []},
+        },
+      }))
+      source.notify()
+      renderer.update(render(createRendererCatalog([])))
+    })
+    await act(async () => undefined)
+    expect(findByTestID(renderer, 'ui.base.render:runtime-failure')).toBeDefined()
+    expect(findByTestID(renderer, 'ui.base.render:runtime-failure:title').props.children).toBe('终端运行异常')
+    expect(renderer.root.findAll(node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0)
+    expect(events.some(event => event.event === 'startup.failure-page-visible')).toBe(true)
+    renderer.unmount()
+
+    const beforeReadySource = createSource()
+    beforeReadySource.setRoot(rootWithContent({
+      contentSets: {
+        PRIMARY: {containers: {root: {partKey: 'content-ready-part'}}, layers: []},
+        SECONDARY: {containers: {}, layers: []},
+      },
+    }))
+    beforeReadySource.setStatus('started')
+    const beforeReadyRenderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: beforeReadySource.stateSource,
+        uiCatalog,
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        ...unusedRenderProviderBindings,
+        nativeLoadingCapability,
+      },
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+        canvas: {width: 960, height: 540},
+        surfaceHostSource: host,
+      }),
+    ))
+    expect(findByTestID(beforeReadyRenderer, 'ui.base.render:startup-failure')).toBeDefined()
+    expect(findByTestID(beforeReadyRenderer, 'ui.base.render:startup-failure:title').props.children).toBe('终端启动失败')
+    beforeReadyRenderer.unmount()
   })
 
   it('does not treat an outer root or a fallback branch as rendered readiness', async () => {
@@ -1214,6 +1595,165 @@ describe('render surface hosts', () => {
     expect(renderer.root.findByProps({testID: 'ui-base-render:fallback:missing-renderer'})).toBeDefined()
     expect(renderer.root.findByProps({testID: 'ui.base.render:startup-failure'})).toBeDefined()
     expect(renderer.root.findAllByProps({testID: 'ui-base-render:screen-ready-boundary'})).toHaveLength(0)
+    renderer.unmount()
+  })
+
+  it('keeps a system failure neutral on the SECONDARY physical surface', async () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const secondaryHost = createHostSource(Object.freeze({
+      stableHostLogicalSize: Object.freeze({width: 800, height: 600}),
+      isHostPrimaryDisplay: false,
+      surfaceIdentity: Object.freeze({
+        surfaceKey: 'SECONDARY' as const,
+        displayIndex: 1 as const,
+        surfaceForm: 'laptop' as const,
+        displayMode: 'SECONDARY' as const,
+      }),
+    }))
+    const missingRenderer = part({
+      partKey: 'secondary-missing-renderer-part',
+      rendererKey: 'secondary-missing-renderer',
+      component: Screen,
+    })
+    source.setRoot(rootWithContent({
+      contentSets: {
+        PRIMARY: {containers: {}, layers: []},
+        SECONDARY: {containers: {root: {partKey: missingRenderer.catalogEntry.partKey}}, layers: []},
+      },
+    }))
+    source.setStatus('started')
+    const hiddenReasons: string[] = []
+    const nativeLoadingCapability = {
+      targetPhysicalSurface: {surfaceKey: 'PRIMARY' as const, displayIndex: 0 as const},
+      hideOnce: async (reason: string) => {
+        hiddenReasons.push(reason)
+        return {hidden: true, alreadyHidden: false, reason}
+      },
+    }
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([missingRenderer.catalogEntry]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        ...unusedRenderProviderBindings,
+        nativeLoadingCapability,
+      },
+      createElement(SurfaceRoot, {
+        displayMode: 'SECONDARY',
+        containerKey: 'root',
+        surfaceHostSource: secondaryHost,
+      }),
+    ))
+
+    expect(findByTestID(renderer, 'ui-base-render:fallback:missing-renderer')).toBeDefined()
+    expect(renderer.root.findAll(node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0)
+    expect(renderer.root.findAll(node => node.props.testID === 'ui.base.render:runtime-failure')).toHaveLength(0)
+    expect(hiddenReasons).toEqual([])
+    renderer.unmount()
+  })
+
+  it('keeps a content failure visible on SECONDARY without reporting PRIMARY readiness', async () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const secondaryHost = createHostSource(Object.freeze({
+      stableHostLogicalSize: Object.freeze({width: 800, height: 600}),
+      isHostPrimaryDisplay: false,
+      surfaceIdentity: Object.freeze({
+        surfaceKey: 'SECONDARY' as const,
+        displayIndex: 1 as const,
+        surfaceForm: 'laptop' as const,
+        displayMode: 'SECONDARY' as const,
+      }),
+    }))
+    const incompatible = part({
+      partKey: 'secondary-content-part',
+      rendererKey: 'secondary-content-renderer',
+      component: Screen,
+      surfaceForm: ['mobile'] as const,
+    })
+    const readyInputs: unknown[] = []
+    const hiddenReasons: string[] = []
+    const nativeLoadingCapability = {
+      targetPhysicalSurface: {surfaceKey: 'PRIMARY' as const, displayIndex: 0 as const},
+      hideOnce: async (reason: string) => {
+        hiddenReasons.push(reason)
+        return {hidden: true, alreadyHidden: false, reason}
+      },
+    }
+    source.setRoot(rootWithContent({
+      contentSets: {
+        PRIMARY: {containers: {}, layers: []},
+        SECONDARY: {containers: {root: {partKey: incompatible.catalogEntry.partKey}}, layers: []},
+      },
+    }))
+    source.setStatus('started')
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([incompatible.catalogEntry]),
+        rendererCatalog: createRendererCatalog([incompatible.rendererBinding]),
+        logger,
+        ...unusedRenderProviderBindings,
+        nativeLoadingCapability,
+        onPrimarySurfaceReady: input => { readyInputs.push(input) },
+      },
+      createElement(SurfaceRoot, {
+        displayMode: 'SECONDARY',
+        containerKey: 'root',
+        surfaceHostSource: secondaryHost,
+      }),
+    ))
+
+    expect(findByTestID(renderer, 'ui-base-render:fallback:incompatible-catalog-entry')).toBeDefined()
+    expect(findByTestID(renderer, 'ui-base-render:fallback:incompatible-catalog-entry').props.children).toContain('页面找不到')
+    expect(renderer.root.findAll(node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0)
+    expect(renderer.root.findAll(node => node.props.testID === 'ui.base.render:runtime-failure')).toHaveLength(0)
+    expect(readyInputs).toHaveLength(0)
+    expect(hiddenReasons).toEqual([])
+    renderer.unmount()
+  })
+
+  it('keeps content failure visible without native readiness when no physical host is attached', () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    const missing = part({partKey: 'hostless-content-part', rendererKey: 'hostless-content-renderer', component: Screen})
+    const readyInputs: unknown[] = []
+    const hiddenReasons: string[] = []
+    const nativeLoadingCapability = {
+      targetPhysicalSurface: {surfaceKey: 'PRIMARY' as const, displayIndex: 0 as const},
+      hideOnce: async (reason: string) => {
+        hiddenReasons.push(reason)
+        return {hidden: true, alreadyHidden: false, reason}
+      },
+    }
+    source.setRoot(rootWithContent({
+      contentSets: {
+        PRIMARY: {containers: {root: {partKey: 'hostless-missing-part'}}, layers: []},
+        SECONDARY: {containers: {}, layers: []},
+      },
+    }))
+    source.setStatus('started')
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([missing.catalogEntry]),
+        rendererCatalog: createRendererCatalog([missing.rendererBinding]),
+        logger,
+        ...unusedRenderProviderBindings,
+        nativeLoadingCapability,
+        onPrimarySurfaceReady: input => { readyInputs.push(input) },
+      },
+      createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
+    ))
+
+    expect(findByTestID(renderer, 'ui-base-render:fallback:missing-catalog-entry')).toBeDefined()
+    expect(readyInputs).toEqual([])
+    expect(hiddenReasons).toEqual([])
     renderer.unmount()
   })
 })

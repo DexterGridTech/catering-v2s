@@ -2,15 +2,22 @@ package com.catering.v2s.organization.application;
 
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
+import com.catering.v2s.audit.contract.AuditValueState;
+import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
+import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.extension.api.ExtensionValueSemantics;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.math.BigDecimal;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /** Pure value helpers shared by the four organization entity command targets. */
 final class BusinessEntityValueSupport {
@@ -82,6 +89,124 @@ final class BusinessEntityValueSupport {
                 .stream()
                 .filter(change -> !Objects.equals(change.beforeValue(), change.afterValue()))
                 .toList();
+    }
+
+    static Set<String> extensionKeys(ExtensionDefinitionReadback definition) {
+        if (definition == null || definition.fields() == null) return Set.of();
+        return definition.fields().stream()
+                .map(ExtensionDefinitionReadback.Field::fieldKey)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    static ExtensionDefinitionReadback optionalDefinition(
+            ExtensionDefinitionLookup definitions,
+            java.util.UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String hostType) {
+        try {
+            return definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, hostType);
+        } catch (com.catering.v2s.extension.application.ExtensionDefinitionService.DefinitionNotFoundException absent) {
+            return null;
+        }
+    }
+
+    static List<AuditChange> withExtensionChanges(
+            List<AuditChange> coreChanges,
+            com.catering.v2s.organization.api.OrganizationEntityReadback before,
+            com.catering.v2s.organization.api.OrganizationEntityReadback after,
+            ExtensionDefinitionReadback definition,
+            ExtensionSubmission submission) {
+        return java.util.stream.Stream.concat(
+                        (coreChanges == null ? List.<AuditChange>of() : coreChanges).stream(),
+                        extensionChanges(before, after, definition, submission).stream())
+                .toList();
+    }
+
+    /**
+     * Produces the same typed, labelled extension diff for every organization owner. The definition is the exact
+     * definition already used by the command path; arbitrary payload keys never become audit keys.
+     */
+    static List<AuditChange> extensionChanges(
+            com.catering.v2s.organization.api.OrganizationEntityReadback before,
+            com.catering.v2s.organization.api.OrganizationEntityReadback after,
+            ExtensionDefinitionReadback definition,
+            ExtensionSubmission submission) {
+        if (definition == null || definition.fields() == null || definition.fields().isEmpty()) return List.of();
+        Map<String, ExtensionSubmission.Mode> intent = submission == null
+                ? Map.of()
+                : submission.fields().stream()
+                        .collect(Collectors.toMap(
+                                ExtensionSubmission.ExtensionFieldValue::fieldKey,
+                                ExtensionSubmission.ExtensionFieldValue::mode,
+                                (left, right) -> right));
+        Map<String, String> beforeValues = before == null || before.extensionValues() == null
+                ? Map.of()
+                : before.extensionValues();
+        Map<String, String> afterValues = after == null || after.extensionValues() == null
+                ? Map.of()
+                : after.extensionValues();
+        return definition.fields().stream()
+                .map(field -> extensionChange(field, beforeValues, afterValues, intent))
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private static AuditChange extensionChange(
+            ExtensionDefinitionReadback.Field field,
+            Map<String, String> beforeValues,
+            Map<String, String> afterValues,
+            Map<String, ExtensionSubmission.Mode> intent) {
+        String key = field.fieldKey();
+        AuditCell before = extensionCell(field, beforeValues, key, false);
+        boolean explicitlyCleared = intent.get(key) == ExtensionSubmission.Mode.CLEAR
+                && before.state() != AuditValueState.MISSING;
+        AuditCell after = extensionCell(field, afterValues, key, explicitlyCleared);
+        if (before.sameAs(after)) return null;
+        return new AuditChange(
+                key,
+                field.label(),
+                before.state(),
+                before.value(),
+                after.state(),
+                after.value());
+    }
+
+    private static AuditCell extensionCell(
+            ExtensionDefinitionReadback.Field field,
+            Map<String, String> values,
+            String key,
+            boolean cleared) {
+        if (!values.containsKey(key))
+            return new AuditCell(cleared ? AuditValueState.CLEARED : AuditValueState.MISSING, null);
+        String raw = values.get(key);
+        if (isJsonNull(raw)) return new AuditCell(AuditValueState.NULL, null);
+        return new AuditCell(AuditValueState.VALUE, displayValue(field, raw));
+    }
+
+    private static String displayValue(ExtensionDefinitionReadback.Field field, String raw) {
+        try {
+            JsonNode json = JSON.readTree(raw);
+            return switch (field.fieldType()) {
+                case "TEXT", "DATE", "SELECT" -> json.isTextual() ? json.asText() : json.toString();
+                case "BOOLEAN" -> json.isBoolean() ? Boolean.toString(json.booleanValue()) : json.toString();
+                case "NUMBER" -> json.isNumber() ? canonicalNumber(json) : json.toString();
+                default -> json.isValueNode() ? json.asText() : json.toString();
+            };
+        } catch (java.io.IOException failure) {
+            return raw;
+        }
+    }
+
+    private static String canonicalNumber(JsonNode value) {
+        BigDecimal decimal = value.decimalValue().stripTrailingZeros();
+        return decimal.scale() < 0 ? decimal.setScale(0).toPlainString() : decimal.toPlainString();
+    }
+
+    private record AuditCell(AuditValueState state, String value) {
+        private boolean sameAs(AuditCell other) {
+            return state == other.state && Objects.equals(value, other.value);
+        }
     }
 
     static String auditJson(List<AuditChange> changes) {

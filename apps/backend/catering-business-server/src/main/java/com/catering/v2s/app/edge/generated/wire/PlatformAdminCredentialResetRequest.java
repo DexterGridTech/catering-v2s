@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record PlatformAdminCredentialResetRequest(
-    String password,
-    Long expectedVersion,
-    String idempotencyKey
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "password", required = true) String password,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "idempotencyKey", required = true) String idempotencyKey
 ) {}

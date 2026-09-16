@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record BrandPage(
-    BrandPageMetadata metadata,
-    java.util.List<Brand> items
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "metadata", required = true) BrandPageMetadata metadata,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "items", required = true) java.util.List<Brand> items
 ) {}

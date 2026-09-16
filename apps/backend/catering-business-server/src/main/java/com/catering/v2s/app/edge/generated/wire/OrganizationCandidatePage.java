@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationCandidatePage(
-    OrganizationCandidatePageMetadata metadata,
-    java.util.List<OrganizationCandidatePageItemsItem> items
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "metadata", required = true) OrganizationCandidatePageMetadata metadata,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "items", required = true) java.util.List<OrganizationCandidatePageItemsItem> items
 ) {}

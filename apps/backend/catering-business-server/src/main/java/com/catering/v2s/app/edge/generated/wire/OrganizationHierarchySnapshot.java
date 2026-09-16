@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationHierarchySnapshot(
-    String groupWorkspaceKey,
-    CommercialGroupRoot commercialGroup,
-    java.util.List<OrganizationNode> items
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "groupWorkspaceKey", required = true) String groupWorkspaceKey,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "commercialGroup", required = true) CommercialGroupRoot commercialGroup,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "items", required = true) java.util.List<OrganizationNode> items
 ) {}

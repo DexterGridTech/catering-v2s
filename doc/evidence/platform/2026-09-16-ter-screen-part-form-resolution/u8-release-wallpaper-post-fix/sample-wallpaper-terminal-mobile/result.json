@@ -1,0 +1,109 @@
+{
+  "runId": "sample-wallpaper-terminal-mobile-1789555729515",
+  "app": "sample-wallpaper-terminal",
+  "packageName": "com.catering.v2s.terminal.samplewallpaper",
+  "serial": "emulator-5556",
+  "shape": "mobile",
+  "failureMode": null,
+  "startedAt": "2026-09-16T10:48:49.515Z",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "firstFailure": null,
+  "display": {
+    "ids": [
+      0
+    ],
+    "hasSecondary": false
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": []
+  },
+  "timeline": [
+    {
+      "event": "before-launch",
+      "timestamp": "2026-09-16T10:48:50.024Z",
+      "splashVisible": false,
+      "packagePid": ""
+    },
+    {
+      "event": "after-launch-before-ready-poll",
+      "timestamp": "2026-09-16T10:48:50.431Z",
+      "millisecondsSinceLaunch": 366,
+      "splashVisible": true
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 50,
+      "millisecondsSinceLaunch": 366,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 100,
+      "millisecondsSinceLaunch": 615,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 200,
+      "millisecondsSinceLaunch": 902,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 400,
+      "millisecondsSinceLaunch": 1137,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 800,
+      "millisecondsSinceLaunch": 1365,
+      "splashVisible": false
+    },
+    {
+      "event": "t0-first-rn-content",
+      "timestamp": "2026-09-16T10:48:53.641Z",
+      "splashVisible": false,
+      "failurePage": false,
+      "readyCandidateObservedInSameDeviceLog": true,
+      "readyHiddenObservedInSameDeviceLog": true
+    },
+    {
+      "event": "ready-or-failure-observed",
+      "timestamp": "2026-09-16T10:48:53.981Z",
+      "millisecondsSinceLaunch": 3916,
+      "readyCandidate": true,
+      "readyHidden": true,
+      "startupComplete": true,
+      "failurePage": false,
+      "splashVisible": false,
+      "splashVisibleBeforeReady": true,
+      "preReadyCaptured": true
+    },
+    {
+      "event": "settled",
+      "timestamp": "2026-09-16T10:48:57.712Z",
+      "splashVisible": false,
+      "packagePid": "11880",
+      "secondarySurfaceObserved": false,
+      "primaryUiHasRnContent": true
+    },
+    {
+      "event": "startup-order",
+      "candidateEpoch": 1789555716.555,
+      "hiddenEpoch": 1789555716.579,
+      "completeEpoch": 1789555716.568,
+      "firstContentObservationTimestamp": "2026-09-16T10:48:53.641Z",
+      "firstContentObservationSplashVisible": false,
+      "firstContentObservedAfterReadyCandidate": true,
+      "firstContentObservedAfterReadyHidden": true,
+      "provenReadyAfterRenderOwnedContent": true,
+      "settledSplashHidden": true
+    }
+  ],
+  "finishedAt": "2026-09-16T10:48:57.790Z"
+}

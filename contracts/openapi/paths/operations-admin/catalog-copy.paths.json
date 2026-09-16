@@ -43,7 +43,7 @@
             {
               "from": null,
               "to": 14,
-              "reason": "current managed acceptance program maximum"
+              "reason": "CP-05 maximum database operation count across three runs"
             }
           ]
         },
@@ -118,15 +118,15 @@
         "x-mutation": true,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 31,
+          "max": 32,
           "measurementScenarioIds": [
             "performance.normal-path"
           ],
           "history": [
             {
               "from": null,
-              "to": 31,
-              "reason": "current managed acceptance program maximum"
+              "to": 32,
+              "reason": "CP-05 maximum database operation count across three runs"
             }
           ]
         },
@@ -211,7 +211,7 @@
             {
               "from": null,
               "to": 21,
-              "reason": "current managed acceptance program maximum"
+              "reason": "CP-05 maximum database operation count across three runs"
             }
           ]
         },
@@ -288,15 +288,16 @@
         "x-mutation": true,
         "x-database-operation-budget": {
           "kind": "FIXED",
-          "max": 48,
+          "max": 49,
           "measurementScenarioIds": [
             "performance.normal-path"
           ],
           "history": [
             {
-              "from": null,
-              "to": 48,
-              "reason": "current managed acceptance program maximum"
+              "from": 48,
+              "to": 49,
+              "reason": "Dexter 2026-08-26: brand-copy keeps its complete multi-owner closure; three current-tree CP-05 calibration runs measured a stable maximum of 49 after the Store operating-rule gate, with no safe consolidation that preserves all business facts.",
+              "decisionRef": "DEXTER-2026-08-26-BRAND_COPY_CLOSURE_BUDGET"
             }
           ]
         },

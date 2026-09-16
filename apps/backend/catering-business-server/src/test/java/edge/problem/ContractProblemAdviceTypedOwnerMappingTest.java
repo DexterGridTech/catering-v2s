@@ -11,6 +11,7 @@ import com.catering.v2s.contract.application.ContractCommandReceiptService;
 import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationTaskPathService;
+import com.catering.v2s.organization.api.StoreOperatingRuleGate;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
 import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
@@ -138,6 +139,20 @@ class ContractProblemAdviceTypedOwnerMappingTest {
                         request),
                 HttpStatus.FORBIDDEN,
                 "SCOPE_FORBIDDEN");
+        assertProblem(
+                advice.catalogManagementDisabled(
+                        new StoreOperatingRuleGate.CatalogManagementDisabledException(
+                                StoreOperatingRuleGate.CatalogManagementDisabledException.Reason.DISABLED),
+                        request),
+                HttpStatus.FORBIDDEN,
+                "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED");
+        assertProblem(
+                advice.invalid(
+                        new BusinessEntityService.OrganizationOperatingRuleValidationException(
+                                new IllegalArgumentException("invalid operating rule")),
+                        request),
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "ORGANIZATION_STORE_OPERATING_RULES_INVALID");
         assertProblem(
                 advice.multipartTooLarge(new MaxUploadSizeExceededException(5L * 1024 * 1024), request),
                 HttpStatus.UNPROCESSABLE_ENTITY,

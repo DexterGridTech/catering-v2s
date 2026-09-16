@@ -20,6 +20,7 @@ import com.catering.v2s.organization.application.OrganizationCommandService;
 import com.catering.v2s.organization.application.OrganizationHierarchyCommandReceiptService;
 import com.catering.v2s.organization.application.OrganizationHierarchyService;
 import com.catering.v2s.organization.application.OrganizationTaskPathService;
+import com.catering.v2s.organization.api.StoreOperatingRuleGate;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
 import com.catering.v2s.platform.asset.application.PlatformAssetService.AssetIdempotencyConflictException;
 import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
@@ -120,6 +121,31 @@ public final class ContractProblemAdvice {
         String detail = catalogInventoryDetail(code, exception);
         JsonNode details = exception instanceof InventoryOwnerApi.Problem inventory ? inventory.details() : null;
         return problem(HttpStatus.valueOf(status), code, detail, request, details);
+    }
+
+    @ExceptionHandler(StoreOperatingRuleGate.CatalogManagementDisabledException.class)
+    ResponseEntity<Problem> catalogManagementDisabled(
+            StoreOperatingRuleGate.CatalogManagementDisabledException exception, HttpServletRequest request) {
+        RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(request);
+        log.atWarn()
+                .addKeyValue("event", "STORE_CATALOG_MANAGEMENT_DISABLED")
+                .addKeyValue("phase", "OWNER_GATE")
+                .addKeyValue("outcome", "FAILED")
+                .addKeyValue("reason", exception.reason().name())
+                .addKeyValue("storeRefHash", exception.storeRefHash())
+                .addKeyValue("correlationId", completion == null ? "unavailable" : completion.correlationId())
+                .addKeyValue("requestId", completion == null ? "unavailable" : completion.requestId())
+                .addKeyValue("operationId", completion == null ? "unavailable" : completion.operationId())
+                .log(
+                        "store-catalog-management-disabled event=STORE_CATALOG_MANAGEMENT_DISABLED phase=OWNER_GATE "
+                                + "outcome=FAILED reason={} storeRefHash={}",
+                        exception.reason().name(),
+                        exception.storeRefHash());
+        return problem(
+                HttpStatus.FORBIDDEN,
+                StoreOperatingRuleGate.CATALOG_MANAGEMENT_DISABLED_CODE,
+                "功能尚未开启，需项目对门店授权",
+                request);
     }
 
     /**
@@ -434,6 +460,8 @@ public final class ContractProblemAdvice {
                 ? assetStorageFailureCode(RequestCompletionDiagnosticState.find(request))
                 : exception instanceof ExtensionDefinitionService.DefinitionInvalidException
                         ? "EXTENSION_DEFINITION_INVALID"
+                        : exception instanceof BusinessEntityService.OrganizationOperatingRuleValidationException
+                                ? "ORGANIZATION_STORE_OPERATING_RULES_INVALID"
                         : exception instanceof WorkspaceRoleService.RoleCapabilityUnknownException
                                 ? "WORKSPACE_IAM_ROLE_CAPABILITY_UNKNOWN"
                                 : exception instanceof WorkspaceRoleService.PageAccessCatalogMismatchException

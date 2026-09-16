@@ -1,5 +1,7 @@
 package com.catering.v2s.organization.api;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -11,6 +13,14 @@ public interface OrganizationOwnerApi {
      * not replace the absent fact with a product default.
      */
     SalesMenuStoreJudgment requireSalesMenuStore(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef);
+
+    /** Reads the complete resolved rule map for one explicitly identified Store. */
+    StoreOperatingRuleReadback requireStoreOperatingRuleSwitches(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeId);
+
+    /** Bounded batch readback for already paged Store ids; it does not replace the Store page query. */
+    Map<UUID, StoreOperatingRuleReadback> requireStoreOperatingRuleSwitches(
+            UUID workspaceUuid, String groupWorkspaceKey, List<UUID> storeIds);
 
     record SalesMenuStoreJudgment(UUID storeRef, String status, String timezone, String dataNodeRef, String brandRef) {
         public SalesMenuStoreJudgment {

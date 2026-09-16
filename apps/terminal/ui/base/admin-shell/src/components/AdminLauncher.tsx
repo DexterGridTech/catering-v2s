@@ -15,11 +15,16 @@ import {
 import {adminTestIds} from '../foundations/adminTestIds'
 
 const coordinateSpaceOf = (
-  origin: Readonly<{readonly x: number; readonly y: number}> | null,
+  windowMeasurement: Readonly<{
+    readonly x: number
+    readonly y: number
+    readonly width: number
+    readonly height: number
+  }> | null,
   canvas: SurfaceHostSize,
   host: SurfaceHostSize | null,
 ): AdminGestureCoordinateSpace | null => {
-  if (origin === null || host === null) return null
+  if (windowMeasurement === null || host === null) return null
   if (
     !Number.isFinite(canvas.width)
     || !Number.isFinite(canvas.height)
@@ -30,11 +35,20 @@ const coordinateSpaceOf = (
     || host.width <= 0
     || host.height <= 0
   ) return null
+  const measuredScaleX = windowMeasurement.width / canvas.width
+  const measuredScaleY = windowMeasurement.height / canvas.height
+  const scaleX = Number.isFinite(measuredScaleX) && measuredScaleX > 0
+    ? measuredScaleX
+    : host.width / canvas.width
+  const scaleY = Number.isFinite(measuredScaleY) && measuredScaleY > 0
+    ? measuredScaleY
+    : host.height / canvas.height
+  if (!Number.isFinite(scaleX) || !Number.isFinite(scaleY) || scaleX <= 0 || scaleY <= 0) return null
   return Object.freeze({
-    originX: origin.x,
-    originY: origin.y,
-    scaleX: host.width / canvas.width,
-    scaleY: host.height / canvas.height,
+    originX: windowMeasurement.x,
+    originY: windowMeasurement.y,
+    scaleX,
+    scaleY,
   })
 }
 
@@ -50,18 +64,29 @@ type AdminLauncherProps = Readonly<{
  */
 export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
   const surface = useSurfaceContext()
+  const hostLogicalSize = surface.hostLogicalSize
   const snapshot = useRenderSnapshot()
   const dispatchCommand = useDispatchCommand()
   const gestureState = useRef<AdminGestureState>(createInitialAdminGestureState())
-  const originRef = useRef<Readonly<{readonly x: number; readonly y: number}> | null>(null)
+  const windowMeasurementRef = useRef<Readonly<{
+    readonly x: number
+    readonly y: number
+    readonly width: number
+    readonly height: number
+  }> | null>(null)
   const nodeRef = useRef<View>(null)
   const hasAdminLayer = snapshot.root !== undefined
     && selectLayers(snapshot.root, surface.displayMode).some(layer => layer.layerId === ADMIN_CONSOLE_LAYER_ID)
 
   const measureOrigin = useCallback(() => {
-    nodeRef.current?.measureInWindow((x, y) => {
-      if (Number.isFinite(x) && Number.isFinite(y)) {
-        originRef.current = Object.freeze({x, y})
+    nodeRef.current?.measureInWindow((x, y, width, height) => {
+      if (
+        Number.isFinite(x)
+        && Number.isFinite(y)
+        && Number.isFinite(width)
+        && Number.isFinite(height)
+      ) {
+        windowMeasurementRef.current = Object.freeze({x, y, width, height})
       }
     })
   }, [])
@@ -80,7 +105,10 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
 
   const handleLauncherEvent = useCallback((event: unknown) => {
     const eventPoint = adminLauncherPointFromEvent(event)
-    const space = coordinateSpaceOf(originRef.current, canvas, surface.hostLogicalSize)
+    const eventRecord = typeof event === 'object' && event !== null
+      ? event as Readonly<{readonly stopPropagation?: unknown}>
+      : null
+    const space = coordinateSpaceOf(windowMeasurementRef.current, canvas, hostLogicalSize)
     const point = space === null
       ? null
       : eventPoint === null
@@ -100,8 +128,14 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
       atMs: Date.now(),
     })
     gestureState.current = result.state
-    if (result.completed) open()
-  }, [canvas, open, surface.hostLogicalSize])
+    if (result.completed) {
+      const stopPropagation = eventRecord?.stopPropagation
+      if (typeof stopPropagation === 'function') {
+        stopPropagation.call(event)
+      }
+      open()
+    }
+  }, [canvas, hostLogicalSize, open])
 
   if (!surface.isHostPrimaryDisplay) return <>{children}</>
   const launcherEventProps = typeof document === 'undefined'

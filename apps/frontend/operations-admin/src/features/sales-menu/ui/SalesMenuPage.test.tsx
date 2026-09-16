@@ -1,9 +1,14 @@
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {App} from 'antd';
 import {Provider} from 'react-redux';
 import {operationsStore} from '../../../app/state/OperationsStore';
 import {SalesMenuPage, salesMenuCategoryTreeData} from './SalesMenuPage';
+
+// This page composes the existing catalog detail surface. Its catalog editor
+// dependency imports ProList, whose published CJS entry is not executable as
+// ESM under this Vitest workspace. The page tests do not mount that editor.
+vi.mock('@ant-design/pro-components', () => ({ProList: () => null}));
 
 const category = (categoryRef: string, name: string, parentCategoryRef: string | null, displayOrder: number) => ({
   categoryRef: categoryRef as never,
@@ -71,7 +76,8 @@ describe('sales menu page boundary', () => {
     );
     expect(markup).not.toContain('门店销售菜单');
     expect(markup).toContain('data-scope-ref="00000000-0000-4000-8000-000000000001"');
-    expect(markup).toContain('data-testid="sales-menu-selector-input"');
+    expect(markup).toContain('data-testid="operations-store-operating-rule-loading"');
+    expect(markup).not.toContain('data-testid="sales-menu-selector-input"');
     expect(markup).not.toContain('选择门店');
     expect(markup).not.toContain('门店选择器');
   });

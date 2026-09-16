@@ -1,3 +1,4 @@
+import packageJson from '../../package.json'
 import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports'
 import {definePart, type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render'
 import {
@@ -52,9 +53,11 @@ type SampleAssemblyInput = Readonly<{
   readonly persistenceKey?: string
   readonly surfaceForm: SurfaceForm
   readonly terminalSurfaces?: TerminalSurfaces
+  readonly defaultContainerPartKeys?: Readonly<Partial<Record<string, string>>>
   readonly environmentMode?: EnvironmentMode
   readonly packagingDebugMode?: boolean
   readonly startupDebugMode?: boolean
+  readonly showAdminPassword?: boolean
   readonly surfaceHostSourcesByDisplayIndex?: Readonly<Partial<Record<0 | 1, SurfaceHostMeasurementSource>>>
 }>
 
@@ -77,9 +80,11 @@ export async function createSampleAssembly(
     persistenceKey: input.persistenceKey,
     surfaceForm,
     surfaceDeclarations: getSurfaceDeclarations(input.terminalSurfaces ?? terminalSurfaces, surfaceForm),
+    defaultContainerPartKeys: input.defaultContainerPartKeys,
     environmentMode,
     packagingDebugMode: input.packagingDebugMode,
     startupDebugMode: input.startupDebugMode,
+    showAdminPassword: input.showAdminPassword ?? packageJson.showAdminPassword,
     parts: createSampleDefinedParts(),
     layerDismissals: Object.freeze({
       ...sampleStaffAuthAssembly.layerDismissals,
@@ -88,10 +93,11 @@ export async function createSampleAssembly(
     variables: [...sampleStaffAuthAssembly.variables],
     surfaceHostSourcesByDisplayIndex: input.surfaceHostSourcesByDisplayIndex,
     startupReadyCommand,
-    createStartupReadyPayload: ({surfaceKey, displayIndex, partKey}) => ({
+    createStartupReadyPayload: ({surfaceKey, displayIndex, readyPartKey, contentFailure}) => ({
       surfaceKey,
       displayIndex,
-      readyPartKey: partKey,
+      readyPartKey,
+      contentFailure,
     }),
     createApplicationModules: () => [
       createSampleConsoleModule(),

@@ -2,14 +2,14 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record GroupWorkspaceCreateResult(
-    String groupWorkspaceKey,
-    String name,
-    String operationsTitle,
-    java.util.UUID logoAssetRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "groupWorkspaceKey", required = true) String groupWorkspaceKey,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "operationsTitle", required = true) String operationsTitle,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "logoAssetRef", required = true) java.util.UUID logoAssetRef,
     String notes,
-    GroupWorkspaceStatus status,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) GroupWorkspaceStatus status,
     Long statusChangedAt,
-    Long version,
-    Long createdAt,
-    Long updatedAt
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "version", required = true) Long version,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "createdAt", required = true) Long createdAt,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "updatedAt", required = true) Long updatedAt
 ) {}

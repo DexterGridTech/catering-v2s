@@ -1,0 +1,39 @@
+63:         1789523643.863  1091  1239 D SplashScreenView: Build android.window.SplashScreenView{b199084 V.E...... ......ID 0,0-0,0}
+64:         1789523643.863  1091  1239 D SplashScreenView: Icon: view: android.widget.ImageView{e02f06d V.ED..... ......I. 0,0-0,0 #1020542 android:id/splashscreen_icon_view} drawable: com.android.wm.shell.startingsurface.SplashscreenIconDrawableFactory$ImmobileIconDrawable@dcfc4a2 size: 384
+65:         1789523643.863  1091  1239 D SplashScreenView: Branding: view: android.view.View{6ac4533 G.ED..... ......I. 0,0-0,0 #1020541 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+225:         1789523644.297  7692  7692 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal
+226:         1789523644.297  7692  7692 I TER-Splash: event=native.application-callbacks-registered
+227:         1789523644.297  7692  7692 I TER-Splash: event=native.registry-application-registered app=sample-terminal
+228:         1789523644.298  7692  7692 I TER-Splash: event=expo.prevent-auto-hide-set app=sample-terminal value=true
+250:         1789523644.314  7692  7692 I TER-Splash: event=expo.activity-registered app=sample-terminal
+251:         1789523644.314  7692  7692 I TER-Splash: event=native.gate-installed activity=native-splash-activity-1
+252:         1789523644.314  7692  7692 I TER-Splash: event=native.activity-registered app=sample-terminal
+253:         1789523644.314  7692  7692 I TER-Splash: event=activity.onCreate phase=before-super app=sample-terminal
+275:         1789523644.375  7692  7692 I TER-Splash: event=activity.onCreate phase=after-super app=sample-terminal
+292:         1789523644.406  7692  7692 I TER-Splash: event=native.pre-draw-blocked activity=native-splash-activity-1
+310:         1789523644.712  7692  7692 D SplashScreenView: Building from parcel drawable: android.graphics.drawable.BitmapDrawable@bf1ae6c
+311:         1789523644.714  7692  7692 D SplashScreenView: Build android.window.SplashScreenView{54198ca V.E...... ......ID 0,0-0,0}
+312:         1789523644.714  7692  7692 D SplashScreenView: Icon: view: androidx.appcompat.widget.AppCompatImageView{fb7ca3b V.ED..... ......I. 0,0-0,0 #1020542 android:id/splashscreen_icon_view} drawable: android.graphics.drawable.BitmapDrawable@bf1ae6c size: 384
+313:         1789523644.714  7692  7692 D SplashScreenView: Branding: view: android.view.View{5814558 G.ED..... ......I. 0,0-0,0 #1020541 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+436:         1789523645.643  7787  7787 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+437:         1789523645.646  7787  7787 I AndroidRuntime: Using default boot image
+438:         1789523645.646  7787  7787 I AndroidRuntime: Leaving lock profiling enabled
+571:         1789523645.702  7787  7787 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+1685:         1789523645.937  7692  7762 I ReactNativeJS:   category: 'startup.ready-candidate',
+1686:         1789523645.937  7692  7762 I ReactNativeJS:   event: 'startup.ready-candidate',
+1850:         1789523645.986  7692  7762 I ReactNativeJS:   category: 'startup.ready',
+1851:         1789523645.986  7692  7762 I ReactNativeJS:   event: 'startup.ready',
+1911:         1789523646.028  7692  7762 I ReactNativeJS:   category: 'startup.complete',
+1912:         1789523646.028  7692  7762 I ReactNativeJS:   event: 'startup.complete',
+1944:         1789523646.047  7692  7692 I TER-Splash: event=native.begin-hide reason=startup-ready activity=native-splash-activity-1 alreadyReleased=false
+1945:         1789523646.061  7692  7692 I TER-Splash: event=native.release-hide activity=native-splash-activity-1
+1948:         1789523646.062  7692  7762 I ReactNativeJS:   category: 'startup.ready-hidden',
+1949:         1789523646.062  7692  7762 I ReactNativeJS:   event: 'startup.ready-hidden',
+1988:         1789523646.078  7692  7692 I TER-Splash: event=native.pre-draw-released activity=native-splash-activity-1
+2011:         1789523646.512  7692  7692 D SplashScreenView: remove starting view
+2081:         1789523647.653  7787  7787 D AndroidRuntime: Shutting down VM
+2340:         1789523686.619  7827  7827 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+2341:         1789523686.622  7827  7827 I AndroidRuntime: Using default boot image
+2342:         1789523686.622  7827  7827 I AndroidRuntime: Leaving lock profiling enabled
+2354:         1789523686.690  7827  7827 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+2675:         1789523687.736  7827  7827 D AndroidRuntime: Shutting down VM

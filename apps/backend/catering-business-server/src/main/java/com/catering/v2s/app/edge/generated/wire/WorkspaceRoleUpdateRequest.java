@@ -2,9 +2,9 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceRoleUpdateRequest(
-    String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
     String description,
-    java.util.List<String> capabilityKeys,
-    java.util.List<String> pageAccessKeys,
-    Long expectedVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "capabilityKeys", required = true) java.util.List<String> capabilityKeys,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "pageAccessKeys", required = true) java.util.List<String> pageAccessKeys,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion
 ) {}

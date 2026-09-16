@@ -87,7 +87,10 @@ test('platform typed write paths include extension replacement and opaque asset 
   assert.match(extensionEditSource, /PLATFORM_ADMIN_OPERATION_IDS\.replaceExtensionDefinition/);
   assert.match(extensionEditSource, /<Form\.List\s+name=\{\[field\.name,\s*'options'\]\}/);
   assert.match(extensionEditSource, /extensionDefinitionOptionTestId/);
-  assert.doesNotMatch(extensionEditSource, /extension-definition-(?:option-)?(?:remove|label|type|list-display|searchable|required|status)-\$\{index\}/);
+  assert.doesNotMatch(
+    extensionEditSource,
+    /extension-definition-(?:option-)?(?:remove|label|type|list-display|searchable|required|status)-\$\{index\}/,
+  );
   assert.match(extensionEditSource, /field\.type === 'SELECT' \? field\.options\.map/);
   assert.doesNotMatch(extensionEditSource, /optionsText|顿号分隔|split\('、'\)|join\('、'\)/);
   assert.match(extensionEditSource, /extensionDefinitionFieldTestId/);

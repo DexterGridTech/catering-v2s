@@ -28,6 +28,7 @@
       }
     }
   },
+  "showAdminPassword": true,
   "scripts": {
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs",

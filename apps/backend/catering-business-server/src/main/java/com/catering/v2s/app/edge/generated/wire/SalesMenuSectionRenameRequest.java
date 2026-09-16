@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuSectionRenameRequest(
-    String name,
-    Long expectedVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion
 ) {}

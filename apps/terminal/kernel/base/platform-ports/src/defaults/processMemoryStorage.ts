@@ -53,7 +53,7 @@ export const createProcessMemoryStateStoragePort = (): StateStoragePort => {
       return noOutput();
     },
   };
-  Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
+  if (__DEV__) Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
     value: Object.freeze({
       port: 'persistKv',
       capabilities: Object.freeze([

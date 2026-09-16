@@ -29,7 +29,7 @@ test("seed labels close the complete SKU tuple and reusable catalog-definition f
   const dictionary = fixture.seedBusinessLabels.dictionary;
   assert.deepEqual(Object.keys(dictionary.SKU_ATTRIBUTE_VALUE).sort(), [...skuValueCodes].sort());
   assert.deepEqual(Object.keys(dictionary.SKU_ATTRIBUTE).sort(), [...attributeCodes].sort());
-  assert.equal(skuValueCodes.size, 13);
+  assert.equal(skuValueCodes.size, 14);
   assert.equal(dictionary.SKU_ATTRIBUTE_VALUE.MEDIUM, undefined);
   assert.equal(dictionary.SKU_ATTRIBUTE_VALUE.LARGE, undefined);
   assert.equal(dictionary.SKU_ATTRIBUTE_VALUE.SMALL, undefined);
@@ -77,7 +77,7 @@ test("seed labels close the complete SKU tuple and reusable catalog-definition f
   assert.deepEqual(caesar.attributes.find((entry) => entry.definitionCode === "ALLERGENS").optionNames, ["蛋类", "乳制品"]);
   assert.equal(caesar.orderOptions.find((entry) => entry.definitionCode === "CAESAR_DRESSING").required, false);
   const toppings = caesar.orderOptions.find((entry) => entry.definitionCode === "CAESAR_TOPPINGS");
-  assert.deepEqual([toppings.minSelectionCount, toppings.maxSelectionCount], [0, 2]);
+  assert.deepEqual([toppings.minSelectionCount, toppings.maxSelectionCount], [1, 2]);
   assert.equal(toppings.values.find((entry) => entry.valueCode === "BACON").extraPrice, 200);
   assert.equal(
     caesar.optionValueBoms.find((entry) => entry.valueCode === "CHICKEN").lines[0].quantity,

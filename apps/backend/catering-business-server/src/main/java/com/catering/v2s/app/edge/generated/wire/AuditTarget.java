@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record AuditTarget(
-    String entityType,
-    String entityId
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "entityType", required = true) String entityType,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "entityId", required = true) String entityId
 ) {}

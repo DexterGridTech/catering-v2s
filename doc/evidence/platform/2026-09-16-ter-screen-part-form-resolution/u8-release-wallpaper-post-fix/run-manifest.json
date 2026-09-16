@@ -1,0 +1,21 @@
+{
+  "runId": "u8-1789555728627",
+  "tool": "tools/terminal-sample2/run-u8-release-cold-start.mjs",
+  "mode": "record-only-release-cold-start",
+  "failureMode": null,
+  "startedAt": "2026-09-16T10:48:48.627Z",
+  "phoneSerial": "emulator-5556",
+  "dualSerial": "emulator-5554",
+  "profiles": [
+    "sample-wallpaper-terminal"
+  ],
+  "build": "SKIPPED_BY_EXPLICIT_OPTION",
+  "apkBindings": {
+    "sample-wallpaper-terminal": {
+      "path": "apps/terminal/assembly/android/sample-wallpaper-terminal/android/app/build/outputs/apk/release/app-release.apk",
+      "sha256": "e87b9b2097de31225999c5edbdf76cd84cfcfe85e6e78206171f51e00a18c8c7",
+      "bytes": 88946033,
+      "mtimeMs": 1789555721845.126
+    }
+  }
+}

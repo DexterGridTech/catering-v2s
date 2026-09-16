@@ -9,17 +9,23 @@ import type {
 import {isUiCatalogEntryAvailable} from '@catering-v2s/kernel-base-ui-state'
 import type {RendererCatalog} from '../types/catalog'
 import type {RenderPartDiagnosticReporter} from '../foundations/diagnostics'
+import type {
+  ContentFailureReason,
+  RenderFailure,
+  SystemFailureReason,
+  TransitionFailureReason,
+} from '../types/props'
 
-export type RenderFallbackReason =
-  | 'runtime-unavailable'
-  | 'container-empty'
-  | 'missing-catalog-entry'
-  | 'missing-renderer'
-  | 'invalid-props'
-  | 'incompatible-catalog-entry'
+type RenderFailureReason = ContentFailureReason | SystemFailureReason | TransitionFailureReason
+type ContentRenderFailure = Extract<RenderFailure, {readonly category: 'content'}>
+type SystemRenderFailure = Extract<RenderFailure, {readonly category: 'system'}>
+type ContentRenderFailureFor<Reason extends ContentFailureReason> = Omit<ContentRenderFailure, 'reason'> & Readonly<{readonly reason: Reason}>
+type SystemRenderFailureFor<Reason extends SystemFailureReason> = Omit<SystemRenderFailure, 'reason'> & Readonly<{readonly reason: Reason}>
 
-const fallbackTestIds: Readonly<Record<RenderFallbackReason, string>> = Object.freeze({
-  'runtime-unavailable': 'ui-base-render:fallback:runtime-unavailable',
+const fallbackTestIds: Readonly<Record<RenderFailureReason, string>> = Object.freeze({
+  'runtime-not-started': 'ui-base-render:fallback:runtime-not-started',
+  'runtime-start-failed': 'ui-base-render:fallback:runtime-start-failed',
+  'surface-host-unavailable': 'ui-base-render:fallback:surface-host-unavailable',
   'container-empty': 'ui-base-render:fallback:container-empty',
   'missing-catalog-entry': 'ui-base-render:fallback:missing-catalog-entry',
   'missing-renderer': 'ui-base-render:fallback:missing-renderer',
@@ -27,11 +33,22 @@ const fallbackTestIds: Readonly<Record<RenderFallbackReason, string>> = Object.f
   'incompatible-catalog-entry': 'ui-base-render:fallback:incompatible-catalog-entry',
 })
 
-export const RenderFallback = ({
-  reason,
-}: Readonly<{readonly reason: RenderFallbackReason}>) => createElement(Text, {
-  testID: fallbackTestIds[reason],
-})
+const fallbackMessage = (failure: RenderFailure): string => {
+  if (failure.category === 'content') {
+    const location = failure.partKey === null ? failure.containerKey : `${failure.containerKey}/${failure.partKey}`
+    return `页面找不到：${location}（${failure.surfaceForm}）`
+  }
+  if (failure.category === 'transition') return '终端正在加载'
+  return '终端内容暂不可用'
+}
+
+export const RenderFallback = ({failure}: Readonly<{readonly failure: RenderFailure}>) => {
+  const testID = fallbackTestIds[failure.reason]
+  return createElement(Text, {
+    testID,
+    accessibilityRole: failure.category === 'content' ? 'alert' : undefined,
+  }, fallbackMessage(failure))
+}
 
 type Placement = Readonly<{
   readonly partKey: string
@@ -55,9 +72,25 @@ export type PartResolution = Readonly<{
   readonly node: ReactNode
 }> | Readonly<{
   readonly kind: 'fallback'
-  readonly reason: RenderFallbackReason
+  readonly failure: RenderFailure
   readonly node: ReactNode
 }>
+
+const createContentFailure = <Reason extends ContentFailureReason>(
+  input: ResolvePartInput,
+  reason: Reason,
+): ContentRenderFailureFor<Reason> => Object.freeze({
+  category: 'content' as const,
+  reason,
+  partKey: input.placement.partKey,
+  containerKey: input.containerKey ?? 'layer',
+  surfaceForm: input.catalogContext.surfaceForm,
+})
+
+const createSystemFailure = <Reason extends SystemFailureReason>(reason: Reason): SystemRenderFailureFor<Reason> => Object.freeze({
+  category: 'system' as const,
+  reason,
+})
 
 const hasOwn = (value: object, property: PropertyKey): boolean =>
   Object.prototype.hasOwnProperty.call(value, property)
@@ -87,21 +120,12 @@ const readComponentProps = (
 export const resolvePartWithStatus = (input: ResolvePartInput): PartResolution => {
   const entry = input.uiCatalog.byPartKey[input.placement.partKey]
   if (entry === undefined) {
+    const failure = createContentFailure(input, 'missing-catalog-entry')
     input.reportPartDiagnostic({
       event: 'missing-catalog-entry',
-      data: {partKey: input.placement.partKey, displayMode: input.displayMode},
-    })
-    return {
-      kind: 'fallback',
-      reason: 'missing-catalog-entry',
-      node: createElement(RenderFallback, {reason: 'missing-catalog-entry', key: input.elementKey}),
-    }
-  }
-
-  if (!isUiCatalogEntryAvailable(entry, input.containerKey, input.catalogContext)) {
-    input.reportPartDiagnostic({
-      event: 'incompatible-catalog-entry',
       data: {
+        category: 'content',
+        reason: failure.reason,
         partKey: input.placement.partKey,
         displayMode: input.displayMode,
         containerKey: input.containerKey,
@@ -110,16 +134,39 @@ export const resolvePartWithStatus = (input: ResolvePartInput): PartResolution =
     })
     return {
       kind: 'fallback',
-      reason: 'incompatible-catalog-entry',
-      node: createElement(RenderFallback, {reason: 'incompatible-catalog-entry', key: input.elementKey}),
+      failure,
+      node: createElement(RenderFallback, {failure, key: input.elementKey}),
+    }
+  }
+
+  if (!isUiCatalogEntryAvailable(entry, input.containerKey, input.catalogContext)) {
+    const failure = createContentFailure(input, 'incompatible-catalog-entry')
+    input.reportPartDiagnostic({
+      event: 'incompatible-catalog-entry',
+      data: {
+        category: 'content',
+        reason: failure.reason,
+        partKey: input.placement.partKey,
+        displayMode: input.displayMode,
+        containerKey: input.containerKey,
+        surfaceForm: input.catalogContext.surfaceForm,
+      },
+    })
+    return {
+      kind: 'fallback',
+      failure,
+      node: createElement(RenderFallback, {failure, key: input.elementKey}),
     }
   }
 
   const binding = input.rendererCatalog.resolve(entry.rendererKey)
   if (binding === undefined) {
+    const failure = createSystemFailure('missing-renderer')
     input.reportPartDiagnostic({
       event: 'missing-renderer',
       data: {
+        category: 'system',
+        reason: failure.reason,
         partKey: input.placement.partKey,
         displayMode: input.displayMode,
         rendererKey: entry.rendererKey,
@@ -127,25 +174,30 @@ export const resolvePartWithStatus = (input: ResolvePartInput): PartResolution =
     })
     return {
       kind: 'fallback',
-      reason: 'missing-renderer',
-      node: createElement(RenderFallback, {reason: 'missing-renderer', key: input.elementKey}),
+      failure,
+      node: createElement(RenderFallback, {failure, key: input.elementKey}),
     }
   }
 
   const componentProps = readComponentProps(input.placement)
   if (componentProps.props === undefined) {
+    const failure = createContentFailure(input, 'invalid-props')
     input.reportPartDiagnostic({
       event: 'invalid-props-shape',
       data: {
+        category: 'content',
+        reason: failure.reason,
         partKey: input.placement.partKey,
         displayMode: input.displayMode,
+        containerKey: input.containerKey,
+        surfaceForm: input.catalogContext.surfaceForm,
         valueType: valueType(componentProps.invalidValue),
       },
     })
     return {
       kind: 'fallback',
-      reason: 'invalid-props',
-      node: createElement(RenderFallback, {reason: 'invalid-props', key: input.elementKey}),
+      failure,
+      node: createElement(RenderFallback, {failure, key: input.elementKey}),
     }
   }
 

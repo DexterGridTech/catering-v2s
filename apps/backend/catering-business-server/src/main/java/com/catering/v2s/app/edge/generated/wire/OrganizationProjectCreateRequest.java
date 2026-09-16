@@ -2,8 +2,8 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationProjectCreateRequest(
-    String code,
-    String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "code", required = true) String code,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
     String notes,
     tools.jackson.databind.JsonNode extensionValues,
     java.util.List<OrganizationProjectCreateRequestPhasesItem> phases

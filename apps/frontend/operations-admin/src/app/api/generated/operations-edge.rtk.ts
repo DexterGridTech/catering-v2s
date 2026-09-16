@@ -456,6 +456,14 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    getOperationsOrganizationStoreOperatingRule: (pathParameters: FaceOperationContracts["getOperationsOrganizationStoreOperatingRule"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStoreOperatingRule">): FaceOperationRequest<"getOperationsOrganizationStoreOperatingRule"> => ({
+      operationId: "getOperationsOrganizationStoreOperatingRule",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getOperationsOrganizationStores: (pathParameters: FaceOperationContracts["getOperationsOrganizationStores"]["path"], options: FaceOperationOptions<"getOperationsOrganizationStores">): FaceOperationRequest<"getOperationsOrganizationStores"> => ({
       operationId: "getOperationsOrganizationStores",
       method: "GET",
@@ -1364,6 +1372,10 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsOrganizationStoreExtensionDefinition: build.query<FaceOperationContracts["getOperationsOrganizationStoreExtensionDefinition"]["response"], FaceOperationRequest<"getOperationsOrganizationStoreExtensionDefinition">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsOrganizationStoreOperatingRule: build.query<FaceOperationContracts["getOperationsOrganizationStoreOperatingRule"]["response"], FaceOperationRequest<"getOperationsOrganizationStoreOperatingRule">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),

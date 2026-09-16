@@ -3,7 +3,7 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceOperationsInvitationActionRequest(
     java.util.UUID scopeRef,
-    Long expectedContextVersion,
-    Long expectedVersion,
-    String idempotencyKey
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedContextVersion", required = true) Long expectedContextVersion,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "idempotencyKey", required = true) String idempotencyKey
 ) {}

@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceSelectContextRequest(
-    java.util.UUID roleAssignmentRef,
-    Long requiredContextVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "roleAssignmentRef", required = true) java.util.UUID roleAssignmentRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "requiredContextVersion", required = true) Long requiredContextVersion
 ) {}

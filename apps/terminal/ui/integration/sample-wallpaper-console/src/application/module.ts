@@ -5,6 +5,7 @@ import {
   type ActorDefinition,
   type RuntimeModule,
 } from '@catering-v2s/kernel-base-runtime'
+import type {ContentFailureReason} from '@catering-v2s/ui-base-render'
 import {runtimeModuleDependencyNames} from '../dependencies'
 import {createWallpaperConsolePlacementActor} from '../features/actors/actors'
 import {moduleKind, moduleName} from '../moduleName'
@@ -12,7 +13,8 @@ import {moduleKind, moduleName} from '../moduleName'
 export type SampleWallpaperConsoleReadyPayload = Readonly<{
   readonly surfaceKey: 'PRIMARY'
   readonly displayIndex: 0
-  readonly readyPartKey: string
+  readonly readyPartKey: string | null
+  readonly contentFailure: ContentFailureReason | null
 }>
 
 export const startupReadyCommand = defineCommand<SampleWallpaperConsoleReadyPayload>(moduleName, {
@@ -30,6 +32,7 @@ const createStartupReadyActor = (): ActorDefinition => defineActor(moduleName, '
         surfaceKey: context.command.payload.surfaceKey,
         displayIndex: context.command.payload.displayIndex,
         readyPartKey: context.command.payload.readyPartKey,
+        contentFailure: context.command.payload.contentFailure,
         writer: 'ui.base.console-assembly',
       },
     })

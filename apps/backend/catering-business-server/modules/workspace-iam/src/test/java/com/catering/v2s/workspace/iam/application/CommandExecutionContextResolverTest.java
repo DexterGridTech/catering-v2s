@@ -30,7 +30,8 @@ class CommandExecutionContextResolverTest {
     @Test
     void carriesOnlyOrganizationJudgedBrandAndBrandCopySource() {
         CatalogScopeLookup lookup = lookup();
-        CommandExecutionContextResolver resolver = new CommandExecutionContextResolver(capabilities(), lookup);
+        CommandExecutionContextResolver resolver = new CommandExecutionContextResolver(
+                capabilities(), lookup, null, (workspace, group, targetType, storeId) -> {});
         WorkspaceCommandOperationToken token =
                 CatalogInventoryWorkspaceCommandTokens.EXECUTE_OPERATIONS_BRAND_CATALOG_COPY;
 
@@ -57,7 +58,8 @@ class CommandExecutionContextResolverTest {
     @Test
     void leavesLocalAndTemporarySourcesToTheirStaticOwnerPolicies() {
         CatalogScopeLookup lookup = lookup();
-        CommandExecutionContextResolver resolver = new CommandExecutionContextResolver(capabilities(), lookup);
+        CommandExecutionContextResolver resolver = new CommandExecutionContextResolver(
+                capabilities(), lookup, null, (workspace, group, targetType, storeId) -> {});
         WorkspaceCommandOperationToken local =
                 CatalogInventoryWorkspaceCommandTokens.PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY;
         WorkspaceCommandOperationToken promotion =
@@ -92,7 +94,8 @@ class CommandExecutionContextResolverTest {
 
     @Test
     void mapsAuthenticatedCatalogScopeOutsideTheGeneratedTokenToTypedForbidden() {
-        CommandExecutionContextResolver resolver = new CommandExecutionContextResolver(capabilities(), lookup());
+        CommandExecutionContextResolver resolver = new CommandExecutionContextResolver(
+                capabilities(), lookup(), null, (workspace, group, targetType, storeId) -> {});
         WorkspaceCommandOperationToken token =
                 CatalogInventoryWorkspaceCommandTokens.TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS;
 
@@ -113,7 +116,8 @@ class CommandExecutionContextResolverTest {
         WorkspaceSessionReadback session = session("EDIT_STORE_CATALOG");
         RecordingAuthenticationService authentication = new RecordingAuthenticationService(commandFacts(session));
         CommandExecutionContextResolver resolver =
-                new CommandExecutionContextResolver(capabilities(), lookup(), authentication);
+                new CommandExecutionContextResolver(
+                        capabilities(), lookup(), authentication, (workspace, group, targetType, storeId) -> {});
 
         WorkspaceCommandAuthorizationFacts facts = resolver.resolveOperations("fresh-session-credential", GROUP);
 
@@ -127,7 +131,8 @@ class CommandExecutionContextResolverTest {
         RecordingAuthenticationService authentication =
                 new RecordingAuthenticationService(commandFacts(session("EDIT_STORE_CATALOG")));
         CommandExecutionContextResolver resolver =
-                new CommandExecutionContextResolver(capabilities(), lookup(), authentication);
+                new CommandExecutionContextResolver(
+                        capabilities(), lookup(), authentication, (workspace, group, targetType, storeId) -> {});
 
         assertThrows(
                 WorkspaceAuthenticationService.SessionInvalidException.class,
@@ -140,7 +145,8 @@ class CommandExecutionContextResolverTest {
         RecordingAuthenticationService authentication =
                 new RecordingAuthenticationService(commandFacts(session("EDIT_STORE_CATALOG")));
         CommandExecutionContextResolver resolver =
-                new CommandExecutionContextResolver(capabilities(), lookup(), authentication);
+                new CommandExecutionContextResolver(
+                        capabilities(), lookup(), authentication, (workspace, group, targetType, storeId) -> {});
 
         assertThrows(
                 WorkspaceAuthenticationService.SessionConflictException.class,
@@ -149,7 +155,8 @@ class CommandExecutionContextResolverTest {
     }
 
     private static CommandExecutionContextResolver resolver(CatalogScopeLookup lookup) {
-        return new CommandExecutionContextResolver(capabilities(), lookup);
+        return new CommandExecutionContextResolver(
+                capabilities(), lookup, null, (workspace, group, targetType, storeId) -> {});
     }
 
     private static WorkspaceCapabilityScopeResolver capabilities() {

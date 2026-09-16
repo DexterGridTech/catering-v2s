@@ -5,6 +5,7 @@ import {operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTra
 import type {AuditChange, AuditHistoryItem, AuditHistoryPage} from '../../../app/api/generated/operations-edge';
 import {OPERATIONS_ADMIN_OPERATION_IDS} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
+import {auditFieldLabel, auditValue} from './auditChangePresentation';
 
 type AuditEntityType = Parameters<
   typeof operationsAdminRtkRequest.getOperationsEntityAuditHistory
@@ -48,28 +49,6 @@ const actionLabels: Record<string, string> = {
   ROLE_PERMISSIONS_REPLACED: '已更新业务角色授权',
   WORKSPACE_ROLE_STATUS_CHANGED: '已更新业务角色状态',
 };
-const fieldLabels: Record<string, string> = {
-  status: '状态',
-  displayName: '显示名称',
-  name: '名称',
-  legalName: '法定名称',
-  creditCode: '统一代码',
-  alias: '别名',
-  remark: '备注',
-  notes: '说明',
-  description: '说明',
-  contractNo: '合同编号',
-  effectiveFrom: '生效日期',
-  effectiveTo: '失效日期',
-  relationship: '关联关系',
-  lifecycleEvent: '生命周期事件',
-  serviceNodeAssignment: '任职',
-  pageAccessKeys: '可使用的功能菜单',
-  capabilityKeys: '可执行的操作',
-  phaseName: '项目分期',
-  items: '货号',
-};
-
 function formatOccurredAt(value: number) {
   return new Intl.DateTimeFormat('zh-CN', {dateStyle: 'medium', timeStyle: 'medium', timeZone: 'Asia/Shanghai'}).format(
     new Date(value),
@@ -77,7 +56,6 @@ function formatOccurredAt(value: number) {
 }
 
 const action = (value: string) => actionLabels[value] ?? '已记录操作';
-const field = (value: string) => fieldLabels[value] ?? '字段变更';
 
 /** Approved R5 master-detail read only: it is never a route, Drawer, or list action column. */
 export function OperationsAuditHistoryModal({
@@ -282,9 +260,9 @@ function AuditDetail({item}: {item: AuditHistoryItem}) {
         dataSource={item.changes}
         locale={{emptyText: '该操作不包含可展示的字段变更'}}
         columns={[
-          {title: '字段', dataIndex: 'fieldKey', render: field},
-          {title: '变更前', dataIndex: 'beforeValue', render: (value: string) => value || '—'},
-          {title: '变更后', dataIndex: 'afterValue', render: (value: string) => value || '—'},
+          {title: '字段', dataIndex: 'fieldKey', render: (_, change) => auditFieldLabel(change)},
+          {title: '变更前', dataIndex: 'beforeValue', render: (_, change) => auditValue(change, 'before')},
+          {title: '变更后', dataIndex: 'afterValue', render: (_, change) => auditValue(change, 'after')},
         ]}
       />
     </>

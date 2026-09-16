@@ -10,7 +10,7 @@ export const unavailableConnectorPort: ConnectorPort = {
   on: async <TEvent extends ConnectorValue>(_input: Parameters<ConnectorPort['on']>[0]): Promise<PortResult<ConnectorSubscription>> => createUnavailable('connector', 'on'),
 };
 
-Object.defineProperty(unavailableConnectorPort, PORT_DESCRIPTOR_KEY, {
+if (__DEV__) Object.defineProperty(unavailableConnectorPort, PORT_DESCRIPTOR_KEY, {
   value: Object.freeze({
     port: 'connector',
     capabilities: Object.freeze([

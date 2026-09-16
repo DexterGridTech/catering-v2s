@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.app.edge.generated.wire.OrganizationStoreCreateRequest;
+import com.catering.v2s.app.edge.generated.wire.OrganizationStoreOperatingRuleValues;
 import com.catering.v2s.app.edge.generated.wire.OrganizationStoreSortDirection;
 import com.catering.v2s.app.edge.generated.wire.OrganizationStoreSortKey;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionCookie;
@@ -21,6 +22,8 @@ import com.catering.v2s.contract.application.ContractTaskReadService;
 import com.catering.v2s.organization.api.OperationsStoreCommandApi;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
+import com.catering.v2s.organization.api.StoreOperatingRuleReadback;
+import com.catering.v2s.organization.domain.generated.StoreOperatingRuleCatalog;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionEntryReadback;
@@ -375,6 +378,9 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                         10L,
                         11L,
                         Map.of()));
+        when(fixture.entities.requireStoreOperatingRuleSwitches(fixture.workspaceId, KEY, storeId))
+                .thenReturn(new StoreOperatingRuleReadback(
+                        storeId, StoreOperatingRuleCatalog.values(Map.of(), false)));
         when(fixture.overview.readStoreDetail(
                         new OperationsStoreCommandApi.StoreDetailQuery(fixture.workspaceId, KEY, storeId)))
                 .thenReturn(new OperationsStoreCommandApi.StoreOrganizationDetailReadback(
@@ -426,7 +432,20 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                         "STORE-01",
                         "门店一",
                         "备注",
-                        JSON.createObjectNode().put("remark", "test")));
+                        JSON.createObjectNode().put("remark", "test"),
+                        new OrganizationStoreOperatingRuleValues(
+                                false,
+                                false,
+                                "",
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false)));
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals("门店一", response.getBody().name());
@@ -457,6 +476,7 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                         IDEMPOTENCY_KEY,
                         fixture.actor,
                         grant));
+        verify(fixture.entities).requireStoreOperatingRuleSwitches(fixture.workspaceId, KEY, storeId);
     }
 
     private static Fixture fixture() {

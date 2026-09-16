@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OperationsPasswordRecoveryOtpSendResponse(
-    Long expiresAt,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expiresAt", required = true) Long expiresAt,
     String debugVerificationCode
 ) {}

@@ -2,9 +2,9 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record PlatformAdminCreateRequest(
-    String loginName,
-    String userName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "loginName", required = true) String loginName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "userName", required = true) String userName,
     String mobile,
-    String password,
-    String idempotencyKey
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "password", required = true) String password,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "idempotencyKey", required = true) String idempotencyKey
 ) {}

@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record ExternalSystemStatusRequest(
-    String status,
-    Long expectedVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) String status,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion
 ) {}

@@ -1,5 +1,5 @@
 import type {ComponentProps} from 'react';
-import {CatalogItemDrawer} from '../../catalog-management/ui/CatalogItemDrawer';
+import {CatalogItemDrawer} from '../../catalog-management/CatalogItemDrawer';
 import {SalesMenuCandidateDrawer} from './SalesMenuCandidateDrawer';
 import {SalesMenuCreateModal} from './SalesMenuCreateModal';
 import {SalesMenuItemDetailDrawer} from './SalesMenuItemDetailDrawer';

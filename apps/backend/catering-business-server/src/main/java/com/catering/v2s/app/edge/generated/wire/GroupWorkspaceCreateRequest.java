@@ -2,11 +2,11 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record GroupWorkspaceCreateRequest(
-    String groupWorkspaceKey,
-    String name,
-    String operationsTitle,
-    java.util.UUID logoAssetRef,
-    String logoBindGrant,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "groupWorkspaceKey", required = true) String groupWorkspaceKey,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "operationsTitle", required = true) String operationsTitle,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "logoAssetRef", required = true) java.util.UUID logoAssetRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "logoBindGrant", required = true) String logoBindGrant,
     String notes,
-    String idempotencyKey
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "idempotencyKey", required = true) String idempotencyKey
 ) {}

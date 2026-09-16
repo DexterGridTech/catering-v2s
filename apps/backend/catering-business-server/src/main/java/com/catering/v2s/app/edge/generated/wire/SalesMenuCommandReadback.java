@@ -2,9 +2,9 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuCommandReadback(
-    String operationKind,
-    java.util.UUID salesMenuRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "operationKind", required = true) String operationKind,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "salesMenuRef", required = true) java.util.UUID salesMenuRef,
     java.util.UUID targetRef,
-    Long version,
-    String readbackStatus
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "version", required = true) Long version,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "readbackStatus", required = true) String readbackStatus
 ) {}

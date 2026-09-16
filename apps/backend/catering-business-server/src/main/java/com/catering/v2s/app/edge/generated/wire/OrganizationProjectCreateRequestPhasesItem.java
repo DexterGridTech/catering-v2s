@@ -2,5 +2,5 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationProjectCreateRequestPhasesItem(
-    String name
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name
 ) {}

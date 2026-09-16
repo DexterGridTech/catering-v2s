@@ -41,6 +41,9 @@ const EXTENSION_HOST_TYPES = new Set([
 ]);
 const FLAT_EXTENSION_HOST_TYPES = new Set(['BRAND', 'TENANT', 'HEAD_COMPANY', 'STORE', 'CONTRACT']);
 const EXTENSION_FIELD_TYPES = new Set(['TEXT', 'NUMBER', 'DATE', 'BOOLEAN', 'SELECT']);
+const storeOperatingRuleCatalogPath = path.join(root, 'contracts/catalog/store-operating-rule-switches.json');
+const STORE_OPERATING_RULE_CATALOG = JSON.parse(readFileSync(storeOperatingRuleCatalogPath, 'utf8'));
+const STORE_OPERATING_RULE_DEFINITIONS = Object.freeze(STORE_OPERATING_RULE_CATALOG.definitions ?? []);
 
 export class FormalSeedFailure extends Error {
   constructor(code) { super(code); this.code = code; }
@@ -143,6 +146,50 @@ export function validateExtensionDefinitionRevisionChangeCoverage(fixture) {
     seen.add(change.definitionKey);
   }
   return Object.freeze({changeCount: changes.length, definitionKeys: [...seen]});
+}
+
+function validateStoreOperatingRuleValues(storeKey, values, requireCatalogManagementEnabled = true) {
+  if (!values || typeof values !== 'object' || Array.isArray(values)) fail(`SEED_STORE_OPERATING_RULE_VALUES_INVALID:${storeKey}`);
+  const expectedKeys = STORE_OPERATING_RULE_DEFINITIONS.map((definition) => definition.key);
+  const actualKeys = Object.keys(values);
+  if (actualKeys.length !== expectedKeys.length || expectedKeys.some((key) => !Object.hasOwn(values, key))
+    || actualKeys.some((key) => !expectedKeys.includes(key))) {
+    fail(`SEED_STORE_OPERATING_RULE_KEYS_INVALID:${storeKey}`);
+  }
+  for (const definition of STORE_OPERATING_RULE_DEFINITIONS) {
+    const value = values[definition.key];
+    const valid = definition.type === 'BOOLEAN' ? typeof value === 'boolean'
+      : definition.type === 'NUMBER' ? typeof value === 'number' && Number.isFinite(value)
+      : typeof value === 'string';
+    if (!valid) fail(`SEED_STORE_OPERATING_RULE_TYPE_INVALID:${storeKey}:${definition.key}`);
+  }
+  if (requireCatalogManagementEnabled && values.catalogManagementEnabled !== true) {
+    fail(`SEED_STORE_CATALOG_MANAGEMENT_NOT_ENABLED:${storeKey}`);
+  }
+  return values;
+}
+
+export function validateStoreOperatingRuleSeedCoverage(fixture) {
+  const stores = fixture?.stableFixtures?.organization?.stores;
+  if (!Array.isArray(stores) || stores.length === 0) fail('SEED_STORE_OPERATING_RULE_STORE_SET_INVALID');
+  for (const store of stores) validateStoreOperatingRuleValues(store?.key, store?.operatingRuleSwitches);
+  return Object.freeze({storeCount: stores.length, ruleCount: STORE_OPERATING_RULE_DEFINITIONS.length});
+}
+
+export function storeOperatingRuleValuesForSeed(store) {
+  validateStoreOperatingRuleValues(store?.key, store?.operatingRuleSwitches);
+  return Object.freeze({...store.operatingRuleSwitches});
+}
+
+export function assertStoreOperatingRuleReadback(response, storeKey, expectedValues) {
+  const actual = response?.json?.operatingRuleSwitches;
+  validateStoreOperatingRuleValues(storeKey, actual);
+  for (const definition of STORE_OPERATING_RULE_DEFINITIONS) {
+    if (actual[definition.key] !== expectedValues[definition.key]) {
+      fail(`SEED_STORE_OPERATING_RULE_READBACK_INVALID:${storeKey}:${definition.key}`);
+    }
+  }
+  return actual;
 }
 const defaultSeedLogoBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+X+0JXwAAAABJRU5ErkJggg==', 'base64');
 
@@ -277,6 +324,7 @@ export function validateFormalSeedStaticInputs({fixture, registry}) {
   validateThreeStateSeedCoverage(fixture);
   validateExtensionDefinitionSeedCoverage(fixture);
   validateExtensionDefinitionRevisionChangeCoverage(fixture);
+  validateStoreOperatingRuleSeedCoverage(fixture);
   const groupRole = fixture?.stableFixtures?.workspaceIam?.roles?.find((entry) => entry.key === 'role-group');
   if (!groupRole || GROUP_SEED_CAPABILITIES.some((capability) => !groupRole.actionCapabilityKeys?.includes(capability))) {
     const missing = GROUP_SEED_CAPABILITIES.find((capability) => !groupRole?.actionCapabilityKeys?.includes(capability)) ?? 'role-group';
@@ -659,7 +707,9 @@ async function executeFormalSeed() {
     for (const store of fixture.stableFixtures.organization.stores) {
       await selectProjectScope({projectRef: requireValue(ids.project[store.project]?.id, 'SEED_PROJECT_ID'), stage: `project-select-store-${store.key}`});
       const extensionValues = extensionValuesFor('gw-aurora', 'STORE', store.extensionValues);
-      const created = await request(`store-${store.key}`, 'createOperationsOrganizationStore', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {brandId: requireValue(ids.brand[store.brand]?.id, 'SEED_BRAND_ID'), tenantId: requireValue(ids.tenant[store.tenant]?.id, 'SEED_TENANT_ID'), headCompanyId: requireValue(ids.headCompany[store.headCompany]?.id, 'SEED_HEAD_COMPANY_ID'), code: store.code, name: store.name, extensionValues: extensionSubmission(extensionValues)}});
+      const operatingRuleSwitches = storeOperatingRuleValuesForSeed(store);
+      const created = await request(`store-${store.key}`, 'createOperationsOrganizationStore', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {brandId: requireValue(ids.brand[store.brand]?.id, 'SEED_BRAND_ID'), tenantId: requireValue(ids.tenant[store.tenant]?.id, 'SEED_TENANT_ID'), headCompanyId: requireValue(ids.headCompany[store.headCompany]?.id, 'SEED_HEAD_COMPANY_ID'), code: store.code, name: store.name, extensionValues: extensionSubmission(extensionValues), operatingRuleSwitches}});
+      assertStoreOperatingRuleReadback(created, store.key, operatingRuleSwitches);
       assertExtensionValueReadback(created, extensionValues); extensionReadback.STORE += 1; ids.store[store.key] = created.json;
     }
     // Materialize every declared invitation state through public owner commands.

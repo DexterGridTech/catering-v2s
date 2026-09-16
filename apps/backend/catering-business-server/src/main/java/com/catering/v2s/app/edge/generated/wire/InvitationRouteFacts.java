@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record InvitationRouteFacts(
-    String groupWorkspaceKey,
-    String invitationToken
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "groupWorkspaceKey", required = true) String groupWorkspaceKey,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "invitationToken", required = true) String invitationToken
 ) {}

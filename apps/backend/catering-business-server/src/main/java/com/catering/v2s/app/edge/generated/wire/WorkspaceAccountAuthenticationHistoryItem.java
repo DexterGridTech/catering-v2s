@@ -2,5 +2,5 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceAccountAuthenticationHistoryItem(
-    Long authenticatedAt
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "authenticatedAt", required = true) Long authenticatedAt
 ) {}

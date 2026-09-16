@@ -2,8 +2,8 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record BusinessChannelTemplateUpdateRequest(
-    String templateName,
-    Long expectedVersion,
-    BusinessChannelTemplateStoreVisibilityScope storeVisibilityScope,
-    java.util.List<java.util.UUID> visibleStoreRefs
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "templateName", required = true) String templateName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "storeVisibilityScope", required = true) BusinessChannelTemplateStoreVisibilityScope storeVisibilityScope,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "visibleStoreRefs", required = true) java.util.List<java.util.UUID> visibleStoreRefs
 ) {}

@@ -43,6 +43,10 @@ const secondary = createSurfaceForDisplayIndex(assembly, 1)
 ```
 
 调用方可通过可选的 `terminalSurfaces` 整份覆盖本包默认配置；未传入时使用本包 `package.json`，而具体形态仍由本包按 `surfaceForm` 选择。
+本包 `package.json` 的 `showAdminPassword` 控制 admin 登录提示旁是否显示当前动态口令；调用方显式传入的值优先。
+
+admin console 的 laptop/mobile 版式与导航语义由 `ui.base.admin-shell` 的 form-specific renderer 负责：laptop
+使用 master-detail，mobile 使用可换行 tablist；内容标题通过 polite live region 宣布，焦点 scope 的关闭/恢复仍由既有 terminal layer 管线负责。
 
 `displayIndex` 只选择物理 host source；`displayMode` 由 display-context 统一推导并决定画布
 与 catalog placement。mobile 只创建主屏，不调用副屏入口。Web 预览由 dev-host 通过 URL

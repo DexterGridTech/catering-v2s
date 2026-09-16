@@ -75,6 +75,51 @@ const FULL_CATALOG_PARITY_DELIVERY_PHASE = 'P4';
 // operation's catalog capability; direct inventory writes retain their own
 // EDIT_STORE_INVENTORY requirement.
 const CATALOG_SAVE_INVENTORY_DEFINITION_COMMANDS = Object.freeze(['replaceCatalogInventoryRules']);
+const STORE_CATALOG_MANAGEMENT_DISABLED = 'ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED';
+// These are the complete store-target mutation operations in this edge.  The
+// three copy preflights are deliberately absent: they validate a candidate,
+// but do not mutate store catalog data.  The execution commands are included
+// and are gated by the generated workspace-command token at the owner boundary.
+const STORE_CATALOG_MANAGEMENT_GATE_OPERATION_IDS = new Set([
+  'createOperationsCatalogItem',
+  'saveOperationsCatalogItem',
+  'transitionOperationsCatalogItemStatus',
+  'batchTransitionOperationsCatalogItemStatus',
+  'createOperationsCatalogCategory',
+  'updateOperationsCatalogCategory',
+  'moveOperationsCatalogCategory',
+  'createOperationsCatalogDictionaryEntry',
+  'updateOperationsCatalogDictionaryEntry',
+  'reorderOperationsCatalogDictionaryEntry',
+  'transitionOperationsCatalogDictionaryEntryStatus',
+  'createOperationsProductionTag',
+  'updateOperationsProductionTag',
+  'transitionOperationsProductionTagStatus',
+  'executeOperationsLocalCatalogCopy',
+  'executeOperationsTemporaryCatalogItemPromotion',
+  'executeOperationsBrandCatalogCopy',
+  'countOperationsInventoryTarget',
+  'increaseOperationsInventoryTarget',
+  'adjustOperationsInventoryTarget',
+  'updateOperationsInventoryTargetConfiguration',
+  'stageOperationsCatalogAsset',
+  'releaseOperationsCatalogStagedAsset',
+  'createOperationsCatalogAttributeDefinition',
+  'updateOperationsCatalogAttributeDefinition',
+  'createOperationsCatalogOrderOptionDefinition',
+  'updateOperationsCatalogOrderOptionDefinition',
+  'createOperationsCatalogUnit',
+  'updateOperationsCatalogUnit',
+  'transitionOperationsCatalogAttributeDefinitionStatus',
+  'transitionOperationsCatalogOrderOptionDefinitionStatus',
+  'transitionOperationsCatalogUnitStatus',
+  'transitionOperationsCatalogCategoryStatus',
+]);
+const storeCatalogManagementGateCondition = {
+  precedence: 0,
+  problemCode: STORE_CATALOG_MANAGEMENT_DISABLED,
+  conditions: ['The resolved store has not enabled catalog, inventory and sales-menu management.'],
+};
 
 function abs(rel) {
   return path.join(ROOT, rel);
@@ -1920,7 +1965,18 @@ const catalogOperationMetadata = [
     responseComponent: 'CatalogItemSkuPage',
     problemCodes: ['VALIDATION_ERROR', 'SCOPE_FORBIDDEN', 'NOT_FOUND'],
   }),
-];
+].map(entry =>
+  STORE_CATALOG_MANAGEMENT_GATE_OPERATION_IDS.has(entry.operationId)
+    ? {
+        ...entry,
+        problemCodes: Array.from(new Set([...entry.problemCodes, STORE_CATALOG_MANAGEMENT_DISABLED])),
+        conditionToProblem: [
+          storeCatalogManagementGateCondition,
+          ...entry.conditionToProblem,
+        ],
+      }
+    : entry,
+);
 const catalogBudgetProjection = projectedCatalogOperationMetadata(catalogOperationMetadata);
 const operationMetadata = catalogBudgetProjection.catalogOperations;
 

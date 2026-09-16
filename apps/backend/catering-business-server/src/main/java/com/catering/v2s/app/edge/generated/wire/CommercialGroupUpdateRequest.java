@@ -2,8 +2,8 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record CommercialGroupUpdateRequest(
-    String groupCode,
-    String groupName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "groupCode", required = true) String groupCode,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "groupName", required = true) String groupName,
     tools.jackson.databind.JsonNode extensionValues,
-    Long expectedVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion
 ) {}

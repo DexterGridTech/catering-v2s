@@ -21,6 +21,7 @@ const tableRowStyle = Object.freeze({flexWrap: 'nowrap' as const, alignItems: 'c
 const capabilityStyle = Object.freeze({flex: 2, minWidth: 0, fontSize: 12, lineHeight: 16})
 const stateStyle = Object.freeze({flex: 1, minWidth: 0, fontSize: 12, lineHeight: 16})
 const sourceStyle = Object.freeze({flex: 1, minWidth: 0, fontSize: 12, lineHeight: 16})
+const sectionStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0})
 
 const stateLabelOf = (state: CapabilityRow['state']): string => {
   if (state === 'real') return '可用'
@@ -48,7 +49,7 @@ const rowsOf = (context: AdminSectionProps['context']): readonly CapabilityRow[]
 })
 
 export const PlatformPortsSection = ({context}: AdminSectionProps) => (
-  <PrimitiveContainer testID="admin.console.platform-ports" layout="content" bounded>
+  <PrimitiveContainer testID="admin.console.platform-ports" layout="content" bounded style={sectionStyle}>
     <PrimitiveHeading testID="admin.console.platform-ports:title">{context.catalogEntry.title}</PrimitiveHeading>
     <PrimitiveGrid testID="admin.console.platform-ports:columns" style={tableRowStyle}>
       <PrimitiveText testID="admin.console.platform-ports:columns:capability" style={capabilityStyle}>能力</PrimitiveText>

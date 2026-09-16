@@ -1,5 +1,6 @@
 import {act, create} from 'react-test-renderer';
 import {useCallback, useState} from 'react';
+import {StyleSheet} from 'react-native';
 import {describe, expect, it, vi} from 'vitest';
 import {VirtualKeyboard} from '../src/components/VirtualKeyboard';
 
@@ -25,6 +26,30 @@ const KeyboardHarness = () => {
 };
 
 describe('VirtualKeyboard render boundary', () => {
+  it('owns an opaque surface background instead of inheriting the host background', () => {
+    let renderer: ReturnType<typeof create> | undefined;
+    act(() => {
+      renderer = create(
+        <VirtualKeyboard
+          layout="numeric"
+          height={250}
+          frameWidth={TEST_FRAME_WIDTH}
+          cellWidth={310}
+          shift={false}
+          capsLock={false}
+          hasNextField={false}
+          onKey={() => undefined}
+        />,
+      );
+    });
+
+    const keyboard = renderer!.root.findByProps({testID: 'ui.base.input:virtual-keyboard'});
+    expect(StyleSheet.flatten(keyboard.props.style)).toMatchObject({backgroundColor: '#FFFFFF'});
+    act(() => {
+      renderer!.unmount();
+    });
+  });
+
   it('keeps ordinary key handlers stable while the parent updates', () => {
     let renderer: ReturnType<typeof create> | undefined;
     act(() => {
@@ -122,7 +147,10 @@ describe('VirtualKeyboard render boundary', () => {
         />,
       );
     });
-    renderer!.root.findByProps({testID: 'ui.base.input:virtual-keyboard:complete'}).props.onPress();
+    const complete = renderer!.root.findByProps({testID: 'ui.base.input:virtual-keyboard:complete'});
+    expect(complete.props.children).toBe('↵');
+    expect(complete.props.accessibilityLabel).toBe('回车');
+    complete.props.onPress();
     expect(onKey).toHaveBeenCalledWith({kind: 'complete', hasNextField: false});
     act(() => {
       renderer!.unmount();

@@ -3,7 +3,10 @@ package com.catering.v2s.organization.application.persistence;
 import com.catering.v2s.organization.api.BusinessEntityTypes;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -35,6 +38,42 @@ public class StorePersistence {
                 });
     }
 
+    public String readOperatingRuleSwitches(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
+        return jdbc.query(
+                StoreServiceSql.STORE_SERVICE_SELECT_OPERATING_RULE_SWITCHES_TEXT,
+                statement -> {
+                    statement.setObject(1, storeId);
+                    statement.setObject(2, workspaceUuid);
+                    statement.setString(3, groupWorkspaceKey);
+                },
+                result -> {
+                    if (!result.next()) throw new IllegalStateException("store operating rules not found");
+                    return result.getString(1);
+                });
+    }
+
+    public Map<UUID, String> readOperatingRuleSwitches(
+            UUID workspaceUuid, String groupWorkspaceKey, List<UUID> storeIds) {
+        if (storeIds == null || storeIds.isEmpty()) return Map.of();
+        List<UUID> ids = storeIds.stream().distinct().toList();
+        String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
+        Object[] parameters = new Object[ids.size() + 2];
+        parameters[0] = workspaceUuid;
+        parameters[1] = groupWorkspaceKey;
+        for (int index = 0; index < ids.size(); index++) parameters[index + 2] = ids.get(index);
+        Map<UUID, String> values = new LinkedHashMap<>();
+        jdbc.query(
+                StoreServiceSql.STORE_SERVICE_SELECT_OPERATING_RULE_SWITCHES_BATCH_PREFIX
+                        + placeholders
+                        + StoreServiceSql.STORE_SERVICE_SELECT_OPERATING_RULE_SWITCHES_BATCH_SUFFIX,
+                (row, index) -> {
+                    values.put(row.getObject(1, UUID.class), row.getString(2));
+                    return null;
+                },
+                parameters);
+        return Map.copyOf(values);
+    }
+
     public int insert(
             UUID id,
             UUID workspaceUuid,
@@ -46,10 +85,11 @@ public class StorePersistence {
             String code,
             String name,
             String notes,
+            String operatingRuleSwitches,
             long now) {
         return jdbc.update(
                 StoreServiceSql.STORE_SERVICE_INSERT_INTO_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PROJECT_ID_TENANT_ID
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_BRAND_ID_HEAD_COMPANY_ID_CODE_NAME
+                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_BRAND_ID_HEAD_COMPANY_ID_CODE_NAME_NOTES_OPERATING_RULE
                         + StoreServiceSql.STORE_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_ENABLED,
                 id,
                 workspaceUuid,
@@ -61,6 +101,7 @@ public class StorePersistence {
                 code,
                 name,
                 notes,
+                operatingRuleSwitches,
                 now,
                 now);
     }
@@ -76,11 +117,12 @@ public class StorePersistence {
             String code,
             String name,
             String notes,
+            String operatingRuleSwitches,
             long now,
             long expectedVersion) {
         return jdbc.update(
                 StoreServiceSql.STORE_SERVICE_UPDATE_STORE_PROJECT_ID_TENANT_ID_BRAND_ID_HEAD_COMPANY_ID
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_NAME_NOTES_VERSION_UPDATED_AT_EPOCH_MILLIS
+                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_NAME_NOTES_OPERATING_RULE_VERSION_UPDATED_AT_EPOCH_MILLIS
                         + StoreServiceSql.STORE_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
                 projectId,
                 tenantId,
@@ -89,6 +131,7 @@ public class StorePersistence {
                 code,
                 name,
                 notes,
+                operatingRuleSwitches,
                 now,
                 storeId,
                 workspaceUuid,

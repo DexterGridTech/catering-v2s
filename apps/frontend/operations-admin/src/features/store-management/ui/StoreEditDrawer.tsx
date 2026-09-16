@@ -1,4 +1,17 @@
-import {Alert, Button, DatePicker, Drawer, Form, Input, InputNumber, Select, Space, Switch, Typography} from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  DatePicker,
+  Drawer,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  Space,
+  Switch,
+  Typography,
+} from 'antd';
 import {
   adminDrawerSurfaceProps,
   NameCodeText,
@@ -11,11 +24,19 @@ import {operationsClient, operationsProblemOf, operationsRtk} from '../../../app
 import {
   OPERATIONS_ADMIN_OPERATION_IDS,
   type ExtensionDefinition,
+  type OrganizationStoreOperatingRuleValues,
   type OrganizationStore,
 } from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {useOrganizationCandidates} from '../../../app/queries/useOrganizationCandidates';
+import {
+  STORE_OPERATING_RULE_DEFINITIONS,
+  storeOperatingRuleApplicable,
+  storeOperatingRuleDefaults,
+  type StoreOperatingRuleValues,
+} from '../../../app/api/generated/storeOperatingRuleCatalog';
+import {storeManagementTestIds} from '../storeManagementTestIds';
 import {
   extensionValuesForGeneratedRequest,
   hydrateOrganizationExtensionValues,
@@ -23,7 +44,13 @@ import {
   type OrganizationExtensionFormValues,
 } from '../../organization-structure/model/organizationExtensionValues';
 
-type Values = {name: string; headCompanyId?: string; notes?: string; extensionValues?: OrganizationExtensionFormValues};
+type Values = {
+  name: string;
+  headCompanyId?: string;
+  notes?: string;
+  extensionValues?: OrganizationExtensionFormValues;
+  operatingRuleSwitches?: OrganizationStoreOperatingRuleValues;
+};
 
 function extensionFields(definition?: ExtensionDefinition) {
   return (definition?.definitions ?? [])
@@ -32,18 +59,18 @@ function extensionFields(definition?: ExtensionDefinition) {
     .map(field => {
       const control =
         field.type === 'NUMBER' ? (
-          <InputNumber style={{width: '100%'}} {...testId(`operations-store-edit-extension-${field.key}`)} />
+          <InputNumber style={{width: '100%'}} {...testId(storeManagementTestIds.editExtension(field.key))} />
         ) : field.type === 'BOOLEAN' ? (
-          <Switch {...testId(`operations-store-edit-extension-${field.key}`)} />
+          <Switch {...testId(storeManagementTestIds.editExtension(field.key))} />
         ) : field.type === 'DATE' ? (
-          <DatePicker style={{width: '100%'}} {...testId(`operations-store-edit-extension-${field.key}`)} />
+          <DatePicker style={{width: '100%'}} {...testId(storeManagementTestIds.editExtension(field.key))} />
         ) : field.type === 'SELECT' ? (
           <Select
             options={field.options.map(option => ({value: option, label: option}))}
-            {...testId(`operations-store-edit-extension-${field.key}`)}
+            {...testId(storeManagementTestIds.editExtension(field.key))}
           />
         ) : (
-          <Input {...testId(`operations-store-edit-extension-${field.key}`)} />
+          <Input {...testId(storeManagementTestIds.editExtension(field.key))} />
         );
       return (
         <Form.Item
@@ -59,6 +86,52 @@ function extensionFields(definition?: ExtensionDefinition) {
     });
 }
 
+function operatingRuleFields(values: StoreOperatingRuleValues) {
+  return STORE_OPERATING_RULE_DEFINITIONS.map(definition => {
+    const applicable = storeOperatingRuleApplicable(values, definition.key);
+    const control =
+      definition.type === 'BOOLEAN' ? (
+        <Switch disabled={!applicable} {...testId(storeManagementTestIds.operatingRule(definition.key))} />
+      ) : definition.type === 'NUMBER' ? (
+        <InputNumber
+          disabled={!applicable}
+          style={{width: '100%'}}
+          {...testId(storeManagementTestIds.operatingRule(definition.key))}
+        />
+      ) : (
+        <Input disabled={!applicable} {...testId(storeManagementTestIds.operatingRule(definition.key))} />
+      );
+    return (
+      <Form.Item
+        key={definition.key}
+        name={['operatingRuleSwitches', definition.key]}
+        label={definition.label}
+        extra={
+          !applicable ? (
+            <span {...testId(storeManagementTestIds.operatingRuleHelp(definition.key))}>请先开启上级功能</span>
+          ) : undefined
+        }
+        style={definition.parentKey ? {paddingInlineStart: 24} : undefined}
+        valuePropName={definition.type === 'BOOLEAN' ? 'checked' : undefined}
+      >
+        {control}
+      </Form.Item>
+    );
+  });
+}
+
+function completeOperatingRuleValues(
+  values: OrganizationStoreOperatingRuleValues | undefined,
+): OrganizationStoreOperatingRuleValues {
+  const defaults = storeOperatingRuleDefaults();
+  return Object.fromEntries(
+    STORE_OPERATING_RULE_DEFINITIONS.map(definition => [
+      definition.key,
+      values?.[definition.key] ?? defaults[definition.key],
+    ]),
+  ) as OrganizationStoreOperatingRuleValues;
+}
+
 export function StoreEditDrawer({
   store,
   queryContext,
@@ -72,6 +145,9 @@ export function StoreEditDrawer({
 }) {
   const [form] = Form.useForm<Values>();
   const [commandProblem, setCommandProblem] = useState<string>();
+  const watchedOperatingRules = Form.useWatch('operatingRuleSwitches', form) as
+    OrganizationStoreOperatingRuleValues | undefined;
+  const operatingRules = useMemo(() => completeOperatingRuleValues(watchedOperatingRules), [watchedOperatingRules]);
   const open = Boolean(store);
   const lifecycle = useDrawerFormLifecycle({
     open,
@@ -112,6 +188,7 @@ export function StoreEditDrawer({
       headCompanyId: store.headCompany?.id,
       notes: store.notes ?? undefined,
       extensionValues: hydrateOrganizationExtensionValues(definition.currentData, store.extensionValues),
+      operatingRuleSwitches: completeOperatingRuleValues(store.operatingRuleSwitches),
     });
     setCommandProblem(undefined);
     lifecycle.reset();
@@ -148,6 +225,7 @@ export function StoreEditDrawer({
             ),
             extensionRuleRevision: store.extensionRuleRevision,
             expectedVersion: store.revision,
+            operatingRuleSwitches: completeOperatingRuleValues(value.operatingRuleSwitches),
           },
           headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()},
         },
@@ -174,13 +252,13 @@ export function StoreEditDrawer({
       onClose={lifecycle.requestClose}
       afterOpenChange={lifecycle.afterOpenChange}
       {...adminDrawerSurfaceProps}
-      {...testId('operations-store-edit-drawer')}
+      {...testId(storeManagementTestIds.editDrawer)}
       footer={
         <Space>
           <Button
             onClick={lifecycle.requestClose}
             disabled={lifecycle.submitting}
-            {...testId('operations-store-edit-cancel')}
+            {...testId(storeManagementTestIds.editCancel)}
           >
             取消
           </Button>
@@ -189,7 +267,7 @@ export function StoreEditDrawer({
             loading={lifecycle.submitting}
             disabled={!ready}
             onClick={() => form.submit()}
-            {...testId('operations-store-edit-submit')}
+            {...testId(storeManagementTestIds.editSubmit)}
           >
             保存
           </Button>
@@ -203,7 +281,7 @@ export function StoreEditDrawer({
           title="门店编辑未完成"
           description={problem}
           style={{marginBottom: 16}}
-          {...testId('operations-store-edit-problem')}
+          {...testId(storeManagementTestIds.editProblem)}
         />
       )}
       <Form
@@ -217,25 +295,25 @@ export function StoreEditDrawer({
         }}
       >
         <Form.Item label="所属项目">
-          <Typography.Text {...testId('operations-store-edit-project')}>
+          <Typography.Text {...testId(storeManagementTestIds.editProject)}>
             {store ? <NameCodeText name={store.project.name} code={store.project.code} /> : '—'}
           </Typography.Text>
         </Form.Item>
         <Form.Item label="品牌">
-          <Typography.Text {...testId('operations-store-edit-brand')}>
+          <Typography.Text {...testId(storeManagementTestIds.editBrand)}>
             {store ? <NameCodeText name={store.brand.name} code={store.brand.code} /> : '—'}
           </Typography.Text>
         </Form.Item>
         <Form.Item label="经营租户">
-          <Typography.Text {...testId('operations-store-edit-tenant')}>
+          <Typography.Text {...testId(storeManagementTestIds.editTenant)}>
             {store ? <NameCodeText name={store.tenant.name} code={store.tenant.code} /> : '—'}
           </Typography.Text>
         </Form.Item>
         <Form.Item label="门店编码">
-          <Typography.Text {...testId('operations-store-edit-code')}>{store?.code ?? '—'}</Typography.Text>
+          <Typography.Text {...testId(storeManagementTestIds.editCode)}>{store?.code ?? '—'}</Typography.Text>
         </Form.Item>
         <Form.Item name="name" label="门店名称" rules={[{required: true, whitespace: true, message: '请输入门店名称'}]}>
-          <Input maxLength={120} {...testId('operations-store-edit-name')} />
+          <Input maxLength={120} {...testId(storeManagementTestIds.editName)} />
         </Form.Item>
         <Form.Item name="headCompanyId" label="总公司">
           <Select
@@ -250,13 +328,16 @@ export function StoreEditDrawer({
               value: item.id,
               label: <NameCodeText name={item.name} code={item.code} />,
             }))}
-            {...testId('operations-store-edit-head-company')}
+            {...testId(storeManagementTestIds.editHeadCompany)}
           />
         </Form.Item>
         <Form.Item name="notes" label="备注">
-          <Input.TextArea rows={3} maxLength={2000} {...testId('operations-store-edit-notes')} />
+          <Input.TextArea rows={3} maxLength={2000} {...testId(storeManagementTestIds.editNotes)} />
         </Form.Item>
         {extensionFields(definition.currentData)}
+        <Card size="small" title="经营规则" {...testId(storeManagementTestIds.operatingRuleGroup)}>
+          {operatingRuleFields(operatingRules)}
+        </Card>
       </Form>
     </Drawer>
   );

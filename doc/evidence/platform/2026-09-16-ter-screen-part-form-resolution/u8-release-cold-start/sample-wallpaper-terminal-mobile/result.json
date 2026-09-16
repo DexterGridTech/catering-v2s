@@ -1,0 +1,89 @@
+{
+  "runId": "sample-wallpaper-terminal-mobile-1789554518519",
+  "app": "sample-wallpaper-terminal",
+  "packageName": "com.catering.v2s.terminal.samplewallpaper",
+  "serial": "emulator-5556",
+  "shape": "mobile",
+  "failureMode": null,
+  "startedAt": "2026-09-16T10:28:38.519Z",
+  "business": "NOT_RUN",
+  "cleanup": "PASS",
+  "firstFailure": "release cold start rendered startup failure page",
+  "display": {
+    "ids": [
+      0
+    ],
+    "hasSecondary": false
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": []
+  },
+  "timeline": [
+    {
+      "event": "before-launch",
+      "timestamp": "2026-09-16T10:28:38.866Z",
+      "splashVisible": false,
+      "packagePid": ""
+    },
+    {
+      "event": "after-launch-before-ready-poll",
+      "timestamp": "2026-09-16T10:28:39.261Z",
+      "millisecondsSinceLaunch": 372,
+      "splashVisible": true
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 50,
+      "millisecondsSinceLaunch": 372,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 100,
+      "millisecondsSinceLaunch": 560,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 200,
+      "millisecondsSinceLaunch": 979,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 400,
+      "millisecondsSinceLaunch": 1380,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 800,
+      "millisecondsSinceLaunch": 1757,
+      "splashVisible": false
+    },
+    {
+      "event": "ready-or-failure-observed",
+      "timestamp": "2026-09-16T10:28:45.122Z",
+      "millisecondsSinceLaunch": 6233,
+      "readyCandidate": true,
+      "readyHidden": false,
+      "startupComplete": false,
+      "failurePage": true,
+      "splashVisible": false,
+      "splashVisibleBeforeReady": true,
+      "preReadyCaptured": true
+    },
+    {
+      "event": "settled",
+      "timestamp": "2026-09-16T10:28:49.073Z",
+      "splashVisible": false,
+      "packagePid": "10467",
+      "secondarySurfaceObserved": false,
+      "primaryUiHasRnContent": false
+    }
+  ],
+  "finishedAt": "2026-09-16T10:28:49.162Z"
+}

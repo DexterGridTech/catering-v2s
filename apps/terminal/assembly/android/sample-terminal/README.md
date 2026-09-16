@@ -49,6 +49,10 @@ splash。库消费者不应绕过 `App` 自己创建第二个 React host、runti
 `App` 是唯一保留 `surfaceForm='laptop'` 默认值的外层入口；它把解析后的形态显式传给
 `createSampleTerminalAssembly`，Android wrapper 与 sample-console assembly 不再各自兜底。
 Android 运行时使用本包 `package.json` 的 `terminalSurfaces` 整份覆盖 integration 默认值；integration 仍按 `surfaceForm` 选择对应声明。
+Android 运行时使用本包 `package.json` 的 `showAdminPassword` 控制 admin 登录提示旁是否显示当前动态口令。
+
+进入 admin console 后，laptop/mobile 的 master-detail 或可换行 tablist 版式由 integration 接入的
+`ui.base.admin-shell` renderer 提供；内容标题以 polite live region 通知，关闭与返回沿用 terminal layer 的焦点恢复边界。
 
 ## 在这个包上迭代时
 

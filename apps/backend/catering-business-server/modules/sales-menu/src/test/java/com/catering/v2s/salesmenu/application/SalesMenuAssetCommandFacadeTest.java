@@ -29,7 +29,7 @@ class SalesMenuAssetCommandFacadeTest {
     @Test
     void mapsStageEnvelopeAndClaimReadbackWithoutMovingAssetOwnership() {
         var assetOwner = mock(com.catering.v2s.platform.asset.api.SalesMenuAssetCommandApi.class);
-        var facade = new SalesMenuAssetCommandFacade(assetOwner);
+        var facade = new SalesMenuAssetCommandFacade(assetOwner, (workspace, group, targetType, storeId) -> {});
         var grant = grant();
         var target = target();
         var content = new ByteArrayInputStream(new byte[] {1, 2, 3});
@@ -85,7 +85,7 @@ class SalesMenuAssetCommandFacadeTest {
     @Test
     void mapsPlatformReleaseClaimRejectionToSalesMenuClaimRejection() {
         var assetOwner = mock(com.catering.v2s.platform.asset.api.SalesMenuAssetCommandApi.class);
-        var facade = new SalesMenuAssetCommandFacade(assetOwner);
+        var facade = new SalesMenuAssetCommandFacade(assetOwner, (workspace, group, targetType, storeId) -> {});
         var grant = grant();
         var target = target();
         var command = new SalesMenuAssetCommandApi.ReleaseCommand(target, grant, 7L, ASSET, 1L, "release-key");
@@ -108,7 +108,7 @@ class SalesMenuAssetCommandFacadeTest {
     @Test
     void mapsPlatformClaimRejectionToSalesMenuClaimRejection() {
         var assetOwner = mock(com.catering.v2s.platform.asset.api.SalesMenuAssetCommandApi.class);
-        var facade = new SalesMenuAssetCommandFacade(assetOwner);
+        var facade = new SalesMenuAssetCommandFacade(assetOwner, (workspace, group, targetType, storeId) -> {});
         var grant = grant();
         var target = target();
         when(assetOwner.claimSalesMenuItemImages(

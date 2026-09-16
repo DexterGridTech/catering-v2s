@@ -2,8 +2,8 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceScopeContext(
-    WorkspaceScopeNode region,
-    WorkspaceScopeNode project,
-    WorkspaceScopeNode store,
-    WorkspaceScopeNode headCompany
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "region", required = true) WorkspaceScopeNode region,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "project", required = true) WorkspaceScopeNode project,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "store", required = true) WorkspaceScopeNode store,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "headCompany", required = true) WorkspaceScopeNode headCompany
 ) {}

@@ -16,12 +16,27 @@ const dictionaryTagReleaseMigration = readFileSync(path.join(root, 'apps/backend
 const deadIndexMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260816_040000_000__remove_unusable_stock_bom_option_value_index.sql'), 'utf8');
 const dictionaryMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260816_010000_000__catalog_dictionary_attribute_parent_and_order_option_kind.sql'), 'utf8');
 const catalogOwner = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java'), 'utf8');
+const catalogDictionaryService = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogDictionaryService.java'), 'utf8');
+const catalogDictionaryPersistence = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogDictionaryPersistence.java'), 'utf8');
+const catalogDictionaryServiceSql = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogDictionaryServiceSql.java'), 'utf8');
+const catalogCopyService = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogCopyService.java'), 'utf8');
+const catalogCopyPersistence = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogCopyPersistence.java'), 'utf8');
+const catalogCopyServiceSql = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogCopyServiceSql.java'), 'utf8');
+const catalogItemService = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemService.java'), 'utf8');
 const productionTagOwner = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java'), 'utf8');
+const productionTagServiceSql = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/persistence/ProductionTagOwnerServiceSql.java'), 'utf8');
 const platformAuthentication = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java'), 'utf8');
+const platformAuthenticationServiceSql = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/persistence/PlatformAuthenticationServiceSql.java'), 'utf8');
 const inventoryOwner = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java'), 'utf8');
 const itemReferenceFacts = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemReferenceFacts.java'), 'utf8');
+const itemReferencePersistence = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogItemReferenceFacts.java'), 'utf8');
+const catalogOwnerValueSupport = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerValueSupport.java'), 'utf8');
 const itemMediaFacts = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemMediaFacts.java'), 'utf8');
 const skuMediaFacts = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogSkuMediaFacts.java'), 'utf8');
+const itemMediaPersistence = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogItemMediaFacts.java'), 'utf8');
+const skuMediaPersistence = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogSkuMediaFacts.java'), 'utf8');
+const itemMediaSql = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogItemMediaFactsSql.java'), 'utf8');
+const skuMediaSql = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogSkuMediaFactsSql.java'), 'utf8');
 const designCoverage = readFileSync(path.join(root, 'contracts/policy/catalog-inventory-design-byte-coverage.json'), 'utf8');
 const generator = readFileSync(path.join(root, 'scripts/generate/catalog-inventory-p1.mjs'), 'utf8');
 const designCoverageJson = JSON.parse(designCoverage);
@@ -30,8 +45,12 @@ const openApiJson = readCatalogInventoryOpenApi(root);
 const openApi = JSON.stringify(openApiJson);
 const normalizeJavaSource = source => source.replace(/"\s*\+\s*"/g, '').replace(/\s+/g, ' ');
 const normalizedCatalogOwner = normalizeJavaSource(catalogOwner);
+const normalizedCatalogDictionaryService = normalizeJavaSource(catalogDictionaryService);
+const normalizedCatalogItemService = normalizeJavaSource(catalogItemService);
 const normalizedProductionTagOwner = normalizeJavaSource(productionTagOwner);
+const normalizedProductionTagServiceSql = normalizeJavaSource(productionTagServiceSql);
 const normalizedPlatformAuthentication = normalizeJavaSource(platformAuthentication);
+const normalizedPlatformAuthenticationServiceSql = normalizeJavaSource(platformAuthenticationServiceSql);
 
 test('catalog inventory root OpenAPI declares its generated projection boundary', () => {
   assert.equal(openApiRootDocument['x-v2s-generated'], true);
@@ -94,8 +113,11 @@ test('dictionary and production-tag codes are reusable only after VOIDED while l
   assert.match(dictionaryTagReleaseMigration, /CREATE UNIQUE INDEX ux_catalog_dictionary_active_code[\s\S]*WHERE status <> 'VOIDED';/);
   assert.match(dictionaryTagReleaseMigration, /DROP CONSTRAINT production_tag_definition_data_node_ref_brand_ref_code_key;/);
   assert.match(dictionaryTagReleaseMigration, /CREATE UNIQUE INDEX ux_production_tag_active_code[\s\S]*WHERE status <> 'VOIDED';/);
-  assert.match(normalizedCatalogOwner, /ON CONFLICT \(data_node_ref,brand_ref,dictionary_kind,code\) WHERE status <> 'VOIDED' DO NOTHING/);
-  const dictionaryListing = catalogOwner.match(/private DictionaryListing loadDictionaryListing\([\s\S]*?\n    private List<DictionaryRow> lockDictionaryEntriesForReorder/)?.[0] ?? '';
+  assert.match(catalogCopyServiceSql, /CATALOG_COPY_SERVICE_OPEN_PAREN_ON_CONFLICT\s*=\s*"[^\n]*ON CONFLICT "/);
+  assert.match(catalogCopyServiceSql, /CATALOG_COPY_SERVICE_OPEN_PAREN_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE\s*=\s*"[^\n]*WHERE status <> 'VOIDED' DO "/);
+  assert.match(catalogCopyServiceSql, /CATALOG_COPY_SERVICE_CONTINUATION\s*=\s*"NOTHING"/);
+  assert.match(catalogCopyPersistence, /OPEN_PAREN_ON_CONFLICT[\s\S]*OPEN_PAREN_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE[\s\S]*CONTINUATION/);
+  const dictionaryListing = catalogDictionaryService.match(/private DictionaryListing loadDictionaryListing\([\s\S]*?\n    private Set<UUID> relationalSkuDictionaryReferences/)?.[0] ?? '';
   assert.notEqual(dictionaryListing, '');
   assert.doesNotMatch(dictionaryListing, /status\s*<>\s*'VOIDED'/);
   const tagListing = normalizedProductionTagOwner.match(/public JsonNode readTags\([\s\S]*?return envelope\(requestId, data\); \}/)?.[0] ?? '';
@@ -105,9 +127,9 @@ test('dictionary and production-tag codes are reusable only after VOIDED while l
 
 test('only the stock BOM partial index without a matching production predicate is retired', () => {
   assert.match(deadIndexMigration, /DROP INDEX inventory\.ix_stock_bom_option_value;/);
-  assert.match(normalizedProductionTagOwner, /FROM fulfillment_production\.production_tag_definition WHERE data_node_ref=\? AND brand_ref=\?/);
-  assert.match(normalizedProductionTagOwner, /ORDER BY code NULLS LAST,\s*tag_ref LIMIT \?/);
-  assert.match(normalizedPlatformAuthentication, /FROM platform_iam\.platform_password_recovery_flow WHERE token_hash=\? FOR UPDATE/);
+  assert.match(normalizedProductionTagServiceSql, /FROM fulfillment_production\.production_tag_definition WHERE data_node_ref=\? AND brand_ref=\?/);
+  assert.match(normalizedProductionTagServiceSql, /ORDER BY code NULLS LAST,\s*tag_ref LIMIT \?/);
+  assert.match(normalizedPlatformAuthenticationServiceSql, /FROM platform_iam\.platform_password_recovery_flow WHERE token_hash=\? FOR UPDATE/);
   assert.doesNotMatch(inventoryOwner, /stock_bom[\s\S]{0,240}option_value_code\s+IS\s+NOT\s+NULL/);
 });
 
@@ -116,12 +138,12 @@ test('P3 keeps only unordered item-owned sets in the shared reference table', ()
   assert.ok(allowedKinds);
   assert.deepEqual(allowedKinds.slice(1), ['PRODUCTION_TAG', 'CATALOG_TAG']);
   assert.match(unitModelMigration, /DELETE FROM catalog\.catalog_item_reference WHERE kind='SALES_UNIT';/);
-  assert.match(itemReferenceFacts, /private static final List<String> KINDS = List\.of\(PRODUCTION_TAG, CATALOG_TAG\);/);
+  assert.match(itemReferencePersistence, /private static final List<String> KINDS = List\.of\(PRODUCTION_TAG, CATALOG_TAG\);/);
   assert.doesNotMatch(itemReferenceFacts, /ITEM_IMAGE|SKU_MEDIA|ORDER_OPTION_ATTRIBUTE_VALUE/);
-  assert.match(itemMediaFacts, /catalog\.catalog_item_image/);
-  assert.match(skuMediaFacts, /catalog\.catalog_sku_media/);
-  assert.match(itemMediaFacts, /ORDER BY item_ref,display_order,asset_ref/);
-  assert.match(skuMediaFacts, /ORDER BY product_sku_ref,display_order,asset_ref/);
+  assert.match(itemMediaSql, /catalog\.catalog_item_image/);
+  assert.match(skuMediaSql, /catalog\.catalog_sku_media/);
+  assert.match(itemMediaSql, /ORDER BY item_ref,display_order,asset_ref/);
+  assert.match(skuMediaSql, /ORDER BY product_sku_ref,display_order,asset_ref/);
 });
 
 test('C1-2 separates option values and enforces parent ownership at the database boundary', () => {
@@ -134,8 +156,10 @@ test('C1-2 separates option values and enforces parent ownership at the database
   assert.match(dictionaryMigration, /trg_catalog_sku_attribute_value_relation/);
   assert.match(dictionaryMigration, /trg_catalog_sku_variant_axis_value_relation/);
   assert.match(dictionaryMigration, /trg_catalog_order_option_value_relation/);
-  assert.match(catalogOwner, /parentEntryRef/);
-  assert.match(catalogOwner, /parentEntryRef.*ORDER_OPTION_VALUE|ORDER_OPTION_VALUE.*parentEntryRef/s);
+  assert.match(normalizedCatalogDictionaryService, /parentEntryRef/);
+  assert.match(normalizedCatalogDictionaryService, /"SKU_ATTRIBUTE_VALUE"\.equals\(kind\)/);
+  assert.match(catalogOwnerValueSupport, /case "ORDER_OPTION_VALUE" -> "SKU_ATTRIBUTE_VALUE"/);
+  assert.match(catalogCopyService, /case "TAG", "SKU_ATTRIBUTE", "SKU_ATTRIBUTE_VALUE", "ORDER_OPTION_VALUE"/);
 });
 
 test('P3 retires the redundant governance status dimension from the owner and contract', () => {
@@ -191,8 +215,8 @@ test('P3 derived catalog facts are response-only and shape-owned', () => {
   assert.equal(Object.hasOwn(saveDraft.properties, 'listedSalePrice'), false);
   assert.equal(Object.hasOwn(saveDraft.properties, 'standardSalePrice'), true);
   assert.equal(Object.hasOwn(saveSku.properties, 'version'), false);
-  assert.doesNotMatch(catalogOwner, /applyDerivedCatalogFacts|sections\.putObject\("skuSummary"\)|sections\.put\("missingPriceCount"/);
-  assert.match(catalogOwner, /new DerivedSkuFacts\(/);
+  assert.doesNotMatch(catalogItemService, /applyDerivedCatalogFacts|sections\.putObject\("skuSummary"\)|sections\.put\("missingPriceCount"/);
+  assert.match(catalogItemService, /new DerivedSkuFacts\(/);
 });
 
 test('P3 derives the smart-view wire vocabulary and exposes dictionary entry identity', () => {
@@ -224,5 +248,6 @@ test('P3 item detail returns the complete candidate scope for SKU pickers', () =
   assert.equal(detailCoverage.fields.some((field) => field.path === 'queryIdentity.brandRef' && field.type === 'string'), true);
   const queryIdentity = openApiJson.components.schemas.CatalogItemDetail.properties.data.properties.queryIdentity;
   assert.equal(queryIdentity.properties.brandRef.type, 'string');
-  assert.match(normalizedCatalogOwner, /data\.putObject\("queryIdentity"\)\s*\.put\("dataNodeRef",\s*dataNodeRef\)\s*\.put\("brandRef",\s*brandRef\)/);
+  assert.match(normalizedCatalogOwner, /return itemService\.readItem\(dataNodeRef, brandRef, itemCode, requestId\)/);
+  assert.match(normalizedCatalogItemService, /data\.putObject\("queryIdentity"\)\s*\.put\("dataNodeRef",\s*dataNodeRef\)\s*\.put\("brandRef",\s*brandRef\)/);
 });

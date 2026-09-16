@@ -2,6 +2,7 @@ import type {ReactNode} from 'react'
 import {
   PrimitiveActions,
   PrimitiveButton,
+  PrimitiveCenter,
   PrimitiveContainer,
   PrimitiveHeading,
   PrimitiveText,
@@ -24,20 +25,22 @@ export const SystemFailureNotice = ({
   dismissLabel = '知道了',
   children,
 }: SystemFailureNoticeProps) => (
-  <PrimitiveContainer testID={testIDPrefix} layout="card">
-    <PrimitiveHeading testID={`${testIDPrefix}:title`}>{title}</PrimitiveHeading>
-    <PrimitiveText testID={`${testIDPrefix}:message`} accessibilityRole="alert">
-      {message}
-    </PrimitiveText>
-    {children}
-    <PrimitiveActions testID={`${testIDPrefix}:actions`}>
-      <PrimitiveButton
-        testID={`${testIDPrefix}:dismiss`}
-        accessibilityLabel="关闭系统提示"
-        onPress={onDismiss}
-      >
-        {dismissLabel}
-      </PrimitiveButton>
-    </PrimitiveActions>
-  </PrimitiveContainer>
+  <PrimitiveCenter testID={testIDPrefix} style={{flex: 1, minHeight: 0, padding: 24}}>
+    <PrimitiveContainer testID={`${testIDPrefix}:card`} layout="card" bounded>
+      <PrimitiveHeading testID={`${testIDPrefix}:title`}>{title}</PrimitiveHeading>
+      <PrimitiveText testID={`${testIDPrefix}:message`} accessibilityRole="alert">
+        {message}
+      </PrimitiveText>
+      {children}
+      <PrimitiveActions testID={`${testIDPrefix}:actions`}>
+        <PrimitiveButton
+          testID={`${testIDPrefix}:dismiss`}
+          accessibilityLabel="关闭系统提示"
+          onPress={onDismiss}
+        >
+          {dismissLabel}
+        </PrimitiveButton>
+      </PrimitiveActions>
+    </PrimitiveContainer>
+  </PrimitiveCenter>
 )

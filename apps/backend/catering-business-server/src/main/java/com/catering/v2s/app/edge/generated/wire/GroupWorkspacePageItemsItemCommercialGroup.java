@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record GroupWorkspacePageItemsItemCommercialGroup(
-    Boolean initialized,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "initialized", required = true) Boolean initialized,
     GroupWorkspacePageItemsItemCommercialGroupRoot root
 ) {}

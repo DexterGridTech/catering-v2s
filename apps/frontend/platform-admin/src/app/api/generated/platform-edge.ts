@@ -1009,14 +1009,14 @@ export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
   },
   "replaceExtensionDefinition": {
     "kind": "FIXED",
-    "max": 19,
+    "max": 20,
     "measurementScenarioIds": [
       "performance.normal-path"
     ],
     "history": [
       {
         "from": null,
-        "to": 19,
+        "to": 20,
         "reason": "CP-05 maximum database operation count across three runs"
       }
     ]
@@ -1417,8 +1417,11 @@ export type Uuid = string & { readonly __uuid: "Uuid" };
 
 export type AuditChange = {
   fieldKey: string;
-  beforeValue: string;
-  afterValue: string;
+  fieldLabelSnapshot?: (string) | null;
+  beforeState?: AuditValueState;
+  beforeValue?: (string) | null;
+  afterState?: AuditValueState;
+  afterValue?: (string) | null;
 };
 
 export type AuditHistoryItem = {
@@ -1442,6 +1445,8 @@ export type AuditTarget = {
   entityType: string;
   entityId: string;
 };
+
+export type AuditValueState = "MISSING" | "NULL" | "CLEARED" | "VALUE";
 
 export type CapabilityDictionary = {
   externalSystems: Array<ExternalSystemView>;
@@ -1880,6 +1885,10 @@ export type OwnerBindingCreateRequest = {
   nodeRef: string & { readonly __uuid: "Uuid" };
   bindingDisplayName?: string | null;
   externalOwnerId?: string | null;
+};
+
+export type OwnerBindingDeleteRequest = {
+  expectedVersion: number;
 };
 
 export type OwnerBindingPage = {
@@ -2429,7 +2438,7 @@ export type FaceOperationContracts = {
     headersRequired: true;
   };
   "deletePlatformOwnerBinding": {
-    request: OwnerBindingUpdateRequest;
+    request: OwnerBindingDeleteRequest;
     response: OwnerBindingView;
     requestRequired: true;
     requiresSession: true;

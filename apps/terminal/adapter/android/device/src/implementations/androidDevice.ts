@@ -106,7 +106,7 @@ export const createAndroidDevicePort = (): DevicePort => {
       }
     },
   }
-  Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
+  if (__DEV__) Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
     value: Object.freeze({
       port: 'device',
       capabilities: Object.freeze([

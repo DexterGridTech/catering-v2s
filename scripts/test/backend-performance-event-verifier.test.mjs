@@ -117,6 +117,18 @@ test('requires normalized request cardinality for the batch linear budget', () =
     () => parseHttpRequestEvents(JSON.stringify({...batch, requestCardinality: 101})),
     /HTTP_REQUEST_EVENT_BATCH_REQUEST_CARDINALITY_INVALID/,
   );
+  assert.doesNotThrow(() =>
+    parseHttpRequestEvents(
+      JSON.stringify(
+        event({
+          operationId: 'batchTransitionOperationsCatalogItemStatus',
+          outcome: 'FAILED',
+          status: 403,
+          requestCardinality: 0,
+        }),
+      ),
+    ),
+  );
   assert.throws(
     () => parseHttpRequestEvents(JSON.stringify(event({operationConnectionBorrowCount: -1}))),
     /HTTP_REQUEST_EVENT_OPERATIONCONNECTIONBORROWCOUNT_INVALID/,

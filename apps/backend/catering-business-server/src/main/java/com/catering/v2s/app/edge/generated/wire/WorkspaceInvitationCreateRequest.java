@@ -2,8 +2,8 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceInvitationCreateRequest(
-    String mobile,
-    String targetOrganizationType,
-    java.util.UUID targetOrganizationRef,
-    java.util.List<String> roleIds
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "mobile", required = true) String mobile,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "targetOrganizationType", required = true) String targetOrganizationType,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "targetOrganizationRef", required = true) java.util.UUID targetOrganizationRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "roleIds", required = true) java.util.List<String> roleIds
 ) {}

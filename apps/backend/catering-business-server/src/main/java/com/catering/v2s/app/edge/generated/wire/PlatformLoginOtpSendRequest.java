@@ -2,5 +2,5 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record PlatformLoginOtpSendRequest(
-    String mobile
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "mobile", required = true) String mobile
 ) {}

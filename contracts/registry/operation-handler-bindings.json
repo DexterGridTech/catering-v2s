@@ -11,8 +11,8 @@
       "schemaVersion": 1,
       "revision": "CATALOG_INVENTORY_P1_20260806",
       "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
-      "contractDigest": "571eb98fc52f525c6dc22bb97d1a4350b53c600301382078d7ca435becc83136",
-      "contentSha256": "b64aaf0bd381cfd1d0c7708d45870318b4d43ebb0277b9334d2d8102e48052fb"
+      "contractDigest": "30e20a63b2c1dcb7a65d72fad92a86ecd38effb6af3c23799bddff9c143ea8f7",
+      "contentSha256": "3334df4a0a54c4e97d40b16ea125c596027da8da6b175ebc7df65e90a85591f1"
     },
     "edge-face": {
       "schemaVersion": 2,
@@ -22,7 +22,7 @@
         "doc/evidence/platform/r5-u01-edge-placement-resolution.json"
       ],
       "contractDigest": null,
-      "contentSha256": "7539d04c5b305b419dbb2fe41406f0de1c5f10f657747122dadc8c691ce91d84"
+      "contentSha256": "6c5bdd38159ac93afa95beeb90302c4bd9a4346c43c2e6296dbcdbfdb4c16fde"
     }
   },
   "runtimeIntegration": {
@@ -30,13 +30,13 @@
     "legacyDispatcher": "NO_LEGACY_DISPATCH",
     "reason": "BP-U06 completed the 51-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth."
   },
-  "operationCount": 269,
-  "readCount": 114,
+  "operationCount": 270,
+  "readCount": 115,
   "commandCount": 155,
   "contextCounts": {
     "PLATFORM_COMMAND_CONTEXT": 34,
     "PUBLIC_PROTOCOL_CONTEXT": 9,
-    "READ_CONTEXT": 114,
+    "READ_CONTEXT": 115,
     "WORKSPACE_EXECUTION_CONTEXT": 105,
     "WORKSPACE_PROTOCOL_CONTEXT": 7
   },
@@ -3231,7 +3231,7 @@
       "routeRegistry": "edge-face",
       "mode": "COMMAND",
       "adapter": "com.catering.v2s.collaboration.application.operations.DeleteOperationsOwnerBindingOperation",
-      "wireRequest": "OwnerBindingUpdateRequest",
+      "wireRequest": "OwnerBindingDeleteRequest",
       "wireResponse": "OwnerBindingView",
       "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
       "transactionMode": "REQUIRED",
@@ -3247,7 +3247,7 @@
       "routeRegistry": "edge-face",
       "mode": "COMMAND",
       "adapter": "com.catering.v2s.collaboration.application.DeletePlatformOwnerBindingOperation",
-      "wireRequest": "OwnerBindingUpdateRequest",
+      "wireRequest": "OwnerBindingDeleteRequest",
       "wireResponse": "OwnerBindingView",
       "contextKind": "PLATFORM_COMMAND_CONTEXT",
       "transactionMode": "REQUIRED",
@@ -4344,10 +4344,26 @@
       "transactionMode": "OUTSIDE_TRANSACTION",
       "copyRole": "NONE",
       "commandBoundary": "NOT_APPLICABLE"
+    },
+    {
+      "operationId": "getOperationsOrganizationStoreOperatingRule",
+      "owner": "organization",
+      "routeRegistry": "edge-face",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches",
+      "face": "operations-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.organization.application.GetOperationsOrganizationStoreOperatingRuleOperation",
+      "wireRequest": "NoBody",
+      "wireResponse": "OrganizationStore",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE"
     }
   ],
   "commandBoundaryCounts": {
-    "NOT_APPLICABLE": 114,
+    "NOT_APPLICABLE": 115,
     "OWNER_COMMAND": 130,
     "PROTOCOL": 25
   }

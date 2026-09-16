@@ -6,8 +6,8 @@ import {InputSurfaceFrame} from '../src/components/InputSurfaceFrame'
 import {InputKeyboard} from '../src/components/InputKeyboard'
 import {useInputField} from '../src/hooks/useInputField'
 import {useInputSnapshot} from '../src/hooks/useInputSnapshot'
-import {useInputKeyboardState} from '../src/contexts/context'
-import type {InputFieldResult} from '../src/types/types'
+import {useInputController, useInputKeyboardState} from '../src/contexts/context'
+import type {InputController, InputFieldResult} from '../src/types/types'
 import {TextInput} from 'react-native'
 import {useRef} from 'react'
 
@@ -118,12 +118,14 @@ const Field = ({
   testID,
   nativeLess = false,
   keyboardPlacement,
+  focusScopeId,
   onReady,
 }: Readonly<{
   readonly fieldId: string
   readonly testID: string
   readonly nativeLess?: boolean
   readonly keyboardPlacement?: 'surface' | 'field'
+  readonly focusScopeId?: string
   readonly keyboardKind?: 'virtual'
   readonly onReady: (result: InputFieldResult) => void
 }>) => {
@@ -136,10 +138,16 @@ const Field = ({
       layout: 'numeric',
       nativeLess,
       keyboardPlacement,
+      focusScopeId,
     },
   )
   onReady(result)
   return <PrimitiveInput {...result.inputProps} />
+}
+
+const ControllerProbe = ({onReady}: Readonly<{readonly onReady: (controller: InputController) => void}>) => {
+  onReady(useInputController())
+  return null
 }
 
 const InlineKeyboardField = ({onReady}: Readonly<{readonly onReady: (result: InputFieldResult) => void}>) => {
@@ -498,6 +506,46 @@ describe('input provider', () => {
       content.props.onTouchStart?.({nativeEvent: {pageX: 10, pageY: 20}})
       content.props.onTouchEnd?.({nativeEvent: {pageX: 10, pageY: 20}})
     })
+    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0)
+    act(() => { renderer.unmount() })
+  })
+
+  it('does not let business surface dismissal clear a non-business scoped field', () => {
+    let field: InputFieldResult | undefined
+    let controller: InputController | undefined
+    const renderer = mount(
+      <InputSurfaceFrame>
+        <Field
+          fieldId="admin-scoped-field"
+          testID="sample:admin-scoped-field"
+          nativeLess
+          focusScopeId="admin.console"
+          onReady={value => { field = value }}
+        />
+        <ControllerProbe onReady={value => { controller = value }} />
+        <PrimitiveHeading testID="sample:admin-scoped-field:title">标题</PrimitiveHeading>
+      </InputSurfaceFrame>,
+    )
+
+    act(() => {
+      controller?.activateFocusScope('admin.console')
+      field?.focus()
+    })
+    expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'})).toBeDefined()
+
+    const content = renderer.root.findByProps({testID: 'ui.base.input:surface-content'}) as unknown as Readonly<{
+      readonly props: Readonly<{
+        readonly onTouchStart?: (event: Readonly<{readonly nativeEvent: Readonly<{readonly pageX: number; readonly pageY: number}>}>) => void;
+        readonly onTouchEnd?: (event: Readonly<{readonly nativeEvent: Readonly<{readonly pageX: number; readonly pageY: number}>}>) => void;
+      }>
+    }>
+    act(() => {
+      content.props.onTouchStart?.({nativeEvent: {pageX: 10, pageY: 20}})
+      content.props.onTouchEnd?.({nativeEvent: {pageX: 10, pageY: 20}})
+    })
+    expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'})).toBeDefined()
+
+    act(() => { field?.blur() })
     expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0)
     act(() => { renderer.unmount() })
   })

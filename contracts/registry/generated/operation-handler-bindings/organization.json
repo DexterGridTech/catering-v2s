@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "generated-owner-operation-bindings",
   "owner": "organization",
-  "operationCount": 38,
-  "readCount": 18,
+  "operationCount": 39,
+  "readCount": 19,
   "commandCount": 20,
   "dispatchStrategy": "CLOSED_SWITCH",
   "commandBindingBoundary": "KIND_SPECIFIC_TYPED_METHODS",
@@ -616,6 +616,22 @@
       "copyRole": "NONE",
       "commandBoundary": "OWNER_COMMAND",
       "dispatchMethod": "updateOperationsOrganizationTenant"
+    },
+    {
+      "operationId": "getOperationsOrganizationStoreOperatingRule",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches",
+      "face": "operations-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.organization.application.GetOperationsOrganizationStoreOperatingRuleOperation",
+      "wireRequest": "NoBody",
+      "wireResponse": "OrganizationStore",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE",
+      "dispatchMethod": "getOperationsOrganizationStoreOperatingRule"
     }
   ],
   "commandContextGroups": {

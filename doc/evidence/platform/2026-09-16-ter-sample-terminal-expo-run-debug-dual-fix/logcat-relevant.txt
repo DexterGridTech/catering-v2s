@@ -1,0 +1,43 @@
+252:09-12 23:44:25.909   825   895 D SplashScreenView: Build android.window.SplashScreenView{de760ab V.E...... ......ID 0,0-0,0}
+253:09-12 23:44:25.909   825   895 D SplashScreenView: Icon: view: android.widget.ImageView{a3a7308 V.ED..... ......I. 0,0-0,0 #1020504 android:id/splashscreen_icon_view} drawable: com.android.wm.shell.startingsurface.SplashscreenIconDrawableFactory$ImmobileIconDrawable@a1f9aa1 size: 384
+254:09-12 23:44:25.909   825   895 D SplashScreenView: Branding: view: android.view.View{a1814c6 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+523:09-12 23:44:26.745  3280  3280 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal
+524:09-12 23:44:26.746  3280  3280 I TER-Splash: event=native.application-callbacks-registered
+525:09-12 23:44:26.746  3280  3280 I TER-Splash: event=native.registry-application-registered app=sample-terminal
+526:09-12 23:44:26.746  3280  3280 I TER-Splash: event=expo.prevent-auto-hide-set app=sample-terminal value=true
+528:09-12 23:44:26.764  3280  3280 I TER-Splash: event=expo.activity-registered app=sample-terminal
+529:09-12 23:44:26.764  3280  3280 I TER-Splash: event=native.gate-installed activity=native-splash-activity-1
+530:09-12 23:44:26.764  3280  3280 I TER-Splash: event=native.activity-registered app=sample-terminal
+531:09-12 23:44:26.764  3280  3280 I TER-Splash: event=native.system-splash-condition-registered
+532:09-12 23:44:26.765  3280  3280 I TER-Splash: event=native.system-splash-condition-registered app=sample-terminal
+533:09-12 23:44:26.765  3280  3280 I TER-Splash: event=activity.onCreate phase=before-super app=sample-terminal
+558:09-12 23:44:26.893  3280  3280 I TerminalDualScreen: event=secondary-start-requested displayId=2 displayCount=2
+568:09-12 23:44:26.897  3280  3280 I TER-Splash: event=activity.onCreate phase=after-super app=sample-terminal
+586:09-12 23:44:26.989  3280  3280 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+588:09-12 23:44:26.989  3280  3280 I TER-Splash: event=native.pre-draw-blocked activity=native-splash-activity-1
+593:09-12 23:44:27.022  3280  3280 I TerminalDualScreen: event=primary-window-post-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+595:09-12 23:44:27.076  3280  3280 D SplashScreenView: Building from parcel drawable: android.graphics.drawable.BitmapDrawable@87bde19
+596:09-12 23:44:27.078  3280  3280 D SplashScreenView: Build android.window.SplashScreenView{1738bf V.E...... ......ID 0,0-0,0}
+597:09-12 23:44:27.078  3280  3280 D SplashScreenView: Icon: view: androidx.appcompat.widget.AppCompatImageView{fe78b8c V.ED..... ......I. 0,0-0,0 #1020504 android:id/splashscreen_icon_view} drawable: android.graphics.drawable.BitmapDrawable@87bde19 size: 384
+598:09-12 23:44:27.078  3280  3280 D SplashScreenView: Branding: view: android.view.View{c6342d5 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+599:09-12 23:44:27.091  3280  3280 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+621:09-12 23:44:27.523  3280  3280 D SplashScreenView: remove starting view
+622:09-12 23:44:27.523  3280  3280 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+647:09-12 23:44:27.710  3280  3280 I TerminalDualScreen: event=secondary-start-completed
+1008:09-12 23:44:28.130  3280  3348 I ReactNativeJS: Running "main" with {"rootTag":1,"initialProps":{"displayIndex":1,"displayCount":2,"surfaceForm":"laptop"},"fabric":true}
+1009:09-12 23:44:28.180  3280  3348 I ReactNativeJS: Running "main" with {"rootTag":11,"initialProps":{"displayIndex":0,"displayCount":2,"surfaceForm":"laptop"},"fabric":true}
+1058:09-12 23:44:28.266  3280  3280 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+1257:09-12 23:44:28.274  3280  3280 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+1731:09-12 23:44:28.532  3280  3280 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+2062:09-12 23:44:28.574  3280  3280 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+2416:09-12 23:44:28.657  3280  3348 I ReactNativeJS:   category: 'startup.ready-candidate',
+2417:09-12 23:44:28.657  3280  3348 I ReactNativeJS:   event: 'startup.ready-candidate',
+2599:09-12 23:44:28.725  3280  3348 I ReactNativeJS:   category: 'startup.ready',
+2600:09-12 23:44:28.725  3280  3348 I ReactNativeJS:   event: 'startup.ready',
+2700:09-12 23:44:28.757  3280  3348 I ReactNativeJS:   category: 'startup.complete',
+2701:09-12 23:44:28.757  3280  3348 I ReactNativeJS:   event: 'startup.complete',
+2732:09-12 23:44:28.774  3280  3280 I TER-Splash: event=native.begin-hide reason=startup-ready activity=native-splash-activity-1 alreadyReleased=false
+2733:09-12 23:44:28.796  3280  3280 I TER-Splash: event=native.release-hide activity=native-splash-activity-1
+2736:09-12 23:44:28.797  3280  3348 I ReactNativeJS:   category: 'startup.ready-hidden',
+2737:09-12 23:44:28.797  3280  3348 I ReactNativeJS:   event: 'startup.ready-hidden',
+2776:09-12 23:44:28.808  3280  3280 I TER-Splash: event=native.pre-draw-released activity=native-splash-activity-1

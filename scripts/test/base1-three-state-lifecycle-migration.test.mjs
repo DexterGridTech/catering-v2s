@@ -15,11 +15,62 @@ const inventoryOwnerServicePath = path.join(
   'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java',
 );
 const inventoryOwnerService = fs.readFileSync(inventoryOwnerServicePath, 'utf8');
-const businessChannelOwnerServicePath = path.join(
-  repoRoot,
-  'apps/backend/catering-business-server/modules/business-channel/src/main/java/com/catering/v2s/businesschannel/application/BusinessChannelOwnerService.java',
+const inventoryBomPersistence = fs.readFileSync(
+  path.join(
+    repoRoot,
+    'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/persistence/InventoryBomPersistence.java',
+  ),
+  'utf8',
 );
-const businessChannelOwnerService = fs.readFileSync(businessChannelOwnerServicePath, 'utf8');
+const inventoryBomServiceSql = fs.readFileSync(
+  path.join(
+    repoRoot,
+    'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/persistence/InventoryBomServiceSql.java',
+  ),
+  'utf8',
+);
+const inventoryCopyPersistence = fs.readFileSync(
+  path.join(
+    repoRoot,
+    'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/persistence/InventoryCopyPersistence.java',
+  ),
+  'utf8',
+);
+const inventoryCopyServiceSql = fs.readFileSync(
+  path.join(
+    repoRoot,
+    'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/persistence/InventoryCopyServiceSql.java',
+  ),
+  'utf8',
+);
+const businessChannelService = fs.readFileSync(
+  path.join(
+    repoRoot,
+    'apps/backend/catering-business-server/modules/business-channel/src/main/java/com/catering/v2s/businesschannel/application/BusinessChannelService.java',
+  ),
+  'utf8',
+);
+const businessChannelTemplateService = fs.readFileSync(
+  path.join(
+    repoRoot,
+    'apps/backend/catering-business-server/modules/business-channel/src/main/java/com/catering/v2s/businesschannel/application/BusinessChannelTemplateService.java',
+  ),
+  'utf8',
+);
+const businessChannelTemplatePersistence = fs.readFileSync(
+  path.join(
+    repoRoot,
+    'apps/backend/catering-business-server/modules/business-channel/src/main/java/com/catering/v2s/businesschannel/application/persistence/BusinessChannelTemplatePersistence.java',
+  ),
+  'utf8',
+);
+const businessChannelServiceSql = fs.readFileSync(
+  path.join(
+    repoRoot,
+    'apps/backend/catering-business-server/modules/business-channel/src/main/java/com/catering/v2s/businesschannel/application/persistence/BusinessChannelServiceSql.java',
+  ),
+  'utf8',
+);
 
 function indexOfRequired(source, needle) {
   const index = source.indexOf(needle);
@@ -33,56 +84,65 @@ function uniqueIndexStatement(source, indexName) {
   return match[0];
 }
 
-function javaQueryArguments(source) {
-  const queryExpression = /jdbc\.(?:batchUpdate|update)\(\s*((?:"(?:\\.|[^"\\])*"\s*(?:\+\s*)?)+)\s*,/g;
-  return [...source.matchAll(queryExpression)].map((match) =>
-    [...match[1].matchAll(/"((?:\\.|[^"\\])*)"/g)]
-      .map((literal) => literal[1].replaceAll('\\"', '"').replaceAll('\\\\', '\\'))
-      .join(''),
-  );
+function methodBody(source, methodName) {
+  const start = source.indexOf(`${methodName}(`);
+  assert.notEqual(start, -1, `missing ${methodName}`);
+  const nextMethod = source.indexOf('\n    public ', start + methodName.length);
+  return source.slice(start, nextMethod === -1 ? source.length : nextMethod);
 }
 
-function inventoryBomUpsertQueries(source) {
-  return javaQueryArguments(source).filter(
-    (query) => query.includes('inventory.stock_bom') && query.includes('ON CONFLICT'),
-  );
-}
-
-function assertInventoryBomUpsertPredicates(source) {
-  const queries = inventoryBomUpsertQueries(source);
-  assert.equal(queries.length, 3, 'inventory has exactly three BOM upsert query expressions');
-  for (const query of queries) {
-    assert.match(
-      query,
-      /ON CONFLICT[\s\S]*WHERE definition_status='ENABLED'\s+DO (?:NOTHING|UPDATE)/,
-      'each BOM upsert keeps the ENABLED-only arbiter predicate',
-    );
+function assertInventoryBomUpsertPredicates(sources) {
+  const callSites = [
+    {
+      method: 'upsertCopiedOptionValueBom',
+      persistence: sources.bomPersistence,
+      sql: sources.bomSql,
+      constant: 'INVENTORY_BOM_SERVICE_WHERE_DEFINITION_STATUS_ENABLED',
+      predicate: /WHERE definition_status='ENABLED' DO NOTHING/,
+    },
+    {
+      method: 'upsertCatalogBomRows',
+      persistence: sources.bomPersistence,
+      sql: sources.bomSql,
+      constant: 'INVENTORY_BOM_SERVICE_CONTINUATION_DEFINITION_STATUS_ENABLED',
+      predicate: /WHERE definition_status='ENABLED'/,
+    },
+    {
+      method: 'copyCatalogSkus',
+      persistence: sources.copyPersistence,
+      sql: sources.copySql,
+      constant: 'INVENTORY_COPY_SERVICE_CONTINUATION_DEFINITION_STATUS_ENABLED',
+      predicate: /WHERE definition_status='ENABLED'/,
+    },
+  ];
+  assert.equal(callSites.length, 3, 'inventory has exactly three BOM upsert call sites');
+  for (const callSite of callSites) {
+    assert.match(methodBody(callSite.persistence, callSite.method), new RegExp(callSite.constant));
+    assert.match(callSite.sql, callSite.predicate, `${callSite.method} keeps the ENABLED-only arbiter predicate`);
   }
 }
 
-function assertBusinessChannelCodeAvailabilityPredicates(source) {
-  const templateStart = source.indexOf('private void ensureTemplateCodeAvailable(');
-  const channelStart = source.indexOf('private void ensureChannelCodeAvailable(');
-  const countStart = source.indexOf('private long count(');
-  const projectionStart = source.indexOf('private TemplateCommandProjection readTemplateCommandProjection(');
-  const projectionEnd = source.indexOf('\n    private ChannelRow readChannelRow(', projectionStart);
-  const createStart = source.indexOf('public BusinessChannelReadback.Channel createChannel(');
-  assert.ok(templateStart >= 0, 'missing template code availability owner');
-  assert.ok(channelStart > templateStart, 'missing channel code availability owner');
-  assert.ok(countStart > channelStart, 'missing owner count helper after code availability checks');
-  assert.ok(projectionStart >= 0, 'missing channel availability projection');
-  assert.ok(projectionEnd > projectionStart, 'missing channel availability projection boundary');
-  assert.ok(createStart >= 0, 'missing channel create owner');
-  const templateCheck = source.slice(templateStart, channelStart);
-  const channelCheck = source.slice(channelStart, countStart);
-  const projection = source.slice(projectionStart, projectionEnd);
-  const create = source.slice(createStart, projectionStart);
-  assert.match(templateCheck, /status <> 'VOIDED'/, 'template code reuse excludes VOIDED rows');
-  assert.match(projection, /channel\.status <> 'VOIDED'/, 'channel code reuse excludes VOIDED rows');
-  assert.match(projection, /channel_code_in_use/, 'channel availability is part of the locked template projection');
-  assert.match(templateCheck, /DUPLICATE_CODE/, 'template duplicate remains typed');
-  assert.match(channelCheck, /DUPLICATE_CODE/, 'channel duplicate remains typed');
+function assertBusinessChannelCodeAvailabilityPredicates(sources) {
+  assert.match(
+    migration,
+    /CREATE UNIQUE INDEX ux_business_channel_template_active_project_code[\s\S]*WHERE template_code IS NOT NULL AND status <> 'VOIDED';/,
+    'template code reuse excludes VOIDED rows at the database boundary',
+  );
+  assert.match(
+    migration,
+    /CREATE UNIQUE INDEX ux_business_channel_active_group_code[\s\S]*WHERE channel_code IS NOT NULL AND status <> 'VOIDED';/,
+    'channel code reuse excludes VOIDED rows at the database boundary',
+  );
+  const projection = methodBody(sources.templatePersistence, 'readTemplateCommandProjection');
+  assert.match(projection, /CONDITION_CHANNEL_CHANNEL_CODE_STATUS_VOIDED/);
+  assert.match(projection, /channel_code_in_use/);
+  assert.match(sources.serviceSql, /channel\.channel_code=\? AND channel\.status <> 'VOIDED'/);
+  const create = methodBody(sources.service, 'createChannel');
+  assert.match(create, /readTemplateCommandProjection/);
   assert.match(create, /ensureChannelCodeAvailable\(template\.channelCodeInUse\(\)\)/);
+  const createTemplate = methodBody(sources.templateService, 'createTemplate');
+  assert.match(createTemplate, /catch \(DuplicateKeyException/);
+  assert.match(createTemplate, /problem\("DUPLICATE_CODE"/);
 }
 
 const EXPECTED_DUPLICATE_LABELS = [
@@ -209,24 +269,45 @@ test('BASE1 CP-B1 migration statically matches lifecycle DDL contract', () => {
 });
 
 test('BASE1 CP-B1 inventory BOM upserts keep their historical-definition predicate', () => {
-  assertInventoryBomUpsertPredicates(inventoryOwnerService);
+  assertInventoryBomUpsertPredicates({
+    bomPersistence: inventoryBomPersistence,
+    bomSql: inventoryBomServiceSql,
+    copyPersistence: inventoryCopyPersistence,
+    copySql: inventoryCopyServiceSql,
+  });
 });
 
 test('BASE1 CP-B1 business-channel code checks release codes only after VOIDED', () => {
-  assertBusinessChannelCodeAvailabilityPredicates(businessChannelOwnerService);
+  assertBusinessChannelCodeAvailabilityPredicates({
+    service: businessChannelService,
+    templateService: businessChannelTemplateService,
+    templatePersistence: businessChannelTemplatePersistence,
+    serviceSql: businessChannelServiceSql,
+  });
 });
 
 test('BASE1 CP-B1 red fixture rejects a widened inventory BOM upsert predicate', () => {
-  const mutated = inventoryOwnerService.replaceAll(
-    "WHERE definition_status='ENABLED'",
-    "WHERE definition_status <> 'VOIDED'",
+  const widenedPredicate = "WHERE definition_status <> 'VOIDED'";
+  assert.throws(() =>
+    assertInventoryBomUpsertPredicates({
+      bomPersistence: inventoryBomPersistence,
+      bomSql: inventoryBomServiceSql.replaceAll("WHERE definition_status='ENABLED'", widenedPredicate),
+      copyPersistence: inventoryCopyPersistence,
+      copySql: inventoryCopyServiceSql.replaceAll("WHERE definition_status='ENABLED'", widenedPredicate),
+    }),
   );
-  assert.throws(() => assertInventoryBomUpsertPredicates(mutated));
 });
 
 test('BASE1 CP-B1 red fixture rejects counting VOIDED business-channel rows as duplicates', () => {
-  const mutated = businessChannelOwnerService.replaceAll(" AND status <> 'VOIDED'", '');
-  assert.throws(() => assertBusinessChannelCodeAvailabilityPredicates(mutated));
+  const mutatedServiceSql = businessChannelServiceSql.replace("AND channel.channel_code=? AND channel.status <> 'VOIDED'", 'AND channel.channel_code=?');
+  assert.throws(() =>
+    assertBusinessChannelCodeAvailabilityPredicates({
+      service: businessChannelService,
+      templateService: businessChannelTemplateService,
+      templatePersistence: businessChannelTemplatePersistence,
+      serviceSql: mutatedServiceSql,
+    }),
+  );
 });
 
 test('BASE1 CP-B1 migration enumerates the complete duplicate-precondition denominator', () => {

@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record BusinessChannelTemplateViewStatusDimensionsItem(
-    BusinessChannelTemplateViewStatusDimensionsItemType type,
-    String ref,
-    BusinessChannelTemplateViewStatusDimensionsItemStatus status
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "type", required = true) BusinessChannelTemplateViewStatusDimensionsItemType type,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "ref", required = true) String ref,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) BusinessChannelTemplateViewStatusDimensionsItemStatus status
 ) {}

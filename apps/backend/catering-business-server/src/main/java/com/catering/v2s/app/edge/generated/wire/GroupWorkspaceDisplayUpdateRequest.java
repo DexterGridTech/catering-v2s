@@ -2,12 +2,12 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record GroupWorkspaceDisplayUpdateRequest(
-    String name,
-    String operationsTitle,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "operationsTitle", required = true) String operationsTitle,
     String notes,
-    String logoIntent,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "logoIntent", required = true) String logoIntent,
     java.util.UUID logoAssetRef,
     String logoBindGrant,
-    Long expectedVersion,
-    String idempotencyKey
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "idempotencyKey", required = true) String idempotencyKey
 ) {}

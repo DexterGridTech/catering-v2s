@@ -751,7 +751,8 @@ class SalesMenuOwnerServiceOwnerApiTest {
                         organization,
                         assets,
                         assetCommands,
-                        null)
+                        null,
+                        (workspace, group, targetType, storeId) -> {})
                 .updateItem(command);
 
         assertEquals(SalesMenuCommandReadbackStatus.APPLIED, result.readbackStatus());
@@ -845,7 +846,10 @@ class SalesMenuOwnerServiceOwnerApiTest {
                 inventory,
                 channels,
                 organization,
-                assets);
+                assets,
+                null,
+                null,
+                (workspace, group, targetType, storeId) -> {});
     }
 
     private static SalesMenuScope scope() {

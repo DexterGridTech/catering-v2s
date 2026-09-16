@@ -1,32 +1,34 @@
 import {useEffect, useRef, useState} from 'react'
+import {Pressable} from 'react-native'
 import {
   PrimitiveActions,
   PrimitiveButton,
   PrimitiveContainer,
+  PrimitiveCenter,
   PrimitiveGrid,
   PrimitiveHeading,
   PrimitiveStatus,
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
-import {InputKeyboard, useInputController, useInputField, useInputKeyboardState} from '@catering-v2s/ui-base-input'
-import {useRenderContext, type RuntimeDeviceIdentity} from '@catering-v2s/ui-base-render'
+import {useInputController, useInputField, useInputKeyboardState} from '@catering-v2s/ui-base-input'
+import type {DebugMode, RuntimeDeviceIdentity} from '@catering-v2s/ui-base-render'
 import {ADMIN_CONSOLE_FOCUS_SCOPE_ID} from '../foundations/adminIdentity'
 import {adminTestIds} from '../foundations/adminTestIds'
 import {ADMIN_PASSWORD_FALLBACK, deriveAdminPassword, verifyAdminPassword} from '../foundations/adminPassword'
-import type {DebugMode} from '@catering-v2s/ui-base-render'
 
 const PASSWORD_FIELD_ID = 'terminal.admin:password-field'
+const layerFrameStyle = Object.freeze({flex: 1, minHeight: 0, padding: 24})
 
 export type AdminLoginProps = Readonly<{
   readonly identity: RuntimeDeviceIdentity
   readonly debugMode: DebugMode
+  readonly showAdminPassword?: boolean
   readonly onAuthenticated: () => void
   readonly onClose: () => void
   readonly now?: () => Date
 }>
 
-export const AdminLogin = ({identity, debugMode, onAuthenticated, onClose, now}: AdminLoginProps) => {
-  const {logger} = useRenderContext()
+export const AdminLogin = ({identity, debugMode, showAdminPassword, onAuthenticated, onClose, now}: AdminLoginProps) => {
   const inputController = useInputController()
   const keyboardState = useInputKeyboardState()
   const didAutoFocus = useRef(false)
@@ -38,26 +40,17 @@ export const AdminLogin = ({identity, debugMode, onAuthenticated, onClose, now}:
     layout: 'numeric',
     maxLength: 6,
     nativeLess: true,
-    keyboardPlacement: 'field',
+    keyboardPlacement: 'surface',
     focusScopeId: ADMIN_CONSOLE_FOCUS_SCOPE_ID,
   })
   const password = field.inputProps.value ?? ''
   const [error, setError] = useState<string | null>(null)
+  const keyboardOpen = keyboardState.activeFieldId === PASSWORD_FIELD_ID && keyboardState.visible
+  const keyboardLift = keyboardOpen
+    ? Math.min(Math.max(Math.round(keyboardState.height * 0.5), 72), 144)
+    : 0
 
   useEffect(() => {
-    if (__DEV__) {
-      logger.info({
-        category: 'display-diagnostics',
-        event: 'admin.login-autofocus-attempt',
-        message: 'Admin login autofocus lifecycle observed',
-        data: {
-          activeFieldId: keyboardState.activeFieldId,
-          capacity: keyboardState.capacity,
-          didAutoFocus: didAutoFocus.current,
-          revision: keyboardState.revision,
-        },
-      })
-    }
     if (keyboardState.activeFieldId === PASSWORD_FIELD_ID) {
       didAutoFocus.current = true
       return
@@ -65,21 +58,13 @@ export const AdminLogin = ({identity, debugMode, onAuthenticated, onClose, now}:
     if (didAutoFocus.current || keyboardState.capacity !== 'supported') return
     inputController.activateFocusScope(ADMIN_CONSOLE_FOCUS_SCOPE_ID)
     const focusAccepted = inputController.preflightFocusTarget(PASSWORD_FIELD_ID)
-    if (__DEV__) {
-      logger.info({
-        category: 'display-diagnostics',
-        event: 'admin.login-autofocus-preflight',
-        message: 'Admin login autofocus preflight observed',
-        data: {accepted: focusAccepted},
-      })
-    }
     if (!focusAccepted) return
     field.focus()
-  }, [field, inputController, keyboardState.activeFieldId, keyboardState.capacity, keyboardState.revision, logger])
+  }, [field, inputController, keyboardState.activeFieldId, keyboardState.capacity, keyboardState.revision])
 
   const currentDate = now?.() ?? new Date()
   const clockUnavailable = Number.isNaN(currentDate.getTime())
-  const debugPassword = debugMode.enabled && !clockUnavailable
+  const debugPassword = (showAdminPassword ?? debugMode.enabled) && !clockUnavailable
     ? identity.available && identity.deviceId !== null
       ? deriveAdminPassword({deviceId: identity.deviceId, localDate: currentDate})
       : ADMIN_PASSWORD_FALLBACK
@@ -99,29 +84,50 @@ export const AdminLogin = ({identity, debugMode, onAuthenticated, onClose, now}:
     setError('口令不正确')
   }
 
+  const focusPassword = () => {
+    field.focus()
+  }
+
   return (
-    <PrimitiveContainer testID={adminTestIds.login} layout="card">
+    <PrimitiveCenter testID={adminTestIds.login} style={layerFrameStyle}>
+      <PrimitiveContainer
+        testID={`${adminTestIds.login}:card`}
+        layout="card"
+        bounded
+        style={keyboardLift > 0 ? {transform: [{translateY: -keyboardLift}]} : undefined}
+      >
       <PrimitiveHeading testID="terminal.admin:login:title">终端管理</PrimitiveHeading>
-      <PrimitiveText testID="terminal.admin:login:instruction">请输入六位动态口令</PrimitiveText>
-      <PrimitiveGrid testID={`${adminTestIds.password}:cells`}>
-        {Array.from({length: 6}, (_value, index) => (
-          <PrimitiveText
-            key={index}
-            testID={`${adminTestIds.password}:digit:${index}`}
-            accessibilityLabel={`第${index + 1}位${index < password.length ? '已填写' : '未填写'}`}
-          >
-            {index < password.length ? '•' : '○'}
-          </PrimitiveText>
-        ))}
-      </PrimitiveGrid>
+      <PrimitiveText testID="terminal.admin:login:instruction">
+        请输入六位动态口令
+        {debugPassword !== null ? (
+          <PrimitiveText testID={adminTestIds.debugPassword}>{`（${debugPassword}）`}</PrimitiveText>
+          ) : null}
+      </PrimitiveText>
+      <Pressable
+        testID={adminTestIds.passwordInput}
+        accessibilityRole="button"
+        accessibilityLabel="输入六位动态口令"
+        onPress={focusPassword}
+        onTouchEnd={event => event.stopPropagation()}
+        style={{width: '100%'}}
+      >
+        <PrimitiveGrid testID={`${adminTestIds.password}:cells`}>
+          {Array.from({length: 6}, (_value, index) => (
+            <PrimitiveText
+              key={index}
+              testID={`${adminTestIds.password}:digit:${index}`}
+              accessibilityLabel={`第${index + 1}位${index < password.length ? '已填写' : '未填写'}`}
+            >
+              {index < password.length ? '•' : '○'}
+            </PrimitiveText>
+          ))}
+        </PrimitiveGrid>
+      </Pressable>
       {identity.available === false ? (
         <PrimitiveStatus testID="terminal.admin:login:fallback">设备标识不可用，已启用降级口令</PrimitiveStatus>
       ) : null}
       {clockUnavailable ? (
         <PrimitiveStatus testID="terminal.admin:login:clock-error" tone="error">无法读取设备时间</PrimitiveStatus>
-      ) : null}
-      {debugPassword !== null ? (
-        <PrimitiveStatus testID={adminTestIds.debugPassword} tone="info">调试口令：{debugPassword}</PrimitiveStatus>
       ) : null}
       {error !== null && !clockUnavailable ? (
         <PrimitiveStatus testID="terminal.admin:login:error" tone="error">{error}</PrimitiveStatus>
@@ -139,7 +145,7 @@ export const AdminLogin = ({identity, debugMode, onAuthenticated, onClose, now}:
           关闭
         </PrimitiveButton>
       </PrimitiveActions>
-      <InputKeyboard placement="field" />
-    </PrimitiveContainer>
+      </PrimitiveContainer>
+    </PrimitiveCenter>
   )
 }

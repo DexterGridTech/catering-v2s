@@ -1,0 +1,33 @@
+- generic [ref=f11e5]:
+  - generic [ref=f11e6]:
+    - generic [ref=f11e7]:
+      - generic [ref=f11e8]:
+        - generic [ref=f11e9]: LIVE SURFACE PREVIEW
+        - generic [ref=f11e10]: 壁纸终端画布
+      - generic [ref=f11e11]:
+        - generic [ref=f11e12]:
+          - generic [ref=f11e13]:
+            - generic [ref=f11e15]: RUNTIME
+            - generic [ref=f11e16]: Started
+          - generic [ref=f11e18]:
+            - generic [ref=f11e20]: STORE
+            - generic [ref=f11e21]: 同一 assembly
+          - generic [ref=f11e23]:
+            - generic [ref=f11e25]: SURFACES
+            - generic [ref=f11e26]: 读取中
+        - generic [ref=f11e28]:
+          - generic [ref=f11e30]: 手持屏 · 360 × 640
+          - generic [ref=f11e31]: 已挂载
+    - generic [ref=f11e32]:
+      - generic "surface 宽度" [ref=f11e33]:
+        - slider "surface 宽度比例" [ref=f11e35] [cursor=pointer]
+        - generic [ref=f11e39]: 100%
+      - generic "终端视角" [ref=f11e40]:
+        - generic [ref=f11e41]: 视角
+        - radio "laptop 视角" [ref=f11e42] [cursor=pointer]
+        - radio "mobile 视角" [checked] [ref=f11e45] [cursor=pointer]
+  - generic [ref=f11e49]:
+    - generic [ref=f11e50]: ···
+    - generic [ref=f11e52]:
+      - generic [ref=f11e53]: 正在读取屏幕信息
+      - generic [ref=f11e54]: 外壳正在决定是否挂载客显；这一步不改变业务模块与 runtime。

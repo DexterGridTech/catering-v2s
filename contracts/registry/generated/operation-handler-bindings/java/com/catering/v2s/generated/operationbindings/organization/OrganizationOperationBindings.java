@@ -48,6 +48,7 @@ public final class OrganizationOperationBindings {
     OperationBindingTypes.Wire.OrganizationNode updateOperationsOrganizationNode(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.OrganizationNodeUpdateRequest request);
     OperationBindingTypes.Wire.OrganizationStore updateOperationsOrganizationStore(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.OrganizationStoreUpdateRequest request);
     OperationBindingTypes.Wire.Tenant updateOperationsOrganizationTenant(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.TenantUpdateRequest request);
+    OperationBindingTypes.Wire.OrganizationStore getOperationsOrganizationStoreOperatingRule(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.NoBody request);
   }
 
   private final OwnerLocalAdapters adapters;
@@ -94,6 +95,7 @@ public final class OrganizationOperationBindings {
   public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_ORGANIZATION_NODE_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsOrganizationNode", "organization", "edge-face");
   public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_ORGANIZATION_STORE_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsOrganizationStore", "organization", "edge-face");
   public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_ORGANIZATION_TENANT_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsOrganizationTenant", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor GET_OPERATIONS_ORGANIZATION_STORE_OPERATING_RULE_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getOperationsOrganizationStoreOperatingRule", "organization", "edge-face");
 
   private static void requireReadDescriptor(OperationBindingTypes.OperationDescriptor descriptor) {
     if (descriptor == null) throw new IllegalArgumentException("descriptor is required");
@@ -116,6 +118,7 @@ public final class OrganizationOperationBindings {
       case "getPlatformOrganizationHierarchyTree" -> { if (descriptor != GET_PLATFORM_ORGANIZATION_HIERARCHY_TREE_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getPlatformOrganizationOverviewDetail" -> { if (descriptor != GET_PLATFORM_ORGANIZATION_OVERVIEW_DETAIL_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getPlatformOrganizationOverviewPage" -> { if (descriptor != GET_PLATFORM_ORGANIZATION_OVERVIEW_PAGE_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "getOperationsOrganizationStoreOperatingRule" -> { if (descriptor != GET_OPERATIONS_ORGANIZATION_STORE_OPERATING_RULE_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       default -> throw new IllegalArgumentException("unsupported descriptor");
     }
   }
@@ -142,6 +145,7 @@ public final class OrganizationOperationBindings {
       case "getPlatformOrganizationHierarchyTree" -> adapters.getPlatformOrganizationHierarchyTree(GET_PLATFORM_ORGANIZATION_HIERARCHY_TREE_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
       case "getPlatformOrganizationOverviewDetail" -> adapters.getPlatformOrganizationOverviewDetail(GET_PLATFORM_ORGANIZATION_OVERVIEW_DETAIL_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
       case "getPlatformOrganizationOverviewPage" -> adapters.getPlatformOrganizationOverviewPage(GET_PLATFORM_ORGANIZATION_OVERVIEW_PAGE_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
+      case "getOperationsOrganizationStoreOperatingRule" -> adapters.getOperationsOrganizationStoreOperatingRule(GET_OPERATIONS_ORGANIZATION_STORE_OPERATING_RULE_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
       default -> throw new IllegalArgumentException("Unsupported read operation: " + descriptor.operationId());
     };
   }

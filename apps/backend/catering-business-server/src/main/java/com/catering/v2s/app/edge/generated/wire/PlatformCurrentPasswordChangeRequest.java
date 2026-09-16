@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record PlatformCurrentPasswordChangeRequest(
-    String currentPassword,
-    String newPassword,
-    Long expectedSessionVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "currentPassword", required = true) String currentPassword,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "newPassword", required = true) String newPassword,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedSessionVersion", required = true) Long expectedSessionVersion
 ) {}

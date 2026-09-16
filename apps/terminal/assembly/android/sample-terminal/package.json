@@ -27,6 +27,7 @@
       }
     }
   },
+  "showAdminPassword": true,
   "dependencies": {
     "@catering-v2s/assembly-base-android": "workspace:*",
     "@catering-v2s/ui-base-render": "workspace:*",

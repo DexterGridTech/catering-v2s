@@ -52,8 +52,12 @@ export function validateHttpRequestEvent(event, {requireMeasurementScenarioId = 
   if (Object.hasOwn(event, 'requestCardinality')) {
     nonNegativeInteger(event.requestCardinality, 'HTTP_REQUEST_EVENT_REQUEST_CARDINALITY_INVALID');
   }
+  // Only successful batch completions enter the normal-sample budget path. A failed request may
+  // be rejected before the contract's minItems/maxItems boundary (for example an empty batch
+  // rejected by a Store capability gate), so its observed collection size is diagnostic only.
   if (
     event.operationId === BATCH_OPERATION_ID &&
+    event.outcome === 'SUCCEEDED' &&
     (!Object.hasOwn(event, 'requestCardinality') ||
       !Number.isInteger(event.requestCardinality) ||
       event.requestCardinality < 1 ||

@@ -2,15 +2,15 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceRole(
-    String id,
-    String groupWorkspaceKey,
-    String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "id", required = true) String id,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "groupWorkspaceKey", required = true) String groupWorkspaceKey,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
     String description,
-    String serviceNodeType,
-    java.util.List<String> capabilityKeys,
-    java.util.List<String> pageAccessKeys,
-    WorkspaceRoleStatus status,
-    Long revision,
-    Long createdAt,
-    Long updatedAt
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "serviceNodeType", required = true) String serviceNodeType,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "capabilityKeys", required = true) java.util.List<String> capabilityKeys,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "pageAccessKeys", required = true) java.util.List<String> pageAccessKeys,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) WorkspaceRoleStatus status,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "revision", required = true) Long revision,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "createdAt", required = true) Long createdAt,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "updatedAt", required = true) Long updatedAt
 ) {}

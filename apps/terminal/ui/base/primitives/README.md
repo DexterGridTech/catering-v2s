@@ -17,6 +17,9 @@ automation 后端仍按裁定押后。
 使用对应的专用 primitive，不得用通用文本控件冒充。实现会把这两个反馈语义转发到 RN
 0.86.3 的 typed `role` 属性，因为 RN 的旧 `accessibilityRole` 类型不包含 `status`。
 
+`PrimitiveHeading` 保持 header 语义，并使用 `accessibilityLiveRegion="polite"` 通知标题内容变化；
+它只负责通用的可读呈现，不持有页面导航、焦点 scope 或业务状态。
+
 `PrimitiveInput` 的输入公共面只增加三个呈现/编辑 prop：`selection`、`onSelectionChange` 与
 `maxLength`。它们只透传到真实 RN `TextInput`，不引入 `inputMode`、
 键盘布局、业务字段、command 或 store；`selection.end` 缺省时按光标位置归一为 `start`。业务层

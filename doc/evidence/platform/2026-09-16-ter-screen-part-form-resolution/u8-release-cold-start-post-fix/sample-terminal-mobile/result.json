@@ -1,0 +1,109 @@
+{
+  "runId": "sample-terminal-mobile-1789555551477",
+  "app": "sample-terminal",
+  "packageName": "com.anonymous.sampleterminal",
+  "serial": "emulator-5556",
+  "shape": "mobile",
+  "failureMode": null,
+  "startedAt": "2026-09-16T10:45:51.477Z",
+  "business": "PASS",
+  "cleanup": "PASS",
+  "firstFailure": null,
+  "display": {
+    "ids": [
+      0
+    ],
+    "hasSecondary": false
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": []
+  },
+  "timeline": [
+    {
+      "event": "before-launch",
+      "timestamp": "2026-09-16T10:45:51.832Z",
+      "splashVisible": false,
+      "packagePid": ""
+    },
+    {
+      "event": "after-launch-before-ready-poll",
+      "timestamp": "2026-09-16T10:45:52.255Z",
+      "millisecondsSinceLaunch": 396,
+      "splashVisible": true
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 50,
+      "millisecondsSinceLaunch": 396,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 100,
+      "millisecondsSinceLaunch": 596,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 200,
+      "millisecondsSinceLaunch": 787,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 400,
+      "millisecondsSinceLaunch": 934,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 800,
+      "millisecondsSinceLaunch": 1081,
+      "splashVisible": false
+    },
+    {
+      "event": "t0-first-rn-content",
+      "timestamp": "2026-09-16T10:45:55.099Z",
+      "splashVisible": false,
+      "failurePage": false,
+      "readyCandidateObservedInSameDeviceLog": true,
+      "readyHiddenObservedInSameDeviceLog": true
+    },
+    {
+      "event": "ready-or-failure-observed",
+      "timestamp": "2026-09-16T10:45:55.338Z",
+      "millisecondsSinceLaunch": 3479,
+      "readyCandidate": true,
+      "readyHidden": true,
+      "startupComplete": true,
+      "failurePage": false,
+      "splashVisible": false,
+      "splashVisibleBeforeReady": true,
+      "preReadyCaptured": true
+    },
+    {
+      "event": "settled",
+      "timestamp": "2026-09-16T10:45:58.993Z",
+      "splashVisible": false,
+      "packagePid": "11341",
+      "secondarySurfaceObserved": false,
+      "primaryUiHasRnContent": true
+    },
+    {
+      "event": "startup-order",
+      "candidateEpoch": 1789555538.441,
+      "hiddenEpoch": 1789555538.463,
+      "completeEpoch": 1789555538.45,
+      "firstContentObservationTimestamp": "2026-09-16T10:45:55.099Z",
+      "firstContentObservationSplashVisible": false,
+      "firstContentObservedAfterReadyCandidate": true,
+      "firstContentObservedAfterReadyHidden": true,
+      "provenReadyAfterRenderOwnedContent": true,
+      "settledSplashHidden": true
+    }
+  ],
+  "finishedAt": "2026-09-16T10:45:59.078Z"
+}

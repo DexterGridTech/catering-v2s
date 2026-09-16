@@ -28,6 +28,7 @@ import {
   clearLayersCommand,
   closeLayerCommand,
   openLayerCommand,
+  pruneHydratedContainersCommand,
   pruneHydratedLayersCommand,
   showScreenCommand,
 } from '../commands'
@@ -35,7 +36,7 @@ import {
   contentActions,
   readContentState,
 } from '../../foundations/workspaceSlices'
-import {isUiCatalogEntryAvailable} from '../../foundations/catalog'
+import {hasUiContainerDeclarations, isUiCatalogEntryAvailable} from '../../foundations/catalog'
 import type {SurfaceForm, UiCatalog} from '../../types/catalog'
 import type {StateRoot} from '@catering-v2s/kernel-base-state'
 import {completeUiStateWrite} from './completeWrite'
@@ -207,6 +208,7 @@ const createLayerPartUnavailableError = (
 })
 
 type ContentAction = ReturnType<typeof contentActions.showScreen>
+  | ReturnType<typeof contentActions.removeScreen>
   | ReturnType<typeof contentActions.openLayer>
   | ReturnType<typeof contentActions.closeLayer>
   | ReturnType<typeof contentActions.clearLayers>
@@ -290,6 +292,79 @@ export const createClearLayersActor = (): ActorDefinition => defineActor(moduleN
       context,
       contentActions.clearLayers(payload),
     ), 'content')
+  }),
+])
+
+const pruneHydratedContainersForDisplayMode = (
+  {context, catalog, selectSurfaceForm, workspace, displayMode}: Readonly<{
+    readonly context: ActorExecutionContext
+    readonly catalog: UiCatalog
+    readonly selectSurfaceForm: (root: StateRoot) => SurfaceForm
+    readonly workspace: WorkspaceKey
+    readonly displayMode: DisplayMode
+  }>,
+): boolean => {
+  const dispatch = createWorkspaceActionDispatcher({
+    routeContext: {workspace},
+    dispatch: context.dispatchAction,
+  })
+  const before = readContentState(context.getState(), workspace)
+  const containers = before.contentSets[displayMode].containers
+  const catalogContext = currentCatalogContext(context.getState(), displayMode, selectSurfaceForm)
+  for (const [containerKey, placement] of Object.entries(containers)) {
+    const entry = catalog.byPartKey[placement.partKey]
+    const renderable = entry !== undefined
+      && isUiCatalogEntryAvailable(entry, containerKey, catalogContext)
+    if (renderable) continue
+    context.platformPorts.logger.warn({
+      category: 'ui-state-hydration',
+      event: 'ui-state-hydration.container.not-renderable',
+      message: 'Hydrated UI container was removed because it is not renderable in the current catalog',
+      data: {
+        scope: 'container',
+        workspace,
+        displayMode,
+        containerKey,
+        layerId: null,
+        partKey: placement.partKey,
+        reason: 'hydrated-container-not-renderable',
+      },
+    })
+    dispatch(contentActions.removeScreen({displayMode, containerKey}))
+  }
+  const after = readContentState(context.getState(), workspace)
+  return after !== before
+}
+
+export const createPruneHydratedContainersActor = (input: Readonly<{
+  readonly catalog: UiCatalog
+  readonly selectSurfaceForm: (root: StateRoot) => SurfaceForm
+}>): ActorDefinition => defineActor(moduleName, 'prune-hydrated-containers', [
+  onCommand(pruneHydratedContainersCommand, async context => {
+    let changed = false
+    const workspaces: readonly WorkspaceKey[] = ['MAIN', 'BRANCH']
+    const displayModes: readonly DisplayMode[] = ['PRIMARY', 'SECONDARY']
+    if (!hasUiContainerDeclarations(input.catalog)) {
+      return completeUiStateWrite(context, {
+        workspace: currentWorkspace(context),
+        changed: false,
+      }, 'content')
+    }
+    for (const workspace of workspaces) {
+      for (const displayMode of displayModes) {
+        changed = pruneHydratedContainersForDisplayMode({
+          context,
+          catalog: input.catalog,
+          selectSurfaceForm: input.selectSurfaceForm,
+          workspace,
+          displayMode,
+        }) || changed
+      }
+    }
+    return completeUiStateWrite(context, {
+      workspace: currentWorkspace(context),
+      changed,
+    }, 'content')
   }),
 ])
 

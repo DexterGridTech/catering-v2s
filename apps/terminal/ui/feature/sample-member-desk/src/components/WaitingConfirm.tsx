@@ -8,6 +8,7 @@ import {
 import {
   PrimitiveActions,
   PrimitiveButton,
+  PrimitiveCenter,
   PrimitiveContainer,
   PrimitiveStatus,
   PrimitiveText,
@@ -27,25 +28,27 @@ export const WaitingConfirm = () => {
   })
 
   return (
-    <PrimitiveContainer testID="sample.desk.waiting-confirm" layout="card">
-      <PrimitiveStatus testID="sample.desk.waiting-confirm:message">
-        已提交，等待顾客确认
-      </PrimitiveStatus>
-      <PrimitiveText testID="sample.desk.waiting-confirm:member-name" accessibilityLabel="姓名">
-        {pending?.name ?? ''}
-      </PrimitiveText>
-      <PrimitiveText testID="sample.desk.waiting-confirm:member-phone" accessibilityLabel="电话">
-        {pending?.phone ?? ''}
-      </PrimitiveText>
-      <PrimitiveActions testID="sample.desk.waiting-confirm:actions">
-        <PrimitiveButton
-          testID="sample.desk.waiting-confirm:withdraw"
-          accessibilityLabel="撤回"
-          onPress={withdraw}
-        >
-          撤回
-        </PrimitiveButton>
-      </PrimitiveActions>
-    </PrimitiveContainer>
+    <PrimitiveCenter testID="sample.desk.waiting-confirm" style={{flex: 1, minHeight: 0, padding: 24}}>
+      <PrimitiveContainer testID="sample.desk.waiting-confirm:card" layout="card" bounded>
+        <PrimitiveStatus testID="sample.desk.waiting-confirm:message">
+          已提交，等待顾客确认
+        </PrimitiveStatus>
+        <PrimitiveText testID="sample.desk.waiting-confirm:member-name" accessibilityLabel="姓名">
+          {pending?.name ?? ''}
+        </PrimitiveText>
+        <PrimitiveText testID="sample.desk.waiting-confirm:member-phone" accessibilityLabel="电话">
+          {pending?.phone ?? ''}
+        </PrimitiveText>
+        <PrimitiveActions testID="sample.desk.waiting-confirm:actions">
+          <PrimitiveButton
+            testID="sample.desk.waiting-confirm:withdraw"
+            accessibilityLabel="撤回"
+            onPress={withdraw}
+          >
+            撤回
+          </PrimitiveButton>
+        </PrimitiveActions>
+      </PrimitiveContainer>
+    </PrimitiveCenter>
   )
 }

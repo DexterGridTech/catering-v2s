@@ -148,8 +148,6 @@ export function OwnerBindingDetailDrawer({
         {groupWorkspaceKey, bindingRef: binding.bindingRef},
         {
           body: {
-            bindingDisplayName: binding.bindingDisplayName ?? null,
-            externalOwnerId: binding.externalOwnerId,
             expectedVersion: binding.version,
           },
           headers: {'Idempotency-Key': submission.getIdempotencyKey()},

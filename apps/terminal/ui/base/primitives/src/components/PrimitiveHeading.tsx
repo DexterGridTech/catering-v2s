@@ -4,7 +4,12 @@ import {assertTestID} from '../foundations/assertTestID';
 import type {PrimitiveHeadingProps} from '../types/types';
 
 export const PrimitiveHeading = ({testID, children}: PrimitiveHeadingProps) => (
-  <RnrText testID={assertTestID(testID)} accessibilityRole="header" className={baseTokens.heading}>
+  <RnrText
+    testID={assertTestID(testID)}
+    accessibilityRole="header"
+    accessibilityLiveRegion="polite"
+    className={baseTokens.heading}
+  >
     {children}
   </RnrText>
 );

@@ -2,9 +2,9 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuSkuPrice(
-    java.util.UUID skuRef,
-    String skuName,
-    String skuCode,
-    Long standardPriceCents,
-    Long listedPriceCents
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "skuRef", required = true) java.util.UUID skuRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "skuName", required = true) String skuName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "skuCode", required = true) String skuCode,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "standardPriceCents", required = true) Long standardPriceCents,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "listedPriceCents", required = true) Long listedPriceCents
 ) {}

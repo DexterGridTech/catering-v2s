@@ -15,7 +15,7 @@ export const unavailableAppControlPort: AppControlPort = {
   hideNativeLoading: async (_input: SurfaceActionInput): Promise<PortResult<NoOutput>> => createUnavailable('appControl', 'hideNativeLoading'),
 };
 
-Object.defineProperty(unavailableAppControlPort, PORT_DESCRIPTOR_KEY, {
+if (__DEV__) Object.defineProperty(unavailableAppControlPort, PORT_DESCRIPTOR_KEY, {
   value: Object.freeze({
     port: 'appControl',
     capabilities: Object.freeze([

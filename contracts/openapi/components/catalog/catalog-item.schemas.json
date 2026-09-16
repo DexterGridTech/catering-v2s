@@ -6050,6 +6050,7 @@
                   "MOVE_BOUNDARY",
                   "NEGATIVE_STOCK_NOT_ALLOWED",
                   "NOT_FOUND",
+                  "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
                   "OWNER_REFERENCE_LEAK",
                   "PRODUCTION_TAG_NOT_BINDABLE",
                   "REFERENCE_BLOCKS_VOID",

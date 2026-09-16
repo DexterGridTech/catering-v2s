@@ -1,0 +1,28 @@
+--------- beginning of main
+09-12 23:57:29.163   825   895 D SplashScreenView: Build android.window.SplashScreenView{93954e5 V.E...... ......ID 0,0-0,0}
+09-12 23:57:29.163   825   895 D SplashScreenView: Icon: view: android.widget.ImageView{3651bba V.ED..... ......I. 0,0-0,0 #1020504 android:id/splashscreen_icon_view} drawable: com.android.wm.shell.startingsurface.SplashscreenIconDrawableFactory$ImmobileIconDrawable@c5baa6b size: 384
+09-12 23:57:29.163   825   895 D SplashScreenView: Branding: view: android.view.View{ab659c8 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+09-12 23:57:30.180  4584  4584 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal
+09-12 23:57:30.181  4584  4584 I TER-Splash: event=native.application-callbacks-registered
+09-12 23:57:30.181  4584  4584 I TER-Splash: event=native.registry-application-registered app=sample-terminal
+09-12 23:57:30.183  4584  4584 I TER-Splash: event=expo.prevent-auto-hide-set app=sample-terminal value=true
+09-12 23:57:30.213  4584  4584 I TER-Splash: event=expo.activity-registered app=sample-terminal
+09-12 23:57:30.213  4584  4584 I TER-Splash: event=expo.content-gate-released-for-native-overlay app=sample-terminal
+09-12 23:57:30.213  4584  4584 I TER-Splash: event=native.gate-installed activity=native-splash-activity-1
+09-12 23:57:30.220  4584  4584 I TER-Splash: event=native.loading-overlay-attached activity=native-splash-activity-1
+09-12 23:57:30.220  4584  4584 I TER-Splash: event=native.activity-registered app=sample-terminal
+09-12 23:57:30.220  4584  4584 I TER-Splash: event=activity.onCreate phase=before-super app=sample-terminal
+09-12 23:57:30.496  4584  4584 I TER-Splash: event=activity.onCreate phase=after-super app=sample-terminal
+09-12 23:57:30.496  4584  4584 I TER-Splash: event=native.loading-overlay-attached activity=native-splash-activity-1
+09-12 23:57:30.496  4584  4584 I TER-Splash: event=native.loading-overlay-attached-after-super app=sample-terminal
+09-12 23:57:30.835  4584  4584 I TER-Splash: event=native.pre-draw-covered activity=native-splash-activity-1
+09-12 23:57:31.120  4584  4584 D SplashScreenView: Building from parcel drawable: android.graphics.drawable.BitmapDrawable@87bde19
+09-12 23:57:31.128  4584  4584 D SplashScreenView: Build android.window.SplashScreenView{fe78b8c V.E...... ......ID 0,0-0,0}
+09-12 23:57:31.128  4584  4584 D SplashScreenView: Icon: view: androidx.appcompat.widget.AppCompatImageView{c6342d5 V.ED..... ......I. 0,0-0,0 #1020504 android:id/splashscreen_icon_view} drawable: android.graphics.drawable.BitmapDrawable@87bde19 size: 384
+09-12 23:57:31.128  4584  4584 D SplashScreenView: Branding: view: android.view.View{a5e8aea G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+09-12 23:57:31.590  4584  4584 D SplashScreenView: remove starting view
+09-12 23:57:32.864  4584  4584 I TER-Splash: event=native.begin-hide reason=startup-ready activity=native-splash-activity-1 alreadyReleased=false
+09-12 23:57:32.882  4584  4584 I TER-Splash: event=native.release-hide activity=native-splash-activity-1
+09-12 23:57:32.882  4584  4584 I TER-Splash: event=native.loading-overlay-fade-start activity=native-splash-activity-1
+09-12 23:57:32.883  4584  4584 I TER-Splash: event=native.pre-draw-released activity=native-splash-activity-1
+09-12 23:57:33.174  4584  4584 I TER-Splash: event=native.loading-overlay-removed activity=native-splash-activity-1

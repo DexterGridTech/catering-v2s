@@ -16,6 +16,8 @@ export type RuntimeDeviceIdentity = DeviceIdentity
 export type RenderRuntimeFacts = Readonly<{
   readonly environmentMode: EnvironmentMode
   readonly debugMode: DebugMode
+  /** Optional package-level opt-in for showing the current sample admin password in the login UI. */
+  readonly showAdminPassword?: boolean
   readonly deviceIdentity: RuntimeDeviceIdentity
   readonly platformPortCapabilities: readonly PlatformPortCapabilitySnapshot[]
 }>
@@ -37,16 +39,19 @@ export const resolveDebugMode = ({startup, packaging}: DebugModeResolutionInput)
 export const createRenderRuntimeFacts = ({
   environmentMode,
   debugMode,
+  showAdminPassword,
   deviceIdentity,
   platformPortCapabilities,
 }: Readonly<{
   readonly environmentMode: EnvironmentMode
   readonly debugMode: DebugMode
+  readonly showAdminPassword?: boolean
   readonly deviceIdentity: RuntimeDeviceIdentity
   readonly platformPortCapabilities: readonly PlatformPortCapabilitySnapshot[]
 }>): RenderRuntimeFacts => Object.freeze({
   environmentMode,
   debugMode: Object.freeze({enabled: debugMode.enabled, source: debugMode.source}),
+  ...(showAdminPassword === undefined ? {} : {showAdminPassword}),
   deviceIdentity: Object.freeze({
     available: deviceIdentity.available,
     deviceId: deviceIdentity.deviceId,

@@ -157,3 +157,6 @@ export const isUiCatalogEntryAvailable = (
     && entry.instanceModes.includes(context.instanceMode)
     && entry.surfaceForm.includes(context.surfaceForm)
 }
+
+export const hasUiContainerDeclarations = (catalog: UiCatalog): boolean =>
+  catalog.entries.some(entry => entry.containerKeys.length > 0)

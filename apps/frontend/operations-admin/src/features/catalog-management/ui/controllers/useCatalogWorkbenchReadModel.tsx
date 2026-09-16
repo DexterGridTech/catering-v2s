@@ -40,7 +40,8 @@ function queryRefetchFailed(value: unknown): boolean {
 export function useCatalogWorkbenchReadModel({
   queryContext,
   surface,
-}: Pick<OperationsPageProps, 'queryContext'> & {surface: 'store' | 'brand'}) {
+  rulesReady = true,
+}: Pick<OperationsPageProps, 'queryContext'> & {surface: 'store' | 'brand'; rulesReady?: boolean}) {
   const [view, setView] = useState<'TREE_TABLE' | 'TABLE_ONLY'>('TREE_TABLE');
   const [brandRef, setBrandRef] = useState<string>();
   const [treeSelection, setTreeSelection] = useState<CatalogTreeSelection>({
@@ -88,6 +89,7 @@ export function useCatalogWorkbenchReadModel({
   }, [brands, surface]);
   const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
   const scopeReady = Boolean(queryContext.scopeRef) && (surface === 'store' || Boolean(brandRef));
+  const businessReady = scopeReady && rulesReady;
   const tagDictionaryState = useCursorCandidates<TagDictionaryEntry>({
     resetKey: `${queryContext.scopeRef ?? ''}:${brandRef ?? ''}`,
     pageSize: 50,
@@ -159,15 +161,21 @@ export function useCatalogWorkbenchReadModel({
     () => catalogInventoryRtkRequest.getOperationsCatalogItems({}, {query: {...listQuery, queryGeneration}, headers}),
     [headers, listQuery, queryGeneration],
   );
-  const contextQuery = operationsRtk.useGetOperationsCatalogWorkbenchContextQuery(contextRequest, {skip: !scopeReady});
-  const navigationQuery = operationsRtk.useGetOperationsCatalogNavigationQuery(navigationRequest, {skip: !scopeReady});
-  const manifestQuery = operationsRtk.useGetOperationsCatalogShapeManifestQuery(manifestRequest, {skip: !scopeReady});
-  const tagDictionaryQuery = operationsRtk.useGetOperationsCatalogDictionaryQuery(tagDictionaryRequest, {
-    skip: !scopeReady,
+  const contextQuery = operationsRtk.useGetOperationsCatalogWorkbenchContextQuery(contextRequest, {
+    skip: !businessReady,
   });
-  const itemsQuery = operationsRtk.useGetOperationsCatalogItemsQuery(itemsRequest, {skip: !scopeReady});
+  const navigationQuery = operationsRtk.useGetOperationsCatalogNavigationQuery(navigationRequest, {
+    skip: !businessReady,
+  });
+  const manifestQuery = operationsRtk.useGetOperationsCatalogShapeManifestQuery(manifestRequest, {
+    skip: !businessReady,
+  });
+  const tagDictionaryQuery = operationsRtk.useGetOperationsCatalogDictionaryQuery(tagDictionaryRequest, {
+    skip: !businessReady,
+  });
+  const itemsQuery = operationsRtk.useGetOperationsCatalogItemsQuery(itemsRequest, {skip: !businessReady});
   const categoryCandidates = useCatalogCategoryCandidates({
-    open: scopeReady,
+    open: businessReady,
     scopeRef: queryContext.scopeRef,
     brandRef,
     usage: 'ITEM_ASSIGNMENT',
@@ -248,7 +256,7 @@ export function useCatalogWorkbenchReadModel({
     [clearSelectedRows, clearSkuRows, collapseSkuRows, goToPage],
   );
   const refresh = useCallback(() => {
-    if (!scopeReady) return;
+    if (!businessReady) return;
     if (surface === 'brand') void headCompanyQuery.refetch();
     void contextQuery.refetch();
     void navigationQuery.refetch();
@@ -261,15 +269,15 @@ export function useCatalogWorkbenchReadModel({
     itemsQuery,
     manifestQuery,
     navigationQuery,
-    scopeReady,
+    businessReady,
     surface,
     tagDictionaryQuery,
   ]);
   const refreshAfterBatch = useCallback(async () => {
-    if (!scopeReady) return;
+    if (!businessReady) return;
     const results = await Promise.all([itemsQuery.refetch(), navigationQuery.refetch()]);
     if (results.some(queryRefetchFailed)) throw new Error('CATALOG_BATCH_REFRESH_FAILED');
-  }, [itemsQuery, navigationQuery, scopeReady]);
+  }, [businessReady, itemsQuery, navigationQuery]);
   const contentTabRefreshVersion = useRefreshVersion(operationsContentTabRefreshSignal);
   const lastContentTabRefreshVersion = useRef(contentTabRefreshVersion);
   useEffect(() => {
@@ -288,6 +296,7 @@ export function useCatalogWorkbenchReadModel({
     brandsLoading: headCompanyQuery.isLoading,
     headers,
     scopeReady,
+    businessReady,
     treeSelection,
     treeSearch,
     treeExpandedKeys,

@@ -12,6 +12,7 @@ import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.organization.api.OrganizationNodeReadback;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationHierarchyService;
+import com.catering.v2s.organization.domain.generated.StoreOperatingRuleCatalog;
 import com.catering.v2s.platform.access.PlatformExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.runtime.RuntimeEnvironmentKeys;
@@ -310,6 +311,9 @@ class BackendAcceptanceTest {
     static final RouteIdentity OPERATIONS_ORGANIZATION_STORE = new RouteIdentity(
             "getOperationsOrganizationStore",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}");
+    static final RouteIdentity OPERATIONS_ORGANIZATION_STORE_OPERATING_RULE = new RouteIdentity(
+            "getOperationsOrganizationStoreOperatingRule",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches");
     static final RouteIdentity OPERATIONS_ORGANIZATION_CANDIDATES = new RouteIdentity(
             "getOperationsOrganizationCandidates",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates");
@@ -677,6 +681,12 @@ class BackendAcceptanceTest {
         return fixture(targetType, Set.of(), capabilities);
     }
 
+    static Map<String, Object> acceptanceStoreOperatingRuleSwitches() {
+        Map<String, Object> values = new java.util.LinkedHashMap<>(StoreOperatingRuleCatalog.defaults());
+        values.put(StoreOperatingRuleCatalog.definition("catalogManagementEnabled").key(), true);
+        return Map.copyOf(values);
+    }
+
     Fixture fixture(String targetType, Set<String> pageAccessKeys, Set<String> capabilities) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String key = "acceptance-" + suffix;
@@ -733,7 +743,7 @@ class BackendAcceptanceTest {
                 "Acceptance Tenant Ltd",
                 "91310000ACCEPTANCE",
                 Map.of());
-        OrganizationEntityReadback store = entities.createStore(
+        OrganizationEntityReadback store = entities.createStoreWithOperatingRuleSwitches(
                 workspaceUuid,
                 key,
                 project.id(),
@@ -743,7 +753,8 @@ class BackendAcceptanceTest {
                 "acceptance-store",
                 "Acceptance Store",
                 "Acceptance Store Notes",
-                Map.of());
+                Map.of(),
+                acceptanceStoreOperatingRuleSwitches());
         OrganizationEntityReadback headCompany = "HEAD_COMPANY".equals(targetType)
                 ? entities.createEntity(
                         "HEAD_COMPANY",
@@ -832,6 +843,17 @@ class BackendAcceptanceTest {
 
     /** Creates an independently authorized store/brand context in an existing isolated workspace. */
     Fixture siblingStoreFixture(Fixture existing, Set<String> capabilities) {
+        return siblingStoreFixture(existing, capabilities, acceptanceStoreOperatingRuleSwitches());
+    }
+
+    /** Creates an independently authorized Store with an explicitly closed operating-rule map for gate negatives. */
+    Fixture closedStoreFixture(Fixture existing, Set<String> capabilities) {
+        return siblingStoreFixture(
+                existing, capabilities, new java.util.LinkedHashMap<>(StoreOperatingRuleCatalog.defaults()));
+    }
+
+    private Fixture siblingStoreFixture(
+            Fixture existing, Set<String> capabilities, Map<String, Object> operatingRuleSwitches) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         long now = Instant.now().toEpochMilli();
         OrganizationEntityReadback brand = entities.createEntity(
@@ -852,7 +874,7 @@ class BackendAcceptanceTest {
                 "Acceptance Tenant " + suffix + " Ltd",
                 "91310000" + suffix,
                 Map.of());
-        OrganizationEntityReadback store = entities.createStore(
+        OrganizationEntityReadback store = entities.createStoreWithOperatingRuleSwitches(
                 existing.workspaceUuid(),
                 existing.groupWorkspaceKey(),
                 existing.projectId(),
@@ -862,7 +884,8 @@ class BackendAcceptanceTest {
                 "acceptance-store-" + suffix,
                 "Acceptance Store " + suffix,
                 "Acceptance Store Notes",
-                Map.of());
+                Map.of(),
+                operatingRuleSwitches);
         UUID roleId = roles.create(
                         existing.workspaceUuid(),
                         existing.groupWorkspaceKey(),
@@ -901,7 +924,7 @@ class BackendAcceptanceTest {
     Fixture siblingStoreFixtureSameBrand(Fixture existing, Set<String> capabilities) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         long now = Instant.now().toEpochMilli();
-        OrganizationEntityReadback store = entities.createStore(
+        OrganizationEntityReadback store = entities.createStoreWithOperatingRuleSwitches(
                 existing.workspaceUuid(),
                 existing.groupWorkspaceKey(),
                 existing.projectId(),
@@ -911,7 +934,8 @@ class BackendAcceptanceTest {
                 "acceptance-store-same-brand-" + suffix,
                 "Acceptance Same Brand Store " + suffix,
                 "Acceptance Store Notes",
-                Map.of());
+                Map.of(),
+                acceptanceStoreOperatingRuleSwitches());
         UUID roleId = roles.create(
                         existing.workspaceUuid(),
                         existing.groupWorkspaceKey(),
@@ -1035,7 +1059,7 @@ class BackendAcceptanceTest {
                 source.brandId(),
                 "acceptance-brand-copy-authorization-" + suffix,
                 AuditActor.system());
-        OrganizationEntityReadback store = entities.createStore(
+        OrganizationEntityReadback store = entities.createStoreWithOperatingRuleSwitches(
                 source.workspaceUuid(),
                 source.groupWorkspaceKey(),
                 source.projectId(),
@@ -1045,7 +1069,8 @@ class BackendAcceptanceTest {
                 "acceptance-brand-copy-store-" + suffix,
                 "Acceptance Brand Copy Store " + suffix,
                 "Acceptance Store Notes",
-                Map.of());
+                Map.of(),
+                acceptanceStoreOperatingRuleSwitches());
         UUID roleId = roles.create(
                         source.workspaceUuid(),
                         source.groupWorkspaceKey(),
@@ -1161,7 +1186,7 @@ class BackendAcceptanceTest {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         List<UUID> result = new java.util.ArrayList<>(count);
         for (int index = 0; index < count; index++) {
-            OrganizationEntityReadback store = entities.createStore(
+            OrganizationEntityReadback store = entities.createStoreWithOperatingRuleSwitches(
                     existing.workspaceUuid(),
                     existing.groupWorkspaceKey(),
                     existing.projectId(),
@@ -1171,7 +1196,8 @@ class BackendAcceptanceTest {
                     "acceptance-store-" + suffix + "-" + String.format("%02d", index),
                     "Acceptance Store " + suffix + " " + index,
                     "Acceptance Store Notes",
-                    Map.of());
+                    Map.of(),
+                    acceptanceStoreOperatingRuleSwitches());
             result.add(store.id());
         }
         return List.copyOf(result);

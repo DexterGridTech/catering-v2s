@@ -2,6 +2,7 @@ package com.catering.v2s.workspace.iam.application;
 
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.organization.api.StoreOperatingRuleGate;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.OwnerGrant;
 import com.catering.v2s.platform.command.WorkspaceCommandContextMint;
@@ -25,20 +26,18 @@ public final class CommandExecutionContextResolver {
     private final WorkspaceCapabilityScopeResolver capabilities;
     private final CatalogScopeLookup catalogScopes;
     private final WorkspaceAuthenticationService sessions;
-
-    public CommandExecutionContextResolver(
-            WorkspaceCapabilityScopeResolver capabilities, CatalogScopeLookup catalogScopes) {
-        this(capabilities, catalogScopes, null);
-    }
+    private final StoreOperatingRuleGate storeOperatingRuleGate;
 
     @org.springframework.beans.factory.annotation.Autowired
     public CommandExecutionContextResolver(
             WorkspaceCapabilityScopeResolver capabilities,
             CatalogScopeLookup catalogScopes,
-            WorkspaceAuthenticationService sessions) {
+            WorkspaceAuthenticationService sessions,
+            StoreOperatingRuleGate storeOperatingRuleGate) {
         this.capabilities = capabilities;
         this.catalogScopes = catalogScopes;
         this.sessions = sessions;
+        this.storeOperatingRuleGate = storeOperatingRuleGate;
     }
 
     /**
@@ -126,6 +125,14 @@ public final class CommandExecutionContextResolver {
             WorkspaceCapabilityScopeResolver.ScopeResolution resolution = catalogResolution.scopeResolution();
             if (resolution.decision() != WorkspaceCapabilityScopeResolver.Decision.ALLOW) {
                 throw new CatalogScopeForbiddenException(catalogResolution.denialReason());
+            }
+            if (token.requiresStoreOperatingRuleGate()
+                    && ServiceNodeTypes.STORE.equals(dataNodeType)) {
+                if (storeOperatingRuleGate == null) {
+                    throw new IllegalStateException("store operating-rule gate is not wired");
+                }
+                storeOperatingRuleGate.requireCatalogManagementForStoreTarget(
+                        session.workspaceUuid(), session.groupWorkspaceKey(), dataNodeType, dataNodeId);
             }
             OperationsOwnerScopeGrant legacyGrant = resolution.ownerScopeGrant(token.requirementId());
             CatalogScopeLookup.CatalogBrandJudgment judgment = catalogResolution.brandJudgment();

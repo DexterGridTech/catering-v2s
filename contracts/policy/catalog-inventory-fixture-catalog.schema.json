@@ -1383,6 +1383,13 @@
           ],
           "description": "nullable standard sale price"
         },
+        "standardSalePriceCents": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "nullable standard sale price in cents"
+        },
         "skuCodes": {
           "type": "array",
           "description": "SKU codes",

@@ -2,5 +2,5 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuSectionList(
-    java.util.List<SalesMenuSectionView> items
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "items", required = true) java.util.List<SalesMenuSectionView> items
 ) {}

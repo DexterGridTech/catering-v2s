@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationOverviewItemExtensionFieldsItem(
-    String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
     String value
 ) {}

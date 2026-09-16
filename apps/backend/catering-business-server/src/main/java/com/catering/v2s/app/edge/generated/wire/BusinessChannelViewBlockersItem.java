@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record BusinessChannelViewBlockersItem(
-    BusinessChannelViewBlockersItemType type,
-    String ref,
-    BusinessChannelViewBlockersItemStatus status
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "type", required = true) BusinessChannelViewBlockersItemType type,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "ref", required = true) String ref,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) BusinessChannelViewBlockersItemStatus status
 ) {}

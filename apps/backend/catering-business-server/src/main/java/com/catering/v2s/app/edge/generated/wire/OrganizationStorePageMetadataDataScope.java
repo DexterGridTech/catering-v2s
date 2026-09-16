@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationStorePageMetadataDataScope(
-    String nodeType,
-    java.util.UUID nodeRef,
-    String nodeName
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "nodeType", required = true) String nodeType,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "nodeRef", required = true) java.util.UUID nodeRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "nodeName", required = true) String nodeName
 ) {}

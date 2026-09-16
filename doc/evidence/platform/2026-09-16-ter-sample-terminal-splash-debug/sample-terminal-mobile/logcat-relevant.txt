@@ -1,0 +1,36 @@
+         1789523476.780  7242  7242 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal
+         1789523476.780  7242  7242 I TER-Splash: event=native.application-callbacks-registered
+         1789523476.781  7242  7242 I TER-Splash: event=native.registry-application-registered app=sample-terminal
+         1789523476.781  7242  7242 I TER-Splash: event=expo.prevent-auto-hide-set app=sample-terminal value=true
+         1789523476.785  7242  7242 I TER-Splash: event=expo.activity-registered app=sample-terminal
+         1789523476.785  7242  7242 I TER-Splash: event=native.gate-installed activity=native-splash-activity-1
+         1789523476.785  7242  7242 I TER-Splash: event=native.activity-registered app=sample-terminal
+         1789523476.785  7242  7242 I TER-Splash: event=activity.onCreate phase=before-super app=sample-terminal
+         1789523476.790  7242  7242 I TerminalDualScreen: event=primary-activity-configuration displayIndex=0 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=360 screenHeightDp=640 smallestWidthDp=360 orientation=1 resourceWidthPx=720 resourceHeightPx=1280
+         1789523476.794  7242  7242 I TER-Splash: event=activity.onCreate phase=after-super app=sample-terminal
+         1789523476.839  7242  7282 I ExpoModulesCore: ✅ AppContext was initialized
+         1789523476.850  7242  7242 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789523476.851  7242  7242 I TER-Splash: event=native.pre-draw-blocked activity=native-splash-activity-1
+         1789523476.854  7242  7242 I TerminalDualScreen: event=primary-window-post-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789523476.870  7242  7283 I ExpoModulesCore: ✅ JSI interop was installed
+         1789523476.878  7242  7283 I ExpoModulesCore: ✅ Constants were exported
+         1789523476.965  7242  7242 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789523477.002  7242  7242 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789523477.003  7242  7283 I ReactNativeJS:   category: 'startup.ready-candidate',
+         1789523477.003  7242  7283 I ReactNativeJS:   event: 'startup.ready-candidate',
+         1789523477.006  7242  7283 I ReactNativeJS:   category: 'startup.ready',
+         1789523477.006  7242  7283 I ReactNativeJS:   event: 'startup.ready',
+         1789523477.008  7242  7283 I ReactNativeJS:   category: 'startup.complete',
+         1789523477.008  7242  7283 I ReactNativeJS:   event: 'startup.complete',
+         1789523477.012  7242  7242 I TER-Splash: event=native.begin-hide reason=startup-ready activity=native-splash-activity-1 alreadyReleased=false
+         1789523477.028  7242  7242 I TER-Splash: event=native.release-hide activity=native-splash-activity-1
+         1789523477.029  7242  7283 I ReactNativeJS:   category: 'startup.ready-hidden',
+         1789523477.029  7242  7283 I ReactNativeJS:   event: 'startup.ready-hidden',
+         1789523477.045  7242  7242 I TER-Splash: event=native.pre-draw-released activity=native-splash-activity-1
+         1789523477.094  7242  7242 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789523477.529  7242  7242 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=720 heightPx=1280 measuredWidthPx=720 measuredHeightPx=1280 densityDpi=320 density=2.0 logicalWidth=360.0 logicalHeight=640.0
+         1789523477.824  7407  7407 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789523477.827  7407  7407 I AndroidRuntime: Using default boot image
+         1789523477.827  7407  7407 I AndroidRuntime: Leaving lock profiling enabled
+         1789523477.864  7407  7407 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789523478.896  7407  7407 D AndroidRuntime: Shutting down VM

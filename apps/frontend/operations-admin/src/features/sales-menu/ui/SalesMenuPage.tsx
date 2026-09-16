@@ -73,6 +73,8 @@ import {accessKindLabels, orderKindLabels} from '../../business-channel/model/bu
 import {salesMenuTestIds} from '../salesMenuTestIds';
 import {AssetPreview} from '../../../app/components/AssetPreview';
 import {SalesMenuTaskSurfaces} from './SalesMenuTaskSurfaces';
+import {OperationsStoreCatalogManagementDisabledSurface} from '../../../app/components/OperationsStoreCatalogManagementDisabledSurface';
+import {useStoreOperatingRuleGate} from '../../store-operating-rules/model/useStoreOperatingRuleGate';
 import {
   commandErrorMessage,
   formatOccurredAt,
@@ -604,7 +606,8 @@ function SalesMenuOperationTable({read}: {read: SalesMenuReadModel}) {
 }
 
 export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPageProps) {
-  const read = useSalesMenuReadModel({queryContext});
+  const ruleGate = useStoreOperatingRuleGate({queryContext});
+  const read = useSalesMenuReadModel({queryContext, capabilityReady: ruleGate.isEnabled});
   const commands = useSalesMenuCommands();
   const {token} = theme.useToken();
   const canEdit = actionCapabilityKeys.includes(ACTION_CAPABILITIES.EDIT_STORE_SALES_MENU);
@@ -1283,6 +1286,11 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
         )}
         {!read.scopeReady ? (
           <Alert type="info" showIcon title="请先选择门店数据节点。" />
+        ) : !read.businessReady ? (
+          <OperationsStoreCatalogManagementDisabledSurface
+            state={ruleGate.state as Exclude<typeof ruleGate.state, 'BYPASSED' | 'SCOPE_MISSING' | 'ENABLED'>}
+            onRetry={ruleGate.retry}
+          />
         ) : (
           <>
             <Card title="经营入口" size="small">
@@ -1554,104 +1562,106 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
         )}
       </Space>
 
-      <SalesMenuTaskSurfaces
-        manager={{
-          open: managerOpen,
-          read,
-          onClose: () => setManagerOpen(false),
-          onSelect: menu => {
-            read.selectMenu(menu.salesMenuRef);
-            setManagerOpen(false);
-          },
-          onToggle: toggleMenu,
-          onRename: openRenameMenu,
-          onCopy: copyMenu,
-          onArchive: archiveMenu,
-          onCreate: trigger => {
-            createTriggerRef.current = trigger;
-            setCreateOpen(true);
-          },
-          canEdit,
-        }}
-        create={{
-          open: createOpen,
-          name: createName,
-          lifecycle: createLifecycle,
-          onNameChange: setCreateName,
-          onSubmit: () => void createMenu(),
-          onAfterOpenChange: createAfterOpenChange,
-        }}
-        candidate={{
-          open: candidateOpen && read.candidateOpen,
-          read,
-          onClose: () => {
-            read.closeCandidates();
-            setCandidateOpen(false);
-          },
-          onAdd: addCandidates,
-          onClosedFocus: () => {
-            window.requestAnimationFrame(() => {
-              candidateTriggerRef.current?.focus();
-              candidateTriggerRef.current = null;
-            });
-          },
-        }}
-        editor={{
-          item: editorItem,
-          open: editorOpen,
-          queryContext,
-          menuRef: selectedMenuRef,
-          menuVersion: selectedMenu?.version,
-          commands,
-          onSave: saveItem,
-          onClose: () => {
-            clearProductDetailContext();
-            setEditorOpen(false);
-          },
-          onSaved: () => {
-            clearProductDetailContext();
-            setEditorItem(undefined);
-          },
-          onDelete: deleteItem,
-          onViewProduct: openProductDetail,
-          onClosedFocus: () => {
-            editorTriggerRef.current?.focus();
-            editorTriggerRef.current = null;
-          },
-        }}
-        catalogItem={{
-          itemCode: productDetailItemCode,
-          initialMode: 'view',
-          queryContext,
-          canWriteCatalog: false,
-          surface: 'store',
-          onClose: closeProductDetail,
-          onAfterOpenChange: productDetailAfterOpenChange,
-        }}
-        detail={{
-          item: detailItem,
-          open: Boolean(detailItem),
-          queryContext,
-          menuRef: selectedMenuRef,
-          channelRef: selectedChannelRef,
-          onClose: () => setDetailItem(undefined),
-          onAfterOpenChange: detailAfterOpenChange,
-        }}
-        publish={{
-          open: publishOpen,
-          read,
-          canEdit,
-          onClose: () => setPublishOpen(false),
-          onPublish: () => {
-            if (!basePath || !selectedMenu) return;
-            void runCommand(
-              () => commands.publish(basePath, {expectedVersion: selectedMenu.version}),
-              '本系统已生成新的前台菜单。该结果不代表收银端、扫码端或自助机已经获取。',
-              () => setPublishOpen(false),
-            );
-          },
-        }}
-      />
+      {read.businessReady && (
+        <SalesMenuTaskSurfaces
+          manager={{
+            open: managerOpen,
+            read,
+            onClose: () => setManagerOpen(false),
+            onSelect: menu => {
+              read.selectMenu(menu.salesMenuRef);
+              setManagerOpen(false);
+            },
+            onToggle: toggleMenu,
+            onRename: openRenameMenu,
+            onCopy: copyMenu,
+            onArchive: archiveMenu,
+            onCreate: trigger => {
+              createTriggerRef.current = trigger;
+              setCreateOpen(true);
+            },
+            canEdit,
+          }}
+          create={{
+            open: createOpen,
+            name: createName,
+            lifecycle: createLifecycle,
+            onNameChange: setCreateName,
+            onSubmit: () => void createMenu(),
+            onAfterOpenChange: createAfterOpenChange,
+          }}
+          candidate={{
+            open: candidateOpen && read.candidateOpen,
+            read,
+            onClose: () => {
+              read.closeCandidates();
+              setCandidateOpen(false);
+            },
+            onAdd: addCandidates,
+            onClosedFocus: () => {
+              window.requestAnimationFrame(() => {
+                candidateTriggerRef.current?.focus();
+                candidateTriggerRef.current = null;
+              });
+            },
+          }}
+          editor={{
+            item: editorItem,
+            open: editorOpen,
+            queryContext,
+            menuRef: selectedMenuRef,
+            menuVersion: selectedMenu?.version,
+            commands,
+            onSave: saveItem,
+            onClose: () => {
+              clearProductDetailContext();
+              setEditorOpen(false);
+            },
+            onSaved: () => {
+              clearProductDetailContext();
+              setEditorItem(undefined);
+            },
+            onDelete: deleteItem,
+            onViewProduct: openProductDetail,
+            onClosedFocus: () => {
+              editorTriggerRef.current?.focus();
+              editorTriggerRef.current = null;
+            },
+          }}
+          catalogItem={{
+            itemCode: productDetailItemCode,
+            initialMode: 'view',
+            queryContext,
+            canWriteCatalog: false,
+            surface: 'store',
+            onClose: closeProductDetail,
+            onAfterOpenChange: productDetailAfterOpenChange,
+          }}
+          detail={{
+            item: detailItem,
+            open: Boolean(detailItem),
+            queryContext,
+            menuRef: selectedMenuRef,
+            channelRef: selectedChannelRef,
+            onClose: () => setDetailItem(undefined),
+            onAfterOpenChange: detailAfterOpenChange,
+          }}
+          publish={{
+            open: publishOpen,
+            read,
+            canEdit,
+            onClose: () => setPublishOpen(false),
+            onPublish: () => {
+              if (!basePath || !selectedMenu) return;
+              void runCommand(
+                () => commands.publish(basePath, {expectedVersion: selectedMenu.version}),
+                '本系统已生成新的前台菜单。该结果不代表收银端、扫码端或自助机已经获取。',
+                () => setPublishOpen(false),
+              );
+            },
+          }}
+        />
+      )}
 
       <Drawer
         open={renameOpen}

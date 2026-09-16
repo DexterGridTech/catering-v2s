@@ -5,9 +5,9 @@ import java.util.Map;
 
 /**
  * Generated command tokens. Binding source: contracts/registry/operation-handler-bindings.json Binding digest:
- * e53c2cfdafbd899c927d5855f10571a850e8fa4ffe6cd8028c04d95ce5e7e60f Contract source:
+ * b70a1fe23866ce6a4dbdcc7f6c956831a95d31e05a55ae210e0a32e9e53f2347 Contract source:
  * contracts/catalog/catalog-inventory-edge-contract.json Contract digest:
- * fea320be8639bccef9042cc8e57c12fa406d4003a0114af4fbe2790809215786
+ * ac1568443e44af877fddd4ab7401bd05a4fe207fd1579326379008a2ed425bd9
  */
 public final class CatalogInventoryWorkspaceCommandTokens {
     private CatalogInventoryWorkspaceCommandTokens() {}
@@ -20,7 +20,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                     List.of("STORE"),
                     Map.ofEntries(Map.entry("STORE", "EDIT_STORE_INVENTORY")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken BATCH_TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS =
             new WorkspaceCommandOperationToken(
@@ -32,7 +33,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken COUNT_OPERATIONS_INVENTORY_TARGET =
             new WorkspaceCommandOperationToken(
@@ -42,7 +44,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                     List.of("STORE"),
                     Map.ofEntries(Map.entry("STORE", "EDIT_STORE_INVENTORY")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken CREATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION =
             new WorkspaceCommandOperationToken(
@@ -54,7 +57,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken CREATE_OPERATIONS_CATALOG_CATEGORY =
             new WorkspaceCommandOperationToken(
@@ -66,7 +70,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken CREATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY =
             new WorkspaceCommandOperationToken(
@@ -78,7 +83,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken CREATE_OPERATIONS_CATALOG_ITEM =
             new WorkspaceCommandOperationToken(
@@ -90,7 +96,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken CREATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION =
             new WorkspaceCommandOperationToken(
@@ -102,7 +109,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken CREATE_OPERATIONS_CATALOG_UNIT =
             new WorkspaceCommandOperationToken(
@@ -114,7 +122,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken CREATE_OPERATIONS_PRODUCTION_TAG =
             new WorkspaceCommandOperationToken(
@@ -126,7 +135,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken EXECUTE_OPERATIONS_BRAND_CATALOG_COPY =
             new WorkspaceCommandOperationToken(
@@ -136,7 +146,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                     List.of("STORE"),
                     Map.ofEntries(Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "COPY_TARGET",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.ORGANIZATION_JUDGMENT);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.ORGANIZATION_JUDGMENT,
+                    true);
 
     public static final WorkspaceCommandOperationToken EXECUTE_OPERATIONS_LOCAL_CATALOG_COPY =
             new WorkspaceCommandOperationToken(
@@ -146,7 +157,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                     List.of("STORE"),
                     Map.ofEntries(Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "COPY_TARGET",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.TARGET_SCOPE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.TARGET_SCOPE,
+                    true);
 
     public static final WorkspaceCommandOperationToken EXECUTE_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION =
             new WorkspaceCommandOperationToken(
@@ -158,7 +170,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "COPY_TARGET",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.CATALOG_ITEM);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.CATALOG_ITEM,
+                    true);
 
     public static final WorkspaceCommandOperationToken INCREASE_OPERATIONS_INVENTORY_TARGET =
             new WorkspaceCommandOperationToken(
@@ -168,7 +181,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                     List.of("STORE"),
                     Map.ofEntries(Map.entry("STORE", "EDIT_STORE_INVENTORY")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken MOVE_OPERATIONS_CATALOG_CATEGORY =
             new WorkspaceCommandOperationToken(
@@ -180,7 +194,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken PREFLIGHT_OPERATIONS_BRAND_CATALOG_COPY =
             new WorkspaceCommandOperationToken(
@@ -190,7 +205,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                     List.of("STORE"),
                     Map.ofEntries(Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "COPY_TARGET",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.ORGANIZATION_JUDGMENT);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.ORGANIZATION_JUDGMENT,
+                    false);
 
     public static final WorkspaceCommandOperationToken PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY =
             new WorkspaceCommandOperationToken(
@@ -200,7 +216,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                     List.of("STORE"),
                     Map.ofEntries(Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "COPY_TARGET",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.TARGET_SCOPE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.TARGET_SCOPE,
+                    false);
 
     public static final WorkspaceCommandOperationToken PREFLIGHT_OPERATIONS_TEMPORARY_CATALOG_ITEM_PROMOTION =
             new WorkspaceCommandOperationToken(
@@ -212,7 +229,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "COPY_TARGET",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.CATALOG_ITEM);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.CATALOG_ITEM,
+                    false);
 
     public static final WorkspaceCommandOperationToken RELEASE_OPERATIONS_CATALOG_STAGED_ASSET =
             new WorkspaceCommandOperationToken(
@@ -224,7 +242,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken REORDER_OPERATIONS_CATALOG_DICTIONARY_ENTRY =
             new WorkspaceCommandOperationToken(
@@ -236,7 +255,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken SAVE_OPERATIONS_CATALOG_ITEM =
             new WorkspaceCommandOperationToken(
@@ -248,7 +268,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken STAGE_OPERATIONS_CATALOG_ASSET =
             new WorkspaceCommandOperationToken(
@@ -260,7 +281,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken TRANSITION_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION_STATUS =
             new WorkspaceCommandOperationToken(
@@ -272,7 +294,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken TRANSITION_OPERATIONS_CATALOG_CATEGORY_STATUS =
             new WorkspaceCommandOperationToken(
@@ -284,7 +307,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS =
             new WorkspaceCommandOperationToken(
@@ -296,7 +320,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken TRANSITION_OPERATIONS_CATALOG_ITEM_STATUS =
             new WorkspaceCommandOperationToken(
@@ -308,7 +333,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken TRANSITION_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_STATUS =
             new WorkspaceCommandOperationToken(
@@ -320,7 +346,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken TRANSITION_OPERATIONS_CATALOG_UNIT_STATUS =
             new WorkspaceCommandOperationToken(
@@ -332,7 +359,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS =
             new WorkspaceCommandOperationToken(
@@ -344,7 +372,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken UPDATE_OPERATIONS_CATALOG_ATTRIBUTE_DEFINITION =
             new WorkspaceCommandOperationToken(
@@ -356,7 +385,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken UPDATE_OPERATIONS_CATALOG_CATEGORY =
             new WorkspaceCommandOperationToken(
@@ -368,7 +398,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY =
             new WorkspaceCommandOperationToken(
@@ -380,7 +411,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken UPDATE_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION =
             new WorkspaceCommandOperationToken(
@@ -392,7 +424,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken UPDATE_OPERATIONS_CATALOG_UNIT =
             new WorkspaceCommandOperationToken(
@@ -404,7 +437,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken UPDATE_OPERATIONS_INVENTORY_TARGET_CONFIGURATION =
             new WorkspaceCommandOperationToken(
@@ -414,7 +448,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                     List.of("STORE"),
                     Map.ofEntries(Map.entry("STORE", "EDIT_STORE_INVENTORY")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static final WorkspaceCommandOperationToken UPDATE_OPERATIONS_PRODUCTION_TAG =
             new WorkspaceCommandOperationToken(
@@ -426,7 +461,8 @@ public final class CatalogInventoryWorkspaceCommandTokens {
                             Map.entry("HEAD_COMPANY", "EDIT_HEAD_COMPANY_CATALOG"),
                             Map.entry("STORE", "EDIT_STORE_CATALOG")),
                     "NONE",
-                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE);
+                    WorkspaceCommandOperationToken.CopySourcePolicy.NONE,
+                    true);
 
     public static List<WorkspaceCommandOperationToken> all() {
         return List.of(

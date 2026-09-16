@@ -266,7 +266,7 @@ export const createAndroidPersistKvPort = (
     clear: (_input: StateStorageCall) => execute('clear', native => native.clear(persistenceKey, mode)),
   }
   const port = portName
-  Object.defineProperty(storagePort, PORT_DESCRIPTOR_KEY, {
+  if (__DEV__) Object.defineProperty(storagePort, PORT_DESCRIPTOR_KEY, {
       value: Object.freeze({
         port,
         capabilities: Object.freeze([

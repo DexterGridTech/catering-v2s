@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
+import {useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {calculateVirtualKeyboardMetrics, type KeyboardCapacity, type LocalFrameMetrics} from '../foundations/keyboardHeight';
 import {
   InputControllerContext,
@@ -58,6 +58,16 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
     [],
   );
 
+  const notifyRegistryChange = useCallback(() => {
+    const current = keyboardStateRef.current;
+    commitKeyboardState({
+      activeFieldId: current.activeFieldId,
+      owner: current.owner,
+      keyboardPlacement: current.keyboardPlacement,
+      layout: current.layout,
+    });
+  }, [commitKeyboardState]);
+
   const clearBlockedField = useCallback(() => {
     if (blockedFieldIdRef.current === null && blockedCapacityRef.current === null) return;
     blockedFieldIdRef.current = null;
@@ -73,6 +83,7 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
 
   const fieldRegistry = useInputFieldRegistry({
     commitKeyboardState,
+    notifyRegistryChange,
     keyboardStateRef,
     blockedFieldIdRef,
     blockedCapacityRef,
@@ -201,39 +212,6 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
     visible: surfaceMetrics.visible,
     contentTooSmall: surfaceMetrics.contentTooSmall,
   };
-  const diagnosticData = {
-    source: 'ui-base-input.InputProvider',
-    frameWidth: frameMetrics?.width ?? null,
-    frameHeight: frameMetrics?.height ?? null,
-    frameReady: frameMetrics?.ready ?? false,
-    frameOrientation: frameMetrics?.orientation ?? null,
-    layout: keyboardState.layout,
-    fieldCount: fieldsRef.current.size,
-    fieldIds: [...fieldsRef.current.keys()],
-    activeFieldId: keyboardState.activeFieldId,
-    owner: keyboardState.owner,
-    capacity: keyboardState.capacity,
-    blockedFieldId: keyboardState.blockedFieldId,
-    blockedCapacity: keyboardState.blockedCapacity,
-    height: keyboardState.height,
-    contentHeight: keyboardState.contentHeight,
-    frameWidthForKeyboard: keyboardState.frameWidth,
-    cellWidth: keyboardState.cellWidth,
-    rowCount: keyboardState.rowCount,
-    hasNextField: keyboardState.hasNextField,
-    visible: keyboardState.visible,
-    contentTooSmall: keyboardState.contentTooSmall,
-    revision: keyboardState.revision,
-  } satisfies Parameters<NonNullable<InputDiagnosticReporter>>[0]['data'];
-  const diagnosticSignature = JSON.stringify(diagnosticData);
-  const previousDiagnosticSignature = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!__DEV__ || onDiagnostic === undefined || previousDiagnosticSignature.current === diagnosticSignature) return;
-    previousDiagnosticSignature.current = diagnosticSignature;
-    onDiagnostic({event: 'input.provider-metrics', data: diagnosticData});
-  }, [diagnosticData, diagnosticSignature, onDiagnostic]);
-
   return (
     <InputDiagnosticContext.Provider value={onDiagnostic ?? null}>
       <InputControllerContext.Provider value={controllerValue}>

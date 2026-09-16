@@ -72,6 +72,26 @@ const measurePrimarySurface = (renderer: ReactTestRenderer): void => {
   })
 }
 
+const press = (renderer: ReactTestRenderer, testID: string): (() => unknown) => {
+  const instance = renderer.root.findByProps({testID}) as unknown as Readonly<{
+    readonly props: Readonly<{readonly onPress: () => unknown}>
+  }>
+  return instance.props.onPress
+}
+
+const authenticateAdmin = async (renderer: ReactTestRenderer): Promise<void> => {
+  for (const digit of ['1', '2', '3', '4', '5', '6']) {
+    await act(async () => {
+      press(renderer, `ui.base.input:virtual-keyboard:text-${digit}`)()
+      await new Promise(resolve => setTimeout(resolve, 0))
+    })
+  }
+  await act(async () => {
+    press(renderer, adminTestIds.verify)()
+    await new Promise(resolve => setTimeout(resolve, 0))
+  })
+}
+
 const dispatchOptions = (displayMode: 'PRIMARY' | 'SECONDARY' = 'PRIMARY') => ({
   requestId: createRequestId(),
   routeContext: {displayMode},
@@ -172,6 +192,9 @@ describe('sample2 wallpaper console assembly', () => {
       await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)) })
 
       expect(events.filter(event => event.event === 'startup.complete')).toHaveLength(1)
+      const complete = events.find(event => event.event === 'startup.complete')
+      expect(complete?.data).toHaveProperty('primaryReadyPartKey')
+      expect(complete?.data).toHaveProperty('primaryContentFailure')
       expect(events.some(event => event.event === 'startup.ready-failed')).toBe(false)
     } finally {
       if (renderer !== undefined) act(() => { renderer!.unmount() })
@@ -185,6 +208,7 @@ describe('sample2 wallpaper console assembly', () => {
         platformPorts: createTestPlatformPorts({displayCount: surfaceForm === 'laptop' ? 2 : 1}),
         persistenceKey: `sample2-admin-integration-${surfaceForm}-${Date.now()}`,
         surfaceForm,
+        showAdminPassword: true,
       })))
     const renderers: ReactTestRenderer[] = []
     try {
@@ -196,8 +220,18 @@ describe('sample2 wallpaper console assembly', () => {
         }, dispatchOptions())
         const renderer = mount(createSurfaceForDisplayIndex(assembly, 0))
         renderers.push(renderer)
+        measurePrimarySurface(renderer)
         expect(renderer.root.findAllByType(AdminLauncher)).toHaveLength(1)
         expect(renderer.root.findByProps({testID: adminTestIds.login})).toBeDefined()
+        expect(renderer.root.findByProps({testID: adminTestIds.debugPassword}).props.children).toMatch(/^（\d{6}）$/)
+        await authenticateAdmin(renderer)
+        for (const sectionTestID of [
+          adminTestIds.sections.platformPorts,
+          adminTestIds.sections.runtime,
+          adminTestIds.sections.displayContext,
+        ]) {
+          expect(renderer.root.findByProps({testID: sectionTestID})).toBeDefined()
+        }
         expect(selectLayers(assembly.runtime.getState(), 'PRIMARY'))
           .toEqual(expect.arrayContaining([expect.objectContaining({layerId: ADMIN_CONSOLE_LAYER_ID})]))
       }
@@ -238,6 +272,59 @@ describe('sample2 wallpaper console assembly', () => {
     } finally {
       releaseRuntimeForTest(laptop.runtime)
       releaseRuntimeForTest(mobile.runtime)
+    }
+  })
+
+  it('prunes a persisted laptop-only secondary container when hydrating the mobile assembly', async () => {
+    const plainStorage = createProcessMemoryStateStoragePort()
+    const protectedStorage = createProcessMemoryStateStoragePort()
+    const events: LogEvent[] = []
+    const persistenceKey = `sample2-cross-form-container-${Date.now()}`
+    let laptop: Awaited<ReturnType<typeof createSampleWallpaperConsoleAssembly>> | undefined
+    let mobile: Awaited<ReturnType<typeof createSampleWallpaperConsoleAssembly>> | undefined
+    try {
+      laptop = await createSampleWallpaperConsoleAssembly({
+        platformPorts: createTestPlatformPorts({
+          displayCount: 2,
+          events,
+          plainStorage,
+          protectedStorage,
+        }),
+        persistenceKey,
+        surfaceForm: 'laptop',
+      })
+      await laptop.runtime.dispatchCommand(sessionRestoredAnonymousCommand, {}, dispatchOptions())
+      expect(selectScreen(laptop.runtime.getState(), 'SECONDARY', 'main')?.partKey)
+        .toBe('sample.wallpaper-console.waiting')
+      await new Promise(resolve => setTimeout(resolve, 350))
+      releaseRuntimeForTest(laptop.runtime)
+      laptop = undefined
+
+      mobile = await createSampleWallpaperConsoleAssembly({
+        platformPorts: createTestPlatformPorts({
+          displayCount: 1,
+          events,
+          plainStorage,
+          protectedStorage,
+        }),
+        persistenceKey,
+        surfaceForm: 'mobile',
+      })
+      expect(selectScreen(mobile.runtime.getState(), 'SECONDARY', 'main')).toBeUndefined()
+      expect(events).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          event: 'ui-state-hydration.container.not-renderable',
+          data: expect.objectContaining({
+            displayMode: 'SECONDARY',
+            containerKey: 'main',
+            partKey: 'sample.wallpaper-console.waiting',
+            reason: 'hydrated-container-not-renderable',
+          }),
+        }),
+      ]))
+    } finally {
+      if (laptop !== undefined) releaseRuntimeForTest(laptop.runtime)
+      if (mobile !== undefined) releaseRuntimeForTest(mobile.runtime)
     }
   })
 

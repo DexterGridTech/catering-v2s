@@ -111,7 +111,7 @@ test("inventory's typed dependency guard consumes declarations generated from th
     'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryCatalogReferenceDeclarations.java',
   );
   const inventoryOwner = read(
-    'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java',
+    'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryCatalogLifecycleService.java',
   );
   for (const [objectType, tableName, columnName] of [
     ['CATALOG_ITEM', 'stock_target', 'item_ref'],

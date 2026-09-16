@@ -3,13 +3,15 @@ import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime'
 import {PrimitiveContainer, PrimitiveHeading, PrimitiveKeyValueRow, PrimitiveScrollView, PrimitiveStatusRow} from '@catering-v2s/ui-base-primitives'
 import type {AdminSectionProps} from '../../types/adminSection'
 
+const sectionStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0})
+
 export const DisplayContextSection = ({context}: AdminSectionProps) => {
   const role = selectDisplayRole(context.stateRoot)
   const instanceMode = selectRuntimeInstanceMode(context.stateRoot)
   const hostReady = context.surface.surfaceIdentity !== null
   const hostSize = context.surface.hostLogicalSize
   return (
-    <PrimitiveContainer testID="admin.console.display-context" layout="content" bounded>
+    <PrimitiveContainer testID="admin.console.display-context" layout="content" bounded style={sectionStyle}>
       <PrimitiveScrollView testID="admin.console.display-context:scroll">
         <PrimitiveHeading testID="admin.console.display-context:title">{context.catalogEntry.title}</PrimitiveHeading>
         <PrimitiveKeyValueRow testID="admin.console.display-context:form" label="形态" value={context.surface.surfaceForm} />

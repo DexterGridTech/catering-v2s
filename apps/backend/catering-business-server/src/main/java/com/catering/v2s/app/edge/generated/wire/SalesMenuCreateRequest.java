@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuCreateRequest(
-    java.util.UUID channelRef,
-    String name
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "channelRef", required = true) java.util.UUID channelRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name
 ) {}

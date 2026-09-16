@@ -843,8 +843,8 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 315,
-      "caseExpectedDbMs": 13450.5,
+      "caseDbOperationUpperBound": 317,
+      "caseExpectedDbMs": 13535.900000000001,
       "caseLocalActionMs": 1250,
       "caseTimeoutMs": 30000
     },
@@ -910,8 +910,8 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 315,
-      "caseExpectedDbMs": 13450.5,
+      "caseDbOperationUpperBound": 317,
+      "caseExpectedDbMs": 13535.900000000001,
       "caseLocalActionMs": 750,
       "caseTimeoutMs": 29000
     },
@@ -977,10 +977,10 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 315,
-      "caseExpectedDbMs": 13450.5,
+      "caseDbOperationUpperBound": 317,
+      "caseExpectedDbMs": 13535.900000000001,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 29000
+      "caseTimeoutMs": 30000
     },
     {
       "caseId": "catalog-edit-success",
@@ -1054,8 +1054,8 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 350,
-      "caseExpectedDbMs": 14945.000000000002,
+      "caseDbOperationUpperBound": 351,
+      "caseExpectedDbMs": 14987.7,
       "caseLocalActionMs": 1250,
       "caseTimeoutMs": 33000
     },
@@ -1126,8 +1126,8 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 386,
-      "caseExpectedDbMs": 16482.2,
+      "caseDbOperationUpperBound": 388,
+      "caseExpectedDbMs": 16567.600000000002,
       "caseLocalActionMs": 750,
       "caseTimeoutMs": 35000
     },
@@ -1270,8 +1270,8 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 378,
-      "caseExpectedDbMs": 16140.6,
+      "caseDbOperationUpperBound": 379,
+      "caseExpectedDbMs": 16183.300000000001,
       "caseLocalActionMs": 1500,
       "caseTimeoutMs": 36000
     },
@@ -1347,8 +1347,8 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 353,
-      "caseExpectedDbMs": 15073.1,
+      "caseDbOperationUpperBound": 354,
+      "caseExpectedDbMs": 15115.800000000001,
       "caseLocalActionMs": 1000,
       "caseTimeoutMs": 33000
     },
@@ -1424,8 +1424,8 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 384,
-      "caseExpectedDbMs": 16396.800000000003,
+      "caseDbOperationUpperBound": 386,
+      "caseExpectedDbMs": 16482.2,
       "caseLocalActionMs": 1250,
       "caseTimeoutMs": 36000
     },
@@ -1555,8 +1555,8 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 317,
-      "caseExpectedDbMs": 13535.900000000001,
+      "caseDbOperationUpperBound": 318,
+      "caseExpectedDbMs": 13578.6,
       "caseLocalActionMs": 1250,
       "caseTimeoutMs": 30000
     },
@@ -1690,8 +1690,8 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 393,
-      "caseExpectedDbMs": 16781.100000000002,
+      "caseDbOperationUpperBound": 394,
+      "caseExpectedDbMs": 16823.800000000003,
       "caseLocalActionMs": 1250,
       "caseTimeoutMs": 37000
     },
@@ -1767,8 +1767,8 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 437,
-      "caseExpectedDbMs": 18659.9,
+      "caseDbOperationUpperBound": 439,
+      "caseExpectedDbMs": 18745.300000000003,
       "caseLocalActionMs": 1250,
       "caseTimeoutMs": 40000
     },
@@ -1844,10 +1844,10 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 519,
-      "caseExpectedDbMs": 22161.300000000003,
+      "caseDbOperationUpperBound": 522,
+      "caseExpectedDbMs": 22289.4,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 47000
+      "caseTimeoutMs": 48000
     },
     {
       "caseId": "catalog-governance-success",
@@ -1911,8 +1911,8 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 301,
-      "caseExpectedDbMs": 12852.7,
+      "caseDbOperationUpperBound": 302,
+      "caseExpectedDbMs": 12895.400000000001,
       "caseLocalActionMs": 1000,
       "caseTimeoutMs": 28000
     },
@@ -2040,12 +2040,12 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 301,
-      "caseExpectedDbMs": 12852.7,
+      "caseDbOperationUpperBound": 302,
+      "caseExpectedDbMs": 12895.400000000001,
       "caseLocalActionMs": 1000,
       "caseTimeoutMs": 28000
     }
   ],
-  "fullRunExpectedMs": 641274.2,
-  "fullRunTimeoutMs": 1283000
+  "fullRunExpectedMs": 642213.6,
+  "fullRunTimeoutMs": 1285000
 }

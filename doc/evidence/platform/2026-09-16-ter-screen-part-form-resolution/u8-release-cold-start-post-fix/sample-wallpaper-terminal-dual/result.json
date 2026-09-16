@@ -1,0 +1,92 @@
+{
+  "runId": "sample-wallpaper-terminal-dual-1789555581321",
+  "app": "sample-wallpaper-terminal",
+  "packageName": "com.catering.v2s.terminal.samplewallpaper",
+  "serial": "emulator-5554",
+  "shape": "dual",
+  "failureMode": null,
+  "startedAt": "2026-09-16T10:46:21.321Z",
+  "business": "NOT_RUN",
+  "cleanup": "PASS",
+  "firstFailure": "release cold start rendered startup failure page",
+  "display": {
+    "ids": [
+      0,
+      2
+    ],
+    "hasSecondary": true
+  },
+  "surfaceFlinger": {
+    "primaryIds": [
+      "4619827259835644672"
+    ],
+    "virtualIds": [
+      "11529215047789101945"
+    ]
+  },
+  "timeline": [
+    {
+      "event": "before-launch",
+      "timestamp": "2026-09-16T10:46:21.556Z",
+      "splashVisible": false,
+      "packagePid": ""
+    },
+    {
+      "event": "after-launch-before-ready-poll",
+      "timestamp": "2026-09-16T10:46:22.373Z",
+      "millisecondsSinceLaunch": 799,
+      "splashVisible": true
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 50,
+      "millisecondsSinceLaunch": 799,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 100,
+      "millisecondsSinceLaunch": 1953,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 200,
+      "millisecondsSinceLaunch": 3138,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 400,
+      "millisecondsSinceLaunch": 4279,
+      "splashVisible": false
+    },
+    {
+      "event": "launch-sample",
+      "targetMilliseconds": 800,
+      "millisecondsSinceLaunch": 5466,
+      "splashVisible": false
+    },
+    {
+      "event": "ready-or-failure-observed",
+      "timestamp": "2026-09-16T10:46:32.248Z",
+      "millisecondsSinceLaunch": 10674,
+      "readyCandidate": true,
+      "readyHidden": false,
+      "startupComplete": false,
+      "failurePage": true,
+      "splashVisible": false,
+      "splashVisibleBeforeReady": true,
+      "preReadyCaptured": true
+    },
+    {
+      "event": "settled",
+      "timestamp": "2026-09-16T10:46:37.218Z",
+      "splashVisible": false,
+      "packagePid": "6954",
+      "secondarySurfaceObserved": true,
+      "primaryUiHasRnContent": false
+    }
+  ],
+  "finishedAt": "2026-09-16T10:46:37.294Z"
+}

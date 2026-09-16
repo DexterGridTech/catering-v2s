@@ -1,23 +1,58 @@
-import type {DisplayMode} from '@catering-v2s/kernel-base-ui-state'
+import type {ContainerKey, DisplayMode, SurfaceForm} from '@catering-v2s/kernel-base-ui-state'
 import type {RequestId} from '@catering-v2s/kernel-base-contracts'
 import type {LoggerPort} from '@catering-v2s/kernel-base-platform-ports'
+import type {ContentFailureReason, SystemFailureReason} from '../types/props'
 
 export type RenderPartDiagnostic =
   | Readonly<{
+      readonly event: 'container-empty'
+      readonly data: Readonly<{
+        readonly category: 'content'
+        readonly reason: Extract<ContentFailureReason, 'container-empty'>
+        readonly partKey: null
+        readonly displayMode: DisplayMode
+        readonly containerKey: ContainerKey
+        readonly surfaceForm: SurfaceForm
+      }>
+    }>
+  | Readonly<{
       readonly event: 'missing-catalog-entry'
-      readonly data: Readonly<{partKey: string; displayMode: DisplayMode}>
+      readonly data: Readonly<{
+        readonly category: 'content'
+        readonly reason: Extract<ContentFailureReason, 'missing-catalog-entry'>
+        readonly partKey: string
+        readonly displayMode: DisplayMode
+        readonly containerKey: ContainerKey | null
+        readonly surfaceForm: SurfaceForm
+      }>
     }>
   | Readonly<{
       readonly event: 'missing-renderer'
-      readonly data: Readonly<{partKey: string; displayMode: DisplayMode; rendererKey: string}>
+      readonly data: Readonly<{
+        readonly category: 'system'
+        readonly reason: Extract<SystemFailureReason, 'missing-renderer'>
+        readonly partKey: string
+        readonly displayMode: DisplayMode
+        readonly rendererKey: string
+      }>
     }>
   | Readonly<{
       readonly event: 'invalid-props-shape'
-      readonly data: Readonly<{partKey: string; displayMode: DisplayMode; valueType: string}>
+      readonly data: Readonly<{
+        readonly category: 'content'
+        readonly reason: Extract<ContentFailureReason, 'invalid-props'>
+        readonly partKey: string
+        readonly displayMode: DisplayMode
+        readonly containerKey: ContainerKey | null
+        readonly surfaceForm: SurfaceForm
+        readonly valueType: string
+      }>
     }>
   | Readonly<{
       readonly event: 'incompatible-catalog-entry'
       readonly data: Readonly<{
+        readonly category: 'content'
+        readonly reason: Extract<ContentFailureReason, 'incompatible-catalog-entry'>
         readonly partKey: string
         readonly displayMode: DisplayMode
         readonly containerKey: string | null
@@ -59,7 +94,7 @@ const diagnosticIdentity = (diagnostic: RenderPartDiagnostic): string =>
 export const createRenderPartDiagnosticReporter = (
   logger: LoggerPort,
 ): RenderPartDiagnosticReporter => {
-  const reported = new Map<string, Readonly<{partKey: string; displayMode: DisplayMode}>>()
+  const reported = new Map<string, Readonly<{partKey: string | null; displayMode: DisplayMode}>>()
   return Object.freeze({
     report: (diagnostic: RenderPartDiagnostic): void => {
       const identity = diagnosticIdentity(diagnostic)

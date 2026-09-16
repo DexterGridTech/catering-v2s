@@ -27,6 +27,7 @@ describe('render runtime facts', () => {
     const facts = createRenderRuntimeFacts({
       environmentMode: 'PROD',
       debugMode: resolveDebugMode({packaging: true}),
+      showAdminPassword: true,
       deviceIdentity: {available: true, deviceId: 'DEVICE-001'},
       platformPortCapabilities: [{
         port: 'device',
@@ -37,6 +38,7 @@ describe('render runtime facts', () => {
 
     expect(facts.environmentMode).toBe('PROD')
     expect(facts.debugMode).toEqual({enabled: true, source: 'packaging'})
+    expect(facts.showAdminPassword).toBe(true)
     expect(facts.deviceIdentity).toEqual({available: true, deviceId: 'DEVICE-001'})
     expect(Object.isFrozen(facts)).toBe(true)
     expect(Object.isFrozen(facts.debugMode)).toBe(true)

@@ -13,6 +13,7 @@ import {
   createClearUiVariablesActor,
   createCloseLayerActor,
   createOpenLayerActor,
+  createPruneHydratedContainersActor,
   createPruneHydratedLayersActor,
   createSetUiVariablesActor,
   createShowScreenActor,
@@ -22,6 +23,7 @@ import {
   clearUiVariablesCommand,
   closeLayerCommand,
   openLayerCommand,
+  pruneHydratedContainersCommand,
   pruneHydratedLayersCommand,
   setUiVariablesCommand,
   showScreenCommand,
@@ -87,6 +89,7 @@ export const createUiStateModule = (
     createOpenLayerActor({catalog: input.catalog, selectSurfaceForm: selectSurfaceFormFromState}),
     createCloseLayerActor(),
     createClearLayersActor(),
+    createPruneHydratedContainersActor({catalog: input.catalog, selectSurfaceForm: selectSurfaceFormFromState}),
     createPruneHydratedLayersActor({catalog: input.catalog}),
     createSetUiVariablesActor(registry, variableFamily),
     createClearUiVariablesActor(registry, variableFamily),
@@ -96,6 +99,7 @@ export const createUiStateModule = (
     openLayerCommand,
     closeLayerCommand,
     clearLayersCommand,
+    pruneHydratedContainersCommand,
     pruneHydratedLayersCommand,
     setUiVariablesCommand,
     clearUiVariablesCommand,
@@ -141,12 +145,19 @@ export const createUiStateModule = (
     install: async context => {
       const diagnostics = hydrationDiagnostics.splice(0, hydrationDiagnostics.length)
       for (const diagnostic of diagnostics) {
+        const subject = diagnostic.scope === 'container' ? 'container' : 'layer'
         context.platformPorts.logger.warn({
           category: 'ui-state-hydration',
-          event: 'ui-state-hydration.layer.discarded',
-          message: 'Hydrated UI layer was discarded during validation',
+          event: `ui-state-hydration.${subject}.discarded`,
+          message: subject === 'container'
+            ? 'Hydrated UI container was discarded during validation'
+            : 'Hydrated UI layer was discarded during validation',
           data: diagnostic,
         })
+      }
+      const containerPruning = await context.dispatchCommand(pruneHydratedContainersCommand, Object.freeze({}))
+      if (containerPruning.status !== 'completed') {
+        throw new Error(`UI state hydrated-container membership cleanup failed: ${containerPruning.status}`)
       }
       const pruning = await context.dispatchCommand(pruneHydratedLayersCommand, Object.freeze({}))
       if (pruning.status !== 'completed') {

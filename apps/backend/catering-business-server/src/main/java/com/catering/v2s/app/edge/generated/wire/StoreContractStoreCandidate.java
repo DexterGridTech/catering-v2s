@@ -2,8 +2,8 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record StoreContractStoreCandidate(
-    String id,
-    String code,
-    String name,
-    String storeStatus
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "id", required = true) String id,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "code", required = true) String code,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "storeStatus", required = true) String storeStatus
 ) {}

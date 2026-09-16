@@ -2,17 +2,17 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record BusinessChannelView(
-    java.util.UUID channelRef,
-    java.util.UUID templateRef,
-    BusinessChannelViewOwnerNodeType ownerNodeType,
-    java.util.UUID ownerNodeRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "channelRef", required = true) java.util.UUID channelRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "templateRef", required = true) java.util.UUID templateRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "ownerNodeType", required = true) BusinessChannelViewOwnerNodeType ownerNodeType,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "ownerNodeRef", required = true) java.util.UUID ownerNodeRef,
     tools.jackson.databind.JsonNode channelCode,
-    String channelName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "channelName", required = true) String channelName,
     java.util.UUID bindingRef,
-    BusinessChannelViewStatus status,
-    BusinessChannelViewBindingStatus bindingStatus,
-    BusinessChannelViewSelfStatus selfStatus,
-    java.util.List<BusinessChannelViewStatusDimensionsItem> statusDimensions,
-    java.util.List<BusinessChannelViewBlockersItem> blockers,
-    Long version
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) BusinessChannelViewStatus status,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "bindingStatus", required = true) BusinessChannelViewBindingStatus bindingStatus,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "selfStatus", required = true) BusinessChannelViewSelfStatus selfStatus,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "statusDimensions", required = true) java.util.List<BusinessChannelViewStatusDimensionsItem> statusDimensions,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "blockers", required = true) java.util.List<BusinessChannelViewBlockersItem> blockers,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "version", required = true) Long version
 ) {}

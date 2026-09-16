@@ -1,0 +1,56 @@
+         1789253866.913  5485  5485 I TER-Splash: event=activity.onCreate phase=start app=sample-terminal
+         1789253866.913  5485  5485 I TER-Splash: event=native.application-callbacks-registered
+         1789253866.913  5485  5485 I TER-Splash: event=native.registry-application-registered app=sample-terminal
+         1789253866.913  5485  5485 I TER-Splash: event=expo.prevent-auto-hide-set app=sample-terminal value=true
+         1789253866.929  5485  5485 I TER-Splash: event=expo.activity-registered app=sample-terminal
+         1789253866.929  5485  5485 I TER-Splash: event=expo.content-gate-released-for-native-overlay app=sample-terminal
+         1789253866.929  5485  5485 I TER-Splash: event=native.gate-installed activity=native-splash-activity-1
+         1789253866.951  5485  5485 I TER-Splash: event=native.loading-overlay-attached activity=native-splash-activity-1
+         1789253866.951  5485  5485 I TER-Splash: event=native.activity-registered app=sample-terminal
+         1789253866.951  5485  5485 I TER-Splash: event=activity.onCreate phase=before-super app=sample-terminal
+         1789253866.959  5485  5485 I TerminalDualScreen: event=primary-activity-configuration displayIndex=0 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=1280 screenHeightDp=800 smallestWidthDp=800 orientation=2 resourceWidthPx=2560 resourceHeightPx=1600
+         1789253866.977  5485  5485 I TerminalDualScreen: event=secondary-react-surface-context displayIndex=1 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=962 screenHeightDp=541 smallestWidthDp=541 orientation=2 resourceWidthPx=1280 resourceHeightPx=720
+         1789253866.977  5485  5485 I TerminalDualScreen: event=secondary-react-surface-created displayId=2 surfaceDensityDpi=320 surfaceDensity=2.0 surfaceWidthPx=0 surfaceHeightPx=0
+         1789253866.989  5485  5485 I TerminalDualScreen: event=secondary-start-requested displayId=2 displayCount=2
+         1789253866.990  5485  5485 I TER-Splash: event=activity.onCreate phase=after-super app=sample-terminal
+         1789253866.990  5485  5485 I TER-Splash: event=native.loading-overlay-attached activity=native-splash-activity-1
+         1789253866.990  5485  5485 I TER-Splash: event=native.loading-overlay-attached-after-super app=sample-terminal
+         1789253867.011  5485  5485 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=320 density=2.0 logicalWidth=640.0 logicalHeight=360.0
+         1789253867.011  5485  5485 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789253867.049  5485  5518 I ExpoModulesCore: ✅ AppContext was initialized
+         1789253867.069  5485  5485 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789253867.069  5485  5485 I TER-Splash: event=native.pre-draw-covered activity=native-splash-activity-1
+         1789253867.091  5485  5485 I TerminalDualScreen: event=secondary-presentation-window-post-create displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789253867.091  5485  5485 I TerminalDualScreen: event=secondary-presentation-window-post-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789253867.091  5485  5485 I TerminalDualScreen: event=secondary-react-surface-post-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=320 density=2.0 logicalWidth=640.0 logicalHeight=360.0
+         1789253867.101  5485  5485 I TerminalDualScreen: event=primary-window-post-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789253867.103  5485  5485 I TerminalDualScreen: event=secondary-start-completed
+         1789253867.120  5485  5520 I ExpoModulesCore: ✅ JSI interop was installed
+         1789253867.120  5485  5520 I ExpoModulesCore: ✅ Constants were exported
+         1789253867.139  5485  5485 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789253867.212  5485  5485 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=320 density=2.0 logicalWidth=640.0 logicalHeight=360.0
+         1789253867.212  5485  5485 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789253867.213  5485  5485 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789253867.225  5485  5485 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=320 density=2.0 logicalWidth=640.0 logicalHeight=360.0
+         1789253867.225  5485  5485 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789253867.229  5485  5485 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789253867.234  5485  5520 I ReactNativeJS:   category: 'startup.ready-candidate',
+         1789253867.234  5485  5520 I ReactNativeJS:   event: 'startup.ready-candidate',
+         1789253867.237  5485  5520 I ReactNativeJS:   category: 'startup.ready',
+         1789253867.237  5485  5520 I ReactNativeJS:   event: 'startup.ready',
+         1789253867.244  5485  5520 I ReactNativeJS:   category: 'startup.complete',
+         1789253867.244  5485  5520 I ReactNativeJS:   event: 'startup.complete',
+         1789253867.252  5485  5485 I TER-Splash: event=native.begin-hide reason=startup-ready activity=native-splash-activity-1 alreadyReleased=false
+         1789253867.262  5485  5485 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789253867.264  5485  5485 I TER-Splash: event=native.release-hide activity=native-splash-activity-1
+         1789253867.264  5485  5485 I TER-Splash: event=native.loading-overlay-fade-start activity=native-splash-activity-1
+         1789253867.264  5485  5520 I ReactNativeJS:   category: 'startup.ready-hidden',
+         1789253867.264  5485  5520 I ReactNativeJS:   event: 'startup.ready-hidden',
+         1789253867.272  5485  5485 I TER-Splash: event=native.pre-draw-released activity=native-splash-activity-1
+         1789253867.572  5485  5485 I TER-Splash: event=native.loading-overlay-removed activity=native-splash-activity-1
+         1789253867.572  5485  5485 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789253868.704  5618  5618 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789253868.708  5618  5618 I AndroidRuntime: Using default boot image
+         1789253868.708  5618  5618 I AndroidRuntime: Leaving lock profiling enabled
+         1789253868.772  5618  5618 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789253869.795  5618  5618 D AndroidRuntime: Shutting down VM

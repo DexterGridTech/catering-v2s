@@ -382,7 +382,7 @@ describe('sales menu IA static trace', () => {
     expect(testIdsSource).toContain("itemViewProduct: 'sales-menu-item-view-product'");
     expect(editorSource).toContain('onViewProduct(detail.itemCode, event.currentTarget)');
     expect(taskSurfacesSource).toContain(
-      "import {CatalogItemDrawer} from '../../catalog-management/ui/CatalogItemDrawer';",
+      "import {CatalogItemDrawer} from '../../catalog-management/CatalogItemDrawer';",
     );
     expect(taskSurfacesSource).toContain('<CatalogItemDrawer {...catalogItem} />');
     expect(pageSource).toContain('const [productDetailItemCode, setProductDetailItemCode] = useState<string>();');

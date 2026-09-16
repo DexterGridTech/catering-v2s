@@ -66,7 +66,9 @@ describe('ui primitives', () => {
     const container = renderer.root.findAllByProps({testID: 'sample:root'}).find(node => node.type === View)!;
     expect(container.props.className).toBe('flex-1 bg-canvas p-6 gap-4');
     expect(renderer.root.findByProps({testID: 'sample:root'})).toBeDefined();
-    expect(renderer.root.findByProps({testID: 'sample:heading'})).toBeDefined();
+    const heading = renderer.root.findAllByProps({testID: 'sample:heading'}).find(node => node.type === Text)!;
+    expect(heading.props.accessibilityRole).toBe('header');
+    expect(heading.props.accessibilityLiveRegion).toBe('polite');
     expect(renderer.root.findByProps({testID: 'sample:label'})).toBeDefined();
     expect(renderer.root.findByProps({testID: 'sample:label'}).props.nativeID).toBe('sample:label');
     expect(renderer.root.findByProps({testID: 'sample:input'})).toBeDefined();

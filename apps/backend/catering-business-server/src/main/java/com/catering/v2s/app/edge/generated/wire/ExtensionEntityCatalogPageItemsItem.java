@@ -2,8 +2,8 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record ExtensionEntityCatalogPageItemsItem(
-    ExtensionEntityType entityType,
-    String displayName,
-    Long configuredFieldCount,
-    Long updatedAt
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "entityType", required = true) ExtensionEntityType entityType,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "displayName", required = true) String displayName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "configuredFieldCount", required = true) Long configuredFieldCount,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "updatedAt", required = true) Long updatedAt
 ) {}

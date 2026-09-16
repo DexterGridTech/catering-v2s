@@ -2,8 +2,8 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceAccountInvitationHistoryItem(
-    String invitationId,
-    WorkspaceInvitationStatus status,
-    Long generation,
-    Long expiresAt
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "invitationId", required = true) String invitationId,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) WorkspaceInvitationStatus status,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "generation", required = true) Long generation,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expiresAt", required = true) Long expiresAt
 ) {}

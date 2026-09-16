@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record StoreContractPage(
-    StoreContractPageMetadata metadata,
-    java.util.List<StoreContract> items
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "metadata", required = true) StoreContractPageMetadata metadata,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "items", required = true) java.util.List<StoreContract> items
 ) {}

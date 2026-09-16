@@ -10,6 +10,7 @@ import {CatalogWorkbenchContent} from '../CatalogWorkbenchContent';
 import {CatalogWorkbenchTaskSurfaces} from '../CatalogWorkbenchTaskSurfaces';
 import {useCatalogWorkbenchTaskCoordinator} from './useCatalogWorkbenchTaskCoordinator';
 import {useCatalogWorkbenchReadModel} from './useCatalogWorkbenchReadModel';
+import {useStoreOperatingRuleGate} from '../../../store-operating-rules/model/useStoreOperatingRuleGate';
 
 export type CatalogSurface = 'store' | 'brand';
 
@@ -19,7 +20,12 @@ export function CatalogWorkbenchController({
   actionCapabilityKeys,
   surface,
 }: OperationsPageProps & {surface: CatalogSurface}) {
-  const model = useCatalogWorkbenchReadModel({queryContext, surface});
+  const ruleGate = useStoreOperatingRuleGate({queryContext, enabled: surface === 'store'});
+  const model = useCatalogWorkbenchReadModel({
+    queryContext,
+    surface,
+    rulesReady: surface !== 'store' || ruleGate.isEnabled,
+  });
   const {
     view,
     setView,
@@ -27,6 +33,7 @@ export function CatalogWorkbenchController({
     brands,
     headers,
     scopeReady,
+    businessReady,
     treeSelection,
     treeSearch,
     treeExpandedKeys,
@@ -70,7 +77,7 @@ export function CatalogWorkbenchController({
     surface,
     brandRef,
     headers,
-    scopeReady,
+    scopeReady: businessReady,
     navigation,
     selectedItemRows,
     refreshAfterBatch,
@@ -139,6 +146,8 @@ export function CatalogWorkbenchController({
         failed={failed}
         noAuthorizedBrand={noAuthorizedBrand}
         noSelectedScope={noSelectedScope}
+        ruleState={surface === 'store' ? ruleGate.state : 'BYPASSED'}
+        onRuleRetry={ruleGate.retry}
         treeVisible={view === 'TREE_TABLE'}
         toolbarProps={{
           surface,
@@ -218,7 +227,7 @@ export function CatalogWorkbenchController({
           failed,
           scopeReady,
           noAuthorizedBrand,
-          loading: itemsQuery.isFetching && scopeReady,
+          loading: itemsQuery.isFetching && businessReady,
           onSelectedRowsChange: setSelectedRows,
           onTableExpand: skuController.onExpand,
           onOpenDetail: openDetail,
@@ -226,52 +235,54 @@ export function CatalogWorkbenchController({
         }}
         onRefresh={refresh}
       />
-      <CatalogWorkbenchTaskSurfaces
-        workspaceTask={workspaceTask}
-        surface={surface}
-        queryContext={queryContext}
-        brandRef={context?.brandRef ?? brandRef}
-        canWriteCatalog={canWriteCatalog}
-        detailTarget={detailTarget}
-        batchProps={{
-          action: batchController.action,
-          results: batchController.results,
-          selectedItemCount: selectedItemRows.length,
-          submitting: batchController.submitting,
-          problem: batchController.problem,
-          refreshProblem: batchController.refreshProblem,
-          categoryCandidates,
-          categoryRef: batchController.categoryRef,
-          tagRefs: batchController.tagRefs,
-          tagOptions,
-          tagLoading: tagDictionaryQuery.isLoading || tagDictionaryQuery.isFetching,
-          status: batchController.status,
-          onCategoryChange: batchController.setCategoryRef,
-          onTagsChange: batchController.setTagRefs,
-          onTagPopupScroll: event => tagDictionaryState.onPopupScroll(event, tagDictionaryQuery.isFetching),
-          onStatusChange: batchController.setStatus,
-          onClose: batchController.close,
-          onExecute: () => void batchController.execute(),
-        }}
-        categoryProps={{
-          action: categoryController.action,
-          form: categoryController.form,
-          problem: categoryController.problem,
-          createCandidates: categoryController.createCandidates,
-          reparentCandidates: categoryController.reparentCandidates,
-          submitting: categoryController.submitting,
-          onClose: categoryController.close,
-          onSubmit: () => void categoryController.submit(),
-        }}
-        onDetailEdit={openDetailEdit}
-        onLocalCopy={openLocalCopy}
-        onDetailSaved={onDetailSaved}
-        onDetailClose={closeDetail}
-        onCreateClose={onCreateClose}
-        onCreated={onCreated}
-        onConfigClose={onConfigClose}
-        onCopyClose={onCopyClose}
-      />{' '}
+      {businessReady && (
+        <CatalogWorkbenchTaskSurfaces
+          workspaceTask={workspaceTask}
+          surface={surface}
+          queryContext={queryContext}
+          brandRef={context?.brandRef ?? brandRef}
+          canWriteCatalog={canWriteCatalog}
+          detailTarget={detailTarget}
+          batchProps={{
+            action: batchController.action,
+            results: batchController.results,
+            selectedItemCount: selectedItemRows.length,
+            submitting: batchController.submitting,
+            problem: batchController.problem,
+            refreshProblem: batchController.refreshProblem,
+            categoryCandidates,
+            categoryRef: batchController.categoryRef,
+            tagRefs: batchController.tagRefs,
+            tagOptions,
+            tagLoading: tagDictionaryQuery.isLoading || tagDictionaryQuery.isFetching,
+            status: batchController.status,
+            onCategoryChange: batchController.setCategoryRef,
+            onTagsChange: batchController.setTagRefs,
+            onTagPopupScroll: event => tagDictionaryState.onPopupScroll(event, tagDictionaryQuery.isFetching),
+            onStatusChange: batchController.setStatus,
+            onClose: batchController.close,
+            onExecute: () => void batchController.execute(),
+          }}
+          categoryProps={{
+            action: categoryController.action,
+            form: categoryController.form,
+            problem: categoryController.problem,
+            createCandidates: categoryController.createCandidates,
+            reparentCandidates: categoryController.reparentCandidates,
+            submitting: categoryController.submitting,
+            onClose: categoryController.close,
+            onSubmit: () => void categoryController.submit(),
+          }}
+          onDetailEdit={openDetailEdit}
+          onLocalCopy={openLocalCopy}
+          onDetailSaved={onDetailSaved}
+          onDetailClose={closeDetail}
+          onCreateClose={onCreateClose}
+          onCreated={onCreated}
+          onConfigClose={onConfigClose}
+          onCopyClose={onCopyClose}
+        />
+      )}
     </>
   );
 }

@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record PlatformAssetStageMultipart(
-    String usage,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "usage", required = true) String usage,
     String groupWorkspaceKey,
-    String file
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "file", required = true) String file
 ) {}

@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationNodeStatusTransitionRequest(
-    String targetStatus,
-    Long expectedVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "targetStatus", required = true) String targetStatus,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion
 ) {}

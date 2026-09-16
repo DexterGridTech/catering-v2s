@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record ExternalCapability(
-    ExternalCapabilityCapabilityClass capabilityClass,
-    String displayName,
-    ExternalCapabilityAttributeValues attributeValues
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "capabilityClass", required = true) ExternalCapabilityCapabilityClass capabilityClass,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "displayName", required = true) String displayName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "attributeValues", required = true) ExternalCapabilityAttributeValues attributeValues
 ) {}

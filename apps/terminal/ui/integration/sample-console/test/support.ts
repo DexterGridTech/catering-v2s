@@ -41,6 +41,12 @@ const withTestPortDescriptor = <T extends object>(
   return Object.freeze(copy)
 }
 
+const withoutTestPortDescriptor = <T extends object>(value: T): T => {
+  const descriptors = Object.getOwnPropertyDescriptors(value)
+  Reflect.deleteProperty(descriptors, PORT_DESCRIPTOR_KEY)
+  return Object.freeze(Object.create(Object.getPrototypeOf(value), descriptors) as T)
+}
+
 const nativeLoadingCapability: NativeLoadingCapability = Object.freeze({
   targetPhysicalSurface: Object.freeze({surfaceKey: 'PRIMARY', displayIndex: 0}),
   hideOnce: async reason => Object.freeze({hidden: true, alreadyHidden: false, reason}),
@@ -75,6 +81,7 @@ export const createTestPlatformPorts = (input: Readonly<{
   readonly protectedStorage?: StateStoragePort
   readonly events?: LogEvent[]
   readonly startupRunId?: string
+  readonly stripPortDescriptors?: boolean
 }> = {}): TestPlatformPorts => {
   const events = input.events ?? []
   let displayInfoCalls = 0
@@ -115,18 +122,32 @@ export const createTestPlatformPorts = (input: Readonly<{
       persistKv: plainStorage,
       persistSecure: protectedStorage,
       device,
-      appControl: unavailableAppControlPort,
-      script: unavailableScriptPort,
-      connector: unavailableConnectorPort,
-      hotUpdate: unavailableHotUpdatePort,
-      logUpload: unavailableLogUploadPort,
-      topologyHost: unavailableTopologyHostPort,
+      appControl: withTestPortDescriptor(unavailableAppControlPort, 'appControl'),
+      script: withTestPortDescriptor(unavailableScriptPort, 'script'),
+      connector: withTestPortDescriptor(unavailableConnectorPort, 'connector'),
+      hotUpdate: withTestPortDescriptor(unavailableHotUpdatePort, 'hotUpdate'),
+      logUpload: withTestPortDescriptor(unavailableLogUploadPort, 'logUpload'),
+      topologyHost: withTestPortDescriptor(unavailableTopologyHostPort, 'topologyHost'),
     },
   })
-  return Object.freeze({
+  const result = Object.freeze({
     ...ports,
     ...(input.startupRunId === undefined ? {} : {startupRunId: input.startupRunId}),
     nativeLoadingCapability,
+  })
+  if (!input.stripPortDescriptors) return result
+  return Object.freeze({
+    ...result,
+    logger: withoutTestPortDescriptor(result.logger),
+    persistKv: withoutTestPortDescriptor(result.persistKv),
+    persistSecure: withoutTestPortDescriptor(result.persistSecure),
+    device: withoutTestPortDescriptor(result.device),
+    appControl: withoutTestPortDescriptor(result.appControl),
+    script: withoutTestPortDescriptor(result.script),
+    connector: withoutTestPortDescriptor(result.connector),
+    hotUpdate: withoutTestPortDescriptor(result.hotUpdate),
+    logUpload: withoutTestPortDescriptor(result.logUpload),
+    topologyHost: withoutTestPortDescriptor(result.topologyHost),
   })
 }
 

@@ -30,7 +30,8 @@ export const useInputFocusController = ({
   const activeScopeIdRef = useRef<string>(BUSINESS_FOCUS_SCOPE_ID);
 
   const activateFocusScope = useCallback((scopeId: string): void => {
-    if (scopeId === activeScopeIdRef.current) return;
+    const previousScopeId = activeScopeIdRef.current;
+    if (scopeId === previousScopeId) return;
     activeScopeIdRef.current = scopeId;
     const current = keyboardStateRef.current;
     const field = current.activeFieldId === null ? undefined : fieldsRef.current.get(current.activeFieldId);
@@ -44,8 +45,15 @@ export const useInputFocusController = ({
   const preflightFocusTarget = useCallback(
     (fieldId: string): boolean => {
       const target = fieldsRef.current.get(fieldId);
-      if (target === undefined || target.focusScopeId !== activeScopeIdRef.current) return false;
-      if (focusSuspendedRef.current && activeScopeIdRef.current === BUSINESS_FOCUS_SCOPE_ID) return false;
+      if (target === undefined) {
+        return false;
+      }
+      if (target.focusScopeId !== activeScopeIdRef.current) {
+        return false;
+      }
+      if (focusSuspendedRef.current && activeScopeIdRef.current === BUSINESS_FOCUS_SCOPE_ID) {
+        return false;
+      }
       if (target.keyboardKind === 'virtual') {
         const metrics = calculateVirtualKeyboardMetrics(frameMetricsRef.current, target.layout);
         if (metrics.capacity !== 'supported') {
@@ -123,8 +131,12 @@ export const useInputFocusController = ({
     const current = keyboardStateRef.current;
     clearBlockedField();
     if (current.activeFieldId === null) return;
+    const field = fieldsRef.current.get(current.activeFieldId);
+    if (field !== undefined && field.focusScopeId !== BUSINESS_FOCUS_SCOPE_ID) {
+      return;
+    }
     commitKeyboardState({activeFieldId: null, owner: 'none', layout: current.layout});
-    fieldsRef.current.get(current.activeFieldId)?.inputRef?.current?.blur();
+    field?.inputRef?.current?.blur();
   }, [clearBlockedField, commitKeyboardState, fieldsRef, keyboardStateRef]);
 
   const focusField = useCallback(

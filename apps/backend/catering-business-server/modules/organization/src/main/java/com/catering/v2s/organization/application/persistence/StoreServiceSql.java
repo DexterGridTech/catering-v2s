@@ -2,13 +2,16 @@ package com.catering.v2s.organization.application.persistence;
 
 /** SQL text fragments owned by StoreService; B3 relocates text only and does not change execution. */
 public final class StoreServiceSql {
+    public static final String STORE_SERVICE_SELECT_OPERATING_RULE_SWITCHES_TEXT = "SELECT operating_rule_switches::text FROM organization.store WHERE id=? AND workspace_uuid=? AND group_workspace_key=?";
+    public static final String STORE_SERVICE_SELECT_OPERATING_RULE_SWITCHES_BATCH_PREFIX = "SELECT id, operating_rule_switches::text FROM organization.store WHERE workspace_uuid=? AND group_workspace_key=? AND id IN (";
+    public static final String STORE_SERVICE_SELECT_OPERATING_RULE_SWITCHES_BATCH_SUFFIX = ")";
     public static final String STORE_SERVICE_SELECT_STORE_PROJECT_ID_TENANT_ID_BRAND_ID_CODE = "SELECT project_id, tenant_id, brand_id, code FROM organization.store WHERE id=? AND ";
     public static final String STORE_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY = "workspace_uuid=? AND group_workspace_key=?";
     public static final String STORE_SERVICE_INSERT_INTO_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PROJECT_ID_TENANT_ID = "INSERT INTO organization.store (id, workspace_uuid, group_workspace_key, project_id, tenant_id, ";
-    public static final String STORE_SERVICE_CONTINUATION_BRAND_ID_HEAD_COMPANY_ID_CODE_NAME = "brand_id, head_company_id, code, name, notes, status, version, created_at_epoch_millis, ";
-    public static final String STORE_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_ENABLED = "updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ENABLED', 1, ?, ?)";
+    public static final String STORE_SERVICE_CONTINUATION_BRAND_ID_HEAD_COMPANY_ID_CODE_NAME_NOTES_OPERATING_RULE = "brand_id, head_company_id, code, name, notes, operating_rule_switches, status, version, created_at_epoch_millis, ";
+    public static final String STORE_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_ENABLED = "updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS JSONB), 'ENABLED', 1, ?, ?)";
     public static final String STORE_SERVICE_UPDATE_STORE_PROJECT_ID_TENANT_ID_BRAND_ID_HEAD_COMPANY_ID = "UPDATE organization.store SET project_id=?, tenant_id=?, brand_id=?, head_company_id=?, code=?, ";
-    public static final String STORE_SERVICE_CONTINUATION_NAME_NOTES_VERSION_UPDATED_AT_EPOCH_MILLIS = "name=?, notes=?, version=version+1, updated_at_epoch_millis=? WHERE id=? AND ";
+    public static final String STORE_SERVICE_CONTINUATION_NAME_NOTES_OPERATING_RULE_VERSION_UPDATED_AT_EPOCH_MILLIS = "name=?, notes=?, operating_rule_switches=CAST(? AS JSONB), version=version+1, updated_at_epoch_millis=? WHERE id=? AND ";
     public static final String STORE_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION = "workspace_uuid=? AND group_workspace_key=? AND version=?";
     public static final String STORE_SERVICE_UPDATE_STORE_STATUS_VERSION_UPDATED_AT_EPOCH_MILLIS = "UPDATE organization.store SET status=?, version=version+1, updated_at_epoch_millis=? ";
     public static final String STORE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION = "WHERE id=? AND workspace_uuid=? AND group_workspace_key=? AND version=?";

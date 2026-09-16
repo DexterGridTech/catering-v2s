@@ -3,8 +3,8 @@
   "kind": "backend-performance-operation-counts",
   "status": "ACTIVE",
   "manual": true,
-  "operations": 269,
-  "reads": 114,
+  "operations": 270,
+  "reads": 115,
   "commands": 155,
   "commandsByFace": {
     "operationsAdmin": 112,

@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceInvitationCandidatePage(
-    java.util.List<WorkspaceInvitationCandidatePageOrganizationsItem> organizations,
-    java.util.List<WorkspaceRole> roles,
-    WorkspaceInvitationCandidatePageMetadata metadata
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "organizations", required = true) java.util.List<WorkspaceInvitationCandidatePageOrganizationsItem> organizations,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "roles", required = true) java.util.List<WorkspaceRole> roles,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "metadata", required = true) WorkspaceInvitationCandidatePageMetadata metadata
 ) {}

@@ -2,5 +2,5 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record ExtensionEntityCatalogPage(
-    java.util.List<ExtensionEntityCatalogPageItemsItem> items
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "items", required = true) java.util.List<ExtensionEntityCatalogPageItemsItem> items
 ) {}

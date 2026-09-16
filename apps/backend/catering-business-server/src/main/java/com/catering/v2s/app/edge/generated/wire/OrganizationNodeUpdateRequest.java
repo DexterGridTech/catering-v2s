@@ -2,11 +2,11 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationNodeUpdateRequest(
-    String code,
-    String name,
-    String parentId,
-    java.util.List<OrganizationNodeUpdateRequestPhasesItem> phases,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "code", required = true) String code,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "parentId", required = true) String parentId,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "phases", required = true) java.util.List<OrganizationNodeUpdateRequestPhasesItem> phases,
     String notes,
-    Long expectedVersion,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion,
     tools.jackson.databind.JsonNode extensionValues
 ) {}

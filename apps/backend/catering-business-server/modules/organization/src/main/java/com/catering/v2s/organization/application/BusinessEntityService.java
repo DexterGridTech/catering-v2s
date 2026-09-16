@@ -28,6 +28,9 @@ import com.catering.v2s.organization.api.OperationsStoreCommandApi.StoreStatusCo
 import com.catering.v2s.organization.api.OperationsStoreCommandApi.UpdateStoreCommand;
 import com.catering.v2s.organization.api.StoreAssignmentLookup;
 import com.catering.v2s.organization.api.StoreContractLookup;
+import com.catering.v2s.organization.api.StoreOperatingRuleGate;
+import com.catering.v2s.organization.api.StoreOperatingRuleReadback;
+import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -50,7 +53,8 @@ public class BusinessEntityService
                 CatalogScopeLookup,
                 OperationsBusinessEntityCommandApi,
                 OperationsStoreCommandApi,
-                OrganizationOwnerApi {
+                OrganizationOwnerApi,
+                StoreOperatingRuleGate {
     private final BusinessBrandService brand;
     private final BusinessTenantService tenant;
     private final HeadCompanyService headCompany;
@@ -687,6 +691,35 @@ public class BusinessEntityService
                 null);
     }
 
+    public OrganizationEntityReadback createStoreWithOperatingRuleSwitches(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID projectId,
+            UUID tenantId,
+            UUID brandId,
+            UUID headCompanyId,
+            String code,
+            String name,
+            String notes,
+            Map<String, String> extensionValues,
+            Map<String, ?> operatingRuleSwitches) {
+        return store.createStoreWithOperatingRuleSwitches(
+                workspaceUuid,
+                groupWorkspaceKey,
+                projectId,
+                tenantId,
+                brandId,
+                headCompanyId,
+                code,
+                name,
+                notes,
+                extensionValues,
+                null,
+                AuditActor.system(),
+                null,
+                operatingRuleSwitches);
+    }
+
     public OrganizationEntityReadback createStore(
             UUID workspaceUuid,
             String groupWorkspaceKey,
@@ -999,6 +1032,48 @@ public class BusinessEntityService
     public OrganizationOwnerApi.SalesMenuStoreJudgment requireSalesMenuStore(
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
         return reads.requireSalesMenuStore(workspaceUuid, groupWorkspaceKey, storeRef);
+    }
+
+    @Override
+    public StoreOperatingRuleReadback requireStoreOperatingRuleSwitches(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
+        return store.requireStoreOperatingRuleSwitches(workspaceUuid, groupWorkspaceKey, storeId);
+    }
+
+    @Override
+    public Map<UUID, StoreOperatingRuleReadback> requireStoreOperatingRuleSwitches(
+            UUID workspaceUuid, String groupWorkspaceKey, List<UUID> storeIds) {
+        return store.requireStoreOperatingRuleSwitches(workspaceUuid, groupWorkspaceKey, storeIds);
+    }
+
+    @Override
+    public void requireCatalogManagementForStoreTarget(
+            UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID storeId) {
+        if (!com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.STORE.equals(targetType)
+                || workspaceUuid == null
+                || groupWorkspaceKey == null
+                || groupWorkspaceKey.isBlank()
+                || storeId == null) {
+            throw new StoreOperatingRuleGate.CatalogManagementDisabledException(
+                    StoreOperatingRuleGate.CatalogManagementDisabledException.Reason.TARGET_NOT_STORE);
+        }
+        StoreOperatingRuleReadback readback;
+        try {
+            readback = store.requireStoreOperatingRuleSwitches(workspaceUuid, groupWorkspaceKey, storeId);
+        } catch (RuntimeException failure) {
+            // A missing or malformed owner fact must never turn into an allow. Preserve the cause for the structured
+            // edge diagnostic while exposing the same closed capability problem to the caller.
+            throw new StoreOperatingRuleGate.CatalogManagementDisabledException(
+                    StoreOperatingRuleGate.CatalogManagementDisabledException.Reason.STORE_READ_FAILED,
+                    Sha256Hex.digest(storeId.toString()),
+                    failure);
+        }
+        if (!Boolean.TRUE.equals(readback.values().get("catalogManagementEnabled"))) {
+            throw new StoreOperatingRuleGate.CatalogManagementDisabledException(
+                    StoreOperatingRuleGate.CatalogManagementDisabledException.Reason.DISABLED,
+                    Sha256Hex.digest(storeId.toString()),
+                    null);
+        }
     }
 
     @Override
@@ -1334,6 +1409,12 @@ public class BusinessEntityService
         public OrganizationValidationException() {}
 
         public OrganizationValidationException(Throwable cause) {
+            super(cause);
+        }
+    }
+
+    public static final class OrganizationOperatingRuleValidationException extends OrganizationValidationException {
+        public OrganizationOperatingRuleValidationException(Throwable cause) {
             super(cause);
         }
     }

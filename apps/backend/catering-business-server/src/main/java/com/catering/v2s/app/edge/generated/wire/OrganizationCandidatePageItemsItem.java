@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationCandidatePageItemsItem(
-    java.util.UUID id,
-    String code,
-    String name
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "id", required = true) java.util.UUID id,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "code", required = true) String code,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name
 ) {}

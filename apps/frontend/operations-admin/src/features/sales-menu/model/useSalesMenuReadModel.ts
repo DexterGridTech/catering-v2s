@@ -28,9 +28,13 @@ function queryRefetchFailed(value: unknown): boolean {
   return Boolean(value && typeof value === 'object' && 'error' in value && (value as {error?: unknown}).error);
 }
 
-export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
+export function useSalesMenuReadModel({
+  queryContext,
+  capabilityReady = true,
+}: SalesMenuPageProps & {capabilityReady?: boolean}) {
   const storeRef = queryContext.scopeRef;
   const scopeReady = Boolean(storeRef);
+  const businessReady = scopeReady && capabilityReady;
   const [mode, setMode] = useState<SalesMenuMode>('DRAFT');
   const [selectedChannelRef, setSelectedChannelRef] = useState<Uuid>();
   const [selectedMenuRef, setSelectedMenuRef] = useState<Uuid>();
@@ -126,7 +130,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     [channelCandidates.cursor, queryContext.groupWorkspaceKey, storeRef],
   );
   const channelsQuery = operationsRtk.useGetOperationsStoreBusinessChannelsQuery(channelRequest, {
-    skip: !scopeReady,
+    skip: !businessReady,
   });
 
   const selectorRequest = useMemo(
@@ -154,7 +158,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     ],
   );
   const selectorQueryState = operationsRtk.useGetOperationsSalesMenusQuery(selectorRequest, {
-    skip: !scopeReady || !selectedChannelRef,
+    skip: !businessReady || !selectedChannelRef,
   });
 
   useEffect(() => {
@@ -178,7 +182,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     [queryContext.groupWorkspaceKey],
   );
   const channelTemplatesQuery = operationsRtk.useGetOperationsBusinessChannelTemplatesQuery(channelTemplateRequest, {
-    skip: !scopeReady,
+    skip: !businessReady,
   });
   const channelTemplateByRef = useMemo(
     () =>
@@ -209,7 +213,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     [managerCursor.cursor, managerQuery, queryContext.groupWorkspaceKey, selectedChannelRef, storeRef],
   );
   const managerQueryState = operationsRtk.useGetOperationsSalesMenusQuery(managerRequest, {
-    skip: !scopeReady || !selectedChannelRef,
+    skip: !businessReady || !selectedChannelRef,
   });
 
   const menuRequest = useMemo(
@@ -225,7 +229,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     [queryContext.groupWorkspaceKey, selectedChannelRef, selectedMenuRef, storeRef],
   );
   const menuQuery = operationsRtk.useGetOperationsSalesMenuQuery(menuRequest, {
-    skip: !scopeReady || !selectedChannelRef || !selectedMenuRef,
+    skip: !businessReady || !selectedChannelRef || !selectedMenuRef,
   });
 
   const sectionRequest = useMemo(
@@ -241,7 +245,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     [queryContext.groupWorkspaceKey, selectedMenuRef, storeRef],
   );
   const draftSectionsQuery = operationsRtk.useGetOperationsSalesMenuDraftSectionsQuery(sectionRequest, {
-    skip: !scopeReady || !selectedMenuRef || mode !== 'DRAFT',
+    skip: !businessReady || !selectedMenuRef || mode !== 'DRAFT',
   });
 
   const publishedSectionRequest = useMemo(
@@ -258,7 +262,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
   );
   const publishedSectionsQuery = operationsRtk.useGetOperationsSalesMenuPublishedSectionsQuery(
     publishedSectionRequest,
-    {skip: !scopeReady || !selectedMenuRef || mode !== 'PUBLISHED'},
+    {skip: !businessReady || !selectedMenuRef || mode !== 'PUBLISHED'},
   );
 
   const draftItemRequest = useMemo(
@@ -280,7 +284,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     [draftCursor.cursor, queryContext.groupWorkspaceKey, selectedMenuRef, selectedSectionRef, storeRef],
   );
   const draftItemsQuery = operationsRtk.useGetOperationsSalesMenuDraftItemsQuery(draftItemRequest, {
-    skip: !scopeReady || !selectedMenuRef || !selectedSectionRef || mode !== 'DRAFT',
+    skip: !businessReady || !selectedMenuRef || !selectedSectionRef || mode !== 'DRAFT',
   });
 
   const publishedItemRequest = useMemo(
@@ -310,7 +314,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     ],
   );
   const publishedItemsQuery = operationsRtk.useGetOperationsSalesMenuPublishedItemsQuery(publishedItemRequest, {
-    skip: !scopeReady || !selectedChannelRef || !selectedMenuRef || !selectedSectionRef || mode !== 'PUBLISHED',
+    skip: !businessReady || !selectedChannelRef || !selectedMenuRef || !selectedSectionRef || mode !== 'PUBLISHED',
   });
 
   const operationRequest = useMemo(
@@ -332,7 +336,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     [logCursor.cursor, queryContext.groupWorkspaceKey, selectedChannelRef, selectedMenuRef, storeRef],
   );
   const operationQuery = operationsRtk.useGetOperationsSalesMenuOperationRecordsQuery(operationRequest, {
-    skip: !scopeReady || !selectedChannelRef || !selectedMenuRef || mode !== 'OPERATIONS',
+    skip: !businessReady || !selectedChannelRef || !selectedMenuRef || mode !== 'OPERATIONS',
   });
 
   const publicationPreviewRequest = useMemo(
@@ -349,7 +353,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
   );
   const publicationPreviewQuery = operationsRtk.useGetOperationsSalesMenuPublicationPreviewQuery(
     publicationPreviewRequest,
-    {skip: !scopeReady || !selectedChannelRef || !selectedMenuRef},
+    {skip: !businessReady || !selectedChannelRef || !selectedMenuRef},
   );
 
   const candidateRequest = useMemo(
@@ -379,7 +383,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     ],
   );
   const candidateQueryState = operationsRtk.useGetOperationsSalesMenuItemCandidatesQuery(candidateRequest, {
-    skip: !scopeReady || !selectedMenuRef || !candidateOpen,
+    skip: !businessReady || !selectedMenuRef || !candidateOpen,
   });
 
   const refetchChannels = channelsQuery.refetch;
@@ -404,11 +408,11 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
   }, [channelSelectionScope]);
 
   useEffect(() => {
-    if (!scopeReady) return;
+    if (!businessReady) return;
     // The SALES_MENU owner query already returns only maintainable STORE/INTERNAL/DINE_IN/TAKEAWAY channels.
     // Keep the selected ref while the user incrementally accumulates the owner-issued dropdown collection.
     setSelectedChannelRef(current => current ?? channelCandidates.items[0]?.channelRef);
-  }, [channelCandidates.items, scopeReady]);
+  }, [businessReady, channelCandidates.items]);
 
   useEffect(() => {
     if (!selectedChannelRef || selectedMenuRef || selectorCandidates.items.length === 0) return;
@@ -478,7 +482,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
   const closeCandidates = useCallback(() => setCandidateOpen(false), []);
 
   useEffect(() => {
-    if (contentTabRefreshVersion === 0) return;
+    if (contentTabRefreshVersion === 0 || !businessReady) return;
     void refetchChannels();
     void refetchChannelTemplates();
     if (selectedChannelRef) {
@@ -496,6 +500,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     if (selectedSectionRef && mode === 'PUBLISHED') void refetchPublishedItems();
     if (candidateOpen) void refetchCandidates();
   }, [
+    businessReady,
     contentTabRefreshVersion,
     mode,
     candidateOpen,
@@ -517,7 +522,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
   ]);
 
   const refresh = useCallback(async () => {
-    if (!scopeReady) {
+    if (!businessReady) {
       operationsLogger.debug({
         event: 'sales-menu.read-model.refresh',
         phase: 'READ_MODEL_REFRESH',
@@ -584,7 +589,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
     refetchPublishedItems,
     refetchPublishedSections,
     refetchSelector,
-    scopeReady,
+    businessReady,
     selectedChannelRef,
     selectedMenuRef,
     selectedSectionRef,
@@ -592,6 +597,7 @@ export function useSalesMenuReadModel({queryContext}: SalesMenuPageProps) {
 
   return {
     scopeReady,
+    businessReady,
     storeRef,
     mode,
     setMode: changeMode,

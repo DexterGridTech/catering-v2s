@@ -2,9 +2,9 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuItemUpdateRequest(
-    String displayNameOverride,
-    SalesMenuItemUpdateRequestSaleContent saleContent,
-    SalesMenuOrderingConstraints orderingConstraints,
-    SalesMenuDisplayMedia displayMedia,
-    Long expectedVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "displayNameOverride", required = true) String displayNameOverride,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "saleContent", required = true) SalesMenuItemUpdateRequestSaleContent saleContent,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "orderingConstraints", required = true) SalesMenuOrderingConstraints orderingConstraints,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "displayMedia", required = true) SalesMenuDisplayMedia displayMedia,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion
 ) {}

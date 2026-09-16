@@ -2,11 +2,11 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceAccountAssignmentsItem(
-    String id,
-    ServiceNodeType serviceNodeType,
-    java.util.List<OrganizationPathNode> organizationPathNodes,
-    String roleName,
-    String status,
-    String source,
-    Long revision
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "id", required = true) String id,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "serviceNodeType", required = true) ServiceNodeType serviceNodeType,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "organizationPathNodes", required = true) java.util.List<OrganizationPathNode> organizationPathNodes,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "roleName", required = true) String roleName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) String status,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "source", required = true) String source,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "revision", required = true) Long revision
 ) {}

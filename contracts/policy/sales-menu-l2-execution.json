@@ -2,43 +2,13 @@
   "schemaVersion": 1,
   "kind": "sales-menu-l2-execution-profile",
   "revision": "SALES_MENU_L2_P1_20260908",
-  "mode": "INCREMENTAL",
-  "enabledCaseIds": [
-    "sales-menu-entry-and-channels",
-    "sales-menu-section-actions",
-    "sales-menu-section-move-and-delete",
-    "sales-menu-section-delete-non-empty",
-    "sales-menu-add-candidates",
-    "sales-menu-edit-direct-item-and-media",
-    "sales-menu-edit-sku-prices",
-    "sales-menu-edit-weighted-item",
-    "sales-menu-draft-order-and-pagination",
-    "sales-menu-publish-and-front-structure",
-    "sales-menu-front-status-and-pagination",
-    "sales-menu-manual-sold-out-and-restore",
-    "sales-menu-menu-management-and-multi-active",
-    "sales-menu-copy-boundary",
-    "sales-menu-publish-blockers",
-    "sales-menu-operation-records",
-    "sales-menu-failure-recovery-and-focus",
-    "sales-menu-auth-and-scope-isolation",
-    "business-channel-external-dine-in-template",
-    "business-channel-store-all-and-sales-menu-exclusion"
-  ],
+  "mode": "FRAMEWORK_ONLY",
+  "enabledCaseIds": [],
   "sourceOfTruth": "contracts/policy/sales-menu-l2-case-blueprint.json",
   "noSeedRuntimeInput": true,
   "activationCandidate": {
     "path": "contracts/policy/sales-menu-l2-activation-candidate.json",
     "digest": "72110988cd5a2de1d3ae11d0734132ece15285366f8d06a5acf5fdf85f1f7423"
   },
-  "enablementRule": "P1 enables only the candidate exact set after a matching PASS held readiness manifest; generated output is never hand-edited.",
-  "readiness": {
-    "manifestPath": ".runtime/browser-l2/l2-1789083764784-11693-2b4b38dd-8e24-48ca-a2fa-57a92a87622f/readiness-manifest.json",
-    "runBinding": {
-      "runId": "l2-1789083764784-11693-2b4b38dd-8e24-48ca-a2fa-57a92a87622f",
-      "namespace": "v2s_l2_4ae6bbb007b8d30f",
-      "database": "catering_v2s_l2_4ae6bbb007b8d30f",
-      "assetPrefix": "s3://catering-v2s-r5-assets/catering-v2s/l2/l2-1789083764784-11693-2b4b38dd-8e24-48ca-a2fa-57a92a87622f/"
-    }
-  }
+  "enablementRule": "P1 enables only the candidate exact set after a matching PASS held readiness manifest; generated output is never hand-edited."
 }

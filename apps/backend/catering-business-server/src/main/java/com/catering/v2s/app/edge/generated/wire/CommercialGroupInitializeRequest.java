@@ -2,8 +2,8 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record CommercialGroupInitializeRequest(
-    String groupCode,
-    String groupName,
-    String idempotencyKey,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "groupCode", required = true) String groupCode,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "groupName", required = true) String groupName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "idempotencyKey", required = true) String idempotencyKey,
     tools.jackson.databind.JsonNode extensionValues
 ) {}

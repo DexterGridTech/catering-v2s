@@ -1,0 +1,17 @@
+export const storeManagementTestIds = {
+  editDrawer: 'operations-store-edit-drawer',
+  editCancel: 'operations-store-edit-cancel',
+  editSubmit: 'operations-store-edit-submit',
+  editProblem: 'operations-store-edit-problem',
+  editProject: 'operations-store-edit-project',
+  editBrand: 'operations-store-edit-brand',
+  editTenant: 'operations-store-edit-tenant',
+  editCode: 'operations-store-edit-code',
+  editName: 'operations-store-edit-name',
+  editHeadCompany: 'operations-store-edit-head-company',
+  editNotes: 'operations-store-edit-notes',
+  editExtension: (key: string) => `operations-store-edit-extension-${key}`,
+  operatingRuleGroup: 'operations-store-edit-operating-rules',
+  operatingRule: (key: string) => `operations-store-edit-operating-rule-${key}`,
+  operatingRuleHelp: (key: string) => `operations-store-edit-operating-rule-help-${key}`,
+} as const;

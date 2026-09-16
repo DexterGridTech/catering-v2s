@@ -170,7 +170,9 @@ final class OrganizationAcceptanceScenarios {
         updateStoreBody.put("headCompanyId", null);
         updateStoreBody.put("notes", "updated-by-http");
         updateStoreBody.put("extensionValues", List.of());
+        updateStoreBody.put("extensionRuleRevision", 0);
         updateStoreBody.put("expectedVersion", version);
+        updateStoreBody.put("operatingRuleSwitches", acceptanceStoreOperatingRuleSwitches());
         BackendAcceptanceTest.Response updated = context.patch(
                 OPERATIONS_ORGANIZATION_STORE_UPDATE,
                 "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/organization/stores/" + storeId,
@@ -206,6 +208,115 @@ final class OrganizationAcceptanceScenarios {
                 detail.json().path("name").asText(),
                 "BUSINESS: fresh detail returns the write");
         assertEquals("DISABLED", detail.json().path("status").asText(), "BUSINESS: fresh detail returns the status");
+    }
+
+    @AcceptanceScenario(
+            id = "org.store-operating-rule-read-write-and-assignment-scope",
+            module = "ORG",
+            operation = "getOperationsOrganizationStoreOperatingRule")
+    void storeOperatingRuleReadWriteAndAssignmentScope(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        BackendAcceptanceTest.Fixture projectFixture =
+                host.fixture("PROJECT", Set.of("BC-ORG-STORE-EDIT"));
+        host.completeInvitation(context, projectFixture);
+        BackendAcceptanceTest.Session projectSession = selectStore(context, projectFixture, host.login(context, projectFixture));
+
+        BackendAcceptanceTest.Response projectRead = context.get(
+                OPERATIONS_ORGANIZATION_STORE_OPERATING_RULE,
+                "/api/operations/group-workspaces/" + projectFixture.groupWorkspaceKey()
+                        + "/organization/stores/" + projectFixture.storeId()
+                        + "/operating-rule-switches?expectedContextVersion=" + projectSession.contextVersion(),
+                projectSession.cookie(),
+                Set.of(200));
+        assertOperatingRules(
+                projectRead.json(),
+                acceptanceStoreOperatingRuleSwitches(),
+                "BUSINESS: project assignment reads the selected Store rule owner fact");
+        long version = projectRead.json().path("revision").asLong();
+
+        Map<String, Object> parentClosedChildOpen = new LinkedHashMap<>(acceptanceStoreOperatingRuleSwitches());
+        parentClosedChildOpen.put("catalogManagementEnabled", false);
+        parentClosedChildOpen.put("externalCatalogSyncEnabled", true);
+        parentClosedChildOpen.put("openPlatformDeveloperCode", "acceptance-developer");
+        Map<String, Object> updateStoreBody = new LinkedHashMap<>();
+        updateStoreBody.put("name", "Acceptance Store");
+        updateStoreBody.put("headCompanyId", null);
+        updateStoreBody.put("notes", "rule-scope-update");
+        updateStoreBody.put("extensionValues", List.of());
+        updateStoreBody.put("extensionRuleRevision", 0);
+        updateStoreBody.put("expectedVersion", version);
+        updateStoreBody.put("operatingRuleSwitches", parentClosedChildOpen);
+        BackendAcceptanceTest.Response updated = context.patch(
+                OPERATIONS_ORGANIZATION_STORE_UPDATE,
+                "/api/operations/group-workspaces/" + projectFixture.groupWorkspaceKey()
+                        + "/organization/stores/" + projectFixture.storeId(),
+                projectSession.cookie(),
+                updateStoreBody,
+                Map.of("Idempotency-Key", "acceptance-store-operating-rule-" + UUID.randomUUID()),
+                Set.of(200));
+        assertOperatingRules(
+                updated.json(),
+                parentClosedChildOpen,
+                "BUSINESS: parent false and child true are retained as a legal stored combination");
+
+        BackendAcceptanceTest.Response projectReadback = context.get(
+                OPERATIONS_ORGANIZATION_STORE_OPERATING_RULE,
+                "/api/operations/group-workspaces/" + projectFixture.groupWorkspaceKey()
+                        + "/organization/stores/" + projectFixture.storeId()
+                        + "/operating-rule-switches?expectedContextVersion=" + projectSession.contextVersion(),
+                projectSession.cookie(),
+                Set.of(200));
+        assertOperatingRules(
+                projectReadback.json(),
+                parentClosedChildOpen,
+                "BUSINESS: project readback returns the persisted rule map after update");
+
+        BackendAcceptanceTest.Fixture storeFixture = host.storeUserFixture(projectFixture, Set.of());
+        host.completeInvitation(context, storeFixture);
+        BackendAcceptanceTest.Session storeSession = selectStore(context, storeFixture, host.login(context, storeFixture));
+        BackendAcceptanceTest.Response storeRead = context.get(
+                OPERATIONS_ORGANIZATION_STORE_OPERATING_RULE,
+                "/api/operations/group-workspaces/" + storeFixture.groupWorkspaceKey()
+                        + "/organization/stores/" + storeFixture.storeId()
+                        + "/operating-rule-switches?expectedContextVersion=" + storeSession.contextVersion(),
+                storeSession.cookie(),
+                Set.of(200));
+        assertOperatingRules(
+                storeRead.json(),
+                parentClosedChildOpen,
+                "BUSINESS: Store assignment reads only its own selected Store rule fact");
+    }
+
+    private static BackendAcceptanceTest.Session selectStore(
+            BackendAcceptanceTest.ScenarioContext context,
+            BackendAcceptanceTest.Fixture fixture,
+            BackendAcceptanceTest.Session session)
+            throws Exception {
+        BackendAcceptanceTest.Response selected = context.post(
+                OPERATIONS_WORKSPACE_SESSION_DATA_NODE,
+                "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/session/data-node",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef", fixture.storeId(),
+                        "dataNodeType", "STORE",
+                        "requiredContextVersion", session.contextVersion()),
+                Set.of(200));
+        assertEquals(
+                fixture.storeId().toString(),
+                selected.json().path("scopeContext").path("store").path("dataNodeRef").asText(),
+                "BUSINESS: operating-rule scenario selects the intended Store");
+        return new BackendAcceptanceTest.Session(
+                session.cookie(), selected.json(), selected.json().path("contextVersion").asLong());
+    }
+
+    private static void assertOperatingRules(
+            JsonNode store, Map<String, Object> expected, String message) {
+        JsonNode values = store.path("operatingRuleSwitches");
+        assertTrue(values.isObject(), message + ": values object");
+        assertEquals(expected.size(), values.size(), message + ": complete value count");
+        expected.forEach((key, value) -> {
+            assertTrue(values.has(key), message + ": key " + key);
+            assertEquals(String.valueOf(value), values.path(key).asText(), message + ": value " + key);
+        });
     }
 
     @AcceptanceScenario(

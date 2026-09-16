@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OwnerBindingPage(
-    OwnerBindingPageMetadata metadata,
-    java.util.List<OwnerBindingView> items
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "metadata", required = true) OwnerBindingPageMetadata metadata,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "items", required = true) java.util.List<OwnerBindingView> items
 ) {}

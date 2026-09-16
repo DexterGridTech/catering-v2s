@@ -69,10 +69,14 @@
     "getOperationsEntityAuditHistory": {
       "capability": "audit-history",
       "pathFile": "paths/operations-admin/audit-history.paths.json"
+    },
+    "getOperationsOrganizationStoreOperatingRule": {
+      "capability": "store-operating-rule",
+      "pathFile": "paths/operations-admin/store-operating-rule.paths.json"
     }
   },
   "componentFamilyRules": [
-    {"match": "^(NoBody|NoContent|Problem|EpochMillis|AuditHistory.*|AuditChange.*|AuditEntity.*|AuditActor.*|AuditTarget.*)$", "family": "common"},
+    {"match": "^(NoBody|NoContent|Problem|EpochMillis|AuditHistory.*|AuditChange.*|AuditValueState|AuditEntity.*|AuditActor.*|AuditTarget.*)$", "family": "common"},
     {"match": "^(ExternalCapability.*|ExternalSystem.*|ProviderProfile.*|ExternalCollaborationTree|OwnerBinding.*|CapabilityDictionary)$", "family": "collaboration"},
     {"match": "^(BusinessChannel.*|ExternalProviderCandidate.*)$", "family": "business-channel"},
     {"match": "^(SalesMenu.*|InventoryAvailabilityFact|ManualSaleStatusFact)$", "family": "sales-menu"},
@@ -157,7 +161,7 @@
   "closure": {
     "sourceOperationCount": 148,
     "plannedAdditionalOperationCount": 63,
-    "expectedResolvedOperationCount": 211,
+    "expectedResolvedOperationCount": 212,
     "expectedUnresolvedOperationCount": 0,
     "expectedAmbiguousOperationCount": 0,
     "sourceComponentCount": 240,
@@ -167,7 +171,7 @@
     "expectedAmbiguousComponentCount": 0,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 138,
+      "operations-admin": 139,
       "public": 12
     }
   }

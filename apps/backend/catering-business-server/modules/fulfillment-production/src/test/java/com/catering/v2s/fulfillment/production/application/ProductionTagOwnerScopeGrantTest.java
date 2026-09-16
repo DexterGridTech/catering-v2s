@@ -209,7 +209,8 @@ class ProductionTagOwnerScopeGrantTest {
                                 "brand", "TEST_ORGANIZATION_JUDGMENT", "TEST_REVISION"),
                         null));
         CatalogScopeLookup catalogScopes = mock(CatalogScopeLookup.class);
-        return new CommandExecutionContextResolver(capabilities, catalogScopes, sessions)
+        return new CommandExecutionContextResolver(
+                        capabilities, catalogScopes, sessions, (workspace, group, targetType, storeId) -> {})
                 .resolveCatalog(
                         "typed-context-session",
                         token,

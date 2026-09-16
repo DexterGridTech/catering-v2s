@@ -721,6 +721,7 @@ const ADDITIONAL_ROUTE_WIRE_TYPES = Object.freeze({
   publishOperationsSalesMenu: ["SalesMenuPublishRequest", "SalesMenuCommandReadback"],
   setOperationsSalesMenuItemSoldOut: ["SalesMenuManualSoldOutRequest", "SalesMenuCommandReadback"],
   restoreOperationsSalesMenuItemSale: ["SalesMenuManualRestoreRequest", "SalesMenuCommandReadback"],
+  getOperationsOrganizationStoreOperatingRule: ["NoBody", "OrganizationStore"],
 });
 function expandGeneratedCatalogUnitRows(binding, root) {
   const routes = routeOperations(root);

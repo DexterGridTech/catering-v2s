@@ -2,6 +2,8 @@ import {Alert, Button} from 'antd';
 import {testId} from '@catering-v2s/admin-ui-foundation';
 import type {ComponentProps} from 'react';
 import {catalogTestIds} from '../catalogTestIds';
+import type {StoreOperatingRuleGateState} from '../../store-operating-rules/model/useStoreOperatingRuleGate';
+import {OperationsStoreCatalogManagementDisabledSurface} from '../../../app/components/OperationsStoreCatalogManagementDisabledSurface';
 import type {CatalogSurface} from './controllers/CatalogWorkbenchController';
 import {CatalogWorkbenchItemList} from './CatalogWorkbenchItemList';
 import {CatalogWorkbenchNavigationTree} from './CatalogWorkbenchNavigationTree';
@@ -14,6 +16,8 @@ type Props = {
   failed: boolean;
   noAuthorizedBrand: boolean;
   noSelectedScope: boolean;
+  ruleState: StoreOperatingRuleGateState;
+  onRuleRetry: () => void;
   treeVisible: boolean;
   toolbarProps: ComponentProps<typeof CatalogWorkbenchToolbar>;
   navigationProps: ComponentProps<typeof CatalogWorkbenchNavigationTree>;
@@ -29,6 +33,8 @@ export function CatalogWorkbenchContent({
   failed,
   noAuthorizedBrand,
   noSelectedScope,
+  ruleState,
+  onRuleRetry,
   treeVisible,
   toolbarProps,
   navigationProps,
@@ -83,11 +89,20 @@ export function CatalogWorkbenchContent({
           {...testId(catalogTestIds.static.inventoryScopeRequired)}
         />
       )}
-      <CatalogWorkbenchToolbar {...toolbarProps} />
-      <div style={{display: 'flex', gap: 16, marginTop: 16, minHeight: 460}}>
-        {treeVisible && <CatalogWorkbenchNavigationTree {...navigationProps} />}
-        <CatalogWorkbenchItemList {...itemListProps} />
-      </div>
+      {surface === 'store' && !noSelectedScope && ruleState !== 'ENABLED' ? (
+        <OperationsStoreCatalogManagementDisabledSurface
+          state={ruleState as Exclude<StoreOperatingRuleGateState, 'BYPASSED' | 'SCOPE_MISSING' | 'ENABLED'>}
+          onRetry={onRuleRetry}
+        />
+      ) : (
+        <>
+          <CatalogWorkbenchToolbar {...toolbarProps} />
+          <div style={{display: 'flex', gap: 16, marginTop: 16, minHeight: 460}}>
+            {treeVisible && <CatalogWorkbenchNavigationTree {...navigationProps} />}
+            <CatalogWorkbenchItemList {...itemListProps} />
+          </div>
+        </>
+      )}
     </section>
   );
 }

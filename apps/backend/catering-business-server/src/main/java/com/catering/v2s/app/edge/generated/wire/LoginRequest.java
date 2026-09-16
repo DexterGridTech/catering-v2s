@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record LoginRequest(
-    String accountName,
-    String password
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "accountName", required = true) String accountName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "password", required = true) String password
 ) {}

@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record ExtensionDefinitionBlocker(
-    String type,
-    GroupWorkspaceStatus status
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "type", required = true) String type,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) GroupWorkspaceStatus status
 ) {}

@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuItemsAddRequest(
-    java.util.List<java.util.UUID> catalogItemRefs,
-    Long expectedVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "catalogItemRefs", required = true) java.util.List<java.util.UUID> catalogItemRefs,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion
 ) {}

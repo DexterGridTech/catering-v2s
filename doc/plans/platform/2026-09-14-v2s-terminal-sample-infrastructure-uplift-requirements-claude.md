@@ -333,14 +333,14 @@ Codex 隔离副本实测:令两个新包分别依赖 `ui.integration.sample-cons
 
 ### 3.2 splash 需求
 
-- **R-S1 时机**(Dexter 裁定"主屏加载完毕后"):开机画面自原生启动起显示,**在"主屏已就绪"之前不得收起——包括不得被默认的自动收起收掉**;就绪后收起。
+- **R-S1 时机**(Dexter 裁定"主屏加载完毕后"):开机画面自原生启动起显示,**在目标 PRIMARY 物理表面首次就绪之前不得收起——包括不得被默认的自动收起收掉**;就绪后收起。就绪内容可以是正常 screen part 或内容失败的可见容器呈现；过渡态与系统失败不算就绪。
 
-  ⚠️ **R-E3 勘误(Dexter 2026-09-14 确认)**——"主屏已就绪"重定义为:**开机画面覆盖的那块主 Activity 物理表面**首次渲染出真实 screen part 并完成首次布局。
+  ⚠️ **R-E3 勘误(Dexter 2026-09-14 确认)**——"主屏已就绪"重定义为:**开机画面覆盖的那块主 Activity 物理表面**首次渲染出真实 screen part 或内容失败的可见容器呈现并完成首次布局。
 
   原定义用逻辑 `displayMode === 'PRIMARY'` 判定,但 `resolveSurfaceDisplayMode`(`kernel/base/display-context/src/foundations/displayDerivation.ts:5-9`)在 `displayRole === 'VICE' && instanceMode === 'SLAVE'` 时把物理 0 号屏(即开机画面所在的那块屏)判为逻辑 SECONDARY,单屏 SLAVE 设备按旧定义会永远等不到就绪。新定义按**物理表面**判定,渲染实现须能取得"当前进程渲染的是不是被开机画面覆盖的那块物理表面"这一事实,不经 `displayMode`。
 
-  `ScreenContainer` 的真实 part 分支要求排除**全部** `RenderFallbackReason`(`ui/base/render/src/components/resolvePart.ts:13-19`),不止 `runtime-unavailable`、`container-empty` 两种——另有 `missing-catalog-entry`、`incompatible-catalog-entry`、`missing-renderer`、`invalid-props` 四种,均不算就绪。此时 `SurfaceHostController` 也已过 geometry pending(不再渲染 `ui-base-render:surface-host-pending`)。App loading 回退、host pending、任一 `RenderFallbackReason`、外层 root 的布局**都不算**就绪。双屏只看开机画面覆盖的那块物理表面。**在 release 构建上成立才算成立。**
-- **R-S7 就绪永远不可达时的处置**(Dexter 2026-09-14 裁定):assembly 创建被拒绝、runtime 启动失败、host 快照长期不到、真实 part 持续落在上述任一 fallback 等终态失败场景,**收起开机画面并显示失败页**;不得让开机画面无限期停留(用户会以为设备卡死),也不得因已调用 `preventAutoHideAsync` 就放任默认自动收起(会绕过 R-S1)。失败页的最小内容由详设定,须能让用户或运维判断"启动失败",不是简单转黑屏或转空白。**v3.7 补充**:R-S7 只适用于首次就绪前;就绪后的处理、失败页文案与错误代码见 §8 v3.7 第 1、2 项。
+  `ScreenContainer` 的目标 PRIMARY 物理表面必须排除过渡态与系统类 fallback；内容类 fallback(`missing-catalog-entry`、`incompatible-catalog-entry`、`container-empty`、`invalid-props`)只要已在目标表面产生可见内容并完成首次布局,就算就绪。`SurfaceHostController` 仍须先通过 geometry pending；App loading、host pending、过渡态、系统失败与外层 root 布局**都不算**就绪。双屏只看开机画面覆盖的那块物理表面。**在 release 构建上成立才算成立。**
+- **R-S7 就绪永远不可达时的处置**(Dexter 2026-09-14 裁定):只对首次就绪前的**系统类终态失败**生效——assembly 创建被拒绝、runtime 启动失败、目标宿主表面不可用、目标 PRIMARY 持续落在系统 fallback 等场景,**收起开机画面并显示失败页**;过渡态继续等待,内容类 fallback 在容器内呈现并照常就绪。首次就绪后不显示启动失败档；运行期系统失败可显示运行期失败档。SECONDARY 不显示全屏失败页。不得因已调用 `preventAutoHideAsync` 就放任默认自动收起(会绕过 R-S1)。
 - **R-S2 能力归属**:收起时机的控制是 base 能力,各 App 不写收起逻辑。
 - **R-S3 配置归属**:开机画面内容按 App 定制,且**只有一个配置入口**。
 - **R-S4 一致性**:两个 App 采用同一种原生集成方式。
@@ -515,7 +515,7 @@ grep -rln "SystemNotice\|system-notice" ui --include='*.ts' --include='*.tsx' | 
 | U5 | **App 不接线 adapter**:adapter 接线只在 base | 跨包相对路径导入(今天无门挡);把接线代码复制进 App;挪到 App 内另一个文件 |
 | U6 | **身份一致且不撞名**:每个 App 一个权威身份源,其余身份位置与之一致;两个 App 互不相同 | 只查 Kotlin 包目录、不查源文件 `package` 声明;只查一个 App |
 | U7 | **资产引用双向闭合**:配置引用的资产都存在;`assets/` 下每个文件都被引用或登记;两个 App 同一规则 | 只查"引用 → 存在",孤儿文件照过;两个 App 用不同规则 |
-| U8 | **R-S1 在 release 构建冷启动时成立**(就绪按 R-E3 重定义的物理表面 + 全部 `RenderFallbackReason` 排除),手机形态与双屏形态都成立;R-S7 的失败页在终态失败场景可见;development build 只作辅助证据。**证据分档裁定(Dexter 2026-09-14)**:复用 `tools/terminal-sample2/run-a9-runtime.mjs` 先例,做一次记录式 release 观察即可,不新建受管 runner——除非该先例经详设核实无法驱动本判据所需的双形态冷启动观察,才升级为新建 | 把 App 壳或外层 root 的布局、host pending、任一 `RenderFallbackReason` 当作就绪;未阻止默认自动收起(开机画面在就绪前已消失);`preventAutoHideAsync` 调用过晚;只在 development build 或 Expo Go 上验证;只凭 JS 调用顺序日志而无设备观察;以 `__DEV__` 诊断为信号(release 中不存在);只验一种形态;终态失败时开机画面无限期停留而非收起显示失败页 |
+| U8 | **R-S1 在 release 构建冷启动时成立**(目标 PRIMARY 物理表面、host geometry 已就绪、内容正常或内容失败的可见呈现均可宣告 ready；过渡态与系统类 fallback 不可宣告 ready),手机形态与双屏形态都成立;R-S7 的系统类终态失败页在目标 PRIMARY 可见,内容类 fallback 不走失败页;development build 只作辅助证据。**证据分档裁定(Dexter 2026-09-14)**:复用 `tools/terminal-sample2/run-a9-runtime.mjs` 先例,做一次记录式 release 观察即可,不新建受管 runner——除非该先例经详设核实无法驱动本判据所需的双形态冷启动观察,才升级为新建 | 把 App 壳或外层 root 的布局、host pending、过渡态或系统类 fallback 当作就绪;把内容类 fallback 错判为系统失败页或阻止 ready;未阻止默认自动收起(开机画面在就绪前已消失);`preventAutoHideAsync` 调用过晚;只在 development build 或 Expo Go 上验证;只凭 JS 调用顺序日志而无设备观察;以 `__DEV__` 诊断为信号(release 中不存在);只验一种形态;系统类终态失败时开机画面无限期停留而非收起显示失败页 |
 | U9 | **TR-13 四形态对每个 console 构造性成立**:不写任何 admin 相关代码的 console 仍满足 | 另建 admin 路由、第二条 `openLayer`、自定义 `ADMIN_CONSOLE_*`(TR-13 第 4 形态);只渲染 launcher 而 admin parts 不在 catalog(TR-13 反例栏)。**验证沿用 TR-13 边界**:focused test 与实施评审,不新增 skeleton/layering 机器门,不在工具里硬编码包名 |
 | U10 | **两个 App 的冻结旅途与场景矩阵全部回归通过**,含冷重启、手机与双屏形态;每步断言 partKey 与 state,不接受成功文本 | 只跑一个平凡的挂载/点击流程;漏登录、确认、持久化或双屏;system notice 上收后 partKey、layerId、testID 被改名,回归矩阵跟着改名掩盖回归 |
 | U11 | **§3.0 通则成立**(按 R-E1 的放行方向,assembly → adapter 不算违反),依赖形态与扫描全集按 §3.0 | 经 `devDependencies`;`import type` 或 `export type … from`;动态 `import()` / `require()`;跨包相对路径;只扫 `src/` 漏掉 `test/` 或根目录配置;经另一个 base 包间接依赖(通则覆盖全部 base 包即闭合);**误将 assembly → adapter 判红**(该方向本条放行,判红即检查器本身有 bug) |
@@ -692,7 +692,7 @@ console.log('文件',files.length,'不一致',bad)"
 
 | # | 事项 | 裁定 |
 |---|---|---|
-| 1 | R-S7 的适用阶段(评审 S-1) | R-S7 只管首次就绪前,且只由终态事实触发;可恢复的原生移除保持开机画面,等下一次有效快照。首次就绪后永不显示"终端启动失败":可恢复的宿主不可用保留当前画面并自动恢复;runtime 失败或 PRIMARY 主屏终态 fallback 显示同一失败页的运行期变体;SECONDARY 任何阶段都不显示全屏失败页 |
+| 1 | R-S7 的适用阶段(评审 S-1) | R-S7 只管首次就绪前的系统类终态事实;可恢复的原生移除保持开机画面,等下一次有效快照。内容类 fallback 在容器内呈现并照常完成目标 PRIMARY 的 ready;首次就绪后永不显示"终端启动失败":可恢复的宿主不可用保留当前画面并自动恢复;runtime 失败或 PRIMARY 主屏系统类终态 fallback 显示同一失败页的运行期变体;SECONDARY 任何阶段都不显示全屏失败页 |
 | 2 | 失败页内容 | 启动期"终端启动失败"、运行期"终端运行异常",说明均为"请重启终端，如仍失败请联系管理员",附错误代码(仅内部 reason 与错误名);两个变体用不同 testID;本批不做页内"重新启动"按钮 |
 | 3 | picker 写入后与未知相位(评审 S-7) | 保留写入后分支;夹具由真实 kernel actor 先写、后置 actor 抛错;相位以 actor 回读为准;文案:写入前"操作没有完成，请重试",选择写入后"已选中该壁纸，但系统未能确认，可继续操作",确认写入后"壁纸已更换，但系统未能确认，无需重复操作",未知相位"操作结果未能确认，请以当前画面为准" |
 | 4 | startup.complete 完成语义(评审 M-1) | 六个必需启动组全部完成、PRIMARY declared 与 measured 都已发生、PRIMARY 真实 part 首次就绪,三者缺一不写;唯一 owner 为 console-assembly writer,DEV 与 release 同一判定;platform-ports logger 只做 sink,不覆盖 startupRunId;不新增生产诊断事件 |

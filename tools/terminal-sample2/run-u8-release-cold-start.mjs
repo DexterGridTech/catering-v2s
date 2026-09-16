@@ -166,7 +166,7 @@ const startupFailureUiIdentity = xml => xml !== null
 
 const relevantLog = log => log
   .split(/\r?\n/)
-  .filter(line => /startup\.(ready|complete|failure)|surface-host-(ready|unavailable)|secondary-(presentation|react-surface|start)|primary-(activity|window)|FATAL EXCEPTION|AndroidRuntime|ExpoModulesCore/i.test(line))
+  .filter(line => /TER-Splash|startup\.(ready|complete|failure)|surface-host-(ready|unavailable)|secondary-(presentation|react-surface|start)|primary-(activity|window)|FATAL EXCEPTION|AndroidRuntime|ExpoModulesCore/i.test(line))
   .join('\n')
 
 const eventLines = log => log
@@ -263,6 +263,25 @@ const launchOne = async (profile, serial, shape, directory) => {
       millisecondsSinceLaunch: Date.now() - launchTimestamp,
       splashVisible: splashVisible(immediateWindow),
     })
+    const launchSampleSurface = expectedFailure ? surfaceFlinger.virtualIds[0] : surfaceFlinger.primaryIds[0]
+    for (const targetMilliseconds of [50, 100, 200, 400, 800]) {
+      const remaining = targetMilliseconds - (Date.now() - launchTimestamp)
+      if (remaining > 0) await sleep(remaining)
+      const actualMilliseconds = Date.now() - launchTimestamp
+      const sampleWindow = windowSnapshot(serial)
+      const sampleActivity = activitySnapshot(serial)
+      const sampleName = expectedFailure ? 'screen-failure' : 'screen-primary'
+      const sampleStem = `${sampleName}-launch-${targetMilliseconds}ms`
+      writeText(recordDirectory, `window-${sampleStem}.txt`, sampleWindow)
+      writeText(recordDirectory, `activity-${sampleStem}.txt`, sampleActivity)
+      captureSurface(serial, launchSampleSurface, sampleStem, recordDirectory)
+      record.timeline.push({
+        event: 'launch-sample',
+        targetMilliseconds,
+        millisecondsSinceLaunch: actualMilliseconds,
+        splashVisible: splashVisible(sampleWindow),
+      })
+    }
     let readyCandidateLine = null
     let readyHiddenLine = null
     let completeLine = null

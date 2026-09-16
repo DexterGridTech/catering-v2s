@@ -10,6 +10,7 @@ import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
 import type {
   ContainerKey,
   DisplayMode,
+  PartKey,
   SurfaceForm,
   UiCatalog,
   UiVariableDeclaration,
@@ -58,6 +59,8 @@ type RenderSurfaceFormReader = (root: RenderStateRoot) => SurfaceForm
 export type SurfaceRootProps = Readonly<{
   readonly displayMode: DisplayMode
   readonly containerKey: ContainerKey
+  /** Optional integration-owned fallback used only when no persisted placement exists. */
+  readonly defaultContainerPartKeys?: Readonly<Partial<Record<ContainerKey, PartKey>>>
   readonly children?: ReactNode
   readonly renderContentFrame?: (frame: SurfaceRootContentFrame) => ReactNode
   readonly canvas?: SurfaceCanvasDeclaration
@@ -68,12 +71,43 @@ export type SurfaceRootContentFrame = Readonly<{
   readonly content: ReactNode
 }>
 
+export type ContentFailureReason =
+  | 'missing-catalog-entry'
+  | 'incompatible-catalog-entry'
+  | 'container-empty'
+  | 'invalid-props'
+
+export type SystemFailureReason =
+  | 'missing-renderer'
+  | 'runtime-start-failed'
+  | 'surface-host-unavailable'
+
+export type TransitionFailureReason = 'runtime-not-started'
+
+export type RenderFailure =
+  | Readonly<{
+      readonly category: 'content'
+      readonly reason: ContentFailureReason
+      readonly partKey: string | null
+      readonly containerKey: ContainerKey
+      readonly surfaceForm: SurfaceForm
+    }>
+  | Readonly<{
+      readonly category: 'system'
+      readonly reason: SystemFailureReason
+    }>
+  | Readonly<{
+      readonly category: 'transition'
+      readonly reason: TransitionFailureReason
+    }>
+
 export type RenderSurfaceReadyInput = Readonly<{
   readonly surfaceKey: 'PRIMARY'
   readonly displayIndex: 0
   readonly displayMode: DisplayMode
   readonly containerKey: ContainerKey
-  readonly partKey: string
+  readonly readyPartKey: string | null
+  readonly contentFailure: ContentFailureReason | null
 }>
 
 export type RenderProviderProps = Readonly<{

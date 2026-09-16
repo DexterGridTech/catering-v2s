@@ -1,0 +1,4 @@
+265:        source=ActivityRecord{253166903 u0 com.anonymous.sampleterminal/.MainActivity t9} SCREEN_ORIENTATION_LANDSCAPE
+271:        source=ActivityRecord{253166903 u0 com.anonymous.sampleterminal/.MainActivity t9} SCREEN_ORIENTATION_PORTRAIT
+277:        source=ActivityRecord{173269561 u0 com.anonymous.sampleterminal/.MainActivity t10} SCREEN_ORIENTATION_LANDSCAPE
+283:        source=ActivityRecord{173269561 u0 com.anonymous.sampleterminal/.MainActivity t10} SCREEN_ORIENTATION_PORTRAIT

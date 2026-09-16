@@ -135,6 +135,29 @@ const rawLayerStorage = (
   [layerStorageKey(persistenceKey, workspace, displayMode)]: JSON.stringify(value),
 })
 
+const containerStorageKey = (
+  persistenceKey: string,
+  workspace: 'MAIN' | 'BRANCH',
+  displayMode: 'PRIMARY' | 'SECONDARY',
+): string => [
+  'catering-v2s.terminal.state.v1',
+  encodeURIComponent(persistenceKey),
+  encodeURIComponent(`kernel.base.ui-state.content.${workspace}`),
+  'record',
+  'containers',
+  'entry',
+  encodeURIComponent(displayMode),
+].join('/')
+
+const rawContainerStorage = (
+  persistenceKey: string,
+  workspace: 'MAIN' | 'BRANCH',
+  displayMode: 'PRIMARY' | 'SECONDARY',
+  value: unknown,
+): Record<string, string> => ({
+  [containerStorageKey(persistenceKey, workspace, displayMode)]: JSON.stringify(value),
+})
+
 const dispatchOptions = (displayMode: 'PRIMARY' | 'SECONDARY' = 'PRIMARY') => ({
   requestId: createRequestId(),
   routeContext: Object.freeze({workspace: 'MAIN' as const, instanceMode: 'MASTER' as const, displayMode}),
@@ -419,6 +442,79 @@ describe('ui-state workspace content commands', () => {
     expect(parsed.map(layer => layer.layerId)).toEqual(['valid'])
     expect(diagnostics).toHaveLength(1)
     expect(diagnostics[0]?.reason).toBe('invalid-entry')
+  })
+
+  it('prunes malformed, unknown, and other-form hydrated containers before render', async () => {
+    const persistenceKey = 'ui-state-content-container-prune'
+    const plainStorage = createFakeStorage(rawContainerStorage(persistenceKey, 'MAIN', 'PRIMARY', {
+      root: {partKey: 'known-screen'},
+      mobile: {partKey: 'mobile-screen'},
+      retired: {partKey: 'retired-screen'},
+      broken: 'not-a-placement',
+    }))
+    const protectedStorage = createFakeStorage()
+    const catalog = createUiCatalog([
+      {
+        partKey: 'known-screen',
+        rendererKey: 'known-screen-renderer',
+        containerKeys: ['root'],
+        displayModes: ['PRIMARY', 'SECONDARY'] as const,
+        workspaces: ['MAIN', 'BRANCH'] as const,
+        instanceModes: ['MASTER', 'SLAVE'] as const,
+        surfaceForm: ['laptop', 'mobile'] as const,
+        title: 'Known screen',
+        description: 'Known screen',
+      },
+      {
+        partKey: 'mobile-screen',
+        rendererKey: 'mobile-screen-renderer',
+        containerKeys: ['root'],
+        displayModes: ['PRIMARY', 'SECONDARY'] as const,
+        workspaces: ['MAIN', 'BRANCH'] as const,
+        instanceModes: ['MASTER', 'SLAVE'] as const,
+        surfaceForm: ['mobile'] as const,
+        title: 'Mobile screen',
+        description: 'Mobile screen',
+      },
+    ])
+    const fixture = await createFixture({plainStorage, protectedStorage, persistenceKey, catalog})
+    runtimes.push(fixture.runtime)
+
+    expect(selectScreen(fixture.runtime.getState(), 'PRIMARY', 'root')?.partKey).toBe('known-screen')
+    expect(selectScreen(fixture.runtime.getState(), 'PRIMARY', 'mobile')).toBeUndefined()
+    expect(selectScreen(fixture.runtime.getState(), 'PRIMARY', 'retired')).toBeUndefined()
+    expect(selectScreen(fixture.runtime.getState(), 'PRIMARY', 'broken')).toBeUndefined()
+    expect(fixture.events).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        event: 'ui-state-hydration.container.discarded',
+        data: expect.objectContaining({
+          scope: 'container',
+          containerKey: 'broken',
+          reason: 'hydrated-container-invalid',
+        }),
+      }),
+      expect.objectContaining({
+        event: 'ui-state-hydration.container.not-renderable',
+        data: expect.objectContaining({
+          scope: 'container',
+          containerKey: 'mobile',
+          reason: 'hydrated-container-not-renderable',
+        }),
+      }),
+      expect.objectContaining({
+        event: 'ui-state-hydration.container.not-renderable',
+        data: expect.objectContaining({
+          scope: 'container',
+          containerKey: 'retired',
+          reason: 'hydrated-container-not-renderable',
+        }),
+      }),
+    ]))
+    expect(fixture.events.filter(event => event.event === 'ui-state-hydration.container.not-renderable')
+      .every(event => event.message === 'Hydrated UI container was removed because it is not renderable in the current catalog'))
+      .toBe(true)
+    expect([...plainStorage.values.values()].some(value => value.includes('mobile-screen'))).toBe(false)
+    expect([...plainStorage.values.values()].some(value => value.includes('retired-screen'))).toBe(false)
   })
 
   it('prunes unknown catalog members across all four buckets without pruning known layers', async () => {

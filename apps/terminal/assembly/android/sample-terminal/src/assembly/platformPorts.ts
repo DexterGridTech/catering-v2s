@@ -13,5 +13,6 @@ export const createSampleTerminalAssembly = (input: Readonly<{readonly surfaceFo
     persistenceKey,
     surfaceForm: input.surfaceForm,
     terminalSurfaces: packageJson.terminalSurfaces,
+    showAdminPassword: packageJson.showAdminPassword,
   })
 }

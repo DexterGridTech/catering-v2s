@@ -246,7 +246,8 @@ class InventoryReceiptFirstUseConcurrencyIntegrationTest {
                                 BRAND, "RECEIPT_INVENTORY_TEST", "RECEIPT_INVENTORY_REVISION"),
                         null));
         CatalogScopeLookup catalogScopes = mock(CatalogScopeLookup.class);
-        return new CommandExecutionContextResolver(capabilities, catalogScopes, sessions)
+        return new CommandExecutionContextResolver(
+                        capabilities, catalogScopes, sessions, (workspace, group, targetType, storeId) -> {})
                 .resolveCatalog(
                         "test-session",
                         token,

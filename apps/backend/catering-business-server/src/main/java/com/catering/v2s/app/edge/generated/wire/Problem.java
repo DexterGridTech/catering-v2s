@@ -2,11 +2,11 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record Problem(
-    String type,
-    String title,
-    Long status,
-    String detail,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "type", required = true) String type,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "title", required = true) String title,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) Long status,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "detail", required = true) String detail,
     String instance,
-    String errorCode,
-    String correlationId
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "errorCode", required = true) String errorCode,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "correlationId", required = true) String correlationId
 ) {}

@@ -2,5 +2,5 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record BusinessChannelTemplatePage(
-    java.util.List<BusinessChannelTemplateView> items
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "items", required = true) java.util.List<BusinessChannelTemplateView> items
 ) {}

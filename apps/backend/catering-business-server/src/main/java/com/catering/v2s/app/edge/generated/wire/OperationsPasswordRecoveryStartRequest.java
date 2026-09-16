@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OperationsPasswordRecoveryStartRequest(
-    String loginName,
-    String mobile
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "loginName", required = true) String loginName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "mobile", required = true) String mobile
 ) {}

@@ -2,9 +2,9 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuAssetStageReadback(
-    java.util.UUID assetRef,
-    String bindGrant,
-    String status,
-    Long version,
-    SalesMenuAssetTargetReadback target
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "assetRef", required = true) java.util.UUID assetRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "bindGrant", required = true) String bindGrant,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) String status,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "version", required = true) Long version,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "target", required = true) SalesMenuAssetTargetReadback target
 ) {}

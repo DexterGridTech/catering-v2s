@@ -149,7 +149,10 @@ function assertNoPrivateFeatureUiImports(base = root) {
     const prefix = `apps/frontend/${app}/src/features/`;
     for (const file of sourceFiles(prefix, base)) {
       const owner = file.slice(prefix.length).split('/')[0];
-      const imports = [...read(file, base).matchAll(/from\s+["']([^"']+)["']/g)].map(match => match[1]);
+      const parsed = ts.createSourceFile(file, read(file, base), ts.ScriptTarget.Latest, true, frontendScriptKind(file));
+      const imports = parsed.statements
+        .filter(statement => ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier))
+        .map(statement => statement.moduleSpecifier.text);
       for (const specifier of imports) {
         if (!specifier.startsWith('.')) continue;
         const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(file), specifier));

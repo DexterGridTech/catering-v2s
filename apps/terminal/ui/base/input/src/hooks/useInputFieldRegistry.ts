@@ -14,6 +14,7 @@ import type {
 
 type InputFieldRegistryOptions = Readonly<{
   readonly commitKeyboardState: CommitKeyboardState;
+  readonly notifyRegistryChange: () => void;
   readonly keyboardStateRef: MutableRef<KeyboardStateBase>;
   readonly blockedFieldIdRef: MutableRef<string | null>;
   readonly blockedCapacityRef: MutableRef<KeyboardCapacity | null>;
@@ -21,6 +22,7 @@ type InputFieldRegistryOptions = Readonly<{
 
 export const useInputFieldRegistry = ({
   commitKeyboardState,
+  notifyRegistryChange,
   keyboardStateRef,
   blockedFieldIdRef,
   blockedCapacityRef,
@@ -39,8 +41,12 @@ export const useInputFieldRegistry = ({
       ...registration,
       token,
     });
+    // Registration is an input lifecycle boundary. Making it observable lets
+    // a just-mounted native-less field retry an autofocus request that raced
+    // its registration without adding a timer or changing keyboard semantics.
+    notifyRegistryChange();
     return token;
-  }, []);
+  }, [notifyRegistryChange]);
 
   const unregisterField = useCallback(
     (token: InputRegistrationToken): void => {
@@ -53,9 +59,11 @@ export const useInputFieldRegistry = ({
       }
       if (keyboardStateRef.current.activeFieldId === token.fieldId) {
         commitKeyboardState({activeFieldId: null, owner: 'none', layout: 'numeric'});
+      } else {
+        notifyRegistryChange();
       }
     },
-    [blockedCapacityRef, blockedFieldIdRef, commitKeyboardState, keyboardStateRef],
+    [blockedCapacityRef, blockedFieldIdRef, commitKeyboardState, keyboardStateRef, notifyRegistryChange],
   );
 
   const updateValue = useCallback((token: InputRegistrationToken, value: string): void => {

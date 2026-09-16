@@ -3,6 +3,7 @@ package com.catering.v2s.organization.application;
 import com.catering.v2s.organization.application.persistence.BusinessBrandPersistence;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
+import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.audit.contract.AuditEntityTypes;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
@@ -33,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BusinessBrandService {
     private static final Set<String> VALID_STATUS = Set.of("ENABLED", "DISABLED", "VOIDED");
+    private static final Set<String> AUDIT_FIELDS = Set.of("code", "name", "status", "relationship", "notes");
     private final BusinessBrandPersistence persistence;
     private final TimeProvider time;
     private final ExtensionDefinitionLookup definitions;
@@ -320,7 +322,18 @@ public class BusinessBrandService {
         replaceNewValues(id, workspaceUuid, groupWorkspaceKey, submission);
         OrganizationEntityReadback created = OwnerOperationDiagnostics.readback(
                 () -> reads.requireEntity(BusinessEntityTypes.BRAND, workspaceUuid, groupWorkspaceKey, id));
-        audit(workspaceUuid, groupWorkspaceKey, id, "BRAND_CREATED", now, actor, BusinessEntityValueSupport.createdChanges(created));
+        ExtensionDefinitionReadback definition = BusinessEntityValueSupport.optionalDefinition(
+                definitions, workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.BRAND);
+        audit(
+                workspaceUuid,
+                groupWorkspaceKey,
+                id,
+                "BRAND_CREATED",
+                now,
+                actor,
+                BusinessEntityValueSupport.withExtensionChanges(
+                        BusinessEntityValueSupport.createdChanges(created), null, created, definition, submission),
+                BusinessEntityValueSupport.extensionKeys(definition));
         return created;
     }
 
@@ -378,6 +391,8 @@ public class BusinessBrandService {
         replaceValues(id, workspaceUuid, groupWorkspaceKey, before.extensionValues(), submission);
         OrganizationEntityReadback updated = OwnerOperationDiagnostics.readback(
                 () -> reads.requireEntity(BusinessEntityTypes.BRAND, workspaceUuid, groupWorkspaceKey, id));
+        ExtensionDefinitionReadback definition = BusinessEntityValueSupport.optionalDefinition(
+                definitions, workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.BRAND);
         audit(
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -385,7 +400,9 @@ public class BusinessBrandService {
                 "BRAND_UPDATED",
                 time.currentEpochMillis(),
                 actor,
-                BusinessEntityValueSupport.changed(before, updated));
+                BusinessEntityValueSupport.withExtensionChanges(
+                        BusinessEntityValueSupport.changed(before, updated), before, updated, definition, submission),
+                BusinessEntityValueSupport.extensionKeys(definition));
         return updated;
     }
 
@@ -550,17 +567,31 @@ public class BusinessBrandService {
             long now,
             AuditActor actor,
             List<AuditChange> changes) {
+        audit(workspaceUuid, groupWorkspaceKey, id, action, now, actor, changes, Set.of());
+    }
+
+    private void audit(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID id,
+            String action,
+            long now,
+            AuditActor actor,
+            List<AuditChange> changes,
+            Set<String> additionalAllowedFieldKeys) {
+        AuditChangePolicy policy = new AuditChangePolicy(BusinessEntityTypes.BRAND, action, AUDIT_FIELDS)
+                .withAdditionalFieldKeys(additionalAllowedFieldKeys);
         persistence.audit(
                 UUID.randomUUID(),
                 workspaceUuid,
                 groupWorkspaceKey,
-                "BRAND",
+                BusinessEntityTypes.BRAND,
                 id.toString(),
                 actor.actorType(),
                 actor.actorId(),
                 actor.displaySnapshot(),
                 action,
                 now,
-                BusinessEntityValueSupport.auditJson(changes));
+                BusinessEntityValueSupport.auditJson(policy.allow(changes)));
     }
 }

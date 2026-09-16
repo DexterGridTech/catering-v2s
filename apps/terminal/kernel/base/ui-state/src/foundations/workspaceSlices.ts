@@ -29,11 +29,15 @@ export type ContentHydrationDiagnosticReason =
   | 'duplicate-layer-id'
   | 'ephemeral-entry'
   | 'invalid-entry'
+  | 'hydrated-container-invalid'
+  | 'hydrated-container-not-renderable'
 
 export type ContentHydrationDiagnostic = Readonly<{
+  readonly scope: 'layer' | 'container'
   readonly workspace: WorkspaceKey
   readonly displayMode: DisplayMode | null
   readonly layerId: string | null
+  readonly containerKey: string | null
   readonly partKey: string | null
   readonly reason: ContentHydrationDiagnosticReason
 }>
@@ -151,6 +155,17 @@ const readCloseLayerPayload = (value: unknown): Readonly<{
   return Object.freeze({displayMode: record.displayMode, layerId: record.layerId})
 }
 
+const readRemoveScreenPayload = (value: unknown): Readonly<{
+  displayMode: DisplayMode
+  containerKey: string
+}> | undefined => {
+  const record = readObject(value)
+  if (record === undefined || !isDisplayMode(record.displayMode) || !isNonEmptyString(record.containerKey)) {
+    return undefined
+  }
+  return Object.freeze({displayMode: record.displayMode, containerKey: record.containerKey})
+}
+
 const readClearLayersPayload = (value: unknown): Readonly<{displayMode: DisplayMode}> | undefined => {
   const record = readObject(value)
   return record !== undefined && isDisplayMode(record.displayMode)
@@ -167,6 +182,7 @@ type MutableContentState = {
 
 type ContentCaseReducers = {
   readonly showScreen: (state: MutableContentState, action: PayloadAction<unknown>) => void
+  readonly removeScreen: (state: MutableContentState, action: PayloadAction<unknown>) => void
   readonly openLayer: (state: MutableContentState, action: PayloadAction<unknown>) => void
   readonly closeLayer: (state: MutableContentState, action: PayloadAction<unknown>) => void
   readonly clearLayers: (state: MutableContentState, action: PayloadAction<unknown>) => void
@@ -177,6 +193,11 @@ const createContentReducers = (): ContentCaseReducers => ({
     const payload = readShowPayload(action.payload)
     if (payload === undefined) return
     state.contentSets[payload.displayMode].containers[payload.containerKey] = payload.placement
+  },
+  removeScreen: (state, action): void => {
+    const payload = readRemoveScreenPayload(action.payload)
+    if (payload === undefined) return
+    delete state.contentSets[payload.displayMode].containers[payload.containerKey]
   },
   openLayer: (state, action): void => {
     const payload = readOpenLayerPayload(action.payload)
@@ -308,18 +329,6 @@ const parsePlacement = (value: StateJsonValue): ScreenPlacement | undefined => {
   })
 }
 
-const parseContainers = (value: StateJsonValue): Readonly<Record<string, ScreenPlacement>> => {
-  const record = readObject(value)
-  if (record === undefined) return Object.freeze({})
-  const containers: Record<string, ScreenPlacement> = {}
-  for (const [containerKey, rawPlacement] of Object.entries(record)) {
-    if (!isNonEmptyString(containerKey)) continue
-    const placement = parsePlacement(rawPlacement as StateJsonValue)
-    if (placement !== undefined) containers[containerKey] = placement
-  }
-  return Object.freeze(containers)
-}
-
 const diagnosticIdentity = (record: Record<string, unknown>): Readonly<{
   readonly layerId: string | null
   readonly partKey: string | null
@@ -327,6 +336,76 @@ const diagnosticIdentity = (record: Record<string, unknown>): Readonly<{
   layerId: isNonEmptyString(record.layerId) ? record.layerId : null,
   partKey: isNonEmptyString(record.partKey) ? record.partKey : null,
 })
+
+type HydrationParseInput = Readonly<{
+  readonly workspace: WorkspaceKey
+  readonly displayMode: DisplayMode
+  readonly onHydrationDiagnostic: ContentHydrationDiagnosticSink
+}>
+
+const reportHydrationDiagnostic = (
+  input: HydrationParseInput,
+  diagnostic: Readonly<{
+    readonly scope: 'layer' | 'container'
+    readonly layerId: string | null
+    readonly containerKey: string | null
+    readonly partKey: string | null
+    readonly reason: ContentHydrationDiagnosticReason
+  }>,
+): void => {
+  input.onHydrationDiagnostic(Object.freeze({
+    workspace: input.workspace,
+    displayMode: input.displayMode,
+    ...diagnostic,
+  }))
+}
+
+const parseContainers = (
+  value: StateJsonValue,
+  input: HydrationParseInput,
+): Readonly<Record<string, ScreenPlacement>> => {
+  const record = readObject(value)
+  if (record === undefined) {
+    reportHydrationDiagnostic(input, {
+      scope: 'container',
+      layerId: null,
+      containerKey: null,
+      partKey: null,
+      reason: 'hydrated-container-invalid',
+    })
+    return Object.freeze({})
+  }
+  const containers: Record<string, ScreenPlacement> = {}
+  for (const [containerKey, rawPlacement] of Object.entries(record)) {
+    const rawRecord = readObject(rawPlacement)
+    const partKey = rawRecord !== undefined && isNonEmptyString(rawRecord.partKey)
+      ? rawRecord.partKey
+      : null
+    if (!isNonEmptyString(containerKey)) {
+      reportHydrationDiagnostic(input, {
+        scope: 'container',
+        layerId: null,
+        containerKey: null,
+        partKey,
+        reason: 'hydrated-container-invalid',
+      })
+      continue
+    }
+    const placement = parsePlacement(rawPlacement as StateJsonValue)
+    if (placement === undefined) {
+      reportHydrationDiagnostic(input, {
+        scope: 'container',
+        layerId: null,
+        containerKey,
+        partKey,
+        reason: 'hydrated-container-invalid',
+      })
+      continue
+    }
+    containers[containerKey] = placement
+  }
+  return Object.freeze(containers)
+}
 
 const parseLayerEntry = (
   value: unknown,
@@ -347,21 +426,21 @@ const parseLayerEntry = (
     || !isValidOpenedAt(record.openedAt)
     || hasInvalidOptionalProps(record)
     || (record.persistence !== undefined && persistence === undefined)) {
-    input.onHydrationDiagnostic(Object.freeze({
-      workspace: input.workspace,
-      displayMode: input.displayMode,
+    reportHydrationDiagnostic(input, {
+      scope: 'layer',
       ...identity,
-      reason: 'invalid-entry' as const,
-    }))
+      containerKey: null,
+      reason: 'invalid-entry',
+    })
     return undefined
   }
   if (persistence === 'ephemeral') {
-    input.onHydrationDiagnostic(Object.freeze({
-      workspace: input.workspace,
-      displayMode: input.displayMode,
+    reportHydrationDiagnostic(input, {
+      scope: 'layer',
       ...identity,
-      reason: 'ephemeral-entry' as const,
-    }))
+      containerKey: null,
+      reason: 'ephemeral-entry',
+    })
     return undefined
   }
   const props = readOptionalProps(record)
@@ -383,13 +462,13 @@ export const parseLayerEntries = (
   }>,
 ): readonly LayerEntry[] => {
   if (!Array.isArray(value)) {
-    input.onHydrationDiagnostic(Object.freeze({
-      workspace: input.workspace,
-      displayMode: input.displayMode,
+    reportHydrationDiagnostic(input, {
+      scope: 'layer',
       layerId: null,
+      containerKey: null,
       partKey: null,
-      reason: 'invalid-entry' as const,
-    }))
+      reason: 'invalid-entry',
+    })
     return Object.freeze([])
   }
   const seenLayerIds = new Set<string>()
@@ -398,13 +477,13 @@ export const parseLayerEntries = (
     const layer = parseLayerEntry(raw, input)
     if (layer === undefined) continue
     if (seenLayerIds.has(layer.layerId)) {
-      input.onHydrationDiagnostic(Object.freeze({
-        workspace: input.workspace,
-        displayMode: input.displayMode,
+      reportHydrationDiagnostic(input, {
+        scope: 'layer',
         layerId: layer.layerId,
+        containerKey: null,
         partKey: layer.partKey,
-        reason: 'duplicate-layer-id' as const,
-      }))
+        reason: 'duplicate-layer-id',
+      })
       continue
     }
     seenLayerIds.add(layer.layerId)
@@ -414,16 +493,21 @@ export const parseLayerEntries = (
 }
 
 const applyPersistedContentEntries = (
-  state: Readonly<UiContentState>,
-  entries: Readonly<Partial<Record<string, StateJsonValue>>>,
+  input: Readonly<{
+    readonly state: Readonly<UiContentState>
+    readonly entries: Readonly<Partial<Record<string, StateJsonValue>>>
+    readonly workspace: WorkspaceKey
+    readonly onHydrationDiagnostic: ContentHydrationDiagnosticSink
+  }>,
 ): UiContentState => {
+  const {state, entries, workspace, onHydrationDiagnostic} = input
   const contentSets = {...state.contentSets}
   for (const displayMode of displayModes) {
     const raw = entries[displayMode]
     if (raw === undefined) continue
     contentSets[displayMode] = Object.freeze({
       ...contentSets[displayMode],
-      containers: parseContainers(raw),
+      containers: parseContainers(raw, {workspace, displayMode, onHydrationDiagnostic}),
     })
   }
   return Object.freeze({...state, contentSets: Object.freeze(contentSets)})
@@ -464,7 +548,12 @@ const createContentDescriptor = (input: Readonly<{
       kind: 'record',
       storageKeyPrefix: 'containers',
       getEntries: serializeContentEntries,
-      applyEntries: applyPersistedContentEntries,
+      applyEntries: (state, entries) => applyPersistedContentEntries({
+        state,
+        entries,
+        workspace,
+        onHydrationDiagnostic,
+      }),
     },
     {
       kind: 'record',

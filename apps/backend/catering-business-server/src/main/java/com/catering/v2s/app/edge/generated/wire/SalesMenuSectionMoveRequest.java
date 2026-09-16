@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuSectionMoveRequest(
-    String direction,
-    Long expectedVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "direction", required = true) String direction,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion
 ) {}

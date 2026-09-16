@@ -1,6 +1,7 @@
 package com.catering.v2s.app.edge.audit;
 
 import com.catering.v2s.app.edge.generated.wire.AuditChange;
+import com.catering.v2s.app.edge.generated.wire.AuditValueState;
 import com.catering.v2s.app.edge.generated.wire.AuditHistoryItem;
 import com.catering.v2s.app.edge.generated.wire.AuditHistoryPage;
 import com.catering.v2s.app.edge.generated.wire.AuditTarget;
@@ -23,7 +24,12 @@ public final class AuditHistoryWireMapper {
                                         item.target().entityRef()),
                                 item.changes().stream()
                                         .map(change -> new AuditChange(
-                                                change.fieldKey(), change.beforeValue(), change.afterValue()))
+                                                change.fieldKey(),
+                                                change.fieldLabelSnapshot(),
+                                                change.beforeState() == null ? null : AuditValueState.valueOf(change.beforeState().name()),
+                                                change.beforeValue(),
+                                                change.afterState() == null ? null : AuditValueState.valueOf(change.afterState().name()),
+                                                change.afterValue()))
                                         .toList()))
                         .toList(),
                 value.page(),

@@ -12,8 +12,8 @@ public final class CollaborationOperationBindings {
   public interface OwnerLocalAdapters {
     OperationBindingTypes.Wire.OwnerBindingView createOperationsOwnerBinding(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.OwnerBindingCreateRequest request);
     OperationBindingTypes.Wire.OwnerBindingView createPlatformOwnerBinding(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.OwnerBindingCreateRequest request);
-    OperationBindingTypes.Wire.OwnerBindingView deleteOperationsOwnerBinding(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.OwnerBindingUpdateRequest request);
-    OperationBindingTypes.Wire.OwnerBindingView deletePlatformOwnerBinding(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.OwnerBindingUpdateRequest request);
+    OperationBindingTypes.Wire.OwnerBindingView deleteOperationsOwnerBinding(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.OwnerBindingDeleteRequest request);
+    OperationBindingTypes.Wire.OwnerBindingView deletePlatformOwnerBinding(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.OwnerBindingDeleteRequest request);
     OperationBindingTypes.Wire.CapabilityDictionary getOperationsExternalCapabilityDictionary(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.NoBody request);
     OperationBindingTypes.Wire.ExternalProviderCandidatePage getOperationsExternalProviderCandidates(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.NoBody request);
     OperationBindingTypes.Wire.OwnerBindingView getOperationsOwnerBindingDetail(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.NoBody request);
@@ -93,11 +93,11 @@ public final class CollaborationOperationBindings {
     return adapters.createPlatformOwnerBinding(CREATE_PLATFORM_OWNER_BINDING_DESCRIPTOR, context, request);
   }
 
-  public OperationBindingTypes.Wire.OwnerBindingView deleteOperationsOwnerBinding(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.OwnerBindingUpdateRequest request) {
+  public OperationBindingTypes.Wire.OwnerBindingView deleteOperationsOwnerBinding(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.OwnerBindingDeleteRequest request) {
     return adapters.deleteOperationsOwnerBinding(DELETE_OPERATIONS_OWNER_BINDING_DESCRIPTOR, context, request);
   }
 
-  public OperationBindingTypes.Wire.OwnerBindingView deletePlatformOwnerBinding(OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.OwnerBindingUpdateRequest request) {
+  public OperationBindingTypes.Wire.OwnerBindingView deletePlatformOwnerBinding(OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.OwnerBindingDeleteRequest request) {
     return adapters.deletePlatformOwnerBinding(DELETE_PLATFORM_OWNER_BINDING_DESCRIPTOR, context, request);
   }
 

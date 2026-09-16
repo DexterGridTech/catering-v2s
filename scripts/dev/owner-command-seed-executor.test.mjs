@@ -1,10 +1,24 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {FormalSeedFailure, createProjectScopeSelector, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateCatalogInventorySeedPrerequisite, validateExtensionDefinitionRevisionChangeCoverage, validateExtensionDefinitionSeedCoverage, validateFormalSeedStaticInputs, validateThreeStateSeedCoverage, invocationKeyForTest} from './owner-command-seed-executor.mjs';
+import {FormalSeedFailure, assertStoreOperatingRuleReadback, createProjectScopeSelector, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateCatalogInventorySeedPrerequisite, validateExtensionDefinitionRevisionChangeCoverage, validateExtensionDefinitionSeedCoverage, validateFormalSeedStaticInputs, validateStoreOperatingRuleSeedCoverage, validateThreeStateSeedCoverage, invocationKeyForTest} from './owner-command-seed-executor.mjs';
 import {loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById} from '../test/seed-report.mjs';
 
 const generatedRegistry = loadGeneratedOperationRegistry(new URL('../../apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json', import.meta.url));
 const FLAT_EXTENSION_HOST_TYPES = new Set(['BRAND', 'TENANT', 'HEAD_COMPANY', 'STORE', 'CONTRACT']);
+const STORE_OPERATING_RULE_VALUES = Object.freeze({
+  catalogManagementEnabled: true,
+  externalCatalogSyncEnabled: false,
+  openPlatformDeveloperCode: '',
+  reservationEnabled: false,
+  reservationDepositEnabled: false,
+  queueCallEnabled: false,
+  tableManagementEnabled: false,
+  tableStatusEnabled: false,
+  tableWaitCallEnabled: false,
+  banquetOrderEnabled: false,
+  pickupCallEnabled: false,
+  receivableEnabled: false,
+});
 
 const fixture = {
   profile: {id: 'r5-full', version: 1},
@@ -41,7 +55,11 @@ const fixture = {
       brands: [{key: 'brand-enabled', status: 'ENABLED'}, {key: 'brand-disabled', status: 'DISABLED'}, {key: 'brand-voided', status: 'VOIDED'}],
       tenants: [{key: 'tenant-enabled', status: 'ENABLED'}, {key: 'tenant-disabled', status: 'DISABLED'}, {key: 'tenant-voided', status: 'VOIDED'}],
       headCompanies: [{key: 'head-enabled', status: 'ENABLED'}, {key: 'head-disabled', status: 'DISABLED'}, {key: 'head-voided', status: 'VOIDED'}],
-      stores: [{key: 'store-a', status: 'ENABLED'}, {key: 'store-disabled', status: 'DISABLED'}, {key: 'store-voided', status: 'VOIDED'}],
+      stores: [
+        {key: 'store-a', status: 'ENABLED', operatingRuleSwitches: {...STORE_OPERATING_RULE_VALUES}},
+        {key: 'store-disabled', status: 'DISABLED', operatingRuleSwitches: {...STORE_OPERATING_RULE_VALUES}},
+        {key: 'store-voided', status: 'VOIDED', operatingRuleSwitches: {...STORE_OPERATING_RULE_VALUES}},
+      ],
     },
     extensionDefinitions: [
       {key: 'ext-brand', hostType: 'BRAND', fields: [
@@ -87,6 +105,17 @@ test('formal seed requires every lifecycle-bearing fixture collection to cover a
   const missingStatus = structuredClone(fixture);
   delete missingStatus.stableFixtures.workspaceIam.accounts[0].status;
   assert.throws(() => validateThreeStateSeedCoverage(missingStatus), code('SEED_STATUS_VALUE_INVALID:workspaceIam.accounts'));
+});
+
+test('formal seed explicitly enables catalog management for every experience store', () => {
+  assert.deepEqual(validateStoreOperatingRuleSeedCoverage(fixture), {storeCount: 3, ruleCount: 12});
+  const omitted = structuredClone(fixture);
+  delete omitted.stableFixtures.organization.stores[0].operatingRuleSwitches;
+  assert.throws(() => validateStoreOperatingRuleSeedCoverage(omitted), code('SEED_STORE_OPERATING_RULE_VALUES_INVALID:store-a'));
+  const disabled = structuredClone(fixture);
+  disabled.stableFixtures.organization.stores[0].operatingRuleSwitches.catalogManagementEnabled = false;
+  assert.throws(() => validateStoreOperatingRuleSeedCoverage(disabled), code('SEED_STORE_CATALOG_MANAGEMENT_NOT_ENABLED:store-a'));
+  assert.throws(() => assertStoreOperatingRuleReadback({json: {operatingRuleSwitches: {...STORE_OPERATING_RULE_VALUES, catalogManagementEnabled: false}}}, 'store-a', STORE_OPERATING_RULE_VALUES), code('SEED_STORE_CATALOG_MANAGEMENT_NOT_ENABLED:store-a'));
 });
 
 test('formal seed keeps the catalog inventory principal enabled on the store scope used by both catalog clients', async () => {

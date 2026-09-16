@@ -52,9 +52,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
   },
 })
 
@@ -211,7 +208,7 @@ export const LayerStack = () => {
   if (snapshot.root === undefined) {
     return (
       <View testID={LAYER_STACK_TEST_ID}>
-        <RenderFallback reason="runtime-unavailable" />
+        <RenderFallback failure={{category: 'transition', reason: 'runtime-not-started'}} />
       </View>
     )
   }

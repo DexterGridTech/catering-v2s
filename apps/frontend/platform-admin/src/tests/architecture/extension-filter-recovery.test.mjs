@@ -24,16 +24,31 @@ test('platform organization and contract lists block stale recovery until a veri
   assert.match(source, /rememberStaleRevision/);
   assert.match(source, /const recovery = .*\.begin\(/s);
   assert.match(source, /isCurrentRecovery/);
-  assert.match(source, /setOrganizationExtensionRecoveryFlags\(\{scopeKey: recovery\.scopeKey, inProgress: true, failed: false\}\)/);
-  assert.match(source, /setContractExtensionRecoveryFlags\(\{scopeKey: recovery\.scopeKey, inProgress: true, failed: false\}\)/);
+  assert.match(
+    source,
+    /setOrganizationExtensionRecoveryFlags\(\{scopeKey: recovery\.scopeKey, inProgress: true, failed: false\}\)/,
+  );
+  assert.match(
+    source,
+    /setContractExtensionRecoveryFlags\(\{scopeKey: recovery\.scopeKey, inProgress: true, failed: false\}\)/,
+  );
   assert.match(source, /organizationExtensionRecoveryFailed/);
   assert.match(source, /contractExtensionRecoveryFailed/);
-  assert.match(source, /setOrganizationExtensionRecoveryFlags\(\{scopeKey: recovery\.scopeKey, inProgress: false, failed: true\}\)/);
-  assert.match(source, /setContractExtensionRecoveryFlags\(\{scopeKey: recovery\.scopeKey, inProgress: false, failed: true\}\)/);
+  assert.match(
+    source,
+    /setOrganizationExtensionRecoveryFlags\(\{scopeKey: recovery\.scopeKey, inProgress: false, failed: true\}\)/,
+  );
+  assert.match(
+    source,
+    /setContractExtensionRecoveryFlags\(\{scopeKey: recovery\.scopeKey, inProgress: false, failed: true\}\)/,
+  );
   assert.match(source, /organizationExtensionRecoveryBlocked/);
   assert.match(source, /contractExtensionRecoveryBlocked/);
   assert.equal((source.match(/const definition = result\.data/g) ?? []).length, 2);
-  assert.equal((source.match(/isExtensionDefinitionRevisionAtLeast\(definition, recovery\.expectedRevision\)/g) ?? []).length, 2);
+  assert.equal(
+    (source.match(/isExtensionDefinitionRevisionAtLeast\(definition, recovery\.expectedRevision\)/g) ?? []).length,
+    2,
+  );
   assert.match(source, /extensionRecoveryRetryAvailable/);
   assert.doesNotMatch(source, /\.catch\(\(\) => undefined\)\.finally\(/);
   assert.match(source, /setExtensionRecoveryNoticeScope\(undefined\)/);

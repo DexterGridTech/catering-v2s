@@ -3,7 +3,7 @@ package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceOperationsInvitationCreateRequest(
     java.util.UUID scopeRef,
-    String mobile,
-    java.util.List<String> roleIds,
-    String idempotencyKey
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "mobile", required = true) String mobile,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "roleIds", required = true) java.util.List<String> roleIds,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "idempotencyKey", required = true) String idempotencyKey
 ) {}

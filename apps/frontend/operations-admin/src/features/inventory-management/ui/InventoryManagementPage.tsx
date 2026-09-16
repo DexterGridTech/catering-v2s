@@ -21,6 +21,8 @@ import {wireUuid} from '../../../app/api/wireUuid';
 import {ACTION_CAPABILITIES} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {InventoryDetailDrawer} from './InventoryDetailDrawer';
+import {OperationsStoreCatalogManagementDisabledSurface} from '../../../app/components/OperationsStoreCatalogManagementDisabledSurface';
+import {useStoreOperatingRuleGate} from '../../store-operating-rules/model/useStoreOperatingRuleGate';
 import {
   envelopeData,
   hasCapability,
@@ -61,6 +63,8 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
   const detailTriggerRef = useRef<HTMLElement | null>(null);
   const contentTabRefreshVersion = useRefreshVersion(operationsContentTabRefreshSignal);
   const scopeReady = Boolean(queryContext.scopeRef);
+  const ruleGate = useStoreOperatingRuleGate({queryContext});
+  const businessReady = scopeReady && ruleGate.isEnabled;
   const navigationRequest = useMemo(
     () =>
       catalogInventoryRtkRequest.getOperationsCatalogNavigation(
@@ -69,7 +73,7 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
       ),
     [queryContext.scopeRef],
   );
-  const navigation = operationsRtk.useGetOperationsCatalogNavigationQuery(navigationRequest, {skip: !scopeReady});
+  const navigation = operationsRtk.useGetOperationsCatalogNavigationQuery(navigationRequest, {skip: !businessReady});
   const categoryOptions = useMemo(
     () =>
       (navigation.currentData?.data.tree ?? []).map(node => ({
@@ -95,16 +99,16 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
       ),
     [categoryRef, cursor, keyword, pageSize, queryContext.scopeRef, view],
   );
-  const list = operationsRtk.useGetOperationsInventoryTargetsQuery(request, {skip: !scopeReady});
+  const list = operationsRtk.useGetOperationsInventoryTargetsQuery(request, {skip: !businessReady});
   const refetchNavigation = navigation.refetch;
   const refetchList = list.refetch;
   useEffect(() => {
-    if (!scopeReady || contentTabRefreshVersion === 0) return;
+    if (!businessReady || contentTabRefreshVersion === 0) return;
     // This catalog-inventory edge has no LIST tag. Re-read every inventory
     // workbench model while preserving the current filters and cursor page.
     void refetchNavigation();
     void refetchList();
-  }, [contentTabRefreshVersion, refetchList, refetchNavigation, scopeReady]);
+  }, [businessReady, contentTabRefreshVersion, refetchList, refetchNavigation]);
   const page = envelopeData<InventoryPage>(list.currentData);
   const rows = page?.items ?? [];
   const counts = useMemo<InventoryCounts>(() => {
@@ -279,7 +283,7 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
           {...testId('inventory-scope-required')}
         />
       )}
-      {scopeForbidden && (
+      {businessReady && scopeForbidden && (
         <Alert
           type="error"
           showIcon
@@ -290,7 +294,7 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
           {...testId('inventory-scope-forbidden')}
         />
       )}
-      {problem && (
+      {businessReady && problem && (
         <Alert
           type="error"
           showIcon
@@ -301,79 +305,91 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
           {...testId('inventory-list-problem')}
         />
       )}
-      <Space direction="vertical" size={12} style={{display: 'flex'}}>
-        <Segmented<StockView>
-          value={view}
-          onChange={next => {
-            setView(next);
-            resetCursor();
-          }}
-          options={(Object.keys(stockLabels) as StockView[]).map(key => ({
-            value: key,
-            label: `${stockLabels[key]} ${counts[key]}`,
-          }))}
-          {...testId('inventory-stock-view')}
+      {scopeReady && !businessReady && (
+        <OperationsStoreCatalogManagementDisabledSurface
+          state={ruleGate.state as Exclude<typeof ruleGate.state, 'BYPASSED' | 'SCOPE_MISSING' | 'ENABLED'>}
+          onRetry={ruleGate.retry}
         />
-        <ProTable<InventoryTargetSummary>
-          size="small"
-          aria-label="门店库存管理"
-          rowKey="targetRef"
-          options={{density: false, fullScreen: false, reload: () => list.refetch()}}
-          scroll={{x: 1250}}
-          sticky
-          dataSource={rows}
-          columns={columns}
-          {...adminListState({
-            loading: list.isFetching,
-            failed: Boolean(list.error) || !scopeReady,
-            emptyText: '暂无库存对象',
-            testIdPrefix: 'inventory-target-list',
-          })}
-          search={{
-            labelWidth: 'auto',
-            optionRender: searchConfig => [
-              <Button
-                key="submit"
-                type="primary"
-                onClick={() => searchConfig.form?.submit()}
-                {...testId('inventory-filter-submit')}
-              >
-                查询
-              </Button>,
-              <Button
-                key="reset"
-                onClick={() => {
-                  searchConfig.form?.resetFields();
-                  setKeyword(undefined);
-                  setCategoryRef(undefined);
-                  resetCursor();
-                }}
-                {...testId('inventory-filter-reset')}
-              >
-                重置
-              </Button>,
-            ],
-          }}
-          onSubmit={values => {
-            setKeyword(typeof values.keyword === 'string' ? values.keyword.trim() || undefined : undefined);
-            setCategoryRef(typeof values.categoryRef === 'string' ? values.categoryRef.trim() || undefined : undefined);
-            resetCursor();
-          }}
-          pagination={false}
-          {...testId('inventory-target-table')}
+      )}
+      {businessReady && (
+        <Space direction="vertical" size={12} style={{display: 'flex'}}>
+          <Segmented<StockView>
+            value={view}
+            onChange={next => {
+              setView(next);
+              resetCursor();
+            }}
+            options={(Object.keys(stockLabels) as StockView[]).map(key => ({
+              value: key,
+              label: `${stockLabels[key]} ${counts[key]}`,
+            }))}
+            {...testId('inventory-stock-view')}
+          />
+          <ProTable<InventoryTargetSummary>
+            size="small"
+            aria-label="门店库存管理"
+            rowKey="targetRef"
+            options={{density: false, fullScreen: false, reload: () => list.refetch()}}
+            scroll={{x: 1250}}
+            sticky
+            dataSource={rows}
+            columns={columns}
+            {...adminListState({
+              loading: list.isFetching,
+              failed: Boolean(list.error) || !scopeReady,
+              emptyText: '暂无库存对象',
+              testIdPrefix: 'inventory-target-list',
+            })}
+            search={{
+              labelWidth: 'auto',
+              optionRender: searchConfig => [
+                <Button
+                  key="submit"
+                  type="primary"
+                  onClick={() => searchConfig.form?.submit()}
+                  {...testId('inventory-filter-submit')}
+                >
+                  查询
+                </Button>,
+                <Button
+                  key="reset"
+                  onClick={() => {
+                    searchConfig.form?.resetFields();
+                    setKeyword(undefined);
+                    setCategoryRef(undefined);
+                    resetCursor();
+                  }}
+                  {...testId('inventory-filter-reset')}
+                >
+                  重置
+                </Button>,
+              ],
+            }}
+            onSubmit={values => {
+              setKeyword(typeof values.keyword === 'string' ? values.keyword.trim() || undefined : undefined);
+              setCategoryRef(
+                typeof values.categoryRef === 'string' ? values.categoryRef.trim() || undefined : undefined,
+              );
+              resetCursor();
+            }}
+            pagination={false}
+            {...testId('inventory-target-table')}
+          />
+          <CursorPagination
+            state={{page: cursorPage, canPrevious, goToPage}}
+            nextCursor={page?.cursor}
+            testIdPrefix="inventory-target-pagination"
+          />
+        </Space>
+      )}
+      {businessReady && (
+        <InventoryDetailDrawer
+          targetRef={detail.isOpen ? detail.target : undefined}
+          canEdit={canEdit}
+          queryContext={queryContext}
+          onClose={closeDetail}
         />
-        <CursorPagination
-          state={{page: cursorPage, canPrevious, goToPage}}
-          nextCursor={page?.cursor}
-          testIdPrefix="inventory-target-pagination"
-        />
-      </Space>
-      <InventoryDetailDrawer
-        targetRef={detail.isOpen ? detail.target : undefined}
-        canEdit={canEdit}
-        queryContext={queryContext}
-        onClose={closeDetail}
-      />
+      )}
     </section>
   );
 }

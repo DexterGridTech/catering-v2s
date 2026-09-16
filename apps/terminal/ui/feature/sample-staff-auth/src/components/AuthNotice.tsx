@@ -1,5 +1,6 @@
 import {
   PrimitiveButton,
+  PrimitiveCenter,
   PrimitiveContainer,
   PrimitiveActions,
   PrimitiveHeading,
@@ -22,23 +23,25 @@ export const AuthNotice = ({reasonCode}: AuthNoticeProps) => {
   })
 
   return (
-    <PrimitiveContainer testID="sample.auth.notice" layout="card">
-      <PrimitiveHeading testID="sample.auth.notice:title">登录失败</PrimitiveHeading>
-      <PrimitiveText
-        testID="sample.auth.notice:message"
-        accessibilityRole="alert"
-      >
-        {messageForReason(reasonCode)}
-      </PrimitiveText>
-      <PrimitiveActions testID="sample.auth.notice:actions">
-        <PrimitiveButton
-          testID="sample.auth.notice:dismiss"
-          accessibilityLabel="关闭登录失败提示"
-          onPress={dismiss}
+    <PrimitiveCenter testID="sample.auth.notice" style={{flex: 1, minHeight: 0, padding: 24}}>
+      <PrimitiveContainer testID="sample.auth.notice:card" layout="card" bounded>
+        <PrimitiveHeading testID="sample.auth.notice:title">登录失败</PrimitiveHeading>
+        <PrimitiveText
+          testID="sample.auth.notice:message"
+          accessibilityRole="alert"
         >
-          关闭
-        </PrimitiveButton>
-      </PrimitiveActions>
-    </PrimitiveContainer>
+          {messageForReason(reasonCode)}
+        </PrimitiveText>
+        <PrimitiveActions testID="sample.auth.notice:actions">
+          <PrimitiveButton
+            testID="sample.auth.notice:dismiss"
+            accessibilityLabel="关闭登录失败提示"
+            onPress={dismiss}
+          >
+            关闭
+          </PrimitiveButton>
+        </PrimitiveActions>
+      </PrimitiveContainer>
+    </PrimitiveCenter>
   )
 }

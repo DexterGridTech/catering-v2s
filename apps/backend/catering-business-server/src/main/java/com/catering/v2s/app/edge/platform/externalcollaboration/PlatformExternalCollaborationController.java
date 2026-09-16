@@ -6,6 +6,7 @@ import com.catering.v2s.app.edge.generated.wire.ExternalCollaborationTree;
 import com.catering.v2s.app.edge.generated.wire.ExternalSystemStatusRequest;
 import com.catering.v2s.app.edge.generated.wire.ExternalSystemView;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingCreateRequest;
+import com.catering.v2s.app.edge.generated.wire.OwnerBindingDeleteRequest;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingPage;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingUpdateRequest;
 import com.catering.v2s.app.edge.generated.wire.OwnerBindingView;
@@ -232,7 +233,7 @@ public final class PlatformExternalCollaborationController {
             @PathVariable String groupWorkspaceKey,
             @PathVariable UUID bindingRef,
             @RequestHeader("Idempotency-Key") String idempotencyKey,
-            @RequestBody OwnerBindingUpdateRequest body) {
+            @RequestBody OwnerBindingDeleteRequest body) {
         var session = sessions.require(request);
         var workspace = workspaces.requireEnabled(groupWorkspaceKey);
         if (body == null || body.expectedVersion() == null) {

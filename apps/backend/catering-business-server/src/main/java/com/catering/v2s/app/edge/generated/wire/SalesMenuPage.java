@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuPage(
-    java.util.List<SalesMenuSummary> items,
-    String cursor,
-    String nextCursor
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "items", required = true) java.util.List<SalesMenuSummary> items,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "cursor", required = true) String cursor,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "nextCursor", required = true) String nextCursor
 ) {}

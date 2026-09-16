@@ -512,6 +512,8 @@ public class HeadCompanyService {
         replaceNewValues(id, workspaceUuid, groupWorkspaceKey, submission);
         OrganizationEntityReadback created = OwnerOperationDiagnostics.readback(
                 () -> reads.requireEntity(BusinessEntityTypes.HEAD_COMPANY, workspaceUuid, groupWorkspaceKey, id));
+        ExtensionDefinitionReadback definition = BusinessEntityValueSupport.optionalDefinition(
+                definitions, workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.HEAD_COMPANY);
         audit(
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -519,7 +521,9 @@ public class HeadCompanyService {
                 "HEAD_COMPANY_CREATED",
                 now,
                 actor,
-                BusinessEntityValueSupport.createdChanges(created));
+                BusinessEntityValueSupport.withExtensionChanges(
+                        BusinessEntityValueSupport.createdChanges(created), null, created, definition, submission),
+                BusinessEntityValueSupport.extensionKeys(definition));
         return created;
     }
 
@@ -554,6 +558,8 @@ public class HeadCompanyService {
                         now,
                         expectedVersion)
                 .orElseThrow(BusinessEntityService.OrganizationConflictException::new);
+        ExtensionDefinitionReadback definition = BusinessEntityValueSupport.optionalDefinition(
+                definitions, workspaceUuid, groupWorkspaceKey, ExtensionHostTypes.HEAD_COMPANY);
         audit(
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -561,7 +567,9 @@ public class HeadCompanyService {
                 "HEAD_COMPANY_UPDATED",
                 time.currentEpochMillis(),
                 actor,
-                BusinessEntityValueSupport.changed(before, updated));
+                BusinessEntityValueSupport.withExtensionChanges(
+                        BusinessEntityValueSupport.changed(before, updated), before, updated, definition, submission),
+                BusinessEntityValueSupport.extensionKeys(definition));
         return updated;
     }
 
@@ -724,7 +732,20 @@ public class HeadCompanyService {
             long now,
             AuditActor actor,
             List<AuditChange> changes) {
-        AuditChangePolicy policy = new AuditChangePolicy(AuditEntityTypes.HEAD_COMPANY, action, AUDIT_FIELDS);
+        audit(workspaceUuid, groupWorkspaceKey, id, action, now, actor, changes, Set.of());
+    }
+
+    private void audit(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID id,
+            String action,
+            long now,
+            AuditActor actor,
+            List<AuditChange> changes,
+            Set<String> additionalAllowedFieldKeys) {
+        AuditChangePolicy policy = new AuditChangePolicy(AuditEntityTypes.HEAD_COMPANY, action, AUDIT_FIELDS)
+                .withAdditionalFieldKeys(additionalAllowedFieldKeys);
         persistence.audit(
                 UUID.randomUUID(),
                 workspaceUuid,

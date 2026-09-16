@@ -46,6 +46,10 @@
 surface 的闭包入口。
 `persistenceKey` 仅用于测试隔离；生产端口由 assembly 的消费者注入。
 调用方可通过可选的 `terminalSurfaces` 整份覆盖本包默认配置；未传入时使用本包 `package.json`，而具体形态仍由本包按 `surfaceForm` 选择。
+本包 `package.json` 的 `showAdminPassword` 控制 admin 登录提示旁是否显示当前动态口令；调用方显式传入的值优先。
+
+admin console 的 laptop/mobile 版式与导航语义由 `ui.base.admin-shell` 的 form-specific renderer 负责：laptop
+使用 master-detail，mobile 使用可换行 tablist；内容标题通过 polite live region 宣布，焦点 scope 的关闭/恢复仍由既有 terminal layer 管线负责。
 
 主题 token 由 `theme/global.css` 声明、由 `tailwind.config.cjs` 映射为语义 class；
 `ui/base/primitives` 只消费这些语义 class，不反向 import 应用主题。新增应用时复制自己的

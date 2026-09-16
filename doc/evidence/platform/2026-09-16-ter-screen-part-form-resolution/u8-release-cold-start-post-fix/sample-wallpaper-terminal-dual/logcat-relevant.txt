@@ -1,0 +1,58 @@
+         1789255002.464  6954  6954 I TER-Splash: event=activity.onCreate phase=start app=sample-wallpaper-terminal
+         1789255002.464  6954  6954 I TER-Splash: event=native.application-callbacks-registered
+         1789255002.464  6954  6954 I TER-Splash: event=native.registry-application-registered app=sample-wallpaper-terminal
+         1789255002.464  6954  6954 I TER-Splash: event=expo.prevent-auto-hide-set app=sample-wallpaper-terminal value=true
+         1789255002.468  6954  6954 I TER-Splash: event=expo.activity-registered app=sample-wallpaper-terminal
+         1789255002.468  6954  6954 I TER-Splash: event=expo.content-gate-released-for-native-overlay app=sample-wallpaper-terminal
+         1789255002.468  6954  6954 I TER-Splash: event=native.gate-installed activity=native-splash-activity-1
+         1789255002.470  6954  6954 I TER-Splash: event=native.loading-overlay-attached activity=native-splash-activity-1
+         1789255002.470  6954  6954 I TER-Splash: event=native.activity-registered app=sample-wallpaper-terminal
+         1789255002.470  6954  6954 I TER-Splash: event=activity.onCreate phase=before-super app=sample-wallpaper-terminal
+         1789255002.475  6954  6954 I TerminalDualScreen: event=primary-activity-configuration displayIndex=0 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=1280 screenHeightDp=800 smallestWidthDp=800 orientation=2 resourceWidthPx=2560 resourceHeightPx=1600
+         1789255002.482  6954  6954 I TerminalDualScreen: event=secondary-react-surface-context displayIndex=1 densityDpi=320 density=2.0 scaledDensity=2.0 fontScale=1.0 screenWidthDp=962 screenHeightDp=541 smallestWidthDp=541 orientation=2 resourceWidthPx=1280 resourceHeightPx=720
+         1789255002.482  6954  6954 I TerminalDualScreen: event=secondary-react-surface-created displayId=2 surfaceDensityDpi=320 surfaceDensity=2.0 surfaceWidthPx=0 surfaceHeightPx=0
+         1789255002.487  6954  6954 I TerminalDualScreen: event=secondary-start-requested displayId=2 displayCount=2
+         1789255002.488  6954  6954 I TER-Splash: event=activity.onCreate phase=after-super app=sample-wallpaper-terminal
+         1789255002.488  6954  6954 I TER-Splash: event=native.loading-overlay-attached activity=native-splash-activity-1
+         1789255002.488  6954  6954 I TER-Splash: event=native.loading-overlay-attached-after-super app=sample-wallpaper-terminal
+         1789255002.498  6954  6954 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=320 density=2.0 logicalWidth=640.0 logicalHeight=360.0
+         1789255002.498  6954  6954 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789255002.505  6954  6985 I ExpoModulesCore: ✅ AppContext was initialized
+         1789255002.518  6954  6954 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789255002.519  6954  6954 I TER-Splash: event=native.pre-draw-covered activity=native-splash-activity-1
+         1789255002.527  6954  6987 I ExpoModulesCore: ✅ JSI interop was installed
+         1789255002.534  6954  6954 I TerminalDualScreen: event=secondary-presentation-window-post-create displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789255002.534  6954  6954 I TerminalDualScreen: event=secondary-presentation-window-post-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789255002.534  6954  6954 I TerminalDualScreen: event=secondary-react-surface-post-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=320 density=2.0 logicalWidth=640.0 logicalHeight=360.0
+         1789255002.535  6954  6954 I TerminalDualScreen: event=primary-window-post-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789255002.535  6954  6954 I TerminalDualScreen: event=secondary-start-completed
+         1789255002.537  6954  6987 I ExpoModulesCore: ✅ Constants were exported
+         1789255002.555  6954  6954 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789255002.615  6954  6954 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=320 density=2.0 logicalWidth=640.0 logicalHeight=360.0
+         1789255002.616  6954  6954 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789255002.617  6954  6954 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789255002.621  6954  6987 I ReactNativeJS:   category: 'startup.ready-candidate',
+         1789255002.621  6954  6987 I ReactNativeJS:   event: 'startup.ready-candidate',
+         1789255002.627  6954  6987 I ReactNativeJS:   category: 'startup.ready',
+         1789255002.627  6954  6987 I ReactNativeJS:   event: 'startup.ready',
+         1789255002.643  6954  6987 E ReactNativeJS:   category: 'startup.failure-page',
+         1789255002.643  6954  6987 E ReactNativeJS:   event: 'startup.ready-failed',
+         1789255002.646  6954  6988 E unknown:ReactNative: console.error: {"timestamp":1789255002635,"level":"error","category":"startup.failure-page","event":"startup.ready-failed","message":"Resolved PRIMARY screen could not complete startup readiness","scope":{"moduleName":"platform-ports","layer":"kernel"},"data":{"readyPartKey":"sample.wallpaper.picker","contentFailure":null,"errorName":"StartupCompletionPrerequisitesMissing:group.ports"},"security":{"containsSensitiveRaw":false,"maskingMode":"masked"}}, stack:
+         1789255002.657  6954  6954 I TerminalDualScreen: event=secondary-react-surface-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=320 density=2.0 logicalWidth=640.0 logicalHeight=360.0
+         1789255002.657  6954  6954 I TerminalDualScreen: event=secondary-presentation-window-layout displayIndex=1 displayId=2 leftPx=0 topPx=0 widthPx=1280 heightPx=720 measuredWidthPx=1280 measuredHeightPx=720 densityDpi=213 density=1.3312501 logicalWidth=961.5023 logicalHeight=540.84503
+         1789255002.663  6954  6954 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789255002.671  6954  6954 I TER-Splash: event=native.begin-hide reason=startup-failure activity=native-splash-activity-1 alreadyReleased=false
+         1789255002.672  6954  6954 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789255002.693  6954  6954 I TER-Splash: event=native.release-hide activity=native-splash-activity-1
+         1789255002.693  6954  6954 I TER-Splash: event=native.loading-overlay-fade-start activity=native-splash-activity-1
+         1789255002.693  6954  6954 I TER-Splash: event=native.pre-draw-released activity=native-splash-activity-1
+         1789255002.694  6954  6987 E ReactNativeJS:   category: 'startup.failure-page',
+         1789255002.694  6954  6987 E ReactNativeJS:   event: 'startup.failure-page-visible',
+         1789255002.696  6954  6988 E unknown:ReactNative: console.error: {"timestamp":1789255002693,"level":"error","category":"startup.failure-page","event":"startup.failure-page-visible","message":"请重启终端，如仍失败请联系管理员","scope":{"moduleName":"platform-ports","layer":"kernel"},"data":{"reason":"ready-callback-failed","failureStage":"startup","errorName":"StartupCompletionPrerequisitesMissing:group.ports","errorCode":"ready-callback-failed:StartupCompletionPrerequisitesMissing:group.ports","fallbackReason":null,"hideResult":"hidden","surfaceKey":"PRIMARY","displayIndex":0},"security":{"containsSensitiveRaw":false,"maskingMode":"masked"}}, stack:
+         1789255002.989  6954  6954 I TER-Splash: event=native.loading-overlay-removed activity=native-splash-activity-1
+         1789255002.989  6954  6954 I TerminalDualScreen: event=primary-window-layout displayIndex=0 displayId=0 leftPx=0 topPx=0 widthPx=2560 heightPx=1600 measuredWidthPx=2560 measuredHeightPx=1600 densityDpi=320 density=2.0 logicalWidth=1280.0 logicalHeight=800.0
+         1789255009.034  7094  7094 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+         1789255009.038  7094  7094 I AndroidRuntime: Using default boot image
+         1789255009.038  7094  7094 I AndroidRuntime: Leaving lock profiling enabled
+         1789255009.101  7094  7094 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+         1789255010.123  7094  7094 D AndroidRuntime: Shutting down VM

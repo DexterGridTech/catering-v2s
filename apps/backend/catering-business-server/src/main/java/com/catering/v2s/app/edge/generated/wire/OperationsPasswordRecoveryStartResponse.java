@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OperationsPasswordRecoveryStartResponse(
-    String workspaceName,
-    String operationsTitle,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "workspaceName", required = true) String workspaceName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "operationsTitle", required = true) String operationsTitle,
     String logoUrl
 ) {}

@@ -924,7 +924,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "../../components/collaboration/collaboration.schemas.json#/components/schemas/OwnerBindingUpdateRequest"
+                "$ref": "../../components/collaboration/collaboration.schemas.json#/components/schemas/OwnerBindingDeleteRequest"
               }
             }
           }

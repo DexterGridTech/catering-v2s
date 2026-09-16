@@ -42,6 +42,8 @@ final class CatalogAcceptanceScenarios {
             JsonNode imagesBefore,
             JsonNode attributeAssignmentsBefore) {}
 
+    private record ClosedStoreContext(Fixture fixture, Session session) {}
+
     private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_CATALOG_ATTRIBUTE_DEFINITIONS =
             new BackendAcceptanceTest.RouteIdentity(
                     "listOperationsCatalogAttributeDefinitions",
@@ -2549,6 +2551,111 @@ final class CatalogAcceptanceScenarios {
                 batchSize > 12 ? 1 : 0,
                 failures,
                 "BUSINESS: only the deliberately stale item fails when the selected cardinality includes it");
+    }
+
+    @AcceptanceScenario(
+            id = "catalog.closed-store-rejects-batch-status",
+            module = "CATALOG",
+            operation = "batchTransitionOperationsCatalogItemStatus")
+    void closedStoreRejectsBatchStatus(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        ClosedStoreContext closed = closedStoreContext(context);
+        Response rejected = context.post(
+                OPERATIONS_CATALOG_BATCH_STATUS,
+                "/api/operations/catalog-inventory/items/status",
+                closed.session().cookie(),
+                Map.of(
+                        "dataNodeRef", closed.fixture().storeId(),
+                        "targetStatus", "DISABLED",
+                        "items", List.of()),
+                Set.of(403));
+        assertCatalogManagementDisabled(rejected, "batch status");
+    }
+
+    @AcceptanceScenario(
+            id = "catalog.closed-store-rejects-local-copy",
+            module = "CATALOG",
+            operation = "executeOperationsLocalCatalogCopy")
+    void closedStoreRejectsLocalCopy(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        ClosedStoreContext closed = closedStoreContext(context);
+        Response rejected = context.post(
+                OPERATIONS_CATALOG_LOCAL_COPY_EXECUTE,
+                "/api/operations/catalog-inventory/copy/local/execute",
+                closed.session().cookie(),
+                Map.of(
+                        "sourceItemCode", "CLOSED-GATE-SOURCE",
+                        "targetItemCode", "CLOSED-GATE-TARGET",
+                        "selectedSections", List.of("BASIC"),
+                        "preflightDigest", "closed-store-gate",
+                        "expectedSourceVersion", 1L,
+                        "expectedTargetVersion", 1L,
+                        "compatibilityDispositions", List.of(),
+                        "dataNodeRef", closed.fixture().storeId()),
+                Set.of(403));
+        assertCatalogManagementDisabled(rejected, "local copy");
+    }
+
+    @AcceptanceScenario(
+            id = "catalog.closed-store-rejects-brand-copy",
+            module = "CATALOG",
+            operation = "executeOperationsBrandCatalogCopy")
+    void closedStoreRejectsBrandCopy(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        ClosedStoreContext closed = closedStoreContext(context);
+        Response rejected = context.post(
+                OPERATIONS_CATALOG_BRAND_COPY_EXECUTE,
+                "/api/operations/catalog-inventory/copy/brand/execute",
+                closed.session().cookie(),
+                Map.of(
+                        "selectedItemCodes", List.of("CLOSED-GATE-SOURCE"),
+                        "targetDataNodeRef", closed.fixture().storeId(),
+                        "preflightDigest", "closed-store-gate",
+                        "expectedSourceVersion", 1L,
+                        "expectedTargetVersion", 1L,
+                        "compatibilityDispositions", List.of(),
+                        "dataNodeRef", closed.fixture().storeId()),
+                Set.of(403));
+        assertCatalogManagementDisabled(rejected, "brand copy");
+    }
+
+    private ClosedStoreContext closedStoreContext(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        Fixture projectFixture = host.fixture("PROJECT", Set.of("EDIT_STORE_CATALOG"));
+        host.completeInvitation(context, projectFixture);
+        Session projectSession = host.login(context, projectFixture);
+        Fixture closedStore = host.closedStoreFixture(projectFixture, Set.of());
+        Session selected = selectStore(context, projectFixture, projectSession, closedStore.storeId());
+        return new ClosedStoreContext(closedStore, selected);
+    }
+
+    private static Session selectStore(
+            BackendAcceptanceTest.ScenarioContext context,
+            Fixture projectFixture,
+            Session session,
+            UUID storeId)
+            throws Exception {
+        Response selected = context.post(
+                OPERATIONS_WORKSPACE_SESSION_DATA_NODE,
+                "/api/operations/group-workspaces/" + projectFixture.groupWorkspaceKey() + "/session/data-node",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef", storeId,
+                        "dataNodeType", "STORE",
+                        "requiredContextVersion", session.contextVersion()),
+                Set.of(200));
+        assertEquals(
+                storeId.toString(),
+                selected.json().path("scopeContext").path("store").path("dataNodeRef").asText(),
+                "BUSINESS: closed-store gate scenario selects the intended Store");
+        return new Session(session.cookie(), selected.json(), selected.json().path("contextVersion").asLong());
+    }
+
+    private static void assertCatalogManagementDisabled(Response response, String operation) {
+        assertEquals(
+                "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+                response.problemCode(),
+                "BUSINESS: closed Store rejects " + operation + " with the typed operating-rule problem");
+        assertEquals(
+                "功能尚未开启，需项目对门店授权",
+                response.json().path("detail").asText(),
+                "BUSINESS: closed Store " + operation + " preserves the Chinese capability guidance");
     }
 
     private int batchStatusCalibrationCardinality() {

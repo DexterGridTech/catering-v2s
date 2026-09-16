@@ -41,7 +41,7 @@ test('business-channel seed static child plan has no execution authority', () =>
   assert.equal(staticPlan.noDirectDatabaseWrites, true);
   assert.equal(staticPlan.noRuntimeExecution, true);
   assert.equal(staticPlan.requiresManagedParentRunId, true);
-  assert.equal(staticPlan.acceptanceScenarioIds.length, 37);
+  assert.equal(staticPlan.acceptanceScenarioIds.length, seedPlan.acceptanceScenarioIds.length);
   assert.doesNotThrow(() => validateStaticSeedPlan(staticPlan));
   assert.throws(
     () => validateStaticSeedPlan({...staticPlan, business: 'PASS'}),

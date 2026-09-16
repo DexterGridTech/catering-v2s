@@ -2,7 +2,10 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record AuditChange(
-    String fieldKey,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "fieldKey", required = true) String fieldKey,
+    String fieldLabelSnapshot,
+    AuditValueState beforeState,
     String beforeValue,
+    AuditValueState afterState,
     String afterValue
 ) {}

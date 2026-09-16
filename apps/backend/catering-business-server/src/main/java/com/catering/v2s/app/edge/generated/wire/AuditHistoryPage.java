@@ -2,8 +2,8 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record AuditHistoryPage(
-    java.util.List<AuditHistoryItem> items,
-    Long page,
-    Long pageSize,
-    Long total
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "items", required = true) java.util.List<AuditHistoryItem> items,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "page", required = true) Long page,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "pageSize", required = true) Long pageSize,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "total", required = true) Long total
 ) {}

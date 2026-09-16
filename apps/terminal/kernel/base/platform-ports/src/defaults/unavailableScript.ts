@@ -9,7 +9,7 @@ export const unavailableScriptPort: ScriptPort = {
   clearStats: async (_input: ScriptCall): Promise<PortResult<NoOutput>> => createUnavailable('script', 'clearStats'),
 };
 
-Object.defineProperty(unavailableScriptPort, PORT_DESCRIPTOR_KEY, {
+if (__DEV__) Object.defineProperty(unavailableScriptPort, PORT_DESCRIPTOR_KEY, {
   value: Object.freeze({
     port: 'script',
     capabilities: Object.freeze([

@@ -85,7 +85,7 @@
     },
     {
       "path": "contracts/openapi-source/collaboration.schemas.json",
-      "sha256": "87cadf3daaa047d7c4803c5558d60c4edbc7a4dbbb0c447260853133eeee19ff"
+      "sha256": "4ef862fd2848d55863e84991cc8ad69434f2558e97af738b500356e6f0191258"
     },
     {
       "path": "contracts/openapi-source/business-channel.schemas.json",
@@ -94,14 +94,18 @@
     {
       "path": "contracts/openapi-source/sales-menu.schemas.json",
       "sha256": "2769fd4b29de76452b9617b7b8d75eaf6e54cbd762a04517cbfca685d297591e"
+    },
+    {
+      "path": "contracts/openapi/components/organization/store-operating-rule-schemas.generated.json",
+      "sha256": "a00d4c507f63c7518682d24594f575ff32b4f4f670b8e2c15293de8037b72f19"
     }
   ],
   "denominator": {
     "scenarios": 34,
-    "operations": 211,
+    "operations": 212,
     "faces": {
       "platform-admin": 61,
-      "operations-admin": 138,
+      "operations-admin": 139,
       "public": 12
     },
     "owners": [
@@ -492,13 +496,15 @@
       "ORGANIZATION_STORE_HEAD_COMPANY_AUTHORIZATION_REQUIRED",
       "ORGANIZATION_STORE_NAME_CONFLICT",
       "ORGANIZATION_STORE_PROJECT_REQUIRED",
-      "ORGANIZATION_STORE_RELATION_INVALID"
+      "ORGANIZATION_STORE_RELATION_INVALID",
+      "ORGANIZATION_STORE_OPERATING_RULES_INVALID"
     ],
     "updateOperationsOrganizationStore": [
       "ORGANIZATION_STORE_EXTENSION_VERSION_CONFLICT",
       "ORGANIZATION_STORE_RELATION_INVALID",
       "ORGANIZATION_STORE_RELATION_LOCKED",
-      "ORGANIZATION_STORE_VERSION_CONFLICT"
+      "ORGANIZATION_STORE_VERSION_CONFLICT",
+      "ORGANIZATION_STORE_OPERATING_RULES_INVALID"
     ],
     "transitionOperationsOrganizationStoreStatus": [
       "ORGANIZATION_STORE_STATUS_TRANSITION_INVALID",
@@ -639,6 +645,39 @@
       "VERSION_CONFLICT",
       "VOIDED_RECORD_IMMUTABLE"
     ],
+    "createOperationsCatalogItem": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "saveOperationsCatalogItem": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "transitionOperationsCatalogItemStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "batchTransitionOperationsCatalogItemStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "createOperationsCatalogCategory": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "updateOperationsCatalogCategory": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "moveOperationsCatalogCategory": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "createOperationsCatalogDictionaryEntry": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "updateOperationsCatalogDictionaryEntry": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "reorderOperationsCatalogDictionaryEntry": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "transitionOperationsCatalogDictionaryEntryStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "createOperationsProductionTag": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "updateOperationsProductionTag": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "transitionOperationsProductionTagStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "executeOperationsLocalCatalogCopy": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "executeOperationsTemporaryCatalogItemPromotion": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "executeOperationsBrandCatalogCopy": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "countOperationsInventoryTarget": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "increaseOperationsInventoryTarget": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "adjustOperationsInventoryTarget": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "updateOperationsInventoryTargetConfiguration": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "stageOperationsCatalogAsset": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "releaseOperationsCatalogStagedAsset": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "createOperationsCatalogAttributeDefinition": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "updateOperationsCatalogAttributeDefinition": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "createOperationsCatalogOrderOptionDefinition": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "updateOperationsCatalogOrderOptionDefinition": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "createOperationsCatalogUnit": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "updateOperationsCatalogUnit": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "transitionOperationsCatalogAttributeDefinitionStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "transitionOperationsCatalogOrderOptionDefinitionStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "transitionOperationsCatalogUnitStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "transitionOperationsCatalogCategoryStatus": ["ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
     "getOperationsSalesMenus": ["SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CHANNEL_INELIGIBLE"],
     "getOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CHANNEL_INELIGIBLE"],
     "getOperationsSalesMenuDraftSections": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
@@ -650,25 +689,25 @@
     "getOperationsSalesMenuItemCandidates": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
     "getOperationsSalesMenuPublicationPreview": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
     "getOperationsSalesMenuOperationRecords": ["SALES_MENU_NOT_FOUND", "SALES_MENU_SCOPE_MISMATCH"],
-    "createOperationsSalesMenu": ["SALES_MENU_CHANNEL_INELIGIBLE", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "copyOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "renameOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "archiveOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "setOperationsSalesMenuActivation": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CHANNEL_INELIGIBLE", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "updateOperationsSalesMenuSchedule": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_SCHEDULE_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "createOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "renameOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "deleteOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_SECTION_NOT_EMPTY", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "moveOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_MOVE_BOUNDARY", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "addOperationsSalesMenuItems": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_ITEM_REFERENCE_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "updateOperationsSalesMenuItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_ITEM_REFERENCE_INVALID", "SALES_MENU_SKU_REFERENCE_INVALID", "SALES_MENU_ORDER_OPTION_REFERENCE_INVALID", "SALES_MENU_ORDER_OPTION_SELECTION_INVALID", "SALES_MENU_ORDER_OPTION_SHAPE_UNSUPPORTED", "SALES_MENU_PRICE_REQUIRED", "SALES_MENU_CONSTRAINT_INVALID", "SALES_MENU_ASSET_INVALID", "SALES_MENU_ASSET_TARGET_MISMATCH", "SALES_MENU_ASSET_LIFECYCLE_CONFLICT", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "deleteOperationsSalesMenuItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "moveOperationsSalesMenuItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_MOVE_BOUNDARY", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "stageOperationsSalesMenuAsset": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CAPABILITY_REQUIRED", "SALES_MENU_ASSET_INVALID", "SALES_MENU_ASSET_TARGET_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "releaseOperationsSalesMenuStagedAsset": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CAPABILITY_REQUIRED", "SALES_MENU_ASSET_INVALID", "SALES_MENU_ASSET_TARGET_MISMATCH", "SALES_MENU_ASSET_LIFECYCLE_CONFLICT", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "publishOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_STORE_DISABLED", "SALES_MENU_CHANNEL_DISABLED", "SALES_MENU_CHANNEL_INELIGIBLE", "SALES_MENU_DRAFT_INVALID", "SALES_MENU_ITEM_REFERENCE_INVALID", "SALES_MENU_SKU_REFERENCE_INVALID", "SALES_MENU_ORDER_OPTION_REFERENCE_INVALID", "SALES_MENU_ORDER_OPTION_SELECTION_INVALID", "SALES_MENU_ORDER_OPTION_SHAPE_UNSUPPORTED", "SALES_MENU_PRICE_REQUIRED", "SALES_MENU_SCHEDULE_INVALID", "SALES_MENU_CONSTRAINT_INVALID", "SALES_MENU_ASSET_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "setOperationsSalesMenuItemSoldOut": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED", "SALES_MENU_MANUAL_REASON_REQUIRED", "SALES_MENU_MANUAL_TARGET_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"],
-    "restoreOperationsSalesMenuItemSale": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED", "SALES_MENU_MANUAL_TARGET_INVALID", "CONFIRMATION_REQUIRED", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN"]
+    "createOperationsSalesMenu": ["SALES_MENU_CHANNEL_INELIGIBLE", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "copyOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "renameOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "archiveOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "setOperationsSalesMenuActivation": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CHANNEL_INELIGIBLE", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "updateOperationsSalesMenuSchedule": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_SCHEDULE_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "createOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "renameOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "deleteOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_SECTION_NOT_EMPTY", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "moveOperationsSalesMenuSection": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_MOVE_BOUNDARY", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "addOperationsSalesMenuItems": ["SALES_MENU_NOT_FOUND", "SALES_SECTION_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_ITEM_REFERENCE_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "updateOperationsSalesMenuItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_ITEM_REFERENCE_INVALID", "SALES_MENU_SKU_REFERENCE_INVALID", "SALES_MENU_ORDER_OPTION_REFERENCE_INVALID", "SALES_MENU_ORDER_OPTION_SELECTION_INVALID", "SALES_MENU_ORDER_OPTION_SHAPE_UNSUPPORTED", "SALES_MENU_PRICE_REQUIRED", "SALES_MENU_CONSTRAINT_INVALID", "SALES_MENU_ASSET_INVALID", "SALES_MENU_ASSET_TARGET_MISMATCH", "SALES_MENU_ASSET_LIFECYCLE_CONFLICT", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "deleteOperationsSalesMenuItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "moveOperationsSalesMenuItem": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_MOVE_BOUNDARY", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "stageOperationsSalesMenuAsset": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CAPABILITY_REQUIRED", "SALES_MENU_ASSET_INVALID", "SALES_MENU_ASSET_TARGET_MISMATCH", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "releaseOperationsSalesMenuStagedAsset": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CAPABILITY_REQUIRED", "SALES_MENU_ASSET_INVALID", "SALES_MENU_ASSET_TARGET_MISMATCH", "SALES_MENU_ASSET_LIFECYCLE_CONFLICT", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "publishOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_STORE_DISABLED", "SALES_MENU_CHANNEL_DISABLED", "SALES_MENU_CHANNEL_INELIGIBLE", "SALES_MENU_DRAFT_INVALID", "SALES_MENU_ITEM_REFERENCE_INVALID", "SALES_MENU_SKU_REFERENCE_INVALID", "SALES_MENU_ORDER_OPTION_REFERENCE_INVALID", "SALES_MENU_ORDER_OPTION_SELECTION_INVALID", "SALES_MENU_ORDER_OPTION_SHAPE_UNSUPPORTED", "SALES_MENU_PRICE_REQUIRED", "SALES_MENU_SCHEDULE_INVALID", "SALES_MENU_CONSTRAINT_INVALID", "SALES_MENU_ASSET_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "setOperationsSalesMenuItemSoldOut": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED", "SALES_MENU_MANUAL_REASON_REQUIRED", "SALES_MENU_MANUAL_TARGET_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "restoreOperationsSalesMenuItemSale": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED", "SALES_MENU_MANUAL_TARGET_INVALID", "CONFIRMATION_REQUIRED", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"]
   },
   "operationErrorSelectionRules": {
     "default": "operation errorSetRef plus operationErrorAugmentations[operationId]",
@@ -6959,6 +6998,46 @@
       "focusedTestId": "edge.getOperationsOrganizationStore"
     },
     {
+      "operationId": "getOperationsOrganizationStoreOperatingRule",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches",
+      "face": "operations-admin",
+      "owner": "organization",
+      "scenarioIds": [
+        "D02-S04",
+        "D01-S07O"
+      ],
+      "pageKey": "OPERATIONS-STORE-MANAGEMENT",
+      "disposition": "ADAPT_V2_SEMANTICS",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "storeId"
+      ],
+      "queryParameters": [
+        {
+          "name": "expectedContextVersion",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "OrganizationStore",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsOrganizationStoreOperatingRule"
+    },
+    {
       "operationId": "updateOperationsOrganizationStore",
       "method": "PATCH",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
@@ -8443,7 +8522,7 @@
         "bindingRef"
       ],
       "queryParameters": [],
-      "requestSchema": "OwnerBindingUpdateRequest",
+      "requestSchema": "OwnerBindingDeleteRequest",
       "responseSchema": "OwnerBindingView",
       "successStatus": "200",
       "idempotency": {
@@ -8681,7 +8760,7 @@
         "channelRef"
       ],
       "queryParameters": [],
-      "requestSchema": "OwnerBindingUpdateRequest",
+      "requestSchema": "OwnerBindingDeleteRequest",
       "responseSchema": "OwnerBindingView",
       "successStatus": "200",
       "idempotency": {
@@ -11459,12 +11538,19 @@
       },
       "additionalProperties": false
     },
+    "AuditValueState": {
+      "type": "string",
+      "enum": [
+        "MISSING",
+        "NULL",
+        "CLEARED",
+        "VALUE"
+      ]
+    },
     "AuditChange": {
       "type": "object",
       "required": [
-        "fieldKey",
-        "beforeValue",
-        "afterValue"
+        "fieldKey"
       ],
       "properties": {
         "fieldKey": {
@@ -11472,12 +11558,27 @@
           "minLength": 1,
           "maxLength": 120
         },
+        "fieldLabelSnapshot": {
+          "type": "string",
+          "nullable": true,
+          "maxLength": 120
+        },
+        "beforeState": {
+          "ref": "AuditValueState",
+          "description": "Present on new audit events; omitted on legacy events without state metadata."
+        },
         "beforeValue": {
           "type": "string",
+          "nullable": true,
           "maxLength": 2000
+        },
+        "afterState": {
+          "ref": "AuditValueState",
+          "description": "Present on new audit events; omitted on legacy events without state metadata."
         },
         "afterValue": {
           "type": "string",
+          "nullable": true,
           "maxLength": 2000
         }
       },
@@ -11669,6 +11770,9 @@
     },
     "OrganizationStore": {
       "ref": "OrganizationStore"
+    },
+    "OrganizationStoreOperatingRuleValues": {
+      "ref": "OrganizationStoreOperatingRuleValues"
     },
     "OrganizationCandidatePage": {
       "type": "object",
@@ -13568,6 +13672,9 @@
     "OwnerBindingUpdateRequest": {
       "ref": "OwnerBindingUpdateRequest"
     },
+    "OwnerBindingDeleteRequest": {
+      "ref": "OwnerBindingDeleteRequest"
+    },
     "OwnerBindingView": {
       "ref": "OwnerBindingView"
     },
@@ -14228,7 +14335,8 @@
         "source"
       ],
       "requiredAdditions": [
-        "contractDerivedStatus"
+        "contractDerivedStatus",
+        "operatingRuleSwitches"
       ],
       "properties": {
         "contractDerivedStatus": {
@@ -14239,13 +14347,29 @@
             "NOT_OPERATING"
           ],
           "readOnly": true
+        },
+        "operatingRuleSwitches": {
+          "ref": "OrganizationStoreOperatingRuleValues"
         }
       }
     },
     "OrganizationStoreCreateRequest": {
       "removeProperties": [
         "projectId"
-      ]
+      ],
+      "properties": {
+        "operatingRuleSwitches": {
+          "ref": "OrganizationStoreOperatingRuleValues"
+        }
+      }
+    },
+    "OrganizationStoreUpdateRequest": {
+      "properties": {
+        "operatingRuleSwitches": {
+          "ref": "OrganizationStoreOperatingRuleValues"
+        }
+      },
+      "requiredAdditions": ["operatingRuleSwitches"]
     },
     "Brand": {
       "removeProperties": [
@@ -15149,10 +15273,10 @@
     "status": "MATERIALIZED",
     "pipeline": "R24_P3C",
     "sourceOperationCount": 148,
-    "operationCount": 211,
+    "operationCount": 212,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 138,
+      "operations-admin": 139,
       "public": 12
     }
   }

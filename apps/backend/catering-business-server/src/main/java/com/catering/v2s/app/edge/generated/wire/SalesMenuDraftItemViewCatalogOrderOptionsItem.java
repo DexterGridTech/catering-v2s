@@ -2,12 +2,12 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuDraftItemViewCatalogOrderOptionsItem(
-    java.util.UUID definitionRef,
-    String name,
-    String selectionMode,
-    Long displayOrder,
-    Boolean required,
-    Long minSelectionCount,
-    Long maxSelectionCount,
-    java.util.List<SalesMenuDraftItemViewCatalogOrderOptionsItemValuesItem> values
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "definitionRef", required = true) java.util.UUID definitionRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "selectionMode", required = true) String selectionMode,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "displayOrder", required = true) Long displayOrder,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "required", required = true) Boolean required,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "minSelectionCount", required = true) Long minSelectionCount,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "maxSelectionCount", required = true) Long maxSelectionCount,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "values", required = true) java.util.List<SalesMenuDraftItemViewCatalogOrderOptionsItemValuesItem> values
 ) {}

@@ -1,0 +1,8 @@
+capture attempt: timestamped dual-surface screenshot sampler
+result: FAILED before screenshot collection
+stderr: zsh:1: bad math expression: operator expected at `N - captur...'
+root cause: macOS date does not expand GNU-style %3N milliseconds and returned a literal N suffix
+second attempt: FAILED before screenshot collection
+stderr: zsh:1: bad math expression: illegal character: \\
+root cause: the shell command over-escaped the Perl newline while composing the arithmetic sampler
+next action: use a newline-free Perl millisecond expression

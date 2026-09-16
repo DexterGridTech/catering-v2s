@@ -22,6 +22,12 @@ public record AuditChangePolicy(String entityType, String action, Set<String> al
         return values;
     }
 
+    public AuditChangePolicy withAdditionalFieldKeys(Set<String> additionalFieldKeys) {
+        Set<String> merged = new LinkedHashSet<>(allowedFieldKeys);
+        if (additionalFieldKeys != null) merged.addAll(additionalFieldKeys);
+        return new AuditChangePolicy(entityType, action, merged);
+    }
+
     private static String required(String value, String name) {
         String normalized = Objects.requireNonNullElse(value, "").trim();
         if (normalized.isEmpty()) throw new IllegalArgumentException(name + " is invalid");

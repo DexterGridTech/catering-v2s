@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationHierarchyTree(
-    String groupCode,
-    String groupName,
-    java.util.List<OrganizationHierarchyTreeNode> regions
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "groupCode", required = true) String groupCode,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "groupName", required = true) String groupName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "regions", required = true) java.util.List<OrganizationHierarchyTreeNode> regions
 ) {}

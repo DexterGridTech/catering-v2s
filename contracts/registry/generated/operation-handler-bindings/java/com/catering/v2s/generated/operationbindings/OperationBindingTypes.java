@@ -184,6 +184,7 @@ public final class OperationBindingTypes {
     public record OrganizationStoreStatusRequest() {}
     public record OrganizationStoreUpdateRequest() {}
     public record OwnerBindingCreateRequest() {}
+    public record OwnerBindingDeleteRequest() {}
     public record OwnerBindingPage() {}
     public record OwnerBindingUpdateRequest() {}
     public record OwnerBindingView() {}

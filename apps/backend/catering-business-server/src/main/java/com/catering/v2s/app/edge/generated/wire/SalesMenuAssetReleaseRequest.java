@@ -2,5 +2,5 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuAssetReleaseRequest(
-    Long expectedAssetVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedAssetVersion", required = true) Long expectedAssetVersion
 ) {}

@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record CapabilityDictionary(
-    java.util.List<ExternalSystemView> externalSystems,
-    java.util.List<ProviderProfileView> providerProfiles
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "externalSystems", required = true) java.util.List<ExternalSystemView> externalSystems,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "providerProfiles", required = true) java.util.List<ProviderProfileView> providerProfiles
 ) {}

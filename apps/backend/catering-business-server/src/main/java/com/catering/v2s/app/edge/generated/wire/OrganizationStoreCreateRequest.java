@@ -2,11 +2,12 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationStoreCreateRequest(
-    String brandId,
-    String tenantId,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "brandId", required = true) String brandId,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "tenantId", required = true) String tenantId,
     String headCompanyId,
-    String code,
-    String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "code", required = true) String code,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
     String notes,
-    tools.jackson.databind.JsonNode extensionValues
+    tools.jackson.databind.JsonNode extensionValues,
+    OrganizationStoreOperatingRuleValues operatingRuleSwitches
 ) {}

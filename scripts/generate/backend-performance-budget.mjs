@@ -55,25 +55,27 @@ const INVITATION_ASSIGNMENT_P3_MEASURED_MAX_BY_OPERATION = Object.freeze({
 // Sales Menu or P3 ceiling increase.
 const SALES_MENU_P3_DECISION_REF = 'DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3';
 const SALES_MENU_P3_MEASURED_MAX_BY_OPERATION = Object.freeze({
-  addOperationsSalesMenuItems: 31,
-  archiveOperationsSalesMenu: 26,
-  copyOperationsSalesMenu: 38,
-  createOperationsSalesMenu: 32,
-  createOperationsSalesMenuSection: 29,
-  deleteOperationsSalesMenuItem: 33,
-  deleteOperationsSalesMenuSection: 30,
-  moveOperationsSalesMenuItem: 33,
-  moveOperationsSalesMenuSection: 33,
-  publishOperationsSalesMenu: 47,
-  releaseOperationsSalesMenuStagedAsset: 30,
-  renameOperationsSalesMenu: 26,
-  renameOperationsSalesMenuSection: 29,
-  restoreOperationsSalesMenuItemSale: 35,
-  setOperationsSalesMenuActivation: 31,
-  setOperationsSalesMenuItemSoldOut: 35,
-  stageOperationsSalesMenuAsset: 32,
-  updateOperationsSalesMenuItem: 50,
-  updateOperationsSalesMenuSchedule: 28,
+  // The current-tree CP-05 remeasurement includes the Store operating-rule gate read.
+  // Keep the existing operation-scoped Dexter exception; refresh only its measured maxima.
+  addOperationsSalesMenuItems: 32,
+  archiveOperationsSalesMenu: 27,
+  copyOperationsSalesMenu: 39,
+  createOperationsSalesMenu: 33,
+  createOperationsSalesMenuSection: 30,
+  deleteOperationsSalesMenuItem: 34,
+  deleteOperationsSalesMenuSection: 31,
+  moveOperationsSalesMenuItem: 34,
+  moveOperationsSalesMenuSection: 34,
+  publishOperationsSalesMenu: 48,
+  releaseOperationsSalesMenuStagedAsset: 31,
+  renameOperationsSalesMenu: 27,
+  renameOperationsSalesMenuSection: 30,
+  restoreOperationsSalesMenuItemSale: 36,
+  setOperationsSalesMenuActivation: 32,
+  setOperationsSalesMenuItemSoldOut: 36,
+  stageOperationsSalesMenuAsset: 36,
+  updateOperationsSalesMenuItem: 51,
+  updateOperationsSalesMenuSchedule: 29,
 });
 
 const FORBIDDEN_PLACEHOLDER_TOKENS = new Set([
@@ -182,14 +184,14 @@ const salesMenuBudgetExceptionRecords = Object.entries(SALES_MENU_P3_MEASURED_MA
         'business-facts:asset-target-claim-release-guards-for-applicable-asset-operations',
         `measurement:cp05-three-run-max:${operationId}:${measuredMax}`,
         'measurement:cp05-report:contracts/policy/backend-performance-cp05-calibration-report.json',
-        'measurement:cp05-source-runs:r5-tc-1788843287798-85864,r5-tc-1788843601526-91444,r5-tc-1788843892374-96469',
+        'measurement:cp05-source-runs:r5-tc-1789567247310-40901,r5-tc-1789567647809-42171,r5-tc-1789568049113-43334',
       ],
       sharedMechanismsReused: true,
       sharedMechanismsEvidence: [
         'source:sales-menu:shared-command-receipt-lock-owner-readback',
         'source:sales-menu:set-based-write-helpers-and-shared-owner-guards',
         'measurement:basis:JDBC_EXECUTION_PLUS_CONNECTION_TRANSACTION_BATCH',
-        'measurement:cp05-three-run-exact-operation-set:268:unclassified-sql:0',
+        'measurement:cp05-three-run-exact-operation-set:270:unclassified-sql:0',
       ],
       rejectedAlternative:
         '删除 Sales Menu owner 复核、REQUIRED 事务、幂等回放、并发锁、CAS、typed problem、审计、asset target guard 或权威 readback，以硬压到通用 20；该方案会丢失销售菜单业务事实或原子性。',
@@ -199,9 +201,51 @@ const salesMenuBudgetExceptionRecords = Object.entries(SALES_MENU_P3_MEASURED_MA
     }),
 );
 
+// Dexter decision 2026-08-26: retain the complete brand-copy closure. The
+// current-tree CP-05 remeasurement moves its exact operation-scoped ceiling
+// from the previously recorded 48 to 49; this is not a generic P3 allowance.
+const brandCopyBudgetExceptionRecords = Object.freeze([
+  Object.freeze({
+    operationId: 'executeOperationsBrandCatalogCopy',
+    decisionRef: 'DEXTER-2026-08-26-BRAND_COPY_CLOSURE_BUDGET',
+    authority: 'DEXTER',
+    from: 48,
+    to: 49,
+    history: [
+      {
+        from: 48,
+        to: 49,
+        reason:
+          'Dexter 2026-08-26: brand-copy keeps its complete multi-owner closure; three current-tree CP-05 calibration runs measured a stable maximum of 49 after the Store operating-rule gate, with no safe consolidation that preserves all business facts.',
+        decisionRef: 'DEXTER-2026-08-26-BRAND_COPY_CLOSURE_BUDGET',
+      },
+    ],
+    businessFactsPreserved: true,
+    businessFactsEvidence: [
+      'owner:catalog:brand-copy-coordinator-and-copy-closure',
+      'business-facts:scope-recheck-preflight-digest-transaction-idempotency-lock-audit-authoritative-readback',
+      'measurement:cp05-three-run-max:executeOperationsBrandCatalogCopy:49',
+      'measurement:cp05-report:contracts/policy/backend-performance-cp05-calibration-report.json',
+      'measurement:cp05-source-runs:r5-tc-1789570560983-51172,r5-tc-1789570966699-52876,r5-tc-1789571368879-54896',
+    ],
+    sharedMechanismsReused: true,
+    sharedMechanismsEvidence: [
+      'source:catalog:shared-copy-preflight-closure-and-owner-command-path',
+      'measurement:basis:JDBC_EXECUTION_PLUS_CONNECTION_TRANSACTION_BATCH',
+      'measurement:cp05-three-run-exact-operation-set:270:unclassified-sql:0',
+    ],
+    rejectedAlternative:
+      '删除品牌复制的 owner 闭包、预检重算、事务、幂等回放、并发锁、审计、跨 owner command 或权威 readback，以硬压到 48；该方案会丢失复制事实或原子性。',
+    costComparison:
+      '三轮受管 CP-05 在 1、20、100 三种批量基数下均测得 49；逐项检查未发现可消除的共享 fan-out 或重复 owner 查询，保留完整闭包的成本高于既有 48 ceiling，但只影响这一条已授权 operation。',
+    narrowScope: 'executeOperationsBrandCatalogCopy',
+  }),
+]);
+
 export const CONTROLLED_BUDGET_EXCEPTION_RECORDS = Object.freeze([
   ...invitationAssignmentBudgetExceptionRecords,
   ...salesMenuBudgetExceptionRecords,
+  ...brandCopyBudgetExceptionRecords,
 ]);
 
 const CONTROLLED_BUDGET_EXCEPTION_AUTHORITIES = new Set(['DEXTER', 'IMPLEMENTATION_AGENT']);

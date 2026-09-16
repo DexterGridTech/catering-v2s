@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceUserPageCriteria(
-    WorkspaceUserSortKey sort,
-    SortDirection direction
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "sort", required = true) WorkspaceUserSortKey sort,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "direction", required = true) SortDirection direction
 ) {}

@@ -2,10 +2,10 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceInvitationCandidatePageMetadata(
-    String subjectType,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "subjectType", required = true) String subjectType,
     String queryText,
-    Long page,
-    Long pageSize,
-    Long total,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "page", required = true) Long page,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "pageSize", required = true) Long pageSize,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "total", required = true) Long total,
     java.util.UUID selectedOrganizationRef
 ) {}

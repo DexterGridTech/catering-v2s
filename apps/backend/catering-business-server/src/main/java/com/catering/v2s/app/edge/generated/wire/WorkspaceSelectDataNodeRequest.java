@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceSelectDataNodeRequest(
-    java.util.UUID dataNodeRef,
-    String dataNodeType,
-    Long requiredContextVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "dataNodeRef", required = true) java.util.UUID dataNodeRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "dataNodeType", required = true) String dataNodeType,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "requiredContextVersion", required = true) Long requiredContextVersion
 ) {}

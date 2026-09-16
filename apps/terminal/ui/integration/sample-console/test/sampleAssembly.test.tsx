@@ -1,7 +1,7 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import type {ReactElement} from 'react'
-import {describe, expect, it} from 'vitest'
-import {StyleSheet, TextInput, View} from 'react-native'
+import {describe, expect, it, vi} from 'vitest'
+import {Pressable, StyleSheet, Text, TextInput, View} from 'react-native'
 import {createRequestId} from '@catering-v2s/kernel-base-contracts'
 import {
   createProcessMemoryStateStoragePort,
@@ -110,6 +110,8 @@ const createRecordingStorage = () => {
 const mount = (
   element: Parameters<typeof create>[0],
   frameLayout: Readonly<{readonly width: number; readonly height: number}> = LANDSCAPE_SECONDARY_FRAME,
+  measureSurface = true,
+  launcherMeasuredSize: Readonly<{readonly width: number; readonly height: number}> = {width: 0, height: 0},
 ): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined
   act(() => {
@@ -122,18 +124,25 @@ const mount = (
         if (testID !== adminTestIds.launcher) return undefined
         return {
           measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) => {
-            callback(LAUNCHER_WINDOW_ORIGIN.x, LAUNCHER_WINDOW_ORIGIN.y, 0, 0)
+            callback(
+              LAUNCHER_WINDOW_ORIGIN.x,
+              LAUNCHER_WINDOW_ORIGIN.y,
+              launcherMeasuredSize.width,
+              launcherMeasuredSize.height,
+            )
           },
         }
       },
     })
   })
   const frames = renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'})
-  act(() => {
-    for (const frame of frames) {
-      ;(frame.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: frameLayout}})
-    }
-  })
+  if (measureSurface) {
+    act(() => {
+      for (const frame of frames) {
+        ;(frame.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: frameLayout}})
+      }
+    })
+  }
   const launchers = renderer!.root.findAllByProps({testID: adminTestIds.launcher})
   act(() => {
     for (const launcher of launchers) {
@@ -152,10 +161,18 @@ const press = (renderer: ReactTestRenderer, testID: string): (() => unknown) => 
   return instance.props.onPress
 }
 
-const pressLauncher = (renderer: ReactTestRenderer, logicalX = 1, logicalY = 1): void => {
+const pressLauncher = (
+  renderer: ReactTestRenderer,
+  logicalX = 1,
+  logicalY = 1,
+  stopPropagation?: () => void,
+): void => {
   const launcher = renderer.root.findByProps({testID: adminTestIds.launcher}) as unknown as Readonly<{
     readonly props: Readonly<{
-      readonly onTouchEnd: (event: Readonly<{readonly nativeEvent: Readonly<{readonly pageX: number; readonly pageY: number}>}>) => void
+      readonly onTouchEnd: (event: Readonly<{
+        readonly nativeEvent: Readonly<{readonly pageX: number; readonly pageY: number}>
+        readonly stopPropagation?: () => void
+      }>) => void
     }>
   }>
   const canvas = renderer.root.findByProps({testID: 'ui-base-render:surface-host-canvas'}) as unknown as Readonly<{
@@ -172,7 +189,7 @@ const pressLauncher = (renderer: ReactTestRenderer, logicalX = 1, logicalY = 1):
   launcher.props.onTouchEnd({nativeEvent: {
     pageX,
     pageY,
-  }})
+  }, stopPropagation})
 }
 
 const tapLauncher = async (
@@ -246,6 +263,72 @@ const findTextInput = (renderer: ReactTestRenderer, testID: string): TextInputTe
 }
 
 describe('sample-console real assembly', () => {
+  it('waits for PRIMARY surface measurement when resolved layout arrives first', async () => {
+    const events: LogEvent[] = []
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts({events}),
+      persistenceKey: `sample-console-ready-measurement-order-${Date.now()}`,
+      surfaceForm: 'mobile',
+      surfaceHostSourcesByDisplayIndex: {0: createHostSource(true, PORTRAIT_PRIMARY_FRAME)},
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), PORTRAIT_PRIMARY_FRAME, false)
+      const boundary = renderer.root.findByProps({testID: 'ui-base-render:screen-ready-boundary'})
+      await act(async () => {
+        ;(boundary.props.onLayout as (event: unknown) => void)({
+          nativeEvent: {layout: PORTRAIT_PRIMARY_FRAME},
+        })
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      expect(events.filter(event => event.event === 'startup.complete')).toHaveLength(0)
+      expect(events.some(event => event.event === 'startup.ready-failed')).toBe(false)
+
+      const frame = renderer.root.findByProps({testID: 'ui.base.input:surface-frame'})
+      act(() => {
+        ;(frame.props.onLayout as (event: unknown) => void)({
+          nativeEvent: {layout: PORTRAIT_PRIMARY_FRAME},
+        })
+      })
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      expect(events.filter(event => event.event === 'startup.complete')).toHaveLength(1)
+      expect(events.some(event => event.event === 'startup.ready-failed')).toBe(false)
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('opens admin console from the transformed mobile preview hit area', async () => {
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts(),
+      persistenceKey: `sample-console-mobile-launcher-preview-${Date.now()}`,
+      surfaceForm: 'mobile',
+      surfaceHostSourcesByDisplayIndex: {0: createHostSource(true, PORTRAIT_PRIMARY_FRAME)},
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      renderer = mount(
+        createSurfaceForDisplayIndex(assembly, 0),
+        PORTRAIT_PRIMARY_FRAME,
+        true,
+        {
+          width: PORTRAIT_PRIMARY_FRAME.width * 3,
+          height: PORTRAIT_PRIMARY_FRAME.height * 3,
+        },
+      )
+      await tapLauncher(renderer, 5, 120, 120)
+      expect(selectLayers(assembly.runtime.getState(), 'PRIMARY'))
+        .toEqual(expect.arrayContaining([expect.objectContaining({layerId: 'admin.console.layer'})]))
+      expect(renderer.root.findByProps({testID: adminTestIds.login})).toBeDefined()
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
   it('uses caller-provided surface declarations for the selected form', async () => {
     const override = {
       orientations: {
@@ -279,6 +362,7 @@ describe('sample-console real assembly', () => {
       platformPorts: createTestPlatformPorts({
         events: firstEvents,
         startupRunId: sharedPlatformRunId,
+        stripPortDescriptors: true,
       }),
       persistenceKey: `sample-console-writer-run-id-first-${Date.now()}`,
       surfaceForm: 'mobile',
@@ -288,6 +372,7 @@ describe('sample-console real assembly', () => {
       platformPorts: createTestPlatformPorts({
         events: secondEvents,
         startupRunId: sharedPlatformRunId,
+        stripPortDescriptors: true,
       }),
       persistenceKey: `sample-console-writer-run-id-second-${Date.now()}`,
       surfaceForm: 'mobile',
@@ -314,6 +399,8 @@ describe('sample-console real assembly', () => {
         const complete = events.find(event => event.event === 'startup.complete')
         const startupRunId = complete?.data?.startupRunId
         if (typeof startupRunId !== 'string') throw new Error('missing startup.complete run id')
+        expect(complete?.data).toHaveProperty('primaryReadyPartKey')
+        expect(complete?.data).toHaveProperty('primaryContentFailure')
         return startupRunId
       }
       const firstRunId = readStartupRunId(firstEvents)
@@ -329,7 +416,7 @@ describe('sample-console real assembly', () => {
     }
   })
 
-  it('exposes the injected sample section through the same catalog projection', () => {
+  it('non-production catalog unit exposes the injected sample section', () => {
     const context = {
       displayMode: 'PRIMARY' as const,
       workspace: 'MAIN' as const,
@@ -361,21 +448,112 @@ describe('sample-console real assembly', () => {
     let laptopRenderer: ReactTestRenderer | undefined
     let mobileRenderer: ReactTestRenderer | undefined
     try {
-      expect(selectAvailableParts(
-        createUiCatalog(createSampleDefinedParts().map(({catalogEntry}) => catalogEntry)),
-        'admin.sections',
-        {displayMode: 'PRIMARY', workspace: 'MAIN', instanceMode: 'MASTER', surfaceForm: 'laptop'},
-      ).map(entry => entry.partKey)).toContain('sample.console.admin-test')
-
       laptopRenderer = mount(createSurfaceForDisplayIndex(laptopAssembly, 0), LANDSCAPE_PRIMARY_FRAME)
       await tapLauncher(laptopRenderer)
       await authenticateAdmin(laptopRenderer)
-      expect(laptopRenderer.root.findByProps({testID: adminTestIds.sections.sampleConsole})).toBeDefined()
+      for (const sectionTestID of [
+        adminTestIds.sections.platformPorts,
+        adminTestIds.sections.runtime,
+        adminTestIds.sections.displayContext,
+        adminTestIds.sections.sampleConsole,
+      ]) {
+        expect(laptopRenderer.root.findByProps({testID: sectionTestID})).toBeDefined()
+      }
+      const laptopShell = laptopRenderer.root.findByProps({testID: adminTestIds.shell})
+      const laptopShellStyle = StyleSheet.flatten(laptopShell.props.style)
+      expect(laptopShellStyle).toMatchObject({flex: 1, width: '100%'})
+      expect(laptopShellStyle).not.toHaveProperty('maxWidth')
+      expect(StyleSheet.flatten(laptopRenderer.root.findByProps({testID: 'terminal.admin:workspace'}).props.style)).toMatchObject({
+        flex: 1,
+        flexDirection: 'row',
+        flexWrap: 'nowrap',
+        minHeight: 0,
+      })
+      expect(StyleSheet.flatten(laptopRenderer.root.findByProps({testID: 'terminal.admin:navigation'}).props.style)).toMatchObject({
+        flexDirection: 'column',
+        flexWrap: 'nowrap',
+      })
+      const laptopSectionButton = laptopRenderer.root.findAllByProps({testID: adminTestIds.sections.runtime})
+        .find(node => node.type === Pressable)!
+      expect(laptopSectionButton.props.accessibilityRole).toBe('button')
+      expect(laptopSectionButton.props.accessibilityLabel).toBe('选择运行状态')
+      expect(laptopSectionButton.props.accessibilityState).toMatchObject({selected: false})
+      await act(async () => {
+        press(laptopRenderer!, adminTestIds.sections.runtime)()
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      const laptopSelectedSectionButton = laptopRenderer.root.findAllByProps({testID: adminTestIds.sections.runtime})
+        .find(node => node.type === Pressable)!
+      expect(laptopSelectedSectionButton.props.accessibilityState).toMatchObject({selected: true})
+      await act(async () => {
+        press(laptopRenderer!, adminTestIds.sections.platformPorts)()
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      expect(StyleSheet.flatten(laptopRenderer.root.findByProps({testID: adminTestIds.content}).props.style)).toMatchObject({
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
+      })
+      expect(StyleSheet.flatten(laptopRenderer.root.findByProps({testID: 'admin.console.platform-ports'}).props.style)).toMatchObject({
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
+      })
+      const laptopSectionHeading = laptopRenderer.root.findAllByProps({testID: 'admin.console.platform-ports:title'})
+        .find(node => node.type === Text)!
+      expect(laptopSectionHeading.props).toMatchObject({
+        accessibilityRole: 'header',
+        accessibilityLiveRegion: 'polite',
+      })
 
       mobileRenderer = mount(createSurfaceForDisplayIndex(mobileAssembly, 0), PORTRAIT_PRIMARY_FRAME)
       await tapLauncher(mobileRenderer)
       await authenticateAdmin(mobileRenderer)
-      expect(mobileRenderer.root.findByProps({testID: adminTestIds.sections.sampleConsole})).toBeDefined()
+      for (const sectionTestID of [
+        adminTestIds.sections.platformPorts,
+        adminTestIds.sections.runtime,
+        adminTestIds.sections.displayContext,
+        adminTestIds.sections.sampleConsole,
+      ]) {
+        expect(mobileRenderer.root.findByProps({testID: sectionTestID})).toBeDefined()
+      }
+      const mobileShell = mobileRenderer.root.findByProps({testID: adminTestIds.shell})
+      const mobileShellStyle = StyleSheet.flatten(mobileShell.props.style)
+      expect(mobileShellStyle).toMatchObject({flex: 1, width: '100%'})
+      expect(mobileShellStyle).not.toHaveProperty('maxWidth')
+      expect(StyleSheet.flatten(mobileRenderer.root.findByProps({testID: 'terminal.admin:navigation'}).props.style)).toMatchObject({
+        flexWrap: 'wrap',
+      })
+      const mobileNavigation = mobileRenderer.root.findByProps({testID: 'terminal.admin:navigation'})
+      expect(mobileNavigation.props.accessibilityRole).toBe('tablist')
+      const mobileSectionTab = mobileRenderer.root.findAllByProps({testID: adminTestIds.sections.runtime})
+        .find(node => node.type === Pressable)!
+      expect(mobileSectionTab.props.accessibilityRole).toBe('tab')
+      expect(mobileSectionTab.props.accessibilityLabel).toBe('选择运行状态')
+      expect(mobileSectionTab.props.accessibilityState).toMatchObject({selected: false})
+      await act(async () => {
+        press(mobileRenderer!, adminTestIds.sections.runtime)()
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      const mobileSelectedSectionTab = mobileRenderer.root.findAllByProps({testID: adminTestIds.sections.runtime})
+        .find(node => node.type === Pressable)!
+      expect(mobileSelectedSectionTab.props.accessibilityState).toMatchObject({selected: true})
+      await act(async () => {
+        press(mobileRenderer!, adminTestIds.sections.platformPorts)()
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+      expect(mobileRenderer.root.findByProps({testID: adminTestIds.content})).toBeDefined()
+      expect(StyleSheet.flatten(mobileRenderer.root.findByProps({testID: 'admin.console.platform-ports'}).props.style)).toMatchObject({
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
+      })
+      const mobileSectionHeading = mobileRenderer.root.findAllByProps({testID: 'admin.console.platform-ports:title'})
+        .find(node => node.type === Text)!
+      expect(mobileSectionHeading.props).toMatchObject({
+        accessibilityRole: 'header',
+        accessibilityLiveRegion: 'polite',
+      })
     } finally {
       if (laptopRenderer !== undefined) act(() => { laptopRenderer!.unmount() })
       if (mobileRenderer !== undefined) act(() => { mobileRenderer!.unmount() })
@@ -481,14 +659,22 @@ describe('sample-console real assembly', () => {
     let renderer: ReactTestRenderer | undefined
     try {
       renderer = mount(createSurfaceForDisplayIndex(assembly, 0), PORTRAIT_PRIMARY_FRAME)
+      const stopPropagation = vi.fn()
       for (let index = 0; index < 5; index += 1) {
         await act(async () => {
-          pressLauncher(renderer!)
+          pressLauncher(renderer!, 1, 1, stopPropagation)
           await new Promise(resolve => setTimeout(resolve, 0))
         })
       }
       expect(renderer.root.findByProps({testID: adminTestIds.login})).toBeDefined()
+      const loginCard = renderer.root.findByProps({testID: `${adminTestIds.login}:card`})
+      expect(renderer.root.findAllByProps({testID: 'ui.base.input:surface-frame'})).toHaveLength(1)
+      expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+      expect(StyleSheet.flatten(loginCard.props.style)).toMatchObject({
+        transform: [{translateY: -110}],
+      })
       expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard:text-1'})).toBeDefined()
+      expect(stopPropagation).toHaveBeenCalledTimes(1)
       for (const digit of ['1', '2', '3', '4', '5', '6']) {
         await act(async () => {
           press(renderer!, `ui.base.input:virtual-keyboard:text-${digit}`)()
@@ -626,13 +812,14 @@ describe('sample-console real assembly', () => {
     }
   })
 
-  it('shows the effective fallback password only when runtime debug mode is enabled', async () => {
+  it('shows the current admin password beside the instruction when the package flag is enabled', async () => {
     const events: never[] = []
     const assembly = await createSampleAssembly({
       platformPorts: createTestPlatformPorts({events}),
       persistenceKey: `sample-console-admin-debug-password-test-${Date.now()}`,
       surfaceForm: 'laptop',
-      startupDebugMode: true,
+      startupDebugMode: false,
+      showAdminPassword: true,
       surfaceHostSourcesByDisplayIndex: {0: createHostSource(true)},
     })
     let renderer: ReactTestRenderer | undefined
@@ -645,9 +832,37 @@ describe('sample-console real assembly', () => {
         })
       }
       const debugPassword = renderer.root.findByProps({testID: adminTestIds.debugPassword})
-      expect(debugPassword.props.children).toContain('123456')
+      expect(debugPassword.props.children).toBe('（123456）')
+      expect(renderer.root.findByProps({testID: 'terminal.admin:login:instruction'})).toBeDefined()
       expect(events.some(event => String((event as {readonly event?: unknown}).event) === 'sample.runtime-facts-resolved')).toBe(true)
       expect(events.some(event => JSON.stringify(event).includes('123456'))).toBe(false)
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('hides the current admin password when the package flag is disabled', async () => {
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts(),
+      persistenceKey: `sample-console-admin-password-hidden-test-${Date.now()}`,
+      surfaceForm: 'laptop',
+      startupDebugMode: true,
+      showAdminPassword: false,
+      surfaceHostSourcesByDisplayIndex: {0: createHostSource(true)},
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME)
+      for (let index = 0; index < 5; index += 1) {
+        await act(async () => {
+          pressLauncher(renderer!)
+          await new Promise(resolve => setTimeout(resolve, 0))
+        })
+      }
+      expect(renderer.root.findAllByProps({testID: adminTestIds.debugPassword})).toHaveLength(0)
+      expect(renderer.root.findByProps({testID: 'terminal.admin:login:instruction'}).props.children)
+        .toEqual(['请输入六位动态口令', null])
     } finally {
       if (renderer !== undefined) act(() => { renderer!.unmount() })
       releaseRuntimeForTest(assembly.runtime)

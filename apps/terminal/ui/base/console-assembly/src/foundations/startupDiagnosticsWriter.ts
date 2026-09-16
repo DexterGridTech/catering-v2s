@@ -1,4 +1,5 @@
 import type {LogFields, LoggerPort} from '@catering-v2s/kernel-base-platform-ports'
+import type {ContentFailureReason} from '@catering-v2s/ui-base-render'
 
 export const startupRequiredGroups = Object.freeze([
   'modules',
@@ -14,6 +15,8 @@ export type StartupDiagnosticsReadiness = Readonly<{
   readonly primaryDeclared: boolean
   readonly primaryMeasured: boolean
   readonly primaryRealReady: boolean
+  readonly primaryReadyPartKey: string | null
+  readonly primaryContentFailure: ContentFailureReason | null
 }>
 
 export type StartupDiagnosticsWriterInput = Readonly<{
@@ -58,6 +61,8 @@ export const createStartupDiagnosticsWriter = (
           primaryDeclared: readiness.primaryDeclared,
           primaryMeasured: readiness.primaryMeasured,
           primaryRealReady: readiness.primaryRealReady,
+          primaryReadyPartKey: readiness.primaryReadyPartKey,
+          primaryContentFailure: readiness.primaryContentFailure,
           writer: 'ui.base.console-assembly',
         },
       })

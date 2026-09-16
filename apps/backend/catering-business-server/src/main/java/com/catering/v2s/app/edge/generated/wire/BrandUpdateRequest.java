@@ -2,11 +2,11 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record BrandUpdateRequest(
-    String code,
-    String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "code", required = true) String code,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
     String alias,
     String remark,
     tools.jackson.databind.JsonNode extensionValues,
     Long expectedExtensionRuleRevision,
-    Long expectedVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion
 ) {}

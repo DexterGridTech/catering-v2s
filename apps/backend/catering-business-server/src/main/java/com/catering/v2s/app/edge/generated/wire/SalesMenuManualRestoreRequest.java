@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record SalesMenuManualRestoreRequest(
-    SalesMenuManualRestoreRequestTarget target,
-    Boolean confirm,
-    Long expectedVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "target", required = true) SalesMenuManualRestoreRequestTarget target,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "confirm", required = true) Boolean confirm,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion
 ) {}

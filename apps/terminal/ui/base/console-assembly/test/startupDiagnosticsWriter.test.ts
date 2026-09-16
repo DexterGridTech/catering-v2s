@@ -31,6 +31,8 @@ const completeReadiness = () => ({
   primaryDeclared: true,
   primaryMeasured: true,
   primaryRealReady: true,
+  primaryReadyPartKey: 'sample.console.home',
+  primaryContentFailure: null,
 })
 
 describe('startup diagnostics writer', () => {
@@ -55,6 +57,8 @@ describe('startup diagnostics writer', () => {
         startupRunId: 'run-1',
         appName: 'sample-console',
         writer: 'ui.base.console-assembly',
+        primaryReadyPartKey: 'sample.console.home',
+        primaryContentFailure: null,
       },
     })
   })

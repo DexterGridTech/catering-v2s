@@ -553,8 +553,10 @@ owner 自己在 reducer 里接"，只是把同一个外部写入拆成二十份�
 并沿用同一套 catalog 与隐藏入口：
 
 1. 包的 `package.json` 与 `src/dependencies.ts` 必须声明 `ui.base.admin-shell`；
-2. assembly 的**唯一** `UiCatalog`/renderer catalog 必须包含
-   `...adminShellAssembly.parts`，不得复制 admin part 或另建 registry；
+2. assembly 的**未过滤装配输入**（即 assembly 汇总的
+   `...adminShellAssembly.parts` 与 integration parts）必须包含完整的
+   `...adminShellAssembly.parts`；随后按本机形态过滤属于装配步骤，不能以过滤后的 catalog
+   反推是否接入，且不得复制 admin part 或另建 registry；
 3. 生产 surface 的 content frame 必须由 `AdminLauncher` 包住业务内容，使用该 surface 的
    `canvas`，从而保留现有隐藏手势、主承载显示门禁和业务子树的正常触摸；
 4. integration 不得自行定义 `ADMIN_CONSOLE_*` 常量、第二个 `openLayer` 路径、覆盖层或
@@ -576,8 +578,30 @@ owner 自己在 reducer 里接"，只是把同一个外部写入拆成二十份�
 admin parts、状态或入口更小且能保持 owner 边界的方案。
 
 **反例栏**：只在 README 或 test fixture 中声明 admin、只把 `ui.base.admin-shell` 写进
-`package.json` 而不接入 catalog、只渲染 launcher 但未把 admin parts 放进该 catalog，均不算
+`package.json` 而不接入未过滤装配输入、只渲染 launcher 但未把 admin parts 纳入该输入，均不算
 集成；它们会分别表现为运行时找不到 part、入口打开后无法渲染或仍然只有纸面依赖。
+
+---
+
+### `TR-14` · 单机型组件文件名必须显式标出机型
+
+**规则（R）**：声明单一 `surfaceForm` 的 screenPart renderer，组件文件 basename 必须包含该机型
+名称（`Laptop` 或 `Mobile`）；同时支持两种机型的组件不得用机型名伪装差异。当前 TER 采用
+`AdminConsoleLaptop.tsx` / `AdminConsoleMobile.tsx` 这种普通 TypeScript 文件名，不依赖 Metro
+把 `.laptop.tsx` 或 `.mobile.tsx` 当作平台扩展名解析。该规则只适用于组件实现文件，不改变
+partKey、rendererKey 或调用方的 partKey-only API。
+
+**仓内实例**：`apps/terminal/ui/base/admin-shell/src/parts/parts.ts` 将为同一 admin partKey
+注册 laptop/mobile 两个 renderer；实现文件必须能从文件名直接看出形态。
+
+**验证边界**：这是 review-only 规则。`tools/code-layout/cli.mjs` 的目录词表不覆盖组件文件名，
+而改名并同步 import 不会改变 production 行为，不能提供有效的 production red mutation；
+由 implementation review 按 part 的 `surfaceForm` 与组件文件 basename 逐项核验。不得为了本条
+新增 AST 门、resolver 配置或兼容别名。
+
+**反例栏**：一个只渲染 mobile 的组件仍叫 `AdminConsole.tsx`；或者保留普通文件与
+`AdminConsole.mobile.tsx` 两套同名候选，靠 resolver 顺序决定实现。前者隐藏形态边界，后者会
+让开发/构建解析差异无法从源文件判断；它们都违反本条，即使 typecheck 仍可能通过。
 
 ---
 

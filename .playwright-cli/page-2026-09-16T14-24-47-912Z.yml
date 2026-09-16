@@ -1,0 +1,37 @@
+- generic [ref=f3e5]:
+  - generic [ref=f3e6]:
+    - generic [ref=f3e7]:
+      - generic [ref=f3e8]:
+        - generic [ref=f3e9]: LIVE SURFACE PREVIEW
+        - generic [ref=f3e10]: 真实业务画布
+      - generic [ref=f3e11]:
+        - generic [ref=f3e12]:
+          - generic [ref=f3e13]:
+            - generic [ref=f3e15]: RUNTIME
+            - generic [ref=f3e16]: Started
+          - generic [ref=f3e18]:
+            - generic [ref=f3e20]: STORE
+            - generic [ref=f3e21]: 同一 assembly
+          - generic [ref=f3e23]:
+            - generic [ref=f3e25]: SURFACES
+            - generic [ref=f3e26]: 1 个 Root
+        - generic [ref=f3e28]:
+          - generic [ref=f3e30]: 手持屏 · 360 × 640
+          - generic [ref=f3e31]: 已挂载
+    - generic [ref=f3e32]:
+      - generic "surface 宽度" [ref=f3e33]:
+        - slider "surface 宽度比例" [ref=f3e35] [cursor=pointer]
+        - generic [ref=f3e39]: 100%
+      - generic "终端视角" [ref=f3e40]:
+        - generic [ref=f3e41]: 视角
+        - radio "laptop 视角" [ref=f3e42] [cursor=pointer]
+        - radio "mobile 视角" [checked] [ref=f3e45] [cursor=pointer]
+  - generic [ref=f3e63]:
+    - generic [ref=f3e65]:
+      - heading "店员登录" [level=1] [ref=f3e66]
+      - generic [ref=f3e67]: 工号
+      - textbox "工号" [ref=f3e68]
+      - generic [ref=f3e69]: 密码
+      - textbox "密码" [ref=f3e70]
+    - button "登录" [ref=f3e71] [cursor=pointer]
+  - generic [ref=f3e73]: 逻辑尺寸固定 · 外层按配置排布 · 内部由业务组件负责内容

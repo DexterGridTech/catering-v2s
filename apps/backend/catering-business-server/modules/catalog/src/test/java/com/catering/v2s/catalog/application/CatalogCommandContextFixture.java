@@ -74,7 +74,8 @@ final class CatalogCommandContextFixture {
             when(catalogScopes.resolveCatalogCopySource(any(), any(), any(), any(), any()))
                     .thenReturn(copySourceScope);
         }
-        return new CommandExecutionContextResolver(capabilities, catalogScopes, sessions)
+        return new CommandExecutionContextResolver(
+                        capabilities, catalogScopes, sessions, (workspace, group, targetType, storeId) -> {})
                 .resolveCatalog(
                         "test-session",
                         token,

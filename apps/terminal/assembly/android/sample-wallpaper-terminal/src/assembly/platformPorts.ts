@@ -17,4 +17,5 @@ export const createSampleWallpaperTerminalAssembly = (input: Readonly<{
   persistenceKey,
   surfaceForm: input.surfaceForm,
   terminalSurfaces: packageJson.terminalSurfaces,
+  showAdminPassword: packageJson.showAdminPassword,
 })

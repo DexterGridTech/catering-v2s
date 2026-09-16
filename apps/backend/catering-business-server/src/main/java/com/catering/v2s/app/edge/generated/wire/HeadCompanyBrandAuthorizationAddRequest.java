@@ -2,5 +2,5 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record HeadCompanyBrandAuthorizationAddRequest(
-    java.util.UUID brandId
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "brandId", required = true) java.util.UUID brandId
 ) {}

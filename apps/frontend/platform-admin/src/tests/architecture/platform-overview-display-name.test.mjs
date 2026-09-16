@@ -23,10 +23,7 @@ test('overview consumers use the display-name wire and the platform edge adapts 
     assert.match(source, /extensionValues/);
     assert.match(source, /organizationOverviewExtensionItems/);
   }
-  assert.match(
-    organizationController,
-    /extensionValues\(value\.extensionValues\(\)\)/,
-  );
+  assert.match(organizationController, /extensionValues\(value\.extensionValues\(\)\)/);
   assert.match(
     organizationController,
     /new OrganizationOverviewItemExtensionFieldsItem\(field\.name\(\), field\.value\(\)\)/,

@@ -2,10 +2,11 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationStoreUpdateRequest(
-    String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
     String headCompanyId,
     String notes,
-    tools.jackson.databind.JsonNode extensionValues,
-    Long extensionRuleRevision,
-    Long expectedVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "extensionValues", required = true) tools.jackson.databind.JsonNode extensionValues,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "extensionRuleRevision", required = true) Long extensionRuleRevision,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "operatingRuleSwitches", required = true) OrganizationStoreOperatingRuleValues operatingRuleSwitches
 ) {}

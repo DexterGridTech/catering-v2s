@@ -76,6 +76,10 @@ export const OPERATIONS_PROBLEM_FEEDBACK: Record<OperationsProblemCode, ProblemF
   ORGANIZATION_NODE_STATUS_TRANSITION_INVALID: {title: '组织状态不可变更', detail: '当前组织状态不支持此操作。'},
   ORGANIZATION_NODE_VERSION_CONFLICT: {title: '组织资料已被更新', detail: '请查看最新组织资料后再试。'},
   ORGANIZATION_STORE_CODE_CONFLICT: {title: '门店编码已存在', detail: '请更换门店编码后重试。'},
+  ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED: {
+    title: '功能尚未开启',
+    detail: '功能尚未开启，需项目对门店授权',
+  },
   ORGANIZATION_STORE_EXTENSION_VERSION_CONFLICT: {title: '门店扩展资料已被更新', detail: '请查看最新资料后再试。'},
   ORGANIZATION_STORE_FIXED_SCOPE_FORBIDDEN: {title: '门店范围不可变更', detail: '当前门店范围不支持此操作。'},
   ORGANIZATION_STORE_HEAD_COMPANY_AUTHORIZATION_REQUIRED: {
@@ -83,6 +87,7 @@ export const OPERATIONS_PROBLEM_FEEDBACK: Record<OperationsProblemCode, ProblemF
     detail: '请先完成总公司授权后重试。',
   },
   ORGANIZATION_STORE_NAME_CONFLICT: {title: '门店名称已存在', detail: '请更换门店名称后重试。'},
+  ORGANIZATION_STORE_OPERATING_RULES_INVALID: {title: '门店经营规则无效', detail: '请检查门店经营规则后重试。'},
   ORGANIZATION_STORE_PROJECT_REQUIRED: {title: '缺少所属项目', detail: '请选择所属项目后重试。'},
   ORGANIZATION_STORE_RELATION_INVALID: {title: '门店关联资料有误', detail: '请检查门店所属关系后重试。'},
   ORGANIZATION_STORE_RELATION_LOCKED: {title: '门店关联已锁定', detail: '当前门店关联不支持此操作。'},

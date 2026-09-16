@@ -502,6 +502,78 @@ function referenceName(reference) {
   return reference.slice(offset + marker.length);
 }
 function pascal(value) { return String(value).split(/[^A-Za-z0-9]+/).filter(Boolean).map((part) => part[0].toUpperCase() + part.slice(1)).join("") || "Value"; }
+function strictOperatingRuleDeserializer(name, properties) {
+  if (name !== "OrganizationStoreOperatingRuleValues") return "";
+  const javaTypes = {boolean: "Boolean", integer: "Long", number: "java.math.BigDecimal", string: "String"};
+  const fields = properties.map(([property, propertySchema]) => {
+    const field = javaIdentifier(property);
+    const type = propertySchema?.type;
+    if (!Object.hasOwn(javaTypes, type)) fail("R5_EDGE_OPERATING_RULE_DESERIALIZER_TYPE_UNSUPPORTED", `${name}.${property}:${type || "missing"}`);
+    const tokenCheck = type === "boolean"
+      ? "parser.currentToken() != tools.jackson.core.JsonToken.VALUE_TRUE && parser.currentToken() != tools.jackson.core.JsonToken.VALUE_FALSE"
+      : type === "string"
+        ? "parser.currentToken() != tools.jackson.core.JsonToken.VALUE_STRING"
+        : "!parser.currentToken().isNumeric()";
+    const read = type === "boolean"
+      ? "parser.getBooleanValue()"
+      : type === "string"
+        ? "parser.getString()"
+        : type === "integer"
+          ? "parser.getLongValue()"
+          : "parser.getDecimalValue()";
+    return `          case ${javaString(property)} -> {
+            if (${tokenCheck}) return context.reportInputMismatch(${name}.class, "property ${property} must be ${type}");
+            ${field} = ${read};
+          }`;
+  }).join("\n");
+  const declarations = properties.map(([property]) => `      ${javaTypes[propertySchemaType(properties, property)]} ${javaIdentifier(property)} = null;`).join("\n");
+  const missingChecks = properties.map(([property]) =>
+    `      if (${javaIdentifier(property)} == null) return context.reportInputMismatch(${name}.class, "missing required property ${property}");`).join("\n");
+  const constructorArgs = properties.map(([property]) => javaIdentifier(property)).join(", ");
+  const recordFields = properties.map(([property, propertySchema]) => `    ${javaTypes[propertySchema.type]} ${javaIdentifier(property)}`).join(",\n");
+  return `@tools.jackson.databind.annotation.JsonDeserialize(using = ${name}.Deserializer.class)
+public record ${name}(
+${recordFields}
+) {
+  public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<${name}> {
+    @Override
+    public ${name} deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)
+            throws tools.jackson.core.JacksonException {
+      if (!parser.isExpectedStartObjectToken())
+        return (${name}) context.handleUnexpectedToken(${name}.class, parser);
+${declarations}
+      java.util.Set<String> seen = new java.util.HashSet<>();
+      tools.jackson.core.JsonToken token = parser.nextToken();
+      while (token != null && token != tools.jackson.core.JsonToken.END_OBJECT) {
+        if (token != tools.jackson.core.JsonToken.PROPERTY_NAME)
+          return context.reportInputMismatch(${name}.class, "object property name is required");
+        String property = parser.currentName();
+        if (!seen.add(property))
+          return context.reportInputMismatch(${name}.class, "duplicate property " + property);
+        token = parser.nextToken();
+        if (token == null)
+          return context.reportInputMismatch(${name}.class, "property value is required");
+        switch (property) {
+${fields}
+          default -> {
+            parser.skipChildren();
+            return context.reportInputMismatch(${name}.class, "unknown property " + property);
+          }
+        }
+        token = parser.nextToken();
+      }
+      if (token == null)
+        return context.reportInputMismatch(${name}.class, "object must end with END_OBJECT");
+${missingChecks}
+      return new ${name}(${constructorArgs});
+    }
+  }
+}
+`;
+}
+function propertySchemaType(properties, property) {
+  return properties.find(([name]) => name === property)?.[1]?.type;
+}
 // Response closed sets are generated as Java enums as well as TypeScript
 // unions.  Request DTOs intentionally remain string-shaped because their
 // controllers pass the owner command values through unchanged; only these
@@ -603,6 +675,14 @@ function javaWireType(name, schema, components, inlineTypes = new Map()) {
     return { name, source: `// Generated from accepted R5 OpenAPI components; do not edit.\npackage com.catering.v2s.app.edge.generated.wire;\n\npublic enum ${name} {\n${values.map((value) => `    ${value}`).join(",\n")};\n\n    public String wire() { return name(); }\n}\n` };
   }
   const properties = Object.entries(schema.properties || {});
+  const strictDeserializer = strictOperatingRuleDeserializer(name, properties);
+  if (strictDeserializer) {
+    return {
+      name,
+      source: `// Generated from accepted R5 OpenAPI components; do not edit.\npackage com.catering.v2s.app.edge.generated.wire;\n\n${strictDeserializer}`,
+    };
+  }
+  const required = new Set(schema.required || []);
   for (const [property, propertySchema] of properties) {
     const resolved = resolvedSchema(propertySchema, components, new Set([name]));
     const inlineName = `${name}${pascal(property)}`;
@@ -620,6 +700,9 @@ function javaWireType(name, schema, components, inlineTypes = new Map()) {
       inlineTypes,
       RESPONSE_INLINE_ENUM_FIELDS.has(`${name}.${property}`),
     );
+    if (required.has(property)) {
+      return `    @com.fasterxml.jackson.annotation.JsonProperty(value = "${property}", required = true) ${type} ${field}`;
+    }
     return field === property
       ? `    ${type} ${field}`
       : `    @com.fasterxml.jackson.annotation.JsonProperty("${property}") ${type} ${field}`;

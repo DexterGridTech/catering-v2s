@@ -18,7 +18,8 @@
           "revision",
           "createdAt",
           "updatedAt",
-          "contractDerivedStatus"
+          "contractDerivedStatus",
+          "operatingRuleSwitches"
         ],
         "properties": {
           "id": {
@@ -205,6 +206,90 @@
               "NOT_OPERATING"
             ],
             "readOnly": true
+          },
+          "operatingRuleSwitches": {
+            "$ref": "#/components/schemas/OrganizationStoreOperatingRuleValues"
+          }
+        }
+      },
+      "OrganizationStoreOperatingRuleValues": {
+        "type": "object",
+        "description": "门店经营规则开关的完整值集合；由 store-operating-rule-switches.json 生成。",
+        "additionalProperties": false,
+        "required": [
+          "catalogManagementEnabled",
+          "externalCatalogSyncEnabled",
+          "openPlatformDeveloperCode",
+          "reservationEnabled",
+          "reservationDepositEnabled",
+          "queueCallEnabled",
+          "tableManagementEnabled",
+          "tableStatusEnabled",
+          "tableWaitCallEnabled",
+          "banquetOrderEnabled",
+          "pickupCallEnabled",
+          "receivableEnabled"
+        ],
+        "properties": {
+          "catalogManagementEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否启用商品、库存和菜单管理"
+          },
+          "externalCatalogSyncEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否启用外部商品、库存、菜单同步"
+          },
+          "openPlatformDeveloperCode": {
+            "type": "string",
+            "default": "",
+            "description": "开放平台开发者编码"
+          },
+          "reservationEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否启用预约功能"
+          },
+          "reservationDepositEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否支持押金预约"
+          },
+          "queueCallEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否启用排队叫号"
+          },
+          "tableManagementEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否启用桌台管理"
+          },
+          "tableStatusEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否启用桌台状态管理"
+          },
+          "tableWaitCallEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否支持「等叫」功能"
+          },
+          "banquetOrderEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否支持宴会订单"
+          },
+          "pickupCallEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否启用取餐叫号"
+          },
+          "receivableEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否支持应收单管理"
           }
         }
       },
@@ -350,6 +435,9 @@
           "extensionValues": {
             "type": "object",
             "additionalProperties": true
+          },
+          "operatingRuleSwitches": {
+            "$ref": "#/components/schemas/OrganizationStoreOperatingRuleValues"
           }
         }
       },
@@ -495,7 +583,8 @@
           "name",
           "extensionValues",
           "extensionRuleRevision",
-          "expectedVersion"
+          "expectedVersion",
+          "operatingRuleSwitches"
         ],
         "properties": {
           "name": {
@@ -526,6 +615,9 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          },
+          "operatingRuleSwitches": {
+            "$ref": "#/components/schemas/OrganizationStoreOperatingRuleValues"
           }
         }
       }

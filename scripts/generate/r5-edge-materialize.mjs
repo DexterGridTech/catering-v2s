@@ -415,7 +415,15 @@ function materialize(rootDir = root, writeOutputs = true) {
 function check() {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-r5-edge-"));
   try {
-    fs.cpSync(root, scratch, { recursive: true, filter: (file) => !file.includes("/build") && !file.includes("/dist") && !file.includes("/.git") });
+    fs.cpSync(root, scratch, {
+      recursive: true,
+      filter: (file) => !file.includes("/build")
+        && !file.includes("/dist")
+        && !file.includes("/.git")
+        && !file.includes("/.runtime")
+        && !file.includes("/node_modules")
+        && !file.includes("/.gradle"),
+    });
     const materialized = materialize(scratch, true);
     compareGeneratedOutputs(root, scratch);
     const report = fs.readFileSync(path.join(root, outputReport), "utf8");
@@ -449,7 +457,15 @@ function selfTest() {
     if (relativeComponentReference !== "../common/time.schemas.json#/components/schemas/EpochMillis") {
       fail("R5_EDGE_RELATIVE_COMPONENT_REFERENCE_RED_NOT_DETECTED");
     }
-    fs.cpSync(root, scratch, { recursive: true, filter: (file) => !file.includes("/build") && !file.includes("/dist") && !file.includes("/.git") });
+    fs.cpSync(root, scratch, {
+      recursive: true,
+      filter: (file) => !file.includes("/build")
+        && !file.includes("/dist")
+        && !file.includes("/.git")
+        && !file.includes("/.runtime")
+        && !file.includes("/node_modules")
+        && !file.includes("/.gradle"),
+    });
     const requiredDataNodeTypeEnums = (value, result = []) => {
       if (Array.isArray(value)) {
         for (const item of value) requiredDataNodeTypeEnums(item, result);

@@ -2,5 +2,5 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record PlatformPasswordRecoveryVerification(
-    String status
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) String status
 ) {}

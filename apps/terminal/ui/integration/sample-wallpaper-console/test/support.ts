@@ -90,12 +90,12 @@ export const createTestPlatformPorts = (input: Readonly<{
       persistKv: plainStorage,
       persistSecure: protectedStorage,
       device,
-      appControl: unavailableAppControlPort,
-      script: unavailableScriptPort,
-      connector: unavailableConnectorPort,
-      hotUpdate: unavailableHotUpdatePort,
-      logUpload: unavailableLogUploadPort,
-      topologyHost: unavailableTopologyHostPort,
+      appControl: withTestPortDescriptor(unavailableAppControlPort, 'appControl'),
+      script: withTestPortDescriptor(unavailableScriptPort, 'script'),
+      connector: withTestPortDescriptor(unavailableConnectorPort, 'connector'),
+      hotUpdate: withTestPortDescriptor(unavailableHotUpdatePort, 'hotUpdate'),
+      logUpload: withTestPortDescriptor(unavailableLogUploadPort, 'logUpload'),
+      topologyHost: withTestPortDescriptor(unavailableTopologyHostPort, 'topologyHost'),
     },
   })
   return Object.freeze({...ports, nativeLoadingCapability})

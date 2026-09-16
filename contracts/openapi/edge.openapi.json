@@ -338,6 +338,9 @@
     "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/status": {
       "$ref": "./paths/operations-admin/store-management.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores~1{storeId}~1status"
     },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches": {
+      "$ref": "./paths/operations-admin/store-operating-rule.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1organization~1stores~1{storeId}~1operating-rule-switches"
+    },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/store/profile": {
       "$ref": "./paths/operations-admin/store-profile.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1store~1profile"
     },
@@ -556,6 +559,9 @@
       },
       "AuditTarget": {
         "$ref": "./components/common/common.schemas.json#/components/schemas/AuditTarget"
+      },
+      "AuditValueState": {
+        "$ref": "./components/common/common.schemas.json#/components/schemas/AuditValueState"
       },
       "AuditChange": {
         "$ref": "./components/common/common.schemas.json#/components/schemas/AuditChange"
@@ -832,6 +838,9 @@
       },
       "OrganizationStore": {
         "$ref": "./components/organization/store.schemas.json#/components/schemas/OrganizationStore"
+      },
+      "OrganizationStoreOperatingRuleValues": {
+        "$ref": "./components/organization/store.schemas.json#/components/schemas/OrganizationStoreOperatingRuleValues"
       },
       "OrganizationCandidatePage": {
         "$ref": "./components/organization/store.schemas.json#/components/schemas/OrganizationCandidatePage"
@@ -1114,6 +1123,9 @@
       },
       "OwnerBindingUpdateRequest": {
         "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/OwnerBindingUpdateRequest"
+      },
+      "OwnerBindingDeleteRequest": {
+        "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/OwnerBindingDeleteRequest"
       },
       "OwnerBindingView": {
         "$ref": "./components/collaboration/collaboration.schemas.json#/components/schemas/OwnerBindingView"

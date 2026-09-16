@@ -8,13 +8,13 @@
     "authorizationManifest": "contracts/registry/iam-org-governance-manifest.json"
   },
   "closure": {
-    "operations": 211,
+    "operations": 212,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 138,
+      "operations-admin": 139,
       "public": 12
     },
-    "componentBaseline": 249,
+    "componentBaseline": 252,
     "componentFiles": 20,
     "unreachable": [
       {
@@ -1496,6 +1496,18 @@
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}",
       "capability": "store-management",
       "pathFile": "paths/operations-admin/store-management.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/organization/store.schemas.json",
+      "errorSetRef": "AUTHZ_READ"
+    },
+    {
+      "operationId": "getOperationsOrganizationStoreOperatingRule",
+      "face": "operations-admin",
+      "owner": "organization",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches",
+      "capability": "store-operating-rule",
+      "pathFile": "paths/operations-admin/store-operating-rule.paths.json",
       "requestComponentFile": "components/common/empty.schemas.json",
       "responseComponentFile": "components/organization/store.schemas.json",
       "errorSetRef": "AUTHZ_READ"

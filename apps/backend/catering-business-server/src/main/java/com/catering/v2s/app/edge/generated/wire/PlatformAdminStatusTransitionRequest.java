@@ -2,7 +2,7 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record PlatformAdminStatusTransitionRequest(
-    PlatformAdminStatus targetStatus,
-    Long expectedVersion,
-    String idempotencyKey
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "targetStatus", required = true) PlatformAdminStatus targetStatus,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "idempotencyKey", required = true) String idempotencyKey
 ) {}

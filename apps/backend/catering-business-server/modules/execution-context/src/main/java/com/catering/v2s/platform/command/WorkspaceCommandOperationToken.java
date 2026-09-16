@@ -27,6 +27,7 @@ public final class WorkspaceCommandOperationToken {
     private final Map<String, String> capabilityByDataNodeType;
     private final String copyRole;
     private final CopySourcePolicy copySourcePolicy;
+    private final boolean storeOperatingRuleGateRequired;
 
     WorkspaceCommandOperationToken(
             String operationId,
@@ -35,7 +36,8 @@ public final class WorkspaceCommandOperationToken {
             List<String> allowedDataNodeTypes,
             Map<String, String> capabilityByDataNodeType,
             String copyRole,
-            CopySourcePolicy copySourcePolicy) {
+            CopySourcePolicy copySourcePolicy,
+            boolean storeOperatingRuleGateRequired) {
         this.operationId = required(operationId, "operationId");
         this.owner = required(owner, "owner");
         this.requirementId = required(requirementId, "requirementId");
@@ -43,6 +45,7 @@ public final class WorkspaceCommandOperationToken {
         this.capabilityByDataNodeType = Map.copyOf(capabilityByDataNodeType);
         this.copyRole = required(copyRole, "copyRole");
         this.copySourcePolicy = Objects.requireNonNull(copySourcePolicy, "copySourcePolicy");
+        this.storeOperatingRuleGateRequired = storeOperatingRuleGateRequired;
     }
 
     public String operationId() {
@@ -71,6 +74,10 @@ public final class WorkspaceCommandOperationToken {
 
     public CopySourcePolicy copySourcePolicy() {
         return copySourcePolicy;
+    }
+
+    public boolean requiresStoreOperatingRuleGate() {
+        return storeOperatingRuleGateRequired;
     }
 
     public boolean isFor(String operationId, String owner) {

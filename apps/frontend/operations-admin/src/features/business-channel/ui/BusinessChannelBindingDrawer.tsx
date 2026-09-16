@@ -151,8 +151,6 @@ export function BusinessChannelBindingDrawer({
         {groupWorkspaceKey: queryContext.groupWorkspaceKey, channelRef: channel.channelRef},
         {
           body: {
-            bindingDisplayName: binding.bindingDisplayName ?? null,
-            externalOwnerId: binding.externalOwnerId ?? null,
             expectedVersion: binding.version,
           },
           headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()},

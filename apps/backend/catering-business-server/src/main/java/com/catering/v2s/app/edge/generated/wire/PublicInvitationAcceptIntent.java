@@ -2,5 +2,5 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record PublicInvitationAcceptIntent(
-    String nextStep
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "nextStep", required = true) String nextStep
 ) {}

@@ -2,12 +2,12 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record GroupWorkspacePageItemsItem(
-    String groupWorkspaceKey,
-    String name,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "groupWorkspaceKey", required = true) String groupWorkspaceKey,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "name", required = true) String name,
     String operationsTitle,
     java.util.UUID logoAssetRef,
     String logoUrl,
     GroupWorkspacePageItemsItemCommercialGroup commercialGroup,
-    GroupWorkspaceStatus status,
-    Long updatedAt
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) GroupWorkspaceStatus status,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "updatedAt", required = true) Long updatedAt
 ) {}

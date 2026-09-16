@@ -25,6 +25,10 @@ public-surface focused test，不得让 README 或 invariant 漂移。
 再修改本包的呈现；不得引入业务 feature import、持久化认证、第二个注册表或新的
 navigation/input owner。
 
+装配后的 laptop renderer 使用 list/button 导航与 master-detail 内容区，mobile renderer 使用可换行的
+tablist/tab；详情标题通过 polite live region 通知选择变化，关闭与返回继续由既有 AdminLayer/LayerStack
+focus scope 负责恢复，不新增第二套焦点或返回管线。
+
 登录口令使用 `@catering-v2s/ui-base-input` 的同一 `InputKeyboard` 公共呈现入口，并选择
 `keyboardPlacement: 'field'` 将键盘放在登录卡片内。其他业务 UI 如需独立 surface dock，使用
 `keyboardPlacement: 'surface'` 并让 `InputSurfaceFrame` 自动挂载同一个 presenter；两种方式的

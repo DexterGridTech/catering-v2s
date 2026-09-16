@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record ExtensionDefinitionUpdateRequest(
-    java.util.List<ExtensionDefinitionUpdateRequestDefinitionsItem> definitions,
-    Long expectedVersion
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "definitions", required = true) java.util.List<ExtensionDefinitionUpdateRequestDefinitionsItem> definitions,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion
 ) {}

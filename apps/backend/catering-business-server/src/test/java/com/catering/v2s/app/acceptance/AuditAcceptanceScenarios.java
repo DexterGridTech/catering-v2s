@@ -122,7 +122,9 @@ final class AuditAcceptanceScenarios {
             updateStoreBody.put("headCompanyId", null);
             updateStoreBody.put("notes", "operations-page-boundary-" + index);
             updateStoreBody.put("extensionValues", List.of());
+            updateStoreBody.put("extensionRuleRevision", 0);
             updateStoreBody.put("expectedVersion", storeVersion);
+            updateStoreBody.put("operatingRuleSwitches", acceptanceStoreOperatingRuleSwitches());
             BackendAcceptanceTest.Response updated = context.patch(
                     OPERATIONS_ORGANIZATION_STORE_UPDATE,
                     "/api/operations/group-workspaces/" + operationsFixture.groupWorkspaceKey()

@@ -12,6 +12,7 @@ import type {SurfaceRootProps} from '../types/props'
 export const SurfaceRoot = ({
   displayMode,
   containerKey,
+  defaultContainerPartKeys,
   children,
   renderContentFrame,
   canvas,
@@ -30,6 +31,7 @@ export const SurfaceRoot = ({
     () => Object.freeze({
       displayMode,
       containerKey,
+      defaultContainerPartKeys,
       surfaceForm,
       isHostPrimaryDisplay: surfaceHostSnapshot?.isHostPrimaryDisplay
         ?? (surfaceHostAvailability === 'unavailable' && surfaceIdentity?.displayIndex === 0),
@@ -37,7 +39,7 @@ export const SurfaceRoot = ({
       hostLogicalSize: surfaceHostSnapshot?.stableHostLogicalSize ?? null,
       surfaceHostAvailability,
     }),
-    [containerKey, displayMode, surfaceForm, surfaceHostAvailability, surfaceHostSnapshot?.isHostPrimaryDisplay, surfaceHostSnapshot?.stableHostLogicalSize, surfaceIdentity],
+    [containerKey, defaultContainerPartKeys, displayMode, surfaceForm, surfaceHostAvailability, surfaceHostSnapshot?.isHostPrimaryDisplay, surfaceHostSnapshot?.stableHostLogicalSize, surfaceIdentity],
   )
   const previousLayout = useRef<string | null>(null)
   const reportLayout = useCallback((event: LayoutChangeEvent) => {

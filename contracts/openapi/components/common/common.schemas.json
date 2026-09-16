@@ -98,12 +98,19 @@
         },
         "additionalProperties": false
       },
+      "AuditValueState": {
+        "type": "string",
+        "enum": [
+          "MISSING",
+          "NULL",
+          "CLEARED",
+          "VALUE"
+        ]
+      },
       "AuditChange": {
         "type": "object",
         "required": [
-          "fieldKey",
-          "beforeValue",
-          "afterValue"
+          "fieldKey"
         ],
         "properties": {
           "fieldKey": {
@@ -111,12 +118,27 @@
             "minLength": 1,
             "maxLength": 120
           },
+          "fieldLabelSnapshot": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 120
+          },
+          "beforeState": {
+            "$ref": "#/components/schemas/AuditValueState",
+            "description": "Present on new audit events; omitted on legacy events without state metadata."
+          },
           "beforeValue": {
             "type": "string",
+            "nullable": true,
             "maxLength": 2000
+          },
+          "afterState": {
+            "$ref": "#/components/schemas/AuditValueState",
+            "description": "Present on new audit events; omitted on legacy events without state metadata."
           },
           "afterValue": {
             "type": "string",
+            "nullable": true,
             "maxLength": 2000
           }
         },

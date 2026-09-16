@@ -8,6 +8,6 @@ public record WorkspaceInvitationPageCriteria(
     WorkspaceInvitationStatus status,
     Long expiresFrom,
     Long expiresTo,
-    WorkspaceInvitationSortKey sort,
-    SortDirection direction
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "sort", required = true) WorkspaceInvitationSortKey sort,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "direction", required = true) SortDirection direction
 ) {}

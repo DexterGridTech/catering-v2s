@@ -158,14 +158,18 @@ function problem(error: unknown): ApiProblem {
       : isCatalogInventoryProblemCode(value.errorCode)
         ? value.errorCode
         : 'PLATFORM_COMMON_RESULT_UNKNOWN';
-    const feedback = isOperationsProblemCode(errorCode)
-      ? operationsProblemFeedback(errorCode)
-      : isCatalogInventoryProblemCode(errorCode)
-        ? {
-            title: '商品与库存操作失败',
-            detail:
-              typeof value.detail === 'string' && value.detail ? value.detail : '请检查当前商品与库存资料后重试。',
-          }
+    const feedback = isCatalogInventoryProblemCode(errorCode)
+      ? {
+          title: errorCode === 'ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED' ? '功能尚未开启' : '商品与库存操作失败',
+          detail:
+            errorCode === 'ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED'
+              ? '功能尚未开启，需项目对门店授权'
+              : typeof value.detail === 'string' && value.detail
+                ? value.detail
+                : '请检查当前商品与库存资料后重试。',
+        }
+      : isOperationsProblemCode(errorCode)
+        ? operationsProblemFeedback(errorCode)
         : operationsProblemFeedback('PLATFORM_COMMON_RESULT_UNKNOWN');
     return {
       ...feedback,

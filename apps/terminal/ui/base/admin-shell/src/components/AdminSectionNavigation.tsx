@@ -11,7 +11,12 @@ export const AdminSectionNavigation = ({
   readonly selectedPartKey: string | null
   readonly onSelect: (partKey: string) => void
 }>) => (
-  <PrimitiveGrid testID="terminal.admin:navigation" accessibilityRole="tablist" accessibilityLabel="终端管理分区">
+  <PrimitiveGrid
+    testID="terminal.admin:navigation"
+    accessibilityRole="tablist"
+    accessibilityLabel="终端管理分区"
+    style={{flexWrap: 'wrap'}}
+  >
     {sections.map(section => (
       <PrimitivePressOption
         key={section.partKey}

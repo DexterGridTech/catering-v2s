@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "kind": "ter-sample-terminal-expo-run-debug",
+  "runId": "ter-sample-terminal-expo-run-debug-20260916",
+  "command": "npx expo run:android --device Small_Phone --no-install",
+  "variant": "debug",
+  "device": {
+    "selector": "Small_Phone",
+    "adbSerial": "emulator-5556",
+    "packageName": "com.anonymous.sampleterminal",
+    "activity": "com.anonymous.sampleterminal/.MainActivity"
+  },
+  "firstFailure": {
+    "command": "npx expo run:android --device emulator-5556 --no-install",
+    "signal": "CommandError: Could not find device with name: emulator-5556",
+    "boundary": "Expo CLI device-name resolution before build"
+  },
+  "lastKnownGood": "corrected Small_Phone selector built, launched, and emitted the native/JS startup sequence",
+  "brokenBoundary": null,
+  "business": "PASS",
+  "cleanup": "PASS",
+  "businessEvidence": {
+    "nativeSequence": [
+      "activity.onCreate phase=start",
+      "expo.prevent-auto-hide-set value=true",
+      "native.gate-installed",
+      "native.pre-draw-blocked",
+      "native.begin-hide reason=startup-ready",
+      "native.release-hide",
+      "native.pre-draw-released"
+    ],
+    "ui": "sample.auth.login is present in ui-after-ready.xml",
+    "blackFrameObservation": "No black frame in the sequential 50/100/200/400/800ms screenshots; the splash remains visible through the early samples and the business surface is visible after ready."
+  },
+  "cleanupEvidence": {
+    "targetPid": "ABSENT",
+    "metroPort8081": "ABSENT",
+    "activityReadback": "cleanup-activity.txt"
+  },
+  "artifacts": [
+    "logcat.txt",
+    "logcat-relevant.txt",
+    "logcat-final.txt",
+    "logcat-final-relevant.txt",
+    "screen-050ms.png",
+    "screen-100ms.png",
+    "screen-200ms.png",
+    "screen-400ms.png",
+    "screen-800ms.png",
+    "screen-after-ready.png",
+    "ui-after-ready.xml"
+  ]
+}

@@ -170,7 +170,7 @@
           {
             "from": null,
             "to": 8,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -296,7 +296,7 @@
           {
             "from": null,
             "to": 12,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -436,7 +436,7 @@
           {
             "from": null,
             "to": 20,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -603,7 +603,7 @@
           {
             "from": null,
             "to": 23,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -646,7 +646,8 @@
         "DUPLICATE_CODE",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
-        "ASSET_NOT_READY"
+        "ASSET_NOT_READY",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -694,6 +695,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -773,15 +781,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 13,
+        "max": 14,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
+            "to": 14,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -846,7 +854,8 @@
         "PRODUCTION_TAG_NOT_BINDABLE",
         "CATALOG_PREPARATION_DURATION_INVALID",
         "CATALOG_OPTION_PREPARATION_CHANGE_NOT_ALLOWED",
-        "CATALOG_PREPARATION_UNKNOWN_FIELD"
+        "CATALOG_PREPARATION_UNKNOWN_FIELD",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -907,6 +916,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -1117,15 +1133,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 44,
+        "max": 45,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 44,
-            "reason": "current managed acceptance program maximum"
+            "to": 45,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -1171,7 +1187,8 @@
         "RESULT_UNKNOWN",
         "VOIDED_RECORD_IMMUTABLE",
         "REFERENCE_BLOCKS_VOID",
-        "DEPENDENT_FACTS_BLOCK_VOID"
+        "DEPENDENT_FACTS_BLOCK_VOID",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -1219,6 +1236,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -1319,15 +1343,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 12,
+        "max": 13,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -1368,7 +1392,8 @@
         "DUPLICATE_CODE",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
-        "CATEGORY_DEPTH_EXCEEDED"
+        "CATEGORY_DEPTH_EXCEEDED",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -1409,6 +1434,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -1490,7 +1522,7 @@
           {
             "from": null,
             "to": 15,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -1531,7 +1563,8 @@
         "NOT_FOUND",
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -1572,6 +1605,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -1645,15 +1685,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 6,
+        "max": 7,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
+            "to": 7,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -1697,7 +1737,8 @@
         "RESULT_UNKNOWN",
         "HIERARCHY_CYCLE",
         "MOVE_BOUNDARY",
-        "CATEGORY_DEPTH_EXCEEDED"
+        "CATEGORY_DEPTH_EXCEEDED",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -1738,6 +1779,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -1832,15 +1880,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 6,
+        "max": 7,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
+            "to": 7,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -1966,7 +2014,7 @@
           {
             "from": null,
             "to": 9,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -2006,7 +2054,8 @@
         "SCOPE_FORBIDDEN",
         "DUPLICATE_CODE",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -2047,6 +2096,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -2113,15 +2169,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 12,
+        "max": 13,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -2163,7 +2219,8 @@
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
-        "VOIDED_RECORD_IMMUTABLE"
+        "VOIDED_RECORD_IMMUTABLE",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -2204,6 +2261,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -2284,15 +2348,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 13,
+        "max": 14,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 13,
-            "reason": "current managed acceptance program maximum"
+            "to": 14,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -2334,7 +2398,8 @@
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
-        "VOIDED_RECORD_IMMUTABLE"
+        "VOIDED_RECORD_IMMUTABLE",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -2375,6 +2440,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -2455,15 +2527,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 14,
+        "max": 15,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 14,
-            "reason": "current managed acceptance program maximum"
+            "to": 15,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -2507,7 +2579,8 @@
         "RESULT_UNKNOWN",
         "VOIDED_RECORD_IMMUTABLE",
         "REFERENCE_BLOCKS_VOID",
-        "DEPENDENT_FACTS_BLOCK_VOID"
+        "DEPENDENT_FACTS_BLOCK_VOID",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -2548,6 +2621,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -2642,15 +2722,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 15,
+        "max": 16,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 15,
-            "reason": "current managed acceptance program maximum"
+            "to": 16,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -2776,7 +2856,7 @@
           {
             "from": null,
             "to": 8,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -2818,7 +2898,8 @@
         "SCOPE_FORBIDDEN",
         "DUPLICATE_CODE",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -2866,6 +2947,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -2937,15 +3025,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 6,
+        "max": 7,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
+            "to": 7,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -2987,7 +3075,8 @@
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
-        "VOIDED_RECORD_IMMUTABLE"
+        "VOIDED_RECORD_IMMUTABLE",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -3028,6 +3117,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -3108,15 +3204,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 6,
+        "max": 7,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
+            "to": 7,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -3162,7 +3258,8 @@
         "RESULT_UNKNOWN",
         "VOIDED_RECORD_IMMUTABLE",
         "REFERENCE_BLOCKS_VOID",
-        "DEPENDENT_FACTS_BLOCK_VOID"
+        "DEPENDENT_FACTS_BLOCK_VOID",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -3210,6 +3307,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -3309,15 +3413,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 6,
+        "max": 7,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 6,
-            "reason": "current managed acceptance program maximum"
+            "to": 7,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -3454,7 +3558,7 @@
           {
             "from": null,
             "to": 9,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -3610,7 +3714,7 @@
           {
             "from": null,
             "to": 14,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -3652,7 +3756,8 @@
         "STALE_COPY_PREFLIGHT",
         "CONSUMPTION_UNIT_INCOMPATIBLE",
         "STRUCTURE_INCOMPATIBLE",
-        "REFERENCE_MAPPING_UNRESOLVED"
+        "REFERENCE_MAPPING_UNRESOLVED",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -3706,6 +3811,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -3806,15 +3918,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 31,
+        "max": 32,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 31,
-            "reason": "current managed acceptance program maximum"
+            "to": 32,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -3953,7 +4065,7 @@
           {
             "from": null,
             "to": 23,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -3996,7 +4108,8 @@
         "STALE_COPY_PREFLIGHT",
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -4037,6 +4150,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -4125,15 +4245,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 16,
+        "max": 17,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 16,
-            "reason": "current managed acceptance program maximum"
+            "to": 17,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -4271,7 +4391,7 @@
           {
             "from": null,
             "to": 13,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -4482,7 +4602,7 @@
           {
             "from": null,
             "to": 21,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -4530,7 +4650,8 @@
         "OWNER_REFERENCE_LEAK",
         "CATALOG_COPY_DEFINITION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -4598,6 +4719,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -4737,15 +4865,16 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 48,
+        "max": 49,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
-            "from": null,
-            "to": 48,
-            "reason": "current managed acceptance program maximum"
+            "from": 48,
+            "to": 49,
+            "reason": "Dexter 2026-08-26: brand-copy keeps its complete multi-owner closure; three current-tree CP-05 calibration runs measured a stable maximum of 49 after the Store operating-rule gate, with no safe consolidation that preserves all business facts.",
+            "decisionRef": "DEXTER-2026-08-26-BRAND_COPY_CLOSURE_BUDGET"
           }
         ]
       }
@@ -4882,7 +5011,7 @@
           {
             "from": null,
             "to": 13,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -5027,7 +5156,7 @@
           {
             "from": null,
             "to": 11,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -5150,7 +5279,7 @@
           {
             "from": null,
             "to": 9,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -5273,7 +5402,7 @@
           {
             "from": null,
             "to": 9,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -5410,7 +5539,7 @@
           {
             "from": null,
             "to": 17,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -5533,7 +5662,7 @@
           {
             "from": null,
             "to": 9,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -5665,7 +5794,7 @@
           {
             "from": null,
             "to": 7,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -5702,7 +5831,8 @@
         "NOT_FOUND",
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -5743,6 +5873,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -5816,15 +5953,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 12,
+        "max": 13,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -5861,7 +5998,8 @@
         "NOT_FOUND",
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -5902,6 +6040,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -5975,15 +6120,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 12,
+        "max": 13,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -6021,7 +6166,8 @@
         "VERSION_CONFLICT",
         "NEGATIVE_STOCK_NOT_ALLOWED",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -6062,6 +6208,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -6142,15 +6295,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 12,
+        "max": 13,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -6188,7 +6341,8 @@
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
-        "VOIDED_RECORD_IMMUTABLE"
+        "VOIDED_RECORD_IMMUTABLE",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -6229,6 +6383,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -6309,15 +6470,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 18,
+        "max": 19,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 18,
-            "reason": "current managed acceptance program maximum"
+            "to": 19,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -6357,7 +6518,8 @@
         "SCOPE_FORBIDDEN",
         "ASSET_PROCESSING_FAILED",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -6398,6 +6560,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -6464,15 +6633,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 18,
+        "max": 22,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 18,
-            "reason": "current managed acceptance program maximum"
+            "to": 22,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -6515,7 +6684,8 @@
         "NOT_FOUND",
         "ASSET_REFERENCE_PROTECTED",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -6563,6 +6733,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -6641,15 +6818,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 12,
+        "max": 13,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 12,
-            "reason": "current managed acceptance program maximum"
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -6776,7 +6953,7 @@
           {
             "from": null,
             "to": 7,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -6822,7 +6999,8 @@
         "RESULT_UNKNOWN",
         "VOIDED_RECORD_IMMUTABLE",
         "REFERENCE_BLOCKS_VOID",
-        "DEPENDENT_FACTS_BLOCK_VOID"
+        "DEPENDENT_FACTS_BLOCK_VOID",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -6870,6 +7048,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -7096,7 +7281,7 @@
           {
             "from": null,
             "to": 8,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -7138,7 +7323,8 @@
         "DUPLICATE_CODE",
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -7179,6 +7365,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -7243,15 +7436,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 11,
+        "max": 12,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 11,
-            "reason": "current managed acceptance program maximum"
+            "to": 12,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -7293,7 +7486,8 @@
         "DUPLICATE_CODE",
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -7334,6 +7528,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -7398,15 +7599,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 11,
+        "max": 12,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 11,
-            "reason": "current managed acceptance program maximum"
+            "to": 12,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -7523,7 +7724,7 @@
           {
             "from": null,
             "to": 10,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -7571,7 +7772,8 @@
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
-        "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL"
+        "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -7619,6 +7821,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -7690,15 +7899,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 17,
+        "max": 18,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 17,
-            "reason": "current managed acceptance program maximum"
+            "to": 18,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -7747,7 +7956,8 @@
         "VERSION_CONFLICT",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
-        "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL"
+        "INVENTORY_TARGET_REQUIRED_FOR_OPTION_MATERIAL",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -7795,6 +8005,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -7866,15 +8083,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 21,
+        "max": 22,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 21,
-            "reason": "current managed acceptance program maximum"
+            "to": 22,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -7991,7 +8208,7 @@
           {
             "from": null,
             "to": 9,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -8035,7 +8252,8 @@
         "CATALOG_UNIT_IN_USE",
         "CATALOG_UNIT_LIMIT_EXCEEDED",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -8076,6 +8294,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -8154,15 +8379,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 9,
+        "max": 10,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 9,
-            "reason": "current managed acceptance program maximum"
+            "to": 10,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -8211,7 +8436,8 @@
         "CATALOG_UNIT_IN_USE",
         "CATALOG_UNIT_LIMIT_EXCEEDED",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -8259,6 +8485,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -8337,15 +8570,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 15,
+        "max": 16,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 15,
-            "reason": "current managed acceptance program maximum"
+            "to": 16,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -8388,7 +8621,8 @@
         "VOIDED_RECORD_IMMUTABLE",
         "REFERENCE_BLOCKS_VOID",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -8430,168 +8664,12 @@
       ],
       "conditionToProblem": [
         {
-          "precedence": 1,
-          "problemCode": "VALIDATION_ERROR",
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
           "conditions": [
-            "Owner emits the declared typed VALIDATION_ERROR condition."
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
           ]
         },
-        {
-          "precedence": 2,
-          "problemCode": "SCOPE_FORBIDDEN",
-          "conditions": [
-            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
-          ]
-        },
-        {
-          "precedence": 3,
-          "problemCode": "NOT_FOUND",
-          "conditions": [
-            "Owner emits the declared typed NOT_FOUND condition."
-          ]
-        },
-        {
-          "precedence": 4,
-          "problemCode": "VERSION_CONFLICT",
-          "conditions": [
-            "Owner emits the declared typed VERSION_CONFLICT condition."
-          ]
-        },
-        {
-          "precedence": 5,
-          "problemCode": "VOIDED_RECORD_IMMUTABLE",
-          "conditions": [
-            "Owner emits the declared typed VOIDED_RECORD_IMMUTABLE condition."
-          ]
-        },
-        {
-          "precedence": 6,
-          "problemCode": "REFERENCE_BLOCKS_VOID",
-          "conditions": [
-            "Owner emits the declared typed REFERENCE_BLOCKS_VOID condition."
-          ]
-        },
-        {
-          "precedence": 7,
-          "problemCode": "IDEMPOTENCY_MISMATCH",
-          "conditions": [
-            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
-          ]
-        },
-        {
-          "precedence": 8,
-          "problemCode": "RESULT_UNKNOWN",
-          "conditions": [
-            "Owner emits the declared typed RESULT_UNKNOWN condition."
-          ]
-        }
-      ],
-      "normalPathDbOperations": {
-        "expectedCount": null,
-        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
-        "assumptions": [
-          "Includes request-scoped trusted-context work.",
-          "The list is scoped and bounded; mutation keeps owner authorization and readback."
-        ],
-        "verificationScenarioIds": [],
-        "breakdown": []
-      },
-      "scenarioIds": [],
-      "transaction": "REQUIRED",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "current managed acceptance program maximum"
-          }
-        ]
-      }
-    },
-    {
-      "ordinal": 61,
-      "operationId": "transitionOperationsCatalogOrderOptionDefinitionStatus",
-      "method": "POST",
-      "path": "/operations/catalog-inventory/order-option-definitions/{definitionRef}/status",
-      "consumerFaces": [
-        "operations-admin"
-      ],
-      "pageKeys": [
-        "PG-CATALOG-STORE-ITEMS",
-        "PG-CATALOG-BRAND-ITEMS"
-      ],
-      "capabilityKeys": [
-        "EDIT_HEAD_COMPANY_CATALOG",
-        "EDIT_STORE_CATALOG"
-      ],
-      "mutation": true,
-      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_STATUS",
-      "capabilityByDataNodeType": {
-        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
-        "STORE": "EDIT_STORE_CATALOG"
-      },
-      "allowedDataNodeTypes": [
-        "HEAD_COMPANY",
-        "STORE"
-      ],
-      "initiatingOwner": "catalog",
-      "coordinatedOwners": [],
-      "requestComponent": "CatalogOrderOptionDefinitionStatusTransitionRequest",
-      "responseComponent": "CatalogOrderOptionDefinitionReadback",
-      "problemCodes": [
-        "VALIDATION_ERROR",
-        "SCOPE_FORBIDDEN",
-        "NOT_FOUND",
-        "VERSION_CONFLICT",
-        "VOIDED_RECORD_IMMUTABLE",
-        "REFERENCE_BLOCKS_VOID",
-        "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
-      ],
-      "logicSteps": [
-        {
-          "order": 1,
-          "stepId": "VALIDATE_TRUSTED_INPUT",
-          "action": "Validate typed input, trusted context and scoped owner facts."
-        },
-        {
-          "order": 2,
-          "stepId": "LOAD_DECIDE_EXECUTE",
-          "action": "Recheck grant and change the catalog-owned aggregate."
-        },
-        {
-          "order": 3,
-          "stepId": "COMPLETE_READBACK",
-          "action": "Return the typed owner readback without per-item calls."
-        }
-      ],
-      "callChain": [
-        {
-          "order": 1,
-          "kind": "EDGE",
-          "target": "operations-edge",
-          "purpose": "typed mapping only"
-        },
-        {
-          "order": 2,
-          "kind": "SECURITY_CONTEXT",
-          "target": "workspace-iam trusted context",
-          "purpose": "request-scoped authorization facts"
-        },
-        {
-          "order": 3,
-          "kind": "INITIATING_OWNER",
-          "target": "catalog.api",
-          "owner": "catalog",
-          "purpose": "own decision and final readback"
-        }
-      ],
-      "conditionToProblem": [
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -8671,7 +8749,178 @@
           {
             "from": null,
             "to": 12,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
+          }
+        ]
+      }
+    },
+    {
+      "ordinal": 61,
+      "operationId": "transitionOperationsCatalogOrderOptionDefinitionStatus",
+      "method": "POST",
+      "path": "/operations/catalog-inventory/order-option-definitions/{definitionRef}/status",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "pageKeys": [
+        "PG-CATALOG-STORE-ITEMS",
+        "PG-CATALOG-BRAND-ITEMS"
+      ],
+      "capabilityKeys": [
+        "EDIT_HEAD_COMPANY_CATALOG",
+        "EDIT_STORE_CATALOG"
+      ],
+      "mutation": true,
+      "authorizationRequirementId": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_CATALOG_ORDER_OPTION_DEFINITION_STATUS",
+      "capabilityByDataNodeType": {
+        "HEAD_COMPANY": "EDIT_HEAD_COMPANY_CATALOG",
+        "STORE": "EDIT_STORE_CATALOG"
+      },
+      "allowedDataNodeTypes": [
+        "HEAD_COMPANY",
+        "STORE"
+      ],
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
+      "requestComponent": "CatalogOrderOptionDefinitionStatusTransitionRequest",
+      "responseComponent": "CatalogOrderOptionDefinitionReadback",
+      "problemCodes": [
+        "VALIDATION_ERROR",
+        "SCOPE_FORBIDDEN",
+        "NOT_FOUND",
+        "VERSION_CONFLICT",
+        "VOIDED_RECORD_IMMUTABLE",
+        "REFERENCE_BLOCKS_VOID",
+        "IDEMPOTENCY_MISMATCH",
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
+      ],
+      "logicSteps": [
+        {
+          "order": 1,
+          "stepId": "VALIDATE_TRUSTED_INPUT",
+          "action": "Validate typed input, trusted context and scoped owner facts."
+        },
+        {
+          "order": 2,
+          "stepId": "LOAD_DECIDE_EXECUTE",
+          "action": "Recheck grant and change the catalog-owned aggregate."
+        },
+        {
+          "order": 3,
+          "stepId": "COMPLETE_READBACK",
+          "action": "Return the typed owner readback without per-item calls."
+        }
+      ],
+      "callChain": [
+        {
+          "order": 1,
+          "kind": "EDGE",
+          "target": "operations-edge",
+          "purpose": "typed mapping only"
+        },
+        {
+          "order": 2,
+          "kind": "SECURITY_CONTEXT",
+          "target": "workspace-iam trusted context",
+          "purpose": "request-scoped authorization facts"
+        },
+        {
+          "order": 3,
+          "kind": "INITIATING_OWNER",
+          "target": "catalog.api",
+          "owner": "catalog",
+          "purpose": "own decision and final readback"
+        }
+      ],
+      "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
+        {
+          "precedence": 1,
+          "problemCode": "VALIDATION_ERROR",
+          "conditions": [
+            "Owner emits the declared typed VALIDATION_ERROR condition."
+          ]
+        },
+        {
+          "precedence": 2,
+          "problemCode": "SCOPE_FORBIDDEN",
+          "conditions": [
+            "Owner emits the declared typed SCOPE_FORBIDDEN condition."
+          ]
+        },
+        {
+          "precedence": 3,
+          "problemCode": "NOT_FOUND",
+          "conditions": [
+            "Owner emits the declared typed NOT_FOUND condition."
+          ]
+        },
+        {
+          "precedence": 4,
+          "problemCode": "VERSION_CONFLICT",
+          "conditions": [
+            "Owner emits the declared typed VERSION_CONFLICT condition."
+          ]
+        },
+        {
+          "precedence": 5,
+          "problemCode": "VOIDED_RECORD_IMMUTABLE",
+          "conditions": [
+            "Owner emits the declared typed VOIDED_RECORD_IMMUTABLE condition."
+          ]
+        },
+        {
+          "precedence": 6,
+          "problemCode": "REFERENCE_BLOCKS_VOID",
+          "conditions": [
+            "Owner emits the declared typed REFERENCE_BLOCKS_VOID condition."
+          ]
+        },
+        {
+          "precedence": 7,
+          "problemCode": "IDEMPOTENCY_MISMATCH",
+          "conditions": [
+            "Owner emits the declared typed IDEMPOTENCY_MISMATCH condition."
+          ]
+        },
+        {
+          "precedence": 8,
+          "problemCode": "RESULT_UNKNOWN",
+          "conditions": [
+            "Owner emits the declared typed RESULT_UNKNOWN condition."
+          ]
+        }
+      ],
+      "normalPathDbOperations": {
+        "expectedCount": null,
+        "countUnit": "REQUEST_COMPLETION_DATABASE_OPERATION_COUNT",
+        "assumptions": [
+          "Includes request-scoped trusted-context work.",
+          "The list is scoped and bounded; mutation keeps owner authorization and readback."
+        ],
+        "verificationScenarioIds": [],
+        "breakdown": []
+      },
+      "scenarioIds": [],
+      "transaction": "REQUIRED",
+      "databaseOperationBudget": {
+        "kind": "FIXED",
+        "max": 13,
+        "measurementScenarioIds": [
+          "performance.normal-path"
+        ],
+        "history": [
+          {
+            "from": null,
+            "to": 13,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -8720,7 +8969,8 @@
         "REFERENCE_BLOCKS_VOID",
         "IDEMPOTENCY_MISMATCH",
         "RESULT_UNKNOWN",
-        "CATALOG_UNIT_IN_USE"
+        "CATALOG_UNIT_IN_USE",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -8768,6 +9018,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -8846,15 +9103,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 14,
+        "max": 15,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 14,
-            "reason": "current managed acceptance program maximum"
+            "to": 15,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -8897,7 +9154,8 @@
         "VOIDED_RECORD_IMMUTABLE",
         "REFERENCE_BLOCKS_VOID",
         "IDEMPOTENCY_MISMATCH",
-        "RESULT_UNKNOWN"
+        "RESULT_UNKNOWN",
+        "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"
       ],
       "logicSteps": [
         {
@@ -8938,6 +9196,13 @@
         }
       ],
       "conditionToProblem": [
+        {
+          "precedence": 0,
+          "problemCode": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+          "conditions": [
+            "The resolved store has not enabled catalog, inventory and sales-menu management."
+          ]
+        },
         {
           "precedence": 1,
           "problemCode": "VALIDATION_ERROR",
@@ -9009,15 +9274,15 @@
       "transaction": "REQUIRED",
       "databaseOperationBudget": {
         "kind": "FIXED",
-        "max": 14,
+        "max": 15,
         "measurementScenarioIds": [
           "performance.normal-path"
         ],
         "history": [
           {
             "from": null,
-            "to": 14,
-            "reason": "current managed acceptance program maximum"
+            "to": 15,
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -9126,7 +9391,7 @@
           {
             "from": null,
             "to": 8,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -9243,7 +9508,7 @@
           {
             "from": null,
             "to": 8,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -9360,7 +9625,7 @@
           {
             "from": null,
             "to": 11,
-            "reason": "current managed acceptance program maximum"
+            "reason": "CP-05 maximum database operation count across three runs"
           }
         ]
       }
@@ -9401,6 +9666,7 @@
     "MOVE_BOUNDARY",
     "NEGATIVE_STOCK_NOT_ALLOWED",
     "NOT_FOUND",
+    "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
     "OWNER_REFERENCE_LEAK",
     "PRODUCTION_TAG_NOT_BINDABLE",
     "REFERENCE_BLOCKS_VOID",
@@ -9465,5 +9731,5 @@
       "digest": "04be8368bd8477c454654136a6510c0d8106f1e9902af70988a59237d944518c"
     }
   },
-  "contractDigest": "f06b010557489aa05a0b1294053e66583e3640a2f5b5863f5688c66e9bdfb685"
+  "contractDigest": "212f49a1cbc583739bb29398ce8663f0bdb3ad42f2cbb86e324f6417edcdc6e1"
 }

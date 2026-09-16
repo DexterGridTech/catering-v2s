@@ -24,16 +24,15 @@ import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
 import {
   createUiCatalog,
   createUiStateModule,
+  type ContainerKey,
+  type PartKey,
   type SurfaceForm,
   type UiCatalogEntry,
   type UiStateModule,
   type UiVariableDeclaration,
 } from '@catering-v2s/kernel-base-ui-state'
-import {useCallback, useRef, type ReactElement, type ReactNode} from 'react'
-import {
-  InputSurfaceFrame,
-  type InputDiagnostic,
-} from '@catering-v2s/ui-base-input'
+import {useRef, type ReactElement, type ReactNode} from 'react'
+import {InputSurfaceFrame} from '@catering-v2s/ui-base-input'
 import {AdminLauncher, adminShellAssembly} from '@catering-v2s/ui-base-admin-shell'
 import {
   bindSurfaceHostIdentity,
@@ -51,7 +50,12 @@ import {
   type SurfaceCanvasDeclaration,
   type SurfaceHostMeasurementSource,
 } from '@catering-v2s/ui-base-render'
-import {createStartupDiagnosticsWriter, type StartupDiagnosticsWriter} from './startupDiagnosticsWriter'
+import {
+  createStartupDiagnosticsWriter,
+  startupRequiredGroups,
+  type StartupDiagnosticsReadiness,
+  type StartupDiagnosticsWriter,
+} from './startupDiagnosticsWriter'
 
 export type ConsoleSurfaceCreationInput = Readonly<{
   readonly displayIndex: 0 | 1
@@ -69,6 +73,24 @@ type ConsoleDefinedPart = Readonly<{
   readonly rendererBinding: RendererBinding<any>
 }>
 
+const supportedSurfaceForms = ['laptop', 'mobile'] as const satisfies readonly SurfaceForm[]
+
+const requiredPlatformPortNames = [
+  'logger',
+  'persistKv',
+  'persistSecure',
+  'device',
+  'appControl',
+  'script',
+  'connector',
+  'hotUpdate',
+  'logUpload',
+  'topologyHost',
+] as const satisfies readonly (keyof PlatformPorts)[]
+
+const platformPortBindingsAreComplete = (platformPorts: PlatformPorts): boolean =>
+  requiredPlatformPortNames.every(port => platformPorts[port] !== undefined && platformPorts[port] !== null)
+
 const assertUniquePartKeys = (parts: readonly ConsoleDefinedPart[]): void => {
   const seen = new Set<string>()
   for (const part of parts) {
@@ -77,6 +99,58 @@ const assertUniquePartKeys = (parts: readonly ConsoleDefinedPart[]): void => {
     }
     seen.add(part.catalogEntry.partKey)
   }
+}
+
+const readDeclaredSurfaceForms = (part: ConsoleDefinedPart): ReadonlySet<SurfaceForm> => {
+  const declared = part.catalogEntry.surfaceForm
+  if (declared.length === 0) {
+    throw new Error(`[ui.base.console-assembly] empty surfaceForm: ${part.catalogEntry.partKey}`)
+  }
+  const forms = new Set<SurfaceForm>()
+  for (const form of declared) {
+    if (!supportedSurfaceForms.includes(form)) {
+      throw new Error(`[ui.base.console-assembly] invalid surfaceForm for ${part.catalogEntry.partKey}: ${form}`)
+    }
+    if (forms.has(form)) {
+      throw new Error(`[ui.base.console-assembly] duplicate surfaceForm for ${part.catalogEntry.partKey}: ${form}`)
+    }
+    forms.add(form)
+  }
+  return forms
+}
+
+const assertNoSurfaceFormOverlap = (
+  parts: readonly ConsoleDefinedPart[],
+): void => {
+  const grouped = new Map<string, ReadonlySet<SurfaceForm>[]>()
+  for (const part of parts) {
+    const partKey = part.catalogEntry.partKey
+    const forms = readDeclaredSurfaceForms(part)
+    const siblings = grouped.get(partKey) ?? []
+    for (const siblingForms of siblings) {
+      const overlap = supportedSurfaceForms.filter(form => forms.has(form) && siblingForms.has(form))
+      if (overlap.length > 0) {
+        throw new Error(
+          `[ui.base.console-assembly] overlapping surfaceForm for ${partKey}: ${overlap.join(', ')}`,
+        )
+      }
+    }
+    siblings.push(forms)
+    grouped.set(partKey, siblings)
+  }
+}
+
+export const selectPartsForSurfaceForm = (
+  parts: readonly ConsoleDefinedPart[],
+  surfaceForm: SurfaceForm,
+): readonly ConsoleDefinedPart[] => {
+  if (!supportedSurfaceForms.includes(surfaceForm)) {
+    throw new Error(`[ui.base.console-assembly] invalid requested surfaceForm: ${surfaceForm}`)
+  }
+  assertNoSurfaceFormOverlap(parts)
+  const selected = parts.filter(part => part.catalogEntry.surfaceForm.includes(surfaceForm))
+  assertUniquePartKeys(selected)
+  return Object.freeze(selected)
 }
 
 export type ConsoleAssembly = Readonly<{
@@ -98,9 +172,11 @@ export type ConsoleAssemblyInput<TReadyPayload extends StateJsonValue> = Readonl
   readonly persistenceKey?: string
   readonly surfaceForm: SurfaceForm
   readonly surfaceDeclarations: ConsoleSurfaceDeclarations
+  readonly defaultContainerPartKeys?: Readonly<Partial<Record<ContainerKey, PartKey>>>
   readonly environmentMode?: EnvironmentMode
   readonly packagingDebugMode?: boolean
   readonly startupDebugMode?: boolean
+  readonly showAdminPassword?: boolean
   readonly parts: readonly ConsoleDefinedPart[]
   readonly layerDismissals: Readonly<Record<string, RenderLayerDismissal>>
   readonly variables: readonly UiVariableDeclaration<StateJsonValue>[]
@@ -163,25 +239,6 @@ const ConsoleSurfaceInputFrame = ({
 }: ConsoleSurfaceInputFrameProps) => {
   const declaredRef = useRef(false)
   const declaredDiagnosticRef = useRef(false)
-  const reportInputDiagnostic = useCallback((diagnostic: InputDiagnostic) => {
-    if (!__DEV__) return
-    logger.info({
-      category: 'display-diagnostics',
-      event: diagnostic.event,
-      message: 'Input display-chain diagnostic',
-      data: {
-        ...diagnostic.data,
-        source: 'ui.base.console-assembly.ConsoleSurfaceInputFrame',
-        appName,
-        displayMode: surface.displayMode,
-        displayIndex: surface.displayIndex,
-        surfaceForm: surface.surfaceForm,
-        hostSourceAttached,
-        declaredWidth: declaredSize.width,
-        declaredHeight: declaredSize.height,
-      },
-    })
-  }, [appName, declaredSize.height, declaredSize.width, hostSourceAttached, logger, surface.displayIndex, surface.displayMode, surface.surfaceForm])
 
   if (!declaredRef.current) {
     declaredRef.current = true
@@ -210,7 +267,6 @@ const ConsoleSurfaceInputFrame = ({
 
   return (
     <InputSurfaceFrame
-      onDiagnostic={reportInputDiagnostic}
       onMeasuredFrame={frame => {
         onSurfaceMeasured()
         if (!__DEV__) return
@@ -253,13 +309,14 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
   const runtimeFacts = createRenderRuntimeFacts({
     environmentMode,
     debugMode: resolveDebugMode({packaging: input.packagingDebugMode, startup: input.startupDebugMode}),
+    showAdminPassword: input.showAdminPassword,
     deviceIdentity,
     platformPortCapabilities: describePlatformPortCapabilities(input.platformPorts),
   })
   const allParts = Object.freeze([...adminShellAssembly.parts, ...input.parts])
-  assertUniquePartKeys(allParts)
-  const uiCatalog = createUiCatalog(allParts.map(({catalogEntry}) => catalogEntry))
-  const rendererCatalog = createRendererCatalog(allParts.map(({rendererBinding}) => rendererBinding))
+  const selectedParts = selectPartsForSurfaceForm(allParts, input.surfaceForm)
+  const uiCatalog = createUiCatalog(selectedParts.map(({catalogEntry}) => catalogEntry))
+  const rendererCatalog = createRendererCatalog(selectedParts.map(({rendererBinding}) => rendererBinding))
   const uiStateModule = createUiStateModule({
     catalog: uiCatalog,
     variables: input.variables,
@@ -269,9 +326,38 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
     primaryDeclared: false,
     primaryMeasured: false,
     primaryRealReady: false,
+    primaryReadyPartKey: null as string | null,
+    primaryContentFailure: null as RenderSurfaceReadyInput['contentFailure'],
     parts: uiCatalog.entries.length > 0 && uiCatalog.entries.every(entry => rendererCatalog.resolve(entry.rendererKey) !== undefined),
   }
   let runtime: Runtime | undefined
+  const getStartupReadiness = (): StartupDiagnosticsReadiness => {
+    const descriptors = runtime?.status === 'started' ? runtime.descriptors : []
+    const runtimeStarted = descriptors.length > 0
+    const registrationGroupsComplete = runtimeStarted && descriptors.every(descriptor =>
+      Array.isArray(descriptor.stateSliceNames)
+      && Array.isArray(descriptor.commandNames)
+      && Array.isArray(descriptor.actorKeys),
+    )
+    return {
+      groups: {
+        modules: runtimeStarted,
+        slices: registrationGroupsComplete,
+        commands: registrationGroupsComplete,
+        actors: registrationGroupsComplete,
+        // Port descriptors are development-only diagnostics. Startup
+        // completeness must use the actual binding shape so DEV and release
+        // apply the same gate without keeping diagnostic metadata in release.
+        ports: platformPortBindingsAreComplete(input.platformPorts),
+        parts: startupReadiness.parts,
+      },
+      primaryDeclared: startupReadiness.primaryDeclared,
+      primaryMeasured: startupReadiness.primaryMeasured,
+      primaryRealReady: startupReadiness.primaryRealReady,
+      primaryReadyPartKey: startupReadiness.primaryReadyPartKey,
+      primaryContentFailure: startupReadiness.primaryContentFailure,
+    }
+  }
   const startupDiagnosticsWriter = createStartupDiagnosticsWriter({
     logger: input.platformPorts.logger,
     startupRunId: createRuntimeInstanceId(),
@@ -286,28 +372,7 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
       clientName: input.appName,
       owner: 'ui.base.console-assembly',
     },
-    getReadiness: () => {
-      const descriptors = runtime?.status === 'started' ? runtime.descriptors : []
-      const runtimeStarted = descriptors.length > 0
-      const registrationGroupsComplete = runtimeStarted && descriptors.every(descriptor =>
-        Array.isArray(descriptor.stateSliceNames)
-        && Array.isArray(descriptor.commandNames)
-        && Array.isArray(descriptor.actorKeys),
-      )
-      return {
-        groups: {
-          modules: runtimeStarted,
-          slices: registrationGroupsComplete,
-          commands: registrationGroupsComplete,
-          actors: registrationGroupsComplete,
-          ports: runtimeFacts.platformPortCapabilities.every(port => port.descriptorStatus === 'complete'),
-          parts: startupReadiness.parts,
-        },
-        primaryDeclared: startupReadiness.primaryDeclared,
-        primaryMeasured: startupReadiness.primaryMeasured,
-        primaryRealReady: startupReadiness.primaryRealReady,
-      }
-    },
+    getReadiness: getStartupReadiness,
   })
   const modules: readonly RuntimeModule[] = [
     createDisplayContextModule(),
@@ -332,6 +397,21 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
   const dispatchCommand = createDispatchCommand(runtime)
   let primaryReadyPromise: Promise<void> | null = null
   let primarySurfaceReady = false
+  let primarySurfaceMeasuredPromise: Promise<void> | null = null
+  let resolvePrimarySurfaceMeasured: (() => void) | null = null
+  const waitForPrimarySurfaceMeasured = (): Promise<void> => {
+    if (startupReadiness.primaryMeasured) return Promise.resolve()
+    primarySurfaceMeasuredPromise ??= new Promise(resolve => {
+      resolvePrimarySurfaceMeasured = resolve
+    })
+    return primarySurfaceMeasuredPromise
+  }
+  const markPrimarySurfaceMeasured = (): void => {
+    if (startupReadiness.primaryMeasured) return
+    startupReadiness.primaryMeasured = true
+    resolvePrimarySurfaceMeasured?.()
+    resolvePrimarySurfaceMeasured = null
+  }
   const onPrimarySurfaceReady: NonNullable<RenderProviderProps['onPrimarySurfaceReady']> = readyInput => {
     // ScreenReadyBoundary is intentionally local to the currently rendered
     // real part.  A login -> business navigation therefore mounts another
@@ -344,13 +424,29 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
       definition: input.startupReadyCommand,
       payload: input.createStartupReadyPayload(readyInput),
       requestId: createRequestId(),
-    }).then(result => {
+    }).then(async result => {
       if (result.status !== 'completed') {
         throw new Error(`[${input.errorPrefix}] startup-ready command ended with ${result.status}`)
       }
       startupReadiness.primaryRealReady = true
+      startupReadiness.primaryReadyPartKey = readyInput.readyPartKey
+      startupReadiness.primaryContentFailure = readyInput.contentFailure
+      // React Native Web may deliver the resolved screen's layout callback
+      // before the enclosing InputSurfaceFrame's layout callback. Keep the
+      // startup completion gate factual without turning that valid ordering
+      // into a false primary.measured failure.
+      await waitForPrimarySurfaceMeasured()
       if (!startupDiagnosticsWriter.writeComplete()) {
-        throw new Error(`[${input.errorPrefix}] startup completion prerequisites were not met`)
+        const readiness = getStartupReadiness()
+        const missing = [
+          ...startupRequiredGroups.filter(group => !readiness.groups[group]).map(group => `group.${group}`),
+          ...(readiness.primaryDeclared ? [] : ['primary.declared']),
+          ...(readiness.primaryMeasured ? [] : ['primary.measured']),
+          ...(readiness.primaryRealReady ? [] : ['primary.real-ready']),
+        ]
+        const error = new Error(`[${input.errorPrefix}] startup completion prerequisites were not met`)
+        error.name = `StartupCompletionPrerequisitesMissing:${missing.join('|') || 'unknown'}`
+        throw error
       }
       primarySurfaceReady = true
     }).catch(error => {
@@ -487,6 +583,7 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
         <SurfaceRoot
           displayMode={surface.displayMode}
           containerKey="main"
+          defaultContainerPartKeys={input.defaultContainerPartKeys}
           canvas={declaredSize}
           surfaceHostSource={getSurfaceHostSource(surface)}
           renderContentFrame={({content}) => (
@@ -500,7 +597,7 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
                 if (surface.displayIndex === 0) startupReadiness.primaryDeclared = true
               }}
               onSurfaceMeasured={() => {
-                if (surface.displayIndex === 0) startupReadiness.primaryMeasured = true
+                if (surface.displayIndex === 0) markPrimarySurfaceMeasured()
               }}
             >
               <AdminLauncher canvas={declaredSize}>{content}</AdminLauncher>

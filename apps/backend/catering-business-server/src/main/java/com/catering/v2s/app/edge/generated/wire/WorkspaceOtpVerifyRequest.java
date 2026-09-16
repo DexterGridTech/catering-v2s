@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceOtpVerifyRequest(
-    String mobile,
-    String code
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "mobile", required = true) String mobile,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "code", required = true) String code
 ) {}

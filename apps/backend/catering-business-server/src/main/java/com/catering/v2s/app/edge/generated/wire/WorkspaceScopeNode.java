@@ -2,11 +2,11 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record WorkspaceScopeNode(
-    String dataNodeType,
-    java.util.UUID dataNodeRef,
-    String dataNodeName,
-    String dataNodeCode,
-    java.util.List<String> ancestorPath,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "dataNodeType", required = true) String dataNodeType,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "dataNodeRef", required = true) java.util.UUID dataNodeRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "dataNodeName", required = true) String dataNodeName,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "dataNodeCode", required = true) String dataNodeCode,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "ancestorPath", required = true) java.util.List<String> ancestorPath,
     java.util.UUID regionRef,
     java.util.UUID projectRef,
     java.util.UUID storeRef,

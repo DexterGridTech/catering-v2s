@@ -2,6 +2,6 @@
 package com.catering.v2s.app.edge.generated.wire;
 
 public record OrganizationStorePage(
-    OrganizationStorePageMetadata metadata,
-    java.util.List<OrganizationStore> items
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "metadata", required = true) OrganizationStorePageMetadata metadata,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "items", required = true) java.util.List<OrganizationStore> items
 ) {}

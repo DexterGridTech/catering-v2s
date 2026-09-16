@@ -2,6 +2,7 @@ export {
   createClearLayersActor,
   createCloseLayerActor,
   createOpenLayerActor,
+  createPruneHydratedContainersActor,
   createPruneHydratedLayersActor,
   createShowScreenActor,
 } from './contentActors'
