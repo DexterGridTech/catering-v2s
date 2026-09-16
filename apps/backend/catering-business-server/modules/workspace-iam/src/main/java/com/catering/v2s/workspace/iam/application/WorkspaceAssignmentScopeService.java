@@ -27,5 +27,11 @@ public class WorkspaceAssignmentScopeService implements WorkspaceAssignmentScope
         return scope;
     }
 
-    public static final class AssignmentScopeNotFoundException extends RuntimeException {}
+    public static final class AssignmentScopeNotFoundException extends RuntimeException {
+        public AssignmentScopeNotFoundException() {}
+
+        public AssignmentScopeNotFoundException(Throwable cause) {
+            super(null, cause);
+        }
+    }
 }

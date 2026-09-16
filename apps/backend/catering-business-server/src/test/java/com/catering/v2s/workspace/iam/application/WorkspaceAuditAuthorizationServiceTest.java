@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.catering.v2s.workspace.iam.application.persistence.WorkspaceAuditAuthorizationPersistence;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import java.util.List;
@@ -116,9 +117,12 @@ class WorkspaceAuditAuthorizationServiceTest {
         when(jdbc.query(anyString(), any(RowMapper.class), any(Object[].class))).thenAnswer(invocation -> {
             String sql = invocation.getArgument(0, String.class);
             if (sql.contains("FROM workspace_iam.role_assignment assignment")) {
-                return List.of(new WorkspaceAuditAuthorizationService.Assignment(assignmentType, assignmentId));
+                return List.of(new WorkspaceAuditAuthorizationPersistence.Assignment(assignmentType, assignmentId));
             }
-            return subjectTargets;
+            return subjectTargets.stream()
+                    .map(target -> new WorkspaceAuditAuthorizationPersistence.SubjectTarget(
+                            target.targetType(), target.targetId()))
+                    .toList();
         });
         when(taskPaths.requireTaskPath(any(), anyString(), anyString(), any())).thenAnswer(invocation -> {
             String targetType = invocation.getArgument(2, String.class);

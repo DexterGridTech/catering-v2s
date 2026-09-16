@@ -258,6 +258,9 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                 .thenReturn(projectPath(projectId));
         when(fixture.entities.requireEntity("STORE", fixture.workspaceId, KEY, storeId))
                 .thenReturn(storeEntity(detail, fixture.workspaceId));
+        when(fixture.entities.requireStoreOperatingRuleSwitches(fixture.workspaceId, KEY, storeId))
+                .thenReturn(new StoreOperatingRuleReadback(
+                        storeId, StoreOperatingRuleCatalog.values(Map.of(), false)));
         when(fixture.contracts.derivedStoreStatus(fixture.workspaceId, KEY, storeId))
                 .thenReturn("OPERATING");
 
@@ -345,6 +348,7 @@ class OperationsStoreManagementControllerCandidateScopeTest {
         var extensionSubmission = new com.catering.v2s.extension.api.ExtensionSubmission(
                 List.of(new com.catering.v2s.extension.api.ExtensionSubmission.ExtensionFieldValue(
                         "remark", "\"test\"", com.catering.v2s.extension.api.ExtensionSubmission.Mode.SET)));
+        var operatingRuleSwitches = StoreOperatingRuleCatalog.values(Map.of(), false);
         var command = new OperationsStoreCommandApi.CreateStoreCommand(
                 fixture.workspaceId,
                 KEY,
@@ -358,7 +362,8 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                 extensionSubmission,
                 IDEMPOTENCY_KEY,
                 fixture.actor,
-                grant);
+                grant,
+                operatingRuleSwitches);
         when(fixture.entities.createStore(command))
                 .thenReturn(new OrganizationEntityReadback(
                         storeId,
@@ -475,7 +480,8 @@ class OperationsStoreManagementControllerCandidateScopeTest {
                                         com.catering.v2s.extension.api.ExtensionSubmission.Mode.SET))),
                         IDEMPOTENCY_KEY,
                         fixture.actor,
-                        grant));
+                        grant,
+                        operatingRuleSwitches));
         verify(fixture.entities).requireStoreOperatingRuleSwitches(fixture.workspaceId, KEY, storeId);
     }
 

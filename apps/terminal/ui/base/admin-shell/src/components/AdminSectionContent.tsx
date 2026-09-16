@@ -3,14 +3,12 @@ import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state'
 import {PrimitiveEmptyState} from '@catering-v2s/ui-base-primitives'
 import {adminTestIds} from '../foundations/adminTestIds'
 import {createAdminSectionCommandBoundary, type AdminSectionCommandBoundary} from '../foundations/adminSectionSelection'
-import type {AdminRenderStateRoot, AdminSectionComponent, AdminSectionRenderContext} from '../types/adminSection'
+import type {AdminSectionComponent} from '../types/adminSection'
 import type {RenderRuntimeFacts, SurfaceContextValue} from '@catering-v2s/ui-base-render'
 
 export type AdminSectionContentProps = Readonly<{
   readonly selectedSection: UiCatalogEntry | undefined
   readonly rendererCatalog: RendererCatalog
-  readonly stateRoot: AdminRenderStateRoot
-  readonly stateSource: AdminSectionRenderContext['stateSource']
   readonly runtimeFacts: RenderRuntimeFacts
   readonly surface: SurfaceContextValue
   readonly commandBoundary?: AdminSectionCommandBoundary
@@ -19,8 +17,6 @@ export type AdminSectionContentProps = Readonly<{
 export const AdminSectionContent = ({
   selectedSection,
   rendererCatalog,
-  stateRoot,
-  stateSource,
   runtimeFacts,
   surface,
   commandBoundary = createAdminSectionCommandBoundary(),
@@ -41,8 +37,6 @@ export const AdminSectionContent = ({
     <ActiveSection
       context={{
         catalogEntry: selectedSection,
-        stateRoot,
-        stateSource,
         runtimeFacts,
         surface,
         commandBoundary,

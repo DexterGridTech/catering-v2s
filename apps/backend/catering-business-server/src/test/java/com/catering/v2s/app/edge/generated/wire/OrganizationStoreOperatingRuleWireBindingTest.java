@@ -21,12 +21,13 @@ class OrganizationStoreOperatingRuleWireBindingTest {
     @Test
     void closedObjectRejectsUnknownMissingAndCoercedValues() {
         assertThrows(Exception.class, () -> JSON.readValue(validJson(false, true).replace(
-                "\"receivableEnabled\":false", "\"unknownRule\":false,\"receivableEnabled\":false"),
+                "\"receivableEnabled\": false", "\"unknownRule\": false,\"receivableEnabled\": false"),
                 OrganizationStoreOperatingRuleValues.class));
         assertThrows(Exception.class, () -> JSON.readValue(validJson(false, true).replace(
-                "\"receivableEnabled\":false,", ""), OrganizationStoreOperatingRuleValues.class));
+                "\"pickupCallEnabled\": false,\n  \"receivableEnabled\": false",
+                "\"pickupCallEnabled\": false"), OrganizationStoreOperatingRuleValues.class));
         assertThrows(Exception.class, () -> JSON.readValue(validJson(false, true).replace(
-                "\"catalogManagementEnabled\":false", "\"catalogManagementEnabled\":\"false\""),
+                "\"catalogManagementEnabled\": false", "\"catalogManagementEnabled\":\"false\""),
                 OrganizationStoreOperatingRuleValues.class));
     }
 

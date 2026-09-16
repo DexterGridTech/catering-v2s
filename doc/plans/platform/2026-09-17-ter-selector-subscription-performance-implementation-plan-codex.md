@@ -1,18 +1,22 @@
-# TER React UI selector 订阅性能优化 · 实施计划
+# TER React UI selector 订阅规范与订阅边界收紧 · 实施计划
 
 `SKILL_USED=cs-writing-plans@72190c88b2b5a67a96b91d66aa72b9161913e10e8769da3f28a226f4cc7b99d0`
 
 ```text
 PROGRAM_ID=V2S_W0_W4_EXECUTION
-REVIEW_TARGET=DESIGN
-IMPLEMENTATION_AUTHORITY=false
+REVIEW_TARGET=IMPLEMENTATION
+IMPLEMENTATION_AUTHORITY=true
+IMPLEMENTATION_STATUS=PREPARED_FOR_REVIEW
 DESIGN=doc/plans/platform/2026-09-17-ter-selector-subscription-performance-implementation-design-codex.md
 REQUIREMENTS=本轮 Dexter 直接任务与上述详设 §0/§4；无重复业务需求稿
-AUTHORIZED=本轮编写详设、实施计划、review handoff 与只读核验材料
-NOT_AUTHORIZED=implementation、typecheck/test/static 执行、Web、Metro、Android、DEV、设备、seed、UAT、部署、Git
+AUTHORIZED=按本详设与本计划实施源码、测试、依赖、规范、README并执行 §4/B4 列明的 typecheck/test/static；准备 implementation review handoff
+NOT_AUTHORIZED=Web、Metro、Android、DEV、设备、seed、UAT、部署、Git、性能测量与性能结论
+SCOPE_DECISION=方案二：本批是框架级 selector 调用规范与订阅边界收紧，不主张任何性能改善；render isolation 只作为行为契约结果
+DESIGN_REVIEW=GO(0M/0S/3N)，三条 Note 在本实施批顺手处置
+PATH_NOTE=文件名沿用创建时的路径以保持既有引用稳定；本批口径以当前标题与 SCOPE_DECISION 为准，不代表性能改善任务
 ```
 
-本计划是未来实施的有序步骤，不表示已经修改源码，也不表示任何验证档位已经 PASS。只有 Dexter 另行授权 implementation 后，才能执行 §4 以后的写入与命令。
+本计划是已授权 implementation 的有序步骤；在各步骤证据闭合前，不表示任何验证档位已经 PASS。它不承诺 FPS、CPU、内存、首帧、延迟或用户感知改善；F-1 等 render-count 用例只验证 selector-aware 订阅契约。最终 implementation/acceptance 结论仍由 Dexter 与 Claude review 决定。
 
 ## 1 · 执行前硬前置
 
@@ -52,7 +56,7 @@ NOT_AUTHORIZED=implementation、typecheck/test/static 执行、Web、Metro、And
 | 批次 | 主题 | 预计改动 | 进入条件 | 收口条件 |
 |---|---|---|---|---|
 | B0 | preflight 与分母冻结 | 只读 source/doc/test inventory | 详设/计划 review 通过、implementation 已授权 | 分母、anchor、直接依赖可执行；无 scope drift |
-| B1 | selector framework core | `useUiStateSelector`、`useRenderStatus`、`useUiCatalogContext`、safe/public 与 private context seam、snapshot internal seam、runtime/type direct dependencies、core focused tests | B0 | selector-aware render-count proof、status/identity/unsubscribe/equality-too-broad proof、public context type closure、typecheck |
+| B1 | selector framework core | `useUiStateSelector`、`useRenderStatus`、`useUiCatalogContext`、safe/public 与 private context seam、snapshot internal seam、runtime/type direct dependencies、core focused tests | B0 | selector-aware subscription-contract proof、status/identity/unsubscribe/equality-too-broad proof、public context type closure、typecheck |
 | B2 | production consumer migration | render 五个宿主、`useUiVariable`、admin shell/section contract 与 consumers、focused regressions | B1 且 B1 三维对账 MATCHED | direct full snapshot production caller=0；行为 focused proof 通过 |
 | B3 | framework standard/enforcement | TR-15、render invariant、静态 checker/self-test、README、active stale-contract cleanup | B2 且 B2 三维对账 MATCHED | public/dependency/static closure 与规范示例回源码 MATCHED |
 | B4 | verification and delivery closure | 全批三维对账、逐代码与详设对账、四包 typecheck/owned tests、terminal static、review handoff | B3 且全批三维对账 MATCHED | 所有计划项 `MATCHED`；未授权档位仍 OPEN/N-A；交 Dexter/Claude review |
@@ -65,7 +69,7 @@ B1～B3 是本批原子实现，不允许以“只新增 hook”“只迁移一�
 
 | 文件/符号 | 写入内容 | 详设对照 |
 |---|---|---|
-| `apps/terminal/ui/base/render/package.json` | 以当前 lock 可解析版本增加 `use-sync-external-store` 直接 dependency，并增加 `@types/use-sync-external-store` direct devDependency；两者版本以 B0 当前解析为准 | 详设 §1、§5.1、§9a |
+| `apps/terminal/ui/base/render/package.json`、`apps/terminal/package.json` | render 增加 `use-sync-external-store` 直接 dependency 与 `@types/use-sync-external-store` direct devDependency；terminal workspace 固定同一 runtime dependency 与 React 19.2.3 peer resolution，避免测试/运行边界加载另一份 React；这是 render 的第一个第三方运行依赖，版本以 B0 当前解析为准，dependency whitelist 精确重算 | 详设 §1、§5.1、§9a |
 | `apps/terminal/ui/base/render/src/hooks/useUiStateSelector.ts` | 使用 `useSyncExternalStoreWithSelector`；root unavailable、默认 `Object.is`、selector identity 语义 | 详设 §4.1、§5.1 |
 | `apps/terminal/ui/base/render/src/hooks/useRenderStatus.ts` | status-only subscription | 详设 §5.2 |
 | `apps/terminal/ui/base/render/src/hooks/useUiCatalogContext.ts`（实际路径以 preflight 为准） | catalog context 的 typed selector 与窄 equality | 详设 §5.3 |
@@ -92,7 +96,7 @@ B1 不修改业务 selector owner、slice、Runtime public API、SurfaceRoot 的
 | `apps/terminal/ui/base/admin-shell/src/types/adminSection.ts` | 删除 raw state 字段，保留其余 section context contract | 详设 §6、§8 |
 | `apps/terminal/ui/base/admin-shell/src/components/sections/DisplayContextSection.tsx` | 直接使用 owner selectors + `useUiStateSelector` | 详设 §6 |
 | `apps/terminal/ui/base/admin-shell/src/components/sections/RuntimeSection.tsx` | 使用 `useRenderStatus` | 详设 §6 |
-| render/admin existing tests | 补行为与 render isolation proof；不改 testID/业务断言意图 | 详设 §7.1、§11 |
+| render/admin existing tests | 补行为与 selector-contract proof；不改 testID/业务断言意图 | 详设 §7.1、§11 |
 
 其余已有 `useUiStateSelector` callers 逐个 source-readback 后保持或仅在测试需要时调整；不能因为它们不在 direct snapshot 分母就跳过核对。
 
@@ -103,10 +107,11 @@ B1 不修改业务 selector owner、slice、Runtime public API、SurfaceRoot 的
 | `doc/platform/terminal-coding-standard.md` | 新增 TR-15：入口、纯度、identity、输出形态、Reselect 边界、窄例外、反例 | 详设 §4 |
 | `tools/terminal-ui-render/check-static.mjs` | 既有 checker 增加 selector boundary/public/dependency 机械规则 | 详设 §7.2 |
 | `tools/terminal-ui-render/check-static.test.mjs` 或现有 self-test 文件 | 每条新增机械规则 baseline+真实 red mutation+cleanup | 详设 §7.2 |
+| `tools/terminal-ui-render/check-behavior.mjs` | 复用既有 behavior harness；修当前源码 mutation anchors、sandbox `use-sync-external-store` 链接并执行 selector-specific vectors | 详设 §7.1、§9a |
 | `apps/terminal/ui/base/render/README.md` | 更新 selector-aware 调用、status、例外、Reselect 说明 | 详设 §9a、§14 |
 | 命中 `useRenderSnapshot` 的 active docs | 仅同步仍被当作当前契约的文字；历史记录不重写 | 详设 §9a |
 
-B3 不建新 AST checker、不把 selector 语义变成字符串 grep、不把历史 plan 改写成伪造实施记录。
+B3 不建新 AST checker、不把 selector 语义变成字符串 grep、不把历史 plan 改写成伪造实施记录。新增规则必须同步 `RENDER_STATIC_RULE_NAMES`、其派生的 `RENDER_STATIC_RULE_GATES` 与现有 self-test 规则清单；dependency whitelist 必须精确重算，不是追加式放行。
 
 ## 4 · 逐步执行步骤
 
@@ -124,9 +129,9 @@ B3 不建新 AST checker、不把 selector 语义变成字符串 grep、不把�
 
 1. 在写每个文件前，重新读取对应符号及详设 §5.1–§5.4；先写 `useUiStateSelector` 的 selector-aware 接缝，再写 status/context adapter。
 2. 使用官方 `useSyncExternalStoreWithSelector`，selector 只接收 snapshot 中的 root；root unavailable 返回 `undefined`，不调用业务 selector。
-3. 对 `useUiCatalogContext` 只比较真实 context 字段；不把 `createCatalogContext` 变成第二 state owner，不在 hook 中写业务默认值。
+3. 对 `useUiCatalogContext` 只比较真实 context 字段；不把 `createCatalogContext` 变成第二 state owner，不在 hook 中写业务默认值；候选对象与 equality 必须是常数时间的字段浅比较，不在通知路径做深遍历、IO 或业务计算。
 4. 更新 public index/invariant/package direct dependency；删除旧 public hook，不保留兼容 alias。
-5. 在 focused tests 中先保留 existing controls，再加入 F-1～F-6。每个新增 case 必须有可观测 render count/value/reference，不得只看 selector call count。
+5. 在 focused tests 中先保留 existing controls，再加入 F-1～F-6。每个新增 case 必须有可观测 render count/value/reference，不得只看 selector call count；F-4 还必须证明业务 selector 返回 `undefined` 时，消费者不能单凭该值推断 runtime unavailable，而要结合 `useRenderStatus`。
 6. B1 focused proof 中执行真实 production red mutations：
    - 把 hook 改回完整 snapshot subscription：无关新 root 且选择结果相等的 render-count case 必须红；
    - 删除 equality 或把 equality 固定为总 false：稳定 derived output case 必须红；
@@ -159,10 +164,10 @@ B3 不建新 AST checker、不把 selector 语义变成字符串 grep、不把�
    - public exports/invariant exact 对账；
    - runtime direct dependency exact 对账；
    - `useRenderSnapshot` import/export forbidden boundary；
-   - public `RenderContextValue` 不再暴露 `stateSource`/`snapshotReader`；外部 `useRenderContext().stateSource` 变异必须由类型或静态 fixture 捕获；
+   - public `RenderContextValue` 不再暴露 `stateSource`/`snapshotReader`；外部 `useRenderContext().stateSource` 变异必须由类型或静态 fixture 捕获；`ui/base/console-assembly` 向 `RenderProvider` 注入 source 属基础设施例外，不得误报为业务 pass-through；
    - 对全 `apps/terminal/ui/**/src/**/*.{ts,tsx}` 做 production source exact-set scan，allowlist 仅为 render framework internal；若现有 checker 无法稳定实现该跨包门，则保留 exact-set scan + typecheck/review，不得声称机械全包覆盖；
    - 能可靠机械判定的 admin raw pass-through 才建门，否则不建门并在设计/计划标为 focused/review。
-3. 每新增一条门都写 baseline control、真实 mutation、预期 failure、cleanup；不能以“文件里没有字符串”作行为 oracle。
+3. 每新增一条门都写 baseline control、真实 mutation、预期 failure、cleanup；不能以“文件里没有字符串”作行为 oracle。同步记录 `RENDER_STATIC_RULE_NAMES`、`RENDER_STATIC_RULE_GATES` 与 self-test 规则清单的变更。
 4. public context 的 red fixture 在一个非 framework 的 production UI source 中尝试读取 `useRenderContext().stateSource`；该 fixture 必须因 public type 收窄而失败。若只用静态 scan 捕获，也必须记录 allowlist 与全量成员清单。
 5. 更新 render README 的代码示例，明确 `useUiStateSelector`、`useRenderStatus`、参数化 selector 和 Reselect 边界；示例回源码核验。
 6. 对旧 docs 做 `rg` audit：历史 plan 只记录为 historical；仍宣称 `useRenderSnapshot` 是现行业务 API 的 active 文档才同步。
@@ -174,7 +179,7 @@ B3 不建新 AST checker、不把 selector 语义变成字符串 grep、不把�
 B4 执行顺序固定如下：
 
 1. B1–B3 全部完成后，任何整体测试之前，由 fresh 独立子 agent按详设 §13b 做全批三维对账；它不是前面步骤报告的汇总。结果逐项只写 `MATCHED`/`OPEN`。
-2. 全批三维对账全 `MATCHED` 后，主 agent做 §9.3 的逐代码与详设对账，逐个 symbol/path/contract 对照，不抽样；结果只允许 `MATCHED`/`OPEN`。
+2. 全批三维对账全 `MATCHED` 后，主 agent做计划 §7（并引用详设 §13c）的逐代码与详设对账，逐个 symbol/path/contract 对照，不抽样；结果只允许 `MATCHED`/`OPEN`。
 3. 只有前两项没有 `OPEN` 才运行以下现有命令（实现授权下）：
 
    ```bash
@@ -184,13 +189,13 @@ B4 执行顺序固定如下：
    yarn workspace @catering-v2s/ui-base-admin-shell test
    yarn workspace @catering-v2s/ui-base-console-assembly typecheck
    yarn workspace @catering-v2s/ui-base-console-assembly test
-   yarn workspace @catering-v2s/terminal verify:static
+   yarn --cwd apps/terminal verify:static
    ```
 
    `ui-base-console-assembly` 只作为跨层 typecheck/回归闭包；若它没有被源码分母影响，仍按计划执行并记录真实结果。
 4. 每条命令保留原始输出路径；失败时记录 first failure、last known good、broken boundary，按 owning source 修复后只做必要的 focused 重验。禁止延长 timeout、盲目重跑或把退出码当业务 oracle。
 5. 运行完 static/focused 后再做一次 direct caller、public export、dependency、TR-15 示例和旧契约 audit；若实现中出现未列出的生产文件，交付项为 `OPEN`。
-6. 生成 `REVIEW_TARGET=IMPLEMENTATION` 交接前不得宣称 implementation/acceptance PASS；本轮用户授权目前只到设计 review，后续需 Dexter 明确 implementation authority。
+6. 生成 `REVIEW_TARGET=IMPLEMENTATION` 交接前不得宣称 implementation/acceptance PASS；本轮已获 implementation authority，但最终 GO/NO-GO 与 M/S/N 仍交 Dexter/Claude review。
 
 ## 5 · 失败与证据处理
 
@@ -199,8 +204,8 @@ B4 执行顺序固定如下：
 | typecheck 失败 | 保留首败原文；定位 owning source；修复后按受影响包 focused 重验 | 不靠增 timeout、加 any、恢复兼容出口 |
 | owned test 失败 | 记录失败用例与 broken boundary；先确认是 hook 语义还是既有行为漂移 | 不只改测试断言让它变绿 |
 | static 失败 | 保留 mutation/control 输出；修 checker 或 source 的真实根因 | 不删除 gate 或改成只检查字符串 |
-| selector render count 不符 | 先确认 snapshot/root/equality/selector identity；再修最小边界 | 不复制 store、加 Provider 或写业务缓存 |
-| evidence 缺失 | 标为 `OPEN`/`NOT_RUN`，说明所需授权/执行体 | 不以 typecheck、退出码或测试名升格 dynamic/performance |
+| selector subscription contract 不符 | 先确认 snapshot/root/equality/selector identity；再修最小边界 | 不复制 store、加 Provider 或写业务缓存 |
+| evidence 缺失 | 标为 `OPEN`/`NOT_RUN`，说明所需授权/执行体 | 不以 typecheck、退出码或测试名升格动态或真实性能结论 |
 | cleanup 失败 | 分开记录 business 与 cleanup，按 runner owner 修复 | 不把 business green 当 cleanup green |
 
 本批没有动态长运行；若测试 runner 使用临时 sandbox，cleanup 必须由其现有 runner 输出并单列，不能用进程名/端口猜测资源归属。
@@ -240,8 +245,8 @@ EVIDENCE=<focused/static/readback 输出相对路径，或 OPEN 原因>
 
 | 设计章节 | 计划落点 | 交付前状态 |
 |---|---|---|
-| §0 问题与非目标 | B0 分母/范围、B1–B3 禁止项 | MATCHED/OPEN |
-| §1 方案 C 与依赖边界 | B1 package direct dependency | MATCHED/OPEN |
+| §0 现状、规范目标与非目标 | B0 分母/范围、B1–B3 禁止项 | MATCHED/OPEN |
+| §1 方案 C 与方案二范围/依赖边界 | B1 package direct dependency | MATCHED/OPEN |
 | §2 CP 原子顺序 | B1→B2→B3→B4 | MATCHED/OPEN |
 | §3 横切机制 | 每批对应 source/test/static | MATCHED/OPEN |
 | §4 TR-15 | B3 terminal standard + README | MATCHED/OPEN |
@@ -253,7 +258,7 @@ EVIDENCE=<focused/static/readback 输出相对路径，或 OPEN 原因>
 | §9a/§9b exact changes/anchors | B4 line-by-line readback | MATCHED/OPEN |
 | §10 migration/seed | no data/seed changes | MATCHED/OPEN |
 | §11 evidence | B4 tier table; no dynamic overclaim | MATCHED/OPEN |
-| §12 out-of-scope | no list virtualization/other perf work | MATCHED/OPEN |
+| §12 out-of-scope | no list virtualization/other render work or performance research | MATCHED/OPEN |
 | §13 stop/reconciliation | every CP + whole batch fresh review | MATCHED/OPEN |
 
 ## 9 · 交付闸门
@@ -267,11 +272,11 @@ EVIDENCE=<focused/static/readback 输出相对路径，或 OPEN 原因>
 - B1/B2/B3 所列 focused/static proof 与真实 red mutations 有输出；
 - 四包 typecheck、两个 owned test 和 terminal static 的实际结果已分档；
 - `useRenderSnapshot` production caller=0，public invariant、direct dependency、TR-15 和 README 同步；
-- native/Android/Web/release/visual/dynamic performance 若未授权或未执行，明确 `N/A`/`OPEN`，不得宣称 PASS；
+- native/Android/Web/release/visual 或真实性能研究若未授权或未执行，明确 `N/A`/`OPEN`，不得宣称 PASS；
 - `scripts/check/claude-review-handoff --file <repo-relative-request>` 通过；
 - 交接文案直接包含背景、目标、阅读路径、独立核验重点、GO/NO-GO 与 M/S/N 格式、授权边界。
 
-在本轮仅有设计授权的状态下，以上 implementation 闸门均为未来计划，不得现在执行或宣称完成。
+以上 implementation 闸门按当前已获授权执行；在真实证据闭合前不得宣称 implementation/acceptance PASS。
 
 ## 10 · 计划自查
 
@@ -281,5 +286,19 @@ EVIDENCE=<focused/static/readback 输出相对路径，或 OPEN 原因>
 - [x] 为每个新增机械门列出真实 production red mutation，并明确不可机械证明的部分交 focused/review。
 - [x] 明确五个 direct snapshot production consumer、两个共享 hook和 admin raw pass-through 的迁移分母。
 - [x] 逐代码与详设对账单独列出，且不与三维对账互替。
-- [x] 明确没有 implementation authority、没有动态验证授权；所有未执行档位必须 OPEN/N-A。
-- [ ] B0–B4 实施证据：待 implementation authority 与后续执行。
+- [x] 明确已获 implementation authority，但没有 Web/Metro/Android/DEV/设备/seed/UAT/部署或性能验证授权；所有未执行档位必须 OPEN/N-A。
+- [x] B0–B4 实施证据：`doc/evidence/platform/2026-09-17-ter-selector-subscription-implementation-codex.md`；逐代码与详设对账、fresh 三维对账及七条命令结果均已记录。
+
+## 11 · Claude 复评处置（已复评；实施结果）
+
+`POST_CLAUDE_REVIEW_STATUS=GO(0M/0S/3N)`。本节与详设 §15 对齐，记录 Dexter 选择方案二及本轮 3S/3N 处置；不改写历史复评，也不构成 implementation/acceptance GO。实现状态为 `PREPARED_FOR_REVIEW`，最终结论交 Dexter 与 Claude review。
+
+| finding | 处置 | 计划落点 | 当前状态 |
+|---|---|---|---|
+| M-1 | `DEXTER_DECISION=方案二`；将交付目标改为框架规范/订阅边界，不写性能改善、基线或性能阈值承诺 | 计划标题、元数据、总览、B4、§8、§9、自查 | 真修复；实现证据与 handoff 保持同一边界 |
+| S-1 | 将通知量不变、selector 执行成本可能增加、catalog equality 必须常数时间浅比较写入设计/计划 | 详设 §5.3；本计划 B1、B3、§5/§6 | 真修复；`b1-red-mutations.log` 与 focused tests 已执行 |
+| S-2 | 将 `ui/base/console-assembly` 的 source 注入列为基础设施例外，禁止业务组件继续接收 source | 本计划 B3、详设 TR-15 | 真修复；static/public-context/admin pass-through red proof 已执行 |
+| S-3 | 把 `undefined` 定义为无生命周期语义的返回值，要求需要区分时同时读取 status，并把 F-4 作为执行体 | 本计划 B1 第 5 步、§6；详设 §5.1/§7.1/§11 | 真修复；status/undefined focused proof 已执行 |
+| N-1 | 点名 `RENDER_STATIC_RULE_NAMES`、`RENDER_STATIC_RULE_GATES` 与 self-test 清单同步 | B3 第 2/3 步、详设 §7.2/§9a | 真修复；`b3-static-model.log` 与 `b3-static-production.log` 已执行 |
+| N-2 | 修正方案 D 的否决理由，仅保留 selector 记忆化/equality 边界维护成本，不再夸大并发边界风险 | 详设 §1；本计划 §8 | 真修复；实现与交付材料不产生性能结论 |
+| N-3 | 明确 render 首个第三方运行依赖及 dependency whitelist 精确重算 | B1 §3.1、B3 第 2 步、详设 §9a | 真修复；B0 依赖清单、package boundary 与七条命令均已核对 |

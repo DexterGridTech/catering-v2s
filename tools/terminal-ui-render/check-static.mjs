@@ -9,16 +9,21 @@ import {assertExactList, readPackageInvariant} from '../terminal-shared/package-
 const toolDirectory = path.dirname(fileURLToPath(import.meta.url))
 export const repoRoot = path.resolve(toolDirectory, '../..')
 export const renderRoot = path.join(repoRoot, 'apps/terminal/ui/base/render')
+export const productionAdminShellRoot = path.join(repoRoot, 'apps/terminal/ui/base/admin-shell')
 
 export const RENDER_STATIC_RULE_NAMES = Object.freeze([
   'render-public-surface',
   'render-package-boundary',
+  'render-selector-boundary',
+  'render-public-context-boundary',
+  'render-admin-state-pass-through',
   'render-source-forbidden-apis',
   'render-source-forbidden-keys',
   'render-hooks-unconditional',
   'render-surface-props-required',
   'render-test-wiring',
 ])
+export const RENDER_STATIC_RULE_GATES = RENDER_STATIC_RULE_NAMES.length
 export const RENDER_STATIC_SUPPORT_CHECK_COUNT = 1
 
 const INFRASTRUCTURE_EXPORTS = Object.freeze([
@@ -121,6 +126,14 @@ function readPackageJson(root) {
   return JSON.parse(fs.readFileSync(packagePath, 'utf8'))
 }
 
+function resolveAdminShellRoot(renderPackageRoot) {
+  const fixtureAdminShellRoot = path.join(renderPackageRoot, 'admin-shell')
+  if (fs.existsSync(fixtureAdminShellRoot)) return fixtureAdminShellRoot
+  const siblingAdminShellRoot = path.resolve(renderPackageRoot, '../admin-shell')
+  if (fs.existsSync(siblingAdminShellRoot)) return siblingAdminShellRoot
+  return productionAdminShellRoot
+}
+
 function runPackageBoundary({root}) {
   const packageJson = readPackageJson(root)
   const dependencies = packageJson.dependencies ?? {}
@@ -139,6 +152,12 @@ function runPackageBoundary({root}) {
   if (allDependencyNames.includes('react-redux')) {
     throw new Error('react-redux must not be a render package dependency')
   }
+  if (dependencies['use-sync-external-store'] !== '^1.6.0') {
+    throw new Error('use-sync-external-store must be a direct ^1.6.0 runtime dependency')
+  }
+  if (packageJson.devDependencies?.['@types/use-sync-external-store'] !== '^0.0.6') {
+    throw new Error('@types/use-sync-external-store must be a direct ^0.0.6 devDependency')
+  }
   assertExactList(
     'render runtime dependencies',
     Object.keys(dependencies),
@@ -150,8 +169,96 @@ function runPackageBoundary({root}) {
       '@catering-v2s/kernel-base-state',
       '@catering-v2s/kernel-base-ui-state',
       '@catering-v2s/ui-base-primitives',
+      'use-sync-external-store',
     ],
   )
+}
+
+function runSelectorBoundary({root}) {
+  for (const filePath of sourceFiles(root)) {
+    const sourceFile = parseSource(filePath)
+    let failure
+    const visit = node => {
+      if (failure !== undefined) return
+      if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+        if (node.moduleSpecifier.text.includes('useRenderSnapshot')) {
+          failure = `useRenderSnapshot import is forbidden in ${path.relative(root, filePath)}`
+          return
+        }
+        if (node.importClause?.namedBindings !== undefined && ts.isNamedImports(node.importClause.namedBindings)) {
+          if (node.importClause.namedBindings.elements.some(element => (element.propertyName?.text ?? element.name.text) === 'useRenderSnapshot')) {
+            failure = `useRenderSnapshot import is forbidden in ${path.relative(root, filePath)}`
+            return
+          }
+        }
+      }
+      if (ts.isExportDeclaration(node) && node.moduleSpecifier !== undefined && ts.isStringLiteral(node.moduleSpecifier)) {
+        if (node.moduleSpecifier.text.includes('useRenderSnapshot')) {
+          failure = `useRenderSnapshot export is forbidden in ${path.relative(root, filePath)}`
+          return
+        }
+        if (node.exportClause !== undefined && ts.isNamedExports(node.exportClause)) {
+          if (node.exportClause.elements.some(element => (element.propertyName?.text ?? element.name.text) === 'useRenderSnapshot')) {
+            failure = `useRenderSnapshot export is forbidden in ${path.relative(root, filePath)}`
+            return
+          }
+        }
+      }
+      if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword
+        && node.arguments[0] !== undefined && ts.isStringLiteral(node.arguments[0])
+        && node.arguments[0].text.includes('useRenderSnapshot')) {
+        failure = `useRenderSnapshot dynamic import is forbidden in ${path.relative(root, filePath)}`
+        return
+      }
+      if (ts.isIdentifier(node) && node.text === 'useRenderSnapshot') {
+        failure = `useRenderSnapshot identifier is forbidden in ${path.relative(root, filePath)}`
+        return
+      }
+      ts.forEachChild(node, visit)
+    }
+    visit(sourceFile)
+    if (failure !== undefined) throw new Error(failure)
+    if (path.basename(filePath, path.extname(filePath)) === 'useRenderSnapshot') {
+      throw new Error(`obsolete useRenderSnapshot hook file is forbidden in ${path.relative(root, filePath)}`)
+    }
+  }
+}
+
+function runPublicContextBoundary({root}) {
+  const filePath = path.join(root, 'src/contexts/RenderContext.ts')
+  const sourceFile = parseSource(filePath)
+  const declaration = sourceFile.statements.find(statement =>
+    ts.isTypeAliasDeclaration(statement) && statement.name.text === 'RenderContextValue',
+  )
+  if (declaration === undefined || !ts.isTypeAliasDeclaration(declaration)) {
+    throw new Error('RenderContextValue declaration is missing')
+  }
+  const typeNode = unwrapReadonly(declaration.type)
+  if (!ts.isTypeLiteralNode(typeNode)) throw new Error('RenderContextValue must be a type literal')
+  for (const member of typeNode.members) {
+    const name = propertyText(member.name)
+    if (name === 'stateSource' || name === 'snapshotReader') {
+      throw new Error(`RenderContextValue must not expose ${name}`)
+    }
+  }
+}
+
+function runAdminStatePassThrough({root}) {
+  if (!fs.existsSync(root)) throw new Error(`admin-shell source root is missing: ${root}`)
+  for (const filePath of sourceFiles(root)) {
+    const sourceFile = parseSource(filePath)
+    let failure
+    const visit = node => {
+      if (failure !== undefined) return
+      if (ts.isIdentifier(node) && (node.text === 'stateRoot' || node.text === 'stateSource')) {
+        failure = `${node.text} pass-through is forbidden in ${path.relative(root, filePath)}`
+        return
+      }
+      ts.forEachChild(node, visit)
+    }
+    visit(sourceFile)
+    if (failure !== undefined) throw new Error(failure)
+  }
 }
 
 function runSourceForbiddenApis({root}) {
@@ -373,7 +480,7 @@ function fail(name, error) {
   return {name, status: 'FAIL', error: error instanceof Error ? error.message : String(error)}
 }
 
-export function runRenderStaticChecks({renderPackageRoot = renderRoot} = {}) {
+export function runRenderStaticChecks({renderPackageRoot = renderRoot, adminShellRoot = resolveAdminShellRoot(renderPackageRoot)} = {}) {
   const invariant = readPackageInvariant(renderPackageRoot, '@catering-v2s/ui-base-render')
   const {program, checker} = createProgram(renderPackageRoot)
   const indexSourceFile = program.getSourceFile(path.join(renderPackageRoot, 'src/index.ts'))
@@ -381,6 +488,9 @@ export function runRenderStaticChecks({renderPackageRoot = renderRoot} = {}) {
   const checks = [
     ['render-public-surface', () => runPublicSurface({root: renderPackageRoot, invariant, checker, indexSourceFile})],
     ['render-package-boundary', () => runPackageBoundary({root: renderPackageRoot})],
+    ['render-selector-boundary', () => runSelectorBoundary({root: renderPackageRoot})],
+    ['render-public-context-boundary', () => runPublicContextBoundary({root: renderPackageRoot})],
+    ['render-admin-state-pass-through', () => runAdminStatePassThrough({root: adminShellRoot})],
     ['render-source-forbidden-apis', () => runSourceForbiddenApis({root: renderPackageRoot})],
     ['render-source-forbidden-keys', () => runSourceForbiddenKeys({root: renderPackageRoot})],
     ['render-hooks-unconditional', () => runHooksUnconditional({root: renderPackageRoot})],
@@ -411,7 +521,7 @@ function printReport(report) {
     console.log(`RENDER_STATIC_RULE name=${result.name} status=${result.status}`)
     if (result.error) console.error(`RENDER_STATIC_RULE_FAILURE name=${result.name} error=${result.error}`)
   }
-  console.log(`RENDER_STATIC_RULE_GATES=${RENDER_STATIC_RULE_NAMES.length}`)
+  console.log(`RENDER_STATIC_RULE_GATES=${RENDER_STATIC_RULE_GATES}`)
   console.log(`RENDER_STATIC_SUPPORT_CHECKS=${RENDER_STATIC_SUPPORT_CHECK_COUNT}`)
   console.log(`RENDER_STATIC_SUPPORT=${report.support.status}`)
   if (report.support.error) console.error(`RENDER_STATIC_SUPPORT_FAILURE error=${report.support.error}`)

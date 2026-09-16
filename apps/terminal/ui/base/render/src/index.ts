@@ -69,7 +69,8 @@ export {SurfaceHostController, useSurfaceHostAvailability, useSurfaceHostSnapsho
 export {useSurfaceDisplayMode} from './hooks/useSurfaceDisplayMode';
 export {useRenderLogger} from './hooks/useRenderLogger';
 export {useDispatchCommand} from './hooks/useDispatchCommand';
-export {useRenderSnapshot} from './hooks/useRenderSnapshot';
+export {useRenderStatus} from './hooks/useRenderStatus';
 export {useUiStateSelector} from './hooks/useUiStateSelector';
+export {useUiCatalogContext} from './hooks/useUiCatalogContext';
 export {useUiVariable} from './hooks/useUiVariable';
 export {useRequestInFlight, useTrackedRequest} from './hooks/useRequest';

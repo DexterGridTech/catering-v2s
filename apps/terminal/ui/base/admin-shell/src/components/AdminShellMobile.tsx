@@ -1,7 +1,7 @@
 import {useMemo} from 'react'
 import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state'
 import {PrimitiveContainer, PrimitiveEmptyState} from '@catering-v2s/ui-base-primitives'
-import {createCatalogContext, useRenderContext, useRenderSnapshot, useSurfaceContext} from '@catering-v2s/ui-base-render'
+import {useRenderContext, useRenderStatus, useSurfaceContext, useUiCatalogContext} from '@catering-v2s/ui-base-render'
 import {createAdminSectionCommandBoundary} from '../foundations/adminSectionSelection'
 import {adminTestIds} from '../foundations/adminTestIds'
 import {useAdminSections} from '../hooks/useAdminSections'
@@ -28,25 +28,24 @@ const resolveMobileSelection = ({sections, requestedPartKey}: Readonly<{
 const contentStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0})
 
 export const AdminShellMobile = ({onClose}: AdminShellProps) => {
-  const {uiCatalog, rendererCatalog, stateSource, runtimeFacts, selectSurfaceForm} = useRenderContext()
+  const {uiCatalog, rendererCatalog, runtimeFacts} = useRenderContext()
   const surface = useSurfaceContext()
-  const snapshot = useRenderSnapshot()
+  const runtimeStatus = useRenderStatus()
+  const catalogContext = useUiCatalogContext(surface.displayMode)
   const commandBoundary = useMemo(() => createAdminSectionCommandBoundary(), [])
+  const selection = useAdminSections({catalog: uiCatalog, context: catalogContext})
+  const resolvedSelection = resolveMobileSelection({
+    sections: selection.sections,
+    requestedPartKey: selection.selectedPartKey,
+  })
 
-  if (snapshot.root === undefined) {
+  if (runtimeStatus !== 'started' || catalogContext === undefined) {
     return (
       <AdminShellFrame onClose={onClose}>
         <PrimitiveEmptyState testID={`${adminTestIds.content}:unavailable`}>运行状态尚未就绪</PrimitiveEmptyState>
       </AdminShellFrame>
     )
   }
-
-  const catalogContext = createCatalogContext(snapshot.root, surface.displayMode, selectSurfaceForm(snapshot.root))
-  const selection = useAdminSections({catalog: uiCatalog, context: catalogContext})
-  const resolvedSelection = resolveMobileSelection({
-    sections: selection.sections,
-    requestedPartKey: selection.selectedPartKey,
-  })
 
   return (
     <AdminShellFrame onClose={onClose}>
@@ -59,8 +58,6 @@ export const AdminShellMobile = ({onClose}: AdminShellProps) => {
         <AdminSectionContent
           selectedSection={resolvedSelection.selectedSection}
           rendererCatalog={rendererCatalog}
-          stateRoot={snapshot.root}
-          stateSource={stateSource}
           runtimeFacts={runtimeFacts}
           surface={surface}
           commandBoundary={commandBoundary}

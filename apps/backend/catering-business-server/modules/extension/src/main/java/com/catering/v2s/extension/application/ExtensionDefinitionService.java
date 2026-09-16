@@ -230,7 +230,7 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
                         hostType,
                         json(normalized));
             } catch (DuplicateKeyException conflict) {
-                throw new DefinitionVersionConflictException();
+                throw new DefinitionVersionConflictException(conflict);
             }
         } else {
             if (existing != expectedVersion) throw new DefinitionVersionConflictException();
@@ -788,7 +788,13 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
 
     public static final class DefinitionNotFoundException extends RuntimeException {}
 
-    public static final class DefinitionVersionConflictException extends RuntimeException {}
+    public static final class DefinitionVersionConflictException extends RuntimeException {
+        public DefinitionVersionConflictException() {}
+
+        public DefinitionVersionConflictException(Throwable cause) {
+            super(null, cause);
+        }
+    }
 
     public static final class DefinitionInvalidException extends RuntimeException {
         public DefinitionInvalidException() {}

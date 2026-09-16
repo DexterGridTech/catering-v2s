@@ -1,6 +1,6 @@
 # 门店经营规则开关 · 实施计划
 
-STATUS=IMPLEMENTATION_IN_PROGRESS
+STATUS=IMPLEMENTATION_COMPLETE_AWAITING_REVIEW
 DESIGN_REF=doc/plans/platform/2026-09-16-v2s-store-operating-rule-switches-implementation-design-codex.md  
 REQUIREMENTS_REF=doc/plans/platform/2026-09-16-v2s-store-operating-rule-switches-requirements-claude.md  
 MAPPING_REF=doc/plans/platform/2026-09-16-v2s-store-operating-rule-switches-operation-mapping-codex.md  
@@ -144,15 +144,15 @@ P3 是一次共享审计契约变更，不是 Store 局部改动；完成前必�
 - 在对应 *AcceptanceScenarios.java 扩展真实 HTTP scenarios；不把场景堆回入口类；
 - 增加 52 行 mapping completeness test/reader，仅在有可证明 red mutation 时接入既有 minutes-level verifier。
 
-**未来验证要求：**
+**验证结果（2026-09-17）：**
 
-1. Catalog generator invalid/valid cases；Store owner command/cas/idempotency cases；Audit four-empty/truncation/dynamic-label cases。
-2. 每种 gate target 解析形态有 HTTP direct-call negative；同一 Store 开启后有 positive counterpart。mapping 静态 completeness 是 52 条全部对账，真实 HTTP 场景证明每个语义簇，不能拿样本说“全部运行过”。
-3. 前端 focused 测试证明 full form value、child retention、failure holds Drawer、Store detail failed blocks child tree、false blocks list tree；存在性 source tests须配行为/否定保护。
-4. 只在实施授权后，用受管 backend-acceptance 执行，读取 logs，按 CONTRACT/BUSINESS/DB_OPERATIONS 分开报告 business/cleanup。任何失败按日志首败诊断，不能以 timeout/重试冒充闭合。
+1. Catalog generator 的四类非法声明 red mutation 与合法生成正例通过；Store owner command/CAS/idempotency、Audit four-empty/truncation/dynamic-label、frontend focused 与 architecture tests 已通过。
+2. mapping 静态 completeness 为 52/52；远端 backend acceptance 覆盖 Store-target read 的项目层与门店层、direct-call rejection、批量状态变更、local/brand copy 与开关开启后的正向路径。它证明实际场景，不把静态全集误报为每条 operation 都逐一运行。
+3. 最终受管 run `r5-tc-1789578383813-98101` 的远端 Gradle 为 `BUILD SUCCESSFUL`，business=`PASS`，Testcontainers container/volume cleanup=`PASS`，证据归档=`PASS`，DEV restore=`PASS`；operation set=270/270、unclassified SQL=0、budget exceeded=0。
+4. 所有结果已按 CONTRACT/BUSINESS/DB_OPERATIONS 与 cleanup 分开读取日志；曾出现的测试首败已按源码边界修复后重跑，不以 timeout 或盲目重试冒充闭合。browser L2、UAT、deploy 未执行且未授权。
 
-**完成判据：** 最终 acceptance 在所有产码/测试改动之后，且 business PASS 与 cleanup PASS 独立成立。  
-**独立对账：** P6 不代替 P9；它证明行为，不证明所有设计行已对齐。
+**完成判据：** P6 的动态 business 与 cleanup 已分别 PASS；P9 逐代码对账另行记录，二者不互相替代。  
+**独立对账：** P6 证明行为，不证明所有设计行已对齐；P9 记录逐代码对账。
 
 ## P7 · 受管 seed 的显式开通事实
 
@@ -179,25 +179,22 @@ P3 是一次共享审计契约变更，不是 Store 局部改动；完成前必�
 2. 对当前生产源码做 fresh independent adversarial review，REVIEW_TARGET=IMPLEMENTATION；reviewer 必须从详设找到每条判据和实现位置，不能复用作者自审 verdict。
 3. finding 必须先由主 agent current-source 验证为 CONFIRMED、PARTIALLY_CONFIRMED、REJECTED_WITH_EVIDENCE、UNVERIFIED_REQUIRES_EVIDENCE 或 DEXTER_DECISION；只修 CONFIRMED 部分，并由新的 fresh reviewer 复查。
 
-**完成判据：** 全批对账与 implementation review 无 OPEN；静态结论不升级 browser/runtime evidence。
+**当前状态：** `P8_STATUS=HANDOFF_READY_AWAITING_FRESH_IMPLEMENTATION_REVIEW`。主 agent 已完成全批三维整体对账并将每个实施文件、52 条映射和实际 evidence 写入 P9 reconciliation；fresh `REVIEW_TARGET=IMPLEMENTATION` 独立 review 尚待 Dexter 转交 Claude，因此本计划不预判 GO/NO-GO，也不把本地或受管运行证据升级为 review 结论。
+
+**完成判据：** P8 的交接材料可复核且没有已知 OPEN；独立 review 的 finding 由当前字节重新核验并按结果处置后，才能收口 implementation review。browser L2、UAT、deploy 仍不在本计划授权内。
 
 ## P9 · 逐代码与详设对账（交付前硬记录）
 
-P9 的执行者是主 Codex agent；独立 reviewer 只读验证。每个实际改动文件必须在表内有一行，行号以改后字节为准；状态只能 MATCHED 或 OPEN。任何“未列文件”“模糊通配”“只写目录”均为 OPEN。下表是实施前的预置分母，执行时要展开新增文件和 mapping 的全部 52 adapter 行。
+P9 已由主 Codex agent 按当前字节完成，独立 reviewer 仍只读复核。每个本批实施面文件、生成物、测试/seed 文件和 52 条 mapping adapter 均已在独立 reconciliation 中逐项列出；行号按改后字节记录，状态只有 `MATCHED` 或 `OPEN`，当前 `P9_OPEN_ITEMS=0`。
 
-| 预置 scope | 对应详设 | 必须核对的行为 | executor | 初始状态 |
-| --- | --- | --- | --- | --- |
-| catalog JSON/schema/generator/three generated outputs | §3.1-3.2 | 12/2/4 tree、typed defaults、single source hash、invalid red cases | Codex | OPEN |
-| Store OpenAPI schemas + edge generated wire | §3.3 | full typed values、schema 400 与 owner 422 边界、response readback | Codex | OPEN |
-| Flyway + StorePersistence + StoreServiceSql + StoreService + public API + edge adapter | §4 | one JSONB fact、same transaction/CAS/idempotency/readback | Codex | OPEN |
-| AuditChange/AuditChangeJson/AuditChangePolicy + OpenAPI + all producer/readers | §5 | label snapshot、four empty、truncate、legacy read、exact dynamic allowlist | Codex | OPEN |
-| BusinessEntityValueSupport + Brand/Tenant/HeadCompany/Store services | §5.3 | four entities identical extension audit representation | Codex | OPEN |
-| mapping 的 52 个 exact adapter symbols and 52 path error entries | §6 and mapping §3 | target resolution before mutation, gate present, x-error code present; no 33/3/181 false positives | Codex | OPEN |
-| error disposition catalog + active edge catalog augmentations + materializer + EdgeProblemCode + ContractProblemAdvice + both feedback maps | §3.3, §6.1 | 422 为 create/update、403 为 52 mutation，54 materialized path closed set、closure 79/79/157 与中文 feedback chain | Codex | OPEN |
-| StoreEditDrawer/testIds + shared disabled surface + three hosts | §7.1-7.2 | hierarchy, retain children, failure states, no-list-child mount, refresh, real testIds | Codex | OPEN |
-| operations/platform audit modals | §5.4 and §7.3 | same label/state display behavior, no empty-string collapse | Codex | OPEN |
-| unit/focused/acceptance/architecture tests | §9.3 and P6 | red/positive oracle boundaries; production versus test seam declared | Codex | OPEN |
-| seed fixture/executor/seed tests | §9.1 and P7 | explicit catalogManagementEnabled true readback | Codex | OPEN |
-| all implementation-added files not above | source + nearest design section | exact reason, owner, UI/contract/transaction impact | Codex | OPEN |
+完整记录：`doc/review/platform/2026-09-17-v2s-store-operating-rule-switches-implementation-reconciliation-codex.md`。
 
-只有 P9 全部 MATCHED、P8 independent review 无未处置 CONFIRMED finding、以及已授权动态验证分别 business PASS/cleanup PASS 后，才可准备 IMPLEMENTATION Claude handoff。本轮仍处于文档阶段，以上所有 P 均未执行。
+对账摘要：
+
+- catalog/contract/generated wire：12 项、两根、最大四层、三类型闭集与 source hash `MATCHED`；schema 400 与 owner 422 的边界和正反 red mutation `MATCHED`。
+- Store owner/迁移/读写：单一 JSONB 事实、Store-target read、同事务 CAS/idempotency/readback、项目层与门店层双向读取 `MATCHED`。
+- audit：四实体共享表示、四态空值、label snapshot、legacy read、截断不反噬业务和动态 key allowlist `MATCHED`。
+- gate：registry=270，mapping=270，STORE=89（READ 34 + PREFLIGHT 3 + MUTATION 52），52/52 mutation gate 与 54 path error materialization `MATCHED`；CP05 closure 实测 `79/79/157`。
+- UI/seed：StoreEditDrawer、三 host shared surface、失败/禁用不发列表请求、testId、显式 seed true 与 owner readback `MATCHED`。
+
+P9 的完成不等于 fresh implementation review 已 GO；Claude handoff 已单独准备，等待 Dexter 转交并由独立方给出 `GO`/`NO-GO` 与 `M/S/N`。

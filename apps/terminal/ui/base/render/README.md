@@ -21,10 +21,33 @@ ui-state module 完成。窄派发 Promise 被拒绝时，`useDispatchCommand` �
 `commandName`／`requestId` 的 `command-dispatch-rejected` typed diagnostic 后原样 rethrow；不把基础设施
 失败伪装成业务成功，也不新增业务错误层。
 
-`useUiStateSelector(selector)` 按 state root 引用与 selector 函数身份共同记忆化结果：同一 root 且同一
-selector 身份不会再次执行 selector；root 不变但 selector 身份变化时必须重新计算。selector 应是 root
-的纯函数；若闭包捕获外部值，selector 身份必须随被捕获值的变化而变化，不能用缺少依赖的
-`useCallback` 把旧值伪装成同一 selector。
+React UI 的状态订阅统一走 `useUiStateSelector(selector[, equalityFn])`，生命周期状态走
+`useRenderStatus()`；业务组件不能直接读取 `stateSource`、完整 snapshot 或 raw root。`useUiStateSelector`
+按 state root 引用与 selector 函数身份共同记忆化结果：同一 root 且同一 selector 身份不会再次执行 selector；
+root 不变但 selector 身份变化时必须重新计算。selector 应是 root 的纯函数；若闭包捕获外部值，selector
+身份必须随被捕获值的变化而变化，不能用缺少依赖的 `useCallback` 把旧值伪装成同一 selector。
+
+`undefined` 只是选择结果，不表示 runtime unavailable，也不表示业务一定为空；需要区分两者时同时读取
+`useRenderStatus()`。无参数 selector 放在模块级；参数化 selector 使用模块级 factory 或带完整依赖的
+`useMemo`/`useCallback`。scalar 与 owner 已稳定的引用直接返回，派生对象/数组优先由 owner selector 或
+Reselect 保持引用稳定，必要时才传入字段明确、常数时间的窄 equality。Reselect 只缓存派生计算和结果引用，
+不能替代 selector-aware subscription，也不能成为继续读取完整 snapshot 的理由。
+
+典型调用保持在组件订阅边界内：
+
+```tsx
+import {selectDisplayRole} from '@catering-v2s/kernel-base-display-context'
+import {useRenderStatus, useUiStateSelector} from '@catering-v2s/ui-base-render'
+
+const DisplayRole = () => {
+  const role = useUiStateSelector(selectDisplayRole)
+  const runtimeStatus = useRenderStatus()
+  return <PrimitiveText>{runtimeStatus === 'started' ? role ?? '未知' : '运行时不可用'}</PrimitiveText>
+}
+```
+
+示例中的 `PrimitiveText` 代表既有 primitives 组件；实际组件必须从对应 owner 包导入它。参数化 selector
+必须将所有捕获值放进完整依赖，不要把组件的 `root` 或 `stateSource` 传给下一级业务组件。
 
 ## Catalog
 
@@ -41,10 +64,11 @@ catalog 缺失、renderer 缺失和非法 props 使用不同的 fallback 语义�
 
 ## 公共面
 
-当前公共面固定为 29 项：3 项基础包元数据导出、9 项类型/焦点协议、1 个焦点 context、5 个渲染组件、2 个 catalog 工厂、7 个 hook
-与 1 个 request helper，其中包括 `SurfaceFocusBoundaryContext`、`SurfaceRootContentFrame`、
+公共面以 `terminal-invariants.json` 与 TypeScript 实际导出为准，其中包括 `SurfaceFocusBoundaryContext`、
+`SurfaceRootContentFrame`、
 `useSurfaceFocusBoundary`、`useDispatchCommand`、`useUiVariable`、`dispatchWithRequestId`、
-`useRequestInFlight` 与 `useTrackedRequest`。焦点协议只允许 `suspend` 与 `restore` 两个 phase；
+`useRenderStatus`、`useUiStateSelector`、`useUiCatalogContext`、`useRequestInFlight` 与 `useTrackedRequest`。
+焦点协议只允许 `suspend` 与 `restore` 两个 phase；
 render 只发出生命周期事件，不读取 input 的 active field 或 keyboard owner。
 
 `SurfaceRoot` 可选接收 `renderContentFrame({content})`。默认路径仍将 assembly children、

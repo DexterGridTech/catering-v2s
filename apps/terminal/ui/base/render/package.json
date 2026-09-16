@@ -16,7 +16,8 @@
     "@catering-v2s/kernel-base-runtime": "workspace:*",
     "@catering-v2s/kernel-base-state": "workspace:*",
     "@catering-v2s/kernel-base-ui-state": "workspace:*",
-    "@catering-v2s/ui-base-primitives": "workspace:*"
+    "@catering-v2s/ui-base-primitives": "workspace:*",
+    "use-sync-external-store": "^1.6.0"
   },
   "peerDependencies": {
     "react": "19.2.3",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "@types/use-sync-external-store": "^0.0.6",
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-test-renderer": "19.2.3",

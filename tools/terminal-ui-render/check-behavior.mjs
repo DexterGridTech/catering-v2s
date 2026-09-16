@@ -96,6 +96,7 @@ const createSandbox = () => {
     'react-test-renderer',
     'scheduler',
     'typescript',
+    'use-sync-external-store',
     'vitest',
   ]) {
     linkNodeModule(nodeModulesRoot, packageName, path.join(repositoryRoot, 'node_modules', packageName))
@@ -149,7 +150,7 @@ const mutations = Object.freeze([
     testName: 'keeps explicit PRIMARY and SECONDARY surfaces on their own content sets',
     apply: sandbox => replaceOnce(
       path.join(sandbox.renderRoot, 'src/components/SurfaceRoot.tsx'),
-      '      displayMode,\n      containerKey,\n      surfaceForm,',
+      '      displayMode,\n      containerKey,\n      defaultContainerPartKeys,',
       "      displayMode: 'PRIMARY',\n      containerKey,\n      surfaceForm,",
     ),
   },
@@ -199,8 +200,8 @@ const mutations = Object.freeze([
     testName: 'reports missing catalog, missing renderer, and invalid props on screen and layer paths',
     apply: sandbox => replaceOnce(
       path.join(sandbox.renderRoot, 'src/components/resolvePart.ts'),
-      "      node: createElement(RenderFallback, {reason: 'missing-renderer', key: input.elementKey}),",
-      '      node: null,',
+      "    const failure = createSystemFailure('missing-renderer')",
+      "    const failure = createSystemFailure('missing-renderer')\n    return {kind: 'fallback', failure, node: null}",
     ),
   },
   {
@@ -209,18 +210,18 @@ const mutations = Object.freeze([
     testName: 'reports missing catalog, missing renderer, and invalid props on screen and layer paths',
     apply: sandbox => replaceOnce(
       path.join(sandbox.renderRoot, 'src/components/resolvePart.ts'),
-      "      node: createElement(RenderFallback, {reason: 'invalid-props', key: input.elementKey}),",
-      '      node: createElement(binding.component, {}),',
+      "    const failure = createContentFailure(input, 'invalid-props')",
+      "    const failure = createContentFailure(input, 'invalid-props')\n    return {kind: 'resolved', node: createElement(binding.component, {})}",
     ),
   },
   {
     id: 'EMPTY_FALLBACK',
     testFile: 'test/renderSurface.test.tsx',
-    testName: 'keeps runtime unavailable and container empty as distinct fallback facts',
+    testName: 'keeps transition and content failures as distinct typed fallback facts',
     apply: sandbox => replaceOnce(
       path.join(sandbox.renderRoot, 'src/components/ScreenContainer.tsx'),
-      '<RenderFallback reason="container-empty" />',
-      '<RenderFallback reason="runtime-unavailable" />',
+      "      category: 'content',\n      reason: 'container-empty',\n      partKey: null,",
+      "      category: 'content',\n      reason: 'runtime-unavailable',\n      partKey: null,",
     ),
   },
   {
@@ -296,11 +297,132 @@ const mutations = Object.freeze([
   {
     id: 'SELECTOR_CACHE',
     testFile: 'test/renderState.test.tsx',
-    testName: 'recomputes when selector identity changes while root stays the same',
+    testName: 're-renders from unavailable through started to failed and caches selector results by root',
     apply: sandbox => replaceOnce(
       path.join(sandbox.renderRoot, 'src/hooks/useUiStateSelector.ts'),
-      'if (cache.current?.root === snapshot.root && cache.current.selector === selector) {',
-      'if (cache.current?.root === snapshot.root) {',
+      ': selector(snapshot.root),',
+      ': undefined,',
+    ),
+  },
+  {
+    id: 'SELECTOR_FULL_SNAPSHOT',
+    testFile: 'test/renderState.test.tsx',
+    testName: 'does not re-render when an unrelated root update leaves the selected primitive equal',
+    apply: sandbox => {
+      const selectorFile = path.join(sandbox.renderRoot, 'src/hooks/useUiStateSelector.ts')
+      replaceOnce(
+        selectorFile,
+        "import {useSyncExternalStoreWithSelector} from 'use-sync-external-store/with-selector'",
+        "import {useSyncExternalStore} from 'use-sync-external-store/shim'",
+      )
+      replaceOnce(
+        selectorFile,
+        '  return useSyncExternalStoreWithSelector(\n'
+          + '    stateSource.subscribe,\n'
+          + '    snapshotReader.getSnapshot,\n'
+          + '    snapshotReader.getSnapshot,\n'
+          + '    selectSnapshot,\n'
+          + '    equalityFn,\n'
+          + '  )',
+        '  return useSyncExternalStore(\n'
+          + '    stateSource.subscribe,\n'
+          + '    snapshotReader.getSnapshot,\n'
+          + '    snapshotReader.getSnapshot,\n'
+          + '  )',
+      )
+    },
+  },
+  {
+    id: 'SELECTOR_NO_EQUALITY',
+    testFile: 'test/renderState.test.tsx',
+    testName: 'uses a narrow equality for derived values without swallowing changed fields',
+    apply: sandbox => replaceOnce(
+      path.join(sandbox.renderRoot, 'src/hooks/useUiStateSelector.ts'),
+      '    equalityFn,\n',
+      '    undefined,\n',
+    ),
+  },
+  {
+    id: 'SELECTOR_IDENTITY_STALE',
+    testFile: 'test/renderState.test.tsx',
+    testName: 'updates a selector when its captured input changes while the root stays the same',
+    apply: sandbox => replaceOnce(
+      path.join(sandbox.renderRoot, 'src/hooks/useUiStateSelector.ts'),
+      '    [selector],\n',
+      '    [],\n',
+    ),
+  },
+  {
+    id: 'STATUS_READS_ROOT',
+    testFile: 'test/renderState.test.tsx',
+    testName: 'keeps runtime status separate from an undefined business selection',
+    apply: sandbox => replaceOnce(
+      path.join(sandbox.renderRoot, 'src/hooks/useRenderStatus.ts'),
+      '  return useSyncExternalStore(stateSource.subscribe, stateSource.getStatus, stateSource.getStatus)',
+      "  return useSyncExternalStore(stateSource.subscribe, () => 'started' as RuntimeStatus, () => 'started' as RuntimeStatus)",
+    ),
+  },
+  {
+    id: 'MISSING_UNSUBSCRIBE',
+    testFile: 'test/renderState.test.tsx',
+    testName: 're-renders from unavailable through started to failed and caches selector results by root',
+    apply: sandbox => replaceOnce(
+      path.join(sandbox.renderRoot, 'src/hooks/useUiStateSelector.ts'),
+      '    stateSource.subscribe,\n',
+      '    listener => {\n'
+        + '      stateSource.subscribe(listener)\n'
+        + '      return () => {}\n'
+        + '    },\n',
+    ),
+  },
+  {
+    id: 'CATALOG_EQUALITY_ALWAYS_TRUE',
+    testFile: 'test/renderState.test.tsx',
+    testName: 'projects catalog context with a complete shallow equality boundary',
+    apply: sandbox => replaceOnce(
+      path.join(sandbox.renderRoot, 'src/hooks/useUiCatalogContext.ts'),
+      'return useUiStateSelector(selector, areUiCatalogContextsEqual)',
+      'return useUiStateSelector(selector, () => true)',
+    ),
+  },
+  {
+    id: 'CATALOG_EQUALITY_MISSING_DISPLAY_MODE',
+    testFile: 'test/renderState.test.tsx',
+    testName: 'compares every catalog context field at the selector equality boundary',
+    apply: sandbox => replaceOnce(
+      path.join(sandbox.renderRoot, 'src/hooks/useUiCatalogContext.ts'),
+      'return previous.displayMode === next.displayMode',
+      'return true',
+    ),
+  },
+  {
+    id: 'CATALOG_EQUALITY_MISSING_WORKSPACE',
+    testFile: 'test/renderState.test.tsx',
+    testName: 'compares every catalog context field at the selector equality boundary',
+    apply: sandbox => replaceOnce(
+      path.join(sandbox.renderRoot, 'src/hooks/useUiCatalogContext.ts'),
+      '    && previous.workspace === next.workspace',
+      '    && true',
+    ),
+  },
+  {
+    id: 'CATALOG_EQUALITY_MISSING_INSTANCE_MODE',
+    testFile: 'test/renderState.test.tsx',
+    testName: 'compares every catalog context field at the selector equality boundary',
+    apply: sandbox => replaceOnce(
+      path.join(sandbox.renderRoot, 'src/hooks/useUiCatalogContext.ts'),
+      '    && previous.instanceMode === next.instanceMode',
+      '    && true',
+    ),
+  },
+  {
+    id: 'CATALOG_EQUALITY_MISSING_SURFACE_FORM',
+    testFile: 'test/renderState.test.tsx',
+    testName: 'compares every catalog context field at the selector equality boundary',
+    apply: sandbox => replaceOnce(
+      path.join(sandbox.renderRoot, 'src/hooks/useUiCatalogContext.ts'),
+      '    && previous.surfaceForm === next.surfaceForm',
+      '    && true',
     ),
   },
   {
@@ -311,8 +433,8 @@ const mutations = Object.freeze([
       const providerFile = path.join(sandbox.renderRoot, 'src/components/RenderProvider.tsx')
       replaceOnce(
         providerFile,
-        "import type {RenderProviderProps} from '../types/props'\n",
-        "import type {RenderProviderProps} from '../types/props'\n\nlet sharedSnapshotReader: ReturnType<typeof createRenderSnapshotReader> | undefined\n",
+        "import type {RenderProviderProps, RenderSurfaceReadyInput} from '../types/props'\n",
+        "import type {RenderProviderProps, RenderSurfaceReadyInput} from '../types/props'\n\nlet sharedSnapshotReader: ReturnType<typeof createRenderSnapshotReader> | undefined\n",
       )
       replaceOnce(
         providerFile,
@@ -332,8 +454,8 @@ const mutations = Object.freeze([
       const providerFile = path.join(sandbox.renderRoot, 'src/components/RenderProvider.tsx')
       replaceOnce(
         providerFile,
-        "import type {RenderProviderProps} from '../types/props'\n",
-        "import type {RenderProviderProps} from '../types/props'\n\nlet sharedDiagnosticReporter: ReturnType<typeof createRenderPartDiagnosticReporter> | undefined\n",
+        "import type {RenderProviderProps, RenderSurfaceReadyInput} from '../types/props'\n",
+        "import type {RenderProviderProps, RenderSurfaceReadyInput} from '../types/props'\n\nlet sharedDiagnosticReporter: ReturnType<typeof createRenderPartDiagnosticReporter> | undefined\n",
       )
       replaceOnce(
         providerFile,

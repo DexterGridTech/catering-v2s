@@ -1,5 +1,5 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
-import {createElement} from 'react'
+import {createElement, useMemo} from 'react'
 import {describe, expect, it} from 'vitest'
 import {createCommandId, createRequestId, type RequestId} from '@catering-v2s/kernel-base-contracts'
 import type {
@@ -18,13 +18,16 @@ import {
   resolveDebugMode,
   useDispatchCommand,
   useRequestInFlight,
+  useRenderStatus,
   useUiStateSelector,
+  useUiCatalogContext,
   useUiVariable,
   useTrackedRequest,
   type RenderProviderProps,
 } from '../src/index'
-import {createModuleUiVariableFactory, createUiCatalog, type UiVariableDeclaration} from '@catering-v2s/kernel-base-ui-state'
+import {createModuleUiVariableFactory, createUiCatalog, type UiCatalogContext, type UiVariableDeclaration} from '@catering-v2s/kernel-base-ui-state'
 import {createRenderSnapshotReader} from '../src/foundations/createRenderSnapshotReader'
+import {areUiCatalogContextsEqual} from '../src/hooks/useUiCatalogContext'
 import {nativeLoadingCapability, unusedRenderProviderBindings} from './renderProviderBindings'
 
 ;(globalThis as {IS_REACT_ACT_ENVIRONMENT?: boolean}).IS_REACT_ACT_ENVIRONMENT = true
@@ -308,6 +311,264 @@ describe('render runtime snapshot seam', () => {
     act(() => {
       renderer!.unmount()
     })
+  })
+
+  it('updates a selector when its captured input changes while the root stays the same', () => {
+    const source = createFakeStateSource('started')
+    const {logger} = createLogger()
+    source.setRoot(Object.freeze({slice: Object.freeze({marker: 'marker', other: 'other'})}) as RuntimeStateRoot)
+    const Probe = ({field}: Readonly<{readonly field: 'marker' | 'other'}>) => {
+      const selector = useMemo(
+        () => (root: RuntimeStateRoot) => (Reflect.get(root, 'slice') as Record<string, unknown>)[field],
+        [field],
+      )
+      const selected = useUiStateSelector(selector)
+      return createElement('selector-capture-probe', {selected})
+    }
+    const provider = (field: 'marker' | 'other') => createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        ...unusedRenderProviderBindings,
+      },
+      createElement(Probe, {field}),
+    )
+    let renderer: ReactTestRenderer
+    act(() => { renderer = create(provider('marker')) })
+    expect(renderer!.root.findByType('selector-capture-probe').props.selected).toBe('marker')
+    act(() => { renderer!.update(provider('other')) })
+    expect(renderer!.root.findByType('selector-capture-probe').props.selected).toBe('other')
+    act(() => { renderer!.unmount() })
+  })
+
+  it('does not re-render when an unrelated root update leaves the selected primitive equal', () => {
+    const source = createFakeStateSource('started')
+    const {logger} = createLogger()
+    const selectMarker = (root: RuntimeStateRoot): number => Reflect.get(
+      Reflect.get(root, 'slice') as Record<PropertyKey, unknown>,
+      'marker',
+    ) as number
+    let renderCount = 0
+    const Probe = () => {
+      renderCount += 1
+      const marker = useUiStateSelector(selectMarker)
+      return createElement('render-count-probe', {marker})
+    }
+    source.setRoot(Object.freeze({
+      slice: Object.freeze({marker: 1}),
+      unrelated: Object.freeze({value: 'first'}),
+    }) as RuntimeStateRoot)
+    const provider = createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        ...unusedRenderProviderBindings,
+      },
+      createElement(Probe),
+    )
+    let renderer: ReactTestRenderer
+    act(() => { renderer = create(provider) })
+    expect(renderCount).toBe(1)
+    expect(renderer!.root.findByType('render-count-probe').props.marker).toBe(1)
+
+    act(() => {
+      source.setRoot(Object.freeze({
+        slice: Object.freeze({marker: 1}),
+        unrelated: Object.freeze({value: 'second'}),
+      }) as RuntimeStateRoot)
+      source.notify()
+    })
+    expect(renderCount).toBe(1)
+
+    act(() => {
+      source.setRoot(Object.freeze({
+        slice: Object.freeze({marker: 2}),
+        unrelated: Object.freeze({value: 'third'}),
+      }) as RuntimeStateRoot)
+      source.notify()
+    })
+    expect(renderCount).toBe(2)
+    expect(renderer!.root.findByType('render-count-probe').props.marker).toBe(2)
+    act(() => { renderer!.unmount() })
+  })
+
+  it('uses a narrow equality for derived values without swallowing changed fields', () => {
+    const source = createFakeStateSource('started')
+    const {logger} = createLogger()
+    const selectProjection = (root: RuntimeStateRoot) => {
+      const slice = Reflect.get(root, 'slice') as Readonly<{readonly marker: number; readonly label: string}>
+      return {marker: slice.marker, label: slice.label}
+    }
+    const equalProjection = (
+      previous: Readonly<{readonly marker: number; readonly label: string}> | undefined,
+      next: Readonly<{readonly marker: number; readonly label: string}> | undefined,
+    ) => previous?.marker === next?.marker && previous?.label === next?.label
+    let renderCount = 0
+    const Probe = () => {
+      renderCount += 1
+      const projection = useUiStateSelector(selectProjection, equalProjection)
+      return createElement('derived-probe', {projection})
+    }
+    const provider = createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        ...unusedRenderProviderBindings,
+      },
+      createElement(Probe),
+    )
+    source.setRoot(Object.freeze({slice: Object.freeze({marker: 1, label: 'one'})}) as RuntimeStateRoot)
+    let renderer: ReactTestRenderer
+    act(() => { renderer = create(provider) })
+    expect(renderCount).toBe(1)
+    act(() => {
+      source.setRoot(Object.freeze({slice: Object.freeze({marker: 1, label: 'one'})}) as RuntimeStateRoot)
+      source.notify()
+    })
+    expect(renderCount).toBe(1)
+    act(() => {
+      source.setRoot(Object.freeze({slice: Object.freeze({marker: 1, label: 'two'})}) as RuntimeStateRoot)
+      source.notify()
+    })
+    expect(renderCount).toBe(2)
+    expect(renderer!.root.findByType('derived-probe').props.projection).toEqual({marker: 1, label: 'two'})
+    act(() => { renderer!.unmount() })
+  })
+
+  it('keeps runtime status separate from an undefined business selection', () => {
+    const source = createFakeStateSource()
+    const {logger} = createLogger()
+    let renderCount = 0
+    const Probe = () => {
+      renderCount += 1
+      const status = useRenderStatus()
+      const emptySelection = useUiStateSelector(() => undefined)
+      return createElement('status-boundary-probe', {status, emptySelection})
+    }
+    let renderer: ReactTestRenderer
+    act(() => {
+      renderer = create(createElement(
+        RenderProvider,
+        {
+          stateSource: source.stateSource,
+          uiCatalog: createUiCatalog([]),
+          rendererCatalog: createRendererCatalog([]),
+          logger,
+          ...unusedRenderProviderBindings,
+        },
+        createElement(Probe),
+      ))
+    })
+    expect(renderer!.root.findByType('status-boundary-probe').props).toMatchObject({
+      status: 'created',
+      emptySelection: undefined,
+    })
+    expect(source.getStateCalls()).toBe(0)
+
+    act(() => {
+      source.setStatus('starting')
+      source.notify()
+    })
+    expect(renderer!.root.findByType('status-boundary-probe').props.status).toBe('starting')
+    expect(source.getStateCalls()).toBe(0)
+
+    source.setRoot(Object.freeze({slice: Object.freeze({marker: 1})}) as RuntimeStateRoot)
+    act(() => {
+      source.setStatus('started')
+      source.notify()
+    })
+    expect(renderer!.root.findByType('status-boundary-probe').props).toMatchObject({
+      status: 'started',
+      emptySelection: undefined,
+    })
+    const rendersAfterStarted = renderCount
+    act(() => {
+      source.setRoot(Object.freeze({slice: Object.freeze({marker: 2})}) as RuntimeStateRoot)
+      source.notify()
+    })
+    expect(renderCount).toBe(rendersAfterStarted)
+    expect(renderer!.root.findByType('status-boundary-probe').props.status).toBe('started')
+    expect(source.getStateCalls()).toBeGreaterThan(0)
+    act(() => { renderer!.unmount() })
+  })
+
+  it('projects catalog context with a complete shallow equality boundary', () => {
+    const source = createFakeStateSource('started')
+    const {logger} = createLogger()
+    const createCatalogRoot = (instanceMode: 'MASTER' | 'SLAVE', marker: number): RuntimeStateRoot => Object.freeze({
+      'kernel.base.runtime.instance-mode': Object.freeze({instanceMode}),
+      'kernel.base.display-context.display-role': Object.freeze({displayRole: 'CHIEF'}),
+      slice: Object.freeze({marker}),
+    }) as RuntimeStateRoot
+    let renderCount = 0
+    const Probe = () => {
+      renderCount += 1
+      const context = useUiCatalogContext('PRIMARY')
+      return createElement('catalog-context-probe', {context})
+    }
+    const provider = (child: ReturnType<typeof createElement>) => createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        ...unusedRenderProviderBindings,
+      },
+      child,
+    )
+    source.setRoot(createCatalogRoot('MASTER', 1))
+    let renderer: ReactTestRenderer
+    act(() => { renderer = create(provider(createElement(Probe))) })
+    expect(renderCount).toBe(1)
+    expect(renderer!.root.findByType('catalog-context-probe').props.context).toMatchObject({
+      displayMode: 'PRIMARY',
+      instanceMode: 'MASTER',
+      surfaceForm: 'laptop',
+    })
+    act(() => {
+      source.setRoot(createCatalogRoot('MASTER', 2))
+      source.notify()
+    })
+    expect(renderCount).toBe(1)
+    act(() => {
+      source.setRoot(createCatalogRoot('SLAVE', 3))
+      source.notify()
+    })
+    expect(renderCount).toBe(2)
+    expect(renderer!.root.findByType('catalog-context-probe').props).toMatchObject({
+      context: {instanceMode: 'SLAVE'},
+    })
+    act(() => { renderer!.unmount() })
+  })
+
+  it('compares every catalog context field at the selector equality boundary', () => {
+    const base: UiCatalogContext = {
+      displayMode: 'PRIMARY',
+      workspace: 'MAIN',
+      instanceMode: 'MASTER',
+      surfaceForm: 'laptop',
+    }
+    const cases: readonly [keyof UiCatalogContext, UiCatalogContext][] = [
+      ['displayMode', {...base, displayMode: 'SECONDARY'}],
+      ['workspace', {...base, workspace: 'BRANCH'}],
+      ['instanceMode', {...base, instanceMode: 'SLAVE'}],
+      ['surfaceForm', {...base, surfaceForm: 'mobile'}],
+    ]
+    for (const [field, changed] of cases) {
+      expect(areUiCatalogContextsEqual(base, changed), `${field} must invalidate the projection`).toBe(false)
+    }
+    expect(areUiCatalogContextsEqual(base, {...base})).toBe(true)
+    expect(areUiCatalogContextsEqual(undefined, base)).toBe(false)
   })
 
   it('keeps two Providers independent across roots, notifications, and teardown', () => {

@@ -1,7 +1,7 @@
-import {useCallback, useRef, type ReactNode} from 'react'
+import {useCallback, useMemo, useRef, type ReactNode} from 'react'
 import {StyleSheet, View} from 'react-native'
 import {openLayerCommand, selectLayers} from '@catering-v2s/kernel-base-ui-state'
-import {dispatchWithRequestId, useDispatchCommand, useRenderSnapshot, useSurfaceContext} from '@catering-v2s/ui-base-render'
+import {dispatchWithRequestId, useDispatchCommand, useSurfaceContext, useUiStateSelector} from '@catering-v2s/ui-base-render'
 import type {SurfaceHostSize} from '@catering-v2s/ui-base-render'
 import {ADMIN_CONSOLE_LAYER_ID, ADMIN_CONSOLE_PART_KEY} from '../foundations/adminIdentity'
 import {
@@ -65,7 +65,12 @@ type AdminLauncherProps = Readonly<{
 export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
   const surface = useSurfaceContext()
   const hostLogicalSize = surface.hostLogicalSize
-  const snapshot = useRenderSnapshot()
+  const hasAdminLayerSelector = useMemo(
+    () => (root: Parameters<typeof selectLayers>[0]) => selectLayers(root, surface.displayMode)
+      .some(layer => layer.layerId === ADMIN_CONSOLE_LAYER_ID),
+    [surface.displayMode],
+  )
+  const hasAdminLayer = useUiStateSelector(hasAdminLayerSelector) ?? false
   const dispatchCommand = useDispatchCommand()
   const gestureState = useRef<AdminGestureState>(createInitialAdminGestureState())
   const windowMeasurementRef = useRef<Readonly<{
@@ -75,11 +80,9 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
     readonly height: number
   }> | null>(null)
   const nodeRef = useRef<View>(null)
-  const hasAdminLayer = snapshot.root !== undefined
-    && selectLayers(snapshot.root, surface.displayMode).some(layer => layer.layerId === ADMIN_CONSOLE_LAYER_ID)
-
   const measureOrigin = useCallback(() => {
-    nodeRef.current?.measureInWindow((x, y, width, height) => {
+    nodeRef.current?.measureInWindow((...measurements: [number, number, number, number]) => {
+      const [x, y, width, height] = measurements
       if (
         Number.isFinite(x)
         && Number.isFinite(y)

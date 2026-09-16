@@ -1,11 +1,12 @@
 import {PrimitiveContainer, PrimitiveHeading, PrimitiveKeyValueRow, PrimitiveScrollView, PrimitiveStatusRow} from '@catering-v2s/ui-base-primitives'
+import {useRenderStatus} from '@catering-v2s/ui-base-render'
 import type {AdminSectionProps} from '../../types/adminSection'
 
 const sectionStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0})
 
 export const RuntimeSection = ({context}: AdminSectionProps) => {
   const facts = context.runtimeFacts
-  const status = context.stateSource.getStatus()
+  const status = useRenderStatus()
   return (
     <PrimitiveContainer testID="admin.console.runtime" layout="content" bounded style={sectionStyle}>
       <PrimitiveScrollView testID="admin.console.runtime:scroll">

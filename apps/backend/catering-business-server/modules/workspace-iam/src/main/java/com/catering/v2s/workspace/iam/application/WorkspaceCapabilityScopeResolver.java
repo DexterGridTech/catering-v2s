@@ -413,7 +413,7 @@ public class WorkspaceCapabilityScopeResolver {
                         session.groupWorkspaceKey(),
                         capability));
             } catch (RuntimeException denied) {
-                throw new WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException();
+                throw new WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException(denied);
             }
         } finally {
             DatabaseOperationTracker.markPhase(DatabaseOperationTracker.Phase.AUTHORIZED);

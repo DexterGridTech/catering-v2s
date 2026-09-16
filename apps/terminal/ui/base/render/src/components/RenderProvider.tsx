@@ -1,7 +1,12 @@
 import {useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore} from 'react'
 import {createRenderPartDiagnosticReporter} from '../foundations/diagnostics'
 import {createRenderSnapshotReader} from '../foundations/createRenderSnapshotReader'
-import {RenderContext, type RenderContextValue} from '../contexts/RenderContext'
+import {
+  RenderContext,
+  RenderSubscriptionContext,
+  type RenderContextValue,
+  type RenderSubscriptionContextValue,
+} from '../contexts/RenderContext'
 import type {RenderProviderProps, RenderSurfaceReadyInput} from '../types/props'
 
 const emptyLayerDismissals = Object.freeze({})
@@ -72,8 +77,11 @@ export const RenderProvider = ({
   }, [logger, status])
 
   const diagnosticReporter = useMemo(() => createRenderPartDiagnosticReporter(logger), [logger])
-  const contextValue = useMemo<RenderContextValue>(() => Object.freeze({
+  const subscriptionContextValue = useMemo<RenderSubscriptionContextValue>(() => Object.freeze({
     stateSource,
+    snapshotReader,
+  }), [snapshotReader, stateSource])
+  const contextValue = useMemo<RenderContextValue>(() => Object.freeze({
     uiCatalog,
     rendererCatalog,
     logger,
@@ -85,13 +93,11 @@ export const RenderProvider = ({
     layerDismissals: layerDismissals ?? emptyLayerDismissals,
     selectUiVariable,
     selectSurfaceForm: selectSurfaceFormReader,
-    snapshotReader,
     reportPartDiagnostic: diagnosticReporter.report,
     clearPartDiagnostic: diagnosticReporter.clearForPart,
   }), [
     diagnosticReporter.report,
     dispatchCommand,
-    getPrimarySurfaceReady,
     layerDismissals,
     logger,
     nativeLoadingCapability,
@@ -100,12 +106,14 @@ export const RenderProvider = ({
     rendererCatalog,
     selectUiVariable,
     selectSurfaceFormReader,
-    snapshotReader,
-    stateSource,
     runtimeFacts,
     uiCatalog,
     hasPrimarySurfaceReady,
   ])
 
-  return <RenderContext.Provider value={contextValue}>{children}</RenderContext.Provider>
+  return (
+    <RenderSubscriptionContext.Provider value={subscriptionContextValue}>
+      <RenderContext.Provider value={contextValue}>{children}</RenderContext.Provider>
+    </RenderSubscriptionContext.Provider>
+  )
 }

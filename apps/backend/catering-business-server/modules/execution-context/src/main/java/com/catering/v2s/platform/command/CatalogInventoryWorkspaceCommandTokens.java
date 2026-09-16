@@ -5,9 +5,9 @@ import java.util.Map;
 
 /**
  * Generated command tokens. Binding source: contracts/registry/operation-handler-bindings.json Binding digest:
- * b70a1fe23866ce6a4dbdcc7f6c956831a95d31e05a55ae210e0a32e9e53f2347 Contract source:
+ * 29cc1de20b62162030070d0365ae2c926cf6aca8ba2c25e980fba8903eaf4707 Contract source:
  * contracts/catalog/catalog-inventory-edge-contract.json Contract digest:
- * ac1568443e44af877fddd4ab7401bd05a4fe207fd1579326379008a2ed425bd9
+ * f068b072dbce84946759b2df4c68f10a71f6d1624914477e67c9bb2a93d9828a
  */
 public final class CatalogInventoryWorkspaceCommandTokens {
     private CatalogInventoryWorkspaceCommandTokens() {}

@@ -69,7 +69,7 @@ public final class ExtensionFilterQuery {
                     ? encodedFilters.trim()
                     : URLDecoder.decode(encodedFilters, StandardCharsets.UTF_8);
         } catch (IllegalArgumentException failure) {
-            throw invalid(List.of(new InvalidReason(null, "PERCENT_DECODE_INVALID", null)));
+            throw invalid(List.of(new InvalidReason(null, "PERCENT_DECODE_INVALID", null)), failure);
         }
         try {
             JsonNode array = JSON.readTree(decoded);
@@ -114,7 +114,7 @@ public final class ExtensionFilterQuery {
         } catch (InvalidFilterException failure) {
             throw failure;
         } catch (Exception failure) {
-            throw invalid(List.of(new InvalidReason(null, "JSON_INVALID", null)));
+            throw invalid(List.of(new InvalidReason(null, "JSON_INVALID", null)), failure);
         }
     }
 
@@ -126,7 +126,7 @@ public final class ExtensionFilterQuery {
         try {
             return Long.parseLong(value);
         } catch (NumberFormatException failure) {
-            throw invalid(List.of(new InvalidReason(null, "DEFINITION_REVISION_INVALID", null)));
+            throw invalid(List.of(new InvalidReason(null, "DEFINITION_REVISION_INVALID", null)), failure);
         }
     }
 
@@ -204,7 +204,7 @@ public final class ExtensionFilterQuery {
         try {
             return LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE);
         } catch (DateTimeParseException failure) {
-            throw new IllegalArgumentException("DATE_INVALID");
+            throw new IllegalArgumentException("DATE_INVALID", failure);
         }
     }
 
@@ -220,6 +220,10 @@ public final class ExtensionFilterQuery {
 
     private static InvalidFilterException invalid(List<InvalidReason> reasons) {
         return new InvalidFilterException(List.copyOf(reasons));
+    }
+
+    private static InvalidFilterException invalid(List<InvalidReason> reasons, Throwable cause) {
+        return new InvalidFilterException(List.copyOf(reasons), cause);
     }
 
     public record RawFilter(String fieldKey, String type, String value) {}
@@ -306,6 +310,11 @@ public final class ExtensionFilterQuery {
         private final List<InvalidReason> reasons;
 
         public InvalidFilterException(List<InvalidReason> reasons) {
+            this(reasons, null);
+        }
+
+        public InvalidFilterException(List<InvalidReason> reasons, Throwable cause) {
+            super(null, cause);
             this.reasons = reasons;
         }
 

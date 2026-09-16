@@ -1,15 +1,19 @@
 import {selectDisplayRole} from '@catering-v2s/kernel-base-display-context'
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime'
-import {PrimitiveContainer, PrimitiveHeading, PrimitiveKeyValueRow, PrimitiveScrollView, PrimitiveStatusRow} from '@catering-v2s/ui-base-primitives'
+import {PrimitiveContainer, PrimitiveEmptyState, PrimitiveHeading, PrimitiveKeyValueRow, PrimitiveScrollView, PrimitiveStatusRow} from '@catering-v2s/ui-base-primitives'
+import {useUiStateSelector} from '@catering-v2s/ui-base-render'
 import type {AdminSectionProps} from '../../types/adminSection'
 
 const sectionStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0})
 
 export const DisplayContextSection = ({context}: AdminSectionProps) => {
-  const role = selectDisplayRole(context.stateRoot)
-  const instanceMode = selectRuntimeInstanceMode(context.stateRoot)
+  const role = useUiStateSelector(selectDisplayRole)
+  const instanceMode = useUiStateSelector(selectRuntimeInstanceMode)
   const hostReady = context.surface.surfaceIdentity !== null
   const hostSize = context.surface.hostLogicalSize
+  if (role === undefined || instanceMode === undefined) {
+    return <PrimitiveEmptyState testID="admin.console.display-context:unavailable">运行状态尚未就绪</PrimitiveEmptyState>
+  }
   return (
     <PrimitiveContainer testID="admin.console.display-context" layout="content" bounded style={sectionStyle}>
       <PrimitiveScrollView testID="admin.console.display-context:scroll">

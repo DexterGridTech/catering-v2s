@@ -1,7 +1,7 @@
 # 门店经营规则开关 · 详设
 
 SKILL_USED=cs-writing-plans@72190c88b2b5a67a96b91d66aa72b9161913e10e8769da3f28a226f4cc7b99d0  
-STATUS=IMPLEMENTATION_IN_PROGRESS
+STATUS=IMPLEMENTATION_COMPLETE_AWAITING_REVIEW
 BUSINESS_SOURCE=doc/plans/platform/2026-09-16-v2s-store-operating-rule-switches-requirements-claude.md  
 JOURNEY_REFS=doc/decisions/2026-09-16-v2s-store-operating-rule-switches-journey-codex.md  
 INTERACTION_REF=doc/plans/platform/2026-09-16-v2s-store-operating-rule-switches-interaction-design-codex.md  
@@ -188,9 +188,9 @@ operations/platform 各自已有 audit-history feature，只改现有 Modal 的 
 
 ### 9.1 seed
 
-未来受管 seed 修改 doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json 的所有可体验 Store fixture，显式放入 operatingRuleSwitches 的完整对象，其中 catalogManagementEnabled=true；scripts/dev/owner-command-seed-executor.mjs 在 createOperationsOrganizationStore payload 传递它，并在 owner readback 中断言 true。不能依赖默认 false，否则 reset 后商品/库存/菜单体验全部被正确 gate 掉。
+受管 seed 已修改 doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json 的所有可体验 Store fixture，显式放入 operatingRuleSwitches 的完整对象，其中 catalogManagementEnabled=true；scripts/dev/owner-command-seed-executor.mjs 在 createOperationsOrganizationStore payload 传递它，并在 owner readback 中断言 true。不能依赖默认 false，否则 reset 后商品/库存/菜单体验全部被正确 gate 掉。
 
-这是未来实施步骤；本次未执行 reset、DEV 或 seed。
+已在本批授权内执行受管 reset、DEV、seed；详见本节 9.3 与《实施结果/P9 对账》文件。DEV start/restart 仍不执行 seed，当前 DEV 在 acceptance 完成后已恢复并保持运行。
 
 ### 9.2 详设核实结果
 
@@ -198,19 +198,21 @@ operations/platform 各自已有 audit-history feature，只改现有 Modal 的 
 
 审计读出口已核实没有动态标签表，且历史只存 key/scalar。因此本详设采用 label snapshot；这不是额外产品功能，而是满足 R-10.3 在 rename/delete 后仍可识别改动字段的最小持久事实。
 
-### 9.3 未来验证（未执行）
+### 9.3 已执行验证与受限范围
 
-每条需求 V-1 至 V-12 需有真实正反构造。特别是：
+本批已按授权完成静态、focused、远端 backend acceptance、reset、DEV 与 seed；业务结果和 cleanup 结果分开判读，完整逐代码对账见 `doc/review/platform/2026-09-17-v2s-store-operating-rule-switches-implementation-reconciliation-codex.md`。
 
-- 52/52 mapping 的每行必须有静态 adapter-to-gate 对账，加上 HTTP backend acceptance 覆盖至少每个 mutation 形态、三条 copy preflight 区分和 direct-call rejection；抽样不能替代全行对账。
-- catalog generator 需有四类 invalid declaration red mutation 和一条合法生成正例。
-- audit 需覆盖四种 empty、TEXT 大于 2000 截断、definition rename/delete 后 snapshot、四实体同表示与动态 key policy。
-- Drawer/front-end focused 覆盖父关闭不清值、full payload、failure retains input、三个 host 不 mount list subtree。
-- 获授权时才进行 managed backend acceptance、reset/DEV/seed、browser L2；每次读取日志，分别报告 business 与 cleanup。当前全部 NOT_EXECUTED / NOT_AUTHORIZED。
+- catalog generator 的四类非法声明 red mutation 与合法生成正例通过；OpenAPI、Java/TS 生成物与 operation bindings 均以 `--check` 通过。
+- mapping 当前 registry 与附录均为 270 条，52 条 STORE mutation 全量逐行核对；远端 acceptance 对批量状态变更、品牌复制以及 Store rules 读写均有真实场景。
+- focused frontend/backend/architecture/seed tests 已通过；远端 Gradle test 为 `BUILD SUCCESSFUL`。已知与本批无关的 code-layout 空目录、Java UTF-8 行长基线和 terminal readability 基线分别保留为非本批静态观察，未冒充本批 PASS。
+- 最终受管 run `r5-tc-1789578383813-98101`：远端 Gradle PASS，business PASS，Testcontainers container/volume cleanup PASS，证据归档 PASS，DEV restore PASS；测量 operation set 270/270、unclassified SQL 0、CP05 budget exceeded 0。
+- reset、DEV、seed 均保留独立 manifest；seed 对所有体验 Store 显式传 `catalogManagementEnabled=true` 并由 owner readback 校验。browser L2、UAT、deploy 仍为 `NOT_AUTHORIZED`，没有用静态或 backend evidence 替代它们。
 
-## 10. 实施前置与 review 状态
+## 10. 实施完成与 review 状态
 
-Dexter 已确认低保真视觉 IA；Claude 第 2 轮独立 DESIGN review 后，M-01/N-01 已修复并授权进入生产实现。本详设不以“文档已写”或旧 runtime 证据升级为运行验收。
+Dexter 已确认低保真视觉 IA；Claude 第 2 轮独立 DESIGN review 后，M-01/N-01 已修复并授权进入生产实现。M-01 的实现是独立 Store-target operating-rule read，使用显式 `storeId` 和 `resolveTaskScope(session, STORE, storeId)`，并由项目层、门店层 acceptance 双向验证；N-01 的当前字节口径是 `commandBoundary` 属于 operation 条目字段，`kind` 与 `commandCount` 属于 registry root 统计字段。
+
+生产实现、生成、构建、focused test、远端 backend acceptance、reset、DEV、seed 已完成；P9 逐代码对账为 `MATCHED` 且无 OPEN。当前仅等待 fresh `REVIEW_TARGET=IMPLEMENTATION` 的独立静态 review，不能把本详设或受管运行结果写成 Claude review GO。
 
 ## 11. 精确实现锚点与机制对账
 
@@ -299,7 +301,7 @@ Dexter 已确认低保真视觉 IA；Claude 第 2 轮独立 DESIGN review 后，
 
 | migration | 加/改什么 | 旧行回填 | 理由 | 回滚 |
 | --- | --- | --- | --- | --- |
-| V20260916 store operating rules | Store JSONB object column default empty object | 不回填 | default resolver 给缺失键唯一默认事实；Dexter 已裁 reset | additive column 可回滚仅在未依赖新字段时 |
+| V20260916 store operating rules | Store JSONB object column default empty object | 不回填 | default resolver 给缺失键唯一默认事实；reset 由独立受管步骤执行 | additive column 可回滚仅在未依赖新字段时 |
 
 ### 18.2 seed 全集
 
@@ -325,6 +327,19 @@ Dexter 已确认低保真视觉 IA；Claude 第 2 轮独立 DESIGN review 后，
 | --- | --- | --- | --- |
 | 开放平台开发者编码是否候选 | UNVERIFIED_REQUIRES_EVIDENCE | STRING 空串 | 伪造 collaboration lookup |
 | 四实体范围 | DEXTER_ACCEPTED_REQUIREMENT_INFERENCE | 按当前四实体实现 | 静默收窄为 Store |
-| wireframe | CONFIRMED_BY_DEXTER | 文档审查已完成 | UI 实施可执行/L2 仍不授权 |
+| wireframe | CONFIRMED_BY_DEXTER | UI 实施已完成；视觉确认不等于 L2 验收 | browser L2 仍不授权 |
 
 必须停机回 Dexter：catalog tree/12 项发生产品变更；需把 STRING 改权威候选；四实体审计需收窄；target resolver 证实某 mapping row 不符合 STORE/non-STORE 分法；视觉确认要求改变 surface。其他上游 review finding 一律先 current-source 验证，不能自动接受。
+
+## 19. 本批实施结果与证据索引
+
+| 结果 | 当前事实 | 证据 |
+| --- | --- | --- |
+| M-01 读取路径 | 三个 host 使用显式 Store-target path；服务端调用 `resolveTaskScope(session, STORE, storeId)`；项目 assignment 与 Store assignment 均读到目标 Store | `apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreOperatingRuleController.java`；`apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application/WorkspaceUserService.java`；`OrganizationAcceptanceScenarios` operating-rule 场景 |
+| N-01 口径 | `commandBoundary` 保留为 operation entry 字段；`kind`、`commandCount` 保持 registry root 统计字段；需求正本与实现对账口径一致 | `doc/plans/platform/2026-09-16-v2s-store-operating-rule-switches-requirements-claude.md` §12.4；`doc/review/platform/2026-09-17-v2s-store-operating-rule-switches-implementation-reconciliation-codex.md` §2 |
+| 生成与契约 | catalog 三类型闭集、12 项实例、OpenAPI/Java/TS 产物与 edge wire 无漂移；operation bindings 270 条 | `scripts/generate/store-operating-rule-catalog.mjs`、`scripts/generate/edge-codegen.mjs`、`scripts/generate/operation-handler-bindings.mjs` 的 `--check` 输出 |
+| gate 闭包 | 52/52 STORE mutation 在 owner mutation 前调用 typed gate；batch status、local/brand copy 与其余 mutation 已纳入映射 | `doc/plans/platform/2026-09-16-v2s-store-operating-rule-switches-operation-mapping-codex.md`；reconciliation §3 |
+| 受管运行 | 最终 backend acceptance business PASS、cleanup PASS、DEV restore PASS；reset、DEV、seed 各自独立留存 manifest；seed 显式开启 catalog/inventory/menu 并 owner readback | `.runtime/r5/evidence/remote-testcontainers/r5-tc-1789578383813-98101/run-manifest.json`；`.runtime/r5/reset/r5-reset-022c56a8-8b6e-4a69-af52-2c6d37a16cf6/run-manifest.json`；`.runtime/r5/seed/complete/complete-seed-68fc6676-6659-4472-8d18-9dd31d55f438/run-manifest.json` |
+| review 状态 | 实施后独立静态 review 尚待 Dexter 转交 Claude；本文件不预判 GO/NO-GO | `doc/review/platform/2026-09-17-v2s-store-operating-rule-switches-implementation-review-request-codex.md` |
+
+本节是当前字节的实施结果索引，不替代独立 review；动态 evidence 只证明已授权的 backend/受管环境边界，browser L2、UAT 与生产部署仍未授权。

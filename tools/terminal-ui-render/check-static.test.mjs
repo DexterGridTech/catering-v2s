@@ -5,8 +5,10 @@ import path from 'node:path'
 
 import {
   RENDER_STATIC_RULE_NAMES,
+  RENDER_STATIC_RULE_GATES,
   RENDER_STATIC_SUPPORT_CHECK_COUNT,
   renderRoot,
+  productionAdminShellRoot,
   runRenderStaticChecks,
 } from './check-static.mjs'
 
@@ -48,16 +50,26 @@ try {
       return !source.split(path.sep).includes('node_modules')
     },
   })
+  fs.cpSync(productionAdminShellRoot, path.join(fixtureRoot, 'admin-shell'), {
+    recursive: true,
+    filter(source) {
+      return !source.split(path.sep).includes('node_modules')
+    },
+  })
 
   assert.deepEqual(RENDER_STATIC_RULE_NAMES, [
     'render-public-surface',
     'render-package-boundary',
+    'render-selector-boundary',
+    'render-public-context-boundary',
+    'render-admin-state-pass-through',
     'render-source-forbidden-apis',
     'render-source-forbidden-keys',
     'render-hooks-unconditional',
     'render-surface-props-required',
     'render-test-wiring',
   ])
+  assert.equal(RENDER_STATIC_RULE_GATES, 10)
   assert.equal(RENDER_STATIC_SUPPORT_CHECK_COUNT, 1)
   assertVector(runRenderStaticChecks({renderPackageRoot: fixtureRoot}))
 
@@ -121,6 +133,77 @@ try {
       console.log(`RENDER_STATIC_RED_BOUNDARY=${rule(report, 'render-package-boundary').status}`)
       assertVector(report, ['render-package-boundary'])
       assert.match(rule(report, 'render-package-boundary').error, /runtime dependencies/)
+    },
+  )
+
+  withMutation(
+    'package.json',
+    source => {
+      const packageJson = JSON.parse(source)
+      delete packageJson.dependencies['use-sync-external-store']
+      return `${JSON.stringify(packageJson, null, 2)}\n`
+    },
+    report => {
+      console.log(`RENDER_STATIC_RED_DIRECT_SYNC_DEP=${rule(report, 'render-package-boundary').status}`)
+      assertVector(report, ['render-package-boundary'])
+      assert.match(rule(report, 'render-package-boundary').error, /use-sync-external-store/)
+    },
+  )
+
+  withMutation(
+    'package.json',
+    source => {
+      const packageJson = JSON.parse(source)
+      delete packageJson.devDependencies['@types/use-sync-external-store']
+      return `${JSON.stringify(packageJson, null, 2)}\n`
+    },
+    report => {
+      console.log(`RENDER_STATIC_RED_DIRECT_SYNC_TYPES=${rule(report, 'render-package-boundary').status}`)
+      assertVector(report, ['render-package-boundary'])
+      assert.match(rule(report, 'render-package-boundary').error, /@types\/use-sync-external-store/)
+    },
+  )
+
+  withMutation(
+    'src/components/RenderProvider.tsx',
+    source => `${source}\nimport {useRenderSnapshot} from '../hooks/useRenderSnapshot'\nvoid useRenderSnapshot\n`,
+    report => {
+      console.log(`RENDER_STATIC_RED_SELECTOR_BOUNDARY=${rule(report, 'render-selector-boundary').status}`)
+      assertVector(report, ['render-selector-boundary'])
+      assert.match(rule(report, 'render-selector-boundary').error, /useRenderSnapshot/)
+    },
+  )
+
+  withMutation(
+    'src/contexts/RenderContext.ts',
+    source => source.replace(
+      "  readonly runtimeFacts: RenderProviderProps['runtimeFacts']",
+      "  readonly stateSource: RenderProviderProps['stateSource']\n  readonly runtimeFacts: RenderProviderProps['runtimeFacts']",
+    ),
+    report => {
+      console.log(`RENDER_STATIC_RED_PUBLIC_CONTEXT=${rule(report, 'render-public-context-boundary').status}`)
+      assertVector(report, ['render-public-context-boundary'])
+      assert.match(rule(report, 'render-public-context-boundary').error, /stateSource/)
+    },
+  )
+
+  withMutation(
+    'admin-shell/src/types/adminSection.ts',
+    source => `${source}\ntype ForbiddenAdminStatePassThrough = {stateSource: unknown}\nvoid (null as unknown as ForbiddenAdminStatePassThrough)\n`,
+    report => {
+      console.log(`RENDER_STATIC_RED_ADMIN_PASS_THROUGH=${rule(report, 'render-admin-state-pass-through').status}`)
+      assertVector(report, ['render-admin-state-pass-through'])
+      assert.match(rule(report, 'render-admin-state-pass-through').error, /stateSource/)
+    },
+  )
+
+  withMutation(
+    'admin-shell/src/types/adminSection.ts',
+    source => `${source}\nimport {useRenderContext} from '@catering-v2s/ui-base-render'\nconst readRawStateSource = () => useRenderContext().stateSource\nvoid readRawStateSource\n`,
+    report => {
+      console.log(`RENDER_STATIC_RED_EXTERNAL_RAW_CONTEXT=${rule(report, 'render-admin-state-pass-through').status}`)
+      assertVector(report, ['render-admin-state-pass-through'])
+      assert.match(rule(report, 'render-admin-state-pass-through').error, /stateSource/)
     },
   )
 

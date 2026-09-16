@@ -605,6 +605,53 @@ partKey、rendererKey 或调用方的 partKey-only API。
 
 ---
 
+### `TR-15` · React UI 状态读取必须经过 selector-aware framework hook
+
+**规则**：`apps/terminal/ui/**` 的生产 React UI 读取 TER runtime state，必须使用
+`@catering-v2s/ui-base-render` 的 `useUiStateSelector(selector[, equalityFn])`；读取 runtime lifecycle
+status 必须使用 `useRenderStatus()`。生产 UI 不得调用、重新导出或重新引入 `useRenderSnapshot`，不得直接
+调用 `stateSource.getState()` / `stateSource.getStatus()`，也不得把 raw state root/source 作为业务渲染
+prop 向下传递。`useRenderContext()` 的 public 返回类型不得暴露 `stateSource` / `snapshotReader`；这两个
+字段只能存在于 render framework 的 private subscription accessor。`useUiStateSelector` 返回
+`undefined` 只表示选择结果，不表示 runtime lifecycle 或业务空值；需要区分 runtime unavailable 与业务
+选择结果为空时，必须同时读取 `useRenderStatus()`。
+
+selector 必须是纯读函数：只能从传入的 root 计算返回值，不得 dispatch、写 store、调用 IO、读取时间或
+随机数，或修改输入。跨包状态只能调用 owner 导出的 typed selector，不得按字符串 slice key 读取别人的
+状态，仍受 `TR-03` 约束。
+
+无参数 selector 应放在模块级；参数化 selector 必须使用模块级 selector factory 或 `useMemo` / `useCallback`
+及其完整依赖构造。禁止用缺少依赖的 hook 把旧闭包伪装成稳定 selector；equality function 也必须稳定，或
+由完整依赖构造。scalar、boolean 和 owner 已稳定的引用可直接返回；派生对象/数组或昂贵计算应由 owner
+selector/Reselect 提供稳定引用，或在确有理由时传入窄的 equality function。Reselect 只缓存派生计算和
+结果引用，不改变外部 store 的订阅粒度；只替换 selector 而继续订阅完整 snapshot 不满足本条。
+
+**允许的窄例外**：render framework 内部的 `RenderContext.ts`、`RenderProvider.tsx`、
+`createRenderSnapshotReader.ts`、`useUiStateSelector.ts` 与 `useRenderStatus.ts` 可以通过 private accessor
+读 source/snapshot 以实现订阅；`apps/terminal/ui/base/console-assembly` 创建 state source 并向
+`RenderProvider` 注入 `stateSource` 属于 assembly→render 的基础设施接线，但不得继续传给业务组件。
+专门验证订阅机制的 `ui-base-render` tests 可以选择 full root。kernel actor/foundation 的同步
+`getState()` 继续遵循其 owner selector/API，不迁移成 React hook。以上例外不得成为 feature、integration
+或 admin-shell 生产 UI 的调用模板。
+
+**公共面同步**：`useRenderSnapshot` 不再是 render package public export；新增或迁移状态读取后，必须同步
+package invariant、README、类型与静态边界。不得为了本条新增第二个 store、Provider、UI 层状态副本或
+兼容 hook。
+
+**反例栏**：
+
+- 在 feature 组件里 `useRenderContext().stateSource.getState()` 或把 `stateRoot` 传给 section；
+- 把 `useUiStateSelector` 换成返回完整 root，或用 `createSelector` / Reselect 但仍订阅完整 snapshot；
+- 用 `useCallback([])` 捕获会变化的 `partKey` / `displayMode`，或让 selector 在执行时 dispatch；
+- 用一次 `equalityFn = () => true`、漏比较一个语义字段，或在 equality 中深遍历/IO；
+- 只删除 public export 而不更新 invariant、README 或直接依赖。
+
+机器门只判定 public context 类型、旧 hook 的 import/export、明显的 admin raw state pass-through、public
+export 与 direct dependency 闭包；selector 纯度、闭包依赖完整性、返回值语义和 equality 合理性必须由
+focused tests 与 implementation review 判定。门不能以字符串命中或测试名称冒充这些语义。
+
+---
+
 ## 2 · 三重命名与依赖方向
 
 ### 2-A · 三重标识由目录路径唯一派生

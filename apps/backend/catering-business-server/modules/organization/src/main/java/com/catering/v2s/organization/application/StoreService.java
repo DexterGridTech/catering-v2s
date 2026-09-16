@@ -349,7 +349,7 @@ public class StoreService {
             StorePersistence.UpdateFacts facts = persistence.readUpdateFacts(workspaceUuid, groupWorkspaceKey, storeId);
             return new StoreUpdateFacts(facts.projectId(), facts.tenantId(), facts.brandId(), facts.code());
         } catch (IllegalStateException notFound) {
-            throw new BusinessEntityService.OrganizationNotFoundException();
+            throw new BusinessEntityService.OrganizationNotFoundException(notFound);
         }
     }
 
@@ -595,7 +595,7 @@ public class StoreService {
                             references.headCompanyEnabled(),
                             references.headCompanyAuthorized()));
         } catch (IllegalStateException notFound) {
-            throw new BusinessEntityService.OrganizationNotFoundException();
+            throw new BusinessEntityService.OrganizationNotFoundException(notFound);
         }
     }
 
@@ -604,7 +604,7 @@ public class StoreService {
             StorePersistence.StatusFacts facts = persistence.readStatusFacts(workspaceUuid, groupWorkspaceKey, storeId);
             return new StoreStatusFacts(facts.before(), facts.projectId());
         } catch (IllegalStateException notFound) {
-            throw new BusinessEntityService.OrganizationNotFoundException();
+            throw new BusinessEntityService.OrganizationNotFoundException(notFound);
         }
     }
 

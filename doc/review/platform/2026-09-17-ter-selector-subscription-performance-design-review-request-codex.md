@@ -1,4 +1,4 @@
-# TER selector 订阅性能优化 · DESIGN review 交接请求
+# TER selector 订阅规范与订阅边界收紧 · DESIGN review 交接请求
 
 REVIEW_TARGET=DESIGN
 REVIEW_KIND=IMPLEMENTATION_FACING_DESIGN
@@ -7,25 +7,28 @@ ADVERSARIAL_REVIEW_REPORT=doc/review/platform/2026-09-17-ter-selector-subscripti
 REVIEW_STATUS=OPEN
 CODEX_SIDE_INDEPENDENT_REVIEW=ROUND_2_COMPLETE_WITH_OPEN_VERIFICATION
 IMPLEMENTATION_AUTHORITY=false
+SCOPE_DECISION=方案二：本批不主张性能改善，render isolation 只作为 selector-aware 订阅契约的行为结果
+PATH_NOTE=文件名沿用创建时的路径以保持既有引用稳定；本批口径以当前标题与 SCOPE_DECISION 为准，不代表性能改善任务
+POST_CLAUDE_REVIEW_DISPOSITION=NO-GO(1M/3S/3N) 已按 Dexter 选择方案二修订；本版本等待 Claude 复评
 
 ## 背景
 
-本轮要处理 TER React UI 的状态订阅粒度问题，并把 selector 的调用方式提升为框架级规范。当前 `useRenderSnapshot` 以完整 `RenderSnapshot` 订阅 state source，`useUiStateSelector` 只在 render 之后缓存 selector 计算结果；因此 root 以新引用更新时，无关状态的 UI consumer 仍会重新 render。Reselect 可以缓存派生计算和结果引用，但不能替代 selector-aware external-store subscription。
+本轮要把 TER React UI 的 selector 调用方式提升为框架级规范，并收紧 React UI 与外部 state source 的订阅边界。当前 `useRenderSnapshot` 以完整 `RenderSnapshot` 订阅 state source，`useUiStateSelector` 只在 render 之后缓存 selector 计算结果；因此当前实现没有提供按选择结果隔离订阅的契约。Reselect 可以缓存派生计算和结果引用，但不能替代 selector-aware external-store subscription。本批不主张性能改善、性能数字或用户感知改善；render isolation 只作为要验证的框架行为性质。
 
 Codex 侧已完成两轮 fresh 只读 DESIGN 对抗审查：Round 1 暴露 3M/1S/1N，已逐条修订；Round 2 一名 reviewer 复核为 `GO_WITH_OPEN_VERIFICATION 0M/0S/0N`，另一名因未完成指定材料读回而提前结束，主 agent按项目规则接管其未完成核验并留痕。该结果不是 Claude/Dexter 的最终 verdict。
 
-本次 Codex 只完成了 implementation-facing 详设、实施计划与本交接请求，没有修改源码、测试、依赖、规范、脚本或构建产物，也没有执行 typecheck、owned test、terminal static、Web、Metro、Android、DEV、设备或部署。Roadmap 的现行授权字段不被本请求扩展；implementation 仍未获授权。
+本次 Codex 只完成了 implementation-facing 详设、实施计划与本交接请求，并根据 Dexter 选择方案二修订了 scope 与 Claude finding 处置；没有修改源码、测试、依赖、规范、脚本或构建产物，也没有执行 typecheck、owned test、terminal static、Web、Metro、Android、DEV、设备或部署。Roadmap 的现行授权字段不被本请求扩展；implementation 仍未获授权。
 
 ## 评审目标
 
 请独立判断：
 
-1. 选定的 `use-sync-external-store/with-selector` 方案是否以足够小的改动真正解决“无关 root 更新造成无关 React render”，而不是只增加 Reselect/cache；
+1. 选定的 `use-sync-external-store/with-selector` 方案是否以足够小的改动建立“无关 root 更新且选择结果相等时不重新 render”的订阅契约，而不是只增加 Reselect/cache；不把该契约误读为已经证明的性能改善；
 2. `useUiStateSelector`、`useRenderStatus`、`useUiCatalogContext` 的公共边界、root unavailable、selector identity、equality 和 derived reference 语义是否完整；
 3. 拟新增的终端规范 `TR-15` 是否足以形成可执行的 selector 调用标准，且没有误伤 kernel actor/foundation 的非 React `getState()`；
 4. 五个 direct full-snapshot production consumers、两个共享 hook、admin raw state pass-through 的迁移分母是否闭合；
-5. focused render-count oracle、static boundary rule、真实 red mutation、证据分档和三维/逐代码对账是否能防止“测试名/selector call count/字符串匹配伪装成性能修复”；
-6. 方案是否无意改变 TER 现有 screen/layer/admin 行为，是否把不属于本批的列表 virtualization、设备性能数字或动态环境正确留在范围外。
+5. focused render-count oracle、static boundary rule、真实 red mutation、证据分档和三维/逐代码对账是否能防止“测试名/selector call count/字符串匹配伪装成订阅契约成立”；
+6. 方案是否无意改变 TER 现有 screen/layer/admin 行为，是否把不属于本批的列表 virtualization、设备性能数字、性能基线或动态环境正确留在范围外；并核对已补充的通知量/selector 执行成本取舍说明。
 
 ## 需阅读文件
 
@@ -51,20 +54,20 @@ Codex 侧已完成两轮 fresh 只读 DESIGN 对抗审查：Round 1 暴露 3M/1S
 
 ## 独立核验重点
 
-1. 从 `useUiStateSelector` 的实际调用链证明当前问题是“订阅太粗”而非单纯 selector 计算慢；给出 root 新引用但选择结果相等时当前组件为何仍会 render 的反例。
+1. 从 `useUiStateSelector` 的实际调用链核对当前订阅边界是否粗于选择边界；给出 root 新引用但选择结果相等时当前组件为何仍会 render 的机制反例，但不要把它升格为已测得的性能问题或改善幅度。
 2. 反向挑战方案 C：比较 Reselect-only、独立 Context、手写 `useSyncExternalStore` wrapper 与官方 `with-selector` shim 的真实边界；特别检查直接依赖是否合理、是否会引入第二份 store/Provider。
 3. 核对 `useSyncExternalStoreWithSelector` 的 snapshot/root/equality 语义：root unavailable 不调用业务 selector；selector identity 变化仍生效；derived object/array 的 equality 不会吞掉真实字段变化。
 4. 用 `rg` 重新枚举所有 `useRenderSnapshot` 生产调用、`stateRoot/stateSource` admin pass-through、已有 `useUiStateSelector` 和非 React `getState()`；判断详设 §6/§9.2 是否漏项。
 5. 检查 `useUiCatalogContext` 是否是必要的共享 adapter，还是可以用更小的现有 selector 组合替代；如果保留，核对 equality 是否覆盖它实际返回的全部字段。
 6. 逐条挑战 TR-15：纯度、参数 selector identity、equality 稳定性、Reselect 的正确定位、render framework/test exception，以及它是否误伤 actor/foundation。
-7. 逐条检查 F-1～F-12 的执行体：把“full snapshot subscription”“删除 equality”“stale dependency”“status 读 root”“恢复 raw pass-through”“删除 static rule”等 red mutation 代入，确认缺陷真实发生时对应判据必红。
+7. 逐条检查 F-1～F-12 的执行体：把“full snapshot subscription”“删除 equality”“stale dependency”“status 读 root”“恢复 raw pass-through”“删除 static rule”等 red mutation 代入，确认订阅契约缺陷真实发生时对应判据必红；F-4 还需核对 `undefined` 与 lifecycle status 的边界。
 8. 核对 `tools/terminal-ui-render/check-static.mjs` 能否在现有 checker 中表达新增机械边界；不能机械证明的语义不得被字符串匹配冒充。
 9. 核对 B0→B1→B2→B3→B4 顺序、每 CP 的 fresh 三维对账、全批测试前全批对账和交付前逐代码/详设对账是否互不替代。
-10. 确认文档没有把 focused/static 证据升级成 native/Android/Web/release/visual/动态性能结论，也没有偷偷授权 implementation。
+10. 确认文档没有把 focused/static 证据升级成 native/Android/Web/release/visual/动态性能或性能改善结论，也没有偷偷授权 implementation；确认方案二的 scope 改写在详设、计划与交接中一致。
 
 ## 期望结论
 
-请给出明确 `GO` 或 `NO-GO`，并报告 `M` / `S` / `N` 数量。每条 finding 请标注：
+请给出明确 `GO` 或 `NO-GO`，并报告 `M` / `S` / `N` 数量。请特别复核本轮对 Claude 上次 `NO-GO(1M/3S/3N)` 的处置：M-1 采用 Dexter 选择的方案二；S-1/S-2/S-3 与 N-1/N-2/N-3 已改文档但尚未执行。每条 finding 请标注：
 
 - `CONFIRMED` / `PARTIALLY_CONFIRMED` / `REJECTED_WITH_EVIDENCE` / `UNVERIFIED_REQUIRES_EVIDENCE` / `DEXTER_DECISION`；
 - 精确仓库相对路径、symbol 或行号、影响面、最小修复建议；
@@ -81,11 +84,11 @@ Codex 侧已完成两轮 fresh 只读 DESIGN 对抗审查：Round 1 暴露 3M/1S
 ## 可直接复制给 Claude 的话术
 
 ```text
-您好 Claude，烦请协助独立评审 TER React UI selector 订阅性能优化的 implementation-facing 详设与实施计划。
+您好 Claude，烦请协助独立评审 TER React UI selector 订阅规范与订阅边界收紧的 implementation-facing 详设与实施计划。
 
-背景：当前 `useRenderSnapshot` 以完整 `RenderSnapshot` 订阅 TER state source，`useUiStateSelector` 只在组件 render 之后缓存 selector 计算结果；root 以新引用更新时，无关状态的 React UI consumer 仍会重新 render。Reselect 能缓存派生计算和结果引用，但不能替代 selector-aware external-store subscription。本轮 Codex 只写了详设、计划和交接，没有修改源码或执行验证。
+背景：本轮目标是把 TER React UI 的 selector 调用方式提升为框架级规范，并收紧订阅边界。当前 `useRenderSnapshot` 以完整 `RenderSnapshot` 订阅 TER state source，`useUiStateSelector` 只在组件 render 之后缓存 selector 计算结果；root 以新引用更新时，当前实现没有按选择结果隔离订阅的契约。Reselect 能缓存派生计算和结果引用，但不能替代 selector-aware external-store subscription。Dexter 已选择方案二，因此本批不主张性能改善或任何性能数字；render isolation 只作为行为契约核验。本轮 Codex 仅修订详设、计划和交接，没有修改源码或执行验证。
 
-目标：请站在实施方立场独立核验方案是否真正解决订阅粒度问题，`useUiStateSelector`、`useRenderStatus`、`useUiCatalogContext` 的公共边界与 selector 调用规范是否完整，TR-15 是否能作为 TER 框架级规范，生产消费者分母是否闭合，以及 focused/static 判据和真实 red mutation 是否能在缺陷发生时变红。
+目标：请站在实施方立场独立核验方案是否建立了正确的订阅边界，`useUiStateSelector`、`useRenderStatus`、`useUiCatalogContext` 的公共边界与 selector 调用规范是否完整，TR-15 是否能作为 TER 框架级规范，生产消费者分母是否闭合，以及 focused/static 判据和真实 red mutation 是否能在订阅契约缺陷发生时变红。不要把本批结果解释为性能改善证据。
 
 请从 catering-v2s 仓库根阅读：
 - `doc/plans/platform/2026-09-17-ter-selector-subscription-performance-implementation-design-codex.md`：详设、TR-15 草案、API、消费者全集和验收执行体；
@@ -99,13 +102,13 @@ Codex 侧已完成两轮 fresh 只读 DESIGN 对抗审查：Round 1 暴露 3M/1S
 - `doc/platform/terminal-coding-standard.md`、`project-memory/decisions/deterministic-context-only.md`、`project-memory/operations/implementation-source-reread-discipline.md`、`project-memory/practices/cache-invalidation-granularity.md`、`project-memory/practices/reuse-projection-within-request.md`：规范与记忆约束。
 
 请重点独立核验：
-1. 当前 hook 是否确实因完整 root snapshot 订阅而使无关 root 更新触发 render；Reselect-only 是否是反例；官方 `use-sync-external-store/with-selector` 是否在不复制 store/不增加 Provider 的前提下足够；
+1. 当前 hook 是否确实因完整 root snapshot 订阅而缺少按选择结果隔离的契约；Reselect-only 是否不能替代该订阅边界；官方 `use-sync-external-store/with-selector` 是否在不复制 store/不增加 Provider 的前提下足够；不要据此推导性能改善幅度；
 2. `useUiStateSelector` 的 root unavailable、selector identity、默认 `Object.is`、派生 object/array equality 和 status-only subscription 是否闭合；
 3. direct `useRenderSnapshot`、admin raw root/source pass-through、已有 selector callers 与 kernel 非 React `getState()` 的全集是否漏项；
 4. TR-15 的纯度、稳定调用身份、Reselect 边界和窄例外是否可执行，哪些必须留给 focused/review 而不能伪装成 AST/字符串门；
-5. F-1～F-12 与每个 red mutation 是否真能逮住对应缺陷，B0–B4 的对账顺序是否正确，证据档位是否有过度宣称。
+5. F-1～F-12 与每个 red mutation 是否真能逮住对应订阅契约缺陷，尤其 F-4 是否明确 `undefined` 不能单独代表 lifecycle unavailable；B0–B4 的对账顺序是否正确，证据档位是否有过度宣称；
 
 请给出明确 `GO` 或 `NO-GO`，并报告 `M` / `S` / `N` 数量。每条 finding 请标注状态、仓内事实/推论/尚缺证据、精确相对路径与 symbol/行号、影响面、最小修复建议和是否需 Dexter 裁决；不同意时请给出可复现反例。请分开报告 static、focused、native/Android、Web、release/visual、cleanup，未执行档位不得写成 PASS。
 
-授权边界：本轮只评审详设、实施计划与交接，不授权修改源码、测试、依赖、脚本、规范或构建产物，不授权任何 typecheck/test/static、Web、Metro、Android、DEV、设备、seed、UAT、部署或 Git 操作。设计 review GO 不等于 implementation authority，是否进入实施由 Dexter 决定。谢谢。
+授权边界：本轮只评审详设、实施计划与交接，不授权修改源码、测试、依赖、脚本、规范或构建产物，不授权任何 typecheck/test/static、Web、Metro、Android、DEV、设备、seed、UAT、部署或 Git 操作。设计 review GO 不等于 implementation authority，是否进入实施由 Dexter 决定。本批不主张性能改善；若未来需要真实性能结论，必须另开有改前基线和独立授权的任务。谢谢。
 ```

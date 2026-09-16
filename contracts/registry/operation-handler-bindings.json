@@ -11,8 +11,8 @@
       "schemaVersion": 1,
       "revision": "CATALOG_INVENTORY_P1_20260806",
       "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
-      "contractDigest": "30e20a63b2c1dcb7a65d72fad92a86ecd38effb6af3c23799bddff9c143ea8f7",
-      "contentSha256": "3334df4a0a54c4e97d40b16ea125c596027da8da6b175ebc7df65e90a85591f1"
+      "contractDigest": "212f49a1cbc583739bb29398ce8663f0bdb3ad42f2cbb86e324f6417edcdc6e1",
+      "contentSha256": "656b43854ca5b6a84084f1a2e8de1ee6d5c11dc4fb86d8809089ef421a620c25"
     },
     "edge-face": {
       "schemaVersion": 2,

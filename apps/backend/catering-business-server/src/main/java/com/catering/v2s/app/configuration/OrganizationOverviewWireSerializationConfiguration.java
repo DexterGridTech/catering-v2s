@@ -5,6 +5,10 @@ import com.catering.v2s.app.edge.generated.wire.OrganizationOverviewItemExtensio
 import com.catering.v2s.app.edge.generated.wire.OrganizationOverviewPage;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.core.JsonGenerator;
+import java.io.IOException;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +33,18 @@ public class OrganizationOverviewWireSerializationConfiguration implements WebMv
     }
 
     static void configure(ObjectMapper mapper) {
+        SimpleModule legacyJsonNodeBridge = new SimpleModule("tools-jackson-json-node-bridge");
+        legacyJsonNodeBridge.addSerializer(tools.jackson.databind.JsonNode.class, new JsonSerializer<>() {
+            @Override
+            public void serialize(
+                    tools.jackson.databind.JsonNode value,
+                    JsonGenerator generator,
+                    com.fasterxml.jackson.databind.SerializerProvider serializers)
+                    throws IOException {
+                serializers.defaultSerializeValue(mapper.readTree(value.toString()), generator);
+            }
+        });
+        mapper.registerModule(legacyJsonNodeBridge);
         mapper.addMixIn(OrganizationOverviewItem.class, OmitNullFlatProjectionFields.class);
     }
 

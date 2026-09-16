@@ -1,6 +1,12 @@
 {
   "name": "@catering-v2s/terminal",
   "private": true,
+  "dependencies": {
+    "use-sync-external-store": "^1.6.0"
+  },
+  "devDependencies": {
+    "react": "19.2.3"
+  },
   "scripts": {
     "typecheck": "yarn --cwd ../.. turbo run typecheck --filter='./apps/terminal/**' --filter='!@catering-v2s/terminal'",
     "test": "yarn --cwd ../.. turbo run test --filter='./apps/terminal/**' --filter='!@catering-v2s/terminal'",

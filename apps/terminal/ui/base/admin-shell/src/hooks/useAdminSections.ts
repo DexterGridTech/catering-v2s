@@ -4,7 +4,7 @@ import {selectAdminSections} from '../foundations/adminSectionSelection'
 
 export type UseAdminSectionsInput = Readonly<{
   readonly catalog: UiCatalog
-  readonly context: UiCatalogContext
+  readonly context: UiCatalogContext | undefined
 }>
 
 export type AdminSectionsState = Readonly<{
@@ -20,7 +20,7 @@ export type AdminSectionsState = Readonly<{
  * receives the already selected catalog and never branches on that fact.
  */
 export const useAdminSections = ({catalog, context}: UseAdminSectionsInput): AdminSectionsState => {
-  const sections = useMemo(() => selectAdminSections(catalog, context), [catalog, context])
+  const sections = useMemo(() => context === undefined ? [] : selectAdminSections(catalog, context), [catalog, context])
   const [requestedPartKey, setRequestedPartKey] = useState<string | null>(null)
   const selectedPartKey = requestedPartKey
   const selectedSection = requestedPartKey === null

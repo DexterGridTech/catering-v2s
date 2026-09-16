@@ -44,7 +44,7 @@ class OperationsBusinessEntityControllerTest {
         when(authentication.session("operations-session")).thenReturn(session);
         readFacts(authentication, session);
         BusinessEntityService entities = mock(BusinessEntityService.class);
-        when(entities.pageBrands(workspaceId, WORKSPACE_KEY, "brand", "ENABLED", "NAME", "ASC", 3, 7))
+        when(entities.pageBrands(workspaceId, WORKSPACE_KEY, "brand", "ENABLED", "NAME", "ASC", 3, 7, null, null))
                 .thenReturn(new BusinessEntityService.BrandPage(List.of(), 51, 3, 7));
         OperationsBusinessEntityController controller = new OperationsBusinessEntityController(
                 new OperationsSessionResolver(authentication), entities, mock(WorkspaceCapabilityScopeResolver.class));
@@ -64,7 +64,7 @@ class OperationsBusinessEntityControllerTest {
         assertEquals(3L, response.metadata().page());
         assertEquals(7L, response.metadata().pageSize());
         assertEquals(List.of(), response.items());
-        verify(entities).pageBrands(workspaceId, WORKSPACE_KEY, "brand", "ENABLED", "NAME", "ASC", 3, 7);
+        verify(entities).pageBrands(workspaceId, WORKSPACE_KEY, "brand", "ENABLED", "NAME", "ASC", 3, 7, null, null);
         verifyNoMoreInteractions(entities);
     }
 
@@ -99,7 +99,9 @@ class OperationsBusinessEntityControllerTest {
                         "NAME",
                         "ASC",
                         2,
-                        5))
+                        5,
+                        null,
+                        null))
                 .thenReturn(new BusinessEntityService.EntityPage(List.of(), 12, 2, 5));
         when(entities.pageEntities(
                         "HEAD_COMPANY",
@@ -113,7 +115,9 @@ class OperationsBusinessEntityControllerTest {
                         "UPDATED_AT",
                         "DESC",
                         4,
-                        3))
+                        3,
+                        null,
+                        null))
                 .thenReturn(new BusinessEntityService.EntityPage(List.of(), 9, 4, 3));
         OperationsBusinessEntityController controller = new OperationsBusinessEntityController(
                 new OperationsSessionResolver(authentication), entities, mock(WorkspaceCapabilityScopeResolver.class));
@@ -171,8 +175,10 @@ class OperationsBusinessEntityControllerTest {
                         "ENABLED",
                         "NAME",
                         "ASC",
-                        2,
-                        5);
+                            2,
+                            5,
+                            null,
+                            null);
         verify(entities)
                 .pageEntities(
                         "HEAD_COMPANY",
@@ -185,8 +191,10 @@ class OperationsBusinessEntityControllerTest {
                         "DISABLED",
                         "UPDATED_AT",
                         "DESC",
-                        4,
-                        3);
+                            4,
+                            3,
+                            null,
+                            null);
         verifyNoMoreInteractions(entities);
     }
 
@@ -236,7 +244,9 @@ class OperationsBusinessEntityControllerTest {
                             "NAME",
                             "ASC",
                             1,
-                            itemCount))
+                            itemCount,
+                            null,
+                            null))
                     .thenReturn(new BusinessEntityService.EntityPage(heads, itemCount, 1, itemCount));
 
             var response = controller.headCompanies(
@@ -269,7 +279,9 @@ class OperationsBusinessEntityControllerTest {
                             "NAME",
                             "ASC",
                             1,
-                            itemCount);
+                            itemCount,
+                            null,
+                            null);
         }
         verifyNoMoreInteractions(entities);
     }

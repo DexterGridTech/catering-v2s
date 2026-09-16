@@ -4,8 +4,9 @@ import {selectScreen} from '@catering-v2s/kernel-base-ui-state'
 import {useRenderContext} from '../contexts/RenderContext'
 import {useSurfaceContext} from '../contexts/SurfaceContext'
 import {RenderFallback, resolvePartWithStatus} from './resolvePart'
-import {useRenderSnapshot} from '../hooks/useRenderSnapshot'
-import {createCatalogContext} from '../foundations/createCatalogContext'
+import {useRenderStatus} from '../hooks/useRenderStatus'
+import {useUiCatalogContext} from '../hooks/useUiCatalogContext'
+import {useUiStateSelector} from '../hooks/useUiStateSelector'
 import {ScreenReadyBoundary, StartupFailurePage} from './ScreenReadyBoundary'
 import type {RenderFailure} from '../types/props'
 
@@ -28,20 +29,16 @@ export const ScreenContainer = () => {
     rendererCatalog,
     reportPartDiagnostic,
     clearPartDiagnostic,
-    selectSurfaceForm,
   } = useRenderContext()
-  const snapshot = useRenderSnapshot()
-  const catalogContext = snapshot.root === undefined
-    ? undefined
-    : createCatalogContext(snapshot.root, displayMode, selectSurfaceForm(snapshot.root))
-
-  const placement = useMemo(() => {
-    if (snapshot.root === undefined) return undefined
-    const persistedPlacement = selectScreen(snapshot.root, displayMode, containerKey)
+  const runtimeStatus = useRenderStatus()
+  const catalogContext = useUiCatalogContext(displayMode)
+  const placementSelector = useMemo(() => (root: Parameters<typeof selectScreen>[0]) => {
+    const persistedPlacement = selectScreen(root, displayMode, containerKey)
     if (persistedPlacement !== undefined) return persistedPlacement
     const defaultPartKey = defaultContainerPartKeys?.[containerKey]
     return defaultPartKey === undefined ? undefined : {partKey: defaultPartKey}
-  }, [containerKey, defaultContainerPartKeys, displayMode, snapshot.root])
+  }, [containerKey, defaultContainerPartKeys, displayMode])
+  const placement = useUiStateSelector(placementSelector)
   useEffect(() => {
     if (!__DEV__) return
     logger.info({
@@ -52,13 +49,13 @@ export const ScreenContainer = () => {
         source: 'ui-base-render.ScreenContainer',
         displayMode,
         containerKey,
-        runtimeStatus: snapshot.status,
+        runtimeStatus,
         screenPartKey: placement?.partKey ?? null,
         screenInstanceId: placement?.instanceId ?? null,
         fallback: placement === undefined ? 'container-empty' : null,
       },
     })
-  }, [containerKey, displayMode, logger, placement, snapshot.status])
+  }, [containerKey, displayMode, logger, placement, runtimeStatus])
   const isTargetPrimarySurface = surfaceIdentity?.surfaceKey === nativeLoadingCapability.targetPhysicalSurface.surfaceKey
     && surfaceIdentity.displayIndex === nativeLoadingCapability.targetPhysicalSurface.displayIndex
     && (isHostPrimaryDisplay || surfaceHostAvailability === 'unavailable')
@@ -78,8 +75,8 @@ export const ScreenContainer = () => {
       </View>
     )
   }
-  if (snapshot.root === undefined) {
-    if (snapshot.status === 'failed') {
+  if (runtimeStatus !== 'started') {
+    if (runtimeStatus === 'failed') {
       const failure: RenderFailure = {category: 'system', reason: 'runtime-start-failed'}
       return (
         <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>

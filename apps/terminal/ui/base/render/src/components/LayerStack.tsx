@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useRef} from 'react'
+import {useCallback, useEffect, useMemo, useRef} from 'react'
 import {BackHandler, Platform, Pressable, StyleSheet, TextInput, View} from 'react-native'
 import {closeLayerCommand, selectLayers} from '@catering-v2s/kernel-base-ui-state'
 import {useRenderContext} from '../contexts/RenderContext'
@@ -7,8 +7,9 @@ import {useSurfaceFocusBoundary} from '../contexts/SurfaceFocusBoundaryContext'
 import {dispatchWithRequestId} from '../foundations/dispatchWithRequestId'
 import {RenderFallback, resolvePart} from './resolvePart'
 import {useDispatchCommand} from '../hooks/useDispatchCommand'
-import {useRenderSnapshot} from '../hooks/useRenderSnapshot'
-import {createCatalogContext} from '../foundations/createCatalogContext'
+import {useRenderStatus} from '../hooks/useRenderStatus'
+import {useUiCatalogContext} from '../hooks/useUiCatalogContext'
+import {useUiStateSelector} from '../hooks/useUiStateSelector'
 import {isUiCatalogEntryAvailable} from '@catering-v2s/kernel-base-ui-state'
 
 const LAYER_STACK_TEST_ID = 'ui-base-render:layer-stack'
@@ -101,21 +102,21 @@ export const LayerStack = () => {
     layerDismissals,
     reportPartDiagnostic,
     clearPartDiagnostic,
-    selectSurfaceForm,
   } = useRenderContext()
   const dispatchCommand = useDispatchCommand()
-  const snapshot = useRenderSnapshot()
-  const catalogContext = snapshot.root === undefined
-    ? undefined
-    : createCatalogContext(snapshot.root, displayMode, selectSurfaceForm(snapshot.root))
-  const layers = snapshot.root === undefined
-    ? []
-    : (selectLayers(snapshot.root, displayMode) as readonly Layer[]).filter(layer => {
-      const entry = uiCatalog.byPartKey[layer.partKey]
-      return entry === undefined
-        || catalogContext === undefined
-        || isUiCatalogEntryAvailable(entry, null, catalogContext)
-    })
+  const runtimeStatus = useRenderStatus()
+  const catalogContext = useUiCatalogContext(displayMode)
+  const layerSelector = useMemo(
+    () => (root: Parameters<typeof selectLayers>[0]) => selectLayers(root, displayMode) as readonly Layer[],
+    [displayMode],
+  )
+  const selectedLayers = useUiStateSelector(layerSelector)
+  const layers = (selectedLayers ?? []).filter(layer => {
+    const entry = uiCatalog.byPartKey[layer.partKey]
+    return entry === undefined
+      || catalogContext === undefined
+      || isUiCatalogEntryAvailable(entry, null, catalogContext)
+  })
   const orderedLayers = [...layers].sort((left, right) => compareLayers({left, right, uiCatalog, rendererCatalog}))
   const layerSignature = orderedLayers.map(layer => layer.layerId).join('\u0000')
   const topLayer = orderedLayers.at(-1)
@@ -134,13 +135,13 @@ export const LayerStack = () => {
       data: {
         source: 'ui-base-render.LayerStack',
         displayMode,
-        runtimeStatus: snapshot.status,
+        runtimeStatus,
         layerCount: orderedLayers.length,
         layerIds: orderedLayers.map(layer => layer.layerId),
         topLayerId,
       },
     })
-  }, [displayMode, logger, orderedLayers, snapshot.status, topLayerId])
+  }, [displayMode, logger, orderedLayers, runtimeStatus, topLayerId])
 
   useEffect(() => {
     const hadLayers = previousLayerSignature.current.length > 0
@@ -205,7 +206,7 @@ export const LayerStack = () => {
     return () => subscription.remove()
   }, [dismissTopLayer, topGuard, topLayer])
 
-  if (snapshot.root === undefined) {
+  if (runtimeStatus !== 'started') {
     return (
       <View testID={LAYER_STACK_TEST_ID}>
         <RenderFallback failure={{category: 'transition', reason: 'runtime-not-started'}} />

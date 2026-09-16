@@ -418,7 +418,7 @@ V-2、V-5、V-7、V-12 是本需求最容易被做成「看起来对」的四条
 
 **Claude 对 Codex 转述的一处更正**：Codex 称本稿「同一文档又写成 4 copies」。原文实为「增加一个类型要改 4 处」，是另一句陈述而非第二个总数。该 finding 本身仍成立（总数确实错），此处仅更正描述。
 
-**Claude 核验时用到的承重事实**（重开当前字节）：需求冻结前 `contracts/registry/operation-handler-bindings.json` 登记 269 条 operation；本批新增专用 operating-rule read 后，当前实现分母为 270；操作级字段包括 `mode` 与 `commandBoundary`；root 统计字段仅是 `kind`、`operationCount`、`readCount`、`commandCount`，这些统计字段不属于任何 operation 条目。此前转述曾把 root 统计字段与条目字段混写，现以本句为准，不能再作为实现输入；`AuditChange.java` 第 20-23 行值超 2000 抛异常、第 8 行键上限 120；`ExtensionDefinitionService.java` 第 772-787 行 TEXT 分支无长度上限，门店写入路径经 `StoreService.java` 第 535-557 行走的正是它；Codex 点名的 `ExtensionFieldType` 具体 source locations 均属实，但该历史转述不代表当前总数，当前规范口径以 §4.3 的“至少 11 处、仅 3 处受生成链保护”为准。
+**Claude 核验时用到的承重事实**（重开当前字节）：需求冻结前 `contracts/registry/operation-handler-bindings.json` 登记 269 条 operation；本批新增专用 operating-rule read 后，当前实现分母为 270；operation 条目字段包括 `mode` 与 `commandBoundary`；根对象的 `kind` 标识以及 `operationCount`、`readCount`、`commandCount`、`commandBoundaryCounts` 等统计字段都不属于任何 operation 条目。此前转述曾把根对象字段与条目字段混写，现以本句为准，不能再作为实现输入；`AuditChange.java` 第 20-23 行值超 2000 抛异常、第 8 行键上限 120；`ExtensionDefinitionService.java` 第 772-787 行 TEXT 分支无长度上限，门店写入路径经 `StoreService.java` 第 535-557 行走的正是它；Codex 点名的 `ExtensionFieldType` 具体 source locations 均属实，但该历史转述不代表当前总数，当前规范口径以 §4.3 的“至少 11 处、仅 3 处受生成链保护”为准。
 
 **Codex 未回答、Claude 亦未核的一项**（记为 `UNVERIFIED_REQUIRES_EVIDENCE`，列入详设前置核查，不作为 finding）：审计读出口对未知 `fieldKey` 是否有白名单或中文标签映射；租户改名或删除扩展字段后，历史审计行引用已不存在的键时如何呈现。
 
