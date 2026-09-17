@@ -74,18 +74,18 @@ final class BusinessEntityValueSupport {
 
     static List<AuditChange> createdChanges(com.catering.v2s.organization.api.OrganizationEntityReadback value) {
         return List.of(
-                new AuditChange("code", null, value.code()),
-                new AuditChange("name", null, value.name()),
-                new AuditChange("status", null, value.status()));
+                AuditChange.forNullableScalar("code", null, value.code()),
+                AuditChange.forNullableScalar("name", null, value.name()),
+                AuditChange.forNullableScalar("status", null, value.status()));
     }
 
     static List<AuditChange> changed(
             com.catering.v2s.organization.api.OrganizationEntityReadback before,
             com.catering.v2s.organization.api.OrganizationEntityReadback after) {
         return List.of(
-                        new AuditChange("code", before.code(), after.code()),
-                        new AuditChange("name", before.name(), after.name()),
-                        new AuditChange("status", before.status(), after.status()))
+                        AuditChange.forNullableScalar("code", before.code(), after.code()),
+                        AuditChange.forNullableScalar("name", before.name(), after.name()),
+                        AuditChange.forNullableScalar("status", before.status(), after.status()))
                 .stream()
                 .filter(change -> !Objects.equals(change.beforeValue(), change.afterValue()))
                 .toList();

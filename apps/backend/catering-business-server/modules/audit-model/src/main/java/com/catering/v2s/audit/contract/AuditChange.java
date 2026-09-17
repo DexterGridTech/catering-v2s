@@ -19,9 +19,12 @@ public record AuditChange(
         validateState(afterState, afterValue, "after");
     }
 
-    /** Existing producers use the smallest constructor; null before/after are new-event lifecycle states. */
-    public AuditChange(String fieldKey, String beforeValue, String afterValue) {
-        this(
+    /**
+     * Creates a change for a nullable scalar whose lifecycle intentionally maps null before to MISSING and null
+     * after to CLEARED. Use the canonical constructor when explicit NULL must be distinguished from MISSING.
+     */
+    public static AuditChange forNullableScalar(String fieldKey, String beforeValue, String afterValue) {
+        return new AuditChange(
                 fieldKey,
                 null,
                 beforeValue == null ? AuditValueState.MISSING : AuditValueState.VALUE,

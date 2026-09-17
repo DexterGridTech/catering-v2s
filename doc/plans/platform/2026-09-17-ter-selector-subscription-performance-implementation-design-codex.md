@@ -177,13 +177,13 @@ useUiStateSelector<TValue>(
 
 | 消费者 | 读取内容 | 目标调用 | 额外处置 |
 |---|---|---|---|
-| `ScreenContainer.tsx` | status、current screen placement、surface form/catalog context | `useRenderStatus`、稳定参数化 `useUiStateSelector`、`useUiCatalogContext` | 默认 placement 用 `useMemo`/模块级常量稳定引用；保留现有 failure/ready 分支 |
+| `ScreenContainer.tsx` | status、current screen placement、surface form/catalog context | `useRenderStatus`、稳定参数化 `useUiStateSelector`、`useUiCatalogContext` | 默认 placement 用 `useMemo`/模块级常量稳定引用；保留现有 failure/ready 分支；focused render-count 覆盖默认分支 |
 | `LayerStack.tsx` | status、layers、catalog context | `useRenderStatus`、`useUiStateSelector`、`useUiCatalogContext` | filter/sort 基于稳定 selected layers/context；不改层序与 fallback |
 | `AdminLauncher.tsx` | admin layer 是否存在 | 参数化 boolean selector + `useUiStateSelector` | selector 只读目标 displayMode 的 layers；保留五击入口与 testID |
 | `AdminShellLaptop.tsx` | runtime availability、surface form/catalog、admin sections | `useRenderStatus`、`useUiCatalogContext`、`useAdminSections` | 不把 raw root/source 传给 `AdminSectionContent`；hook 无条件调用，状态分支放在 hook 之后 |
 | `AdminShellMobile.tsx` | 同上 | 同上 | 与 laptop 使用同一 hook 规则，不改变 mobile IA |
 | `useUiVariable.ts` | runtime root + variable declaration | 以 `useUiStateSelector` 为底层适配器 | 保留 variable owner reader；selector identity 随 declaration 变化 |
-| `DisplayContextSection.tsx` | display role、instance mode | 直接调用 `useUiStateSelector(selectDisplayRole)`、`useUiStateSelector(selectRuntimeInstanceMode)` | 删除 `context.stateRoot` 读取 |
+| `DisplayContextSection.tsx` | runtime status、display role、instance mode | `useRenderStatus()` 与 `useUiStateSelector(selectDisplayRole)`、`useUiStateSelector(selectRuntimeInstanceMode)` | lifecycle 文案只由 status 决定；started 但 owner 数据缺失使用中性数据缺失文案；删除 `context.stateRoot` 读取 |
 | `RuntimeSection.tsx` | runtime status | `useRenderStatus()` | 删除 `context.stateSource.getStatus()` |
 | `AdminSectionRenderContext`/`AdminSectionContent` | raw stateRoot/stateSource pass-through | 从生产 contract 删除两项 | 不删 commandBoundary、runtimeFacts、surface、catalogEntry 等仍需要的字段 |
 
@@ -195,15 +195,16 @@ useUiStateSelector<TValue>(
 
 使用现有 `react-test-renderer`、fake `stateSource` 和 `act`，不添加测试框架。
 
-1. `renderState.test.tsx` 增加 render-count probe：root 变为新引用，但 selector 选择的 primitive/稳定对象不变，probe render count 不增加；选择值改变时 count 增加且值正确。
+1. `renderState.test.tsx` 增加 render-count probe：root 变为新引用，但 selector 选择的 primitive/稳定对象不变，probe render count 不增加；选择值改变时 count 增加且值正确。`renderSurface.test.tsx` 另覆盖“无持久化记录但配置了默认 placement”分支，root 无关字段更新时 screen render count 仍保持不变。
 2. 同一测试保留 status sequence、selector identity change、provider isolation/shared source/unsubscribe 断言；把原有“只缓存 selector 计算”用例改名并补上“render 不增加”语义，不能用 selector call count 冒充 render isolation。
 3. 增加 derived object/array 两组：owner/稳定 selector 的引用不变时不 render；明确 equality 的窄例在语义字段变化时 render。禁止只测 `toEqual` 而不测引用/次数。
 4. 增加 stale dependency red case：参数变化、root 不变时 selector 必须读新参数；把 `useMemo/useCallback([])` 缺少参数依赖的错误实现注入后，value assertion 必须失败。只测 selector identity 不足以关闭本条。
 5. 增加 equality 反向 red cases：比较器返回总 `true`，以及分别漏掉 `displayMode`、`workspace`、`instanceMode`、`surfaceForm` 的变异，必须在对应字段变化时使 F-5/F-6 失败；不能只验证“过于严格导致多 render”。
 6. `useRenderStatus` 测试确认 status 更新不调用 `getState`，root 更新不改变只读 status consumer；同时证明 `useUiStateSelector` 返回 `undefined` 时，消费者必须结合 status 才能区分 runtime unavailable 与业务 selector 的空结果。
 7. `useUiCatalogContext` 测试确认 context 字段更新会 render，无关 root 不会；比较字段必须与 `UiCatalogContext` 类型的完整字段集合逐项对账。
-8. `renderSurface.test.tsx`、`layerStack.test.tsx`、admin-shell 的 `adminLauncher.test.ts`、`adminLayout.test.ts`、`adminSections.test.tsx` 保留现有行为断言，并补 raw root/source 删除后的真实装配/section 消费证明。
+8. `renderSurface.test.tsx`、`layerStack.test.tsx`、admin-shell 的 `adminLauncher.test.ts`、`adminLayout.test.ts`、`adminSections.test.tsx` 保留现有行为断言，并补 raw root/source 删除后的真实装配/section 消费证明；`admin-shell/test/displayContext.test.tsx` 覆盖 runtime status 与 owner 数据缺失的分离。
 9. `renderProps.test.tsx` 中 `useUiStateSelector(root => root)` 若仍保留，只允许作为订阅机制专用 test exception，并在用例注释和规范中说明；不能成为生产调用模板。
+10. 默认 placement 的稳定引用必须有真实 render-count oracle；将 `ScreenContainer` 改回 selector 内每次新建默认对象且不传 equality 的 production-like mutation 后，该 oracle 必须失败。
 
 ### 7.2 机械静态门
 
@@ -285,7 +286,7 @@ useUiStateSelector<TValue>(
 | focused tests | `apps/terminal/ui/base/render/test/renderState.test.tsx`、`renderProps.test.tsx`、`renderSurface.test.tsx`、`layerStack.test.tsx`；admin-shell 对应 test | render-count、status、identity、catalog equality、行为回归与 red case |
 | public invariant | `apps/terminal/ui/base/render/terminal-invariants.json` | actual/expected exports 与新依赖边界同步 |
 | static gate | `tools/terminal-ui-render/check-static.mjs`、其 self-test | 只加真实机械规则与 red mutation，不建第二 checker |
-| focused mutation harness | `tools/terminal-ui-render/check-behavior.mjs` | 既有 harness 的当前源码锚点、sandbox 依赖链接与 selector-specific vectors | 真实 red mutation evidence |
+| focused mutation harness | `tools/terminal-ui-render/check-behavior.mjs` | 既有 harness 的当前源码锚点、sandbox 依赖链接与 selector-specific vectors；包含默认 placement identity mutation | 真实 red mutation evidence |
 | framework standard | `doc/platform/terminal-coding-standard.md` | 新增 TR-15 及反例；与 TR-03 互补，不复制 review 规则 |
 | package docs | `apps/terminal/ui/base/render/README.md`、必要的 admin-shell README | 说明 selector-aware 调用、status hook、例外和 Reselect 边界 |
 | stale contract audit | `doc/plans/platform/2026-09-03-v2s-terminal-ui-base-render-implementation-design-codex.md`、对应 implementation plan 及所有命中 `useRenderSnapshot` 的 doc | 逐个标识历史/现行；历史记录不重写，仍被当作现行契约的文字才纳入同步 |

@@ -1056,7 +1056,7 @@ public class BusinessChannelTemplateService {
 
 
     private static AuditChange change(String field, Object before, Object after) {
-        return new AuditChange(
+        return AuditChange.forNullableScalar(
                 field, before == null ? null : before.toString(), after == null ? null : after.toString());
     }
 

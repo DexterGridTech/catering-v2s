@@ -1,6 +1,6 @@
 import {useEffect, useMemo} from 'react'
 import {StyleSheet, View} from 'react-native'
-import {selectScreen} from '@catering-v2s/kernel-base-ui-state'
+import {selectScreen, type ScreenPlacement} from '@catering-v2s/kernel-base-ui-state'
 import {useRenderContext} from '../contexts/RenderContext'
 import {useSurfaceContext} from '../contexts/SurfaceContext'
 import {RenderFallback, resolvePartWithStatus} from './resolvePart'
@@ -32,12 +32,15 @@ export const ScreenContainer = () => {
   } = useRenderContext()
   const runtimeStatus = useRenderStatus()
   const catalogContext = useUiCatalogContext(displayMode)
+  const defaultPartKey = defaultContainerPartKeys?.[containerKey]
+  const defaultPlacement = useMemo<ScreenPlacement | undefined>(
+    () => defaultPartKey === undefined ? undefined : {partKey: defaultPartKey},
+    [defaultPartKey],
+  )
   const placementSelector = useMemo(() => (root: Parameters<typeof selectScreen>[0]) => {
     const persistedPlacement = selectScreen(root, displayMode, containerKey)
-    if (persistedPlacement !== undefined) return persistedPlacement
-    const defaultPartKey = defaultContainerPartKeys?.[containerKey]
-    return defaultPartKey === undefined ? undefined : {partKey: defaultPartKey}
-  }, [containerKey, defaultContainerPartKeys, displayMode])
+    return persistedPlacement ?? defaultPlacement
+  }, [containerKey, defaultPlacement, displayMode])
   const placement = useUiStateSelector(placementSelector)
   useEffect(() => {
     if (!__DEV__) return

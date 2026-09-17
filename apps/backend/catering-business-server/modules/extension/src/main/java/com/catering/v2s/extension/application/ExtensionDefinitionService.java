@@ -406,8 +406,8 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
         AuditChangePolicy policy =
                 new AuditChangePolicy("EXTENSION_DEFINITION", "EXTENSION_DEFINITION_REPLACED", AUDIT_FIELDS);
         List<AuditChange> changes = List.of(
-                        new AuditChange("fieldDefinitions", summarize(before), summarize(after)),
-                        new AuditChange(
+                        AuditChange.forNullableScalar("fieldDefinitions", summarize(before), summarize(after)),
+                        AuditChange.forNullableScalar(
                                 "revision",
                                 previousRevision == null ? null : previousRevision.toString(),
                                 String.valueOf(revision)))

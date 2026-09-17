@@ -491,7 +491,7 @@ public class BusinessTenantService {
                 "TENANT_STATUS_CHANGED",
                 time.currentEpochMillis(),
                 actor,
-                List.of(new AuditChange("status", before.status(), updated.status())));
+                List.of(AuditChange.forNullableScalar("status", before.status(), updated.status())));
         return updated;
     }
 

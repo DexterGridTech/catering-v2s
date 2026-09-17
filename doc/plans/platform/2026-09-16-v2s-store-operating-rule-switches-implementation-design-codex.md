@@ -107,6 +107,8 @@ StorePersistence 的 insert、read projection、CAS update 与 StoreServiceSql �
 
 MISSING 表示写前/创建对象中 key 从未存在；NULL 表示历史 JSON 的显式 null；CLEARED 仅由 ExtensionSubmission.CLEAR 的操作意图产生，即使持久化后的 key 已不存在；VALUE 加空字符串表示真实空字符串。CREATE 的“未填写”是 MISSING，不把 absent 强行审成 CLEARED。
 
+既有可空标量字段使用 `AuditChange.forNullableScalar`，明确把 before 的 null 表示为 MISSING、after 的 null 表示为 CLEARED；需要区分显式 NULL 时必须使用 AuditChange 的完整六参构造，不得使用可空标量工厂。
+
 ### 5.3 动态 key policy 与四实体
 
 AuditChangePolicy 仍是闭集安全边界，不能放宽为任意 extensionValues 前缀。它新增“静态允许键 + 本次已读取 definition 的精确 dynamic key 集”入口：
@@ -224,7 +226,7 @@ Dexter 已确认低保真视觉 IA；Claude 第 2 轮独立 DESIGN review 后，
 | 跨 owner gate | organization public API；mapping 52 adapter symbols | 其他 owner 只调用 typed public gate，不读 organization schema | replace gate with direct SQL/import 应红 | mapping 52 条 |
 | 规则 read cache | 各 host 的 `getOperationsOrganizationStoreOperatingRule` query；`queryContext.scopeRef`；operationsContentTabRefreshSignal | rule query 无 local/Redux mirror，scope/refresh 时以显式 `storeId` 重新读取 | scope change 保留旧 Store rule read 应红 | catalog/inventory/sales-menu 三页 |
 | Drawer 生命周期 | StoreEditDrawer；adminDrawerSurfaceProps；useDrawerFormLifecycle；useOverlayLock | rules 进入同一 Form 和 submitting truth；三种 close path 不分叉 | rule change 后遮罩关闭丢稿应红 | 1 Drawer |
-| shared disabled surface | 新 features/store-operating-rules；现有 OperationsRequiredScopeSurface | capability false 与 no-scope 不合并；三个 host 只 import 一个领域 surface | 任一 host 自写相同 copy 应红 | 3 hosts |
+| shared disabled surface | `apps/frontend/operations-admin/src/app/components/OperationsStoreCatalogManagementDisabledSurface.tsx`；现有 OperationsRequiredScopeSurface | 跨 feature 的 app-local 领域组件只保留一份；capability false 与 no-scope 不合并；三个 host 只 import 一个领域 surface | 任一 host 自写相同 copy 应红 | 3 hosts |
 | error mapping | error disposition catalog；活动 edge catalog 的 errorSets/operationErrorAugmentations；r5-edge-materialize；EdgeProblemCode；ContractProblemAdvice；operationsProblemFeedback；platformProblemFeedback | 两个新 code 的 metadata 与 operation closed set 分离；403 覆盖 52 mutation、422 覆盖 Store create/update，再 materialize 到 54 paths | 缺任一 catalog source、materialized path、consumer map 或生成 enum/advice 应红 | 54 operation path + 2 feedback map |
 | audit value codec | AuditChange；AuditChangeJson；AuditChangePolicy | four-state scalar、label snapshot、legacy explicit、truncate non-failing | empty string/null/missing/cleared 任两者合并应红 | all organization audit producers/readers |
 | dynamic audit policy | ExtensionDefinitionService validation；BusinessEntityValueSupport | exact current-definition keys only；不放任意 prefix | undeclared key 被 allow 应红 | Brand/Tenant/HeadCompany/Store |

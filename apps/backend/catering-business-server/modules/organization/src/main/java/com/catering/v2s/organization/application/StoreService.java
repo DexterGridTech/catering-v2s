@@ -568,7 +568,7 @@ public class StoreService {
                 "STORE_STATUS_CHANGED",
                 time.currentEpochMillis(),
                 actor,
-                List.of(new AuditChange("status", before.status(), updated.status())));
+                List.of(AuditChange.forNullableScalar("status", before.status(), updated.status())));
         return updated;
     }
 
@@ -801,9 +801,9 @@ public class StoreService {
             UUID afterHeadCompanyId) {
         List<AuditChange> result = new java.util.ArrayList<>(BusinessEntityValueSupport.changed(before, after));
         if (!Objects.equals(before.notes(), after.notes()))
-            result.add(new AuditChange("notes", before.notes(), after.notes()));
+            result.add(AuditChange.forNullableScalar("notes", before.notes(), after.notes()));
         if (!Objects.equals(beforeHeadCompanyId, afterHeadCompanyId))
-            result.add(new AuditChange(
+            result.add(AuditChange.forNullableScalar(
                     "relationship",
                     beforeHeadCompanyId == null ? null : beforeHeadCompanyId.toString(),
                     afterHeadCompanyId == null ? null : afterHeadCompanyId.toString()));

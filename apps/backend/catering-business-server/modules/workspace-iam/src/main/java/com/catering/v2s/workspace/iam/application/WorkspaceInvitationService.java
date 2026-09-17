@@ -1064,7 +1064,7 @@ public class WorkspaceInvitationService {
             String afterStatus) {
         AuditChangePolicy policy = new AuditChangePolicy("WORKSPACE_INVITATION", action, INVITATION_FIELDS);
         List<AuditChange> changes = List.of(
-                new AuditChange("status", beforeStatus, afterStatus), new AuditChange("lifecycleEvent", null, action));
+                AuditChange.forNullableScalar("status", beforeStatus, afterStatus), AuditChange.forNullableScalar("lifecycleEvent", null, action));
         persistence.appendAudit(
                 UUID.randomUUID(),
                 workspaceUuid,

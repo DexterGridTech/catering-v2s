@@ -86,7 +86,7 @@
 
 它替换页面原列表区域和其“新建/编辑”等业务动作区；不得发起任何列表读取请求、不得显示伪可用的新建按钮，也不提供“去开通”链接（当前用户未必有门店编辑权限，且 Dexter 已裁定不做能力总览）。scope 尚未选择继续使用既有 `OperationsRequiredScopeSurface`，不能将二者合并；定义/显式 Store detail 读取失败显示“暂时无法获取门店经营规则，请重试。”并阻断业务子树，不能误显示“未开启”。
 
-组件的唯一 app 内位置由详设确定为 `features/store-operating-rules/ui/StoreCatalogManagementDisabledSurface.tsx`；它不是 foundation：foundation 当前没有这种领域语义，且只有三个同一业务 host，泛化会制造未验证抽象。
+组件的唯一 app 内位置由详设确定为 `apps/frontend/operations-admin/src/app/components/OperationsStoreCatalogManagementDisabledSurface.tsx`；它是跨三个 feature host 共享的 app-local 领域组件，不是 foundation：foundation 当前没有这种领域语义，放在 app 层可避免 feature 私有 UI 互相依赖；泛化会制造未验证抽象。
 
 每个 host 统一处理以下状态：
 

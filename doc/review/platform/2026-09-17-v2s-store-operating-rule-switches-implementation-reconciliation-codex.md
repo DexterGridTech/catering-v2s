@@ -177,3 +177,24 @@ owner seed executor 在 `owner-command-seed-executor.mjs:151-192` 校验完整 1
 - 实施后 fresh 独立静态 review 尚未给出 verdict；本记录不产生 `GO`/`NO-GO`，也不填 `M/S/N`。
 - browser L2、UAT、生产部署仍为 `NOT_AUTHORIZED`，不能将 backend acceptance、DEV 或 seed 解释为 browser/UAT 证据。
 - 发现并修复的生成 digest drift（`GEN-01`）已在最终生成检查、source hash 和最终 acceptance 前闭合；它不是 Claude 新 finding，也不改变 review 轮次。
+
+## 6. Claude 实施后复审 Note 处置
+
+### N-01：AuditChange 可空标量构造语义
+
+状态：`CONFIRMED -> FIXED`，不改变本批业务行为。
+
+- owning source：`apps/backend/catering-business-server/modules/audit-model/src/main/java/com/catering/v2s/audit/contract/AuditChange.java` 的 `AuditChange.forNullableScalar` 与 canonical 六参构造。
+- 修复：移除有歧义的公开三参构造器，新增命名工厂 `forNullableScalar(fieldKey, beforeValue, afterValue)`；工厂只表达“可空标量且不区分显式 NULL”的既有语义，before null 固定为 `MISSING`、after null 固定为 `CLEARED`；需要 `NULL` 时只能使用完整六参构造。
+- 同根全集：原有 74 个三参调用点已全部迁移到命名工厂；另有 2 个新测试调用用于直接断言工厂语义，当前工厂调用共 76 处。AuditChangeJson、AuditHistoryWireMapper 及各显式四态调用点保留完整六参构造。未发现残留三参 `new AuditChange` 调用。
+- 详设同步：详设 §5.2 已写明两种构造路径及其适用边界；该修复不改变现有可空标量字段的审计呈现。
+- focused proof：`compileJava` 与 `compileTestJava` 在修复全限定名调用后均 `BUILD SUCCESSFUL`；直接执行 JUnit 被仓内 `V2S_TESTCONTAINERS_REMOTE_REQUIRED` 门拒绝，未将该次 test task 结果计为通过，也未因此启动任何远端运行。
+
+### N-02：共享未开通组件落点
+
+状态：`CONFIRMED -> FIXED`，无功能行为变化。
+
+- owning source：实际组件为 `apps/frontend/operations-admin/src/app/components/OperationsStoreCatalogManagementDisabledSurface.tsx`，三个 host 均从该 app-local 路径导入。
+- 修复：详设 §8 的 shared disabled surface 机制表与交互设计 §4 均改为该 app-local 唯一路径，并说明跨 feature 共享放在 app 层以避免私有 UI 互相依赖；不迁移源码、不增加重复组件。
+
+本轮两条 Note 均已在既有实施授权内处理；未新增运行、reset、seed、DEV、Browser L2、UAT 或部署动作。`P9_OPEN_ITEMS=0` 保持不变。

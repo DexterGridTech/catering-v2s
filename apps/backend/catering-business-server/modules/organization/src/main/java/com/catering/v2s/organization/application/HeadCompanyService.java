@@ -410,7 +410,7 @@ public class HeadCompanyService {
                                 "HEAD_COMPANY_BRAND_AUTHORIZATION_ADDED",
                                 time.currentEpochMillis(),
                                 actor,
-                                List.of(new AuditChange("relationship", null, brandId.toString())));
+                                List.of(AuditChange.forNullableScalar("relationship", null, brandId.toString())));
                     }
                 });
     }
@@ -464,7 +464,7 @@ public class HeadCompanyService {
                             "HEAD_COMPANY_BRAND_AUTHORIZATION_REMOVED",
                             time.currentEpochMillis(),
                             actor,
-                            List.of(new AuditChange("relationship", brandId.toString(), null)));
+                            List.of(AuditChange.forNullableScalar("relationship", brandId.toString(), null)));
                 });
     }
 
@@ -600,7 +600,7 @@ public class HeadCompanyService {
                 "HEAD_COMPANY_STATUS_CHANGED",
                 time.currentEpochMillis(),
                 actor,
-                List.of(new AuditChange("status", before.status(), updated.status())));
+                List.of(AuditChange.forNullableScalar("status", before.status(), updated.status())));
         return updated;
     }
 

@@ -439,7 +439,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
                 "PLATFORM_ADMIN_STATUS_CHANGED",
                 now,
                 actor,
-                ADMIN_STATUS_CHANGED.allow(List.of(new AuditChange("status", null, targetStatus))));
+                ADMIN_STATUS_CHANGED.allow(List.of(AuditChange.forNullableScalar("status", null, targetStatus))));
         return requireAdministrator(id);
     }
 
@@ -501,7 +501,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
                 "PLATFORM_DIAGNOSTIC_ADMIN_BOOTSTRAPPED",
                 now,
                 AuditActor.system(),
-                ADMIN_CREATED.allow(List.of(new AuditChange("displayName", null, displayName.trim()))));
+                ADMIN_CREATED.allow(List.of(AuditChange.forNullableScalar("displayName", null, displayName.trim()))));
         return requireAdministrator(id);
     }
 
@@ -536,7 +536,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
                 "PLATFORM_ADMIN_CREATED",
                 now,
                 actor,
-                ADMIN_CREATED.allow(List.of(new AuditChange("displayName", null, displayName.trim()))));
+                ADMIN_CREATED.allow(List.of(AuditChange.forNullableScalar("displayName", null, displayName.trim()))));
         return requireAdministrator(id);
     }
 
@@ -598,7 +598,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
                 "PLATFORM_ADMIN_PROFILE_UPDATED",
                 now,
                 actor,
-                ADMIN_PROFILE_UPDATED.allow(List.of(new AuditChange("displayName", null, displayName.trim()))));
+                ADMIN_PROFILE_UPDATED.allow(List.of(AuditChange.forNullableScalar("displayName", null, displayName.trim()))));
         return requireAdministrator(id);
     }
 
@@ -630,7 +630,7 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
                 "PLATFORM_ADMIN_PROFILE_UPDATED",
                 now,
                 AuditActor.system(),
-                ADMIN_PROFILE_UPDATED.allow(List.of(new AuditChange("displayName", null, displayName.trim()))));
+                ADMIN_PROFILE_UPDATED.allow(List.of(AuditChange.forNullableScalar("displayName", null, displayName.trim()))));
         return requireAdministrator(id);
     }
 

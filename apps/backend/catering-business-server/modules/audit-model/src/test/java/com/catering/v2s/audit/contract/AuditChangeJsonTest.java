@@ -10,11 +10,22 @@ class AuditChangeJsonTest {
     @Test
     void writesEscapedScalarChangesAndRoundTrips() {
         String encoded = AuditChangeJson.write(java.util.List.of(
-                new AuditChange("name", "before\\\"\n", "after"), new AuditChange("removed", "old", null)));
+                AuditChange.forNullableScalar("name", "before\\\"\n", "after"), AuditChange.forNullableScalar("removed", "old", null)));
         assertEquals(
                 java.util.List.of(
-                        new AuditChange("name", "before\\\"\n", "after"), new AuditChange("removed", "old", null)),
+                        AuditChange.forNullableScalar("name", "before\\\"\n", "after"), AuditChange.forNullableScalar("removed", "old", null)),
                 AuditChangeJson.read(encoded));
+    }
+
+    @Test
+    void nullableScalarFactoryDeclaresItsLifecycleMapping() {
+        AuditChange created = AuditChange.forNullableScalar("created", null, "value");
+        assertEquals(AuditValueState.MISSING, created.beforeState());
+        assertEquals(AuditValueState.VALUE, created.afterState());
+
+        AuditChange cleared = AuditChange.forNullableScalar("cleared", "value", null);
+        assertEquals(AuditValueState.VALUE, cleared.beforeState());
+        assertEquals(AuditValueState.CLEARED, cleared.afterState());
     }
 
     @Test
@@ -47,7 +58,7 @@ class AuditChangeJsonTest {
     @Test
     void truncatesDisplayValueWithoutThrowingAndMarksIt() {
         String source = "x".repeat(2001);
-        AuditChange change = new AuditChange("long", null, source);
+        AuditChange change = AuditChange.forNullableScalar("long", null, source);
 
         assertEquals(2000, change.afterValue().codePointCount(0, change.afterValue().length()));
         assertTrue(change.afterValue().endsWith("…（已截断）"));

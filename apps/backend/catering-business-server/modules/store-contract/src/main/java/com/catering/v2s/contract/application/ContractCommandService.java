@@ -838,7 +838,7 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
                 now,
                 actor,
                 CONTRACT_INVALIDATED,
-                List.of(new AuditChange("status", existing.status(), invalidated.status())));
+                List.of(AuditChange.forNullableScalar("status", existing.status(), invalidated.status())));
         return invalidated;
     }
 
@@ -1094,22 +1094,22 @@ public class ContractCommandService implements OperationsStoreContractCommandApi
 
     private static List<AuditChange> createdChanges(StoreContractReadback value) {
         return List.of(
-                new AuditChange("contractNo", null, value.contractNo()),
-                new AuditChange("effectiveFrom", null, date(value.effectiveFrom())),
-                new AuditChange("effectiveTo", null, date(value.effectiveTo())),
-                new AuditChange("phaseName", null, value.phaseNameSnapshot()),
-                new AuditChange("status", null, value.status()),
-                new AuditChange("items", null, items(value.items())));
+                AuditChange.forNullableScalar("contractNo", null, value.contractNo()),
+                AuditChange.forNullableScalar("effectiveFrom", null, date(value.effectiveFrom())),
+                AuditChange.forNullableScalar("effectiveTo", null, date(value.effectiveTo())),
+                AuditChange.forNullableScalar("phaseName", null, value.phaseNameSnapshot()),
+                AuditChange.forNullableScalar("status", null, value.status()),
+                AuditChange.forNullableScalar("items", null, items(value.items())));
     }
 
     private static List<AuditChange> changed(StoreContractReadback before, StoreContractReadback after) {
         return List.of(
-                        new AuditChange("contractNo", before.contractNo(), after.contractNo()),
-                        new AuditChange("effectiveFrom", date(before.effectiveFrom()), date(after.effectiveFrom())),
-                        new AuditChange("effectiveTo", date(before.effectiveTo()), date(after.effectiveTo())),
-                        new AuditChange("phaseName", before.phaseNameSnapshot(), after.phaseNameSnapshot()),
-                        new AuditChange("status", before.status(), after.status()),
-                        new AuditChange("items", items(before.items()), items(after.items())))
+                        AuditChange.forNullableScalar("contractNo", before.contractNo(), after.contractNo()),
+                        AuditChange.forNullableScalar("effectiveFrom", date(before.effectiveFrom()), date(after.effectiveFrom())),
+                        AuditChange.forNullableScalar("effectiveTo", date(before.effectiveTo()), date(after.effectiveTo())),
+                        AuditChange.forNullableScalar("phaseName", before.phaseNameSnapshot(), after.phaseNameSnapshot()),
+                        AuditChange.forNullableScalar("status", before.status(), after.status()),
+                        AuditChange.forNullableScalar("items", items(before.items()), items(after.items())))
                 .stream()
                 .filter(change -> !Objects.equals(change.beforeValue(), change.afterValue()))
                 .toList();

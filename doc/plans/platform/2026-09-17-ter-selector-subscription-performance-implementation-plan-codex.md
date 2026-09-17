@@ -145,7 +145,7 @@ B3 不建新 AST checker、不把 selector 语义变成字符串 grep、不把�
 ### B2 · render/admin consumer migration
 
 1. 每个宿主文件写入前重开其当前 snapshot 分支、selector 和 props；先改 `ScreenContainer`/`LayerStack`，再改 admin shell contract，最后改 section consumers。
-2. 任何参数化 selector 用模块级函数或 `useMemo`/完整依赖；默认 placement、filter 派生和 equality 不产生每次 render 的新 identity。
+2. 任何参数化 selector 用模块级函数或 `useMemo`/完整依赖；默认 placement、filter 派生和 equality 不产生每次 render 的新 identity。`ScreenContainer` 的默认 placement 先在 selector 外按 `defaultPartKey` 稳定化，再由 selector 返回；`renderSurface.test.tsx` 必须覆盖无持久化记录的默认分支。
 3. 保持现有 screen/layer fallback、displayMode、layer order、admin launcher 五击入口、section testID、command boundary 和 `runtimeFacts` 不变。
 4. 移除 `AdminSectionRenderContext.stateRoot/stateSource` 后，确认所有其他字段仍从同一 owner 传入；不要让 section 从 context 偷读 raw store。
 5. `DisplayContextSection` 使用 `selectDisplayRole`/`selectRuntimeInstanceMode`；`RuntimeSection` 使用 `useRenderStatus`；这些改动必须以 focused behavior case 而非字符串检查收口。
@@ -153,6 +153,7 @@ B3 不建新 AST checker、不把 selector 语义变成字符串 grep、不把�
    - 在任一生产宿主恢复 `useRenderSnapshot` import：B3 static 预检以及 B2 source proof 必须识别；
    - 在 admin context 恢复 raw root/source，或让 section 读取旧字段：typecheck/contract focused case 必须红；
    - 把 placement/layers selector 变为每次返回新对象并移除 equality：相同选择结果 render-count case 必须红；
+   - 把 `ScreenContainer` 默认 placement 改回 selector 内每次新建对象且不传 equality：配置默认值、无关 root 更新的 render-count case 必须红；
    - 把 `useRenderStatus` 改回 `stateSource.getStatus()` 直接 render 读取：status hook boundary case 必须红。
 7. 用 `rg` 重算 direct full snapshot production denominator，预期为零；测试专用 framework exception 单独列出。
 8. B2 focused proof 后主 agent回读所有 B2 source；交 fresh 独立子 agent做三维对账。对账 `OPEN` 不得进入 B3。
@@ -218,6 +219,16 @@ B4 执行顺序固定如下：
 | B2 | Screen/Layer behavior、Admin launcher/layout/sections、raw props typecheck、direct caller exact scan | 恢复 snapshot consumer、恢复 raw pass-through、每次新派生对象、status direct read |
 | B3 | static baseline、public/invariant exact、runtime/type dependency exact、public context exact、README/source example | 删除 rule、恢复 export、删除 runtime/type direct dependency、重新导入旧 hook、恢复 public raw source |
 | B4 | 四包 typecheck、两个 owned test、terminal static、全批/逐代码对账 | 任一前置 OPEN 或 command failure 保持 OPEN；不能改写为 PASS |
+
+## 12 · Claude implementation code review 处置
+
+本节记录 `doc/review/platform/2026-09-17-ter-selector-subscription-implementation-review-claude.md` 的源码逻辑复评处置。该复评明确只覆盖代码逻辑，未核验既有 evidence、`.runtime/` 产物、步骤级/全批三维对账或整体 implementation acceptance；因此本节不构成 acceptance 结论。
+
+| finding | 处置 | 代码/测试落点 | 证据 |
+|---|---|---|---|
+| S-1 | 真修复；默认 placement 在 selector 外按 `defaultPartKey` 用 `useMemo` 稳定引用，保留持久化 placement 优先语义；补 focused render-count 与 production-like red mutation | `apps/terminal/ui/base/render/src/components/ScreenContainer.tsx`；`apps/terminal/ui/base/render/test/renderSurface.test.tsx`；`tools/terminal-ui-render/check-behavior.mjs` | `.runtime/ter-selector-subscription/2026-09-17-remediation/s1-red-before-fix.log`、`s1-green-after-fix.log`、`behavior-after-fix.log` |
+| N-1 | 真修复；DisplayContextSection 用 `useRenderStatus()` 判生命周期，started 但 role/instance 缺失改用中性数据缺失文案；补两个 focused behavior cases | `apps/terminal/ui/base/admin-shell/src/components/sections/DisplayContextSection.tsx`；`apps/terminal/ui/base/admin-shell/test/displayContext.test.tsx` | `.runtime/ter-selector-subscription/2026-09-17-remediation/admin-n1-focused-after-type-fix-correct.log` |
+| N-2 | 真修复；full-root 探针保留为订阅机制专用例外，并在测试代码中明确说明不得作为生产模板 | `apps/terminal/ui/base/render/test/renderProps.test.tsx` | `render-test-final-after-fix.log`、`terminal-static-after-fix.log` |
 
 ## 7 · 逐代码与详设对账安排
 

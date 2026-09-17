@@ -86,6 +86,8 @@ const createProbeFixture = () => {
   const Probe: ComponentType<ProbeProps> = props => {
     received.push(props)
     const mode = useSurfaceDisplayMode()
+    // Test-only full-root exception: this probe verifies subscription and prop forwarding;
+    // production UI selectors must remain narrow under TR-15.
     const selectedRoot = useUiStateSelector(root => root)
     return createElement('render-props-probe', {
       testID: 'props-probe',

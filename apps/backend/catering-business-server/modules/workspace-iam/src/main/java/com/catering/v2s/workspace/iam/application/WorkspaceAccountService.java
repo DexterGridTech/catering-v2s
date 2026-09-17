@@ -103,7 +103,7 @@ public class WorkspaceAccountService {
                 "WORKSPACE_ACCOUNT_STATUS_CHANGED",
                 actor,
                 ACCOUNT_STATUS_CHANGED,
-                List.of(new AuditChange(
+                List.of(AuditChange.forNullableScalar(
                         "status",
                         transition.previousStatus(),
                         transition.updated().status())));
@@ -147,7 +147,7 @@ public class WorkspaceAccountService {
                 "WORKSPACE_ACCOUNT_ASSIGNMENT_REVOKED",
                 actor,
                 ASSIGNMENT_REVOKED,
-                List.of(new AuditChange("serviceNodeAssignment", assignment, "REVOKED")));
+                List.of(AuditChange.forNullableScalar("serviceNodeAssignment", assignment, "REVOKED")));
     }
 
     @Transactional

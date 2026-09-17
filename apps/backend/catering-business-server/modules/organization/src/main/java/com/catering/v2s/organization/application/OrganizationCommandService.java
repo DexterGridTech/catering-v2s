@@ -223,8 +223,8 @@ public class OrganizationCommandService
                     actor,
                     time.currentEpochMillis(),
                     AuditChangeJson.write(java.util.List.of(
-                            new com.catering.v2s.audit.contract.AuditChange("commercialGroupCode", null, code),
-                            new com.catering.v2s.audit.contract.AuditChange("commercialGroupName", null, name))));
+                            com.catering.v2s.audit.contract.AuditChange.forNullableScalar("commercialGroupCode", null, code),
+                            com.catering.v2s.audit.contract.AuditChange.forNullableScalar("commercialGroupName", null, name))));
             return OwnerOperationDiagnostics.readback(
                     () -> readback(id, groupWorkspaceKey, code, name, actor.displaySnapshot()));
         } catch (DuplicateKeyException exception) {
@@ -356,9 +356,9 @@ public class OrganizationCommandService
                 actor,
                 now,
                 AuditChangeJson.write(java.util.List.of(
-                        new com.catering.v2s.audit.contract.AuditChange(
+                        com.catering.v2s.audit.contract.AuditChange.forNullableScalar(
                                 "commercialGroupCode", current.commercialGroupCode(), updated.commercialGroupCode()),
-                        new com.catering.v2s.audit.contract.AuditChange(
+                        com.catering.v2s.audit.contract.AuditChange.forNullableScalar(
                                 "commercialGroupName", current.commercialGroupName(), updated.commercialGroupName()))));
         return updated;
     }

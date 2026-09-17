@@ -343,6 +343,17 @@ const mutations = Object.freeze([
     ),
   },
   {
+    id: 'DEFAULT_PLACEMENT_IDENTITY',
+    testFile: 'test/renderSurface.test.tsx',
+    testName: 'keeps a configured integration default placement stable across unrelated root updates',
+    apply: sandbox => replaceOnce(
+      path.join(sandbox.renderRoot, 'src/components/ScreenContainer.tsx'),
+      '    return persistedPlacement ?? defaultPlacement',
+      '    const defaultPartKey = defaultContainerPartKeys?.[containerKey]\n'
+        + '    return defaultPartKey === undefined ? undefined : {partKey: defaultPartKey}',
+    ),
+  },
+  {
     id: 'SELECTOR_IDENTITY_STALE',
     testFile: 'test/renderState.test.tsx',
     testName: 'updates a selector when its captured input changes while the root stays the same',

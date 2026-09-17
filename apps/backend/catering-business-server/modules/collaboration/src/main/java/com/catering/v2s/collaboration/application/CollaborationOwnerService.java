@@ -515,7 +515,7 @@ public class CollaborationOwnerService
                 "STATUS_CHANGED",
                 actor,
                 ENABLEMENT_CHANGED,
-                List.of(new AuditChange("status", current == null ? null : current.status(), targetStatus)));
+                List.of(AuditChange.forNullableScalar("status", current == null ? null : current.status(), targetStatus)));
         return persistence.readEnablement(kind, workspaceUuid, groupWorkspaceKey, code);
     }
 
@@ -547,12 +547,12 @@ public class CollaborationOwnerService
                 actor,
                 BINDING_CREATED,
                 List.of(
-                        new AuditChange("providerCode", null, created.providerCode()),
-                        new AuditChange("capabilityClass", null, created.capabilityClass()),
-                        new AuditChange("nodeType", null, created.nodeType()),
-                        new AuditChange("nodeRef", null, created.nodeRef()),
-                        new AuditChange("bindingDisplayName", null, created.bindingDisplayName()),
-                        new AuditChange("status", null, created.status())));
+                        AuditChange.forNullableScalar("providerCode", null, created.providerCode()),
+                        AuditChange.forNullableScalar("capabilityClass", null, created.capabilityClass()),
+                        AuditChange.forNullableScalar("nodeType", null, created.nodeType()),
+                        AuditChange.forNullableScalar("nodeRef", null, created.nodeRef()),
+                        AuditChange.forNullableScalar("bindingDisplayName", null, created.bindingDisplayName()),
+                        AuditChange.forNullableScalar("status", null, created.status())));
         return ownerBinding(created);
     }
 
@@ -589,9 +589,9 @@ public class CollaborationOwnerService
                 actor,
                 BINDING_UPDATED,
                 List.of(
-                        new AuditChange(
+                        AuditChange.forNullableScalar(
                                 "bindingDisplayName", current.bindingDisplayName(), updated.bindingDisplayName()),
-                        new AuditChange("externalOwnerId", current.externalOwnerId(), updated.externalOwnerId())));
+                        AuditChange.forNullableScalar("externalOwnerId", current.externalOwnerId(), updated.externalOwnerId())));
         return ownerBinding(updated);
     }
 
@@ -617,8 +617,8 @@ public class CollaborationOwnerService
                 actor,
                 BINDING_DELETED,
                 List.of(
-                        new AuditChange("status", initial.status(), DELETED),
-                        new AuditChange("deletedAt", null, Long.toString(deleted.deletedAt()))));
+                        AuditChange.forNullableScalar("status", initial.status(), DELETED),
+                        AuditChange.forNullableScalar("deletedAt", null, Long.toString(deleted.deletedAt()))));
         return ownerBinding(deleted);
     }
 
@@ -655,8 +655,8 @@ public class CollaborationOwnerService
                 AuditActor.system(),
                 AUTHORIZATION_APPLIED,
                 List.of(
-                        new AuditChange("status", current.status(), CollaborationBindingPolicy.EFFECTIVE),
-                        new AuditChange("externalOwnerId", current.externalOwnerId(), updated.externalOwnerId())));
+                        AuditChange.forNullableScalar("status", current.status(), CollaborationBindingPolicy.EFFECTIVE),
+                        AuditChange.forNullableScalar("externalOwnerId", current.externalOwnerId(), updated.externalOwnerId())));
         return ownerBinding(updated);
     }
 
@@ -681,8 +681,8 @@ public class CollaborationOwnerService
                 AuditActor.system(),
                 REVOCATION_APPLIED,
                 List.of(
-                        new AuditChange("status", current.status(), INVALID),
-                        new AuditChange(
+                        AuditChange.forNullableScalar("status", current.status(), INVALID),
+                        AuditChange.forNullableScalar(
                                 "externalRevokedAt", null, Objects.toString(updated.externalRevokedAt(), null))));
         return ownerBinding(updated);
     }

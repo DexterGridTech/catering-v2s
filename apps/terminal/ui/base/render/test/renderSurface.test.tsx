@@ -439,11 +439,19 @@ describe('render surface hosts', () => {
     renderer.unmount()
   })
 
-  it('renders an integration default without writing a container record', () => {
+  it('keeps a configured integration default placement stable across unrelated root updates', () => {
     const source = createSource()
     const {logger} = createLogger()
-    const defined = part({partKey: 'default-screen-part', rendererKey: 'default-screen-renderer', component: Screen})
-    const root = rootWithContent(emptyContent())
+    let screenRenderCount = 0
+    const DefaultScreen: ComponentType<object> = props => {
+      screenRenderCount += 1
+      return createElement('render-screen', props)
+    }
+    const defined = part({partKey: 'default-screen-part', rendererKey: 'default-screen-renderer', component: DefaultScreen})
+    const root = Object.freeze({
+      ...rootWithContent(emptyContent()),
+      'test.unrelated': Object.freeze({value: 1}),
+    }) as RuntimeStateRoot
     source.setRoot(root)
     source.setStatus('started')
     const renderer = mount(createElement(
@@ -463,7 +471,18 @@ describe('render surface hosts', () => {
     ))
 
     expect(renderer.root.findAllByType('render-screen')).toHaveLength(1)
+    expect(screenRenderCount).toBe(1)
     expect(selectScreen(source.stateSource.getState(), 'PRIMARY', 'root')).toBeUndefined()
+
+    act(() => {
+      source.setRoot(Object.freeze({
+        ...rootWithContent(emptyContent()),
+        'test.unrelated': Object.freeze({value: 2}),
+      }) as RuntimeStateRoot)
+      source.notify()
+    })
+
+    expect(screenRenderCount).toBe(1)
     renderer.unmount()
   })
 

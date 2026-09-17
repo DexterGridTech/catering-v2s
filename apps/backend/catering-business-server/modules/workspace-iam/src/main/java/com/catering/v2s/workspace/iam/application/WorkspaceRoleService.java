@@ -329,7 +329,7 @@ public class WorkspaceRoleService {
                 "WORKSPACE_ROLE_STATUS_CHANGED",
                 actor,
                 ROLE_STATUS_CHANGED,
-                List.of(new AuditChange("status", beforeStatus, updated.status())));
+                List.of(AuditChange.forNullableScalar("status", beforeStatus, updated.status())));
         return updated;
     }
 
@@ -514,19 +514,19 @@ public class WorkspaceRoleService {
 
     private static List<AuditChange> createdChanges(WorkspaceRoleReadback role) {
         return List.of(
-                new AuditChange("name", null, role.name()),
-                new AuditChange("description", null, role.description()),
-                new AuditChange("status", null, role.status()),
-                new AuditChange("pageAccessKeys", null, keys(role.pageAccessKeys())),
-                new AuditChange("capabilityKeys", null, keys(role.actionCapabilityKeys())));
+                AuditChange.forNullableScalar("name", null, role.name()),
+                AuditChange.forNullableScalar("description", null, role.description()),
+                AuditChange.forNullableScalar("status", null, role.status()),
+                AuditChange.forNullableScalar("pageAccessKeys", null, keys(role.pageAccessKeys())),
+                AuditChange.forNullableScalar("capabilityKeys", null, keys(role.actionCapabilityKeys())));
     }
 
     private static List<AuditChange> changed(WorkspaceRoleReadback before, WorkspaceRoleReadback after) {
         return List.of(
-                        new AuditChange("name", before.name(), after.name()),
-                        new AuditChange("description", before.description(), after.description()),
-                        new AuditChange("pageAccessKeys", keys(before.pageAccessKeys()), keys(after.pageAccessKeys())),
-                        new AuditChange(
+                        AuditChange.forNullableScalar("name", before.name(), after.name()),
+                        AuditChange.forNullableScalar("description", before.description(), after.description()),
+                        AuditChange.forNullableScalar("pageAccessKeys", keys(before.pageAccessKeys()), keys(after.pageAccessKeys())),
+                        AuditChange.forNullableScalar(
                                 "capabilityKeys",
                                 keys(before.actionCapabilityKeys()),
                                 keys(after.actionCapabilityKeys())))
