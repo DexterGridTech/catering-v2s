@@ -19,7 +19,7 @@ import {
   useDrawerFormLifecycle,
   useOverlayLock,
 } from '@catering-v2s/admin-ui-foundation';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {operationsClient, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {
   OPERATIONS_ADMIN_OPERATION_IDS,
@@ -30,13 +30,8 @@ import {
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {useOrganizationCandidates} from '../../../app/queries/useOrganizationCandidates';
-import {
-  STORE_OPERATING_RULE_DEFINITIONS,
-  storeOperatingRuleApplicable,
-  storeOperatingRuleDefaults,
-  type StoreOperatingRuleValues,
-} from '../../../app/api/generated/storeOperatingRuleCatalog';
 import {storeManagementTestIds} from '../storeManagementTestIds';
+import {StoreOperatingRuleTree, completeStoreOperatingRuleValues} from './StoreOperatingRuleTree';
 import {
   extensionValuesForGeneratedRequest,
   hydrateOrganizationExtensionValues,
@@ -86,52 +81,6 @@ function extensionFields(definition?: ExtensionDefinition) {
     });
 }
 
-function operatingRuleFields(values: StoreOperatingRuleValues) {
-  return STORE_OPERATING_RULE_DEFINITIONS.map(definition => {
-    const applicable = storeOperatingRuleApplicable(values, definition.key);
-    const control =
-      definition.type === 'BOOLEAN' ? (
-        <Switch disabled={!applicable} {...testId(storeManagementTestIds.operatingRule(definition.key))} />
-      ) : definition.type === 'NUMBER' ? (
-        <InputNumber
-          disabled={!applicable}
-          style={{width: '100%'}}
-          {...testId(storeManagementTestIds.operatingRule(definition.key))}
-        />
-      ) : (
-        <Input disabled={!applicable} {...testId(storeManagementTestIds.operatingRule(definition.key))} />
-      );
-    return (
-      <Form.Item
-        key={definition.key}
-        name={['operatingRuleSwitches', definition.key]}
-        label={definition.label}
-        extra={
-          !applicable ? (
-            <span {...testId(storeManagementTestIds.operatingRuleHelp(definition.key))}>请先开启上级功能</span>
-          ) : undefined
-        }
-        style={definition.parentKey ? {paddingInlineStart: 24} : undefined}
-        valuePropName={definition.type === 'BOOLEAN' ? 'checked' : undefined}
-      >
-        {control}
-      </Form.Item>
-    );
-  });
-}
-
-function completeOperatingRuleValues(
-  values: OrganizationStoreOperatingRuleValues | undefined,
-): OrganizationStoreOperatingRuleValues {
-  const defaults = storeOperatingRuleDefaults();
-  return Object.fromEntries(
-    STORE_OPERATING_RULE_DEFINITIONS.map(definition => [
-      definition.key,
-      values?.[definition.key] ?? defaults[definition.key],
-    ]),
-  ) as OrganizationStoreOperatingRuleValues;
-}
-
 export function StoreEditDrawer({
   store,
   queryContext,
@@ -145,9 +94,11 @@ export function StoreEditDrawer({
 }) {
   const [form] = Form.useForm<Values>();
   const [commandProblem, setCommandProblem] = useState<string>();
+  const hydratedStoreId = useRef<string | undefined>(undefined);
+  const hydratedDefinition = useRef<ExtensionDefinition | undefined>(undefined);
   const watchedOperatingRules = Form.useWatch('operatingRuleSwitches', form) as
     OrganizationStoreOperatingRuleValues | undefined;
-  const operatingRules = useMemo(() => completeOperatingRuleValues(watchedOperatingRules), [watchedOperatingRules]);
+  const operatingRules = useMemo(() => completeStoreOperatingRuleValues(watchedOperatingRules), [watchedOperatingRules]);
   const open = Boolean(store);
   const lifecycle = useDrawerFormLifecycle({
     open,
@@ -182,16 +133,28 @@ export function StoreEditDrawer({
   });
 
   useEffect(() => {
-    if (!store) return;
+    if (!store) {
+      hydratedStoreId.current = undefined;
+      hydratedDefinition.current = undefined;
+      return;
+    }
+    const storeChanged = hydratedStoreId.current !== store.id;
+    const definitionChanged = hydratedDefinition.current !== definition.currentData;
+    if (!storeChanged && lifecycle.dirty) return;
+    if (!storeChanged && !definitionChanged) return;
     form.setFieldsValue({
       name: store.name,
       headCompanyId: store.headCompany?.id,
       notes: store.notes ?? undefined,
       extensionValues: hydrateOrganizationExtensionValues(definition.currentData, store.extensionValues),
-      operatingRuleSwitches: completeOperatingRuleValues(store.operatingRuleSwitches),
+      operatingRuleSwitches: completeStoreOperatingRuleValues(store.operatingRuleSwitches),
     });
-    setCommandProblem(undefined);
-    lifecycle.reset();
+    if (storeChanged) {
+      setCommandProblem(undefined);
+      lifecycle.reset();
+    }
+    hydratedStoreId.current = store.id;
+    hydratedDefinition.current = definition.currentData;
   }, [definition.currentData, form, lifecycle, store]);
 
   const definitionReady = Boolean(definition.currentData) && !definition.error;
@@ -225,7 +188,7 @@ export function StoreEditDrawer({
             ),
             extensionRuleRevision: store.extensionRuleRevision,
             expectedVersion: store.revision,
-            operatingRuleSwitches: completeOperatingRuleValues(value.operatingRuleSwitches),
+          operatingRuleSwitches: completeStoreOperatingRuleValues(value.operatingRuleSwitches),
           },
           headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()},
         },
@@ -336,7 +299,7 @@ export function StoreEditDrawer({
         </Form.Item>
         {extensionFields(definition.currentData)}
         <Card size="small" title="经营规则" {...testId(storeManagementTestIds.operatingRuleGroup)}>
-          {operatingRuleFields(operatingRules)}
+          <StoreOperatingRuleTree mode="edit" values={operatingRules} />
         </Card>
       </Form>
     </Drawer>

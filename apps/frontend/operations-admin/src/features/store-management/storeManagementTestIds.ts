@@ -12,6 +12,11 @@ export const storeManagementTestIds = {
   editNotes: 'operations-store-edit-notes',
   editExtension: (key: string) => `operations-store-edit-extension-${key}`,
   operatingRuleGroup: 'operations-store-edit-operating-rules',
+  editOperatingRuleTree: 'operations-store-edit-operating-rules-tree',
+  detailOperatingRuleGroup: 'operations-store-detail-operating-rules',
+  detailOperatingRuleTree: 'operations-store-detail-operating-rules-tree',
+  operatingRuleRow: (key: string, mode: 'detail' | 'edit') => `operations-store-${mode}-operating-rule-row-${key}`,
+  detailOperatingRule: (key: string) => `operations-store-detail-operating-rule-${key}`,
   operatingRule: (key: string) => `operations-store-edit-operating-rule-${key}`,
   operatingRuleHelp: (key: string) => `operations-store-edit-operating-rule-help-${key}`,
 } as const;

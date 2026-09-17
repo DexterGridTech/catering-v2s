@@ -16,3 +16,22 @@ coverage/
 *.keystore
 **/.kotlin/
 /doc/evidence/
+
+# Local browser automation captures and visual output
+/.playwright-cli/
+/output/
+
+# Local package-manager state
+/.yarn/install-state.gz
+
+# Native build intermediates
+**/.cxx/
+**/.externalNativeBuild/
+
+# IDE device-specific state
+/.idea/deviceManager.xml
+/.idea/emulatorDisplays.xml
+*.iml
+
+# Accidental root-level build transcript
+/-

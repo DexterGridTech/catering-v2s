@@ -1,5 +1,6 @@
-import {useCallback, useMemo} from 'react';
-import {operationsRtk} from '../../../app/api/OperationsTransport';
+import {useRefreshVersion} from '@catering-v2s/admin-ui-foundation';
+import {useCallback, useEffect, useMemo} from 'react';
+import {operationsContentTabRefreshSignal, operationsRtk} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import {
   storeOperatingRuleEffective,
@@ -31,7 +32,13 @@ export function useStoreOperatingRuleGate({queryContext, enabled = true}: Option
   const query = operationsRtk.useGetOperationsOrganizationStoreOperatingRuleQuery(request, {
     skip: !enabled || !storeId,
   });
-  const retry = useCallback(() => query.refetch(), [query.refetch]);
+  const {refetch} = query;
+  const retry = useCallback(() => refetch(), [refetch]);
+  const contentTabRefreshVersion = useRefreshVersion(operationsContentTabRefreshSignal);
+  useEffect(() => {
+    if (!enabled || !storeId || contentTabRefreshVersion === 0) return;
+    void refetch();
+  }, [contentTabRefreshVersion, enabled, refetch, storeId]);
   const state = useMemo<StoreOperatingRuleGateState>(() => {
     if (!enabled) return 'BYPASSED';
     if (!storeId) return 'SCOPE_MISSING';

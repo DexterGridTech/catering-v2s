@@ -1,4 +1,4 @@
-import {Alert, Descriptions, Drawer, Skeleton} from 'antd';
+import {Alert, Card, Descriptions, Drawer, Skeleton} from 'antd';
 import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
@@ -20,6 +20,8 @@ import {
   organizationStoreStatusLabels,
   toggleOrganizationStoreStatus,
 } from '../../organization-structure/model/organizationStatus';
+import {storeManagementTestIds} from '../storeManagementTestIds';
+import {StoreOperatingRuleTree, completeStoreOperatingRuleValues} from './StoreOperatingRuleTree';
 
 type Props = {
   store?: OrganizationStore;
@@ -86,6 +88,10 @@ export function StoreDetailDrawer({
   const problem = latestStore.error ? '门店详情暂时无法获取，请关闭后重新进入。' : undefined;
   const definitionWarning = definition.error ? '扩展字段暂时无法获取，当前仅显示已确认的基础资料。' : undefined;
   const ready = Boolean(selected) && !loading && !problem;
+  const operatingRuleValues = useMemo(
+    () => completeStoreOperatingRuleValues(selected?.operatingRuleSwitches),
+    [selected?.operatingRuleSwitches],
+  );
   const closeThen = (next: (current: OrganizationStore) => void) => {
     if (!selected || !ready) return;
     closeLatest();
@@ -174,40 +180,50 @@ export function StoreDetailDrawer({
         />
       )}
       {ready && selected && (
-        <Descriptions
-          {...adminDetailDescriptionsProps}
-          items={[
-            {key: 'name', label: '门店名称', children: selected.name},
-            {key: 'code', label: '门店编码', children: selected.code},
-            {
-              key: 'project',
-              label: '所属项目',
-              children: <NameCodeText name={selected.project.name} code={selected.project.code} />,
-            },
-            {
-              key: 'brand',
-              label: '品牌',
-              children: <NameCodeText name={selected.brand.name} code={selected.brand.code} />,
-            },
-            {
-              key: 'tenant',
-              label: '经营租户',
-              children: <NameCodeText name={selected.tenant.name} code={selected.tenant.code} />,
-            },
-            {
-              key: 'headCompany',
-              label: '总公司',
-              children: selected.headCompany ? (
-                <NameCodeText name={selected.headCompany.name} code={selected.headCompany.code} />
-              ) : (
-                '未设置'
-              ),
-            },
-            {key: 'status', label: '状态', children: organizationStoreStatusLabels[selected.status]},
-            {key: 'notes', label: '备注', children: selected.notes ?? '—'},
-            ...extensionItems(definition.currentData, selected.extensionValues),
-          ]}
-        />
+        <>
+          <Descriptions
+            {...adminDetailDescriptionsProps}
+            items={[
+              {key: 'name', label: '门店名称', children: selected.name},
+              {key: 'code', label: '门店编码', children: selected.code},
+              {
+                key: 'project',
+                label: '所属项目',
+                children: <NameCodeText name={selected.project.name} code={selected.project.code} />,
+              },
+              {
+                key: 'brand',
+                label: '品牌',
+                children: <NameCodeText name={selected.brand.name} code={selected.brand.code} />,
+              },
+              {
+                key: 'tenant',
+                label: '经营租户',
+                children: <NameCodeText name={selected.tenant.name} code={selected.tenant.code} />,
+              },
+              {
+                key: 'headCompany',
+                label: '总公司',
+                children: selected.headCompany ? (
+                  <NameCodeText name={selected.headCompany.name} code={selected.headCompany.code} />
+                ) : (
+                  '未设置'
+                ),
+              },
+              {key: 'status', label: '状态', children: organizationStoreStatusLabels[selected.status]},
+              {key: 'notes', label: '备注', children: selected.notes ?? '—'},
+              ...extensionItems(definition.currentData, selected.extensionValues),
+            ]}
+          />
+          <Card
+            size="small"
+            title="经营规则"
+            style={{marginTop: 16}}
+            {...testId(storeManagementTestIds.detailOperatingRuleGroup)}
+          >
+            <StoreOperatingRuleTree mode="detail" values={operatingRuleValues} />
+          </Card>
+        </>
       )}
     </Drawer>
   );
