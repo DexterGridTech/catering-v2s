@@ -31,7 +31,8 @@ const requiredOperationIds = Object.freeze([
   "getOperationsBusinessChannelDetail", "transitionOperationsBusinessChannelStatus", "getOperationsStoreBusinessChannels",
   "getOperationsProjectBusinessChannels", "getOperationsStoreBusinessChannelTemplateCandidates",
   "getOperationsBusinessChannelTemplateVisibleStores", "transitionOperationsOrganizationStoreStatus",
-  "selectOperationsWorkspaceSessionDataNode",
+  "selectOperationsWorkspaceSessionDataNode", "getOperationsStoreQrChannelCandidates", "getOperationsStoreQrConfiguration",
+  "patchOperationsStoreQrConfiguration",
 ]);
 
 export class ExternalCollaborationBusinessChannelSeedFailure extends Error {
@@ -163,6 +164,9 @@ export function validateRuntimeSeedStaticInputs({fixture, staticPlan, registry, 
   const storeRole = fixture.stableFixtures.workspaceIam.roles.find((entry) => entry.key === "role-store");
   if (!projectRole?.actionCapabilityKeys?.includes("BC-BUSINESS-CHANNEL-PROJECT-EDIT")) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_PROJECT_GRANT_MISSING");
   if (!storeRole?.actionCapabilityKeys?.includes("BC-BUSINESS-CHANNEL-STORE-EDIT")) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_STORE_GRANT_MISSING");
+  if (!storeRole?.actionCapabilityKeys?.includes("EDIT_STORE_SERVICE_POINT_QR")) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_STORE_QR_GRANT_MISSING");
+  const servicePointFixture = fixture.stableFixtures.organization.storeServicePoints;
+  if (!servicePointFixture?.qr?.enabled || fixture.stableFixtures.organization.stores.find((entry) => entry.key === servicePointFixture.store)?.operatingRuleSwitches?.tableManagementEnabled !== true) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_STORE_QR_GATE_MISSING");
   const assignments = fixture.stableFixtures.workspaceIam.assignments ?? [];
   if (!assignments.some((entry) => entry.account === "account-multi-role" && entry.role === "role-project" && entry.node === "project-river")) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_PROJECT_IDENTITY_MISSING");
   if (!assignments.some((entry) => entry.account === "account-single-role" && entry.role === "role-store" && entry.node === "store-operating")) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_STORE_IDENTITY_MISSING");
@@ -311,9 +315,9 @@ async function executeManagedSeed() {
     const ownerRefFor = (ownerNodeRef) => ownerNodeRef === "COLLAB-PROJECT" ? project.ref : ownerNodeRef === "COLLAB-STORE" ? store.ref : ownerNodeRef === "COLLAB-STORE-B" ? storeB.ref : fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_RUNTIME_OWNER_UNSUPPORTED:${ownerNodeRef}`);
     const templates = new Map();
     for (const template of inputs.dataset.entities.templates) {
-      const created = await request(`template-create-${template.code}`, "createOperationsBusinessChannelTemplate", {groupWorkspaceKey: "aurora"}, {cookie: project.cookie, expected: [200], body: {projectRef: project.ref, templateName: template.templateName, templateCode: template.code, accessKind: template.accessKind, operatorKind: template.ownerNodeType, orderKind: template.orderKind, dineInForm: template.dineInForm ?? null, providerCode: template.providerCode ?? null, storeVisibilityScope: template.storeVisibilityScope ?? null, visibleStoreRefs: (template.visibleStoreRefs ?? []).map(ownerRefFor)}});
+      const created = await request(`template-create-${template.code}`, "createOperationsBusinessChannelTemplate", {groupWorkspaceKey: "aurora"}, {cookie: project.cookie, expected: [200], body: {projectRef: project.ref, templateName: template.templateName, templateCode: template.code, accessKind: template.accessKind, operatorKind: template.ownerNodeType, orderKind: template.orderKind, dineInForm: template.dineInForm ?? null, providerCode: template.providerCode ?? null, urlRule: template.urlRule ?? null, storeVisibilityScope: template.storeVisibilityScope ?? null, visibleStoreRefs: (template.visibleStoreRefs ?? []).map(ownerRefFor)}});
       const value = dataOf(created.json);
-      if (value?.templateCode !== template.code || value?.templateName !== template.templateName || value?.projectRef !== project.ref || value?.status !== "ENABLED") fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_TEMPLATE_READBACK_INVALID:${template.code}`);
+      if (value?.templateCode !== template.code || value?.templateName !== template.templateName || value?.projectRef !== project.ref || value?.status !== "ENABLED" || (value?.urlRule ?? null) !== (template.urlRule ?? null)) fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_TEMPLATE_READBACK_INVALID:${template.code}`);
       templates.set(template.code, {ref: stringOf(created.json, "templateRef", `EXTERNAL_BUSINESS_CHANNEL_SEED_TEMPLATE_REF_MISSING:${template.code}`), name: template.templateName, version: versionOf(created.json, `EXTERNAL_BUSINESS_CHANNEL_SEED_TEMPLATE_VERSION_INVALID:${template.code}`)});
     }
     const channels = new Map();
@@ -342,6 +346,23 @@ async function executeManagedSeed() {
       const detail = await request(`channel-readback-${channel.code}`, "getOperationsBusinessChannelDetail", {groupWorkspaceKey: "aurora", channelRef: created.channelRef}, {cookie: created.client.cookie});
       assertChannel(detail.json, channel, created.ownerRef, created.templateRef, created.bindingRef);
     }
+    const qrFixture = inputs.fixture.stableFixtures.organization.storeServicePoints?.qr;
+    const qrChannel = channels.get(qrFixture?.channelCode);
+    if (!qrFixture || qrFixture.enabled !== true || !qrChannel) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_QR_FIXTURE_INVALID");
+    const qrCandidates = await request("store-qr-channel-candidates", "getOperationsStoreQrChannelCandidates", {groupWorkspaceKey: "aurora", storeRef: store.ref}, {cookie: store.cookie});
+    const candidateItems = dataOf(qrCandidates.json)?.items ?? [];
+    const qrCandidate = candidateItems.find((entry) => entry.channelRef === qrChannel.channelRef);
+    if (!qrCandidate || qrCandidate.channelCode !== qrFixture.channelCode || qrCandidate.status !== "ENABLED" || qrCandidate.bindingStatus !== "NOT_REQUIRED") fail("EXTERNAL_BUSINESS_CHANNEL_SEED_QR_CANDIDATE_READBACK_INVALID");
+    const qrBefore = await request("store-qr-configuration-before", "getOperationsStoreQrConfiguration", {groupWorkspaceKey: "aurora", storeRef: store.ref}, {cookie: store.cookie});
+    const qrBeforeValue = dataOf(qrBefore.json);
+    if (qrBeforeValue?.enabled !== false || qrBeforeValue?.channelRef !== null) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_QR_DEFAULT_READBACK_INVALID");
+    const qrUpdated = await request("store-qr-configuration-enable", "patchOperationsStoreQrConfiguration", {groupWorkspaceKey: "aurora", storeRef: store.ref}, {cookie: store.cookie, body: {enabled: true, channelRef: qrChannel.channelRef, expectedVersion: revisionOf(qrBefore.json, "EXTERNAL_BUSINESS_CHANNEL_SEED_QR_VERSION_INVALID")}});
+    const qrUpdatedValue = dataOf(qrUpdated.json);
+    if (qrUpdatedValue?.enabled !== true || qrUpdatedValue?.channelRef !== qrChannel.channelRef) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_QR_UPDATE_READBACK_INVALID");
+    const qrAfter = await request("store-qr-configuration-after", "getOperationsStoreQrConfiguration", {groupWorkspaceKey: "aurora", storeRef: store.ref}, {cookie: store.cookie});
+    const qrAfterValue = dataOf(qrAfter.json);
+    if (qrAfterValue?.enabled !== true || qrAfterValue?.channelRef !== qrChannel.channelRef) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_QR_FINAL_READBACK_INVALID");
+    phase("store-qr-configuration-readback", "PASS", {channelCode: qrFixture.channelCode, enabled: true, candidateCount: candidateItems.length});
     const mainTemplate = templates.get("TEMPLATE-STORE-INTERNAL-TAKEAWAY");
     const statusTemplate = templates.get("TEMPLATE-STORE-VISIBILITY-STATUS");
     if (!mainTemplate || !statusTemplate) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_VISIBILITY_TEMPLATE_READBACK_MISSING");

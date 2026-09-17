@@ -1,4 +1,5 @@
 import {createNodeId, createRequestId, createRuntimeInstanceId} from '@catering-v2s/kernel-base-contracts'
+import type {CommandRouteContext, TopologyAdminCapability} from '@catering-v2s/kernel-base-contracts'
 import {
   createDisplayContextModule,
   resolveSurfaceDisplayMode,
@@ -17,6 +18,7 @@ import {
   createRuntime,
   selectRuntimeInstanceMode,
   type CommandDefinition,
+  type CommandTargetResolver,
   type Runtime,
   type RuntimeModule,
 } from '@catering-v2s/kernel-base-runtime'
@@ -36,6 +38,7 @@ import {InputSurfaceFrame} from '@catering-v2s/ui-base-input'
 import {AdminLauncher, adminShellAssembly} from '@catering-v2s/ui-base-admin-shell'
 import {
   bindSurfaceHostIdentity,
+  createCatalogContext,
   createRenderRuntimeFacts,
   createRendererCatalog,
   dispatchWithRequestId,
@@ -183,6 +186,8 @@ export type ConsoleAssemblyInput<TReadyPayload extends StateJsonValue> = Readonl
   readonly surfaceHostSourcesByDisplayIndex?: Readonly<Partial<Record<0 | 1, SurfaceHostMeasurementSource>>>
   readonly startupReadyCommand: CommandDefinition<TReadyPayload>
   readonly createStartupReadyPayload: (input: RenderSurfaceReadyInput) => TReadyPayload
+  readonly resolveCommandTarget?: CommandTargetResolver
+  readonly createTopologyAdminCapability?: (runtime: Runtime) => TopologyAdminCapability
   readonly createApplicationModules: (input: Readonly<{
     readonly uiStateModule: UiStateModule
   }>) => readonly RuntimeModule[]
@@ -198,6 +203,8 @@ export const createStateSource = (runtime: Runtime): RenderProviderProps['stateS
 export const createDispatchCommand = (runtime: Runtime): RenderProviderProps['dispatchCommand'] =>
   (command, options) => runtime.dispatchCommand(command.definition, command.payload, {
     requestId: options.requestId,
+    routeContext: options.routeContext,
+    routeIntent: options.routeIntent,
   })
 
 export const createSurfaceForDisplayIndex = (
@@ -322,6 +329,14 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
     variables: input.variables,
     surfaceForm: input.surfaceForm,
   })
+  const createRouteContext: NonNullable<RenderProviderProps['createRouteContext']> = (root, displayMode): CommandRouteContext => {
+    const catalogContext = createCatalogContext(root, displayMode, input.surfaceForm)
+    return Object.freeze({
+      displayMode: catalogContext.displayMode,
+      workspace: catalogContext.workspace,
+      instanceMode: catalogContext.instanceMode,
+    })
+  }
   const startupReadiness = {
     primaryDeclared: false,
     primaryMeasured: false,
@@ -375,7 +390,7 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
     getReadiness: getStartupReadiness,
   })
   const modules: readonly RuntimeModule[] = [
-    createDisplayContextModule(),
+    createDisplayContextModule({surfaceForm: input.surfaceForm}),
     uiStateModule,
     ...input.createApplicationModules({uiStateModule}),
   ]
@@ -389,12 +404,14 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
       persistenceKey: input.persistenceKey ?? input.defaultPersistenceKey,
       persistenceDebounceMs: 300,
     },
+    resolveCommandTarget: input.resolveCommandTarget,
   })
   await runtime.start()
   if (runtime.status !== 'started') throw new Error(`[${input.errorPrefix}] runtime did not start`)
 
   const stateSource = createStateSource(runtime)
   const dispatchCommand = createDispatchCommand(runtime)
+  const topologyCapability = input.createTopologyAdminCapability?.(runtime)
   let primaryReadyPromise: Promise<void> | null = null
   let primarySurfaceReady = false
   let primarySurfaceMeasuredPromise: Promise<void> | null = null
@@ -575,7 +592,9 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
         onPrimarySurfaceReady={onPrimarySurfaceReady}
         getPrimarySurfaceReady={() => primarySurfaceReady}
         runtimeFacts={runtimeFacts}
+        topologyCapability={topologyCapability}
         dispatchCommand={dispatchCommand}
+        createRouteContext={createRouteContext}
         layerDismissals={input.layerDismissals}
         selectUiVariable={selectUiVariable}
         selectSurfaceForm={selectSurfaceForm}

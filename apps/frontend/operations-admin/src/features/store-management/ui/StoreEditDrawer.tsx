@@ -98,7 +98,10 @@ export function StoreEditDrawer({
   const hydratedDefinition = useRef<ExtensionDefinition | undefined>(undefined);
   const watchedOperatingRules = Form.useWatch('operatingRuleSwitches', form) as
     OrganizationStoreOperatingRuleValues | undefined;
-  const operatingRules = useMemo(() => completeStoreOperatingRuleValues(watchedOperatingRules), [watchedOperatingRules]);
+  const operatingRules = useMemo(
+    () => completeStoreOperatingRuleValues(watchedOperatingRules),
+    [watchedOperatingRules],
+  );
   const open = Boolean(store);
   const lifecycle = useDrawerFormLifecycle({
     open,
@@ -188,7 +191,7 @@ export function StoreEditDrawer({
             ),
             extensionRuleRevision: store.extensionRuleRevision,
             expectedVersion: store.revision,
-          operatingRuleSwitches: completeStoreOperatingRuleValues(value.operatingRuleSwitches),
+            operatingRuleSwitches: completeStoreOperatingRuleValues(value.operatingRuleSwitches),
           },
           headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()},
         },

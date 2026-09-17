@@ -30,8 +30,11 @@ const validateSalesMenuSeedRolePrerequisites = (source) => {
   requireRolePermission(source, "role-project", "PG-BUSINESS-CHANNEL-PROJECT", "BC-BUSINESS-CHANNEL-PROJECT-EDIT");
   requireRolePermission(source, "role-store", "PG-BUSINESS-CHANNEL-STORE", "BC-BUSINESS-CHANNEL-STORE-EDIT");
   requireRolePermission(source, "role-store", "PG-SALES-MENU-STORE", "EDIT_STORE_SALES_MENU");
+  requireRolePermission(source, "role-group", "PG-STORE-SERVICE-POINT-QR", "EDIT_STORE_SERVICE_POINT_QR");
+  requireRolePermission(source, "role-project", "PG-STORE-SERVICE-POINT-QR", "EDIT_STORE_SERVICE_POINT_QR");
+  requireRolePermission(source, "role-store", "PG-STORE-SERVICE-POINT-QR", "EDIT_STORE_SERVICE_POINT_QR");
 };
-const EXTENSION_HOST_TYPES = new Set(["BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT", "COMMERCIAL_GROUP", "REGION", "PROJECT"]);
+const EXTENSION_HOST_TYPES = new Set(["BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT", "COMMERCIAL_GROUP", "REGION", "PROJECT", "SERVICE_POINT"]);
 const FLAT_EXTENSION_HOST_TYPES = new Set(["BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT"]);
 const EXTENSION_FIELD_TYPES = new Set(["TEXT", "NUMBER", "DATE", "BOOLEAN", "SELECT"]);
 const validateExtensionSeedShape = (source) => {
@@ -110,6 +113,8 @@ const displayTextDenominator = (source) => {
     ...organization.tenants.flatMap((entry) => [[`tenant:${entry.key}`, entry.name], ...extensionDisplayTextEntries(source, "TENANT", entry.extensionValues, `tenantExtension:${entry.key}`)]),
     ...organization.headCompanies.flatMap((entry) => [[`headCompany:${entry.key}`, entry.name], ...extensionDisplayTextEntries(source, "HEAD_COMPANY", entry.extensionValues, `headCompanyExtension:${entry.key}`)]),
     ...organization.stores.flatMap((entry) => [[`store:${entry.key}`, entry.name], ...extensionDisplayTextEntries(source, "STORE", entry.extensionValues, `storeExtension:${entry.key}`)]),
+    ...(organization.storeServicePoints?.areas ?? []).map((entry) => [`storeServicePointArea:${entry.key}`, entry.name]),
+    ...(organization.storeServicePoints?.points ?? []).map((entry) => [`storeServicePoint:${entry.key}`, entry.name]),
     ...fixtures.workspaceIam.roles.map((entry) => [`role:${entry.key}`, entry.name]),
     ...fixtures.workspaceIam.accounts.map((entry) => [`account:${entry.key}`, entry.displayName]),
     ...fixtures.contracts.flatMap((entry) => [[`contractPhase:${entry.key}`, entry.phaseNameSnapshot], ...extensionDisplayTextEntries(source, "CONTRACT", entry.extensionValues, `contractExtension:${entry.key}`), ...(entry.items ?? []).map((item) => [`contractItem:${entry.key}:${item.code}`, item.name])]),
@@ -119,9 +124,53 @@ const displayTextDenominator = (source) => {
 const validateBusinessDisplayLabels = (source) => {
   for (const [label, value] of displayTextDenominator(source)) requireChineseBusinessText(value, label);
 };
+const validateStoreServicePointSeedCoverage = (source) => {
+  const fixture = source.stableFixtures.organization.storeServicePoints;
+  if (!fixture || typeof fixture.store !== "string" || !Array.isArray(fixture.areas) || !Array.isArray(fixture.points) || !fixture.qr) {
+    throw new Error("R5_SEED_STORE_SERVICE_POINT_FIXTURE_INVALID");
+  }
+  const store = source.stableFixtures.organization.stores.find((entry) => entry.key === fixture.store);
+  if (!store || store.status !== "ENABLED" || store.operatingRuleSwitches?.tableManagementEnabled !== true) {
+    throw new Error("R5_SEED_STORE_SERVICE_POINT_GATE_NOT_ENABLED");
+  }
+  const areaKeys = new Set(); const areaCodes = new Set();
+  for (const area of fixture.areas) {
+    if (!area || typeof area.key !== "string" || areaKeys.has(area.key) || typeof area.code !== "string" || areaCodes.has(area.code)
+      || !["TABLE_AREA", "SCAN_AREA"].includes(area.areaType) || !["ENABLED", "DISABLED", "VOIDED"].includes(area.status)) {
+      throw new Error("R5_SEED_STORE_SERVICE_POINT_AREA_INVALID");
+    }
+    areaKeys.add(area.key); areaCodes.add(area.code);
+  }
+  requireThreeStateCoverage(fixture.areas, "organization.storeServicePoints.areas");
+  const pointKeys = new Set(); const pointCodes = new Set();
+  const servicePointDefinition = source.stableFixtures.extensionDefinitions.find((entry) => entry.hostType === "SERVICE_POINT");
+  const servicePointFieldKeys = new Set(servicePointDefinition?.fields?.map((field) => field.key) ?? []);
+  if (!servicePointDefinition || !servicePointFieldKeys.size) throw new Error("R5_SEED_STORE_SERVICE_POINT_EXTENSION_DEFINITION_MISSING");
+  for (const point of fixture.points) {
+    const area = fixture.areas.find((entry) => entry.key === point?.area);
+    if (!point || !area || pointKeys.has(point.key) || typeof point.code !== "string" || pointCodes.has(point.code)
+      || !["TABLE", "SCAN"].includes(point.pointType) || !["ENABLED", "DISABLED", "VOIDED"].includes(point.status)
+      || (point.pointType === "TABLE" ? area.areaType !== "TABLE_AREA" : area.areaType !== "SCAN_AREA")
+      || !point.extensionValues || Object.keys(point.extensionValues).some((key) => !servicePointFieldKeys.has(key))) {
+      throw new Error("R5_SEED_STORE_SERVICE_POINT_INVALID");
+    }
+    if (point.pointType === "TABLE") {
+      if (!Number.isInteger(point.seatCapacity) || point.seatCapacity <= 0 || !["HALL", "PRIVATE_ROOM", "BOOTH", "OUTDOOR"].includes(point.tableShape)
+        || typeof point.reservable !== "boolean" || !point.image || typeof point.image.fileName !== "string" || typeof point.image.mediaType !== "string") {
+        throw new Error("R5_SEED_STORE_TABLE_POINT_ATTRIBUTES_INVALID");
+      }
+    } else if (point.seatCapacity !== undefined || point.tableShape !== undefined || point.reservable !== undefined || point.image !== undefined) {
+      throw new Error("R5_SEED_STORE_SCAN_POINT_TABLE_ATTRIBUTES_FORBIDDEN");
+    }
+    pointKeys.add(point.key); pointCodes.add(point.code);
+  }
+  requireThreeStateCoverage(fixture.points, "organization.storeServicePoints.points");
+  if (fixture.qr.enabled !== true || typeof fixture.qr.channelCode !== "string" || !fixture.qr.channelCode) throw new Error("R5_SEED_STORE_QR_FIXTURE_INVALID");
+};
 validateBusinessDisplayLabels(fixture);
 validateExtensionSeedShape(fixture);
 validateExtensionRevisionChangeFixture(fixture);
+validateStoreServicePointSeedCoverage(fixture);
 validateSalesMenuSeedRolePrerequisites(fixture);
 if (process.argv.includes("--self-test")) {
   const redMutation = structuredClone(fixture);
@@ -134,7 +183,12 @@ if (process.argv.includes("--self-test")) {
   rejected = false;
   try { validateSalesMenuSeedRolePrerequisites(permissionRedMutation); } catch (error) { rejected = String(error.message) === "R5_SEED_ROLE_PERMISSION_CAPABILITY_MISSING:role-store:EDIT_STORE_SALES_MENU"; }
   if (!rejected) throw new Error("R5_SEED_ROLE_PERMISSION_RED_MUTATION_MISSED");
-  process.stdout.write("R5_SEED_PLAN_SELF_TEST=PASS; RED=TECHNICAL_ENGLISH_DISPLAY_TEXT,SALES_MENU_ROLE_CAPABILITY\n");
+  const servicePointRedMutation = structuredClone(fixture);
+  servicePointRedMutation.stableFixtures.organization.storeServicePoints.points[0].pointType = "SCAN";
+  rejected = false;
+  try { validateStoreServicePointSeedCoverage(servicePointRedMutation); } catch (error) { rejected = String(error.message) === "R5_SEED_STORE_SERVICE_POINT_INVALID"; }
+  if (!rejected) throw new Error("R5_SEED_STORE_SERVICE_POINT_RED_MUTATION_MISSED");
+  process.stdout.write("R5_SEED_PLAN_SELF_TEST=PASS; RED=TECHNICAL_ENGLISH_DISPLAY_TEXT,SALES_MENU_ROLE_CAPABILITY,STORE_SERVICE_POINT_TYPE\n");
 }
 if (fixture.stableFixtures.workspaceIam.roles.length !== 8) throw new Error("R5_SEED_ROLE_EXPERIENCE_DENOMINATOR_DRIFT");
 for (const roleKey of ["role-store-inventory", "role-store-manager"]) if (!fixture.stableFixtures.workspaceIam.roles.some((role) => role.key === roleKey)) throw new Error(`R5_SEED_ROLE_EXPERIENCE_MISSING:${roleKey}`);
@@ -145,10 +199,12 @@ for (const [label, entries] of [
   ["organization.tenants", fixture.stableFixtures.organization.tenants],
   ["organization.headCompanies", fixture.stableFixtures.organization.headCompanies],
   ["organization.stores", fixture.stableFixtures.organization.stores],
+  ["organization.storeServicePoints.areas", fixture.stableFixtures.organization.storeServicePoints.areas],
+  ["organization.storeServicePoints.points", fixture.stableFixtures.organization.storeServicePoints.points],
   ["workspaceIam.roles", fixture.stableFixtures.workspaceIam.roles],
   ["workspaceIam.accounts", fixture.stableFixtures.workspaceIam.accounts],
 ]) requireThreeStateCoverage(entries, label);
-const facts = {platformAdmins: fixture.stableFixtures.platformAdmins.length, groupWorkspaces: fixture.stableFixtures.groupWorkspaces.length, activeAssets: fixture.stableFixtures.assets.filter((entry) => entry.status === "ACTIVE").length, extensionDefinitions: fixture.stableFixtures.extensionDefinitions.length, commercialGroups: fixture.stableFixtures.organization.commercialGroups.length, regions: fixture.stableFixtures.organization.regions.length, projects: fixture.stableFixtures.organization.projects.length, brands: fixture.stableFixtures.organization.brands.length, tenants: fixture.stableFixtures.organization.tenants.length, headCompanies: fixture.stableFixtures.organization.headCompanies.length, stores: fixture.stableFixtures.organization.stores.length, roles: fixture.stableFixtures.workspaceIam.roles.length, accounts: fixture.stableFixtures.workspaceIam.accounts.length, assignments: fixture.stableFixtures.workspaceIam.assignments.length, invitationStateFixtures: fixture.stableFixtures.workspaceIam.invitationStates.length, contracts: fixture.stableFixtures.contracts.length};
+const facts = {platformAdmins: fixture.stableFixtures.platformAdmins.length, groupWorkspaces: fixture.stableFixtures.groupWorkspaces.length, activeAssets: fixture.stableFixtures.assets.filter((entry) => entry.status === "ACTIVE").length, extensionDefinitions: fixture.stableFixtures.extensionDefinitions.length, commercialGroups: fixture.stableFixtures.organization.commercialGroups.length, regions: fixture.stableFixtures.organization.regions.length, projects: fixture.stableFixtures.organization.projects.length, brands: fixture.stableFixtures.organization.brands.length, tenants: fixture.stableFixtures.organization.tenants.length, headCompanies: fixture.stableFixtures.organization.headCompanies.length, stores: fixture.stableFixtures.organization.stores.length, storeServicePointAreas: fixture.stableFixtures.organization.storeServicePoints.areas.length, storeServicePoints: fixture.stableFixtures.organization.storeServicePoints.points.length, roles: fixture.stableFixtures.workspaceIam.roles.length, accounts: fixture.stableFixtures.workspaceIam.accounts.length, assignments: fixture.stableFixtures.workspaceIam.assignments.length, invitationStateFixtures: fixture.stableFixtures.workspaceIam.invitationStates.length, contracts: fixture.stableFixtures.contracts.length};
 for (const [key, expected] of Object.entries(profile.expectedCounts)) if (facts[key] !== expected) throw new Error(`R5_SEED_PROFILE_DRIFT:${key}:${facts[key]}!=${expected}`);
 if (fixture.scenarioPrerequisitePolicy.denominator !== profile.scenarioDenominator) throw new Error("R5_SEED_SCENARIO_DENOMINATOR_DRIFT");
 process.stdout.write(`R5_SEED_DRY_RUN=PASS; PROFILE=${profile.profile}; SCENARIOS=${profile.scenarioDenominator}; FIXTURES=${Object.keys(facts).length}; STAGES=${fixture.seedStages.map((stage) => stage.id).join(",")}\n`);

@@ -7,8 +7,12 @@ import type {DisplayInfo, LogEvent, PortResult} from '@catering-v2s/kernel-base-
 import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
 import {getDisplayRoleChangeEligibility} from '../src/foundations/displayDerivation'
 import {
+  cancelPowerRoleChangeCommand,
+  confirmPowerRoleChangeCommand,
   powerStatusChangedCommand,
   selectDisplayRole,
+  selectPowerConfirmation,
+  requestPowerRoleChangeCommand,
   switchDisplayRoleCommand,
   switchInstanceModeCommand,
 } from '../src/index'
@@ -176,21 +180,74 @@ describe('display-context command actors', () => {
     expect(result.actorResults[0]?.status).toBe('error')
   })
 
-  it('A-9 powerStatusChanged changes SLAVE CHIEF to VICE on external power', async () => {
+  it('A-9 powerStatusChanged requests confirmation before changing SLAVE CHIEF to VICE', async () => {
     const {runtime, device} = await startSlaveRuntime()
     const displayInfoCallsBefore = device.calls.getDisplayInfo.length
-    const result = await runtime.dispatchCommand(powerStatusChangedCommand, {powerSource: 'external'})
+    const result = await runtime.dispatchCommand(powerStatusChangedCommand, {powerSource: 'external'}, {requestId: requestId()})
     expect(result.status).toBe('completed')
-    expect(result.actorResults[0]?.result).toMatchObject({changed: true, currentRole: 'VICE'})
-    expect(selectDisplayRole(runtime.getState())).toBe('VICE')
+    expect(result.actorResults[0]?.result).toMatchObject({
+      changed: false,
+      pending: true,
+      currentRole: 'CHIEF',
+      targetRole: 'VICE',
+      reason: 'awaiting-confirmation',
+    })
+    expect(selectDisplayRole(runtime.getState())).toBe('CHIEF')
+    expect(selectPowerConfirmation(runtime.getState())).toMatchObject({
+      powerSource: 'external',
+      targetRole: 'VICE',
+    })
     expect(device.calls.getDisplayInfo).toHaveLength(displayInfoCallsBefore + 1)
+
+    const confirm = await runtime.dispatchCommand(confirmPowerRoleChangeCommand, {
+      powerSource: 'external',
+      targetRole: 'VICE',
+    }, {requestId: requestId()})
+    expect(confirm.status).toBe('completed')
+    expect(confirm.actorResults[0]?.result).toMatchObject({changed: true, currentRole: 'VICE'})
+    expect(selectDisplayRole(runtime.getState())).toBe('VICE')
+    expect(selectPowerConfirmation(runtime.getState())).toBeNull()
+    expect(device.calls.getDisplayInfo).toHaveLength(displayInfoCallsBefore + 2)
+  })
+
+  it('A-9b cancellation clears the pending power role change without writing the role', async () => {
+    const {runtime} = await startSlaveRuntime()
+    await runtime.dispatchCommand(requestPowerRoleChangeCommand, {powerSource: 'external'}, {requestId: requestId()})
+    expect(selectPowerConfirmation(runtime.getState())).not.toBeNull()
+
+    const cancel = await runtime.dispatchCommand(cancelPowerRoleChangeCommand, {}, {requestId: requestId()})
+    expect(cancel.status).toBe('completed')
+    expect(cancel.actorResults[0]?.result).toMatchObject({changed: false, reason: 'cancelled', currentRole: 'CHIEF'})
+    expect(selectDisplayRole(runtime.getState())).toBe('CHIEF')
+    expect(selectPowerConfirmation(runtime.getState())).toBeNull()
+  })
+
+  it('A-9c rejects a stale power confirmation after the physical display count changes', async () => {
+    const device = new FakeDevicePort()
+    const {runtime} = await startSlaveRuntime(device)
+    await runtime.dispatchCommand(requestPowerRoleChangeCommand, {powerSource: 'external'}, {requestId: requestId()})
+    device.displayCount = 2
+
+    const confirm = await runtime.dispatchCommand(confirmPowerRoleChangeCommand, {
+      powerSource: 'external',
+      targetRole: 'VICE',
+    }, {requestId: requestId()})
+    expect(confirm.status).toBe('completed')
+    expect(confirm.actorResults[0]?.result).toMatchObject({
+      changed: false,
+      reason: 'stale-precondition',
+      currentRole: 'CHIEF',
+      targetRole: 'VICE',
+    })
+    expect(selectDisplayRole(runtime.getState())).toBe('CHIEF')
+    expect(selectPowerConfirmation(runtime.getState())).toBeNull()
   })
 
   it('A-10 powerStatusChanged records no-change when display info is unavailable', async () => {
     const device = new FakeDevicePort()
     const {runtime, events} = await startSlaveRuntime(device)
     device.displayResults.push(unavailable('getDisplayInfo'))
-    const result = await runtime.dispatchCommand(powerStatusChangedCommand, {powerSource: 'external'})
+    const result = await runtime.dispatchCommand(powerStatusChangedCommand, {powerSource: 'external'}, {requestId: requestId()})
     expect(result.status).toBe('completed')
     expect(result.actorResults[0]?.result).toMatchObject({changed: false, reason: 'display-info-unavailable'})
     expect(selectDisplayRole(runtime.getState())).toBe('CHIEF')
@@ -201,7 +258,7 @@ describe('display-context command actors', () => {
     const device = new FakeDevicePort()
     const {runtime, events} = await startSlaveRuntime(device)
     device.displayResults.push(succeeded({displayCount: Number.NaN}))
-    const result = await runtime.dispatchCommand(powerStatusChangedCommand, {powerSource: 'external'})
+    const result = await runtime.dispatchCommand(powerStatusChangedCommand, {powerSource: 'external'}, {requestId: requestId()})
     expect(result.status).toBe('completed')
     expect(result.actorResults[0]?.result).toMatchObject({changed: false, reason: 'display-info-malformed'})
     expect(selectDisplayRole(runtime.getState())).toBe('CHIEF')
@@ -288,11 +345,12 @@ describe('display-context bridge and install lifecycle', () => {
     expect(runtime.journal.list().filter(event => event.kind === 'command.started' && event.commandName === powerStatusChangedCommand.commandName)).toHaveLength(0)
   })
 
-  it('B-3 dispatches one command for a real power transition', async () => {
+  it('B-3 dispatches one command and exposes confirmation for a real power transition', async () => {
     const {runtime, device} = await startSlaveRuntime()
     device.emit('battery')
     device.emit('external')
-    await vi.waitFor(() => expect(selectDisplayRole(runtime.getState())).toBe('VICE'))
+    await vi.waitFor(() => expect(selectPowerConfirmation(runtime.getState())).toMatchObject({targetRole: 'VICE'}))
+    expect(selectDisplayRole(runtime.getState())).toBe('CHIEF')
     expect(runtime.journal.list().filter(event => event.kind === 'command.started' && event.commandName === powerStatusChangedCommand.commandName)).toHaveLength(1)
   })
 

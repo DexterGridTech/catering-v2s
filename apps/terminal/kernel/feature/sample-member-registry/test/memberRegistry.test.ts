@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest'
 import {createRequestId} from '@catering-v2s/kernel-base-contracts'
+import {releaseRuntimeForTest, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing'
 import {
   confirmMemberCommand,
   createSampleMemberRegistryModule,
@@ -19,6 +20,7 @@ import {
   createTestRuntime,
   type RecordedEvent,
 } from './support'
+import {memberSliceName} from '../src/features/slices/slice'
 
 describe('sample member registry owner module', () => {
   it('describes the owner commands, actors, slice, and isolated persistence contract', () => {
@@ -44,8 +46,44 @@ describe('sample member registry owner module', () => {
       persistIntent: 'owner-only',
     }])
     expect(module.stateSlices).toHaveLength(1)
-    expect(module.stateSlices?.[0]?.syncIntent).toBe('isolated')
+    expect(module.stateSlices?.[0]?.syncIntent).toBe('master-to-slave')
     expect(module.stateSlices?.[0]?.hasPersistence).toBe(true)
+  })
+
+  it('builds and applies the declared master-to-slave full member snapshot', async () => {
+    const source = createTestRuntime([createSampleMemberRegistryModule()])
+    const target = createTestRuntime([createSampleMemberRegistryModule()])
+    try {
+      await source.start()
+      await target.start()
+      await source.dispatchCommand(submitMemberCommand, {
+        name: 'Sync me',
+        phone: '010-0000-0000',
+      }, {requestId: createRequestId()})
+
+      const payload = runtimeStateSyncForTest(source).createFullSyncPayload(memberSliceName)
+      expect(payload.status).toBe('ready')
+      if (payload.status !== 'ready') return
+      expect(payload.payload).toMatchObject({
+        mode: 'authoritative',
+        replaceMissing: true,
+        entries: [expect.objectContaining({key: 'state'})],
+      })
+
+      const applied = runtimeStateSyncForTest(target).applyAuthoritativeSync(memberSliceName, payload.payload)
+      expect(applied).toEqual({
+        status: 'applied',
+        sliceName: memberSliceName,
+        changed: true,
+      })
+      expect(selectPendingMember(target.getState())).toEqual({
+        name: 'Sync me',
+        phone: '010-0000-0000',
+      })
+    } finally {
+      releaseRuntimeForTest(source)
+      releaseRuntimeForTest(target)
+    }
   })
 
   it('submits a pending registration and emits its result event', async () => {

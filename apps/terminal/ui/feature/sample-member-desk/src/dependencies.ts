@@ -1,4 +1,5 @@
 import {moduleName as displayContext} from '@catering-v2s/kernel-base-display-context';
+import {moduleName as topology} from '@catering-v2s/kernel-base-topology';
 import {moduleName as runtime} from '@catering-v2s/kernel-base-runtime';
 import {moduleName as state} from '@catering-v2s/kernel-base-state';
 import {moduleName as uiState} from '@catering-v2s/kernel-base-ui-state';
@@ -12,6 +13,7 @@ import {moduleName as testSupport} from '@catering-v2s/ui-base-test-support';
 
 export const dependencyModuleNames = [
   displayContext,
+  topology,
   runtime,
   state,
   uiState,
@@ -23,4 +25,4 @@ export const dependencyModuleNames = [
   featureAssembly,
 ] as const;
 export const devDependencyModuleNames = [testSupport] as const;
-export const runtimeModuleDependencyNames = [displayContext, runtime, uiState, memberRegistry, staffSession] as const;
+export const runtimeModuleDependencyNames = [displayContext, topology, runtime, uiState, memberRegistry, staffSession] as const;

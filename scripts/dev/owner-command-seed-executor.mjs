@@ -34,10 +34,10 @@ const GROUP_SEED_CAPABILITIES = Object.freeze([
   'BC-ORG-BRAND-CREATE', 'BC-ORG-BRAND-STATUS', 'BC-ORG-HEAD-COMPANY-BRAND', 'BC-ORG-HEAD-COMPANY-CREATE',
   'BC-ORG-HEAD-COMPANY-STATUS', 'BC-ORG-PROJECT-CREATE', 'BC-ORG-PROJECT-STATUS', 'BC-ORG-REGION-CREATE',
   'BC-ORG-REGION-STATUS', 'BC-ORG-STORE-CREATE', 'BC-ORG-STORE-STATUS', 'BC-ORG-TENANT-CREATE',
-  'BC-ORG-TENANT-STATUS',
+  'BC-ORG-TENANT-STATUS', 'EDIT_STORE_SERVICE_POINT_QR',
 ]);
 const EXTENSION_HOST_TYPES = new Set([
-  'BRAND', 'TENANT', 'HEAD_COMPANY', 'STORE', 'CONTRACT', 'COMMERCIAL_GROUP', 'REGION', 'PROJECT',
+  'BRAND', 'TENANT', 'HEAD_COMPANY', 'STORE', 'CONTRACT', 'COMMERCIAL_GROUP', 'REGION', 'PROJECT', 'SERVICE_POINT',
 ]);
 const FLAT_EXTENSION_HOST_TYPES = new Set(['BRAND', 'TENANT', 'HEAD_COMPANY', 'STORE', 'CONTRACT']);
 const EXTENSION_FIELD_TYPES = new Set(['TEXT', 'NUMBER', 'DATE', 'BOOLEAN', 'SELECT']);
@@ -71,6 +71,8 @@ export function validateThreeStateSeedCoverage(fixture) {
     ['organization.tenants', organization?.tenants],
     ['organization.headCompanies', organization?.headCompanies],
     ['organization.stores', organization?.stores],
+    ['organization.storeServicePoints.areas', organization?.storeServicePoints?.areas],
+    ['organization.storeServicePoints.points', organization?.storeServicePoints?.points],
     ['workspaceIam.roles', workspaceIam?.roles],
     ['workspaceIam.accounts', workspaceIam?.accounts],
   ]) requireThreeStateCoverage(entries, label);
@@ -167,6 +169,49 @@ function validateStoreOperatingRuleValues(storeKey, values, requireCatalogManage
     fail(`SEED_STORE_CATALOG_MANAGEMENT_NOT_ENABLED:${storeKey}`);
   }
   return values;
+}
+
+export function validateStoreServicePointSeedCoverage(fixture) {
+  const organization = fixture?.stableFixtures?.organization;
+  const servicePoints = organization?.storeServicePoints;
+  if (!servicePoints || typeof servicePoints.store !== 'string' || !Array.isArray(servicePoints.areas)
+    || !Array.isArray(servicePoints.points) || !servicePoints.qr) fail('SEED_STORE_SERVICE_POINT_FIXTURE_INVALID');
+  const store = organization.stores?.find((entry) => entry.key === servicePoints.store);
+  if (!store || store.status !== 'ENABLED' || store.operatingRuleSwitches?.tableManagementEnabled !== true) {
+    fail('SEED_STORE_SERVICE_POINT_GATE_NOT_ENABLED');
+  }
+  const areaByKey = new Map(); const areaCodes = new Set();
+  for (const area of servicePoints.areas) {
+    if (!area?.key || areaByKey.has(area.key) || typeof area.code !== 'string' || areaCodes.has(area.code)
+      || !['TABLE_AREA', 'SCAN_AREA'].includes(area.areaType) || !THREE_STATE_VALUES.has(area.status)) {
+      fail('SEED_STORE_SERVICE_POINT_AREA_INVALID');
+    }
+    areaByKey.set(area.key, area); areaCodes.add(area.code);
+  }
+  requireThreeStateCoverage(servicePoints.areas, 'organization.storeServicePoints.areas');
+  const pointKeys = new Set(); const pointCodes = new Set();
+  const definition = fixture.stableFixtures.extensionDefinitions?.find((entry) => entry.hostType === 'SERVICE_POINT');
+  const fieldKeys = new Set(definition?.fields?.map((field) => field.key) ?? []);
+  if (!fieldKeys.size) fail('SEED_STORE_SERVICE_POINT_EXTENSION_DEFINITION_MISSING');
+  for (const point of servicePoints.points) {
+    const area = areaByKey.get(point?.area);
+    if (!point?.key || pointKeys.has(point.key) || typeof point.code !== 'string' || pointCodes.has(point.code)
+      || !area || !['TABLE', 'SCAN'].includes(point.pointType) || !THREE_STATE_VALUES.has(point.status)
+      || (point.pointType === 'TABLE' ? area.areaType !== 'TABLE_AREA' : area.areaType !== 'SCAN_AREA')
+      || !point.extensionValues || Object.keys(point.extensionValues).some((key) => !fieldKeys.has(key))) {
+      fail('SEED_STORE_SERVICE_POINT_INVALID');
+    }
+    if (point.pointType === 'TABLE') {
+      if (!Number.isInteger(point.seatCapacity) || point.seatCapacity < 1 || !['HALL', 'PRIVATE_ROOM', 'BOOTH', 'OUTDOOR'].includes(point.tableShape)
+        || typeof point.reservable !== 'boolean' || !point.image?.fileName || !point.image?.mediaType) fail('SEED_STORE_TABLE_POINT_ATTRIBUTES_INVALID');
+    } else if (point.seatCapacity !== undefined || point.tableShape !== undefined || point.reservable !== undefined || point.image !== undefined) {
+      fail('SEED_STORE_SCAN_POINT_TABLE_ATTRIBUTES_FORBIDDEN');
+    }
+    pointKeys.add(point.key); pointCodes.add(point.code);
+  }
+  requireThreeStateCoverage(servicePoints.points, 'organization.storeServicePoints.points');
+  if (servicePoints.qr.enabled !== true || typeof servicePoints.qr.channelCode !== 'string' || !servicePoints.qr.channelCode) fail('SEED_STORE_QR_FIXTURE_INVALID');
+  return Object.freeze({areaCount: servicePoints.areas.length, pointCount: servicePoints.points.length, storeKey: servicePoints.store});
 }
 
 export function validateStoreOperatingRuleSeedCoverage(fixture) {
@@ -325,6 +370,7 @@ export function validateFormalSeedStaticInputs({fixture, registry}) {
   validateExtensionDefinitionSeedCoverage(fixture);
   validateExtensionDefinitionRevisionChangeCoverage(fixture);
   validateStoreOperatingRuleSeedCoverage(fixture);
+  const servicePointSeed = validateStoreServicePointSeedCoverage(fixture);
   const groupRole = fixture?.stableFixtures?.workspaceIam?.roles?.find((entry) => entry.key === 'role-group');
   if (!groupRole || GROUP_SEED_CAPABILITIES.some((capability) => !groupRole.actionCapabilityKeys?.includes(capability))) {
     const missing = GROUP_SEED_CAPABILITIES.find((capability) => !groupRole?.actionCapabilityKeys?.includes(capability)) ?? 'role-group';
@@ -332,10 +378,10 @@ export function validateFormalSeedStaticInputs({fixture, registry}) {
   }
   const catalogInventoryPrerequisite = validateCatalogInventorySeedPrerequisite(fixture);
   const operations = Array.isArray(registry) ? registry : [];
-  for (const operationId of ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'transitionWorkspaceRoleStatus', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract']) {
+  for (const operationId of ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'transitionWorkspaceRoleStatus', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract', 'getOperationsStoreServicePointAreas', 'postOperationsStoreServicePointArea', 'postOperationsStoreServicePoint', 'postOperationsStoreServicePointStatus', 'postOperationsStoreServicePointAreaStatus', 'getOperationsStoreServicePoint', 'stageStoreServicePointImage', 'getOperationsStoreQrConfiguration']) {
     if (operations.filter((entry) => entry.operationId === operationId).length !== 1) fail(`SEED_OPERATION_REGISTRY_MISSING:${operationId}`);
   }
-  return Object.freeze({invitationPlan: resolveInvitationCreationPlan(fixture), catalogInventoryPrerequisite});
+  return Object.freeze({invitationPlan: resolveInvitationCreationPlan(fixture), catalogInventoryPrerequisite, servicePointSeed});
 }
 
 export function createProjectScopeSelector({initialContextVersion, select}) {
@@ -600,7 +646,7 @@ async function executeFormalSeed() {
     const platformCookie = requireValue(login.cookie, 'SEED_PLATFORM_SESSION_MISSING');
     await request('platform-session', 'getCurrentPlatformSession', {}, {cookie: platformCookie});
 
-    const ids = {workspace: {}, asset: {}, extensionDefinition: {}, group: {}, region: {}, project: {}, brand: {}, tenant: {}, headCompany: {}, store: {}, role: {}, account: {}, invitation: {}};
+    const ids = {workspace: {}, asset: {}, extensionDefinition: {}, group: {}, region: {}, project: {}, brand: {}, tenant: {}, headCompany: {}, store: {}, role: {}, account: {}, invitation: {}, servicePoint: {areas: {}, points: {}, qr: null}};
     for (const admin of fixture.stableFixtures.platformAdmins.filter((entry) => !entry.builtIn)) {
       const created = await request(`platform-admin-${admin.key}`, 'createPlatformAdmin', {}, {cookie: platformCookie, expected: [201], body: {loginName: admin.login, userName: requireValue(admin.displayName, 'SEED_PLATFORM_ADMIN_DISPLAY_NAME'), password: admin.key === 'pa-support' ? credentials.V2S_SEED_PLATFORM_SUPPORT_PASSWORD : credentials.V2S_SEED_PLATFORM_DISABLED_PASSWORD, idempotencyKey: '$header'}});
       if (admin.status === 'DISABLED') await request(`platform-admin-disable-${admin.key}`, 'transitionPlatformAdminStatus', {platformAdminId: requireValue(created.json?.id, 'SEED_PLATFORM_ADMIN_ID')}, {cookie: platformCookie, body: {targetStatus: 'DISABLED', expectedVersion: requireValue(created.json?.version, 'SEED_PLATFORM_ADMIN_VERSION'), idempotencyKey: '$header'}});
@@ -638,7 +684,7 @@ async function executeFormalSeed() {
       }
       return resolveExtensionValues(definitionFixture, ids.extensionDefinition[`${workspace}:${hostType}`], fixtureValues);
     };
-    const extensionReadback = {COMMERCIAL_GROUP: 0, REGION: 0, PROJECT: 0, BRAND: 0, TENANT: 0, HEAD_COMPANY: 0, STORE: 0, CONTRACT: 0};
+    const extensionReadback = {COMMERCIAL_GROUP: 0, REGION: 0, PROJECT: 0, BRAND: 0, TENANT: 0, HEAD_COMPANY: 0, STORE: 0, SERVICE_POINT: 0, CONTRACT: 0};
     for (const group of fixture.stableFixtures.organization.commercialGroups) {
       const key = fixture.stableFixtures.groupWorkspaces.find((entry) => entry.key === group.workspace).groupWorkspaceKey;
       const extensionValues = extensionValuesFor(group.workspace, 'COMMERCIAL_GROUP', group.extensionValues);
@@ -712,6 +758,60 @@ async function executeFormalSeed() {
       assertStoreOperatingRuleReadback(created, store.key, operatingRuleSwitches);
       assertExtensionValueReadback(created, extensionValues); extensionReadback.STORE += 1; ids.store[store.key] = created.json;
     }
+    const servicePointFixture = fixture.stableFixtures.organization.storeServicePoints;
+    const servicePointStore = fixture.stableFixtures.organization.stores.find((entry) => entry.key === servicePointFixture.store);
+    await selectProjectScope({projectRef: requireValue(ids.project[servicePointStore.project]?.id, 'SEED_SERVICE_POINT_PROJECT_ID'), stage: 'project-select-service-point-store'});
+    const servicePointDefinitionReadback = ids.extensionDefinition['gw-aurora:SERVICE_POINT'];
+    const servicePointAreas = new Map();
+    for (const area of servicePointFixture.areas) {
+      const created = await request(`service-point-area-${area.key}`, 'postOperationsStoreServicePointArea', {groupWorkspaceKey: aurora, storeRef: requireValue(ids.store[servicePointFixture.store]?.id, 'SEED_SERVICE_POINT_STORE_ID')}, {cookie: operationsCookie, expected: [201], body: {name: area.name, code: area.code, areaType: area.areaType}});
+      if (created.json?.name !== area.name || created.json?.code !== area.code || created.json?.areaType !== area.areaType || created.json?.status !== 'ENABLED') throw new FormalSeedFailure(`SEED_SERVICE_POINT_AREA_READBACK_INVALID:${area.key}`);
+      servicePointAreas.set(area.key, created.json); ids.servicePoint.areas[area.key] = created.json;
+    }
+    const servicePointByKey = new Map();
+    for (const point of servicePointFixture.points) {
+      let staged = null;
+      if (point.image) {
+        const bytes = readSeedAssetFixtureBytes(point.image);
+        const contentDigest = crypto.createHash('sha256').update(bytes).digest('hex');
+        const form = new FormData();
+        form.set('fileName', point.image.fileName);
+        form.set('mediaType', point.image.mediaType);
+        form.set('contentDigest', contentDigest);
+        form.set('content', new Blob([bytes], {type: point.image.mediaType}), point.image.fileName);
+        const stageResponse = await request(`service-point-image-stage-${point.key}`, 'stageStoreServicePointImage', {groupWorkspaceKey: aurora, storeRef: requireValue(ids.store[servicePointFixture.store]?.id, 'SEED_SERVICE_POINT_STORE_ID')}, {cookie: operationsCookie, expected: [201], form});
+        if (stageResponse.json?.status !== 'STAGED' || !stageResponse.json?.assetRef || !stageResponse.json?.bindGrant) throw new FormalSeedFailure(`SEED_SERVICE_POINT_IMAGE_STAGE_READBACK_INVALID:${point.key}`);
+        staged = stageResponse.json;
+      }
+      const extensionValues = extensionValuesFor('gw-aurora', 'SERVICE_POINT', point.extensionValues ?? {});
+      const created = await request(`service-point-${point.key}`, 'postOperationsStoreServicePoint', {groupWorkspaceKey: aurora, storeRef: requireValue(ids.store[servicePointFixture.store]?.id, 'SEED_SERVICE_POINT_STORE_ID'), areaRef: requireValue(servicePointAreas.get(point.area)?.areaRef, 'SEED_SERVICE_POINT_AREA_ID')}, {cookie: operationsCookie, expected: [201], body: {name: point.name, code: point.code, pointType: point.pointType, seatCapacity: point.seatCapacity ?? null, tableShape: point.tableShape ?? null, reservable: point.reservable ?? null, imageAssetRef: staged?.assetRef ?? null, imageBindGrant: staged?.bindGrant ?? null, extensionValues, extensionRuleRevision: servicePointDefinitionReadback?.revision ?? null}});
+      if (created.json?.name !== point.name || created.json?.code !== point.code || created.json?.pointType !== point.pointType || created.json?.status !== 'ENABLED'
+        || created.json?.areaRef !== servicePointAreas.get(point.area)?.areaRef || (point.pointType === 'TABLE' && created.json?.imageAssetRef !== staged?.assetRef)) throw new FormalSeedFailure(`SEED_SERVICE_POINT_READBACK_INVALID:${point.key}`);
+      assertExtensionValueReadback(created, extensionValues); extensionReadback.SERVICE_POINT += 1;
+      servicePointByKey.set(point.key, created.json); ids.servicePoint.points[point.key] = created.json;
+    }
+    for (const point of servicePointFixture.points.filter((entry) => entry.status !== 'ENABLED')) {
+      const current = servicePointByKey.get(point.key);
+      const updated = await request(`service-point-status-${point.key}`, 'postOperationsStoreServicePointStatus', {groupWorkspaceKey: aurora, storeRef: requireValue(ids.store[servicePointFixture.store]?.id, 'SEED_SERVICE_POINT_STORE_ID'), servicePointRef: requireValue(current?.pointRef, 'SEED_SERVICE_POINT_ID')}, {cookie: operationsCookie, body: {status: point.status, expectedVersion: requireValue(current?.version, 'SEED_SERVICE_POINT_VERSION')}});
+      if (updated.json?.status !== point.status) throw new FormalSeedFailure(`SEED_SERVICE_POINT_STATUS_READBACK_INVALID:${point.key}`);
+      servicePointByKey.set(point.key, updated.json); ids.servicePoint.points[point.key] = updated.json;
+    }
+    const areaByKey = new Map(servicePointFixture.areas.map((area) => [area.key, servicePointAreas.get(area.key)]));
+    for (const area of servicePointFixture.areas.filter((entry) => entry.status !== 'ENABLED')) {
+      const current = areaByKey.get(area.key);
+      const updated = await request(`service-point-area-status-${area.key}`, 'postOperationsStoreServicePointAreaStatus', {groupWorkspaceKey: aurora, storeRef: requireValue(ids.store[servicePointFixture.store]?.id, 'SEED_SERVICE_POINT_STORE_ID'), areaRef: requireValue(current?.areaRef, 'SEED_SERVICE_POINT_AREA_ID')}, {cookie: operationsCookie, body: {status: area.status, expectedVersion: requireValue(current?.version, 'SEED_SERVICE_POINT_AREA_VERSION')}});
+      if (updated.json?.status !== area.status) throw new FormalSeedFailure(`SEED_SERVICE_POINT_AREA_STATUS_READBACK_INVALID:${area.key}`);
+      areaByKey.set(area.key, updated.json); ids.servicePoint.areas[area.key] = updated.json;
+    }
+    const servicePointReadback = await request('service-point-area-readback', 'getOperationsStoreServicePointAreas', {groupWorkspaceKey: aurora, storeRef: requireValue(ids.store[servicePointFixture.store]?.id, 'SEED_SERVICE_POINT_STORE_ID')}, {cookie: operationsCookie, idempotency: false, queryParameters: {pageSize: 20}});
+    if (!Array.isArray(servicePointReadback.json?.items) || servicePointReadback.json.items.length !== servicePointFixture.areas.filter((entry) => entry.status !== 'VOIDED').length) throw new FormalSeedFailure('SEED_SERVICE_POINT_AREA_PAGE_READBACK_INVALID');
+    for (const point of servicePointFixture.points) {
+      const current = servicePointByKey.get(point.key);
+      const detail = await request(`service-point-readback-${point.key}`, 'getOperationsStoreServicePoint', {groupWorkspaceKey: aurora, storeRef: requireValue(ids.store[servicePointFixture.store]?.id, 'SEED_SERVICE_POINT_STORE_ID'), servicePointRef: requireValue(current?.pointRef, 'SEED_SERVICE_POINT_ID')}, {cookie: operationsCookie, idempotency: false});
+      if (detail.json?.pointType !== point.pointType || detail.json?.status !== point.status || detail.json?.name !== point.name) throw new FormalSeedFailure(`SEED_SERVICE_POINT_DETAIL_READBACK_INVALID:${point.key}`);
+      const extensionValues = extensionValuesFor('gw-aurora', 'SERVICE_POINT', point.extensionValues ?? {}); assertExtensionValueReadback(detail, extensionValues);
+    }
+    phase('owner-store-service-point-readback', 'PASS', {storeKey: servicePointFixture.store, areas: servicePointFixture.areas.length, visibleAreas: servicePointReadback.json.items.length, points: servicePointFixture.points.length});
     // Materialize every declared invitation state through public owner commands.
     // The only non-HTTP terminal fact is inv-expired, guarded by the narrowly
     // scoped adapter after the public PENDING invitation and intent exist.
@@ -824,7 +924,7 @@ async function executeFormalSeed() {
     // is already read back by its lifecycle response, while account reads above
     // are the owner facts needed for assignments and account states; do not add
     // a redundant collection scrape merely to manufacture a seed denominator.
-    phase('owner-readback', 'PASS', {accounts: Object.keys(ids.account).length, invitations: Object.keys(ids.invitation).length, contracts: Object.keys(contracts).length, extensionDefinitions: fixture.stableFixtures.extensionDefinitions.length, extensionValueEntities: Object.values(extensionReadback).reduce((total, count) => total + count, 0), extensionHosts: Object.keys(extensionReadback)});
+    phase('owner-readback', 'PASS', {accounts: Object.keys(ids.account).length, invitations: Object.keys(ids.invitation).length, contracts: Object.keys(contracts).length, extensionDefinitions: fixture.stableFixtures.extensionDefinitions.length, extensionValueEntities: Object.values(extensionReadback).reduce((total, count) => total + count, 0), extensionHosts: Object.keys(extensionReadback), servicePointAreas: Object.keys(ids.servicePoint.areas).length, servicePoints: Object.keys(ids.servicePoint.points).length});
     finalize('PASS', 'PASS_NO_PERSISTENT_SEED_PROCESS');
   } catch (error) {
     firstFailure ??= error.code ?? 'SEED_EXECUTION_FAILED';

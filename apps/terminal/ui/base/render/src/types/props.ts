@@ -1,9 +1,11 @@
 import type {ReactNode} from 'react'
+import type {CommandRouteContext, TopologyAdminCapability} from '@catering-v2s/kernel-base-contracts'
 import type {LoggerPort, NativeLoadingCapability} from '@catering-v2s/kernel-base-platform-ports'
 import type {
   CommandDispatchOptions,
   CommandDispatchResult,
   CommandIntent,
+  CommandRouteIntent,
   RuntimeStatus,
 } from '@catering-v2s/kernel-base-runtime'
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
@@ -21,7 +23,7 @@ import type {SurfaceCanvasDeclaration, SurfaceHostSource} from '../foundations/s
 
 // Keep this toolkit boundary structural: render consumes a read-only root
 // snapshot and must not import or retain the complete Runtime handle.
-type RenderStateRoot = Readonly<Record<string, object | undefined>>
+export type RenderStateRoot = Readonly<Record<string, object | undefined>>
 
 type RenderStateSource = Readonly<{
   readonly getStatus: () => RuntimeStatus
@@ -31,6 +33,10 @@ type RenderStateSource = Readonly<{
 
 type RenderDispatchOptions = Readonly<{
   readonly requestId: NonNullable<CommandDispatchOptions['requestId']>
+  /** Internal route metadata; SurfaceRoot supplies routeContext for its subtree. */
+  readonly routeContext?: CommandRouteContext | null
+  /** Semantic intent only; the runtime derives the concrete target. */
+  readonly routeIntent?: CommandRouteIntent
 }>
 
 type RenderDispatchCommand = <TPayload extends StateJsonValue>(
@@ -70,6 +76,11 @@ export type SurfaceRootProps = Readonly<{
 export type SurfaceRootContentFrame = Readonly<{
   readonly content: ReactNode
 }>
+
+export type RenderRouteContextFactory = (
+  root: RenderStateRoot,
+  displayMode: DisplayMode,
+) => CommandRouteContext | null
 
 export type ContentFailureReason =
   | 'missing-catalog-entry'
@@ -122,7 +133,11 @@ export type RenderProviderProps = Readonly<{
   /** Run-scoped latch shared by the primary surface's successive providers. */
   readonly getPrimarySurfaceReady?: () => boolean
   readonly runtimeFacts: RenderRuntimeFacts
+  /** Narrow topology control surface for the shared admin section. */
+  readonly topologyCapability?: TopologyAdminCapability
   readonly dispatchCommand: RenderDispatchCommand
+  /** Assembly-owned route context source used by each Root Surface. */
+  readonly createRouteContext?: RenderRouteContextFactory
   /** Feature-owned intents used by generic layer affordances. */
   readonly layerDismissals?: Readonly<Record<string, RenderLayerDismissal>>
   readonly selectUiVariable: RenderUiVariableReader

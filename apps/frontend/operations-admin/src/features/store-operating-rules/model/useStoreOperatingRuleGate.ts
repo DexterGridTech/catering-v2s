@@ -4,6 +4,7 @@ import {operationsContentTabRefreshSignal, operationsRtk} from '../../../app/api
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import {
   storeOperatingRuleEffective,
+  type StoreOperatingRuleKey,
   type StoreOperatingRuleValues,
 } from '../../../app/api/generated/storeOperatingRuleCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
@@ -13,13 +14,18 @@ export type StoreOperatingRuleGateState = 'BYPASSED' | 'SCOPE_MISSING' | 'LOADIN
 type Options = {
   queryContext: OperationsPageProps['queryContext'];
   enabled?: boolean;
+  ruleKey?: StoreOperatingRuleKey;
 };
 
 /**
  * Reads the current Store-target operating rule exactly once per host. The
  * selected Store id is part of the request path, not merely a cache key.
  */
-export function useStoreOperatingRuleGate({queryContext, enabled = true}: Options) {
+export function useStoreOperatingRuleGate({
+  queryContext,
+  enabled = true,
+  ruleKey = 'catalogManagementEnabled',
+}: Options) {
   const storeId = queryContext.scopeRef;
   const request = useMemo(
     () =>
@@ -46,13 +52,12 @@ export function useStoreOperatingRuleGate({queryContext, enabled = true}: Option
     if (query.error) return 'FAILED';
     if (!query.currentData) return 'LOADING';
     const values = query.currentData.operatingRuleSwitches;
-    return values &&
-      storeOperatingRuleEffective(values as StoreOperatingRuleValues, 'catalogManagementEnabled') === true
+    return values && storeOperatingRuleEffective(values as StoreOperatingRuleValues, ruleKey) === true
       ? 'ENABLED'
       : values
         ? 'DISABLED'
         : 'FAILED';
-  }, [enabled, query.currentData, query.error, query.isFetching, storeId]);
+  }, [enabled, query.currentData, query.error, query.isFetching, ruleKey, storeId]);
   const values = query.currentData?.operatingRuleSwitches as StoreOperatingRuleValues | undefined;
   return {
     state,

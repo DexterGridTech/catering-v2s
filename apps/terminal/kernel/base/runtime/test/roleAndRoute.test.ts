@@ -40,6 +40,48 @@ const moduleFor = (
 })
 
 describe('runtime role and route boundaries', () => {
+  it('resolves the final target from each payload at the common dispatch boundary', async () => {
+    const command = defineCommand<Readonly<{readonly lane: 'local' | 'peer'}>>('test.payload-route', {
+      name: 'run',
+      visibility: 'internal',
+    })
+    const localLanes: string[] = []
+    const peerLanes: string[] = []
+    const actor = defineActor('test.payload-route', 'local', [onCommand(command, context => {
+      localLanes.push(context.command.payload.lane)
+      return null
+    })])
+    const module = moduleFor('test.payload-route', [command], [actor], {
+      install: context => {
+        context.installPeerDispatchGateway({
+          dispatchCommand: async intent => {
+            if (typeof intent.payload !== 'object' || intent.payload === null || Array.isArray(intent.payload)) {
+              throw new Error('peer payload must be an object')
+            }
+            const lane: unknown = Reflect.get(intent.payload, 'lane')
+            if (lane !== 'local' && lane !== 'peer') throw new Error('peer payload lane is invalid')
+            peerLanes.push(lane)
+            return {requestId: null, commandId: createCommandId(), status: 'completed', actorResults: []}
+          },
+        })
+      },
+    })
+    const runtime = createRuntime({
+      ...createTestRuntimeInput({modules: [module]}),
+      resolveCommandTarget: input => {
+        if (typeof input.payload !== 'object' || input.payload === null || Array.isArray(input.payload)) return undefined
+        return Reflect.get(input.payload, 'lane') === 'peer' ? 'peer' : undefined
+      },
+    })
+    await runtime.start()
+
+    await runtime.dispatchCommand(command, {lane: 'local'})
+    await runtime.dispatchCommand(command, {lane: 'peer'})
+
+    expect(localLanes).toEqual(['local'])
+    expect(peerLanes).toEqual(['peer'])
+  })
+
   it('I-1 defaults every new runtime to MASTER', async () => {
     const runtime = createRuntime(createTestRuntimeInput({runtimeName: 'runtime-master-default'}))
     await runtime.start()

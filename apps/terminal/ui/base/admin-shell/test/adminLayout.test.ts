@@ -73,6 +73,7 @@ describe('admin layout structural contract', () => {
       '../../feature/sample-member-desk/src/components/RegistryNotice.tsx',
       '../../feature/sample-member-desk/src/components/WaitingConfirm.tsx',
       '../../feature/sample-member-desk/src/components/WithdrawConfirm.tsx',
+      'src/components/PowerRoleConfirmation.tsx',
     ]
     for (const cardPath of cardPaths) {
       const card = readSource(cardPath)
@@ -118,6 +119,7 @@ describe('admin layout structural contract', () => {
       'src/components/sections/PlatformPortsSection.tsx',
       'src/components/sections/RuntimeSection.tsx',
       'src/components/sections/DisplayContextSection.tsx',
+      'src/components/sections/TopologySection.tsx',
     ]) {
       const section = readSource(sectionPath)
       const root = jsxOpenings(section, 'PrimitiveContainer')[0]

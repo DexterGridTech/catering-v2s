@@ -35,9 +35,9 @@ describe('store operating rule tree', () => {
       'tableManagementEnabled',
       'pickupCallEnabled',
     ]);
-    expect(tree[0]?.children?.find(node => node.key === 'tableManagementEnabled')?.children?.map(node => node.key)).toEqual([
-      'tableStatusEnabled',
-    ]);
+    expect(
+      tree[0]?.children?.find(node => node.key === 'tableManagementEnabled')?.children?.map(node => node.key),
+    ).toEqual(['tableStatusEnabled']);
   });
 
   it('fills only missing values from the catalog defaults', () => {

@@ -7,10 +7,10 @@
     "clean": {"kind": "ABSENT"}
   },
   "publicExports": [
-    "DisplayContextEligibility", "DisplayInfoRead", "DisplayMode", "DisplayRole", "DisplayRoleChangeReasonCode", "createDisplayContextModule", "dependencyModuleNames", "devDependencyModuleNames", "getDisplayRoleChangeEligibility", "getSwitchInstanceModeEligibility", "moduleName", "powerStatusChangedCommand", "readDisplayInfo", "resolvePowerRoleTarget", "resolveSecondarySurfaceAvailable", "resolveSurfaceDisplayMode", "resolveWorkspace", "selectDisplayRole", "switchDisplayRoleCommand", "switchInstanceModeCommand"
+    "DisplayContextEligibility", "DisplayInfoRead", "DisplayMode", "DisplayRole", "DisplayRoleChangeReasonCode", "PendingPowerConfirmation", "cancelPowerRoleChangeCommand", "confirmPowerRoleChangeCommand", "createDisplayContextModule", "dependencyModuleNames", "devDependencyModuleNames", "getDisplayRoleChangeEligibility", "getSwitchInstanceModeEligibility", "moduleName", "powerStatusChangedCommand", "readDisplayInfo", "requestPowerRoleChangeCommand", "resolvePowerRoleTarget", "resolveSecondarySurfaceAvailable", "resolveSurfaceDisplayMode", "resolveWorkspace", "selectDisplayRole", "selectPowerConfirmation", "switchDisplayRoleCommand", "switchInstanceModeCommand"
   ],
   "ownerKind": "owner",
   "sliceName": "kernel.base.display-context.display-role",
-  "sliceFields": ["displayRole"],
+  "sliceFields": ["displayRole", "powerConfirmation"],
   "requiredTestIds": ["display-context-restart-positive"]
 }

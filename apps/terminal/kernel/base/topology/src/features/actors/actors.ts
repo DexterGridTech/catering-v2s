@@ -167,12 +167,6 @@ const repairPairState = async (context: ActorExecutionContext): Promise<boolean>
       error: {message: error instanceof Error ? error.message : 'pair repair failed'},
     })
   }
-  if (repaired) {
-    context.dispatchAction(topologyActions.clearMasterLocator())
-    context.dispatchAction(topologyActions.setRepairPending(false))
-  } else {
-    context.dispatchAction(topologyActions.setRepairPending(true))
-  }
   return repaired
 }
 
@@ -211,7 +205,13 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
       await resetSlaveRuntime(context)
       return null
     } catch (error) {
-      await repairPairState(context)
+      const repaired = await repairPairState(context)
+      if (repaired) {
+        context.dispatchAction(topologyActions.clearMasterLocator())
+        context.dispatchAction(topologyActions.setRepairPending(false))
+      } else {
+        context.dispatchAction(topologyActions.setRepairPending(true))
+      }
       throw error
     }
   }),

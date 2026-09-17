@@ -1,18 +1,12 @@
 import {useMemo} from 'react'
-import type {
-  CommandDispatchOptions,
-  CommandDispatchResult,
-  CommandIntent,
-} from '@catering-v2s/kernel-base-runtime'
+import type {CommandDispatchResult, CommandIntent} from '@catering-v2s/kernel-base-runtime'
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
 import type {RenderProviderProps} from '../types/props'
 import {useRenderContext} from '../contexts/RenderContext'
 import {reportRenderCommandDispatchRejection} from '../foundations/diagnostics'
 
 type DispatchCommand = RenderProviderProps['dispatchCommand']
-type DispatchOptions = Readonly<{
-  readonly requestId: NonNullable<CommandDispatchOptions['requestId']>
-}>
+type DispatchOptions = Parameters<DispatchCommand>[1]
 
 const createObservedDispatchCommand = (
   dispatchCommand: DispatchCommand,

@@ -93,6 +93,7 @@ type DispatcherInput = Readonly<{
   performReset?: (reason: string | undefined, rootCommandId: CommandId) => Promise<void>
   isResetting?: () => boolean
   registerResource?: (cleanup: () => void) => () => void
+  resolveCommandTarget?: import('../types/command').CommandTargetResolver
   roleChangeSignalRef?: {
     current?: (signal: RuntimeRoleChangeSignal) => void
   }
@@ -496,10 +497,17 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
     }
     const commandId = options.commandId ?? createCommandId()
     const parentCommandId = options.parentCommandId ?? null
-    const target = options.target ?? definition.defaultTarget
     const routeContext = options.routeContext === undefined
       ? null
       : options.routeContext
+    const target = options.target
+      ?? input.resolveCommandTarget?.({
+        payload,
+        routeContext,
+        routeIntent: options.routeIntent,
+        state: input.stateRuntime.getState(),
+      })
+      ?? definition.defaultTarget
     const command: DispatchedCommand<TPayload> = Object.freeze({
       runtimeId: input.runtimeId,
       requestId,

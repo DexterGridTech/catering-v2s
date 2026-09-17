@@ -119,7 +119,7 @@ const seedDatasets = [
         { code: "TEMPLATE-STORE-TAKEAWAY-B", templateName: "门店饿了么外卖模板", ownerNodeType: "STORE", orderKind: "TAKEAWAY", accessKind: "EXTERNAL", providerCode: "ELEME_OPEN", storeVisibilityScope: "ALL_PROJECT_STORES", visibleStoreRefs: [] },
         { code: "TEMPLATE-STORE-GROUP-BUY", templateName: "门店美团团购模板", ownerNodeType: "STORE", orderKind: "GROUP_BUY", accessKind: "EXTERNAL", providerCode: "MEITUAN_ISV_B", storeVisibilityScope: "ALL_PROJECT_STORES", visibleStoreRefs: [] },
         { code: "TEMPLATE-STORE-DINE-IN-POS", templateName: "门店堂食 POS 模板", ownerNodeType: "STORE", orderKind: "DINE_IN", dineInForm: "POS", accessKind: "INTERNAL", providerCode: null, storeVisibilityScope: "ALL_PROJECT_STORES", visibleStoreRefs: [] },
-        { code: "TEMPLATE-STORE-DINE-IN-QR", templateName: "门店堂食 QR 模板", ownerNodeType: "STORE", orderKind: "DINE_IN", dineInForm: "QR", accessKind: "INTERNAL", providerCode: null, storeVisibilityScope: "ALL_PROJECT_STORES", visibleStoreRefs: [] },
+        { code: "TEMPLATE-STORE-DINE-IN-QR", templateName: "门店堂食 QR 模板", ownerNodeType: "STORE", orderKind: "DINE_IN", dineInForm: "QR", accessKind: "INTERNAL", providerCode: null, urlRule: "https://qr.example.com/order?source=seed#entry", storeVisibilityScope: "ALL_PROJECT_STORES", visibleStoreRefs: [] },
         { code: "TEMPLATE-STORE-DINE-IN-KIOSK", templateName: "门店堂食自助机模板", ownerNodeType: "STORE", orderKind: "DINE_IN", dineInForm: "KIOSK", accessKind: "INTERNAL", providerCode: null, storeVisibilityScope: "ALL_PROJECT_STORES", visibleStoreRefs: [] },
         { code: "TEMPLATE-STORE-DINE-IN-EXTERNAL", templateName: "门店自有点单小程序堂食模板", ownerNodeType: "STORE", orderKind: "DINE_IN", dineInForm: null, accessKind: "EXTERNAL", providerCode: "STORE_OWNED_MINI_PROGRAM_DINE_IN", storeVisibilityScope: "ALL_PROJECT_STORES", visibleStoreRefs: [] },
         { code: "TEMPLATE-STORE-INTERNAL-TAKEAWAY", templateName: "门店内部外卖模板", ownerNodeType: "STORE", orderKind: "TAKEAWAY", accessKind: "INTERNAL", providerCode: null, storeVisibilityScope: "SELECTED_PROJECT_STORES", visibleStoreRefs: ["COLLAB-STORE", "COLLAB-STORE-B"] },
@@ -176,6 +176,19 @@ const seedDatasets = [
           orderKind: "DINE_IN",
           accessKind: "INTERNAL",
           templateRef: "TEMPLATE-STORE-DINE-IN-POS",
+          bindingRef: null,
+          status: "ENABLED",
+        },
+        {
+          code: "CHANNEL-STORE-INTERNAL-DINE-IN-QR",
+          channelName: "万象城扫码点单",
+          channelCode: "CHANNEL-STORE-INTERNAL-DINE-IN-QR",
+          ownerNodeType: "STORE",
+          ownerNodeRef: "COLLAB-STORE",
+          operatorKind: "STORE",
+          orderKind: "DINE_IN",
+          accessKind: "INTERNAL",
+          templateRef: "TEMPLATE-STORE-DINE-IN-QR",
           bindingRef: null,
           status: "ENABLED",
         },
@@ -274,6 +287,8 @@ const seedDatasets = [
         { from: "TEMPLATE-PROJECT-INTERNAL-TAKEAWAY", to: "COLLAB-PROJECT", refKind: "OWNER_NODE" },
         { from: "CHANNEL-STORE-INTERNAL-DINE-IN-POS", to: "COLLAB-STORE", refKind: "OWNER_NODE" },
         { from: "CHANNEL-STORE-INTERNAL-DINE-IN-POS", to: "TEMPLATE-STORE-DINE-IN-POS", refKind: "CHANNEL_TEMPLATE" },
+        { from: "CHANNEL-STORE-INTERNAL-DINE-IN-QR", to: "COLLAB-STORE", refKind: "OWNER_NODE" },
+        { from: "CHANNEL-STORE-INTERNAL-DINE-IN-QR", to: "TEMPLATE-STORE-DINE-IN-QR", refKind: "CHANNEL_TEMPLATE" },
         { from: "CHANNEL-STORE-DINE-IN-EXTERNAL", to: "COLLAB-STORE", refKind: "OWNER_NODE" },
         { from: "CHANNEL-STORE-DINE-IN-EXTERNAL", to: "TEMPLATE-STORE-DINE-IN-EXTERNAL", refKind: "CHANNEL_TEMPLATE" },
         { from: "CHANNEL-STORE-DINE-IN-EXTERNAL", to: "BIND-STORE-DINE-IN-MINI-PROGRAM", refKind: "CHANNEL_BINDING" },
@@ -295,7 +310,7 @@ const plan = {
   kind: "external-collaboration-business-channel-seed-plan",
   status: "STATIC_PLAN_ONLY",
   authority: "DECLARATIVE_INPUTS_ONLY",
-  revision: "EXTERNAL_COLLABORATION_BUSINESS_CHANNEL_20260910_DINE_IN_EXTERNAL_ACCESS",
+  revision: "EXTERNAL_COLLABORATION_BUSINESS_CHANNEL_20260917_STORE_QR_RULE",
   noDirectDatabaseWrites: true,
   noRuntimeExecution: true,
   catalogReference: {
@@ -358,6 +373,19 @@ const expectedChannels = Object.freeze([
     ownerNodeRef: "COLLAB-STORE",
     operatorKind: "STORE",
     templateRef: "TEMPLATE-STORE-DINE-IN-POS",
+    bindingRef: null,
+  },
+  {
+    code: "CHANNEL-STORE-INTERNAL-DINE-IN-QR",
+    channelName: "万象城扫码点单",
+    channelCode: "CHANNEL-STORE-INTERNAL-DINE-IN-QR",
+    orderKind: "DINE_IN",
+    accessKind: "INTERNAL",
+    status: "ENABLED",
+    ownerNodeType: "STORE",
+    ownerNodeRef: "COLLAB-STORE",
+    operatorKind: "STORE",
+    templateRef: "TEMPLATE-STORE-DINE-IN-QR",
     bindingRef: null,
   },
   {
@@ -444,7 +472,7 @@ const expectedTemplates = Object.freeze([
   { code: "TEMPLATE-STORE-TAKEAWAY-B", templateName: "门店饿了么外卖模板", ownerNodeType: "STORE", orderKind: "TAKEAWAY", accessKind: "EXTERNAL", providerCode: "ELEME_OPEN", dineInForm: null, storeVisibilityScope: "ALL_PROJECT_STORES", visibleStoreRefs: [] },
   { code: "TEMPLATE-STORE-GROUP-BUY", templateName: "门店美团团购模板", ownerNodeType: "STORE", orderKind: "GROUP_BUY", accessKind: "EXTERNAL", providerCode: "MEITUAN_ISV_B", dineInForm: null, storeVisibilityScope: "ALL_PROJECT_STORES", visibleStoreRefs: [] },
   { code: "TEMPLATE-STORE-DINE-IN-POS", templateName: "门店堂食 POS 模板", ownerNodeType: "STORE", orderKind: "DINE_IN", accessKind: "INTERNAL", providerCode: null, dineInForm: "POS", storeVisibilityScope: "ALL_PROJECT_STORES", visibleStoreRefs: [] },
-  { code: "TEMPLATE-STORE-DINE-IN-QR", templateName: "门店堂食 QR 模板", ownerNodeType: "STORE", orderKind: "DINE_IN", accessKind: "INTERNAL", providerCode: null, dineInForm: "QR", storeVisibilityScope: "ALL_PROJECT_STORES", visibleStoreRefs: [] },
+  { code: "TEMPLATE-STORE-DINE-IN-QR", templateName: "门店堂食 QR 模板", ownerNodeType: "STORE", orderKind: "DINE_IN", accessKind: "INTERNAL", providerCode: null, dineInForm: "QR", urlRule: "https://qr.example.com/order?source=seed#entry", storeVisibilityScope: "ALL_PROJECT_STORES", visibleStoreRefs: [] },
   { code: "TEMPLATE-STORE-DINE-IN-KIOSK", templateName: "门店堂食自助机模板", ownerNodeType: "STORE", orderKind: "DINE_IN", accessKind: "INTERNAL", providerCode: null, dineInForm: "KIOSK", storeVisibilityScope: "ALL_PROJECT_STORES", visibleStoreRefs: [] },
   { code: "TEMPLATE-STORE-DINE-IN-EXTERNAL", templateName: "门店自有点单小程序堂食模板", ownerNodeType: "STORE", orderKind: "DINE_IN", accessKind: "EXTERNAL", providerCode: "STORE_OWNED_MINI_PROGRAM_DINE_IN", dineInForm: null, storeVisibilityScope: "ALL_PROJECT_STORES", visibleStoreRefs: [] },
   { code: "TEMPLATE-STORE-INTERNAL-TAKEAWAY", templateName: "门店内部外卖模板", ownerNodeType: "STORE", orderKind: "TAKEAWAY", accessKind: "INTERNAL", providerCode: null, dineInForm: null, storeVisibilityScope: "SELECTED_PROJECT_STORES", visibleStoreRefs: ["COLLAB-STORE", "COLLAB-STORE-B"] },
@@ -498,7 +526,8 @@ function validate(input) {
       || template.orderKind !== expected.orderKind
       || template.accessKind !== expected.accessKind
       || (template.providerCode ?? null) !== expected.providerCode
-      || (template.dineInForm ?? null) !== expected.dineInForm) {
+      || (template.dineInForm ?? null) !== expected.dineInForm
+      || (template.urlRule ?? null) !== (expected.urlRule ?? null)) {
       fail("SEED_TEMPLATE_LITERAL_INVALID", expected.code);
     }
     if ((template.storeVisibilityScope ?? null) !== expected.storeVisibilityScope
@@ -520,7 +549,7 @@ function validate(input) {
   if (!Array.isArray(channels) || channels.length !== expectedChannels.length) fail("SEED_CHANNEL_ENTITY_COUNT_INVALID");
   if (channels.filter((channel) => channel.orderKind === "TAKEAWAY").length !== 6) fail("SEED_CHANNEL_TAKEAWAY_LITERAL_COUNT_INVALID");
   if (channels.filter((channel) => channel.orderKind === "GROUP_BUY").length !== 1) fail("SEED_CHANNEL_GROUP_BUY_LITERAL_COUNT_INVALID");
-  if (channels.filter((channel) => channel.orderKind === "DINE_IN").length !== 2) fail("SEED_CHANNEL_DINE_IN_LITERAL_COUNT_INVALID");
+  if (channels.filter((channel) => channel.orderKind === "DINE_IN").length !== 3) fail("SEED_CHANNEL_DINE_IN_LITERAL_COUNT_INVALID");
   if (new Set(channels.map((channel) => channel.code)).size !== channels.length) fail("SEED_CHANNEL_ENTITY_CODE_DUPLICATE");
   const relations = entities.relations;
   const hasRelation = (from, to, refKind) => relations.some((relation) => relation.from === from && relation.to === to && relation.refKind === refKind);
@@ -558,7 +587,7 @@ function validate(input) {
   // The sales-menu projection lists both enabled and disabled store channels;
   // channel status remains a separate publish-blocker/read-model fact.
   const eligibleForSalesMenu = channels.filter((channel) => channel.ownerNodeType === "STORE" && channel.accessKind === "INTERNAL" && ["DINE_IN", "TAKEAWAY"].includes(channel.orderKind));
-  if (eligibleForSalesMenu.map((channel) => channel.code).sort().join(",") !== "CHANNEL-STORE-INTERNAL-DINE-IN-POS,CHANNEL-STORE-INTERNAL-TAKEAWAY,CHANNEL-STORE-INTERNAL-TAKEAWAY-B,CHANNEL-STORE-INTERNAL-TAKEAWAY-DISABLED") fail("SEED_SALES_MENU_ELIGIBLE_CHANNEL_SET_INVALID");
+  if (eligibleForSalesMenu.map((channel) => channel.code).sort().join(",") !== "CHANNEL-STORE-INTERNAL-DINE-IN-POS,CHANNEL-STORE-INTERNAL-DINE-IN-QR,CHANNEL-STORE-INTERNAL-TAKEAWAY,CHANNEL-STORE-INTERNAL-TAKEAWAY-B,CHANNEL-STORE-INTERNAL-TAKEAWAY-DISABLED") fail("SEED_SALES_MENU_ELIGIBLE_CHANNEL_SET_INVALID");
   if (!channels.some((channel) => channel.ownerNodeType === "PROJECT" && channel.accessKind === "INTERNAL" && channel.orderKind === "TAKEAWAY")) fail("SEED_PROJECT_NEGATIVE_CHANNEL_MISSING");
   if (!channels.some((channel) => channel.ownerNodeType === "STORE" && channel.accessKind === "INTERNAL" && channel.orderKind === "TAKEAWAY" && channel.status === "DISABLED")) fail("SEED_DISABLED_INTERNAL_TAKEAWAY_MISSING");
   if (channels.filter((channel) => channel.ownerNodeType === "STORE" && channel.accessKind === "EXTERNAL" && channel.orderKind === "DINE_IN").length !== 1) fail("SEED_EXTERNAL_DINE_IN_CHANNEL_MISSING");

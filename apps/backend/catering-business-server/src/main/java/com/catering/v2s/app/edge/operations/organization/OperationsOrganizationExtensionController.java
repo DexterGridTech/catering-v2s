@@ -42,7 +42,11 @@ public final class OperationsOrganizationExtensionController {
             @org.springframework.web.bind.annotation.RequestParam long expectedContextVersion,
             @org.springframework.web.bind.annotation.RequestParam("entityType") String hostType) {
         var session = requireContext(request, groupWorkspaceKey, expectedContextVersion);
-        if (!java.util.Set.of(ExtensionHostTypes.BRAND, ExtensionHostTypes.TENANT, ExtensionHostTypes.HEAD_COMPANY)
+        if (!java.util.Set.of(
+                        ExtensionHostTypes.BRAND,
+                        ExtensionHostTypes.TENANT,
+                        ExtensionHostTypes.HEAD_COMPANY,
+                        ExtensionHostTypes.SERVICE_POINT)
                 .contains(hostType))
             throw new com.catering.v2s.app.edge.problem.InvalidEdgeRequestException("unsupported host type");
         return ExtensionDefinitionWireMapper.wire(

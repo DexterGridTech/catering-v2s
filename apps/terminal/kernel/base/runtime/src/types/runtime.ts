@@ -25,6 +25,7 @@ export type RuntimeUnknownAction = Parameters<RuntimeStore['dispatch']>[0]
 import type {
   CommandDefinition,
   CommandDispatchOptions,
+  CommandTargetResolver,
 } from './command'
 import type {CommandDispatchResult} from './execution'
 import type {
@@ -57,6 +58,7 @@ export type CreateRuntimeInput = Readonly<{
   limits?: Partial<RuntimeLimits>
   getSessionId?: () => SessionId | null
   onLifecycleEvent?: RuntimeLifecycleObserver
+  readonly resolveCommandTarget?: CommandTargetResolver
 }>
 
 export interface Runtime {

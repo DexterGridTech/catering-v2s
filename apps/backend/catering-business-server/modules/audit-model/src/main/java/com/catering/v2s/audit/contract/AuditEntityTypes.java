@@ -4,6 +4,9 @@ package com.catering.v2s.audit.contract;
 public final class AuditEntityTypes {
     public static final String HEAD_COMPANY = "HEAD_COMPANY";
     public static final String STORE = "STORE";
+    public static final String STORE_SERVICE_POINT_AREA = "STORE_SERVICE_POINT_AREA";
+    public static final String STORE_SERVICE_POINT = "STORE_SERVICE_POINT";
+    public static final String STORE_QR_CONFIGURATION = "STORE_QR_CONFIGURATION";
     public static final String REGION = "REGION";
     public static final String PROJECT = "PROJECT";
 

@@ -1,13 +1,13 @@
 # TER admin shell
 
-本包承载终端本地、只读的 admin console shell。它负责管理员入口、身份口令纯函数、
-后续的 section 导航与诊断内容组合；不拥有业务 feature、不写业务数据，也不创建第二套
+本包承载终端本地的 admin console shell。它负责管理员入口、身份口令纯函数、
+section 导航与诊断内容组合；不拥有业务 feature 或业务事实，也不直接写业务数据，也不创建第二套
 layer、catalog 或输入管线。
 
 当前结构：
 
 - `src/foundations/`：身份、口令、section 选择和真实控件 test ID 等无 UI 规则；
-- `src/components/`：console layer、登录和只读 section 的 React Native 呈现；`AdminLauncher` 是包住业务内容的普通 `View` 观察器，不是会吞掉业务触摸的独立 `Pressable`；
+- `src/components/`：console layer、登录、诊断和拓扑 section 的 React Native 呈现；`AdminLauncher` 是包住业务内容的普通 `View` 观察器，不是会吞掉业务触摸的独立 `Pressable`；
 - `src/foundations/adminTestIds.ts`：真实控件与 focused/L2 绑定共用的 test ID 单源。
 
 公共面由 `src/index.ts` 导出；除模块元数据、assembly 与组件外，事件坐标归一化的
@@ -24,6 +24,12 @@ public-surface focused test，不得让 README 或 invariant 漂移。
 `adminShellAssembly` 合并到同一个 `UiCatalog`。调试态只读 assembly/runtime facts；迭代时先扩展既有 owner API 或契约，
 再修改本包的呈现；不得引入业务 feature import、持久化认证、第二个注册表或新的
 navigation/input owner。
+
+拓扑 section 只接收 `TopologyAdminCapability` 这一窄能力：事实由 capability 读取，配对、解绑和
+主机服务操作委托给 topology owner，admin-shell 不取得 Runtime、stateSource、platform port 或原生
+lifecycle。拓扑 tab 在 laptop/mobile 都恒显；mobile 以禁用控件和可读原因表达限制。电源角色切换由
+display-context 的 request/confirm/cancel owner 驱动，确认层是 PRIMARY-only 的临时 decisive layer，
+不在 admin-shell 持久化事实。
 
 装配后的 laptop renderer 使用 list/button 导航与 master-detail 内容区，mobile renderer 使用可换行的
 tablist/tab；详情标题通过 polite live region 通知选择变化，关闭与返回继续由既有 AdminLayer/LayerStack

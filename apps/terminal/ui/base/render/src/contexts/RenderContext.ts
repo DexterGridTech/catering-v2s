@@ -14,7 +14,9 @@ export type RenderContextValue = Readonly<{
   readonly onPrimarySurfaceReady?: RenderProviderProps['onPrimarySurfaceReady']
   readonly hasPrimarySurfaceReady: boolean
   readonly runtimeFacts: RenderProviderProps['runtimeFacts']
+  readonly topologyCapability?: RenderProviderProps['topologyCapability']
   readonly dispatchCommand: RenderProviderProps['dispatchCommand']
+  readonly createRouteContext?: RenderProviderProps['createRouteContext']
   readonly layerDismissals: RenderProviderProps['layerDismissals']
   readonly selectUiVariable: RenderProviderProps['selectUiVariable']
   readonly selectSurfaceForm: NonNullable<RenderProviderProps['selectSurfaceForm']>

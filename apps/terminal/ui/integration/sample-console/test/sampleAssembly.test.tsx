@@ -9,13 +9,16 @@ import {
   type StateStoragePort,
 } from '@catering-v2s/kernel-base-platform-ports'
 import {switchDisplayRoleCommand, switchInstanceModeCommand} from '@catering-v2s/kernel-base-display-context'
+import {selectRequestExecutionView} from '@catering-v2s/kernel-base-runtime'
 import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
 import {
+  clearLayersCommand,
   openLayerCommand,
   selectLayers,
   selectScreen,
   showScreenCommand,
 } from '@catering-v2s/kernel-base-ui-state'
+import {topologyActions} from '@catering-v2s/kernel-base-topology'
 import {createUiCatalog, selectAvailableParts} from '@catering-v2s/kernel-base-ui-state'
 import {
   confirmMemberCommand,
@@ -432,6 +435,19 @@ describe('sample-console real assembly', () => {
     expect(selectAvailableParts(withoutSample, 'admin.sections', mobileContext).map(entry => entry.partKey)).not.toContain('sample.console.admin-test')
   })
 
+  it('allows only the member desk customer surfaces on a topology secondary', () => {
+    const secondaryMemberParts = createSampleDefinedParts(false)
+      .filter(({catalogEntry}) =>
+        catalogEntry.partKey.startsWith('sample.desk.')
+        && catalogEntry.displayModes.includes('SECONDARY')
+        && catalogEntry.instanceModes.includes('SLAVE'))
+      .map(({catalogEntry}) => catalogEntry.partKey)
+    expect(secondaryMemberParts).toEqual([
+      'sample.desk.customer-welcome',
+      'sample.desk.customer-member',
+    ])
+  })
+
   it('keeps the production admin test section available in both laptop and mobile', async () => {
     const laptopAssembly = await createSampleAssembly({
       platformPorts: createTestPlatformPorts(),
@@ -456,6 +472,7 @@ describe('sample-console real assembly', () => {
         adminTestIds.sections.runtime,
         adminTestIds.sections.displayContext,
         adminTestIds.sections.sampleConsole,
+        adminTestIds.sections.topology,
       ]) {
         expect(laptopRenderer.root.findByProps({testID: sectionTestID})).toBeDefined()
       }
@@ -514,6 +531,7 @@ describe('sample-console real assembly', () => {
         adminTestIds.sections.runtime,
         adminTestIds.sections.displayContext,
         adminTestIds.sections.sampleConsole,
+        adminTestIds.sections.topology,
       ]) {
         expect(mobileRenderer.root.findByProps({testID: sectionTestID})).toBeDefined()
       }
@@ -920,7 +938,7 @@ describe('sample-console real assembly', () => {
     let releaseDisplayInfo: () => void = () => undefined
     const displayInfoGate = new Promise<void>(resolve => { releaseDisplayInfo = resolve })
     const assembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts({displayCount: 2, displayInfoGate, displayInfoGateAfterCalls: 1}),
+      platformPorts: createTestPlatformPorts({displayCount: 2, displayInfoGate, displayInfoGateAfterCalls: 2}),
       persistenceKey: `sample-console-admin-in-flight-${Date.now()}`,
       surfaceForm: 'laptop',
       surfaceHostSourcesByDisplayIndex: {0: createHostSource(true, LANDSCAPE_PRIMARY_FRAME)},
@@ -1140,7 +1158,7 @@ describe('sample-console real assembly', () => {
     }
   })
 
-  it('starts the single assembly with all nine input modules and the runtime module', async () => {
+  it('starts the single assembly with all input modules and the runtime module', async () => {
     const assembly = await createSampleAssembly({
       platformPorts: createTestPlatformPorts(),
       persistenceKey: `sample-console-test-${Date.now()}`,
@@ -1158,7 +1176,7 @@ describe('sample-console real assembly', () => {
         'ui.feature.sample-member-desk',
         'ui.integration.sample-console',
       ]))
-      expect(assembly.runtime.descriptors).toHaveLength(8)
+      expect(assembly.runtime.descriptors).toHaveLength(10)
     } finally {
       releaseRuntimeForTest(assembly.runtime)
     }
@@ -1202,6 +1220,59 @@ describe('sample-console real assembly', () => {
       expect(renderer.root.findByProps({testID: 'sample.desk.customer-welcome'})).toBeDefined()
     } finally {
       if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('routes every production UI screen command through the runtime boundary', async () => {
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts(),
+      persistenceKey: `sample-console-runtime-route-command-family-${Date.now()}`,
+      surfaceForm: 'laptop',
+    })
+    try {
+      assembly.runtime.getStore().dispatch(topologyActions.setMasterLocator({
+        host: '192.0.2.10',
+        port: 43172,
+        basePath: '/terminal-topology',
+        identity: {
+          protocolVersion: 1,
+          nodeId: 'node-master',
+          displayName: 'TER master',
+          instanceMode: 'MASTER',
+          displayRole: 'CHIEF',
+        },
+      }))
+
+      const cases = [
+        {
+          command: showScreenCommand,
+          payload: {displayMode: 'SECONDARY' as const, containerKey: 'main', partKey: 'sample.desk.customer-welcome'},
+        },
+        {
+          command: openLayerCommand,
+          payload: {displayMode: 'SECONDARY' as const, layerId: 'sample.desk.waiting-confirm', partKey: 'sample.desk.waiting-confirm'},
+        },
+        {
+          command: clearLayersCommand,
+          payload: {displayMode: 'SECONDARY' as const},
+        },
+      ] as const
+
+      for (const currentCase of cases) {
+        const requestId = createRequestId()
+        const result = await assembly.runtime.dispatchCommand(currentCase.command.commandName, currentCase.payload, {requestId})
+        expect(result.status).toBe('error')
+        expect(result.actorResults[0]?.actorKey).toBe('kernel.base.runtime.peer-dispatch')
+        expect(selectRequestExecutionView(assembly.runtime.getState(), requestId)).toMatchObject({
+          status: 'error',
+          commands: [expect.objectContaining({
+            commandName: currentCase.command.commandName,
+            observations: [expect.objectContaining({target: 'peer'})],
+          })],
+        })
+      }
+    } finally {
       releaseRuntimeForTest(assembly.runtime)
     }
   })

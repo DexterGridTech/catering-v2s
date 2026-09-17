@@ -90,6 +90,7 @@ const menuIconByKey = {
   [operationsPageDesignKeys.PgInventoryStoreStatus]: <ShopOutlined />,
   [operationsPageDesignKeys.PgCatalogBrandItems]: <TagsOutlined />,
   [operationsPageDesignKeys.PgSalesMenuStore]: <TagsOutlined />,
+  [operationsPageDesignKeys.PgStoreServicePointQr]: <ShopOutlined />,
 } satisfies Partial<Record<OperationsPageDesignKey, ReactNode>>;
 
 const navigationIconByKey = {

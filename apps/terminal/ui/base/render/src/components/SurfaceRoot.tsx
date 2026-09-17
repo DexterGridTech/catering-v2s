@@ -3,11 +3,11 @@ import {StyleSheet, View, type LayoutChangeEvent} from 'react-native'
 import {LayerStack} from './LayerStack'
 import {ScreenContainer} from './ScreenContainer'
 import {SurfaceContext} from '../contexts/SurfaceContext'
-import {useRenderContext} from '../contexts/RenderContext'
+import {RenderContext, useRenderContext, type RenderContextValue} from '../contexts/RenderContext'
 import {SurfaceHostController} from './SurfaceHostController'
 import {useSurfaceHostAvailability, useSurfaceHostSnapshot} from './SurfaceHostController'
 import {useUiStateSelector} from '../hooks/useUiStateSelector'
-import type {SurfaceRootProps} from '../types/props'
+import type {RenderStateRoot, SurfaceRootProps} from '../types/props'
 
 export const SurfaceRoot = ({
   displayMode,
@@ -18,9 +18,27 @@ export const SurfaceRoot = ({
   canvas,
   surfaceHostSource,
 }: SurfaceRootProps) => {
-  const {logger, selectSurfaceForm} = useRenderContext()
+  const renderContext = useRenderContext()
+  const {logger, selectSurfaceForm, createRouteContext} = renderContext
   const selectedSurfaceForm = useUiStateSelector(selectSurfaceForm)
   const surfaceForm = selectedSurfaceForm ?? 'laptop'
+  const selectSurfaceRouteContext = useCallback(
+    (root: RenderStateRoot) => createRouteContext?.(root, displayMode) ?? null,
+    [createRouteContext, displayMode],
+  )
+  const selectedRouteContext = useUiStateSelector(selectSurfaceRouteContext)
+  const surfaceRouteContext = selectedRouteContext ?? null
+  const scopedDispatchCommand = useMemo<RenderContextValue['dispatchCommand']>(() => {
+    if (createRouteContext === undefined) return renderContext.dispatchCommand
+    return (command, options) => renderContext.dispatchCommand(command, {
+      ...options,
+      routeContext: surfaceRouteContext,
+    })
+  }, [createRouteContext, renderContext.dispatchCommand, surfaceRouteContext])
+  const scopedRenderContext = useMemo<RenderContextValue>(() => createRouteContext === undefined
+    ? renderContext
+    : Object.freeze({...renderContext, dispatchCommand: scopedDispatchCommand}),
+  [createRouteContext, renderContext, scopedDispatchCommand])
   const surfaceHostSnapshot = useSurfaceHostSnapshot(surfaceHostSource)
   const explicitSurfaceHostAvailability = useSurfaceHostAvailability(surfaceHostSource)
   const surfaceHostAvailability = surfaceHostSource === undefined
@@ -95,7 +113,9 @@ export const SurfaceRoot = ({
   return (
     <SurfaceContext.Provider value={surfaceValue}>
       <View testID="ui-base-render:surface-root" style={styles.root} onLayout={reportLayout}>
-        {hostedContent}
+        <RenderContext.Provider value={scopedRenderContext}>
+          {hostedContent}
+        </RenderContext.Provider>
       </View>
     </SurfaceContext.Provider>
   )

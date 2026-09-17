@@ -2384,6 +2384,40 @@ final class BusinessChannelAcceptanceScenarios {
         return List.copyOf(channels);
     }
 
+    /** Creates one real STORE-owned INTERNAL DINE_IN QR channel with a URL rule for service-point acceptance. */
+    UUID acceptanceCreateStoreQrChannel(
+            BackendAcceptanceTest.ScenarioContext context,
+            BackendAcceptanceTest.Fixture storeFixture,
+            BackendAcceptanceTest.Session storeSession)
+            throws Exception {
+        BackendAcceptanceTest.Fixture projectFixture =
+                host.projectUserFixture(storeFixture, Set.of("BC-BUSINESS-CHANNEL-PROJECT-EDIT"));
+        host.completeInvitation(context, projectFixture);
+        OperationsFixture projectOwner = new OperationsFixture(projectFixture, host.login(context, projectFixture));
+        CreatedTemplate template = createTemplateWithVisibility(
+                context,
+                projectOwner,
+                "Service point QR template",
+                "INTERNAL",
+                "STORE",
+                "DINE_IN",
+                null,
+                "QR",
+                "TPL-QR-" + UUID.randomUUID(),
+                "ALL_PROJECT_STORES",
+                List.of(),
+                "https://qr.example.test/order?source=acceptance#entry");
+        CreatedChannel channel = createChannel(
+                context,
+                new OperationsFixture(storeFixture, storeSession),
+                template.json().path("templateRef").asText(),
+                "STORE",
+                storeFixture.storeId(),
+                "Service point QR channel");
+        assertEquals("ENABLED", channel.json().path("status").asText(), "BUSINESS: QR channel is enabled");
+        return UUID.fromString(channel.json().path("channelRef").asText());
+    }
+
     /** Creates a real STORE-owned external DINE_IN channel for the sales-menu exclusion proof. */
     JsonNode acceptanceCreateExternalDineInChannel(
             BackendAcceptanceTest.ScenarioContext context,
@@ -3136,6 +3170,35 @@ final class BusinessChannelAcceptanceScenarios {
             String storeVisibilityScope,
             List<UUID> visibleStoreRefs)
             throws Exception {
+        return createTemplateWithVisibility(
+                context,
+                fixture,
+                name,
+                accessKind,
+                operatorKind,
+                orderKind,
+                providerCode,
+                dineInForm,
+                templateCode,
+                storeVisibilityScope,
+                visibleStoreRefs,
+                null);
+    }
+
+    private CreatedTemplate createTemplateWithVisibility(
+            BackendAcceptanceTest.ScenarioContext context,
+            OperationsFixture fixture,
+            String name,
+            String accessKind,
+            String operatorKind,
+            String orderKind,
+            String providerCode,
+            String dineInForm,
+            String templateCode,
+            String storeVisibilityScope,
+            List<UUID> visibleStoreRefs,
+            String urlRule)
+            throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("projectRef", fixture.fixture().projectId().toString());
         body.put("templateName", name);
@@ -3145,6 +3208,7 @@ final class BusinessChannelAcceptanceScenarios {
         body.put("orderKind", orderKind);
         body.put("dineInForm", dineInForm);
         body.put("providerCode", providerCode);
+        body.put("urlRule", urlRule);
         body.put("storeVisibilityScope", storeVisibilityScope);
         body.put("visibleStoreRefs", visibleStoreRefs == null ? List.of() : visibleStoreRefs);
         BackendAcceptanceTest.Response response = context.post(

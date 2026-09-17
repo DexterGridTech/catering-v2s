@@ -20,9 +20,9 @@
 owner 的业务命令：本包只派 `memberSubmissionWithdrawnCommand` 这一 UI 意图，由 desk
 actor 转交 owner 的 `withdrawMemberCommand`；owner 负责清 pending；本地编辑 draft 不跨卸载保留，
 只有 reject retry 通过 owner 的 `PendingMember` 回填已提交的 name/phone；owner 还负责
-处理 confirm/reject/withdraw 的先到者竞态。desk actor 在处理相关命令时经
-display-context 的读取端口实时判断是否有副屏；runtime 组装与平台启动由 integration
-负责。
+处理 confirm/reject/withdraw 的先到者竞态。desk actor 在处理相关命令时读取 topology 的公开
+事实 selector，按“本机物理双屏，或 MASTER 已配对 SLAVE”判断是否有副屏；旧的
+display-context 物理屏 helper 仍保持原语义。runtime 组装与平台启动由 integration 负责。
 
 ## 结构
 

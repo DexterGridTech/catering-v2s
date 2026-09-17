@@ -74,8 +74,13 @@ describe('createAndroidPersistKvPort', () => {
     expect(plain).not.toBe(protectedPort)
     expect(Object.isFrozen(plain)).toBe(true)
     expect(Object.isFrozen(protectedPort)).toBe(true)
-    expect(Reflect.get(plain, descriptorKey)).toMatchObject({port: 'persistKv', mode: 'plain'})
-    expect(Reflect.get(protectedPort, descriptorKey)).toMatchObject({port: 'persistSecure', mode: 'protected'})
+    if (__DEV__) {
+      expect(Reflect.get(plain, descriptorKey)).toMatchObject({port: 'persistKv', mode: 'plain'})
+      expect(Reflect.get(protectedPort, descriptorKey)).toMatchObject({port: 'persistSecure', mode: 'protected'})
+    } else {
+      expect(Reflect.get(plain, descriptorKey)).toBeUndefined()
+      expect(Reflect.get(protectedPort, descriptorKey)).toBeUndefined()
+    }
 
     await expect(protectedPort.read({key: 'secret'})).resolves.toEqual({
       status: 'succeeded',

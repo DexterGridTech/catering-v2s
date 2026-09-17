@@ -20,13 +20,15 @@
 
 ## 结构与用法
 
-- `src/features/slices/displayRole.ts`：唯一 slice，字段只有 `displayRole`，owner-only、立即持久化、isolated sync。
-- `src/features/commands` 与 `src/features/actors`：四条 command、五个 actor；公开 command 需要
+- `src/features/slices/displayRole.ts`：唯一 slice，持久化字段只有 `displayRole`；电源确认是同一 slice
+  中的短生命周期、不可持久化 `powerConfirmation`，owner-only、isolated sync。
+- `src/features/commands` 与 `src/features/actors`：七条 command、六个 actor；公开 command 需要
   `requestId` 与可信的 route context。
 - `src/foundations/displayDerivation.ts`：显示模式、workspace、角色/instance 准入和电源目标的纯函数。
 - `src/foundations/displayDevice.ts`：设备屏数读取与三态归类；私有调用超时不属于公共数值契约。
 - `src/application/createPowerStatusBridge.ts`：安装后先等待 hydrate 校验，再订阅设备电源事件；首个事件只播种，
-  同值去重，跃迁按接收顺序串行派发 `power-status-changed`。
+  同值去重，跃迁按接收顺序串行派发 `power-status-changed`。符合条件的电源跃迁先创建临时确认状态，
+  由 UI 派发 confirm/cancel；confirm 会重新读取设备事实并在 stale 时拒绝写入。
 - `createDisplayContextModule()` 是装配入口；`selectDisplayRole` 是唯一公开的角色读取 selector。
 
 目标为 `CHIEF` 的手动切换不查询设备屏数；所有会写入 `VICE` 的运行期路径都在写前实时取得并校验

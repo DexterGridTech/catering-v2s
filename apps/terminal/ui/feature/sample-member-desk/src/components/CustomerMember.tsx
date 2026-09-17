@@ -71,7 +71,13 @@ export const CustomerMember = ({mode}: CustomerMemberProps) => {
     if (!canDecide) return
     const requestId = request.start()
     try {
-      const result = await dispatchWithRequestId({dispatchCommand, definition: command, payload, requestId})
+      const result = await dispatchWithRequestId({
+        dispatchCommand,
+        definition: command,
+        payload,
+        requestId,
+        routeIntent: 'peer-intent',
+      })
       const outcome = classifyRequestResult(result)
       if (outcome !== 'running') request.finish(requestId)
       if (outcome === 'system-failure') await observeSystemFailure(operation)

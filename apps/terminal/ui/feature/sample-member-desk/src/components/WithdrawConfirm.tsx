@@ -24,6 +24,7 @@ export const WithdrawConfirm = () => {
     dispatchCommand,
     definition: memberSubmissionWithdrawnCommand,
     payload: {},
+    routeIntent: 'peer-intent',
   })
 
   return (

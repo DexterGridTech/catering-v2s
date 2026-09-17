@@ -3,6 +3,7 @@ package com.catering.v2s.audit.read;
 import com.catering.v2s.audit.contract.AuditHistoryPage;
 import com.catering.v2s.audit.contract.AuditReadScope;
 import com.catering.v2s.audit.contract.AuditTarget;
+import com.catering.v2s.audit.contract.AuditEntityTypes;
 import com.catering.v2s.contract.application.ContractAuditHistoryService;
 import com.catering.v2s.organization.application.OrganizationAuditHistoryService;
 import com.catering.v2s.workspace.iam.application.WorkspaceIamAuditHistoryService;
@@ -11,7 +12,7 @@ import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Closed operations-audit task reader with nine compile-time target branches. */
+/** Closed operations-audit task reader with twelve compile-time target branches. */
 @Service
 public class OperationsAuditTaskReadService {
     private final WorkspaceIamAuditHistoryService workspaceIamAudit;
@@ -78,6 +79,27 @@ public class OperationsAuditTaskReadService {
                     value.target(),
                     value.page(),
                     value.pageSize());
+            case OperationsAuditQuery.StoreServicePointArea value -> organizationAudit.readOperationsAuditProjection(
+                    scope,
+                    facts.assignmentNodeType(),
+                    facts.visibleOrganizationFacts(),
+                    value.target(),
+                    value.page(),
+                    value.pageSize());
+            case OperationsAuditQuery.StoreServicePoint value -> organizationAudit.readOperationsAuditProjection(
+                    scope,
+                    facts.assignmentNodeType(),
+                    facts.visibleOrganizationFacts(),
+                    value.target(),
+                    value.page(),
+                    value.pageSize());
+            case OperationsAuditQuery.StoreQrConfiguration value -> organizationAudit.readOperationsAuditProjection(
+                    scope,
+                    facts.assignmentNodeType(),
+                    facts.visibleOrganizationFacts(),
+                    value.target(),
+                    value.page(),
+                    value.pageSize());
             case OperationsAuditQuery.StoreContract value -> contractAudit.readOperationsAuditProjection(
                     scope, facts.visibleOrganizationFacts(), value.target(), value.page(), value.pageSize());
         };
@@ -93,6 +115,9 @@ public class OperationsAuditTaskReadService {
                     OperationsAuditQuery.Tenant,
                     OperationsAuditQuery.HeadCompany,
                     OperationsAuditQuery.Store,
+                    OperationsAuditQuery.StoreServicePointArea,
+                    OperationsAuditQuery.StoreServicePoint,
+                    OperationsAuditQuery.StoreQrConfiguration,
                     OperationsAuditQuery.StoreContract {
         AuditTarget target();
 
@@ -145,6 +170,24 @@ public class OperationsAuditTaskReadService {
         record Store(AuditTarget target, long page, long pageSize) implements OperationsAuditQuery {
             public Store {
                 type(target, "STORE");
+            }
+        }
+
+        record StoreServicePointArea(AuditTarget target, long page, long pageSize) implements OperationsAuditQuery {
+            public StoreServicePointArea {
+                type(target, AuditEntityTypes.STORE_SERVICE_POINT_AREA);
+            }
+        }
+
+        record StoreServicePoint(AuditTarget target, long page, long pageSize) implements OperationsAuditQuery {
+            public StoreServicePoint {
+                type(target, AuditEntityTypes.STORE_SERVICE_POINT);
+            }
+        }
+
+        record StoreQrConfiguration(AuditTarget target, long page, long pageSize) implements OperationsAuditQuery {
+            public StoreQrConfiguration {
+                type(target, AuditEntityTypes.STORE_QR_CONFIGURATION);
             }
         }
 

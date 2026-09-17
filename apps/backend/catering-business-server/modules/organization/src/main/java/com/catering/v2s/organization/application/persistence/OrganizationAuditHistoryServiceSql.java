@@ -88,4 +88,34 @@ public final class OrganizationAuditHistoryServiceSql {
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_CONTINUATION_PAGE_ROWS = "page_rows.occurred_at_epoch_millis, page_rows.actor_display_snapshot, page_rows.action, ";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_CONTINUATION_AUTH_SCOPE = "page_rows.entity_type, page_rows.entity_ref_text, page_rows.changes_json FROM auth_scope CROSS ";
     public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_JOIN_PAGE_ROWS_JOIN_TOTAL_ROWS_LEFT_JOIN_PA = "JOIN total_rows LEFT JOIN page_rows ON TRUE";
+
+    /** Owner projection for store-owned service-point facts; table and identifier fragments are closed below. */
+    public static final String ORGANIZATION_AUDIT_HISTORY_SERVICE_SERVICE_POINT_TARGET_AUDIT_PROJECTION = """
+        WITH target AS (
+          SELECT target.store_ref
+          FROM organization.%s target
+          WHERE target.%s=? AND target.workspace_uuid=? AND target.group_workspace_key=?
+        ), auth_scope AS (
+          SELECT EXISTS(SELECT 1 FROM target) AS found,
+                 COALESCE((SELECT store_ref FROM target)=ANY(?), FALSE) AS authorized
+          FROM (VALUES (1)) input(value)
+        ), audit_rows AS (
+          SELECT event.id AS audit_id, event.occurred_at_epoch_millis, event.actor_display_snapshot,
+                 event.action, event.entity_type, event.entity_ref_text,
+                 event.changes_json::text AS changes_json, count(*) OVER() AS total
+          FROM organization.audit_event event CROSS JOIN auth_scope
+          WHERE auth_scope.found AND auth_scope.authorized
+            AND event.workspace_uuid=? AND event.group_workspace_key=?
+            AND event.entity_type=? AND event.entity_ref_text=?
+        ), page_rows AS (
+          SELECT * FROM audit_rows
+          ORDER BY occurred_at_epoch_millis DESC, audit_id DESC LIMIT ? OFFSET ?
+        ), total_rows AS (
+          SELECT coalesce(max(total), 0) AS total FROM audit_rows
+        )
+        SELECT auth_scope.found, auth_scope.authorized, total_rows.total,
+               page_rows.audit_id, page_rows.occurred_at_epoch_millis, page_rows.actor_display_snapshot,
+               page_rows.action, page_rows.entity_type, page_rows.entity_ref_text, page_rows.changes_json
+        FROM auth_scope CROSS JOIN total_rows LEFT JOIN page_rows ON TRUE
+        """;
 }

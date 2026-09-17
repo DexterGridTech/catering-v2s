@@ -1,5 +1,6 @@
 import type {RuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime'
 import type {WorkspaceKey} from '@catering-v2s/kernel-base-state'
+import type {SurfaceForm} from '@catering-v2s/kernel-base-contracts'
 
 export type DisplayRole = 'CHIEF' | 'VICE'
 export type DisplayMode = 'PRIMARY' | 'SECONDARY'
@@ -20,6 +21,16 @@ export type DisplayContextEligibility =
 
 export type DisplayRoleState = Readonly<{
   displayRole: DisplayRole
+  powerConfirmation: PendingPowerConfirmation | null
+}>
+
+export type PendingPowerConfirmation = Readonly<{
+  readonly powerSource: PowerSource
+  readonly targetRole: DisplayRole
+  readonly requestedSurfaceForm: SurfaceForm
+  readonly requestedInstanceMode: RuntimeInstanceMode
+  readonly requestedDisplayRole: DisplayRole
+  readonly requestedDisplayCount: number
 }>
 
 export type SurfaceDisplayModeInput = Readonly<{

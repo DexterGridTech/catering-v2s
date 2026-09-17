@@ -191,7 +191,7 @@ CP-2 收口需要 native adapter 的 focused/Android supporting evidence；没�
 3. peer receiver 丢弃入站 target 和 routeContext，设置 origin=peer 的内部标志并调用 local dispatch；禁止再次求 peer，验证无回环。
 4. 对 showScreen、openLayer、clearLayers 各做一次只经 render boundary、绕过 runtime dispatch boundary 的 production red mutation；每一条都必须由 CP-3 focused proof 捕获。它们不是“看过调用路径”的确认动作。
 5. members slice 改为 master-to-slave full sync；按实际 secondary parts 的读取反推 allowlist；session 保持 isolated，requestLedger 设为 local topology policy，并保留副机本地生命周期。
-6. 用真实 createCommandPeerDispatcher focused fixture 让副机发起 peer command，按真实 status union 断言副机本地 lifecycle：RequestLifecycleStatus 覆盖 started/completed/partial-failed/timed-out/error，CommandAggregateStatus 覆盖 running/completed/partial-failed/timed-out/error；registered/dispatched/accepted 若出现在日志只能作为 phase，不得写入 status union；wire 不出现 ledger state.full。
+6. 用真实 createCommandPeerDispatcher focused fixture 让副机发起 peer command，按真实 status union 断言副机本地 lifecycle：挂起时覆盖 RequestLifecycleStatus=`started`、CommandAggregateStatus=`running`；远端 completed/timed-out/error 覆盖本地 completed/timed-out/error；远端 partial-failed 按单个 peer-dispatch actor 的真实聚合语义归一为本地 error，不伪造一个不可达的单 actor partial-failed；RequestLifecycleStatus 与 CommandAggregateStatus 的 partial-failed 由现有多命令/多 actor 聚合测试覆盖。registered/dispatched/accepted 若出现在日志只能作为 phase，不得写入 status union；wire 不出现 ledger state.full。
 7. member-desk 12 个调用点全部改为 topology-aware operation capability；不改 resolveSecondarySurfaceAvailable、其两个 production callers 或四个既有 tests。
 8. 为 pair/unpair 修复路径补 stage log 和 focused tests；unpair 严格 CHIEF→MASTER→clear locator。
 

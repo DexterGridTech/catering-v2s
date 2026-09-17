@@ -8,6 +8,10 @@ import {PlatformPortsSectionLaptop} from '../components/sections/PlatformPortsSe
 import {PlatformPortsSectionMobile} from '../components/sections/PlatformPortsSectionMobile'
 import {RuntimeSectionLaptop} from '../components/sections/RuntimeSectionLaptop'
 import {RuntimeSectionMobile} from '../components/sections/RuntimeSectionMobile'
+import {TopologySectionLaptop} from '../components/sections/TopologySectionLaptop'
+import {TopologySectionMobile} from '../components/sections/TopologySectionMobile'
+import {PowerRoleConfirmationLaptop} from '../components/PowerRoleConfirmationLaptop'
+import {PowerRoleConfirmationMobile} from '../components/PowerRoleConfirmationMobile'
 import {ADMIN_CONSOLE_PART_KEY, ADMIN_SECTION_CONTAINER_KEY} from '../foundations/adminIdentity'
 
 const bothDisplayModes = ['PRIMARY', 'SECONDARY'] as const
@@ -22,6 +26,7 @@ type AdminPartSpec = Readonly<{
   readonly title: string
   readonly description: string
   readonly component: ComponentType<any>
+  readonly layerTier?: 'standard' | 'alert'
   readonly layerGuard?: 'decisive'
 }>
 
@@ -38,8 +43,26 @@ const adminConsolePart = (surfaceForm: 'laptop' | 'mobile') => createAdminPart({
   partKey: ADMIN_CONSOLE_PART_KEY,
   containerKeys: layerContainer,
   title: '终端管理',
-  description: '终端本地只读诊断外壳',
+  description: '终端本地诊断与拓扑管理外壳',
   component: surfaceForm === 'laptop' ? AdminLayerLaptop : AdminLayerMobile,
+  layerGuard: 'decisive',
+}, surfaceForm)
+
+const topologyPart = (surfaceForm: 'laptop' | 'mobile') => createAdminPart({
+  partKey: 'admin.console.topology',
+  containerKeys: sectionContainer,
+  title: '双机拓扑',
+  description: '查看并操作主机、副机连接状态',
+  component: surfaceForm === 'laptop' ? TopologySectionLaptop : TopologySectionMobile,
+}, surfaceForm)
+
+const powerConfirmationPart = (surfaceForm: 'laptop' | 'mobile') => createAdminPart({
+  partKey: 'admin.console.power-confirmation',
+  containerKeys: layerContainer,
+  title: '显示角色切换确认',
+  description: '确认电源状态触发的显示角色切换',
+  component: surfaceForm === 'laptop' ? PowerRoleConfirmationLaptop : PowerRoleConfirmationMobile,
+  layerTier: 'alert',
   layerGuard: 'decisive',
 }, surfaceForm)
 
@@ -75,6 +98,10 @@ export const runtimeLaptopPart = runtimePart('laptop')
 export const runtimeMobilePart = runtimePart('mobile')
 export const displayContextLaptopPart = displayContextPart('laptop')
 export const displayContextMobilePart = displayContextPart('mobile')
+export const topologyLaptopPart = topologyPart('laptop')
+export const topologyMobilePart = topologyPart('mobile')
+export const powerConfirmationLaptopPart = powerConfirmationPart('laptop')
+export const powerConfirmationMobilePart = powerConfirmationPart('mobile')
 
 export const parts = Object.freeze([
   adminConsoleLaptopPart,
@@ -85,6 +112,10 @@ export const parts = Object.freeze([
   runtimeMobilePart,
   displayContextLaptopPart,
   displayContextMobilePart,
+  topologyLaptopPart,
+  topologyMobilePart,
+  powerConfirmationLaptopPart,
+  powerConfirmationMobilePart,
 ])
 
 export type AdminShellAssembly = Readonly<{readonly parts: typeof parts}>

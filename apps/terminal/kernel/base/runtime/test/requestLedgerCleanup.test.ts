@@ -4,7 +4,7 @@ import {
   createRequestId,
   type RequestId,
 } from '@catering-v2s/kernel-base-contracts'
-import type {StateJsonValue, SyncStateDiff} from '@catering-v2s/kernel-base-state'
+import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
 import type {StateStoragePort} from '@catering-v2s/kernel-base-platform-ports'
 import {
   createRuntime,
@@ -22,9 +22,9 @@ import {
 import {cleanupRequestLedgerCommand} from '../src/features/commands/cleanupRequestLedger'
 import {
   runtimeRequestLedgerMasterSliceName,
+  requestLedgerActionsForMode,
   runtimeRequestLedgerSlaveSliceName,
 } from '../src/features/slices/requestLedger'
-import {runtimeStateSyncForTest} from '../src/testing/runtimeStateSyncForTest'
 import {releaseRuntimeForTest} from '../src/testing/releaseRuntimeForTest'
 import {createSharedMemoryStoragePort, createTestRuntimeInput, deferred} from './testSupport'
 import type {CommandExecutionObservation, ActorExecutionRecord} from '../src/types/execution'
@@ -118,12 +118,12 @@ const applyRecord = (
   value: RequestExecutionRecord,
   updatedAt: number,
 ): void => {
-  const result: SyncStateDiff = {
-    mode: 'authoritative',
-    replaceMissing: false,
-    entries: [{key: requestId, value: {value, updatedAt}}],
-  }
-  expect(runtimeStateSyncForTest(runtime).applyAuthoritativeSync(sliceName, result).status).toBe('applied')
+  const mode = sliceName === runtimeRequestLedgerMasterSliceName ? 'MASTER' : 'SLAVE'
+  runtime.getStore().dispatch(requestLedgerActionsForMode(mode).upsert({
+    record: value,
+    updatedAt,
+  }))
+  expect(selectRequestExecutionView(runtime.getState(), requestId)).not.toBeNull()
 }
 
 const makeCommandModule = (

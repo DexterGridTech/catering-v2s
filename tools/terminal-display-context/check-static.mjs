@@ -190,14 +190,14 @@ function runRestartPositive({root, invariant}) {
 }
 
 function runNoDisplayIndexInSlice({root}) {
-  assertExactList('DisplayRoleState members', typeMemberNames(root, 'DisplayRoleState'), ['displayRole'])
+  assertExactList('DisplayRoleState members', typeMemberNames(root, 'DisplayRoleState'), ['displayRole', 'powerConfirmation'])
   const sliceSource = fs.readFileSync(path.join(root, 'src/features/slices/displayRole.ts'), 'utf8')
   if (/\bdisplayIndex\b/.test(sliceSource)) {
     throw new Error('display role slice must not persist displayIndex')
   }
   const normalizedSliceSource = sliceSource.replace(/\n/g, ' ')
-  const hasLegacyReducerInitialState = /state:\s*DisplayRoleState\s*=\s*\{\s*displayRole:\s*'CHIEF'\s*\}/.test(normalizedSliceSource)
-  const hasCreateSliceInitialState = /initialState:\s*\{\s*displayRole:\s*'CHIEF'\s*\}\s*as\s*DisplayRoleState/.test(normalizedSliceSource)
+  const hasLegacyReducerInitialState = /state:\s*DisplayRoleState\s*=\s*\{\s*displayRole:\s*'CHIEF'\s*,\s*powerConfirmation:\s*null\s*\}/.test(normalizedSliceSource)
+  const hasCreateSliceInitialState = /initialState:\s*\{\s*displayRole:\s*'CHIEF'\s*,\s*powerConfirmation:\s*null\s*\}\s*as\s*DisplayRoleState/.test(normalizedSliceSource)
   if (!hasLegacyReducerInitialState && !hasCreateSliceInitialState) {
     throw new Error('display role slice initial state must contain only displayRole: CHIEF')
   }

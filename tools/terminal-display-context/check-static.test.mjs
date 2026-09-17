@@ -97,8 +97,8 @@ try {
   withMutation(
     'src/types/display.ts',
     source => source.replace(
-      '  displayRole: DisplayRole\n}',
-      '  displayRole: DisplayRole\n  displayIndex: 0 | 1\n}',
+      '  displayRole: DisplayRole\n  powerConfirmation:',
+      '  displayRole: DisplayRole\n  displayIndex: 0 | 1\n  powerConfirmation:',
     ),
     report => {
       printVector('DISPLAY_CONTEXT_RED_SLICE_SHAPE', report)

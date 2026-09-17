@@ -16,6 +16,7 @@ const secondary = ['SECONDARY'] as const
 const both = ['PRIMARY', 'SECONDARY'] as const
 const mainWorkspace = ['MAIN'] as const
 const masterInstance = ['MASTER'] as const
+const masterAndSlaveInstances = ['MASTER', 'SLAVE'] as const
 const allForms = ['laptop', 'mobile'] as const
 
 export const memberListPart = definePart({
@@ -128,7 +129,7 @@ export const customerWelcomePart = definePart({
   containerKeys: main,
   displayModes: secondary,
   workspaces: mainWorkspace,
-  instanceModes: masterInstance,
+  instanceModes: masterAndSlaveInstances,
   surfaceForm: allForms,
   title: '顾客欢迎页',
   description: '副屏待机时提示顾客等待店员操作',
@@ -141,7 +142,7 @@ export const customerMemberPart = definePart({
   containerKeys: main,
   displayModes: both,
   workspaces: mainWorkspace,
-  instanceModes: masterInstance,
+  instanceModes: masterAndSlaveInstances,
   surfaceForm: allForms,
   title: '顾客会员确认',
   description: '向顾客展示待登记会员并提供确认或拒绝',

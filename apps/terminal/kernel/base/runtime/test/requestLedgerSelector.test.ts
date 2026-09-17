@@ -107,13 +107,13 @@ const envelope = (
 ) => Object.freeze({value: request, updatedAt})
 
 describe('runtime request ledger selectors', () => {
-  it('A-1 declares opposite sync intent for the two mode registrations', () => {
+  it('A-1 keeps both mode registrations isolated from topology sync', () => {
     const masterRegistration = runtimeRequestLedgerMasterSlice
     const slaveRegistration = runtimeRequestLedgerSlaveSlice
 
     expect(masterRegistration).not.toBe(slaveRegistration)
-    expect(masterRegistration.syncIntent).toBe('master-to-slave')
-    expect(slaveRegistration.syncIntent).toBe('slave-to-master')
+    expect(masterRegistration.syncIntent).toBe('isolated')
+    expect(slaveRegistration.syncIntent).toBe('isolated')
   })
 
   it('L-3 calculates local-only and peer-only views from the only existing half', () => {
@@ -282,7 +282,7 @@ describe('runtime request ledger selectors', () => {
     expect(runtime.getState()[runtimeRequestLedgerSlaveSliceName]).toBe(emptySlave)
   })
 
-  it('S-2 consumes tombstones through state sync and treats defensive tombstones as absent', async () => {
+  it('S-2 rejects tombstones through the isolated state-sync boundary', async () => {
     const requestId = createRequestId()
     const ports = createTestPlatformPorts()
     const runtime = await createStateRuntime({
@@ -305,8 +305,12 @@ describe('runtime request ledger selectors', () => {
       entries: [{key: requestId, value: createSyncTombstone(20)}],
     })
 
-    expect(applied.status).toBe('applied')
-    expect(selectRequestExecutionView(runtime.getState(), requestId)).toBeNull()
+    expect(applied).toEqual({
+      status: 'skipped',
+      sliceName: runtimeRequestLedgerSlaveSliceName,
+      reason: 'SYNC_NOT_DECLARED',
+    })
+    expect(selectRequestExecutionView(runtime.getState(), requestId)).not.toBeNull()
     expect(readLiveRequestEnvelope({[requestId]: createSyncTombstone(30)}, requestId)).toBeUndefined()
   })
 })

@@ -10,7 +10,7 @@ import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-aut
 import {sampleWallpaperPickerAssembly, WallpaperBackground} from '@catering-v2s/ui-feature-sample-wallpaper-picker'
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {createSampleWallpaperModule} from '@catering-v2s/kernel-feature-sample-wallpaper'
-import {createTopologyModule} from '@catering-v2s/kernel-base-topology'
+import {createTopologyAdminCapability, createTopologyModule, resolveTopologyCommandTarget} from '@catering-v2s/kernel-base-topology'
 import {createTopologyIdentityClient, createTransportModule, type TopologyPeerChannel} from '@catering-v2s/kernel-base-transport'
 import {createSampleWallpaperConsoleModule, startupReadyCommand, type SampleWallpaperConsoleReadyPayload} from '../application/module'
 import {parts as wallpaperConsoleParts} from '../parts/parts'
@@ -91,6 +91,8 @@ export async function createSampleWallpaperConsoleAssembly(
       readyPartKey,
       contentFailure,
     }),
+    resolveCommandTarget: resolveTopologyCommandTarget,
+    createTopologyAdminCapability,
     createApplicationModules: () => [
       createTransportModule(),
       topologyModule,

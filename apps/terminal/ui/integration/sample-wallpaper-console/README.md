@@ -45,6 +45,10 @@ const secondary = createSurfaceForDisplayIndex(assembly, 1)
 调用方可通过可选的 `terminalSurfaces` 整份覆盖本包默认配置；未传入时使用本包 `package.json`，而具体形态仍由本包按 `surfaceForm` 选择。
 本包 `package.json` 的 `showAdminPassword` 控制 admin 登录提示旁是否显示当前动态口令；调用方显式传入的值优先。
 
+本包通过同一个 shared admin console assembly 接入 topology capability；其 SECONDARY/SLAVE allowlist
+只有 `waiting` 与 `welcome`，mobile 不创建 SECONDARY，其他壁纸业务 parts 不因 topology 接入而改变。
+topology tab 在 mobile 仍恒显；不支持的操作通过禁用控件和可读原因表达，不通过隐藏 tab 表达机型限制。
+
 admin console 的 laptop/mobile 版式与导航语义由 `ui.base.admin-shell` 的 form-specific renderer 负责：laptop
 使用 master-detail，mobile 使用可换行 tablist；内容标题通过 polite live region 宣布，焦点 scope 的关闭/恢复仍由既有 terminal layer 管线负责。
 

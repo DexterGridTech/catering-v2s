@@ -84,6 +84,7 @@ export const MemberForm = () => {
         definition: submitMemberCommand,
         payload: {name, phone},
         requestId,
+        routeIntent: 'peer-intent',
       })
       const outcome = classifyRequestResult(result)
       if (outcome !== 'running') request.finish(requestId)

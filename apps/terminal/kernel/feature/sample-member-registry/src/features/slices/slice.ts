@@ -1,5 +1,6 @@
 import {createSlice, type PayloadAction} from '@reduxjs/toolkit'
-import {defineStateRuntimeSlice} from '@catering-v2s/kernel-base-state'
+import {defineStateRuntimeSlice, type SyncValueEnvelope} from '@catering-v2s/kernel-base-state'
+import type {TimestampMs} from '@catering-v2s/kernel-base-contracts'
 import {moduleName} from '../../moduleName'
 import type {Member, MemberState, PendingMember} from '../../types/types'
 
@@ -36,7 +37,24 @@ export const memberStateRegistration = defineStateRuntimeSlice<MemberState>({
   persistence: [
     {kind: 'field', stateKey: 'members'},
   ],
-  syncIntent: 'isolated',
+  syncIntent: 'master-to-slave',
+  sync: {
+    kind: 'record',
+    getEntries: (state: Readonly<MemberState>): Readonly<Record<string, SyncValueEnvelope>> => ({
+      state: {
+        value: state,
+        updatedAt: 0 as TimestampMs,
+      },
+    }),
+    applyEntries: (
+      _state: Readonly<MemberState>,
+      entries: Readonly<Partial<Record<string, SyncValueEnvelope>>>,
+    ): MemberState => {
+      const stateEntry = entries.state
+      if (stateEntry?.value === undefined || stateEntry.tombstone === true) return initialState
+      return stateEntry.value as MemberState
+    },
+  },
 })
 
 export const memberActions = memberSlice.actions

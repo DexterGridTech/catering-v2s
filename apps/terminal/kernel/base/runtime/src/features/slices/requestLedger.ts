@@ -4,7 +4,6 @@ import {
   createPartitionedStateKeys,
   readPartitionedState,
   toPartitionedStateDescriptors,
-  type StateJsonValue,
   type StateRuntimeSliceRegistration,
   type SyncRecordState,
   type SyncValueEnvelope,
@@ -49,15 +48,6 @@ export const requestLedgerSliceNameForMode = (
 export const peerRequestLedgerSliceNameForMode = (
   mode: RuntimeInstanceMode,
 ): RuntimeRequestLedgerSliceName => requestLedgerSliceNameForMode(peerModeFor(mode))
-
-const syncDescriptor = {
-  kind: 'record' as const,
-  getEntries: (state: RuntimeRequestLedgerState): RuntimeRequestLedgerState => state,
-  applyEntries: (
-    _state: RuntimeRequestLedgerState,
-    entries: Readonly<Partial<Record<string, SyncValueEnvelope<StateJsonValue>>>>,
-  ): RuntimeRequestLedgerState => ({...(entries as RuntimeRequestLedgerState)}),
-}
 
 // Keep the RTK Draft boundary shallow: the owned RequestExecutionRecord has a
 // recursive StateJsonValue graph, which TypeScript cannot expand through
@@ -157,8 +147,7 @@ const requestLedgerRegistrations = toPartitionedStateDescriptors({
     name: stateKey,
     reducer: requestLedgerSlices.get(mode)!.reducer as Reducer<RuntimeRequestLedgerState>,
     persistIntent: 'never' as const,
-    syncIntent: mode === 'MASTER' ? 'master-to-slave' as const : 'slave-to-master' as const,
-    sync: syncDescriptor,
+    syncIntent: 'isolated' as const,
   }),
 })
 

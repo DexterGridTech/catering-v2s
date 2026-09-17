@@ -21,7 +21,15 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class OrganizationAuditHistoryPersistence {
     private static final Set<String> TYPES =
-            Set.of("ORGANIZATION_NODE", "BRAND", "TENANT", AuditEntityTypes.HEAD_COMPANY, AuditEntityTypes.STORE);
+            Set.of(
+                    "ORGANIZATION_NODE",
+                    "BRAND",
+                    "TENANT",
+                    AuditEntityTypes.HEAD_COMPANY,
+                    AuditEntityTypes.STORE,
+                    AuditEntityTypes.STORE_SERVICE_POINT_AREA,
+                    AuditEntityTypes.STORE_SERVICE_POINT,
+                    AuditEntityTypes.STORE_QR_CONFIGURATION);
     private final JdbcTemplate jdbc;
 
     public OrganizationAuditHistoryPersistence(JdbcTemplate jdbc) {
@@ -137,6 +145,8 @@ public class OrganizationAuditHistoryPersistence {
             AuditTarget target,
             long page,
             long pageSize) {
+        if (isStoreOwnedTarget(target.entityType()))
+            return readStoreOwnedOperationsAuditProjection(scope, visibleFacts, target, page, pageSize);
         return ReadBudgetComponent.measure(
                 ReadBudgetComponent.Component.PRIMARY_QUERY,
                 () -> jdbc.query(
@@ -167,6 +177,57 @@ public class OrganizationAuditHistoryPersistence {
                         AuditHistoryResultSetReader::readAuthorized));
     }
 
+    private AuditHistoryResultSetReader.AuthorizedProjection readStoreOwnedOperationsAuditProjection(
+            AuditReadScope scope,
+            VisibleOrganizationFacts visibleFacts,
+            AuditTarget target,
+            long page,
+            long pageSize) {
+        StoreOwnedAuditTarget targetShape = storeOwnedAuditTarget(target.entityType());
+        return ReadBudgetComponent.measure(
+                ReadBudgetComponent.Component.PRIMARY_QUERY,
+                () -> jdbc.query(
+                        String.format(
+                                OrganizationAuditHistoryServiceSql
+                                        .ORGANIZATION_AUDIT_HISTORY_SERVICE_SERVICE_POINT_TARGET_AUDIT_PROJECTION,
+                                targetShape.tableName(),
+                                targetShape.identifierColumn()),
+                        statement -> {
+                            int index = 1;
+                            statement.setObject(index++, uuid(target.entityRef()));
+                            statement.setObject(index++, scope.workspaceUuid());
+                            statement.setString(index++, scope.groupWorkspaceKey());
+                            statement.setArray(index++, uuidArray(statement, ids(visibleFacts, AuditEntityTypes.STORE)));
+                            statement.setObject(index++, scope.workspaceUuid());
+                            statement.setString(index++, scope.groupWorkspaceKey());
+                            statement.setString(index++, target.entityType());
+                            statement.setString(index++, target.entityRef());
+                            statement.setLong(index++, pageSize);
+                            statement.setLong(index, Math.multiplyExact(page - 1, pageSize));
+                        },
+                        AuditHistoryResultSetReader::readAuthorized));
+    }
+
+    private static boolean isStoreOwnedTarget(String type) {
+        return Set.of(
+                        AuditEntityTypes.STORE_SERVICE_POINT_AREA,
+                        AuditEntityTypes.STORE_SERVICE_POINT,
+                        AuditEntityTypes.STORE_QR_CONFIGURATION)
+                .contains(type);
+    }
+
+    private static StoreOwnedAuditTarget storeOwnedAuditTarget(String type) {
+        return switch (type) {
+            case AuditEntityTypes.STORE_SERVICE_POINT_AREA ->
+                    new StoreOwnedAuditTarget("store_service_point_area", "area_ref");
+            case AuditEntityTypes.STORE_SERVICE_POINT ->
+                    new StoreOwnedAuditTarget("store_service_point", "point_ref");
+            case AuditEntityTypes.STORE_QR_CONFIGURATION ->
+                    new StoreOwnedAuditTarget("store_qr_configuration", "store_ref");
+            default -> throw new IllegalArgumentException("unsupported store-owned audit target");
+        };
+    }
+
     private static AuditHistoryItem item(java.sql.ResultSet result) throws SQLException {
         return new AuditHistoryItem(
                 result.getObject("id", UUID.class),
@@ -184,6 +245,9 @@ public class OrganizationAuditHistoryPersistence {
             case "TENANT" -> "tenant";
             case AuditEntityTypes.HEAD_COMPANY -> "head_company";
             case AuditEntityTypes.STORE -> "store";
+            case AuditEntityTypes.STORE_SERVICE_POINT_AREA -> "store_service_point_area";
+            case AuditEntityTypes.STORE_SERVICE_POINT -> "store_service_point";
+            case AuditEntityTypes.STORE_QR_CONFIGURATION -> "store_qr_configuration";
             default -> throw new IllegalArgumentException("unsupported organization audit target");
         };
     }
@@ -263,4 +327,6 @@ public class OrganizationAuditHistoryPersistence {
             throw new IllegalArgumentException("operations audit target must be a UUID", invalid);
         }
     }
+
+    private record StoreOwnedAuditTarget(String tableName, String identifierColumn) {}
 }

@@ -32,6 +32,9 @@ export type {SurfaceForm} from './types/display';
 export {isSurfaceForm} from './types/display';
 export type {
   TopologyDisplayRole,
+  TopologyAdminCapability,
+  TopologyAdminCommandResult,
+  TopologyAdminCommandStatus,
   TopologyFailureReasonCode,
   TopologyFacts,
   TopologyIdentity,

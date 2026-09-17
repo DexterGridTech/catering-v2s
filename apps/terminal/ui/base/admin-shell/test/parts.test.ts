@@ -13,7 +13,7 @@ const normalizeCatalogEntry = (entry: (typeof parts)[number]['catalogEntry']) =>
 
 describe('admin-shell R-10a part declarations', () => {
   it('contains two non-overlapping siblings for every admin part key', () => {
-    expect(parts).toHaveLength(8)
+    expect(parts).toHaveLength(12)
     const groups = new Map<string, typeof parts[number][]>()
     for (const part of parts) {
       const siblings = groups.get(part.catalogEntry.partKey) ?? []
@@ -25,7 +25,9 @@ describe('admin-shell R-10a part declarations', () => {
       'admin.console',
       'admin.console.display-context',
       'admin.console.platform-ports',
+      'admin.console.power-confirmation',
       'admin.console.runtime',
+      'admin.console.topology',
     ])
     for (const siblings of groups.values()) {
       expect(siblings).toHaveLength(2)
@@ -36,7 +38,7 @@ describe('admin-shell R-10a part declarations', () => {
       expect(new Set(siblings.map(part => part.rendererBinding.rendererKey)).size).toBe(2)
       expect(new Set(siblings.map(part => part.rendererBinding.component)).size).toBe(2)
     }
-    expect(new Set(parts.map(part => part.rendererBinding.rendererKey)).size).toBe(8)
+    expect(new Set(parts.map(part => part.rendererBinding.rendererKey)).size).toBe(12)
   })
 
   it('keeps every sibling semantic field and layer binding equal after definePart normalization', () => {
@@ -54,7 +56,10 @@ describe('admin-shell R-10a part declarations', () => {
     }
     const adminConsoleSiblings = groups.get('admin.console')!
     expect(adminConsoleSiblings.every(part => part.rendererBinding.layerGuard === 'decisive')).toBe(true)
-    expect(parts.filter(part => part.catalogEntry.partKey !== 'admin.console')
+    const powerConfirmationSiblings = groups.get('admin.console.power-confirmation')!
+    expect(powerConfirmationSiblings.every(part => part.rendererBinding.layerTier === 'alert')).toBe(true)
+    expect(powerConfirmationSiblings.every(part => part.rendererBinding.layerGuard === 'decisive')).toBe(true)
+    expect(parts.filter(part => !['admin.console', 'admin.console.power-confirmation'].includes(part.catalogEntry.partKey))
       .every(part => part.rendererBinding.layerGuard === 'dismissible')).toBe(true)
   })
 })

@@ -29,7 +29,11 @@ import {
 } from '@catering-v2s/kernel-feature-sample-wallpaper'
 import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
 import {PrimitiveContainer, PrimitiveImage} from '@catering-v2s/ui-base-primitives'
-import {createSurfaceForDisplayIndex, createSampleWallpaperConsoleAssembly as createProductionSampleWallpaperConsoleAssembly} from '../src'
+import {
+  createSurfaceForDisplayIndex,
+  createSampleWallpaperConsoleAssembly as createProductionSampleWallpaperConsoleAssembly,
+  parts as wallpaperConsoleParts,
+} from '../src'
 import {wallpaperPickerTestIds} from '@catering-v2s/ui-feature-sample-wallpaper-picker'
 import {createTestPlatformPorts, type TestPlatformPorts} from './support'
 
@@ -229,6 +233,7 @@ describe('sample2 wallpaper console assembly', () => {
           adminTestIds.sections.platformPorts,
           adminTestIds.sections.runtime,
           adminTestIds.sections.displayContext,
+          adminTestIds.sections.topology,
         ]) {
           expect(renderer.root.findByProps({testID: sectionTestID})).toBeDefined()
         }
@@ -239,6 +244,15 @@ describe('sample2 wallpaper console assembly', () => {
       for (const renderer of renderers) act(() => { renderer.unmount() })
       for (const assembly of assemblies) releaseRuntimeForTest(assembly.runtime)
     }
+  })
+
+  it('allows only waiting and welcome parts on a topology secondary', () => {
+    expect(wallpaperConsoleParts
+      .filter(part => part.catalogEntry.displayModes.includes('SECONDARY') && part.catalogEntry.instanceModes.includes('SLAVE'))
+      .map(part => part.catalogEntry.partKey)).toEqual([
+        'sample.wallpaper-console.waiting',
+        'sample.wallpaper-console.welcome',
+      ])
   })
 
   it('routes session placement through one catalog and does not create a secondary on mobile', async () => {

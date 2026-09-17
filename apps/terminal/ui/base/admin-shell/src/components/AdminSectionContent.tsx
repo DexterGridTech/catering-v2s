@@ -5,6 +5,8 @@ import {adminTestIds} from '../foundations/adminTestIds'
 import {createAdminSectionCommandBoundary, type AdminSectionCommandBoundary} from '../foundations/adminSectionSelection'
 import type {AdminSectionComponent} from '../types/adminSection'
 import type {RenderRuntimeFacts, SurfaceContextValue} from '@catering-v2s/ui-base-render'
+import type {TopologyAdminCapability} from '@catering-v2s/kernel-base-contracts'
+import {ADMIN_TOPOLOGY_SECTION_PART_KEY} from '../foundations/adminIdentity'
 
 export type AdminSectionContentProps = Readonly<{
   readonly selectedSection: UiCatalogEntry | undefined
@@ -12,6 +14,7 @@ export type AdminSectionContentProps = Readonly<{
   readonly runtimeFacts: RenderRuntimeFacts
   readonly surface: SurfaceContextValue
   readonly commandBoundary?: AdminSectionCommandBoundary
+  readonly topologyCapability?: TopologyAdminCapability
 }>
 
 export const AdminSectionContent = ({
@@ -20,6 +23,7 @@ export const AdminSectionContent = ({
   runtimeFacts,
   surface,
   commandBoundary = createAdminSectionCommandBoundary(),
+  topologyCapability,
 }: AdminSectionContentProps) => {
   const activeBinding = selectedSection === undefined
     ? undefined
@@ -40,6 +44,7 @@ export const AdminSectionContent = ({
         runtimeFacts,
         surface,
         commandBoundary,
+        topologyCapability: selectedSection.partKey === ADMIN_TOPOLOGY_SECTION_PART_KEY ? topologyCapability : undefined,
       }}
     />
   )

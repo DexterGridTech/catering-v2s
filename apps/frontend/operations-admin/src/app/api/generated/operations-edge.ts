@@ -3710,7 +3710,7 @@ export type FaceOperationContracts = {
   };
     query: {
     expectedContextVersion: number;
-    entityType: "BRAND" | "TENANT" | "HEAD_COMPANY";
+    entityType: "BRAND" | "TENANT" | "HEAD_COMPANY" | "SERVICE_POINT";
   };
     queryRequired: true;
     headers: Record<string, never>;

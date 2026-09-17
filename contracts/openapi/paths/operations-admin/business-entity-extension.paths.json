@@ -58,7 +58,8 @@
               "enum": [
                 "BRAND",
                 "TENANT",
-                "HEAD_COMPANY"
+                "HEAD_COMPANY",
+                "SERVICE_POINT"
               ]
             }
           }

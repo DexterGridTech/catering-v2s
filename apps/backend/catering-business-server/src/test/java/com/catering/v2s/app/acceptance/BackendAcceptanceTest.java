@@ -314,6 +314,54 @@ class BackendAcceptanceTest {
     static final RouteIdentity OPERATIONS_ORGANIZATION_STORE_OPERATING_RULE = new RouteIdentity(
             "getOperationsOrganizationStoreOperatingRule",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches");
+    static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_AREAS = new RouteIdentity(
+            "getOperationsStoreServicePointAreas",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas");
+    static final RouteIdentity OPERATIONS_STORE_SERVICE_POINTS = new RouteIdentity(
+            "getOperationsStoreServicePoints",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points");
+    static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT = new RouteIdentity(
+            "getOperationsStoreServicePoint",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}");
+    static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_AREA_CREATE = new RouteIdentity(
+            "postOperationsStoreServicePointArea",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas");
+    static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_AREA_UPDATE = new RouteIdentity(
+            "patchOperationsStoreServicePointArea",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}");
+    static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_AREA_STATUS = new RouteIdentity(
+            "postOperationsStoreServicePointAreaStatus",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/status");
+    static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_AREA_ORDER = new RouteIdentity(
+            "postOperationsStoreServicePointAreaOrder",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/order");
+    static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_CREATE = new RouteIdentity(
+            "postOperationsStoreServicePoint",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points");
+    static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_UPDATE = new RouteIdentity(
+            "patchOperationsStoreServicePoint",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}");
+    static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_STATUS = new RouteIdentity(
+            "postOperationsStoreServicePointStatus",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/status");
+    static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_ORDER = new RouteIdentity(
+            "postOperationsStoreServicePointOrder",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/order");
+    static final RouteIdentity OPERATIONS_STORE_QR_CONFIGURATION = new RouteIdentity(
+            "getOperationsStoreQrConfiguration",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration");
+    static final RouteIdentity OPERATIONS_STORE_QR_CONFIGURATION_UPDATE = new RouteIdentity(
+            "patchOperationsStoreQrConfiguration",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration");
+    static final RouteIdentity OPERATIONS_STORE_QR_CHANNEL_CANDIDATES = new RouteIdentity(
+            "getOperationsStoreQrChannelCandidates",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-channel-candidates");
+    static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_ASSET_STAGE = new RouteIdentity(
+            "stageStoreServicePointImage",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage");
+    static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_ASSET_RELEASE = new RouteIdentity(
+            "releaseStagedStoreServicePointImage",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release");
     static final RouteIdentity OPERATIONS_ORGANIZATION_CANDIDATES = new RouteIdentity(
             "getOperationsOrganizationCandidates",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates");
@@ -852,6 +900,13 @@ class BackendAcceptanceTest {
                 existing, capabilities, new java.util.LinkedHashMap<>(StoreOperatingRuleCatalog.defaults()));
     }
 
+    /** Creates a store fixture with the service-point/QR operating-rule gate explicitly enabled. */
+    Fixture storeServicePointFixture(Fixture existing, Set<String> capabilities) {
+        Map<String, Object> rules = new java.util.LinkedHashMap<>(acceptanceStoreOperatingRuleSwitches());
+        rules.put(StoreOperatingRuleCatalog.definition("tableManagementEnabled").key(), true);
+        return siblingStoreFixture(existing, capabilities, rules);
+    }
+
     private Fixture siblingStoreFixture(
             Fixture existing, Set<String> capabilities, Map<String, Object> operatingRuleSwitches) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
@@ -993,6 +1048,44 @@ class BackendAcceptanceTest {
                 existing.groupWorkspaceKey(),
                 mobile,
                 List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "PROJECT", existing.projectId())),
+                now + 3_600_000L);
+        return new Fixture(
+                existing.workspaceUuid(),
+                existing.groupWorkspaceKey(),
+                existing.groupId(),
+                existing.regionId(),
+                existing.projectId(),
+                existing.brandId(),
+                existing.tenantId(),
+                existing.storeId(),
+                existing.headCompanyId(),
+                invitation.id(),
+                invitation.rawInvitationToken(),
+                mobile,
+                loginName);
+    }
+
+    /** Creates a second user assigned to the existing region for owner-scope acceptance. */
+    Fixture regionUserFixture(Fixture existing, Set<String> capabilities) {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        long now = Instant.now().toEpochMilli();
+        UUID roleId = roles.create(
+                        existing.workspaceUuid(),
+                        existing.groupWorkspaceKey(),
+                        "Acceptance Region Operator " + suffix,
+                        "REGION",
+                        null,
+                        Set.of(),
+                        capabilities)
+                .id();
+        String mobile =
+                "139" + String.format("%08d", Math.floorMod(UUID.randomUUID().hashCode(), 100_000_000));
+        String loginName = "operator-region-" + suffix;
+        var invitation = invitations.create(
+                existing.workspaceUuid(),
+                existing.groupWorkspaceKey(),
+                mobile,
+                List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "REGION", existing.regionId())),
                 now + 3_600_000L);
         return new Fixture(
                 existing.workspaceUuid(),
@@ -1661,6 +1754,25 @@ class BackendAcceptanceTest {
             content.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
             String query = "?expectedDraftVersion=" + expectedDraftVersion + "&fileName=" + encode(fileName)
                     + "&mediaType=" + encode(mediaType) + "&contentDigest=" + encode(digest);
+            return send(route, "POST", path + query, cookie, content.toByteArray(), boundary, expected);
+        }
+
+        Response multipartStoreServicePointAsset(
+                RouteIdentity route,
+                String path,
+                String cookie,
+                String fileName,
+                String mediaType,
+                String digest,
+                byte[] bytes,
+                Set<Integer> expected)
+                throws Exception {
+            String boundary = "----backend-acceptance-" + UUID.randomUUID();
+            ByteArrayOutputStream content = new ByteArrayOutputStream();
+            writePart(content, boundary, "content", fileName, mediaType, bytes);
+            content.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+            String query = "?fileName=" + encode(fileName) + "&mediaType=" + encode(mediaType)
+                    + "&contentDigest=" + encode(digest);
             return send(route, "POST", path + query, cookie, content.toByteArray(), boundary, expected);
         }
 

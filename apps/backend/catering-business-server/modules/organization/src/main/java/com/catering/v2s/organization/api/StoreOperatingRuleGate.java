@@ -14,12 +14,21 @@ public interface StoreOperatingRuleGate {
     void requireCatalogManagementForStoreTarget(
             UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID storeId);
 
-    void requireStoreOperatingRuleForStoreTarget(
+    /**
+     * Generic keyed gate used by newly added owners. Existing catalog-only test doubles remain valid because the
+     * legacy key delegates to the original abstract method; production implementations override this method for the
+     * complete rule catalog.
+     */
+    default void requireStoreOperatingRuleForStoreTarget(
             UUID workspaceUuid,
             String groupWorkspaceKey,
             String targetType,
             UUID storeId,
-            String ruleKey);
+            String ruleKey) {
+        if (!"catalogManagementEnabled".equals(ruleKey))
+            throw new UnsupportedOperationException("keyed store operating-rule gate is not implemented");
+        requireCatalogManagementForStoreTarget(workspaceUuid, groupWorkspaceKey, targetType, storeId);
+    }
 
     /** A closed, fail-closed result for a Store operating-rule capability read. */
     final class CatalogManagementDisabledException extends RuntimeException {

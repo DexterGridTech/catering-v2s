@@ -4,6 +4,7 @@ import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
 import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
+import com.catering.v2s.audit.contract.AuditEntityTypes;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
@@ -11,6 +12,7 @@ import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.QrChannelEligibilityLookup;
 import com.catering.v2s.organization.api.StoreServicePointAssetLifecycle;
 import com.catering.v2s.organization.api.StoreServicePointOwnerApi;
+import com.catering.v2s.organization.api.StoreOperatingRuleGate;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,7 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Organization owner for store areas, service points and the store QR singleton. */
 @Service
-public final class StoreServicePointService implements StoreServicePointOwnerApi {
+public class StoreServicePointService implements StoreServicePointOwnerApi {
     public static final String OPERATING_RULE_KEY = "tableManagementEnabled";
     public static final String EXTENSION_HOST = "SERVICE_POINT";
     private static final String AREA = "AREA";
@@ -39,26 +41,29 @@ public final class StoreServicePointService implements StoreServicePointOwnerApi
     private static final String QR = "QR_CONFIGURATION";
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final int PAGE_SIZE = 20;
-    private static final String AREA_ENTITY = "STORE_SERVICE_POINT_AREA";
-    private static final String POINT_ENTITY = "STORE_SERVICE_POINT";
-    private static final String QR_ENTITY = "STORE_QR_CONFIGURATION";
+    private static final String AREA_ENTITY = AuditEntityTypes.STORE_SERVICE_POINT_AREA;
+    private static final String POINT_ENTITY = AuditEntityTypes.STORE_SERVICE_POINT;
+    private static final String QR_ENTITY = AuditEntityTypes.STORE_QR_CONFIGURATION;
     private final JdbcTemplate jdbc;
     private final TimeProvider time;
     private final ExtensionDefinitionLookup definitions;
     private final ObjectProvider<QrChannelEligibilityLookup> qrChannels;
     private final ObjectProvider<StoreServicePointAssetLifecycle> assets;
+    private final StoreOperatingRuleGate operatingRules;
 
     public StoreServicePointService(
             JdbcTemplate jdbc,
             TimeProvider time,
             ExtensionDefinitionLookup definitions,
             ObjectProvider<QrChannelEligibilityLookup> qrChannels,
-            ObjectProvider<StoreServicePointAssetLifecycle> assets) {
+            ObjectProvider<StoreServicePointAssetLifecycle> assets,
+            StoreOperatingRuleGate operatingRules) {
         this.jdbc = jdbc;
         this.time = time;
         this.definitions = definitions;
         this.qrChannels = qrChannels;
         this.assets = assets;
+        this.operatingRules = operatingRules;
     }
 
     @Override
@@ -269,14 +274,19 @@ public final class StoreServicePointService implements StoreServicePointOwnerApi
             return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), pointRef);
         settleImage(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), pointRef, null,
                 command.imageAssetRef(), command.imageBindGrant());
-        ExtensionPayload extension = extension(command.workspaceUuid(), command.groupWorkspaceKey(), command.extensionValuesJson(), "{}");
+        ExtensionPayload extension = extension(
+                command.workspaceUuid(),
+                command.groupWorkspaceKey(),
+                command.extensionValuesJson(),
+                "{}",
+                command.extensionRuleRevision());
         long now = time.currentEpochMillis();
         Long nextOrder = jdbc.queryForObject(
                 "SELECT coalesce(max(display_order), -1) + 1 FROM organization.store_service_point WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND area_ref=? AND status <> 'VOIDED'",
                 Long.class, command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), command.areaRef());
         try {
             jdbc.update(
-                    "INSERT INTO organization.store_service_point(point_ref, workspace_uuid, group_workspace_key, store_ref, area_ref, name, code, point_type, status, display_order, seat_capacity, table_shape, reservable, image_asset_ref, extension_values, extension_rule_revision, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?,?,?,?,?,?,?,?,'ENABLED',?,?,?,?,?,?,?,1,?,?)",
+                    "INSERT INTO organization.store_service_point(point_ref, workspace_uuid, group_workspace_key, store_ref, area_ref, name, code, point_type, status, display_order, seat_capacity, table_shape, reservable, image_asset_ref, extension_values, extension_rule_revision, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?,?,?,?,?,?,?,?,'ENABLED',?,?,?,?,?,CAST(? AS JSONB),?,1,?,?)",
                     pointRef, command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), command.areaRef(), name, code, pointType,
                     nextOrder == null ? 0 : nextOrder, command.seatCapacity(), command.tableShape(), command.reservable(), command.imageAssetRef(),
                     extension.json(), extension.revision(), now, now);
@@ -300,14 +310,19 @@ public final class StoreServicePointService implements StoreServicePointOwnerApi
         if (!compatible(area.areaType, pointType)) throw new BusinessEntityService.OrganizationValidationException();
         if (!claim(command.workspaceUuid(), command.groupWorkspaceKey(), command.idempotencyKey(), canonical(command), before.pointRef, POINT))
             return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef);
-        ExtensionPayload extension = extension(command.workspaceUuid(), command.groupWorkspaceKey(), command.extensionValuesJson(), before.extensionValuesJson);
+        ExtensionPayload extension = extension(
+                command.workspaceUuid(),
+                command.groupWorkspaceKey(),
+                command.extensionValuesJson(),
+                before.extensionValuesJson,
+                command.extensionRuleRevision());
         String status = status(command.status());
         settleImage(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef,
                 before.imageAssetRef, command.imageAssetRef(), command.imageBindGrant());
         int updated;
         try {
             updated = jdbc.update(
-                    "UPDATE organization.store_service_point SET name=?, code=?, point_type=?, status=?, seat_capacity=?, table_shape=?, reservable=?, image_asset_ref=?, extension_values=?, extension_rule_revision=?, version=version+1, updated_at_epoch_millis=? WHERE point_ref=? AND workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND version=?",
+                    "UPDATE organization.store_service_point SET name=?, code=?, point_type=?, status=?, seat_capacity=?, table_shape=?, reservable=?, image_asset_ref=?, extension_values=CAST(? AS JSONB), extension_rule_revision=?, version=version+1, updated_at_epoch_millis=? WHERE point_ref=? AND workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND version=?",
                     required(command.name(), 120), required(command.code(), 64), pointType, status, command.seatCapacity(), command.tableShape(), command.reservable(), command.imageAssetRef(), extension.json(), extension.revision(), time.currentEpochMillis(), before.pointRef, command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), command.expectedVersion());
         } catch (DuplicateKeyException conflict) {
             throw new BusinessEntityService.OrganizationConflictException(conflict);
@@ -382,7 +397,10 @@ public final class StoreServicePointService implements StoreServicePointOwnerApi
         QrRow qr = readQrRow(workspaceUuid, groupWorkspaceKey, row.storeRef);
         String url = null;
         boolean available = "ENABLED".equals(row.status) && "ENABLED".equals(row.areaStatus);
-        if (available && qr.enabled && qr.channelRef != null) {
+        // QR generation is governed only by the final composed URL.  The
+        // point/area lifecycle still controls effectiveAvailable, but it must
+        // not become a fourth "no QR" reason after a channel was selected.
+        if (qr.enabled && qr.channelRef != null) {
             QrChannelEligibilityLookup provider = qrChannels();
             url = provider.deriveUrl(workspaceUuid, groupWorkspaceKey, row.storeRef, qr.channelRef, row.pointRef);
         }
@@ -449,9 +467,16 @@ public final class StoreServicePointService implements StoreServicePointOwnerApi
     private void requireCommand(OperationsOwnerScopeGrant grant, UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
         if (grant == null || !grant.matchesCapability(workspaceUuid, groupWorkspaceKey, "STORE", storeRef, "EDIT_STORE_SERVICE_POINT_QR"))
             throw new BusinessEntityService.OrganizationAuthorizationException();
+        operatingRules.requireStoreOperatingRuleForStoreTarget(
+                workspaceUuid, groupWorkspaceKey, "STORE", storeRef, OPERATING_RULE_KEY);
     }
 
-    private ExtensionPayload extension(UUID workspaceUuid, String groupWorkspaceKey, String requestedJson, String currentJson) {
+    private ExtensionPayload extension(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String requestedJson,
+            String currentJson,
+            Long requestedRevision) {
         String source = requestedJson == null || requestedJson.isBlank() ? "{}" : requestedJson;
         try {
             JsonNode node = JSON.readTree(source);
@@ -465,6 +490,8 @@ public final class StoreServicePointService implements StoreServicePointOwnerApi
             } catch (ExtensionDefinitionService.DefinitionNotFoundException ignored) {
                 if (!requested.isEmpty()) throw new BusinessEntityService.OrganizationValidationException();
             }
+            if (requestedRevision != null && (definition == null || definition.version() != requestedRevision))
+                throw new BusinessEntityService.OrganizationValidationException();
             String merged = definition == null ? "{}" : ExtensionDefinitionService.mergeValues(definition, currentJson, requested);
             return new ExtensionPayload(merged, definition == null ? null : definition.version());
         } catch (BusinessEntityService.OrganizationValidationException failure) {

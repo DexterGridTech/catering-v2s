@@ -68,6 +68,28 @@ export type TopologyOperationEligibility = Readonly<{
   readonly reasonCode: TopologyFailureReasonCode
 }>
 
+export type TopologyAdminCommandStatus = 'completed' | 'partial-failed' | 'timed-out' | 'error'
+
+export type TopologyAdminCommandResult = Readonly<{
+  readonly status: TopologyAdminCommandStatus
+  readonly identity?: TopologyIdentity
+  readonly reasonCode?: TopologyFailureReasonCode
+}>
+
+/**
+ * The only topology surface an admin section may receive.  It deliberately
+ * contains no runtime, state source, platform port, storage, or native
+ * lifecycle handle.
+ */
+export type TopologyAdminCapability = Readonly<{
+  readonly getSnapshot: () => TopologyFacts
+  readonly getOperationEligibility: (operation: TopologyOperation) => TopologyOperationEligibility
+  readonly queryMasterIdentity: (input: Readonly<{readonly host: string}>) => Promise<TopologyAdminCommandResult>
+  readonly pair: (input: Readonly<{readonly locator: TopologyLocator}>) => Promise<TopologyAdminCommandResult>
+  readonly unpair: () => Promise<TopologyAdminCommandResult>
+  readonly setHostEnabled: (enabled: boolean) => Promise<TopologyAdminCommandResult>
+}>
+
 export type TopologyJsonPrimitive = string | number | boolean | null
 export type TopologyJsonValue =
   | TopologyJsonPrimitive

@@ -15,6 +15,7 @@
     "ADMIN_GESTURE_SIZE",
     "ADMIN_GESTURE_WINDOW_MS",
     "ADMIN_SECTION_CONTAINER_KEY",
+    "ADMIN_TOPOLOGY_SECTION_PART_KEY",
     "ADMIN_PASSWORD_FALLBACK",
     "AdminLayer",
     "AdminLauncher", "AdminGestureCoordinateSpace",

@@ -10,7 +10,11 @@ export const dispatchWithRequestId = <TPayload extends StateJsonValue>(input: Re
   definition: CommandDefinition<TPayload>;
   payload: TPayload;
   requestId?: RequestId;
+  routeIntent?: Parameters<DispatchCommand>[1]['routeIntent'];
 }>) => input.dispatchCommand(
   createCommand(input.definition, input.payload),
-  {requestId: input.requestId ?? createRequestId()},
+  {
+    requestId: input.requestId ?? createRequestId(),
+    ...(input.routeIntent === undefined ? {} : {routeIntent: input.routeIntent}),
+  },
 )

@@ -416,6 +416,7 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
           performReset: runReset,
           isResetting: () => resetting,
           registerResource: resources.register,
+          resolveCommandTarget: input.resolveCommandTarget,
           roleChangeSignalRef,
         })
         await lifecycle.runInstall()

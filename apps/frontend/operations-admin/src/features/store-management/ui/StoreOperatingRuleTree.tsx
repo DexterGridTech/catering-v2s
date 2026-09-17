@@ -103,9 +103,7 @@ export function storeOperatingRuleDetailValue(
           : String(value)
         : String(value);
   if (storeOperatingRuleApplicable(values, definition.key)) return text;
-  return definition.type === 'BOOLEAN' && value === true
-    ? `${text}（当前未生效）`
-    : `${text}（上级未开启）`;
+  return definition.type === 'BOOLEAN' && value === true ? `${text}（当前未生效）` : `${text}（上级未开启）`;
 }
 
 function StoreOperatingRuleRow({
@@ -203,18 +201,12 @@ export function StoreOperatingRuleTree({
       )),
     [completeValues, mode],
   );
-  const treeTestId = mode === 'detail' ? storeManagementTestIds.detailOperatingRuleTree : storeManagementTestIds.editOperatingRuleTree;
+  const treeTestId =
+    mode === 'detail' ? storeManagementTestIds.detailOperatingRuleTree : storeManagementTestIds.editOperatingRuleTree;
 
   return (
     <div {...testId(treeTestId)}>
-      <Tree
-        aria-label="门店经营规则"
-        blockNode
-        defaultExpandAll
-        selectable={false}
-        showLine
-        treeData={treeData}
-      />
+      <Tree aria-label="门店经营规则" blockNode defaultExpandAll selectable={false} showLine treeData={treeData} />
     </div>
   );
 }

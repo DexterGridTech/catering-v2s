@@ -9,6 +9,7 @@ import type {
   LoggerPort,
 } from '@catering-v2s/kernel-base-platform-ports'
 import {defineCommand, type Runtime} from '@catering-v2s/kernel-base-runtime'
+import {createCommandId} from '@catering-v2s/kernel-base-contracts'
 import {
   createRendererCatalog,
   bindSurfaceHostIdentity,
@@ -20,6 +21,7 @@ import {
   SurfaceRoot,
   calculateSurfaceHostGeometry,
   dispatchWithRequestId,
+  useDispatchCommand,
   type SurfaceHostSnapshot,
   type SurfaceHostMeasurementSource,
   type SurfaceHostSource,
@@ -188,6 +190,67 @@ const createHostSource = (initial: SurfaceHostSnapshot | null) => {
 }
 
 describe('render surface hosts', () => {
+  it('stamps each surface dispatch with its local route context', async () => {
+    const source = createSource()
+    const {logger} = createLogger()
+    source.setRoot(rootWithContent(emptyContent()))
+    source.setStatus('started')
+    const command = defineCommand<Readonly<{}>>('test.surface-route', {name: 'run', visibility: 'internal'})
+    const observed: Array<Readonly<{readonly displayMode?: unknown; readonly workspace?: unknown}>> = []
+    const dispatchCommand: RenderProviderProps['dispatchCommand'] = async (_current, options) => {
+      observed.push(options.routeContext ?? {})
+      return {
+        requestId: options.requestId ?? null,
+        commandId: createCommandId(),
+        status: 'completed',
+        actorResults: [],
+      }
+    }
+    const RouteProbe = ({label}: Readonly<{readonly label: string}>) => {
+      const dispatch = useDispatchCommand()
+      return createElement('surface-route-probe', {
+        label,
+        invoke: () => dispatch(command, {}),
+      })
+    }
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: source.stateSource,
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        ...unusedRenderProviderBindings,
+        dispatchCommand,
+        createRouteContext: (_root, displayMode) => ({
+          displayMode,
+          workspace: 'MAIN',
+          instanceMode: 'MASTER',
+        }),
+      },
+      createElement(SurfaceRoot, {
+        displayMode: 'PRIMARY',
+        containerKey: 'root',
+      }, createElement(RouteProbe, {label: 'primary'})),
+      createElement(SurfaceRoot, {
+        displayMode: 'SECONDARY',
+        containerKey: 'root',
+      }, createElement(RouteProbe, {label: 'secondary'})),
+    ))
+
+    const probes = renderer.root.findAllByType('surface-route-probe')
+    expect(probes).toHaveLength(2)
+    await act(async () => {
+      await (probes[0]!.props.invoke as () => Promise<unknown>)()
+      await (probes[1]!.props.invoke as () => Promise<unknown>)()
+    })
+    expect(observed).toEqual([
+      {displayMode: 'PRIMARY', workspace: 'MAIN', instanceMode: 'MASTER'},
+      {displayMode: 'SECONDARY', workspace: 'MAIN', instanceMode: 'MASTER'},
+    ])
+    renderer.unmount()
+  })
+
   it('transfers the physical-index host fact without deriving it from display mode', () => {
     const source: SurfaceHostMeasurementSource = {
       getSnapshot: () => Object.freeze({

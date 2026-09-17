@@ -9,6 +9,8 @@ describe('sample-console package surface', () => {
       'kernel.base.display-context',
       'kernel.base.platform-ports',
       'kernel.base.runtime',
+      'kernel.base.topology',
+      'kernel.base.transport',
       'kernel.base.ui-state',
     'kernel.feature.sample-member-registry',
     'kernel.feature.sample-staff-session',

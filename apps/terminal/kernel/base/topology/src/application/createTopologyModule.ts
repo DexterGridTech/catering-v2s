@@ -213,6 +213,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
   const markPeerAccepted = (context: RuntimeModuleContext, peerIdentity?: TopologyIdentity): void => {
     peerAccepted = true
     reconnectAttempt = 0
+    lastReceivedMembersRevision = 0
     if (peerIdentity !== undefined) dispatchTopologyEvent(context, {event: 'peer-accepted', peerIdentity})
     else dispatchTopologyEvent(context, {event: 'peer-accepted'})
     sendMembersSnapshot(context, true)

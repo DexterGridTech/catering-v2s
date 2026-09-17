@@ -10,7 +10,7 @@ import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-d
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth'
 import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry'
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session'
-import {createTopologyModule} from '@catering-v2s/kernel-base-topology'
+import {createTopologyAdminCapability, createTopologyModule, resolveTopologyCommandTarget} from '@catering-v2s/kernel-base-topology'
 import {createTopologyIdentityClient, createTransportModule, type TopologyPeerChannel} from '@catering-v2s/kernel-base-transport'
 import {ADMIN_SECTION_CONTAINER_KEY, SampleSection} from '@catering-v2s/ui-base-admin-shell'
 import {createSampleConsoleModule, startupReadyCommand, type SampleConsoleReadyPayload} from '../application/module'
@@ -108,6 +108,8 @@ export async function createSampleAssembly(
       readyPartKey,
       contentFailure,
     }),
+    resolveCommandTarget: resolveTopologyCommandTarget,
+    createTopologyAdminCapability,
     createApplicationModules: () => [
       createTransportModule(),
       topologyModule,

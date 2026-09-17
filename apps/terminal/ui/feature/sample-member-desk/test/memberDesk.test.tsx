@@ -3,11 +3,14 @@ import {createElement, cloneElement, type ReactElement} from 'react'
 import {TextInput} from 'react-native'
 import {describe, expect, it} from 'vitest'
 import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort, NativeLoadingCapability} from '@catering-v2s/ui-base-test-support'
-import {createRequestId} from '@catering-v2s/kernel-base-contracts'
+import {createRequestId, type TopologyLocator} from '@catering-v2s/kernel-base-contracts'
 import type {CommandDispatchResult, Runtime} from '@catering-v2s/kernel-base-runtime'
 import {createDisplayContextModule} from '@catering-v2s/kernel-base-display-context'
+import {createTransportModule} from '@catering-v2s/kernel-base-transport'
+import {createTopologyModule, topologyActions} from '@catering-v2s/kernel-base-topology'
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry'
+import {loginSucceededCommand} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {
   createRendererCatalog,
   createRenderRuntimeFacts,
@@ -15,7 +18,7 @@ import {
 } from '@catering-v2s/ui-base-render'
 import {InputSurfaceFrame} from '@catering-v2s/ui-base-input'
 import type {RenderProviderProps} from '@catering-v2s/ui-base-render'
-import {createUiCatalog, createUiStateModule, selectLayers} from '@catering-v2s/kernel-base-ui-state'
+import {createUiCatalog, createUiStateModule, selectLayers, selectScreen} from '@catering-v2s/kernel-base-ui-state'
 import {sampleMemberDeskAssembly} from '../src/index'
 import {createSampleMemberDeskModule} from '../src/application/module'
 import {CustomerMember} from '../src/components/CustomerMember'
@@ -206,6 +209,45 @@ describe('sample member desk UI feature', () => {
       'sample.desk.customer-member',
     ])
     expect(sampleMemberDeskAssembly).not.toHaveProperty('variables')
+  })
+
+  it('uses the topology secondary fact for member navigation on a paired single-screen master', async () => {
+    const catalog = createUiCatalog(sampleMemberDeskAssembly.parts.map(part => part.catalogEntry))
+    const runtime = createTestRuntime([
+      createDisplayContextModule(),
+      createTransportModule(),
+      createTopologyModule({displayName: 'sample member desk topology test', surfaceForm: 'laptop'}),
+      createUiStateModule({catalog, variables: [], surfaceForm: 'laptop'}),
+      createSampleStaffSessionModule(),
+      createSampleMemberRegistryModule(),
+      createSampleMemberDeskModule(),
+    ])
+    const locator: TopologyLocator = {
+      host: '192.0.2.60',
+      port: 43172,
+      basePath: '/terminal-topology',
+      identity: {
+        protocolVersion: 1,
+        nodeId: 'node-member-desk-peer',
+        displayName: 'Peer',
+        instanceMode: 'SLAVE',
+        displayRole: 'VICE',
+      },
+    }
+    try {
+      await runtime.start()
+      runtime.getStore().dispatch(topologyActions.setMasterLocator(locator))
+      const result = await runtime.dispatchCommand(
+        loginSucceededCommand,
+        {operatorName: 'A001'},
+        {requestId: createRequestId()},
+      )
+      expect(result.status).toBe('completed')
+      expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toMatchObject({partKey: 'sample.desk.member-list'})
+      expect(selectScreen(runtime.getState(), 'SECONDARY', 'main')).toMatchObject({partKey: 'sample.desk.customer-welcome'})
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
   })
 
   it('reads confirm data through the owner selector and renders the two actions', () => {
@@ -760,6 +802,8 @@ describe('sample member desk UI feature', () => {
     const loggerEvents: LogEvent[] = []
     const runtime = createTestRuntime([
       createDisplayContextModule(),
+      createTransportModule(),
+      createTopologyModule({displayName: 'sample member desk test', surfaceForm: 'mobile'}),
       createUiStateModule({catalog, variables: [], surfaceForm: 'mobile'}),
       createSampleStaffSessionModule(),
       createSampleMemberRegistryModule(),

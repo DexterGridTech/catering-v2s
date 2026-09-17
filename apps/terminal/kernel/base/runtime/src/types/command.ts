@@ -5,12 +5,30 @@ import type {
   RuntimeInstanceId,
   TimestampMs,
 } from '@catering-v2s/kernel-base-contracts'
-import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
+import type {StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state'
 import type {RuntimeLifecycleObserver} from './journal'
 
 export type CommandVisibility = 'public' | 'internal'
 
 export type CommandTarget = 'local' | 'peer'
+
+/**
+ * A route intent describes the semantic origin of a dispatch without naming
+ * a concrete target.  The runtime resolves the final target from this intent
+ * and the current topology facts at the common dispatch boundary.
+ */
+export type CommandRouteIntent = 'peer-intent'
+
+export type CommandTargetResolverInput = Readonly<{
+  readonly payload: StateJsonValue
+  readonly routeContext: CommandRouteContext | null
+  readonly routeIntent?: CommandRouteIntent
+  readonly state: StateRoot
+}>
+
+export type CommandTargetResolver = (
+  input: CommandTargetResolverInput,
+) => CommandTarget | undefined
 
 /**
  * The value is deliberately private to this package.  Keeping the symbol in
@@ -65,6 +83,7 @@ export type CommandDispatchOptions = Readonly<{
   commandId?: CommandId
   parentCommandId?: CommandId
   routeContext?: CommandRouteContext | null
+  routeIntent?: CommandRouteIntent
   target?: CommandTarget
   onLifecycleEvent?: RuntimeLifecycleObserver
 }>
@@ -74,6 +93,7 @@ export type ActorDispatchOptions = Readonly<{
   commandId?: CommandId
   parentCommandId?: CommandId
   routeContext?: CommandRouteContext | null
+  routeIntent?: CommandRouteIntent
   target?: CommandTarget
 }>
 

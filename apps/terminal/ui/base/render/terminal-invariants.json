@@ -16,6 +16,8 @@
     "LayerStack",
     "RenderProvider",
     "RenderProviderProps",
+    "RenderRouteContextFactory",
+    "RenderStateRoot",
     "RenderSurfaceReadyInput",
     "ContentFailureReason",
     "RenderFailure",

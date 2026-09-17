@@ -9,6 +9,7 @@ import type {AdminShellProps} from '../types/adminShell'
 import {AdminSectionContent} from './AdminSectionContent'
 import {AdminSectionNavigation} from './AdminSectionNavigation'
 import {AdminShellFrame} from './AdminShellFrame'
+import {PowerConfirmationBridge} from './PowerConfirmationBridge'
 
 const resolveMobileSelection = ({sections, requestedPartKey}: Readonly<{
   readonly sections: readonly UiCatalogEntry[]
@@ -28,7 +29,7 @@ const resolveMobileSelection = ({sections, requestedPartKey}: Readonly<{
 const contentStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0})
 
 export const AdminShellMobile = ({onClose}: AdminShellProps) => {
-  const {uiCatalog, rendererCatalog, runtimeFacts} = useRenderContext()
+  const {uiCatalog, rendererCatalog, runtimeFacts, topologyCapability} = useRenderContext()
   const surface = useSurfaceContext()
   const runtimeStatus = useRenderStatus()
   const catalogContext = useUiCatalogContext(surface.displayMode)
@@ -49,6 +50,7 @@ export const AdminShellMobile = ({onClose}: AdminShellProps) => {
 
   return (
     <AdminShellFrame onClose={onClose}>
+      <PowerConfirmationBridge />
       <AdminSectionNavigation
         sections={selection.sections}
         selectedPartKey={resolvedSelection.selectedPartKey}
@@ -61,6 +63,7 @@ export const AdminShellMobile = ({onClose}: AdminShellProps) => {
           runtimeFacts={runtimeFacts}
           surface={surface}
           commandBoundary={commandBoundary}
+          topologyCapability={topologyCapability}
         />
       </PrimitiveContainer>
     </AdminShellFrame>

@@ -8,10 +8,12 @@ export type {
 } from './types/catalog';
 export type {
   ContentFailureReason,
+  RenderRouteContextFactory,
   RenderProviderProps,
   RenderLayerDismissal,
   RenderFailure,
   RenderSurfaceReadyInput,
+  RenderStateRoot,
   SurfaceRootContentFrame,
   SurfaceRootProps,
   SystemFailureReason,

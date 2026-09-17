@@ -9,6 +9,7 @@ import type {AdminShellProps} from '../types/adminShell'
 import {AdminSectionContent} from './AdminSectionContent'
 import {AdminShellFrame} from './AdminShellFrame'
 import {AdminSectionNavigationLaptop} from './AdminSectionNavigationLaptop'
+import {PowerConfirmationBridge} from './PowerConfirmationBridge'
 
 const resolveLaptopSelection = ({sections, requestedPartKey}: Readonly<{
   readonly sections: readonly UiCatalogEntry[]
@@ -41,7 +42,7 @@ const navigationFrameStyle = Object.freeze({width: 280, minWidth: 220, maxWidth:
 const detailFrameStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0})
 
 const AdminShellLaptopContent = ({onClose}: AdminShellProps) => {
-  const {uiCatalog, rendererCatalog, runtimeFacts} = useRenderContext()
+  const {uiCatalog, rendererCatalog, runtimeFacts, topologyCapability} = useRenderContext()
   const surface = useSurfaceContext()
   const runtimeStatus = useRenderStatus()
   const catalogContext = useUiCatalogContext(surface.displayMode)
@@ -62,6 +63,7 @@ const AdminShellLaptopContent = ({onClose}: AdminShellProps) => {
 
   return (
     <AdminShellFrame onClose={onClose}>
+      <PowerConfirmationBridge />
       <PrimitiveGrid testID="terminal.admin:workspace" style={workspaceStyle}>
         <PrimitiveContainer testID="terminal.admin:navigation-frame" layout="content" style={navigationFrameStyle}>
           <AdminSectionNavigationLaptop
@@ -77,6 +79,7 @@ const AdminShellLaptopContent = ({onClose}: AdminShellProps) => {
             runtimeFacts={runtimeFacts}
             surface={surface}
             commandBoundary={commandBoundary}
+            topologyCapability={topologyCapability}
           />
         </PrimitiveContainer>
       </PrimitiveGrid>

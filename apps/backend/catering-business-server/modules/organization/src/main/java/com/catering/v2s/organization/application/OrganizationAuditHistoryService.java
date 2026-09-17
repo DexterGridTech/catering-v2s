@@ -67,7 +67,10 @@ public class OrganizationAuditHistoryService implements CommercialGroupInitializ
                                 "BRAND",
                                 "TENANT",
                                 AuditEntityTypes.HEAD_COMPANY,
-                                AuditEntityTypes.STORE)
+                                AuditEntityTypes.STORE,
+                                AuditEntityTypes.STORE_SERVICE_POINT_AREA,
+                                AuditEntityTypes.STORE_SERVICE_POINT,
+                                AuditEntityTypes.STORE_QR_CONFIGURATION)
                         .contains(target.entityType())
                 || page < 1
                 || pageSize < 1

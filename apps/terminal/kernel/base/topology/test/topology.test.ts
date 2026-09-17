@@ -7,11 +7,20 @@ import {
 } from '@catering-v2s/kernel-base-contracts'
 import {
   createRuntime,
+  defineActor,
+  defineCommand,
+  onCommand,
   selectRuntimeInstanceMode,
   type Runtime,
   type RuntimeModule,
 } from '@catering-v2s/kernel-base-runtime'
-import {createDisplayContextModule, selectDisplayRole} from '@catering-v2s/kernel-base-display-context'
+import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
+import {
+  createDisplayContextModule,
+  selectDisplayRole,
+  switchDisplayRoleCommand,
+  switchInstanceModeCommand,
+} from '@catering-v2s/kernel-base-display-context'
 import {createTransportModule} from '@catering-v2s/kernel-base-transport'
 import {
   createPlatformPorts,
@@ -39,15 +48,19 @@ import {moduleName as platformPortsModuleName} from '@catering-v2s/kernel-base-p
 import {moduleName as stateModuleName} from '@catering-v2s/kernel-base-state'
 import {
   createTopologyModule,
+  createTopologyAdminCapability,
   pairTopologyCommand,
   refreshTopologyDisplayCommand,
+  resolveTopologyCommandTarget,
   setTopologyHostEnabledCommand,
+  topologySliceName,
   topologyActions,
+  unpairTopologyCommand,
 } from '../src/index'
 import {moduleName as topologyModuleName} from '../src/moduleName'
 import {moduleName as transportModuleName} from '@catering-v2s/kernel-base-transport'
 import {moduleName as displayContextModuleName} from '@catering-v2s/kernel-base-display-context'
-import type {TopologyPeerChannel, TopologyPeerChannelEvent} from '@catering-v2s/kernel-base-transport'
+import type {TopologyIdentityClient, TopologyPeerChannel, TopologyPeerChannelEvent} from '@catering-v2s/kernel-base-transport'
 import {evaluateTopologyOperation, hasTopologySecondarySurface} from '../src/foundations/evaluateTopologyOperation'
 
 const base = {
@@ -152,6 +165,8 @@ class FakePeerChannel implements TopologyPeerChannel {
   readonly closeCalls: Array<string | undefined> = []
   disposeCalls = 0
   listenCalls = 0
+  private connectionSequence = 0
+  private activeConnectionId: string | undefined
   private readonly listeners = new Set<(event: TopologyPeerChannelEvent) => void>()
 
   subscribe(listener: (event: TopologyPeerChannelEvent) => void): () => void {
@@ -163,14 +178,18 @@ class FakePeerChannel implements TopologyPeerChannel {
 
   async connect(url: string): Promise<void> {
     this.connectCalls.push(url)
-    for (const listener of this.listeners) listener({type: 'open'})
+    const connectionId = `fake-topology-connection-${++this.connectionSequence}`
+    this.activeConnectionId = connectionId
+    for (const listener of this.listeners) listener({type: 'open', connectionId})
   }
 
   async send(raw: string): Promise<void> { this.sentFrames.push(raw) }
 
   async close(reason?: string): Promise<void> {
     this.closeCalls.push(reason)
-    for (const listener of this.listeners) listener({type: 'close', reason})
+    const connectionId = this.activeConnectionId
+    this.activeConnectionId = undefined
+    for (const listener of this.listeners) listener({type: 'close', reason, connectionId})
   }
 
   async dispose(): Promise<void> {
@@ -213,6 +232,8 @@ const createTopologyRuntime = (input: Readonly<{
   readonly protectedStorage?: ReturnType<typeof createProcessMemoryStateStoragePort>
   readonly runtimeName?: string
   readonly appControl?: AppControlPort
+  readonly identityClient?: TopologyIdentityClient
+  readonly extraModules?: readonly RuntimeModule[]
 }>): Readonly<{runtime: Runtime; device: DevicePort}> => {
   const events: LogEvent[] = []
   const device = input.device ?? createTestDevice()
@@ -222,11 +243,13 @@ const createTopologyRuntime = (input: Readonly<{
     displayName: 'TER test',
     surfaceForm: 'laptop',
     nodeId: 'node-master',
+    identityClient: input.identityClient,
     peerChannel: input.peer,
   })
   const runtime = createRuntime({
     localNodeId: createNodeId(),
     modules: [
+      ...(input.extraModules ?? []),
       toolkit(contractsModuleName),
       toolkit(platformPortsModuleName, [contractsModuleName]),
       toolkit(stateModuleName, [contractsModuleName, platformPortsModuleName]),
@@ -290,7 +313,173 @@ describe('topology operation eligibility', () => {
   })
 })
 
+describe('topology runtime target resolution', () => {
+  it('uses each payload and peer intent independently of peer reachability', async () => {
+    const host = new FakeTopologyHost()
+    const {runtime} = createTopologyRuntime({host})
+    await runtime.start()
+    try {
+      const locator: TopologyLocator = Object.freeze({
+        host: '192.0.2.30',
+        port: 43172,
+        basePath: '/terminal-topology',
+        identity: Object.freeze({...identity, nodeId: 'node-master-3'}),
+      })
+      const currentTopology = runtime.getState()[topologySliceName]!
+      const stateWith = (
+        overrides: Readonly<Record<string, unknown>>,
+        instanceMode: 'MASTER' | 'SLAVE' = 'MASTER',
+      ): Parameters<typeof resolveTopologyCommandTarget>[0]['state'] => Object.freeze({
+        ...runtime.getState(),
+        [topologySliceName]: Object.freeze({...currentTopology, ...overrides}),
+        'kernel.base.runtime.instance-mode': Object.freeze({instanceMode}),
+      }) as Parameters<typeof resolveTopologyCommandTarget>[0]['state']
+
+      const paired = stateWith({masterLocator: locator, peerReachable: false})
+      expect(resolveTopologyCommandTarget({
+        state: paired,
+        payload: {displayMode: 'SECONDARY'},
+        routeContext: null,
+      })).toBe('peer')
+      expect(resolveTopologyCommandTarget({
+        state: stateWith({masterLocator: locator, displayCount: 2, peerReachable: false}),
+        payload: {displayMode: 'SECONDARY'},
+        routeContext: null,
+      })).toBeUndefined()
+      expect(resolveTopologyCommandTarget({
+        state: stateWith({masterLocator: null}),
+        payload: {displayMode: 'SECONDARY'},
+        routeContext: null,
+      })).toBeUndefined()
+      expect(resolveTopologyCommandTarget({
+        state: stateWith({masterLocator: locator, peerReachable: false}, 'SLAVE'),
+        payload: {operation: 'member-intent'},
+        routeContext: null,
+        routeIntent: 'peer-intent',
+      })).toBe('peer')
+      expect(resolveTopologyCommandTarget({
+        state: paired,
+        payload: {operation: 'member-intent'},
+        routeContext: null,
+        routeIntent: 'peer-intent',
+      })).toBeUndefined()
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+})
+
+describe('topology admin capability', () => {
+  it('dispatches admin operations through a request-scoped public command', async () => {
+    const host = new FakeTopologyHost()
+    const identityClient: TopologyIdentityClient = Object.freeze({
+      query: async () => Object.freeze({type: 'identity' as const, ...identity}),
+    })
+    const {runtime} = createTopologyRuntime({host, identityClient})
+    await runtime.start()
+    try {
+      const result = await createTopologyAdminCapability(runtime).queryMasterIdentity({host: '192.0.2.10'})
+      expect(result.status).toBe('completed')
+      expect(result.identity).toEqual(identity)
+      expect(runtime.journal.list().some(event =>
+        event.kind === 'command.started'
+        && event.commandName === 'kernel.base.topology.query-host'
+        && event.requestId !== null,
+      )).toBe(true)
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+})
+
 describe('topology lifecycle integration', () => {
+  it('normalizes an inbound peer command to local execution without routing it back', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const observed: Array<Readonly<{readonly target: string; readonly routeContext: unknown}>> = []
+    const command = defineCommand<Readonly<{readonly value: string}>>('test.topology.receiver', {
+      name: 'run',
+      visibility: 'internal',
+    })
+    const actor = defineActor('test.topology.receiver', 'worker', [onCommand(command, context => {
+      observed.push({target: context.command.target, routeContext: context.command.routeContext})
+      return {handled: context.command.payload.value}
+    })])
+    const receiverModule: RuntimeModule = Object.freeze({
+      moduleName: 'test.topology.receiver',
+      kind: 'owner',
+      dependencies: [{moduleName: 'kernel.base.runtime'}],
+      commands: [{name: command.commandName, visibility: command.visibility}],
+      commandDefinitions: [command],
+      actors: [{name: actor.actorName}],
+      actorDefinitions: [actor],
+    })
+    const appControl: AppControlPort = {
+      ...unavailableAppControlPort,
+      resetRuntime: async input => Object.freeze({
+        status: 'accepted' as const,
+        requestId: input.requestId,
+        acceptedAt: completedAt,
+        terminalObservation: 'SUCCESSOR_RUNTIME_STARTED' as const,
+      }),
+    }
+    const {runtime} = createTopologyRuntime({host, peer, appControl, extraModules: [receiverModule]})
+    await runtime.start()
+    try {
+      const locator: TopologyLocator = Object.freeze({
+        host: '192.0.2.40',
+        port: 43172,
+        basePath: '/terminal-topology',
+        identity: Object.freeze({...identity, nodeId: 'node-master-4'}),
+      })
+      const paired = await runtime.dispatchCommand(
+        pairTopologyCommand,
+        {locator},
+        {
+          requestId: createRequestId(),
+          routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'},
+        },
+      )
+      expect(paired.status).toBe('completed')
+      runtime.getStore().dispatch(topologyActions.setRepairPending(false))
+      await waitForReconciliation()
+      peer.emit({
+        type: 'message',
+        raw: JSON.stringify({
+          type: 'hello-accepted',
+          protocolVersion: 1,
+          wireId: 'receiver-accepted',
+          nodeId: 'node-master-4',
+        }),
+      })
+      await waitForReconciliation()
+      expect(runtime.getState()[topologySliceName]).toMatchObject({peerReachable: true})
+
+      peer.emit({
+        type: 'message',
+        raw: JSON.stringify({
+          type: 'command-request',
+          protocolVersion: 1,
+          wireId: 'receiver-command',
+          requestId: null,
+          commandId: 'receiver-command-id',
+          parentCommandId: null,
+          commandName: command.commandName,
+          payload: {value: 'local-only'},
+        }),
+      })
+      await waitForReconciliation()
+      await new Promise<void>(resolve => setTimeout(resolve, 0))
+
+      expect(observed).toEqual([{target: 'local', routeContext: null}])
+      expect(peer.sentFrames.map(frame => JSON.parse(frame) as {type?: string})).toEqual(expect.arrayContaining([
+        expect.objectContaining({type: 'command-result'}),
+      ]))
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
   it('drives the host through desired/actual reconciliation and stops on unsupported display topology', async () => {
     const host = new FakeTopologyHost()
     const device = createTestDevice()
@@ -429,6 +618,92 @@ describe('topology lifecycle integration', () => {
       hostDesired: false,
     })
     expect(peer.connectCalls).toHaveLength(2)
+  })
+
+  it('unpairs in CHIEF then MASTER order before clearing the locator', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const appControl: AppControlPort = {
+      ...unavailableAppControlPort,
+      resetRuntime: async input => Object.freeze({
+        status: 'accepted' as const,
+        requestId: input.requestId,
+        acceptedAt: completedAt,
+        terminalObservation: 'SUCCESSOR_RUNTIME_STARTED' as const,
+      }),
+    }
+    const {runtime} = createTopologyRuntime({host, peer, appControl})
+    await runtime.start()
+    const locator: TopologyLocator = Object.freeze({
+      host: '192.0.2.21',
+      port: 43172,
+      basePath: '/terminal-topology',
+      identity: Object.freeze({...identity, nodeId: 'node-master-unpair'}),
+    })
+    const paired = await runtime.dispatchCommand(
+      pairTopologyCommand,
+      {locator},
+      {requestId: createRequestId(), routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'}},
+    )
+    expect(paired.status).toBe('completed')
+    runtime.getStore().dispatch(topologyActions.setRepairPending(false))
+    await waitForReconciliation()
+
+    const unpairRequestId = createRequestId()
+    const unpaired = await runtime.dispatchCommand(
+      unpairTopologyCommand,
+      {},
+      {requestId: unpairRequestId, routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'}},
+    )
+    expect(unpaired.status).toBe('completed')
+    const commandNames = runtime.journal.list()
+      .filter(event => String(event.requestId) === String(unpairRequestId) && event.kind === 'command.started')
+      .map(event => event.commandName)
+    expect(commandNames.indexOf(switchDisplayRoleCommand.commandName)).toBeGreaterThanOrEqual(0)
+    expect(commandNames.indexOf(switchInstanceModeCommand.commandName)).toBeGreaterThan(
+      commandNames.indexOf(switchDisplayRoleCommand.commandName),
+    )
+    expect(runtime.getState()[topologySliceName]).toMatchObject({masterLocator: null, repairPending: false})
+    expect(selectRuntimeInstanceMode(runtime.getState())).toBe('MASTER')
+    expect(selectDisplayRole(runtime.getState())).toBe('CHIEF')
+  })
+
+  it('closes the active peer transport when a received frame fails protocol parsing', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const appControl: AppControlPort = {
+      ...unavailableAppControlPort,
+      resetRuntime: async input => Object.freeze({
+        status: 'accepted' as const,
+        requestId: input.requestId,
+        acceptedAt: completedAt,
+        terminalObservation: 'SUCCESSOR_RUNTIME_STARTED' as const,
+      }),
+    }
+    const {runtime} = createTopologyRuntime({host, peer, appControl})
+    await runtime.start()
+    const locator: TopologyLocator = Object.freeze({
+      host: '192.0.2.20',
+      port: 43172,
+      basePath: '/terminal-topology',
+      identity: Object.freeze({...identity, nodeId: 'node-master-2'}),
+    })
+    const paired = await runtime.dispatchCommand(
+      pairTopologyCommand,
+      {locator},
+      {requestId: createRequestId(), routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'}},
+    )
+    expect(paired.status).toBe('completed')
+    runtime.getStore().dispatch(topologyActions.setRepairPending(false))
+    await waitForReconciliation()
+    expect(peer.connectCalls).toHaveLength(1)
+
+    peer.emit({type: 'message', connectionId: 'fake-topology-connection-1', raw: '{not-json'})
+    await waitForReconciliation()
+
+    expect(peer.closeCalls).toHaveLength(1)
+    expect(peer.closeCalls[0]).toBeTruthy()
+    releaseRuntimeForTest(runtime)
   })
 
   it('preserves a typed port-occupied error at the host lifecycle boundary', async () => {
