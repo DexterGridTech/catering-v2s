@@ -28,6 +28,31 @@ export {
   createProjectionId,
 } from './foundations/runtimeId';
 export {nowTimestampMs} from './foundations/time';
+export type {SurfaceForm} from './types/display';
+export {isSurfaceForm} from './types/display';
+export type {
+  TopologyDisplayRole,
+  TopologyFailureReasonCode,
+  TopologyFacts,
+  TopologyIdentity,
+  TopologyIdentityResponse,
+  TopologyInstanceMode,
+  TopologyJsonPrimitive,
+  TopologyJsonValue,
+  TopologyLocator,
+  TopologyOperation,
+  TopologyOperationEligibility,
+  TopologyWireError,
+  TopologyWireErrorCode,
+  TopologyWireMessage,
+} from './types/topology';
+export {
+  parseTopologyWireMessage,
+  parseTopologyIdentityResponse,
+  serializeTopologyWireMessage,
+  topologyMaxFrameBytes,
+  topologyProtocolVersion,
+} from './foundations/topologyWire';
 
 export type {
   ErrorCategory,

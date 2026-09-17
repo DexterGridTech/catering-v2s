@@ -1,4 +1,4 @@
-// GENERATED FILE. DO NOT EDIT. sourceSha256=e9315839d89ffc3d981486a826cf1c4595a4cc8f9e8a65a2d998752c183e5646
+// GENERATED FILE. DO NOT EDIT. sourceSha256=cc6e9e397769e5919abbeb4a6dd487746e0f2354434453307cd9f5c8eb15e262
 package com.catering.v2s.organization.domain.generated;
 
 import java.io.Serializable;
@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 public final class StoreOperatingRuleCatalog {
-    public static final String SOURCE_SHA256 = "e9315839d89ffc3d981486a826cf1c4595a4cc8f9e8a65a2d998752c183e5646";
+    public static final String SOURCE_SHA256 = "cc6e9e397769e5919abbeb4a6dd487746e0f2354434453307cd9f5c8eb15e262";
 
     public enum ValueType { BOOLEAN, NUMBER, STRING }
 
@@ -34,7 +34,7 @@ public final class StoreOperatingRuleCatalog {
         new Definition("reservationEnabled", "是否启用预约功能", ValueType.BOOLEAN, Boolean.FALSE, "catalogManagementEnabled", 4),
         new Definition("reservationDepositEnabled", "是否支持押金预约", ValueType.BOOLEAN, Boolean.FALSE, "reservationEnabled", 5),
         new Definition("queueCallEnabled", "是否启用排队叫号", ValueType.BOOLEAN, Boolean.FALSE, "catalogManagementEnabled", 6),
-        new Definition("tableManagementEnabled", "是否启用桌台管理", ValueType.BOOLEAN, Boolean.FALSE, "catalogManagementEnabled", 7),
+        new Definition("tableManagementEnabled", "是否启用桌台和二维码管理", ValueType.BOOLEAN, Boolean.FALSE, "catalogManagementEnabled", 7),
         new Definition("tableStatusEnabled", "是否启用桌台状态管理", ValueType.BOOLEAN, Boolean.FALSE, "tableManagementEnabled", 8),
         new Definition("tableWaitCallEnabled", "是否支持「等叫」功能", ValueType.BOOLEAN, Boolean.FALSE, "tableStatusEnabled", 9),
         new Definition("banquetOrderEnabled", "是否支持宴会订单", ValueType.BOOLEAN, Boolean.FALSE, "tableStatusEnabled", 10),

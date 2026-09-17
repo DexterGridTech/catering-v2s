@@ -18,4 +18,5 @@ export type PeerDispatchGateway = Readonly<{
     command: CommandIntent<TPayload>,
     options: PeerDispatchOptions,
   ) => Promise<CommandDispatchResult>
+  readonly cancelCommand?: (commandId: CommandId) => Promise<void>
 }>

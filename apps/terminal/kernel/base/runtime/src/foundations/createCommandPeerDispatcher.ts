@@ -145,6 +145,7 @@ export const createCommandPeerDispatcher = (
       error: outcome.error,
     }, observer)
     if (timedOutLocally) {
+      void peerGateway.cancelCommand?.(command.commandId).catch(() => undefined)
       void peerPromise.then(lateOutcome => {
         if (lateOutcome.status === 'completed') {
           input.emit({

@@ -1,1 +1,10 @@
-{"schemaVersion":1,"package":"@catering-v2s/kernel-base-transport","owned":{"test":{"kind":"ABSENT"},"lint":{"kind":"ABSENT"},"clean":{"kind":"ABSENT"}}}
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/kernel-base-transport",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-transport", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": ["TopologyIdentityClient", "TopologyPeerChannel", "TopologyPeerChannelEvent", "TopologySession", "TopologySessionInput", "TopologySessionState", "createTopologyIdentityClient", "createTopologySession", "createTransportModule", "dependencyModuleNames", "devDependencyModuleNames", "moduleKind", "moduleName", "runtimeModuleDependencyNames"]
+}

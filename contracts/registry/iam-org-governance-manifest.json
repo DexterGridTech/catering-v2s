@@ -3457,6 +3457,138 @@
       "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_RESTORE_OPERATIONS_SALES_MENU_ITEM_SALE",
       "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_POST_OPERATIONS_STORE_SERVICE_POINT_AREA",
+      "operationIdentity": {"operationId": "postOperationsStoreServicePointArea", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas", "consumerFace": "operations-admin", "ownerModule": "organization"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SERVICE_POINT_QR"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_POST_OPERATIONS_STORE_SERVICE_POINT_AREA",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_PATCH_OPERATIONS_STORE_SERVICE_POINT_AREA",
+      "operationIdentity": {"operationId": "patchOperationsStoreServicePointArea", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}", "consumerFace": "operations-admin", "ownerModule": "organization"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SERVICE_POINT_QR"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_PATCH_OPERATIONS_STORE_SERVICE_POINT_AREA",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_POST_OPERATIONS_STORE_SERVICE_POINT_AREA_STATUS",
+      "operationIdentity": {"operationId": "postOperationsStoreServicePointAreaStatus", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/status", "consumerFace": "operations-admin", "ownerModule": "organization"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SERVICE_POINT_QR"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_POST_OPERATIONS_STORE_SERVICE_POINT_AREA_STATUS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_POST_OPERATIONS_STORE_SERVICE_POINT_AREA_ORDER",
+      "operationIdentity": {"operationId": "postOperationsStoreServicePointAreaOrder", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/order", "consumerFace": "operations-admin", "ownerModule": "organization"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SERVICE_POINT_QR"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_POST_OPERATIONS_STORE_SERVICE_POINT_AREA_ORDER",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_POST_OPERATIONS_STORE_SERVICE_POINT",
+      "operationIdentity": {"operationId": "postOperationsStoreServicePoint", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points", "consumerFace": "operations-admin", "ownerModule": "organization"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SERVICE_POINT_QR"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_POST_OPERATIONS_STORE_SERVICE_POINT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_PATCH_OPERATIONS_STORE_SERVICE_POINT",
+      "operationIdentity": {"operationId": "patchOperationsStoreServicePoint", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}", "consumerFace": "operations-admin", "ownerModule": "organization"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SERVICE_POINT_QR"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_PATCH_OPERATIONS_STORE_SERVICE_POINT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_POST_OPERATIONS_STORE_SERVICE_POINT_STATUS",
+      "operationIdentity": {"operationId": "postOperationsStoreServicePointStatus", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/status", "consumerFace": "operations-admin", "ownerModule": "organization"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SERVICE_POINT_QR"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_POST_OPERATIONS_STORE_SERVICE_POINT_STATUS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_POST_OPERATIONS_STORE_SERVICE_POINT_ORDER",
+      "operationIdentity": {"operationId": "postOperationsStoreServicePointOrder", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/order", "consumerFace": "operations-admin", "ownerModule": "organization"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SERVICE_POINT_QR"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_POST_OPERATIONS_STORE_SERVICE_POINT_ORDER",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_PATCH_OPERATIONS_STORE_QR_CONFIGURATION",
+      "operationIdentity": {"operationId": "patchOperationsStoreQrConfiguration", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration", "consumerFace": "operations-admin", "ownerModule": "organization"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SERVICE_POINT_QR"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "organization",
+      "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
+      "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_PATCH_OPERATIONS_STORE_QR_CONFIGURATION",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_STAGE_STORE_SERVICE_POINT_IMAGE",
+      "operationIdentity": {"operationId": "stageStoreServicePointImage", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage", "consumerFace": "operations-admin", "ownerModule": "platform-asset"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SERVICE_POINT_QR"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "platform-asset",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_ASSET",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_ASSET_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_STAGE_STORE_SERVICE_POINT_IMAGE",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_RELEASE_STAGED_STORE_SERVICE_POINT_IMAGE",
+      "operationIdentity": {"operationId": "releaseStagedStoreServicePointImage", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release", "consumerFace": "operations-admin", "ownerModule": "platform-asset"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_SERVICE_POINT_QR"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "platform-asset",
+      "ownerRecheckId": "OWNER_RECHECK_PLATFORM_ASSET",
+      "typedProblemMappingId": "PROBLEM_PLATFORM_ASSET_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_RELEASE_STAGED_STORE_SERVICE_POINT_IMAGE",
+      "noClientDerivedAuthorization": true
     }
   ]
 }

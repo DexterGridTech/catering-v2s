@@ -84,7 +84,7 @@ export function validateThreeStateSeedCoverage(fixture) {
  */
 export function validateExtensionDefinitionSeedCoverage(fixture) {
   const definitions = fixture?.stableFixtures?.extensionDefinitions;
-  if (!Array.isArray(definitions) || definitions.length !== 8) fail('SEED_EXTENSION_DEFINITION_SET_INVALID');
+  if (!Array.isArray(definitions) || definitions.length !== 9) fail('SEED_EXTENSION_DEFINITION_SET_INVALID');
   const seenHosts = new Set();
   const typeCoverage = new Set();
   const flagCoverage = new Set();

@@ -41,6 +41,7 @@ public class BusinessChannelTemplatePersistence {
             String orderKind,
             String dineInForm,
             String providerCode,
+            String urlRule,
             String storeVisibilityScope,
             String status,
             String projectStatus,
@@ -255,6 +256,7 @@ public class BusinessChannelTemplatePersistence {
             String orderKind,
             String dineInForm,
             String providerCode,
+            String urlRule,
             String storeVisibilityScope,
             long now) {
         try {
@@ -277,6 +279,7 @@ public class BusinessChannelTemplatePersistence {
                     orderKind,
                     dineInForm,
                     providerCode,
+                    urlRule,
                     storeVisibilityScope,
                     now,
                     now);
@@ -369,6 +372,7 @@ public class BusinessChannelTemplatePersistence {
             UUID templateRef,
             String templateName,
             String storeVisibilityScope,
+            String urlRule,
             long expectedVersion,
             List<UUID> visibleStoreRefs,
             long now) {
@@ -413,6 +417,7 @@ public class BusinessChannelTemplatePersistence {
         arguments.add(templateRef);
         arguments.addAll(visibleStoreRefs);
         arguments.add(templateName);
+        arguments.add(urlRule);
         arguments.add(storeVisibilityScope);
         arguments.add(now);
         arguments.add(workspaceUuid);
@@ -524,6 +529,7 @@ public class BusinessChannelTemplatePersistence {
                 result.getString("order_kind"),
                 result.getString("dine_in_form"),
                 result.getString("provider_code"),
+                result.getString("url_rule"),
                 result.getString("store_visibility_scope"),
                 result.getString("status"),
                 result.getString("project_status"),

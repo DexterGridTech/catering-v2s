@@ -2,6 +2,7 @@ package com.catering.v2s.platform.asset.application;
 
 import com.catering.v2s.platform.asset.application.persistence.PlatformAssetPersistence;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.organization.api.StoreServicePointAssetLifecycle;
 import com.catering.v2s.platform.asset.api.CatalogAssetCommandApi;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
 import com.catering.v2s.platform.asset.api.SalesMenuAssetCommandApi;
@@ -55,7 +56,8 @@ public class PlatformAssetService
                 CatalogAssetReferenceLock,
                 CatalogAssetCommandApi,
                 SalesMenuAssetReadApi,
-                SalesMenuAssetCommandApi {
+                SalesMenuAssetCommandApi,
+                StoreServicePointAssetLifecycle {
     private static final Logger log = LoggerFactory.getLogger(PlatformAssetService.class);
     private static final long MAX_IMAGE_BYTES = 5L * 1024 * 1024;
     private static final long MAX_SALES_MENU_IMAGE_BYTES = 2L * 1024 * 1024;
@@ -110,6 +112,31 @@ public class PlatformAssetService
     public StageReadback stageContent(
             String usage, String contentType, long declaredSizeBytes, InputStream content, String idempotencyKey) {
         return stageContentResult(usage, contentType, declaredSizeBytes, content, idempotencyKey, null, null)
+                .stage();
+    }
+
+    /** Stages a store service-point image after the operations edge has resolved the store scope. */
+    public StageReadback stageStoreServicePointImage(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String contentType,
+            long declaredSizeBytes,
+            InputStream content,
+            String idempotencyKey,
+            String expectedDigest) {
+        if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank())
+            throw new AssetInputInvalidException();
+        if (expectedDigest == null || !expectedDigest.matches("[a-f0-9]{64}"))
+            throw new AssetInputInvalidException();
+        return stageContentResult(
+                        "STORE_SERVICE_POINT_IMAGE",
+                        contentType,
+                        declaredSizeBytes,
+                        content,
+                        idempotencyKey,
+                        workspaceUuid,
+                        groupWorkspaceKey,
+                        expectedDigest)
                 .stage();
     }
 
@@ -673,6 +700,70 @@ public class PlatformAssetService
         persistence.markStagedBindGrantConsumed(now, assetRef, proof);
     }
 
+    @Transactional
+    public AssetReadback releaseStagedStoreServicePointImage(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID assetRef,
+            long expectedVersion) {
+        if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank() || assetRef == null)
+            throw new AssetClaimRejectedException();
+        AssetReadback current = require(assetRef);
+        if (!"STORE_SERVICE_POINT_IMAGE".equals(current.usage()) || !"STAGED".equals(current.status()))
+            throw new AssetClaimRejectedException();
+        int changed = persistence.releaseStagedStoreServicePointImage(
+                time.currentEpochMillis(), assetRef, expectedVersion, workspaceUuid, groupWorkspaceKey);
+        if (changed != 1) throw new AssetClaimRejectedException();
+        return require(assetRef);
+    }
+
+    @Override
+    @Transactional
+    public StoreServicePointAssetLifecycle.AssetClaim claimStaged(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID storeRef,
+            UUID servicePointRef,
+            UUID assetRef,
+            String bindGrant) {
+        if (workspaceUuid == null
+                || groupWorkspaceKey == null
+                || groupWorkspaceKey.isBlank()
+                || storeRef == null
+                || servicePointRef == null
+                || assetRef == null
+                || bindGrant == null
+                || bindGrant.isBlank()) throw new AssetClaimRejectedException();
+        AssetReadback current = require(assetRef);
+        if (!"STAGED".equals(current.status()) || !"STORE_SERVICE_POINT_IMAGE".equals(current.usage()))
+            throw new AssetClaimRejectedException();
+        long now = time.currentEpochMillis();
+        String proof = sha256(bindGrant.getBytes(StandardCharsets.UTF_8));
+        if (persistence.consumeStoreServicePointBindGrant(now, assetRef, workspaceUuid, groupWorkspaceKey, proof) != 1)
+            throw new AssetClaimRejectedException();
+        PlatformAssetPersistence.AssetRow activated = persistence.activateStoreServicePointImage(
+                assetRef, servicePointRef, now, current.version(), workspaceUuid, groupWorkspaceKey);
+        if (activated == null) throw new AssetClaimRejectedException();
+        return new StoreServicePointAssetLifecycle.AssetClaim(
+                activated.assetRef(), activated.usage(), activated.status(), activated.version(), activated.sizeBytes());
+    }
+
+    @Override
+    @Transactional
+    public void releaseActive(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID storeRef,
+            UUID servicePointRef,
+            UUID assetRef) {
+        if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank()
+                || storeRef == null || servicePointRef == null || assetRef == null)
+            throw new AssetClaimRejectedException();
+        if (persistence.releaseActiveStoreServicePointImage(
+                        time.currentEpochMillis(), assetRef, servicePointRef, workspaceUuid, groupWorkspaceKey)
+                != 1) throw new AssetClaimRejectedException();
+    }
+
     /** Discards only an unclaimed catalog stage belonging to the authenticated workspace. */
     private AssetReadback releaseCatalogStaged(
             UUID assetRef, long expectedVersion, UUID workspaceUuid, String groupWorkspaceKey) {
@@ -1021,7 +1112,8 @@ public class PlatformAssetService
     private static boolean validUsageContentType(String usage, String contentType) {
         boolean approvedUsage = "GROUP_WORKSPACE_LOGO".equals(usage)
                 || "CATALOG_ITEM_IMAGE".equals(usage)
-                || SALES_MENU_IMAGE_USAGE.equals(usage);
+                || SALES_MENU_IMAGE_USAGE.equals(usage)
+                || "STORE_SERVICE_POINT_IMAGE".equals(usage);
         return approvedUsage
                 && ("image/png".equals(contentType)
                         || "image/jpeg".equals(contentType)

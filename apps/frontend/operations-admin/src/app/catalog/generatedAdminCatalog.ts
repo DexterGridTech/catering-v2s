@@ -676,6 +676,39 @@ export const adminCatalog = {
         "STORE"
       ],
       "userManagementTargetOrganizationType": null
+    },
+    {
+      "pageDesignKey": "PG-STORE-SERVICE-POINT-QR",
+      "kind": "BUSINESS",
+      "pageAccessManaged": true,
+      "menuOrder": 320,
+      "menuGroupKey": "NAV-STORE-OPERATIONS",
+      "menuGroupIconKey": "STORE_OPERATIONS",
+      "menuGroupLabel": "门店经营",
+      "menuLabel": "门店桌台与二维码管理",
+      "pageTitle": "门店桌台与二维码管理",
+      "contentTabLabel": "门店桌台与二维码管理",
+      "pageDescription": "维护门店区域、桌台或扫码点，以及二维码配置。",
+      "dataNodeCascaderLabel": "可视数据节点",
+      "noDataNodePrompt": "请选择可视数据节点",
+      "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+      "cascadeLevelLabels": [
+        "大区",
+        "项目",
+        "门店"
+      ],
+      "forbiddenAlternatives": [
+        "门店桌面管理",
+        "门店点位配置"
+      ],
+      "requiredDataNodeType": "STORE",
+      "supportedRoleNodeTypes": [
+        "GROUP",
+        "REGION",
+        "PROJECT",
+        "STORE"
+      ],
+      "userManagementTargetOrganizationType": null
     }
   ],
   "actionGroups": [
@@ -1654,6 +1687,32 @@ export const adminCatalog = {
         "PROJECT",
         "STORE"
       ]
+    },
+    {
+      "actionKey": "EDIT_STORE_SERVICE_POINT_QR",
+      "actionLabel": "编辑门店桌台与二维码管理",
+      "actionDescription": "编辑门店桌台与二维码管理",
+      "actionGroupKey": "STORE_MANAGEMENT",
+      "actionGroupLabel": "门店管理",
+      "actionGroupOrder": 200,
+      "pageBindings": [
+        {
+          "pageDesignKey": "PG-STORE-SERVICE-POINT-QR",
+          "selectedIdentityTypes": [
+            "GROUP",
+            "REGION",
+            "PROJECT",
+            "STORE"
+          ],
+          "scopeApplicability": "SELECTED_STORE_SCOPE"
+        }
+      ],
+      "grantableRoleNodeTypes": [
+        "GROUP",
+        "REGION",
+        "PROJECT",
+        "STORE"
+      ]
     }
   ],
   "userManagementActionBindings": [
@@ -1769,7 +1828,8 @@ export const operationsPageDesignKeys = {
   "PgCatalogStoreItems": "PG-CATALOG-STORE-ITEMS",
   "PgInventoryStoreStatus": "PG-INVENTORY-STORE-STATUS",
   "PgCatalogBrandItems": "PG-CATALOG-BRAND-ITEMS",
-  "PgSalesMenuStore": "PG-SALES-MENU-STORE"
+  "PgSalesMenuStore": "PG-SALES-MENU-STORE",
+  "PgStoreServicePointQr": "PG-STORE-SERVICE-POINT-QR"
 } as const;
 export type AdminCatalog = typeof adminCatalog;
 export type OperationsPageDesignKey = typeof operationsPageDesignKeys[keyof typeof operationsPageDesignKeys];
@@ -1813,7 +1873,8 @@ export const ACTION_CAPABILITIES = {
   "EDIT_HEAD_COMPANY_CATALOG": "EDIT_HEAD_COMPANY_CATALOG",
   "EDIT_STORE_CATALOG": "EDIT_STORE_CATALOG",
   "EDIT_STORE_INVENTORY": "EDIT_STORE_INVENTORY",
-  "EDIT_STORE_SALES_MENU": "EDIT_STORE_SALES_MENU"
+  "EDIT_STORE_SALES_MENU": "EDIT_STORE_SALES_MENU",
+  "EDIT_STORE_SERVICE_POINT_QR": "EDIT_STORE_SERVICE_POINT_QR"
 } as const;
 export type AdminActionCapabilityKey = typeof ACTION_CAPABILITIES[keyof typeof ACTION_CAPABILITIES];
 export const USER_MANAGEMENT_PAGE_DESIGN_KEYS = [

@@ -535,6 +535,42 @@
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore": {
       "$ref": "./paths/operations-admin/sales-menu.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1sales-menus~1{salesMenuRef}~1published~1items~1{salesItemRef}~1channels~1{channelRef}~1manual-restore"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-areas"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-areas~1{areaRef}~1service-points"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1qr-configuration"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-points~1{servicePointRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-areas~1{areaRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/status": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-areas~1{areaRef}~1status"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/order": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-areas~1{areaRef}~1order"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/status": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-points~1{servicePointRef}~1status"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/order": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-points~1{servicePointRef}~1order"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-channel-candidates": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1qr-channel-candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-assets~1stage"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release": {
+      "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-assets~1stage~1{assetRef}~1release"
     }
   },
   "components": {
@@ -697,6 +733,84 @@
       },
       "ExtensionDefinitionBlocker": {
         "$ref": "./components/extension/extension.schemas.json#/components/schemas/ExtensionDefinitionBlocker"
+      },
+      "StoreServicePointAreaType": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAreaType"
+      },
+      "StoreServicePointType": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointType"
+      },
+      "StoreServicePointStatus": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointStatus"
+      },
+      "StoreServicePointShape": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointShape"
+      },
+      "StoreServicePointOrderDirection": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointOrderDirection"
+      },
+      "StoreServicePointArea": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointArea"
+      },
+      "StoreServicePointAreaPage": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAreaPage"
+      },
+      "StoreServicePointAreaCreateRequest": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAreaCreateRequest"
+      },
+      "StoreServicePointAreaUpdateRequest": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAreaUpdateRequest"
+      },
+      "StoreServicePointAreaStatusRequest": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAreaStatusRequest"
+      },
+      "StoreServicePointAreaOrderRequest": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAreaOrderRequest"
+      },
+      "StoreServicePoint": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePoint"
+      },
+      "StoreServicePointPage": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointPage"
+      },
+      "StoreServicePointCreateRequest": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointCreateRequest"
+      },
+      "StoreServicePointUpdateRequest": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointUpdateRequest"
+      },
+      "StoreServicePointStatusRequest": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointStatusRequest"
+      },
+      "StoreServicePointOrderRequest": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointOrderRequest"
+      },
+      "StoreServicePointDetail": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointDetail"
+      },
+      "StoreQrConfigurationView": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreQrConfigurationView"
+      },
+      "StoreQrConfigurationUpdateRequest": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreQrConfigurationUpdateRequest"
+      },
+      "StoreQrChannelCandidate": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreQrChannelCandidate"
+      },
+      "StoreQrChannelCandidatePage": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreQrChannelCandidatePage"
+      },
+      "StoreServicePointAssetStageRequest": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAssetStageRequest"
+      },
+      "StoreServicePointAssetStageReadback": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAssetStageReadback"
+      },
+      "StoreServicePointAssetReleaseRequest": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAssetReleaseRequest"
+      },
+      "StoreServicePointAssetReleaseReadback": {
+        "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAssetReleaseReadback"
       },
       "GroupWorkspaceCreateRequest": {
         "$ref": "./components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceCreateRequest"

@@ -51,7 +51,8 @@
     "PLATFORM-WORKSPACE-OVERVIEW": "group-workspace-management",
     "PLATFORM-EXTERNAL-COLLABORATION": "external-collaboration",
     "OPERATIONS-BUSINESS-CHANNEL": "business-channel",
-    "OPERATIONS-SALES-MENU": "sales-menu"
+    "OPERATIONS-SALES-MENU": "sales-menu",
+    "PG-STORE-SERVICE-POINT-QR": "store-service-point-qr"
   },
   "operationOverrides": {
     "initializeCommercialGroup": {
@@ -73,7 +74,23 @@
     "getOperationsOrganizationStoreOperatingRule": {
       "capability": "store-operating-rule",
       "pathFile": "paths/operations-admin/store-operating-rule.paths.json"
-    }
+    },
+    "getOperationsStoreServicePointAreas": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "getOperationsStoreServicePoints": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "getOperationsStoreQrConfiguration": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "getOperationsStoreServicePoint": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "postOperationsStoreServicePointArea": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "patchOperationsStoreServicePointArea": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "postOperationsStoreServicePointAreaStatus": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "postOperationsStoreServicePointAreaOrder": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "postOperationsStoreServicePoint": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "patchOperationsStoreServicePoint": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "postOperationsStoreServicePointStatus": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "postOperationsStoreServicePointOrder": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "patchOperationsStoreQrConfiguration": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "getOperationsStoreQrChannelCandidates": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "stageStoreServicePointImage": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "releaseStagedStoreServicePointImage": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"}
   },
   "componentFamilyRules": [
     {"match": "^(NoBody|NoContent|Problem|EpochMillis|AuditHistory.*|AuditChange.*|AuditValueState|AuditEntity.*|AuditActor.*|AuditTarget.*)$", "family": "common"},
@@ -136,6 +153,32 @@
     "ProjectPhaseNames": "components/common/enum.schemas.json",
     "NoBody": "components/common/empty.schemas.json",
     "NoContent": "components/common/empty.schemas.json"
+    ,"StoreServicePointAreaType": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointType": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointStatus": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointShape": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointOrderDirection": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointArea": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointAreaPage": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointAreaCreateRequest": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointAreaUpdateRequest": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointAreaStatusRequest": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointAreaOrderRequest": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePoint": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointPage": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointCreateRequest": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointUpdateRequest": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointStatusRequest": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointOrderRequest": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointDetail": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreQrConfigurationView": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreQrConfigurationUpdateRequest": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreQrChannelCandidate": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreQrChannelCandidatePage": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointAssetStageRequest": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointAssetStageReadback": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointAssetReleaseRequest": "components/organization/store-service-point-qr.schemas.json"
+    ,"StoreServicePointAssetReleaseReadback": "components/organization/store-service-point-qr.schemas.json"
   },
   "resolvedFieldContract": {
     "requiredOnEveryOperation": [
@@ -160,18 +203,18 @@
   },
   "closure": {
     "sourceOperationCount": 148,
-    "plannedAdditionalOperationCount": 63,
-    "expectedResolvedOperationCount": 212,
+    "plannedAdditionalOperationCount": 79,
+    "expectedResolvedOperationCount": 228,
     "expectedUnresolvedOperationCount": 0,
     "expectedAmbiguousOperationCount": 0,
-    "sourceComponentCount": 240,
-    "expectedResolvedComponentCount": 239,
+    "sourceComponentCount": 266,
+    "expectedResolvedComponentCount": 265,
     "expectedExplicitNotCarriedComponentCount": 1,
     "expectedUnresolvedComponentCount": 0,
     "expectedAmbiguousComponentCount": 0,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 139,
+      "operations-admin": 155,
       "public": 12
     }
   }

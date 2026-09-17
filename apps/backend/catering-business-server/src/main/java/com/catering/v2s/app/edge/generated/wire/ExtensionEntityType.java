@@ -9,7 +9,8 @@ public enum ExtensionEntityType {
     CONTRACT,
     COMMERCIAL_GROUP,
     REGION,
-    PROJECT;
+    PROJECT,
+    SERVICE_POINT;
 
     public String wire() { return name(); }
 }

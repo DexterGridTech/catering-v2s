@@ -36,7 +36,7 @@ const FLAT_EXTENSION_HOST_TYPES = new Set(["BRAND", "TENANT", "HEAD_COMPANY", "S
 const EXTENSION_FIELD_TYPES = new Set(["TEXT", "NUMBER", "DATE", "BOOLEAN", "SELECT"]);
 const validateExtensionSeedShape = (source) => {
   const definitions = source.stableFixtures.extensionDefinitions;
-  if (!Array.isArray(definitions) || definitions.length !== 8) throw new Error("R5_SEED_EXTENSION_DEFINITION_SET_INVALID");
+  if (!Array.isArray(definitions) || definitions.length !== 9) throw new Error("R5_SEED_EXTENSION_DEFINITION_SET_INVALID");
   const hosts = new Set();
   const types = new Set();
   const flags = new Set();

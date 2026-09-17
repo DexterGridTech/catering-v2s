@@ -10,6 +10,8 @@ import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-aut
 import {sampleWallpaperPickerAssembly, WallpaperBackground} from '@catering-v2s/ui-feature-sample-wallpaper-picker'
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {createSampleWallpaperModule} from '@catering-v2s/kernel-feature-sample-wallpaper'
+import {createTopologyModule} from '@catering-v2s/kernel-base-topology'
+import {createTopologyIdentityClient, createTransportModule, type TopologyPeerChannel} from '@catering-v2s/kernel-base-transport'
 import {createSampleWallpaperConsoleModule, startupReadyCommand, type SampleWallpaperConsoleReadyPayload} from '../application/module'
 import {parts as wallpaperConsoleParts} from '../parts/parts'
 import {
@@ -38,6 +40,7 @@ type WallpaperConsoleAssemblyInput = Readonly<{
   readonly startupDebugMode?: boolean
   readonly showAdminPassword?: boolean
   readonly surfaceHostSourcesByDisplayIndex?: Readonly<Partial<Record<0 | 1, SurfaceHostMeasurementSource>>>
+  readonly topologyPeerChannel?: TopologyPeerChannel
 }>
 
 export function createSampleWallpaperConsoleAssembly(input: WallpaperConsoleAssemblyInput): Promise<WallpaperConsoleAssembly>
@@ -49,6 +52,12 @@ export async function createSampleWallpaperConsoleAssembly(
   const environmentMode: EnvironmentMode = input.environmentMode ?? (__DEV__ ? 'DEV' : 'PROD')
   const staffAuthModule = sampleStaffAuthAssembly.createModule()
   const wallpaperPickerModule = sampleWallpaperPickerAssembly.createModule()
+  const topologyModule = createTopologyModule({
+    displayName: 'sample-wallpaper-console',
+    surfaceForm,
+    identityClient: createTopologyIdentityClient(),
+    peerChannel: input.topologyPeerChannel,
+  })
   return createConsoleAssembly<SampleWallpaperConsoleReadyPayload>({
     appName: 'sample-wallpaper-console',
     errorPrefix: 'sample-wallpaper-console',
@@ -83,6 +92,8 @@ export async function createSampleWallpaperConsoleAssembly(
       contentFailure,
     }),
     createApplicationModules: () => [
+      createTransportModule(),
+      topologyModule,
       createSampleWallpaperConsoleModule(),
       createSampleStaffSessionModule(),
       createSampleWallpaperModule(),

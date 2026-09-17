@@ -14,6 +14,13 @@ public interface StoreOperatingRuleGate {
     void requireCatalogManagementForStoreTarget(
             UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID storeId);
 
+    void requireStoreOperatingRuleForStoreTarget(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String targetType,
+            UUID storeId,
+            String ruleKey);
+
     /** A closed, fail-closed result for a Store operating-rule capability read. */
     final class CatalogManagementDisabledException extends RuntimeException {
         public enum Reason {

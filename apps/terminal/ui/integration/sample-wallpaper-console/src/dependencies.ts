@@ -1,6 +1,8 @@
 import {moduleName as contracts} from '@catering-v2s/kernel-base-contracts'
 import {moduleName as platformPorts} from '@catering-v2s/kernel-base-platform-ports'
 import {moduleName as runtime} from '@catering-v2s/kernel-base-runtime'
+import {moduleName as topology} from '@catering-v2s/kernel-base-topology'
+import {moduleName as transport} from '@catering-v2s/kernel-base-transport'
 import {moduleName as displayContext} from '@catering-v2s/kernel-base-display-context'
 import {moduleName as uiState} from '@catering-v2s/kernel-base-ui-state'
 import {moduleName as staffSession} from '@catering-v2s/kernel-feature-sample-staff-session'
@@ -18,6 +20,8 @@ export const dependencyModuleNames = [
   contracts,
   platformPorts,
   runtime,
+  topology,
+  transport,
   displayContext,
   uiState,
   staffSession,
@@ -35,6 +39,8 @@ export const devDependencyModuleNames = [devHost] as const
 
 export const runtimeModuleDependencyNames = [
   runtime,
+  topology,
+  transport,
   displayContext,
   uiState,
   staffSession,

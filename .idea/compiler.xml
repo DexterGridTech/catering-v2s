@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel target="21" />
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="catering-v2s.apps" options="-parameters" />
+      <module name="catering-v2s.apps.backend" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.asset" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.asset.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.asset.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.audit-model" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.audit-model.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.audit-model.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.audit-read" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.audit-read.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.audit-read.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.business-channel" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.business-channel.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.business-channel.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.catalog" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.catalog.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.catalog.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.collaboration" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.collaboration.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.collaboration.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.execution-context" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.execution-context.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.execution-context.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.extension" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.extension.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.extension.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.foundation" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.foundation.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.foundation.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.fulfillment-production" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.fulfillment-production.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.fulfillment-production.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.inventory" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.inventory.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.inventory.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.organization" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.organization.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.organization.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.platform-admin-iam" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.platform-admin-iam.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.platform-admin-iam.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.sales-menu" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.sales-menu.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.sales-menu.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.store-contract" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.store-contract.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.store-contract.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.workspace" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.workspace-iam" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.workspace-iam.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.workspace-iam.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.workspace.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.workspace.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.terminal-data-server" options="-parameters" />
+      <module name="catering-v2s.apps.backend.terminal-data-server.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.terminal-data-server.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.test" options="-parameters" />
+      <module name="catering-v2s.apps.main" options="-parameters" />
+      <module name="catering-v2s.apps.test" options="-parameters" />
+    </option>
+  </component>
+</project>

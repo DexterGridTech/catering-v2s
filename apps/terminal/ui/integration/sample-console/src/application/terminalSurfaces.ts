@@ -1,5 +1,8 @@
 import packageJson from '../../package.json'
+import type {SurfaceForm} from '@catering-v2s/kernel-base-contracts'
 import type {DisplayMode} from '@catering-v2s/kernel-base-display-context'
+
+export type {SurfaceForm} from '@catering-v2s/kernel-base-contracts'
 
 export type SurfaceSize = Readonly<{
   readonly width: number
@@ -7,8 +10,6 @@ export type SurfaceSize = Readonly<{
 }>
 
 export type SurfaceOrientation = 'landscape' | 'portrait'
-export type SurfaceForm = 'laptop' | 'mobile'
-
 export type SurfaceCreationInput = Readonly<{
   readonly displayIndex: 0 | 1
   readonly displayMode: DisplayMode

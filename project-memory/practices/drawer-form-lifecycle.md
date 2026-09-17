@@ -38,6 +38,10 @@ Drawer 表单。只读详情 Drawer 不需要为了“看起来统一”引入�
    `requestClose`，不得由某一路径直接调用 `onOpenChange(false)`。
 3. **脏表单规则**：表单变更后由 `lifecycle.setDirty(true)` 标记；关闭时由 foundation 的
    确认框决定“继续编辑”或“放弃并关闭”。不得由页面另造第二个确认框或第二套 dirty 状态。
+   dirty 的唯一 owner 是承载表单的 Drawer lifecycle；`Form.Item`、Switch/Input/Tree 节点、presenter
+   和业务子组件只能通过宿主 Form 的变更链通知编辑意图，不得自行维护 dirty、比较草稿、安装 close guard
+   或显示“请先保存/放弃修改”等提示。Shell 只能消费 foundation 的 `locked` 阻断导航、上下文切换和账号动作，
+   不得把 `dirtyLocked` 渲染成第二个常驻提示；用户可见的 dirty 确认只在 lifecycle 处理关闭意图时出现。
 4. **提交锁规则**：异步提交、上传、暂存或释放资产期间使用 `setSubmitting(true)`；期间
    禁止关闭和重复提交。结束后在 `finally` 恢复提交状态。
 5. **遮罩与键盘规则**：所有 Drawer 都显式使用 `maskClosable`，表单 Drawer 的值为
@@ -112,6 +116,7 @@ overlay lock、手写 close guard 或通过 `destroyOnHidden` 假设清空草稿
 | `maskClosable={!lifecycle.dirty}` | 脏时遮罩点击没有机会弹确认 | `maskClosable={!lifecycle.submitting}`，由 `requestClose` 判断 dirty |
 | 只在 `useEffect` 里按实体 ID hydrate | 取消后再次打开继续显示上次本地草稿 | `afterOpenChange(false)` + `closedSessionKey`/`reset()` 清理会话 |
 | 每个 App 自写 `Modal.confirm`、锁或关闭 hook | 两个后台出现不同文案、竞态和重复确认 | 复用 foundation `useDrawerFormLifecycle` |
+| 规则树/字段控件自建 dirty 或 Shell 额外渲染 dirty 提示 | 同一次编辑出现多个 dirty owner，背景页面会出现与当前关闭意图无关的“请先保存”提示 | 由宿主 Form 的 `onValuesChange` 通知唯一 lifecycle；Shell 仅消费 `locked`，提示由 lifecycle 在关闭意图上呈现 |
 | 通过 `mask={{closable: ...}}` 或省略属性 | 遮罩行为出现三种写法，后续无法做全局静态检查 | 统一显式 `maskClosable` |
 
 ## 5. 验收与证据边界
@@ -127,6 +132,8 @@ overlay lock、手写 close guard 或通过 `destroyOnHidden` 假设清空草稿
    出现上一次未提交草稿。
 5. 全仓静态扫描不存在 `mask={{closable: ...}}`，也不存在未声明 `maskClosable` 的
    Drawer/Modal。静态/typecheck/focused 证据不能冒充浏览器 L2；L2 未授权时如实标注。
+6. 每个可编辑 Drawer 的 dirty 变更链只落到宿主 lifecycle；子控件/树节点没有第二套 dirty、close guard
+   或 dirty 文案，Shell 只使用 `locked` 做交互阻断而不渲染常驻 dirty 提示。此静态规则必须有一个真实的违规变更可使 focused gate 失败；关闭确认、焦点和叠层行为仍需在获授权 L2 中验证。
 
 ## 6. 代码锚点
 

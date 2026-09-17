@@ -106,21 +106,23 @@ export const createAndroidDevicePort = (): DevicePort => {
       }
     },
   }
-  if (__DEV__) Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
-    value: Object.freeze({
-      port: 'device',
-      capabilities: Object.freeze([
-        Object.freeze({capability: 'getDeviceInfo', state: 'real' as const, source: 'adapter' as const}),
-        Object.freeze({capability: 'getDisplayInfo', state: 'real' as const, source: 'adapter' as const}),
-        Object.freeze({capability: 'getSystemStatus', state: 'unavailable' as const, source: 'default' as const}),
-        Object.freeze({capability: 'getPowerStatus', state: 'unavailable' as const, source: 'default' as const}),
-        Object.freeze({capability: 'subscribePowerStatus', state: 'unavailable' as const, source: 'default' as const}),
-        Object.freeze({capability: 'unsubscribePowerStatus', state: 'unavailable' as const, source: 'default' as const}),
-      ]),
-    }),
-    enumerable: false,
-    writable: false,
-    configurable: false,
-  })
+  if (__DEV__) {
+    Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
+      value: Object.freeze({
+        port: 'device',
+        capabilities: Object.freeze([
+          Object.freeze({capability: 'getDeviceInfo', state: 'real' as const, source: 'adapter' as const}),
+          Object.freeze({capability: 'getDisplayInfo', state: 'real' as const, source: 'adapter' as const}),
+          Object.freeze({capability: 'getSystemStatus', state: 'unavailable' as const, source: 'default' as const}),
+          Object.freeze({capability: 'getPowerStatus', state: 'unavailable' as const, source: 'default' as const}),
+          Object.freeze({capability: 'subscribePowerStatus', state: 'unavailable' as const, source: 'default' as const}),
+          Object.freeze({capability: 'unsubscribePowerStatus', state: 'unavailable' as const, source: 'default' as const}),
+        ]),
+      }),
+      enumerable: false,
+      writable: false,
+      configurable: false,
+    })
+  }
   return Object.freeze(port)
 }

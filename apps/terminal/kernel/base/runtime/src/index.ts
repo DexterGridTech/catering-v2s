@@ -48,6 +48,7 @@ export type {PeerDispatchOptions, PeerDispatchGateway} from './types/peer'
 export type {
   RuntimeModulePreSetupContext,
   RuntimeModuleContext,
+  RuntimeModuleDispatch,
   RuntimeModuleResetInput,
   RuntimeModule,
   RuntimeModuleDescriptor,

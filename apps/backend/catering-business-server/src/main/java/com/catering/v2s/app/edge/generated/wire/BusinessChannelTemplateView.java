@@ -11,6 +11,7 @@ public record BusinessChannelTemplateView(
     @com.fasterxml.jackson.annotation.JsonProperty(value = "orderKind", required = true) BusinessChannelTemplateViewOrderKind orderKind,
     BusinessChannelTemplateViewDineInForm dineInForm,
     tools.jackson.databind.JsonNode providerCode,
+    tools.jackson.databind.JsonNode urlRule,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "storeVisibilityScope", required = true) BusinessChannelTemplateStoreVisibilityScope storeVisibilityScope,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "visibleStoreCount", required = true) Long visibleStoreCount,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "status", required = true) BusinessChannelTemplateViewStatus status,

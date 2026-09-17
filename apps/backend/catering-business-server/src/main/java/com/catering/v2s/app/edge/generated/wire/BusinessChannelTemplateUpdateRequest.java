@@ -5,5 +5,6 @@ public record BusinessChannelTemplateUpdateRequest(
     @com.fasterxml.jackson.annotation.JsonProperty(value = "templateName", required = true) String templateName,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "expectedVersion", required = true) Long expectedVersion,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "storeVisibilityScope", required = true) BusinessChannelTemplateStoreVisibilityScope storeVisibilityScope,
+    tools.jackson.databind.JsonNode urlRule,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "visibleStoreRefs", required = true) java.util.List<java.util.UUID> visibleStoreRefs
 ) {}

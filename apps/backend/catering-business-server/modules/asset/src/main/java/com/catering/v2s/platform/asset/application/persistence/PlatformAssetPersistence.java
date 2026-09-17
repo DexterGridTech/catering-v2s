@@ -124,6 +124,85 @@ public class PlatformAssetPersistence {
                 proof);
     }
 
+    public int consumeStoreServicePointBindGrant(
+            long now, UUID assetRef, UUID workspaceUuid, String groupWorkspaceKey, String proof) {
+        return jdbc.update(
+                "UPDATE platform_asset.asset_bind_grant g SET consumed_at_epoch_millis=? "
+                        + "FROM platform_asset.staged_asset a "
+                        + "WHERE g.asset_ref=? AND a.asset_ref=g.asset_ref "
+                        + "AND a.status='STAGED' AND a.usage='STORE_SERVICE_POINT_IMAGE' "
+                        + "AND a.workspace_uuid=? AND a.group_workspace_key=? "
+                        + "AND g.consumed_at_epoch_millis IS NULL AND g.expires_at_epoch_millis>=? AND g.grant_hash=?",
+                now,
+                assetRef,
+                workspaceUuid,
+                groupWorkspaceKey,
+                now,
+                proof);
+    }
+
+    public AssetRow activateStoreServicePointImage(
+            UUID assetRef,
+            UUID servicePointRef,
+            long now,
+            long expectedVersion,
+            UUID workspaceUuid,
+            String groupWorkspaceKey) {
+        return jdbc.query(
+                "UPDATE platform_asset.staged_asset SET status='ACTIVE', claimed_by_type='STORE_SERVICE_POINT_IMAGE', "
+                        + "claimed_by_id=?, activated_at_epoch_millis=?, version=version+1 "
+                        + "WHERE asset_ref=? AND usage='STORE_SERVICE_POINT_IMAGE' AND status='STAGED' "
+                        + "AND version=? AND workspace_uuid=? AND group_workspace_key=? "
+                        + "RETURNING asset_ref, usage, status, version, size_bytes",
+                statement -> {
+                    statement.setObject(1, servicePointRef);
+                    statement.setLong(2, now);
+                    statement.setObject(3, assetRef);
+                    statement.setLong(4, expectedVersion);
+                    statement.setObject(5, workspaceUuid);
+                    statement.setString(6, groupWorkspaceKey);
+                },
+                result -> result.next()
+                        ? new AssetRow(
+                                result.getObject("asset_ref", UUID.class),
+                                result.getString("usage"),
+                                result.getString("status"),
+                                result.getLong("version"),
+                                result.getLong("size_bytes"))
+                        : null);
+    }
+
+    public int releaseStagedStoreServicePointImage(
+            long releasedAt, UUID assetRef, long expectedVersion, UUID workspaceUuid, String groupWorkspaceKey) {
+        return jdbc.update(
+                "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, version=version+1 "
+                        + "WHERE asset_ref=? AND usage='STORE_SERVICE_POINT_IMAGE' AND status='STAGED' "
+                        + "AND version=? AND workspace_uuid=? AND group_workspace_key=?",
+                releasedAt,
+                assetRef,
+                expectedVersion,
+                workspaceUuid,
+                groupWorkspaceKey);
+    }
+
+    public int releaseActiveStoreServicePointImage(
+            long releasedAt,
+            UUID assetRef,
+            UUID servicePointRef,
+            UUID workspaceUuid,
+            String groupWorkspaceKey) {
+        return jdbc.update(
+                "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, version=version+1 "
+                        + "WHERE asset_ref=? AND usage='STORE_SERVICE_POINT_IMAGE' AND status='ACTIVE' "
+                        + "AND claimed_by_type='STORE_SERVICE_POINT_IMAGE' AND claimed_by_id=? "
+                        + "AND workspace_uuid=? AND group_workspace_key=?",
+                releasedAt,
+                assetRef,
+                servicePointRef,
+                workspaceUuid,
+                groupWorkspaceKey);
+    }
+
     public int consumeWorkspaceLogoBindGrant(long now, UUID assetRef, String proof) {
         return jdbc.update(
                 PlatformAssetServiceSql.PLATFORM_ASSET_SERVICE_UPDATE_ASSET_BIND_GRANT_CONSUMED_AT_EPOCH_MILLIS_ALTERNATE_A

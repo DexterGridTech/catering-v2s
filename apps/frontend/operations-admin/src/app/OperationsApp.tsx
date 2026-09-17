@@ -100,8 +100,6 @@ const navigationIconByKey = {
   CATALOG_SERVICES: <TagsOutlined />,
 } as const;
 
-const dirtyDraftPrompt = '请先保存或放弃当前修改';
-
 function Shell({
   session,
   entry,
@@ -290,11 +288,6 @@ function Shell({
                 {entry.operationsTitle}
               </Typography.Text>
             </div>
-            {shellLock.dirtyLocked && (
-              <Typography.Text type="warning" {...testId('operations-shell-dirty-guard')}>
-                {dirtyDraftPrompt}
-              </Typography.Text>
-            )}
           </div>
           <Space align="center">
             <RoleContextSelector entry={entry} variant="header" disabled={locked} onSelected={onRoleSelected} />

@@ -40,7 +40,8 @@ public class ExtensionDefinitionService implements ExtensionDefinitionLookup {
             ExtensionHostTypes.CONTRACT,
             ExtensionHostTypes.COMMERCIAL_GROUP,
             ExtensionHostTypes.REGION,
-            ExtensionHostTypes.PROJECT);
+            ExtensionHostTypes.PROJECT,
+            ExtensionHostTypes.SERVICE_POINT);
     private static final Set<String> HOST_TYPES = Set.copyOf(MANAGEMENT_HOST_TYPES);
     private static final Set<String> AUDIT_FIELDS = Set.of("fieldDefinitions", "revision");
     private static final ObjectMapper JSON = new ObjectMapper();

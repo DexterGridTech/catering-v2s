@@ -1,10 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="gradleJvm" value="#JAVA_HOME" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/apps" />
+            <option value="$PROJECT_DIR$/apps/backend" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/asset" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/audit-model" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/audit-read" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/business-channel" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/catalog" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/collaboration" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/execution-context" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/extension" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/foundation" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/fulfillment-production" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/inventory" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/organization" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/platform-admin-iam" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/sales-menu" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/store-contract" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/workspace" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/workspace-iam" />
+            <option value="$PROJECT_DIR$/apps/backend/terminal-data-server" />
+          </set>
+        </option>
       </GradleProjectSettings>
     </option>
   </component>

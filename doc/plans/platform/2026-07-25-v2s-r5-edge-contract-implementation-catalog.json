@@ -89,7 +89,11 @@
     },
     {
       "path": "contracts/openapi-source/business-channel.schemas.json",
-      "sha256": "5a3629077611a688bea5916ebbea0c046fcfd5831f3b0567451cce524f38a8b9"
+      "sha256": "902a6b5e71ae95686d0439570c1a237b80727cda173d1573d6f40f945b60c098"
+    },
+    {
+      "path": "contracts/openapi-source/store-service-point-qr.schemas.json",
+      "sha256": "31057869ce330847d4a0e0f479e818802d839a00356f97166656febdefb74d16"
     },
     {
       "path": "contracts/openapi-source/sales-menu.schemas.json",
@@ -97,15 +101,15 @@
     },
     {
       "path": "contracts/openapi/components/organization/store-operating-rule-schemas.generated.json",
-      "sha256": "a00d4c507f63c7518682d24594f575ff32b4f4f670b8e2c15293de8037b72f19"
+      "sha256": "42b4f9fa1589857174f8465e69b94b1dc48f23bb7f1fa3d3807c245785f13f10"
     }
   ],
   "denominator": {
     "scenarios": 34,
-    "operations": 212,
+    "operations": 228,
     "faces": {
       "platform-admin": 61,
-      "operations-admin": 139,
+      "operations-admin": 155,
       "public": 12
     },
     "owners": [
@@ -9391,8 +9395,23 @@
       "operationId": "setOperationsSalesMenuItemSoldOut", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-sold-out", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef", "channelRef"], "queryParameters": [], "requestSchema": "SalesMenuManualSoldOutRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.setOperationsSalesMenuItemSoldOut"
     },
     {
-      "operationId": "restoreOperationsSalesMenuItemSale", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef", "channelRef"], "queryParameters": [], "requestSchema": "SalesMenuManualRestoreRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.restoreOperationsSalesMenuItemSale"
-    }
+      "operationId": "restoreOperationsSalesMenuItemSale", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}/channels/{channelRef}/manual-restore", "face": "operations-admin", "owner": "sales-menu", "scenarioIds": ["R5-SALES-MENU"], "pageKey": "OPERATIONS-SALES-MENU", "disposition": "SALES_MENU_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "salesMenuRef", "salesItemRef", "channelRef"], "queryParameters": [], "requestSchema": "SalesMenuManualRestoreRequest", "responseSchema": "SalesMenuCommandReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.restoreOperationsSalesMenuItemSale"},
+    {"operationId": "getOperationsStoreServicePointAreas", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [{"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}], "requestSchema": "NoBody", "responseSchema": "StoreServicePointAreaPage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreServicePointAreas"},
+    {"operationId": "getOperationsStoreServicePoints", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "areaRef"], "queryParameters": [{"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}], "requestSchema": "NoBody", "responseSchema": "StoreServicePointPage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreServicePoints"},
+    {"operationId": "getOperationsStoreQrConfiguration", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "StoreQrConfigurationView", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreQrConfiguration"},
+    {"operationId": "getOperationsStoreServicePoint", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "servicePointRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "StoreServicePointDetail", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreServicePoint"},
+    {"operationId": "postOperationsStoreServicePointArea", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "StoreServicePointAreaCreateRequest", "responseSchema": "StoreServicePointArea", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreServicePointArea"},
+    {"operationId": "patchOperationsStoreServicePointArea", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "areaRef"], "queryParameters": [], "requestSchema": "StoreServicePointAreaUpdateRequest", "responseSchema": "StoreServicePointArea", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.patchOperationsStoreServicePointArea"},
+    {"operationId": "postOperationsStoreServicePointAreaStatus", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/status", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "areaRef"], "queryParameters": [], "requestSchema": "StoreServicePointAreaStatusRequest", "responseSchema": "StoreServicePointArea", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreServicePointAreaStatus"},
+    {"operationId": "postOperationsStoreServicePointAreaOrder", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/order", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "areaRef"], "queryParameters": [], "requestSchema": "StoreServicePointAreaOrderRequest", "responseSchema": "StoreServicePointArea", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreServicePointAreaOrder"},
+    {"operationId": "postOperationsStoreServicePoint", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "areaRef"], "queryParameters": [], "requestSchema": "StoreServicePointCreateRequest", "responseSchema": "StoreServicePoint", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreServicePoint"},
+    {"operationId": "patchOperationsStoreServicePoint", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "servicePointRef"], "queryParameters": [], "requestSchema": "StoreServicePointUpdateRequest", "responseSchema": "StoreServicePoint", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.patchOperationsStoreServicePoint"},
+    {"operationId": "postOperationsStoreServicePointStatus", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/status", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "servicePointRef"], "queryParameters": [], "requestSchema": "StoreServicePointStatusRequest", "responseSchema": "StoreServicePoint", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreServicePointStatus"},
+    {"operationId": "postOperationsStoreServicePointOrder", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/order", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "servicePointRef"], "queryParameters": [], "requestSchema": "StoreServicePointOrderRequest", "responseSchema": "StoreServicePoint", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreServicePointOrder"},
+    {"operationId": "patchOperationsStoreQrConfiguration", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "StoreQrConfigurationUpdateRequest", "responseSchema": "StoreQrConfigurationView", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.patchOperationsStoreQrConfiguration"},
+    {"operationId": "getOperationsStoreQrChannelCandidates", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-channel-candidates", "face": "operations-admin", "owner": "business-channel", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "StoreQrChannelCandidatePage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreQrChannelCandidates"},
+    {"operationId": "stageStoreServicePointImage", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage", "face": "operations-admin", "owner": "platform-asset", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "StoreServicePointAssetStageRequest", "responseSchema": "StoreServicePointAssetStageReadback", "successStatus": "201", "requestContentType": "multipart/form-data", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.stageStoreServicePointImage"},
+    {"operationId": "releaseStagedStoreServicePointImage", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release", "face": "operations-admin", "owner": "platform-asset", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "assetRef"], "queryParameters": [], "requestSchema": "StoreServicePointAssetReleaseRequest", "responseSchema": "StoreServicePointAssetReleaseReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.releaseStagedStoreServicePointImage"}
   ],
   "scenarioOperationCrosswalk": [
     {
@@ -11680,6 +11699,32 @@
     "ExtensionEntityType": {
       "ref": "ExtensionEntityType"
     },
+    "StoreServicePointAreaType": { "ref": "StoreServicePointAreaType" },
+    "StoreServicePointType": { "ref": "StoreServicePointType" },
+    "StoreServicePointStatus": { "ref": "StoreServicePointStatus" },
+    "StoreServicePointShape": { "ref": "StoreServicePointShape" },
+    "StoreServicePointOrderDirection": { "ref": "StoreServicePointOrderDirection" },
+    "StoreServicePointArea": { "ref": "StoreServicePointArea" },
+    "StoreServicePointAreaPage": { "ref": "StoreServicePointAreaPage" },
+    "StoreServicePointAreaCreateRequest": { "ref": "StoreServicePointAreaCreateRequest" },
+    "StoreServicePointAreaUpdateRequest": { "ref": "StoreServicePointAreaUpdateRequest" },
+    "StoreServicePointAreaStatusRequest": { "ref": "StoreServicePointAreaStatusRequest" },
+    "StoreServicePointAreaOrderRequest": { "ref": "StoreServicePointAreaOrderRequest" },
+    "StoreServicePoint": { "ref": "StoreServicePoint" },
+    "StoreServicePointPage": { "ref": "StoreServicePointPage" },
+    "StoreServicePointCreateRequest": { "ref": "StoreServicePointCreateRequest" },
+    "StoreServicePointUpdateRequest": { "ref": "StoreServicePointUpdateRequest" },
+    "StoreServicePointStatusRequest": { "ref": "StoreServicePointStatusRequest" },
+    "StoreServicePointOrderRequest": { "ref": "StoreServicePointOrderRequest" },
+    "StoreServicePointDetail": { "ref": "StoreServicePointDetail" },
+    "StoreQrConfigurationView": { "ref": "StoreQrConfigurationView" },
+    "StoreQrConfigurationUpdateRequest": { "ref": "StoreQrConfigurationUpdateRequest" },
+    "StoreQrChannelCandidate": { "ref": "StoreQrChannelCandidate" },
+    "StoreQrChannelCandidatePage": { "ref": "StoreQrChannelCandidatePage" },
+    "StoreServicePointAssetStageRequest": { "ref": "StoreServicePointAssetStageRequest" },
+    "StoreServicePointAssetStageReadback": { "ref": "StoreServicePointAssetStageReadback" },
+    "StoreServicePointAssetReleaseRequest": { "ref": "StoreServicePointAssetReleaseRequest" },
+    "StoreServicePointAssetReleaseReadback": { "ref": "StoreServicePointAssetReleaseReadback" },
     "GroupWorkspaceCreateRequest": {
       "ref": "GroupWorkspaceCreateRequest"
     },
@@ -14316,9 +14361,10 @@
         "CONTRACT",
         "COMMERCIAL_GROUP",
         "REGION",
-        "PROJECT"
+        "PROJECT",
+        "SERVICE_POINT"
       ],
-      "rule": "all eight persisted extension-value hosts are valid; COMMERCIAL_GROUP, REGION and PROJECT remain organization-owner facts rather than workspace capabilities"
+      "rule": "all nine persisted extension-value hosts are valid; COMMERCIAL_GROUP, REGION and PROJECT remain organization-owner facts rather than workspace capabilities"
     },
     "ProjectPhaseNames": {
       "type": "array",
@@ -15273,10 +15319,10 @@
     "status": "MATERIALIZED",
     "pipeline": "R24_P3C",
     "sourceOperationCount": 148,
-    "operationCount": 212,
+    "operationCount": 228,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 139,
+      "operations-admin": 155,
       "public": 12
     }
   }

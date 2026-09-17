@@ -23,6 +23,7 @@ import {
 } from '@catering-v2s/kernel-base-display-context';
 import type {NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
 import {createWebPlatformPorts, type SurfaceMode, type WebPlatformOptions} from '../implementations/webPlatform';
+import type {SurfaceForm} from '@catering-v2s/kernel-base-contracts';
 import {createWebSurfaceHostSource, type WebSurfaceHostSource} from '../implementations/webSurfaceHost';
 import {
   calculateSurfacePreviewGeometry,
@@ -36,7 +37,7 @@ export type SurfaceSize = Readonly<{
   readonly height: number;
 }>;
 
-export type SurfaceForm = 'laptop' | 'mobile';
+export type {SurfaceForm} from '@catering-v2s/kernel-base-contracts';
 
 export type SurfaceCreationInput = Readonly<{
   readonly displayIndex: 0 | 1;

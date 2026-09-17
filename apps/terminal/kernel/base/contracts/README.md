@@ -51,12 +51,15 @@ src/
     module.ts          AppModule 及其 command/actor/slice 描述符
     request.ts         请求与命令的生命周期状态与快照
     command.ts         CommandRouteContext（**仅本机路由，不得跨线**）
+    display.ts          SurfaceForm 与显示形态闭集
+    topology.ts         双机拓扑身份、操作、定位器与 wire 消息类型
     transport.ts       传输服务地址、配置空间与覆盖解析
   foundations/         极薄的运行时构造器
     runtimeId.ts       runtimeIdPrefixes + 9 个 createXxxId
     time.ts            nowTimestampMs
     errorTemplate.ts   renderErrorTemplate / createAppError / isAppError
     definition.ts      模块级错误与参数工厂 + listDefinitions
+    topologyWire.ts    topology wire 的闭集 parser/serializer 与帧大小校验
   index.ts             **唯一公开面**，逐项显式导出，禁止 export *
 test/
   contracts.test.ts             运行时行为断言
@@ -137,6 +140,13 @@ error.templateMissingKeys;  // ['timeoutMs'] —— 缺参被记录下来，不�
 
 `AppModule.kind` 是**必填**的（`owner` / `toolkit`），与 `TR-09` 对应：
 声明 `owner` 才允许拥有 slice，`toolkit` 不得有。
+
+### 4.5 双机拓扑协议词汇
+
+`SurfaceForm`、拓扑身份/角色、定位器和 `TopologyWireMessage` 是跨 contracts、transport、topology
+与 Android adapter 共享的闭集词汇，统一从本包导出。`parseTopologyWireMessage` 与
+`serializeTopologyWireMessage` 对消息类型、`protocolVersion`、嵌套 error 的 exact keys、方向和
+帧大小执行 fail-closed 校验；调用方不得在自己的包里复制 union 或用未校验的 JSON 直通运行边界。
 
 ---
 

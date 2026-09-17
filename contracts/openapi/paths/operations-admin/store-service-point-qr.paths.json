@@ -1,0 +1,1798 @@
+{
+  "paths": {
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas": {
+      "get": {
+        "operationId": "getOperationsStoreServicePointAreas",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAreaPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postOperationsStoreServicePointArea",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointArea"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-capability": "REQ_POST_OPERATIONS_STORE_SERVICE_POINT_AREA",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAreaCreateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points": {
+      "get": {
+        "operationId": "getOperationsStoreServicePoints",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postOperationsStoreServicePoint",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePoint"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-capability": "REQ_POST_OPERATIONS_STORE_SERVICE_POINT",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointCreateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration": {
+      "get": {
+        "operationId": "getOperationsStoreQrConfiguration",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreQrConfigurationView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchOperationsStoreQrConfiguration",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreQrConfigurationView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_PATCH_OPERATIONS_STORE_QR_CONFIGURATION",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreQrConfigurationUpdateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}": {
+      "get": {
+        "operationId": "getOperationsStoreServicePoint",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "servicePointRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchOperationsStoreServicePoint",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "servicePointRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePoint"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_PATCH_OPERATIONS_STORE_SERVICE_POINT",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointUpdateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}": {
+      "patch": {
+        "operationId": "patchOperationsStoreServicePointArea",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointArea"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_PATCH_OPERATIONS_STORE_SERVICE_POINT_AREA",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAreaUpdateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/status": {
+      "post": {
+        "operationId": "postOperationsStoreServicePointAreaStatus",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointArea"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_POST_OPERATIONS_STORE_SERVICE_POINT_AREA_STATUS",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAreaStatusRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/order": {
+      "post": {
+        "operationId": "postOperationsStoreServicePointAreaOrder",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointArea"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_POST_OPERATIONS_STORE_SERVICE_POINT_AREA_ORDER",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAreaOrderRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/status": {
+      "post": {
+        "operationId": "postOperationsStoreServicePointStatus",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "servicePointRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePoint"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_POST_OPERATIONS_STORE_SERVICE_POINT_STATUS",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointStatusRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/order": {
+      "post": {
+        "operationId": "postOperationsStoreServicePointOrder",
+        "tags": [
+          "organization"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "organization",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "servicePointRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePoint"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_POST_OPERATIONS_STORE_SERVICE_POINT_ORDER",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointOrderRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-channel-candidates": {
+      "get": {
+        "operationId": "getOperationsStoreQrChannelCandidates",
+        "tags": [
+          "business-channel"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "business-channel",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreQrChannelCandidatePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage": {
+      "post": {
+        "operationId": "stageStoreServicePointImage",
+        "tags": [
+          "platform-asset"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "platform-asset",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAssetStageReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-capability": "REQ_STAGE_STORE_SERVICE_POINT_IMAGE",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAssetStageRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release": {
+      "post": {
+        "operationId": "releaseStagedStoreServicePointImage",
+        "tags": [
+          "platform-asset"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "platform-asset",
+        "x-scenario-ids": [
+          "R5-STORE-SERVICE-POINT-QR"
+        ],
+        "x-page-key": "PG-STORE-SERVICE-POINT-QR",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "assetRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAssetReleaseReadback"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_RELEASE_STAGED_STORE_SERVICE_POINT_IMAGE",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAssetReleaseRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

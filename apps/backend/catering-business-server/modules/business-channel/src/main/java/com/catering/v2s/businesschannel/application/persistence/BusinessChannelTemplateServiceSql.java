@@ -53,10 +53,10 @@ public final class BusinessChannelTemplateServiceSql {
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_INSERT_INTO_BUSINESS_CHANNEL_TEMPLATE_INSERT_INTO_BUSINESS_CHANNEL = "INSERT INTO business_channel.business_channel_template ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_OPEN_PAREN_TEMPLATE_REF = "(template_ref, workspace_uuid, group_workspace_key, project_ref, templat";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONTINUATION_E_NAME_TEMPLATE_CODE = "e_name, template_code, ";
-    public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONTINUATION_ACCESS_KIND_OPERATOR_KIND_ORDER_KIND_DINE_IN_FORM = "access_kind, operator_kind, order_kind, dine_in_form, provider_code, ";
+    public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONTINUATION_ACCESS_KIND_OPERATOR_KIND_ORDER_KIND_DINE_IN_FORM = "access_kind, operator_kind, order_kind, dine_in_form, provider_code, url_rule, ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONTINUATION_STORE_VISIBILITY_SCOPE_STATUS = "store_visibility_scope, status, ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONTINUATION_VERSION = "version, created_at_epoch_millis, updated_at_epoch_millis) ";
-    public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_VALUES_ENABLED = "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ENABLED', 1, ?, ?)";
+    public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_VALUES_ENABLED = "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ENABLED', 1, ?, ?)";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_UPDATE_BUSINESS_CHANNEL_TEMPLATE_STATUS = "UPDATE business_channel.business_channel_template SET status=?, ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONTINUATION_VERSION_UPDATED_AT_EPOCH_MILLIS_TEMPLATE_REF = "version=version+1, updated_at_epoch_millis=? WHERE template_ref=? ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION = "AND workspace_uuid=? AND group_workspace_key=? AND version=?";
@@ -64,7 +64,7 @@ public final class BusinessChannelTemplateServiceSql {
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF_ALTERNATE_B = "WHERE workspace_uuid=? AND group_workspace_key=? AND template_ref=? FOR UPDATE";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF_ALTERNATE_C = "WHERE workspace_uuid=? AND group_workspace_key=? AND template_ref=? FOR UPDATE";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF_PROJECT_REF = "SELECT t.workspace_uuid, t.group_workspace_key, t.template_ref, t.project_ref, t.template_name, ";
-    public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONTINUATION_TEMPLATE_CODE_ACCESS_KIND_OPERATOR_KIND_ORDER_KIND = "t.template_code, t.access_kind, t.operator_kind, t.order_kind, t.dine_in_form, t.provider_code, ";
+    public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONTINUATION_TEMPLATE_CODE_ACCESS_KIND_OPERATOR_KIND_ORDER_KIND = "t.template_code, t.access_kind, t.operator_kind, t.order_kind, t.dine_in_form, t.provider_code, t.url_rule, ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONTINUATION_STORE_VISIBILITY_SCOPE_STATUS_VERSION = "t.store_visibility_scope, t.status, t.version, (SELECT count(*) FROM ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONTINUATION_BUSINESS_CHANNEL_TEMPLATE_STORE_VI = "business_channel.business_channel_template_store_visibility v ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_JOIN_STORE_VISIBLE_STORE_STORE_REF = "JOIN organization.store visible_store ON visible_store.id=v.store_ref ";
@@ -104,7 +104,7 @@ public final class BusinessChannelTemplateServiceSql {
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_FROM_CLAUSE_TARGET_TEMPLATE_FROM_TARGET_TEMPLATE_CROSS_J = "FROM target_template CROSS JOIN (";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CLOSE_PAREN_RELATION_ROWS = ") relation_rows ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_RETURNING_TEMPLATE_REF_STORE_REF = "RETURNING template_ref, store_ref), ";
-    public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_UPDATE_BUSINESS_CHANNEL_TEMPLATE_UPDATED_TEMPLATE_NAME = "updated AS (UPDATE business_channel.business_channel_template t SET template_name=?, ";
+    public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_UPDATE_BUSINESS_CHANNEL_TEMPLATE_UPDATED_TEMPLATE_NAME = "updated AS (UPDATE business_channel.business_channel_template t SET template_name=?, url_rule=?, ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONTINUATION_STORE_VISIBILITY_SCOPE = "store_visibility_scope=?, version=version+1, updated_at_epoch_millis=? ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_FROM_CLAUSE_INSERTED_INSERTED_COUNT_RELATION_WRITE = "FROM target_template CROSS JOIN (SELECT count(*) AS inserted_count FROM inserted) relation_write ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_WHERE_TEMPLATE_REF_TARGET_TEMPLATE_WORKSPACE_UUID = "WHERE t.template_ref=target_template.template_ref AND t.workspace_uuid=? ";
@@ -112,7 +112,7 @@ public final class BusinessChannelTemplateServiceSql {
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_RETURNING_RETURNING_T = "RETURNING t.*) ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_SELECT_UPDATED_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEMPLATE_REF = "SELECT updated.workspace_uuid, updated.group_workspace_key, updated.template_ref, ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_UPDATE_UPDATED_PROJECT_REF_TEMPLATE_NAME_TEMPLATE_CODE = "updated.project_ref, updated.template_name, updated.template_code, updated.access_kind, ";
-    public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_UPDATE_UPDATED_OPERATOR_KIND_ORDER_KIND_DINE_IN_FORM = "updated.operator_kind, updated.order_kind, updated.dine_in_form, updated.provider_code, ";
+    public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_UPDATE_UPDATED_OPERATOR_KIND_ORDER_KIND_DINE_IN_FORM = "updated.operator_kind, updated.order_kind, updated.dine_in_form, updated.provider_code, updated.url_rule, ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_UPDATE_INSERTED_UPDATED_STORE_VISIBILITY_SCOPE_STATUS_VERSION = "updated.store_visibility_scope, updated.status, updated.version, (SELECT count(*) FROM inserted ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_JOIN_STORE_VISIBLE_STORE_INSERTED_STORE_REF = "JOIN organization.store visible_store ON visible_store.id=inserted.store_ref ";
     public static final String BUSINESS_CHANNEL_TEMPLATE_SERVICE_CONDITION_VISIBLE_STORE_WORKSPACE_UUID_UPDATED = "AND visible_store.workspace_uuid=updated.workspace_uuid ";

@@ -438,6 +438,10 @@ LIST tag 失效链回读。列表、详情和 Drawer 分别声明自己的读边
   应进入“更多”或独立危险确认。
 - 点击关闭按钮、按 `Esc`、点击遮罩三条关闭路径必须共用同一 dirty 判定：无修改直接关闭；有修改先确认
   “继续编辑 / 放弃修改”。不得让其中一条绕过脏数据保护。长任务默认禁止遮罩直接关闭。
+- dirty 的唯一 owner 是承载表单的 Drawer lifecycle。`Form.Item`、Switch/Input/Tree 节点、presenter
+  或业务子组件只能通过宿主 Form 的变更链通知编辑意图，不得自行维护 dirty、安装关闭确认，或显示“请先保存/放弃修改”等提示。
+- Shell 只能消费 foundation 的 `locked` 阻断导航、上下文切换和账号动作；不得把 `dirtyLocked` 渲染成第二个常驻提示。
+  脏数据提示只允许由 foundation lifecycle 在关闭意图上统一呈现。
 - Modal 宽度只用小 `480px`、中 `720px`、宽 `960px` 三档；Drawer 只用窄 `480px`、宽 `720px`、
   超宽 `adminWideDrawerSurfaceProps`（当前 `min(1024px, calc(100vw - 48px))`）三档。字段少的原子输入
   用小/窄，主从或多区段任务用宽/超宽；

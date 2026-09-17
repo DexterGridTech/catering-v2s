@@ -1,2 +1,8 @@
-export {moduleName} from './moduleName';
-export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
+export {moduleName, moduleKind} from './moduleName'
+export {dependencyModuleNames, devDependencyModuleNames, runtimeModuleDependencyNames} from './dependencies'
+export {createTransportModule} from './application/createTransportModule'
+export {createTopologySession} from './foundations/createTopologySession'
+export {createTopologyIdentityClient} from './foundations/createTopologyIdentityClient'
+export type {TopologySession, TopologySessionInput, TopologySessionState} from './types/session'
+export type {TopologyPeerChannel, TopologyPeerChannelEvent} from './types/channel'
+export type {TopologyIdentityClient} from './types/identityClient'

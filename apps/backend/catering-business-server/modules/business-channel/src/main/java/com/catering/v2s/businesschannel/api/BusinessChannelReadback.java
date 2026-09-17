@@ -19,6 +19,7 @@ public final class BusinessChannelReadback {
             String orderKind,
             String dineInForm,
             String providerCode,
+            String urlRule,
             String storeVisibilityScope,
             long visibleStoreCount,
             String status,
@@ -28,6 +29,27 @@ public final class BusinessChannelReadback {
         public Template {
             statusDimensions = List.copyOf(statusDimensions == null ? List.of() : statusDimensions);
             blockers = List.copyOf(blockers == null ? List.of() : blockers);
+        }
+
+        public Template(
+                UUID templateRef,
+                UUID projectRef,
+                String templateName,
+                String templateCode,
+                String accessKind,
+                String operatorKind,
+                String orderKind,
+                String dineInForm,
+                String providerCode,
+                String storeVisibilityScope,
+                long visibleStoreCount,
+                String status,
+                List<StatusDimension> statusDimensions,
+                List<StatusDimension> blockers,
+                long version) {
+            this(templateRef, projectRef, templateName, templateCode, accessKind, operatorKind, orderKind, dineInForm,
+                    providerCode, null, storeVisibilityScope, visibleStoreCount, status, statusDimensions, blockers,
+                    version);
         }
     }
 

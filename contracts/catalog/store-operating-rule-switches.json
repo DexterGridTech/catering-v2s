@@ -10,7 +10,7 @@
     {"key": "reservationEnabled", "label": "是否启用预约功能", "type": "BOOLEAN", "defaultValue": false, "parentKey": "catalogManagementEnabled", "displayOrder": 4},
     {"key": "reservationDepositEnabled", "label": "是否支持押金预约", "type": "BOOLEAN", "defaultValue": false, "parentKey": "reservationEnabled", "displayOrder": 5},
     {"key": "queueCallEnabled", "label": "是否启用排队叫号", "type": "BOOLEAN", "defaultValue": false, "parentKey": "catalogManagementEnabled", "displayOrder": 6},
-    {"key": "tableManagementEnabled", "label": "是否启用桌台管理", "type": "BOOLEAN", "defaultValue": false, "parentKey": "catalogManagementEnabled", "displayOrder": 7},
+    {"key": "tableManagementEnabled", "label": "是否启用桌台和二维码管理", "type": "BOOLEAN", "defaultValue": false, "parentKey": "catalogManagementEnabled", "displayOrder": 7},
     {"key": "tableStatusEnabled", "label": "是否启用桌台状态管理", "type": "BOOLEAN", "defaultValue": false, "parentKey": "tableManagementEnabled", "displayOrder": 8},
     {"key": "tableWaitCallEnabled", "label": "是否支持「等叫」功能", "type": "BOOLEAN", "defaultValue": false, "parentKey": "tableStatusEnabled", "displayOrder": 9},
     {"key": "banquetOrderEnabled", "label": "是否支持宴会订单", "type": "BOOLEAN", "defaultValue": false, "parentKey": "tableStatusEnabled", "displayOrder": 10},

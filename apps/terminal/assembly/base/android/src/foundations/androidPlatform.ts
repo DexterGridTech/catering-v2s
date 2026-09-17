@@ -1,12 +1,10 @@
 import {
   consoleLoggerBinding,
   createPlatformPorts,
-  unavailableAppControlPort,
   unavailableConnectorPort,
   unavailableHotUpdatePort,
   unavailableLogUploadPort,
   unavailableScriptPort,
-  unavailableTopologyHostPort,
   type NativeLoadingCapability,
   type PlatformPorts,
   type EnvironmentMode,
@@ -15,10 +13,13 @@ import {createAndroidDevicePort} from '@catering-v2s/adapter-android-device'
 import {createAndroidSurfaceHostSource} from '@catering-v2s/adapter-android-dual-screen'
 import {createAndroidPersistKvPort} from '@catering-v2s/adapter-android-persist-kv'
 import {createAndroidNativeLoadingCapability} from './nativeLoadingCapability'
+import {createAndroidAppControlPort, createAndroidTopologyHostPort, createAndroidTopologyPeerChannel} from './nativeTopology'
+import type {TopologyPeerChannel} from '@catering-v2s/kernel-base-transport'
 
 export type AndroidPlatformBinding = Readonly<{
   readonly environmentMode: EnvironmentMode
   readonly platformPorts: PlatformPorts
+  readonly topologyPeerChannel: TopologyPeerChannel
   readonly nativeLoadingCapability: NativeLoadingCapability
   readonly surfaceHostSourcesByDisplayIndex: Readonly<{
     readonly 0: ReturnType<typeof createAndroidSurfaceHostSource>
@@ -36,17 +37,19 @@ export const createAndroidPlatformBinding = (persistenceKey: string): AndroidPla
       persistKv: createAndroidPersistKvPort(persistenceKey, 'plain'),
       persistSecure: createAndroidPersistKvPort(persistenceKey, 'protected'),
       device: createAndroidDevicePort(),
-      appControl: unavailableAppControlPort,
+      appControl: createAndroidAppControlPort(),
       script: unavailableScriptPort,
       connector: unavailableConnectorPort,
       hotUpdate: unavailableHotUpdatePort,
       logUpload: unavailableLogUploadPort,
-      topologyHost: unavailableTopologyHostPort,
+      topologyHost: createAndroidTopologyHostPort(),
     },
   })
+  const topologyPeerChannel = createAndroidTopologyPeerChannel()
   return Object.freeze({
     environmentMode,
     platformPorts,
+    topologyPeerChannel,
     nativeLoadingCapability,
     surfaceHostSourcesByDisplayIndex: Object.freeze({
       0: createAndroidSurfaceHostSource({surfaceKey: 'PRIMARY', displayIndex: 0}),

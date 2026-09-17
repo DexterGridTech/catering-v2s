@@ -266,23 +266,25 @@ export const createAndroidPersistKvPort = (
     clear: (_input: StateStorageCall) => execute('clear', native => native.clear(persistenceKey, mode)),
   }
   const port = portName
-  if (__DEV__) Object.defineProperty(storagePort, PORT_DESCRIPTOR_KEY, {
-      value: Object.freeze({
-        port,
-        capabilities: Object.freeze([
-          Object.freeze({capability: 'read', state: 'real' as const, source: 'adapter' as const}),
-          Object.freeze({capability: 'write', state: 'real' as const, source: 'adapter' as const}),
-          Object.freeze({capability: 'remove', state: 'real' as const, source: 'adapter' as const}),
-          Object.freeze({capability: 'readMany', state: 'real' as const, source: 'adapter' as const}),
-          Object.freeze({capability: 'writeMany', state: 'real' as const, source: 'adapter' as const}),
-          Object.freeze({capability: 'removeMany', state: 'real' as const, source: 'adapter' as const}),
-          Object.freeze({capability: 'listKeys', state: 'real' as const, source: 'adapter' as const}),
-          Object.freeze({capability: 'clear', state: 'real' as const, source: 'adapter' as const}),
-        ]),
-      }),
-      enumerable: false,
-      writable: false,
-      configurable: false,
-    })
+  if (__DEV__) {
+    Object.defineProperty(storagePort, PORT_DESCRIPTOR_KEY, {
+        value: Object.freeze({
+          port,
+          capabilities: Object.freeze([
+            Object.freeze({capability: 'read', state: 'real' as const, source: 'adapter' as const}),
+            Object.freeze({capability: 'write', state: 'real' as const, source: 'adapter' as const}),
+            Object.freeze({capability: 'remove', state: 'real' as const, source: 'adapter' as const}),
+            Object.freeze({capability: 'readMany', state: 'real' as const, source: 'adapter' as const}),
+            Object.freeze({capability: 'writeMany', state: 'real' as const, source: 'adapter' as const}),
+            Object.freeze({capability: 'removeMany', state: 'real' as const, source: 'adapter' as const}),
+            Object.freeze({capability: 'listKeys', state: 'real' as const, source: 'adapter' as const}),
+            Object.freeze({capability: 'clear', state: 'real' as const, source: 'adapter' as const}),
+          ]),
+        }),
+        enumerable: false,
+        writable: false,
+        configurable: false,
+      })
+  }
   return Object.freeze(storagePort)
 }

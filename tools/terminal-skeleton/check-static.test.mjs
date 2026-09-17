@@ -20,9 +20,9 @@ const spec = readSkeletonSpec(skeletonGraphPath);
 const batchOne = projectSkeletonGraph(spec, 1);
 const batchTwo = projectSkeletonGraph(spec, 2);
 
-assert.equal(Object.keys(spec.graph).length, 32, 'the literal skeleton specification has 32 nodes');
+assert.equal(Object.keys(spec.graph).length, 33, 'the literal skeleton specification has 33 nodes');
 assert.equal(Object.keys(batchOne).length, 16, 'batch one projects 16 nodes');
-assert.equal(Object.keys(batchTwo).length, 32, 'batch two projects 32 nodes');
+assert.equal(Object.keys(batchTwo).length, 33, 'batch two projects 33 nodes');
 assert.equal(moduleNameToPackageName('assembly.android.sample-terminal'), '@catering-v2s/assembly-android-sample-terminal');
 assert.equal(moduleNameToPackageName('assembly.android.sample-wallpaper-terminal'), '@catering-v2s/assembly-android-sample-wallpaper-terminal');
 assert.equal(moduleNameToRelativePath('kernel.base.contracts'), 'apps/terminal/kernel/base/contracts');

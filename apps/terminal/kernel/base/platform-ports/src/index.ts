@@ -121,6 +121,7 @@ export type {
   TopologyHostState,
   TopologyHostRuntimeConfig,
   TopologyHostConfig,
+  TopologyHostConfigWithIdentity,
   TopologyHostAddress,
   TopologyHostStatus,
   TopologyHostStats,

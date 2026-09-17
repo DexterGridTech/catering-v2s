@@ -4,12 +4,12 @@
     "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
     "doc/evidence/platform/r5-u01-edge-placement-resolution.json"
   ],
-  "calibrationReportDigest": "d23926ee5ff338a99ea2ee8528c5c7982c12d78f7b55b046ea0357b68719a454",
+  "calibrationReportDigest": "899d3be106d79612c8b19a349c2ce00191d0910094891681398ef190da77cffc",
   "closure": {
-    "operations": 212,
+    "operations": 228,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 139,
+      "operations-admin": 155,
       "public": 12
     }
   },
@@ -21,21 +21,7 @@
       "consumerFaces": [
         "public"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "addOperationsOrganizationHeadCompanyBrandAuthorization",
@@ -44,21 +30,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 18,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 18,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "addOperationsSalesMenuItems",
@@ -67,22 +39,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 32,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 32,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "archiveOperationsSalesMenu",
@@ -91,22 +48,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 27,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 27,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "cancelOperationsWorkspaceGroupInvitation",
@@ -115,21 +57,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 22,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 22,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "cancelOperationsWorkspaceHeadCompanyInvitation",
@@ -138,21 +66,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 22,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 22,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "cancelOperationsWorkspaceProjectInvitation",
@@ -161,21 +75,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 21,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 21,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "cancelOperationsWorkspaceRegionInvitation",
@@ -184,21 +84,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 22,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 22,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "cancelOperationsWorkspaceStoreInvitation",
@@ -207,21 +93,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 21,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 21,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "cancelWorkspaceInvitation",
@@ -230,21 +102,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 24,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 24,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "changeCurrentPlatformPassword",
@@ -253,21 +111,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "changeCurrentWorkspacePassword",
@@ -276,21 +120,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 10,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 10,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "completeOperationsPasswordRecovery",
@@ -299,21 +129,7 @@
       "consumerFaces": [
         "public"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "completePlatformPasswordRecovery",
@@ -322,21 +138,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "completePublicInvitation",
@@ -345,21 +147,7 @@
       "consumerFaces": [
         "public"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 18,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 18,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "copyOperationsSalesMenu",
@@ -368,22 +156,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 39,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 39,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "createOperationsBusinessChannel",
@@ -392,21 +165,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "business-channel",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 20,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "business-channel"
     },
     {
       "operationId": "createOperationsBusinessChannelTemplate",
@@ -415,21 +174,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "business-channel",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 21,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 21,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "business-channel"
     },
     {
       "operationId": "createOperationsContract",
@@ -438,21 +183,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "contract",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 19,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 19,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "contract"
     },
     {
       "operationId": "createOperationsOrganizationBrand",
@@ -461,21 +192,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 22,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 22,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "createOperationsOrganizationHeadCompany",
@@ -484,21 +201,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 22,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 22,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "createOperationsOrganizationProject",
@@ -507,21 +210,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 24,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 24,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "createOperationsOrganizationRegion",
@@ -530,21 +219,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "createOperationsOrganizationStore",
@@ -553,21 +228,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 24,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 24,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "createOperationsOrganizationTenant",
@@ -576,21 +237,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 22,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 22,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "createOperationsOwnerBinding",
@@ -599,21 +246,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 22,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 22,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "createOperationsSalesMenu",
@@ -622,22 +255,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 33,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 33,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "createOperationsSalesMenuSection",
@@ -646,22 +264,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 30,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 30,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "createOperationsWorkspaceGroupInvitation",
@@ -670,21 +273,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 21,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 21,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "createOperationsWorkspaceHeadCompanyInvitation",
@@ -693,21 +282,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 21,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 21,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "createOperationsWorkspaceProjectInvitation",
@@ -716,21 +291,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 20,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "createOperationsWorkspaceRegionInvitation",
@@ -739,21 +300,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 21,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 21,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "createOperationsWorkspaceStoreInvitation",
@@ -762,21 +309,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 20,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "createPlatformAdmin",
@@ -785,21 +318,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 16,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 16,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "createPlatformGroupWorkspace",
@@ -808,21 +327,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-workspace",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 16,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 16,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-workspace"
     },
     {
       "operationId": "createPlatformOwnerBinding",
@@ -831,21 +336,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 19,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 19,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "createWorkspaceInvitation",
@@ -854,22 +345,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 26,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 26,
-            "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-            "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "createWorkspaceRole",
@@ -878,21 +354,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 18,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 18,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "deleteOperationsOwnerBinding",
@@ -901,21 +363,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 22,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 22,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "deleteOperationsSalesMenuItem",
@@ -924,22 +372,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 34,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 34,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "deleteOperationsSalesMenuSection",
@@ -948,22 +381,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 31,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 31,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "deletePlatformOwnerBinding",
@@ -972,21 +390,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 21,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 21,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "getCurrentPlatformSession",
@@ -995,21 +399,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 4,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 4,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "getExtensionDefinition",
@@ -1018,21 +408,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "extension",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "extension"
     },
     {
       "operationId": "getExtensionEntityCatalog",
@@ -1041,21 +417,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "extension",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "extension"
     },
     {
       "operationId": "getOperationsBusinessChannelDetail",
@@ -1064,21 +426,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "business-channel",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "business-channel"
     },
     {
       "operationId": "getOperationsBusinessChannelTemplates",
@@ -1087,21 +435,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "business-channel",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "business-channel"
     },
     {
       "operationId": "getOperationsBusinessChannelTemplateVisibleStores",
@@ -1110,21 +444,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "business-channel",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "business-channel"
     },
     {
       "operationId": "getOperationsContract",
@@ -1133,21 +453,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "contract",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "contract"
     },
     {
       "operationId": "getOperationsContractCandidates",
@@ -1156,21 +462,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "contract",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "contract"
     },
     {
       "operationId": "getOperationsContractExtensionDefinition",
@@ -1179,21 +471,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "contract",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "contract"
     },
     {
       "operationId": "getOperationsContracts",
@@ -1202,21 +480,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "contract",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "contract"
     },
     {
       "operationId": "getOperationsEntityAuditHistory",
@@ -1225,21 +489,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "platform-workspace",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-workspace"
     },
     {
       "operationId": "getOperationsExternalCapabilityDictionary",
@@ -1248,21 +498,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "getOperationsExternalProviderCandidates",
@@ -1271,21 +507,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "getOperationsFixedStoreContracts",
@@ -1294,21 +516,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "contract",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "contract"
     },
     {
       "operationId": "getOperationsOrganizationBrand",
@@ -1317,21 +525,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsOrganizationBrands",
@@ -1340,21 +534,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsOrganizationBusinessEntityExtensionDefinition",
@@ -1363,21 +543,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsOrganizationCandidates",
@@ -1386,21 +552,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsOrganizationHeadCompanies",
@@ -1409,21 +561,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsOrganizationHeadCompany",
@@ -1432,21 +570,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 10,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 10,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsOrganizationHierarchy",
@@ -1455,21 +579,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsOrganizationHierarchyExtensionDefinition",
@@ -1478,21 +588,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsOrganizationStore",
@@ -1501,21 +597,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsOrganizationStoreExtensionDefinition",
@@ -1524,21 +606,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsOrganizationStoreOperatingRule",
@@ -1547,21 +615,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsOrganizationStores",
@@ -1570,21 +624,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 16,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 16,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsOrganizationTenant",
@@ -1593,21 +633,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsOrganizationTenants",
@@ -1616,21 +642,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsOwnerBindingDetail",
@@ -1639,21 +651,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "getOperationsProjectBusinessChannels",
@@ -1662,21 +660,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "business-channel",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 10,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 10,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "business-channel"
     },
     {
       "operationId": "getOperationsSalesMenu",
@@ -1685,21 +669,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "getOperationsSalesMenuDraftItem",
@@ -1708,21 +678,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 24,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 24,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "getOperationsSalesMenuDraftItems",
@@ -1731,21 +687,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 24,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 24,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "getOperationsSalesMenuDraftSections",
@@ -1754,21 +696,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "getOperationsSalesMenuItemCandidates",
@@ -1777,21 +705,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 17,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 17,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "getOperationsSalesMenuOperationRecords",
@@ -1800,21 +714,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "getOperationsSalesMenuPublicationPreview",
@@ -1823,21 +723,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 24,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 24,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "getOperationsSalesMenuPublishedItem",
@@ -1846,21 +732,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 22,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 22,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "getOperationsSalesMenuPublishedItems",
@@ -1869,21 +741,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 21,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 21,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "getOperationsSalesMenuPublishedSections",
@@ -1892,21 +750,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "getOperationsSalesMenus",
@@ -1915,21 +759,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "getOperationsStoreBusinessChannels",
@@ -1938,21 +768,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "business-channel",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "business-channel"
     },
     {
       "operationId": "getOperationsStoreBusinessChannelTemplateCandidates",
@@ -1961,21 +777,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "business-channel",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "business-channel"
     },
     {
       "operationId": "getOperationsStoreProfile",
@@ -1984,21 +786,52 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsStoreQrChannelCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-channel-candidates",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "business-channel"
+    },
+    {
+      "operationId": "getOperationsStoreQrConfiguration",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsStoreServicePoint",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsStoreServicePointAreas",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "getOperationsStoreServicePoints",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
     },
     {
       "operationId": "getOperationsWorkspaceGroupInvitationCandidates",
@@ -2007,21 +840,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceGroupInvitations",
@@ -2030,21 +849,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceGroupUser",
@@ -2053,21 +858,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 18,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 18,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceGroupUserAccount",
@@ -2076,21 +867,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 17,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 17,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceHeadCompanyInvitationCandidates",
@@ -2099,21 +876,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceHeadCompanyInvitations",
@@ -2122,21 +885,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceHeadCompanyUser",
@@ -2145,21 +894,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 18,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 18,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceHeadCompanyUserAccount",
@@ -2168,21 +903,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 17,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 17,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceLoginEntry",
@@ -2191,21 +912,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 4,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 4,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceProjectInvitationCandidates",
@@ -2214,21 +921,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 10,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 10,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceProjectInvitations",
@@ -2237,21 +930,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceProjectUser",
@@ -2260,21 +939,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 16,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 16,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceProjectUserAccount",
@@ -2283,21 +948,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceRegionInvitationCandidates",
@@ -2306,21 +957,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceRegionInvitations",
@@ -2329,21 +966,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceRegionUser",
@@ -2352,21 +975,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 17,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 17,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceRegionUserAccount",
@@ -2375,21 +984,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 16,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 16,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceSessionEntry",
@@ -2398,21 +993,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceStoreInvitationCandidates",
@@ -2421,21 +1002,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceStoreInvitations",
@@ -2444,21 +1011,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 12,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 12,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceStoreUser",
@@ -2467,21 +1020,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 17,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 17,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getOperationsWorkspaceStoreUserAccount",
@@ -2490,21 +1029,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getPlatformAdminDetail",
@@ -2513,21 +1038,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 5,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 5,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "getPlatformAdminPage",
@@ -2536,21 +1047,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "getPlatformContractOverviewDetail",
@@ -2559,21 +1056,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "contract",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "contract"
     },
     {
       "operationId": "getPlatformContractOverviewPage",
@@ -2582,21 +1065,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "contract",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "contract"
     },
     {
       "operationId": "getPlatformEntityAuditHistory",
@@ -2605,21 +1074,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-workspace",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-workspace"
     },
     {
       "operationId": "getPlatformExternalCapabilityDictionary",
@@ -2628,21 +1083,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 4,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 4,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "getPlatformExternalCollaborationTree",
@@ -2651,21 +1092,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "getPlatformExternalSystemDetail",
@@ -2674,21 +1101,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "getPlatformGroupWorkspaceDetail",
@@ -2697,21 +1110,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-workspace",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-workspace"
     },
     {
       "operationId": "getPlatformOrganizationCandidates",
@@ -2720,21 +1119,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getPlatformOrganizationHierarchyTree",
@@ -2743,21 +1128,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getPlatformOrganizationOverviewDetail",
@@ -2766,21 +1137,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getPlatformOrganizationOverviewPage",
@@ -2789,21 +1146,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "getPlatformOwnerBindingDetail",
@@ -2812,21 +1155,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "getPlatformProviderProfileBindings",
@@ -2835,21 +1164,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "getPlatformProviderProfileDetail",
@@ -2858,21 +1173,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "getPublicAssetContent",
@@ -2881,21 +1182,7 @@
       "consumerFaces": [
         "public"
       ],
-      "owner": "platform-asset",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 4,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 4,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-asset"
     },
     {
       "operationId": "getPublicInvitationCompletion",
@@ -2904,21 +1191,7 @@
       "consumerFaces": [
         "public"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 5,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 5,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getPublicInvitationView",
@@ -2927,21 +1200,7 @@
       "consumerFaces": [
         "public"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getWorkspaceAccount",
@@ -2950,21 +1209,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getWorkspaceAccounts",
@@ -2973,21 +1218,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getWorkspaceInvitation",
@@ -2996,21 +1227,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getWorkspaceInvitationCandidates",
@@ -3019,21 +1236,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 8,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 8,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getWorkspaceInvitations",
@@ -3042,21 +1245,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 7,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 7,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getWorkspaceRole",
@@ -3065,21 +1254,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "getWorkspaceRoles",
@@ -3088,21 +1263,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "initializeCommercialGroup",
@@ -3111,21 +1272,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 16,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 16,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "invalidateOperationsContract",
@@ -3134,21 +1281,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "contract",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 18,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 18,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "contract"
     },
     {
       "operationId": "listPlatformGroupWorkspaces",
@@ -3157,21 +1290,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-workspace",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 6,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 6,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-workspace"
     },
     {
       "operationId": "moveOperationsSalesMenuItem",
@@ -3180,22 +1299,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 34,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 34,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "moveOperationsSalesMenuSection",
@@ -3204,22 +1308,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 34,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 34,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "operationsWorkspaceLogout",
@@ -3228,21 +1317,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 4,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 4,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "operationsWorkspacePasswordLogin",
@@ -3251,21 +1326,34 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 22,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 22,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
+    },
+    {
+      "operationId": "patchOperationsStoreQrConfiguration",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "patchOperationsStoreServicePoint",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "patchOperationsStoreServicePointArea",
+      "method": "PATCH",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
     },
     {
       "operationId": "platformLogout",
@@ -3274,21 +1362,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 4,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 4,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "platformPasswordLogin",
@@ -3297,21 +1371,61 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 11,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 11,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
+    },
+    {
+      "operationId": "postOperationsStoreServicePoint",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "postOperationsStoreServicePointArea",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "postOperationsStoreServicePointAreaOrder",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/order",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "postOperationsStoreServicePointAreaStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/status",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "postOperationsStoreServicePointOrder",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/order",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
+    },
+    {
+      "operationId": "postOperationsStoreServicePointStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/status",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "organization"
     },
     {
       "operationId": "publishOperationsSalesMenu",
@@ -3320,22 +1434,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 48,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 48,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "reissueOperationsWorkspaceGroupInvitation",
@@ -3344,22 +1443,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 29,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 29,
-            "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-            "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "reissueOperationsWorkspaceHeadCompanyInvitation",
@@ -3368,22 +1452,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 29,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 29,
-            "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-            "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "reissueOperationsWorkspaceProjectInvitation",
@@ -3392,22 +1461,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 28,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 28,
-            "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-            "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "reissueOperationsWorkspaceRegionInvitation",
@@ -3416,22 +1470,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 29,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 29,
-            "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-            "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "reissueOperationsWorkspaceStoreInvitation",
@@ -3440,22 +1479,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 28,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 28,
-            "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-            "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "reissueWorkspaceInvitation",
@@ -3464,22 +1488,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 30,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 30,
-            "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-            "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "releaseOperationsSalesMenuStagedAsset",
@@ -3488,22 +1497,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 31,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 31,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "releasePlatformStagedAsset",
@@ -3512,21 +1506,16 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-asset",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-asset"
+    },
+    {
+      "operationId": "releaseStagedStoreServicePointImage",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "platform-asset"
     },
     {
       "operationId": "removeOperationsOrganizationHeadCompanyBrandAuthorization",
@@ -3535,21 +1524,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 19,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 19,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "renameOperationsSalesMenu",
@@ -3558,22 +1533,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 27,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 27,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "renameOperationsSalesMenuSection",
@@ -3582,22 +1542,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 30,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 30,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "replaceExtensionDefinition",
@@ -3606,21 +1551,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "extension",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 20,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "extension"
     },
     {
       "operationId": "requestWorkspaceCredentialReset",
@@ -3629,21 +1560,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 20,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "resetPlatformAdminCredential",
@@ -3652,21 +1569,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 17,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 17,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "restoreOperationsSalesMenuItemSale",
@@ -3675,22 +1578,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 36,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 36,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "revokeOperationsWorkspaceGroupUserAssignment",
@@ -3699,22 +1587,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 28,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 28,
-            "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-            "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "revokeOperationsWorkspaceHeadCompanyUserAssignment",
@@ -3723,22 +1596,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 28,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 28,
-            "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-            "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "revokeOperationsWorkspaceProjectUserAssignment",
@@ -3747,22 +1605,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 26,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 26,
-            "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-            "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "revokeOperationsWorkspaceRegionUserAssignment",
@@ -3771,22 +1614,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 28,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 28,
-            "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-            "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "revokeOperationsWorkspaceStoreUserAssignment",
@@ -3795,22 +1623,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 26,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 26,
-            "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-            "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "revokePlatformWorkspaceAssignment",
@@ -3819,21 +1632,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 18,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 18,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "savePublicInvitationCredentials",
@@ -3842,21 +1641,7 @@
       "consumerFaces": [
         "public"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "selectOperationsWorkspaceSessionContext",
@@ -3865,21 +1650,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 16,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 16,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "selectOperationsWorkspaceSessionDataNode",
@@ -3888,21 +1659,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "sendOperationsPasswordRecoveryOtp",
@@ -3911,21 +1668,7 @@
       "consumerFaces": [
         "public"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 19,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 19,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "sendOperationsWorkspaceOtp",
@@ -3934,21 +1677,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 10,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 10,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "sendPlatformLoginOtp",
@@ -3957,21 +1686,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "sendPlatformPasswordRecoveryOtp",
@@ -3980,21 +1695,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 14,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 14,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "sendPublicInvitationOtp",
@@ -4003,21 +1704,7 @@
       "consumerFaces": [
         "public"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 9,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 9,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "setOperationsSalesMenuActivation",
@@ -4026,22 +1713,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 32,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 32,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "setOperationsSalesMenuItemSoldOut",
@@ -4050,22 +1722,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 36,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 36,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "stageOperationsSalesMenuAsset",
@@ -4074,22 +1731,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 36,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 36,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "stagePlatformAsset",
@@ -4098,21 +1740,16 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-asset",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-asset"
+    },
+    {
+      "operationId": "stageStoreServicePointImage",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "platform-asset"
     },
     {
       "operationId": "startOperationsPasswordRecovery",
@@ -4121,21 +1758,7 @@
       "consumerFaces": [
         "public"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 19,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 19,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "startPlatformPasswordRecovery",
@@ -4144,21 +1767,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 17,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 17,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "transitionOperationsBusinessChannelStatus",
@@ -4167,21 +1776,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "business-channel",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "business-channel"
     },
     {
       "operationId": "transitionOperationsBusinessChannelTemplateStatus",
@@ -4190,21 +1785,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "business-channel",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "business-channel"
     },
     {
       "operationId": "transitionOperationsOrganizationBrandStatus",
@@ -4213,21 +1794,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "transitionOperationsOrganizationHeadCompanyStatus",
@@ -4236,21 +1803,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 19,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 19,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "transitionOperationsOrganizationNodeStatus",
@@ -4259,21 +1812,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "transitionOperationsOrganizationStoreStatus",
@@ -4282,21 +1821,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 18,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 18,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "transitionOperationsOrganizationTenantStatus",
@@ -4305,21 +1830,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "transitionPlatformAdminStatus",
@@ -4328,21 +1839,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 19,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 19,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "transitionPlatformExternalSystemStatus",
@@ -4351,21 +1848,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 17,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 17,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "transitionPlatformGroupWorkspaceStatus",
@@ -4374,21 +1857,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-workspace",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 19,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 19,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-workspace"
     },
     {
       "operationId": "transitionPlatformProviderProfileStatus",
@@ -4397,21 +1866,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 20,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "transitionWorkspaceAccountStatus",
@@ -4420,21 +1875,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 20,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 20,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "transitionWorkspaceRoleStatus",
@@ -4443,21 +1884,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 19,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 19,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "updateOperationsBusinessChannel",
@@ -4466,21 +1893,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "business-channel",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "business-channel"
     },
     {
       "operationId": "updateOperationsBusinessChannelTemplate",
@@ -4489,21 +1902,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "business-channel",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 24,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 24,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "business-channel"
     },
     {
       "operationId": "updateOperationsCommercialGroup",
@@ -4512,21 +1911,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 24,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 24,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "updateOperationsContract",
@@ -4535,21 +1920,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "contract",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 21,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 21,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "contract"
     },
     {
       "operationId": "updateOperationsOrganizationBrand",
@@ -4558,21 +1929,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "updateOperationsOrganizationHeadCompany",
@@ -4581,21 +1938,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "updateOperationsOrganizationNode",
@@ -4604,21 +1947,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 22,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 22,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "updateOperationsOrganizationStore",
@@ -4627,21 +1956,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "updateOperationsOrganizationTenant",
@@ -4650,21 +1965,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "organization",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 23,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 23,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "organization"
     },
     {
       "operationId": "updateOperationsSalesMenuItem",
@@ -4673,22 +1974,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 51,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 51,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "updateOperationsSalesMenuSchedule",
@@ -4697,22 +1983,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "sales-menu",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 29,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": 20,
-            "to": 29,
-            "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-            "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-          }
-        ]
-      }
+      "owner": "sales-menu"
     },
     {
       "operationId": "updatePlatformAdminProfile",
@@ -4721,21 +1992,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 15,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 15,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "updatePlatformGroupWorkspaceDisplay",
@@ -4744,21 +2001,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-workspace",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 18,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 18,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-workspace"
     },
     {
       "operationId": "updatePlatformOwnerBinding",
@@ -4767,21 +2010,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "collaboration",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 21,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 21,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "collaboration"
     },
     {
       "operationId": "updateWorkspaceRole",
@@ -4790,21 +2019,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 19,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 19,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "verifyOperationsPasswordRecoveryOtp",
@@ -4813,21 +2028,7 @@
       "consumerFaces": [
         "public"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 22,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 22,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "verifyOperationsWorkspaceOtp",
@@ -4836,21 +2037,7 @@
       "consumerFaces": [
         "operations-admin"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 21,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 21,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     },
     {
       "operationId": "verifyPlatformLoginOtp",
@@ -4859,21 +2046,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "verifyPlatformPasswordRecoveryOtp",
@@ -4882,21 +2055,7 @@
       "consumerFaces": [
         "platform-admin"
       ],
-      "owner": "platform-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "platform-iam"
     },
     {
       "operationId": "verifyPublicInvitationOtp",
@@ -4905,21 +2064,7 @@
       "consumerFaces": [
         "public"
       ],
-      "owner": "workspace-iam",
-      "databaseOperationBudget": {
-        "kind": "FIXED",
-        "max": 13,
-        "measurementScenarioIds": [
-          "performance.normal-path"
-        ],
-        "history": [
-          {
-            "from": null,
-            "to": 13,
-            "reason": "CP-05 maximum database operation count across three runs"
-          }
-        ]
-      }
+      "owner": "workspace-iam"
     }
   ]
 }

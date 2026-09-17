@@ -286,7 +286,8 @@
           "CONTRACT",
           "COMMERCIAL_GROUP",
           "REGION",
-          "PROJECT"
+          "PROJECT",
+          "SERVICE_POINT"
         ]
       },
       "ExtensionDefinitionBlocker": {

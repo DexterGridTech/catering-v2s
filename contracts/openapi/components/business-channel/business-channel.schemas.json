@@ -68,6 +68,14 @@
               "null"
             ]
           },
+          "urlRule": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2048,
+            "description": "二维码 URL 基址规则；由二维码生成层追加集团空间编码与服务点标识。"
+          },
           "storeVisibilityScope": {
             "$ref": "#/components/schemas/BusinessChannelTemplateStoreVisibilityScope"
           },
@@ -169,6 +177,14 @@
           },
           "storeVisibilityScope": {
             "$ref": "#/components/schemas/BusinessChannelTemplateStoreVisibilityScope"
+          },
+          "urlRule": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2048,
+            "description": "二维码 URL 基址规则；由二维码生成层追加集团空间编码与服务点标识。"
           },
           "visibleStoreRefs": {
             "type": "array",
@@ -277,6 +293,14 @@
               "string",
               "null"
             ]
+          },
+          "urlRule": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2048,
+            "description": "二维码 URL 基址规则；由二维码生成层追加集团空间编码与服务点标识。"
           },
           "storeVisibilityScope": {
             "$ref": "#/components/schemas/BusinessChannelTemplateStoreVisibilityScope"

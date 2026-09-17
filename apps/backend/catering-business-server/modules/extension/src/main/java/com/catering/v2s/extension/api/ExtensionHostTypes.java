@@ -12,8 +12,9 @@ public final class ExtensionHostTypes {
     public static final String COMMERCIAL_GROUP = "COMMERCIAL_GROUP";
     public static final String REGION = "REGION";
     public static final String PROJECT = "PROJECT";
+    public static final String SERVICE_POINT = "SERVICE_POINT";
     public static final Set<String> VALUES =
-            Set.of(BRAND, TENANT, HEAD_COMPANY, STORE, CONTRACT, COMMERCIAL_GROUP, REGION, PROJECT);
+            Set.of(BRAND, TENANT, HEAD_COMPANY, STORE, CONTRACT, COMMERCIAL_GROUP, REGION, PROJECT, SERVICE_POINT);
     public static final Set<String> FLAT_VALUES = Set.of(BRAND, TENANT, HEAD_COMPANY, STORE, CONTRACT);
 
     private ExtensionHostTypes() {}

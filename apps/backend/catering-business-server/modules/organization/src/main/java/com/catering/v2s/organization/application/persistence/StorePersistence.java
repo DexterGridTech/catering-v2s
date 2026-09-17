@@ -106,6 +106,12 @@ public class StorePersistence {
                 now);
     }
 
+    public int insertDefaultQrConfiguration(UUID storeRef, UUID workspaceUuid, String groupWorkspaceKey, long now) {
+        return jdbc.update(
+                "INSERT INTO organization.store_qr_configuration(store_ref, workspace_uuid, group_workspace_key, enabled, channel_ref, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?,?,?,FALSE,NULL,1,?,?) ON CONFLICT (store_ref) DO NOTHING",
+                storeRef, workspaceUuid, groupWorkspaceKey, now, now);
+    }
+
     public int update(
             UUID storeId,
             UUID workspaceUuid,

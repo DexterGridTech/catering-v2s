@@ -264,7 +264,7 @@
           "tableManagementEnabled": {
             "type": "boolean",
             "default": false,
-            "description": "是否启用桌台管理"
+            "description": "是否启用桌台和二维码管理"
           },
           "tableStatusEnabled": {
             "type": "boolean",

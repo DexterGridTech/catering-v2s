@@ -10,6 +10,7 @@ public record BusinessChannelTemplateCreateRequest(
     @com.fasterxml.jackson.annotation.JsonProperty(value = "orderKind", required = true) String orderKind,
     String dineInForm,
     tools.jackson.databind.JsonNode providerCode,
+    tools.jackson.databind.JsonNode urlRule,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "storeVisibilityScope", required = true) BusinessChannelTemplateStoreVisibilityScope storeVisibilityScope,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "visibleStoreRefs", required = true) java.util.List<java.util.UUID> visibleStoreRefs
 ) {}

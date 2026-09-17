@@ -126,13 +126,17 @@ public final class CommandExecutionContextResolver {
             if (resolution.decision() != WorkspaceCapabilityScopeResolver.Decision.ALLOW) {
                 throw new CatalogScopeForbiddenException(catalogResolution.denialReason());
             }
-            if (token.requiresStoreOperatingRuleGate()
+            if (token.storeOperatingRuleKey() != null
                     && ServiceNodeTypes.STORE.equals(dataNodeType)) {
                 if (storeOperatingRuleGate == null) {
                     throw new IllegalStateException("store operating-rule gate is not wired");
                 }
-                storeOperatingRuleGate.requireCatalogManagementForStoreTarget(
-                        session.workspaceUuid(), session.groupWorkspaceKey(), dataNodeType, dataNodeId);
+                storeOperatingRuleGate.requireStoreOperatingRuleForStoreTarget(
+                        session.workspaceUuid(),
+                        session.groupWorkspaceKey(),
+                        dataNodeType,
+                        dataNodeId,
+                        token.storeOperatingRuleKey());
             }
             OperationsOwnerScopeGrant legacyGrant = resolution.ownerScopeGrant(token.requirementId());
             CatalogScopeLookup.CatalogBrandJudgment judgment = catalogResolution.brandJudgment();

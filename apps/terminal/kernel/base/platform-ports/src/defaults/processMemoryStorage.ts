@@ -53,16 +53,18 @@ export const createProcessMemoryStateStoragePort = (): StateStoragePort => {
       return noOutput();
     },
   };
-  if (__DEV__) Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
-    value: Object.freeze({
-      port: 'persistKv',
-      capabilities: Object.freeze([
-        'read', 'write', 'remove', 'readMany', 'writeMany', 'removeMany', 'listKeys', 'clear',
-      ].map(capability => Object.freeze({capability, state: 'real' as const, source: 'default' as const}))),
-    }),
-    enumerable: false,
-    writable: false,
-    configurable: false,
-  });
+  if (__DEV__) {
+    Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
+      value: Object.freeze({
+        port: 'persistKv',
+        capabilities: Object.freeze([
+          'read', 'write', 'remove', 'readMany', 'writeMany', 'removeMany', 'listKeys', 'clear',
+        ].map(capability => Object.freeze({capability, state: 'real' as const, source: 'default' as const}))),
+      }),
+      enumerable: false,
+      writable: false,
+      configurable: false,
+    });
+  }
   return Object.freeze(port);
 };

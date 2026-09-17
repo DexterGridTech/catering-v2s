@@ -10,6 +10,8 @@ import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-d
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth'
 import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry'
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session'
+import {createTopologyModule} from '@catering-v2s/kernel-base-topology'
+import {createTopologyIdentityClient, createTransportModule, type TopologyPeerChannel} from '@catering-v2s/kernel-base-transport'
 import {ADMIN_SECTION_CONTAINER_KEY, SampleSection} from '@catering-v2s/ui-base-admin-shell'
 import {createSampleConsoleModule, startupReadyCommand, type SampleConsoleReadyPayload} from '../application/module'
 import {
@@ -59,6 +61,7 @@ type SampleAssemblyInput = Readonly<{
   readonly startupDebugMode?: boolean
   readonly showAdminPassword?: boolean
   readonly surfaceHostSourcesByDisplayIndex?: Readonly<Partial<Record<0 | 1, SurfaceHostMeasurementSource>>>
+  readonly topologyPeerChannel?: TopologyPeerChannel
 }>
 
 export function createSampleAssembly(input: SampleAssemblyInput): Promise<SampleAssembly>
@@ -70,6 +73,12 @@ export async function createSampleAssembly(
   const environmentMode: EnvironmentMode = input.environmentMode ?? (__DEV__ ? 'DEV' : 'PROD')
   const staffAuthModule = sampleStaffAuthAssembly.createModule()
   const memberDeskModule = sampleMemberDeskAssembly.createModule()
+  const topologyModule = createTopologyModule({
+    displayName: 'sample-console',
+    surfaceForm,
+    identityClient: createTopologyIdentityClient(),
+    peerChannel: input.topologyPeerChannel,
+  })
   return createConsoleAssembly<SampleConsoleReadyPayload>({
     appName: 'sample-console',
     errorPrefix: 'sample-console',
@@ -100,6 +109,8 @@ export async function createSampleAssembly(
       contentFailure,
     }),
     createApplicationModules: () => [
+      createTransportModule(),
+      topologyModule,
       createSampleConsoleModule(),
       createSampleStaffSessionModule(),
       createSampleMemberRegistryModule(),

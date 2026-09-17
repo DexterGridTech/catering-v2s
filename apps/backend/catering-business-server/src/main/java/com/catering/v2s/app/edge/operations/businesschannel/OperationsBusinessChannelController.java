@@ -243,6 +243,7 @@ public final class OperationsBusinessChannelController {
                         required(body.orderKind(), "orderKind"),
                         body.dineInForm(),
                         ExternalCollaborationWireMapper.optionalText(body.providerCode(), "providerCode"),
+                        ExternalCollaborationWireMapper.optionalText(body.urlRule(), "urlRule"),
                         body.storeVisibilityScope() == null
                                 ? null
                                 : body.storeVisibilityScope().wire(),
@@ -275,6 +276,7 @@ public final class OperationsBusinessChannelController {
                         body.storeVisibilityScope() == null
                                 ? null
                                 : body.storeVisibilityScope().wire(),
+                        ExternalCollaborationWireMapper.optionalText(body.urlRule(), "urlRule"),
                         body.visibleStoreRefs(),
                         session.contextVersion(),
                         idempotencyKey(idempotencyKey),

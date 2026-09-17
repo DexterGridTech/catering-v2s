@@ -48,6 +48,7 @@ final class BusinessChannelWireMapper {
                 enumValue(BusinessChannelTemplateViewOrderKind.class, value.orderKind(), "orderKind"),
                 enumValue(BusinessChannelTemplateViewDineInForm.class, value.dineInForm(), "dineInForm"),
                 text(value.providerCode()),
+                text(value.urlRule()),
                 enumValue(
                         BusinessChannelTemplateStoreVisibilityScope.class,
                         value.storeVisibilityScope(),

@@ -1,6 +1,6 @@
 {
   "generated": true,
-  "sourceSha256": "e9315839d89ffc3d981486a826cf1c4595a4cc8f9e8a65a2d998752c183e5646",
+  "sourceSha256": "cc6e9e397769e5919abbeb4a6dd487746e0f2354434453307cd9f5c8eb15e262",
   "components": {
     "schemas": {
       "OrganizationStoreOperatingRuleValues": {
@@ -55,7 +55,7 @@
           "tableManagementEnabled": {
             "type": "boolean",
             "default": false,
-            "description": "是否启用桌台管理"
+            "description": "是否启用桌台和二维码管理"
           },
           "tableStatusEnabled": {
             "type": "boolean",

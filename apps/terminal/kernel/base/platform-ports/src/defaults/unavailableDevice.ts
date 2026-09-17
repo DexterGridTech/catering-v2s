@@ -12,15 +12,17 @@ export const unavailableDevicePort: DevicePort = {
   unsubscribePowerStatus: async (_input: PowerStatusUnsubscribeInput): Promise<PortResult<NoOutput>> => createUnavailable('device', 'unsubscribePowerStatus'),
 };
 
-if (__DEV__) Object.defineProperty(unavailableDevicePort, PORT_DESCRIPTOR_KEY, {
-  value: Object.freeze({
-    port: 'device',
-    capabilities: Object.freeze([
-      'getDeviceInfo', 'getDisplayInfo', 'getSystemStatus', 'getPowerStatus',
-      'subscribePowerStatus', 'unsubscribePowerStatus',
-    ].map(capability => Object.freeze({capability, state: 'unavailable' as const, source: 'default' as const}))),
-  }),
-  enumerable: false,
-  writable: false,
-  configurable: false,
-});
+if (__DEV__) {
+  Object.defineProperty(unavailableDevicePort, PORT_DESCRIPTOR_KEY, {
+    value: Object.freeze({
+      port: 'device',
+      capabilities: Object.freeze([
+        'getDeviceInfo', 'getDisplayInfo', 'getSystemStatus', 'getPowerStatus',
+        'subscribePowerStatus', 'unsubscribePowerStatus',
+      ].map(capability => Object.freeze({capability, state: 'unavailable' as const, source: 'default' as const}))),
+    }),
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  });
+}

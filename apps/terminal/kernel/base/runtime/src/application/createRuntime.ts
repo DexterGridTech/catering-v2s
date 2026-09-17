@@ -312,12 +312,22 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
   }
 
   const dispatchForContext = <TPayload extends StateJsonValue>(
-    definition: CommandDefinition<TPayload>,
+    definitionOrName: CommandDefinition<TPayload> | string,
     payload: TPayload,
     options?: CommandDispatchOptions,
-  ): Promise<CommandDispatchResult> => dispatcher === undefined
-    ? Promise.reject(lifecycleError('Runtime dispatcher is not available'))
-    : dispatcher.dispatchCommand(definition, payload, options)
+  ): Promise<CommandDispatchResult> => {
+    if (dispatcher === undefined) return Promise.reject(lifecycleError('Runtime dispatcher is not available'))
+    if (typeof definitionOrName === 'string') {
+      const registered = definitions.get(definitionOrName)
+      if (registered === undefined) return Promise.reject(lifecycleError(`Unknown runtime command: ${definitionOrName}`))
+      return dispatcher.dispatchCommand(
+        registered.definition as CommandDefinition<TPayload>,
+        payload,
+        options,
+      )
+    }
+    return dispatcher.dispatchCommand(definitionOrName, payload, options)
+  }
 
   const installPeerDispatchGateway = (gateway: import('../types/peer').PeerDispatchGateway): void => {
     if (dispatcher === undefined) throw new Error('Runtime dispatcher is not available')

@@ -429,6 +429,7 @@ public class StoreService {
                     BusinessEntityValueSupport.optional(notes, 2000),
                     operatingRuleJson,
                     now);
+            persistence.insertDefaultQrConfiguration(id, workspaceUuid, groupWorkspaceKey, now);
         } catch (DuplicateKeyException exception) {
             throw new BusinessEntityService.OrganizationDuplicateException(exception);
         } catch (DataIntegrityViolationException exception) {

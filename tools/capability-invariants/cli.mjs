@@ -175,6 +175,50 @@ const RESOURCE_TYPE_CAPABILITY_OPERATIONS = new Map([
     {PROJECT: "BC-BUSINESS-CHANNEL-PROJECT-EDIT", STORE: "BC-BUSINESS-CHANNEL-STORE-EDIT"},
   ],
   [
+    "postOperationsStoreServicePointArea|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas|operations-admin",
+    {STORE: "EDIT_STORE_SERVICE_POINT_QR"},
+  ],
+  [
+    "patchOperationsStoreServicePointArea|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}|operations-admin",
+    {STORE: "EDIT_STORE_SERVICE_POINT_QR"},
+  ],
+  [
+    "postOperationsStoreServicePointAreaStatus|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/status|operations-admin",
+    {STORE: "EDIT_STORE_SERVICE_POINT_QR"},
+  ],
+  [
+    "postOperationsStoreServicePointAreaOrder|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/order|operations-admin",
+    {STORE: "EDIT_STORE_SERVICE_POINT_QR"},
+  ],
+  [
+    "postOperationsStoreServicePoint|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-areas/{areaRef}/service-points|operations-admin",
+    {STORE: "EDIT_STORE_SERVICE_POINT_QR"},
+  ],
+  [
+    "patchOperationsStoreServicePoint|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}|operations-admin",
+    {STORE: "EDIT_STORE_SERVICE_POINT_QR"},
+  ],
+  [
+    "postOperationsStoreServicePointStatus|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/status|operations-admin",
+    {STORE: "EDIT_STORE_SERVICE_POINT_QR"},
+  ],
+  [
+    "postOperationsStoreServicePointOrder|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points/{servicePointRef}/order|operations-admin",
+    {STORE: "EDIT_STORE_SERVICE_POINT_QR"},
+  ],
+  [
+    "patchOperationsStoreQrConfiguration|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration|operations-admin",
+    {STORE: "EDIT_STORE_SERVICE_POINT_QR"},
+  ],
+  [
+    "stageStoreServicePointImage|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage|operations-admin",
+    {STORE: "EDIT_STORE_SERVICE_POINT_QR"},
+  ],
+  [
+    "releaseStagedStoreServicePointImage|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release|operations-admin",
+    {STORE: "EDIT_STORE_SERVICE_POINT_QR"},
+  ],
+  [
     "createOperationsSalesMenu|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus|operations-admin",
     {STORE: "EDIT_STORE_SALES_MENU"},
   ],

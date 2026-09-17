@@ -81,6 +81,24 @@ test('operations shell fixes the range footer outside its only scrollable naviga
   assert.match(styles, /\.operations-scope-selector \{[\s\S]*flex: 0 0 auto;/);
 });
 
+test('operations shell delegates dirty ownership to Drawer lifecycle without a duplicate persistent prompt', () => {
+  const app = fs.readFileSync(new URL('../../app/OperationsApp.tsx', import.meta.url), 'utf8');
+  const editDrawer = fs.readFileSync(
+    new URL('../../features/store-management/ui/StoreEditDrawer.tsx', import.meta.url),
+    'utf8',
+  );
+  const ruleTree = fs.readFileSync(
+    new URL('../../features/store-management/ui/StoreOperatingRuleTree.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(app, /const shellLock = useShellInteractionLock\(\)/);
+  assert.match(app, /const locked = shellLock\.locked/);
+  assert.doesNotMatch(app, /dirtyDraftPrompt|dirtyLocked|operations-shell-dirty-guard|请先保存或放弃当前修改/);
+  assert.match(editDrawer, /useDrawerFormLifecycle/);
+  assert.match(editDrawer, /lifecycle\.setDirty\(true\)/);
+  assert.doesNotMatch(ruleTree, /setDirty|useDirtyFormLock|Modal\.confirm|dirtyMessage|请先保存|放弃当前修改/);
+});
+
 test('operations business surfaces never expose owner internals, raw scope identities, or copy implementation terms', () => {
   const dictionaryState = fs.readFileSync(
     new URL('../../features/catalog-management/ui/dictionary/CatalogDictionaryDrawerState.tsx', import.meta.url),

@@ -1,0 +1,153 @@
+import type {SurfaceForm} from './display'
+
+export type TopologyInstanceMode = 'MASTER' | 'SLAVE'
+export type TopologyDisplayRole = 'CHIEF' | 'VICE'
+
+export type TopologyOperation = 'query-host' | 'pair' | 'unpair' | 'enable-host' | 'switch-role'
+
+export type TopologyFailureReasonCode =
+  | 'allowed'
+  | 'TOPOLOGY_UNSUPPORTED_FORM'
+  | 'TOPOLOGY_REQUIRES_SINGLE_SCREEN'
+  | 'TOPOLOGY_REQUIRES_MASTER'
+  | 'TOPOLOGY_ALREADY_PAIRED'
+  | 'TOPOLOGY_NOT_PAIRED'
+  | 'TOPOLOGY_PEER_UNREACHABLE'
+  | 'TOPOLOGY_IDENTITY_FAILED'
+  | 'TOPOLOGY_HOST_FAILED'
+  | 'TOPOLOGY_HOST_PORT_OCCUPIED'
+  | 'TOPOLOGY_STALE_LOCATOR'
+  | 'TOPOLOGY_INVALID_LOCATOR'
+  | 'TOPOLOGY_ROLE_OCCUPIED'
+  | 'TOPOLOGY_PROTOCOL_REJECTED'
+  | 'TOPOLOGY_TIMEOUT'
+  | 'TOPOLOGY_UNAVAILABLE'
+
+export type TopologyLocator = Readonly<{
+  readonly host: string
+  readonly port: number
+  readonly basePath: string
+  readonly identity: TopologyIdentity
+}>
+
+export type TopologyIdentity = Readonly<{
+  readonly protocolVersion: 1
+  readonly nodeId: string
+  readonly displayName: string
+  readonly instanceMode: TopologyInstanceMode
+  readonly displayRole: TopologyDisplayRole
+}>
+
+export type TopologyIdentityResponse = Readonly<{
+  readonly type: 'identity'
+  readonly protocolVersion: 1
+  readonly nodeId: string
+  readonly displayName: string
+  readonly instanceMode: TopologyInstanceMode
+  readonly displayRole: TopologyDisplayRole
+}>
+
+export type TopologyFacts = Readonly<{
+  readonly surfaceForm: SurfaceForm
+  readonly displayCount: number | null
+  readonly instanceMode: TopologyInstanceMode
+  readonly displayRole: TopologyDisplayRole
+  readonly paired: boolean
+  readonly peerReachable: boolean
+  readonly hasTopologySecondarySurface: boolean
+  readonly masterLocator: TopologyLocator | null
+  readonly peerIdentity: TopologyIdentity | null
+  readonly hostDesired: boolean
+  readonly hostActual: 'stopped' | 'starting' | 'running' | 'stopping' | 'error'
+  readonly hostErrorCode: string | null
+}>
+
+export type TopologyOperationEligibility = Readonly<{
+  readonly operation: TopologyOperation
+  readonly allowed: boolean
+  readonly reasonCode: TopologyFailureReasonCode
+}>
+
+export type TopologyJsonPrimitive = string | number | boolean | null
+export type TopologyJsonValue =
+  | TopologyJsonPrimitive
+  | readonly TopologyJsonValue[]
+  | Readonly<{readonly [key: string]: TopologyJsonValue}>
+
+export type TopologyWireErrorCode = Exclude<TopologyFailureReasonCode, 'allowed'>
+
+export type TopologyWireError = Readonly<{
+  readonly code: TopologyWireErrorCode
+  readonly retryable: boolean
+}>
+
+export type TopologyWireMessage =
+  | Readonly<{
+      readonly type: 'hello'
+      readonly protocolVersion: 1
+      readonly wireId: string
+      readonly nodeId: string
+      readonly displayName: string
+      readonly instanceMode: TopologyInstanceMode
+      readonly displayRole: TopologyDisplayRole
+    }>
+  | Readonly<{
+      readonly type: 'hello-accepted'
+      readonly protocolVersion: 1
+      readonly wireId: string
+      readonly nodeId: string
+    }>
+  | Readonly<{
+      readonly type: 'hello-rejected'
+      readonly protocolVersion: 1
+      readonly wireId: string
+      readonly error: TopologyWireError
+    }>
+  | Readonly<{
+      readonly type: 'command-request'
+      readonly protocolVersion: 1
+      readonly wireId: string
+      readonly requestId: string | null
+      readonly commandId: string
+      readonly parentCommandId: string | null
+      readonly commandName: string
+      readonly payload: TopologyJsonValue
+    }>
+  | Readonly<{
+      readonly type: 'command-result'
+      readonly protocolVersion: 1
+      readonly wireId: string
+      readonly requestId: string | null
+      readonly commandId: string
+      readonly status: 'completed' | 'partial-failed' | 'timed-out' | 'error'
+      readonly result: TopologyJsonValue | null
+      readonly error: TopologyWireError | null
+    }>
+  | Readonly<{
+      readonly type: 'command-cancel'
+      readonly protocolVersion: 1
+      readonly wireId: string
+      readonly requestId: string | null
+      readonly commandId: string
+    }>
+  | Readonly<{
+      readonly type: 'state-full'
+      readonly protocolVersion: 1
+      readonly wireId: string
+      readonly sliceName: 'kernel.feature.sample-member-registry.members'
+      readonly direction: 'master-to-slave'
+      readonly revision: number
+      readonly value: TopologyJsonValue
+    }>
+  | Readonly<{
+      readonly type: 'ping' | 'pong'
+      readonly protocolVersion: 1
+      readonly wireId: string
+      readonly sequence: number
+    }>
+  | Readonly<{
+      readonly type: 'closed-error'
+      readonly protocolVersion: 1
+      readonly wireId: string
+      readonly error: TopologyWireError
+    }>

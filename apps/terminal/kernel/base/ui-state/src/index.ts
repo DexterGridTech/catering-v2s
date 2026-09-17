@@ -8,7 +8,7 @@ export type {
   UiCatalogContext,
   UiCatalogEntry,
 } from './types/catalog';
-export {isSurfaceForm} from './types/catalog';
+export {isSurfaceForm} from '@catering-v2s/kernel-base-contracts';
 export type {DisplayMode} from '@catering-v2s/kernel-base-display-context';
 export type {
   LayerEntry,

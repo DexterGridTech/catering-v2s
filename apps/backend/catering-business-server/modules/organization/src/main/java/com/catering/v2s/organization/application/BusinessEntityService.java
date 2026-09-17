@@ -1049,11 +1049,24 @@ public class BusinessEntityService
     @Override
     public void requireCatalogManagementForStoreTarget(
             UUID workspaceUuid, String groupWorkspaceKey, String targetType, UUID storeId) {
+        requireStoreOperatingRuleForStoreTarget(
+                workspaceUuid, groupWorkspaceKey, targetType, storeId, "catalogManagementEnabled");
+    }
+
+    @Override
+    public void requireStoreOperatingRuleForStoreTarget(
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String targetType,
+            UUID storeId,
+            String ruleKey) {
         if (!com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.STORE.equals(targetType)
                 || workspaceUuid == null
                 || groupWorkspaceKey == null
                 || groupWorkspaceKey.isBlank()
-                || storeId == null) {
+                || storeId == null
+                || ruleKey == null
+                || ruleKey.isBlank()) {
             throw new StoreOperatingRuleGate.CatalogManagementDisabledException(
                     StoreOperatingRuleGate.CatalogManagementDisabledException.Reason.TARGET_NOT_STORE);
         }
@@ -1068,7 +1081,7 @@ public class BusinessEntityService
                     Sha256Hex.digest(storeId.toString()),
                     failure);
         }
-        if (!Boolean.TRUE.equals(readback.values().get("catalogManagementEnabled"))) {
+        if (!Boolean.TRUE.equals(readback.values().get(ruleKey))) {
             throw new StoreOperatingRuleGate.CatalogManagementDisabledException(
                     StoreOperatingRuleGate.CatalogManagementDisabledException.Reason.DISABLED,
                     Sha256Hex.digest(storeId.toString()),

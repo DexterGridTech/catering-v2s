@@ -5,11 +5,10 @@ import type {
   StateRoot,
   StateRuntime,
 } from '@catering-v2s/kernel-base-state'
-import type {CommandDispatchOptions, CommandDefinition} from '../types/command'
-import type {CommandDispatchResult} from '../types/execution'
 import type {
   RuntimeModule,
   RuntimeModuleContext,
+  RuntimeModuleDispatch,
   RuntimeModuleDescriptor,
   RuntimeModulePreSetupContext,
   RuntimeModuleResetInput,
@@ -18,11 +17,7 @@ import type {PeerDispatchGateway} from '../types/peer'
 import type {RuntimeUnknownAction} from '../types/runtime'
 import {createStateSubscription} from './createStateSubscription'
 
-type DispatchCommand = <TPayload extends import('@catering-v2s/kernel-base-state').StateJsonValue>(
-  definition: CommandDefinition<TPayload>,
-  payload: TPayload,
-  options?: CommandDispatchOptions,
-) => Promise<CommandDispatchResult>
+type DispatchCommand = RuntimeModuleDispatch
 
 type RuntimeLifecycleInput = Readonly<{
   modules: readonly RuntimeModule[]
@@ -62,6 +57,9 @@ const createModuleContext = (
       input.registerResource,
     ),
     registerResource: input.registerResource,
+    createFullSyncPayload: (sliceName: string) => stateRuntime.createFullSyncPayload(sliceName),
+    applyAuthoritativeSync: (sliceName: string, payload: import('@catering-v2s/kernel-base-state').SyncStateDiff) =>
+      stateRuntime.applyAuthoritativeSync(sliceName, payload),
     dispatchCommand: input.dispatchCommand,
     installPeerDispatchGateway: input.installPeerDispatchGateway,
   })

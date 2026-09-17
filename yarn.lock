@@ -1397,7 +1397,23 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/kernel-base-transport@workspace:apps/terminal/kernel/base/transport":
+"@catering-v2s/kernel-base-topology@workspace:apps/terminal/kernel/base/topology":
+  version: 0.0.0-use.local
+  resolution: "@catering-v2s/kernel-base-topology@workspace:apps/terminal/kernel/base/topology"
+  dependencies:
+    "@catering-v2s/kernel-base-contracts": "workspace:*"
+    "@catering-v2s/kernel-base-display-context": "workspace:*"
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
+    "@catering-v2s/kernel-base-runtime": "workspace:*"
+    "@catering-v2s/kernel-base-state": "workspace:*"
+    "@catering-v2s/kernel-base-transport": "workspace:*"
+    "@reduxjs/toolkit": "npm:2.12.0"
+    typescript: "npm:~6.0.3"
+    vitest: "npm:4.1.10"
+  languageName: unknown
+  linkType: soft
+
+"@catering-v2s/kernel-base-transport@workspace:*, @catering-v2s/kernel-base-transport@workspace:apps/terminal/kernel/base/transport":
   version: 0.0.0-use.local
   resolution: "@catering-v2s/kernel-base-transport@workspace:apps/terminal/kernel/base/transport"
   dependencies:
@@ -1406,6 +1422,7 @@ __metadata:
     "@catering-v2s/kernel-base-runtime": "workspace:*"
     "@catering-v2s/kernel-base-state": "workspace:*"
     typescript: "npm:~6.0.3"
+    vitest: "npm:4.1.10"
   languageName: unknown
   linkType: soft
 

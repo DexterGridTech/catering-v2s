@@ -1,13 +1,12 @@
 import type {DisplayMode, DisplayRole} from '@catering-v2s/kernel-base-display-context'
 import type {RuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime'
 import type {WorkspaceKey} from '@catering-v2s/kernel-base-state'
+import type {SurfaceForm} from '@catering-v2s/kernel-base-contracts'
+export {isSurfaceForm} from '@catering-v2s/kernel-base-contracts'
 
 export type ContainerKey = string
 export type PartKey = string
-export type SurfaceForm = 'laptop' | 'mobile'
-
-export const isSurfaceForm = (value: unknown): value is SurfaceForm =>
-  value === 'laptop' || value === 'mobile'
+export type {SurfaceForm} from '@catering-v2s/kernel-base-contracts'
 
 export type UiCatalogEntry = Readonly<{
   readonly partKey: PartKey

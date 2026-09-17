@@ -120,6 +120,7 @@ public final class PlatformExtensionDefinitionController {
             case COMMERCIAL_GROUP -> "商业集团";
             case REGION -> "大区";
             case PROJECT -> "项目";
+            case SERVICE_POINT -> "服务点";
         };
     }
 }

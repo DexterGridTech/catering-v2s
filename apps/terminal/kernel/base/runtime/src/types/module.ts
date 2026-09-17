@@ -9,7 +9,10 @@ import type {
   PersistenceOperationResult,
   StateJsonValue,
   StateRoot,
+  StateSyncApplyResult,
+  StateSyncPayloadResult,
   StateRuntimeSliceRegistration,
+  SyncStateDiff,
 } from '@catering-v2s/kernel-base-state'
 import type {
   ActorDefinition,
@@ -39,7 +42,25 @@ type RuntimeCommandDefinition = Readonly<Pick<
 > & {
   /** Keep the factory-created brand in the module-facing type. */
   readonly [commandDefinitionBrand]: unknown
-}>
+}> 
+
+export type RuntimeModuleDispatch = {
+  <TPayload extends StateJsonValue>(
+    definition: CommandDefinition<TPayload>,
+    payload: TPayload,
+    options?: CommandDispatchOptions,
+  ): Promise<CommandDispatchResult>
+  /**
+   * Runtime-owned receivers use the registered command name after a wire
+   * boundary.  The lookup remains inside Runtime; modules never receive the
+   * command registry or a forgeable definition.
+   */
+  <TPayload extends StateJsonValue>(
+    commandName: string,
+    payload: TPayload,
+    options?: CommandDispatchOptions,
+  ): Promise<CommandDispatchResult>
+}
 
 export type RuntimeModulePreSetupContext = Readonly<{
   moduleName: string
@@ -62,11 +83,9 @@ export type RuntimeModuleContext = Readonly<{
   flushPersistence: () => Promise<PersistenceOperationResult>
   subscribeState: (listener: () => void) => () => void
   registerResource: (cleanup: () => void) => () => void
-  dispatchCommand: <TPayload extends StateJsonValue>(
-    definition: CommandDefinition<TPayload>,
-    payload: TPayload,
-    options?: CommandDispatchOptions,
-  ) => Promise<CommandDispatchResult>
+  createFullSyncPayload: (sliceName: string) => StateSyncPayloadResult
+  applyAuthoritativeSync: (sliceName: string, payload: SyncStateDiff) => StateSyncApplyResult
+  dispatchCommand: RuntimeModuleDispatch
   installPeerDispatchGateway: (gateway: PeerDispatchGateway) => void
 }>
 

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/kernel-base-topology",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-topology", "runner": "vitest"},
+    "lint": {"kind": "ABSENT"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": ["CreateTopologyModuleInput", "TopologyEligibilityInput", "TopologyState", "createTopologyModule", "dependencyModuleNames", "devDependencyModuleNames", "evaluateTopologyOperation", "hasTopologySecondarySurface", "moduleKind", "moduleName", "pairTopologyCommand", "queryTopologyHostCommand", "reconcileTopologyHostCommand", "reconcileTopologyPeerCommand", "refreshTopologyDisplayCommand", "runtimeModuleDependencyNames", "selectTopologyFacts", "selectTopologyState", "setTopologyHostEnabledCommand", "topologyActions", "topologyHostEventCommand", "topologyReasonMessages", "topologySliceName", "unpairTopologyCommand"]
+}

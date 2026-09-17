@@ -91,8 +91,10 @@ function tokens(bindings = json(bindingPath).operations, contract = json(contrac
       allowedDataNodeTypes: [...operation.allowedDataNodeTypes].sort(),
       capabilityByDataNodeType: Object.fromEntries(capabilities.sort(([a], [b]) => a.localeCompare(b))),
       copySourcePolicy: copySourcePolicies.get(row.operationId) ?? "NONE",
-      storeOperatingRuleGateRequired:
-        storeOperatingRuleGateOwners.has(row.owner) && !storeOperatingRuleGatePreflights.has(row.operationId),
+      storeOperatingRuleKey:
+        storeOperatingRuleGateOwners.has(row.owner) && !storeOperatingRuleGatePreflights.has(row.operationId)
+          ? "catalogManagementEnabled"
+          : null,
     };
   }).sort((left, right) => left.operationId.localeCompare(right.operationId));
   return tokenRows;
@@ -109,7 +111,7 @@ const constant = (operationId) => operationId.replace(/([a-z0-9])([A-Z])/g, "$1_
 function generatedSource(rows = tokens()) {
   const bindingDigest = sha256(read(bindingPath));
   const contractDigest = sha256(read(contractPath));
-  const declarations = rows.map((row) => `    public static final WorkspaceCommandOperationToken ${constant(row.operationId)} =\n            new WorkspaceCommandOperationToken(\n                    \"${row.operationId}\",\n                    \"${row.owner}\",\n                    \"${row.requirementId}\",\n                    ${javaList(row.allowedDataNodeTypes)},\n                    ${javaMap(row.capabilityByDataNodeType)},\n                    \"${row.copyRole}\",\n                    WorkspaceCommandOperationToken.CopySourcePolicy.${row.copySourcePolicy},\n                    ${row.storeOperatingRuleGateRequired});`).join("\n\n");
+  const declarations = rows.map((row) => `    public static final WorkspaceCommandOperationToken ${constant(row.operationId)} =\n            new WorkspaceCommandOperationToken(\n                    \"${row.operationId}\",\n                    \"${row.owner}\",\n                    \"${row.requirementId}\",\n                    ${javaList(row.allowedDataNodeTypes)},\n                    ${javaMap(row.capabilityByDataNodeType)},\n                    \"${row.copyRole}\",\n                    WorkspaceCommandOperationToken.CopySourcePolicy.${row.copySourcePolicy},\n                    ${row.storeOperatingRuleKey === null ? "null" : `\"${row.storeOperatingRuleKey}\"`});`).join("\n\n");
   const all = rows.map((row) => constant(row.operationId)).join(",\n                ");
   return `package com.catering.v2s.platform.command;\n\nimport java.util.List;\nimport java.util.Map;\n\n/**\n * Generated command tokens. Binding source: ${bindingPath} Binding digest:\n * ${bindingDigest} Contract source:\n * ${contractPath} Contract digest:\n * ${contractDigest}\n */\npublic final class CatalogInventoryWorkspaceCommandTokens {\n    private CatalogInventoryWorkspaceCommandTokens() {}\n\n${declarations}\n\n    public static List<WorkspaceCommandOperationToken> all() {\n        return List.of(\n                ${all});\n    }\n}\n`;
 }

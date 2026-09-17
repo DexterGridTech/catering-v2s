@@ -1,4 +1,4 @@
-import type {TimestampMs} from '@catering-v2s/kernel-base-contracts';
+import type {TimestampMs, TopologyIdentity} from '@catering-v2s/kernel-base-contracts';
 import type {NoOutput, PortResult} from './result';
 
 export type TopologyHostState = 'stopped' | 'starting' | 'running' | 'stopping' | 'error';
@@ -8,7 +8,13 @@ export interface TopologyHostRuntimeConfig {
   readonly heartbeatIntervalMs: number;
   readonly heartbeatTimeoutMs: number;
 }
-export interface TopologyHostConfig extends TopologyHostRuntimeConfig { readonly timeoutMs: number }
+export interface TopologyHostConfig extends TopologyHostRuntimeConfig {
+  readonly timeoutMs: number
+  readonly identity?: TopologyIdentity
+}
+export interface TopologyHostConfigWithIdentity extends TopologyHostConfig {
+  readonly identity: TopologyIdentity
+}
 export interface TopologyHostAddress {
   readonly host: string;
   readonly port: number;

@@ -1,4 +1,4 @@
-// GENERATED FILE. DO NOT EDIT. sourceSha256=e9315839d89ffc3d981486a826cf1c4595a4cc8f9e8a65a2d998752c183e5646
+// GENERATED FILE. DO NOT EDIT. sourceSha256=cc6e9e397769e5919abbeb4a6dd487746e0f2354434453307cd9f5c8eb15e262
 
 export type StoreOperatingRuleValueType = 'BOOLEAN' | 'NUMBER' | 'STRING';
 export type StoreOperatingRuleKey = "catalogManagementEnabled" | "externalCatalogSyncEnabled" | "openPlatformDeveloperCode" | "reservationEnabled" | "reservationDepositEnabled" | "queueCallEnabled" | "tableManagementEnabled" | "tableStatusEnabled" | "tableWaitCallEnabled" | "banquetOrderEnabled" | "pickupCallEnabled" | "receivableEnabled";
@@ -14,7 +14,7 @@ export type StoreOperatingRuleDefinition = {
   displayOrder: number;
 };
 
-export const STORE_OPERATING_RULE_SOURCE_SHA256 = "e9315839d89ffc3d981486a826cf1c4595a4cc8f9e8a65a2d998752c183e5646" as const;
+export const STORE_OPERATING_RULE_SOURCE_SHA256 = "cc6e9e397769e5919abbeb4a6dd487746e0f2354434453307cd9f5c8eb15e262" as const;
 export const STORE_OPERATING_RULE_DEFINITIONS: readonly StoreOperatingRuleDefinition[] = [
   { key: "catalogManagementEnabled", label: "是否启用商品、库存和菜单管理", type: "BOOLEAN", defaultValue: false, parentKey: null, displayOrder: 1 },
   { key: "externalCatalogSyncEnabled", label: "是否启用外部商品、库存、菜单同步", type: "BOOLEAN", defaultValue: false, parentKey: "catalogManagementEnabled", displayOrder: 2 },
@@ -22,7 +22,7 @@ export const STORE_OPERATING_RULE_DEFINITIONS: readonly StoreOperatingRuleDefini
   { key: "reservationEnabled", label: "是否启用预约功能", type: "BOOLEAN", defaultValue: false, parentKey: "catalogManagementEnabled", displayOrder: 4 },
   { key: "reservationDepositEnabled", label: "是否支持押金预约", type: "BOOLEAN", defaultValue: false, parentKey: "reservationEnabled", displayOrder: 5 },
   { key: "queueCallEnabled", label: "是否启用排队叫号", type: "BOOLEAN", defaultValue: false, parentKey: "catalogManagementEnabled", displayOrder: 6 },
-  { key: "tableManagementEnabled", label: "是否启用桌台管理", type: "BOOLEAN", defaultValue: false, parentKey: "catalogManagementEnabled", displayOrder: 7 },
+  { key: "tableManagementEnabled", label: "是否启用桌台和二维码管理", type: "BOOLEAN", defaultValue: false, parentKey: "catalogManagementEnabled", displayOrder: 7 },
   { key: "tableStatusEnabled", label: "是否启用桌台状态管理", type: "BOOLEAN", defaultValue: false, parentKey: "tableManagementEnabled", displayOrder: 8 },
   { key: "tableWaitCallEnabled", label: "是否支持「等叫」功能", type: "BOOLEAN", defaultValue: false, parentKey: "tableStatusEnabled", displayOrder: 9 },
   { key: "banquetOrderEnabled", label: "是否支持宴会订单", type: "BOOLEAN", defaultValue: false, parentKey: "tableStatusEnabled", displayOrder: 10 },

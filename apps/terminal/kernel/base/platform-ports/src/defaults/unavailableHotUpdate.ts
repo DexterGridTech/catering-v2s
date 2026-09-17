@@ -13,15 +13,17 @@ export const unavailableHotUpdatePort: HotUpdatePort = {
   confirmLoadComplete: async (_input: HotUpdateCall): Promise<PortResult<HotUpdateMarkerRead>> => createUnavailable('hotUpdate', 'confirmLoadComplete'),
 };
 
-if (__DEV__) Object.defineProperty(unavailableHotUpdatePort, PORT_DESCRIPTOR_KEY, {
-  value: Object.freeze({
-    port: 'hotUpdate',
-    capabilities: Object.freeze([
-      'downloadPackage', 'writeBootMarker', 'readBootMarker', 'readActiveMarker',
-      'readRollbackMarker', 'clearBootMarker', 'confirmLoadComplete',
-    ].map(capability => Object.freeze({capability, state: 'unavailable' as const, source: 'default' as const}))),
-  }),
-  enumerable: false,
-  writable: false,
-  configurable: false,
-});
+if (__DEV__) {
+  Object.defineProperty(unavailableHotUpdatePort, PORT_DESCRIPTOR_KEY, {
+    value: Object.freeze({
+      port: 'hotUpdate',
+      capabilities: Object.freeze([
+        'downloadPackage', 'writeBootMarker', 'readBootMarker', 'readActiveMarker',
+        'readRollbackMarker', 'clearBootMarker', 'confirmLoadComplete',
+      ].map(capability => Object.freeze({capability, state: 'unavailable' as const, source: 'default' as const}))),
+    }),
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  });
+}

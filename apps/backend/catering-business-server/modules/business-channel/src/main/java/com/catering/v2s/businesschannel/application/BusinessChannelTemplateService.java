@@ -60,13 +60,14 @@ public class BusinessChannelTemplateService {
                     "orderKind",
                     "dineInForm",
                     "providerCode",
+                    "urlRule",
                     "storeVisibilityScope",
                     "visibleStoreRefs",
                     "status"));
     private static final AuditChangePolicy TEMPLATE_UPDATED = new AuditChangePolicy(
             "BUSINESS_CHANNEL_TEMPLATE",
             "TEMPLATE_UPDATED",
-            java.util.Set.of("templateName", "storeVisibilityScope", "visibleStoreRefs"));
+            java.util.Set.of("templateName", "urlRule", "storeVisibilityScope", "visibleStoreRefs"));
     private static final AuditChangePolicy TEMPLATE_STATUS =
             new AuditChangePolicy("BUSINESS_CHANNEL_TEMPLATE", "STATUS_CHANGED", java.util.Set.of("status"));
     private final BusinessChannelTemplatePersistence persistence;
@@ -314,6 +315,8 @@ public class BusinessChannelTemplateService {
                         command.groupWorkspaceKey()));
         BusinessChannelPolicy.required(command.templateName(), "templateName", 240);
         String templateCode = BusinessChannelPolicy.preserveTemplateCode(command.templateCode());
+        String urlRule = normalizeUrlRule(
+                command.urlRule(), command.accessKind(), command.operatorKind(), command.orderKind(), command.dineInForm());
         String storeVisibilityScope =
                 normalizedStoreVisibilityScope(command.operatorKind(), command.storeVisibilityScope());
         List<UUID> visibleStoreRefs = BusinessChannelPolicy.validateAndNormalizeStoreVisibility(
@@ -338,6 +341,7 @@ public class BusinessChannelTemplateService {
                 command.orderKind(),
                 command.dineInForm(),
                 command.providerCode(),
+                urlRule,
                 storeVisibilityScope,
                 visibleStoreRefs,
                 command.contextVersion());
@@ -369,6 +373,7 @@ public class BusinessChannelTemplateService {
                                 command.orderKind(),
                                 command.dineInForm(),
                                 command.providerCode(),
+                                urlRule,
                                 storeVisibilityScope,
                                 now);
                     } catch (DuplicateKeyException failure) {
@@ -391,6 +396,7 @@ public class BusinessChannelTemplateService {
                                     change("orderKind", null, command.orderKind()),
                                     change("dineInForm", null, command.dineInForm()),
                                     change("providerCode", null, command.providerCode()),
+                                    change("urlRule", null, urlRule),
                                     change("storeVisibilityScope", null, storeVisibilityScope),
                                     change("visibleStoreRefs", null, visibleStoreRefs),
                                     change("status", null, BusinessChannelPolicy.ENABLED)));
@@ -421,6 +427,7 @@ public class BusinessChannelTemplateService {
                 command.templateName(),
                 command.expectedVersion(),
                 command.storeVisibilityScope(),
+                command.urlRule(),
                 canonicalVisibleStoreRefs,
                 command.contextVersion());
         return receipts.execute(
@@ -466,6 +473,12 @@ public class BusinessChannelTemplateService {
                     requireMutable(currentProjection.status());
                     String storeVisibilityScope = normalizedStoreVisibilityScope(
                             currentProjection.operatorKind(), command.storeVisibilityScope());
+                    String urlRule = normalizeUrlRule(
+                            command.urlRule(),
+                            currentProjection.accessKind(),
+                            currentProjection.operatorKind(),
+                            currentProjection.orderKind(),
+                            currentProjection.dineInForm());
                     List<UUID> visibleStoreRefs = BusinessChannelPolicy.validateAndNormalizeStoreVisibility(
                             currentProjection.operatorKind(), storeVisibilityScope, command.visibleStoreRefs());
                     validateVisibleStoreMembership(
@@ -479,6 +492,7 @@ public class BusinessChannelTemplateService {
                             command.templateRef(),
                             command.templateName(),
                             storeVisibilityScope,
+                            urlRule,
                             command.expectedVersion(),
                             visibleStoreRefs);
                     audit(
@@ -494,6 +508,7 @@ public class BusinessChannelTemplateService {
                                             "storeVisibilityScope",
                                             currentProjection.storeVisibilityScope(),
                                             storeVisibilityScope),
+                                    change("urlRule", currentProjection.urlRule(), urlRule),
                                     change("visibleStoreRefs", current.visibleStoreRefs(), visibleStoreRefs)));
                     StatusFacts facts = statusFacts(
                             command.workspaceUuid(), command.groupWorkspaceKey(), List.of(updated), List.of());
@@ -687,6 +702,7 @@ public class BusinessChannelTemplateService {
                 current.orderKind(),
                 current.dineInForm(),
                 current.providerCode(),
+                current.urlRule(),
                 current.storeVisibilityScope(),
                 current.visibleStoreCount(),
                 targetStatus,
@@ -798,6 +814,7 @@ public class BusinessChannelTemplateService {
                 projection.orderKind(),
                 projection.dineInForm(),
                 projection.providerCode(),
+                projection.urlRule(),
                 projection.storeVisibilityScope(),
                 projection.visibleStoreCount(),
                 projection.status(),
@@ -939,6 +956,7 @@ public class BusinessChannelTemplateService {
             UUID templateRef,
             String templateName,
             String storeVisibilityScope,
+            String urlRule,
             long expectedVersion,
             List<UUID> visibleStoreRefs) {
         return persistence.updateTemplateAndVisibleStoreRelations(
@@ -947,6 +965,7 @@ public class BusinessChannelTemplateService {
                         templateRef,
                         templateName,
                         storeVisibilityScope,
+                        urlRule,
                         expectedVersion,
                         visibleStoreRefs,
                         time.currentEpochMillis())
@@ -959,6 +978,22 @@ public class BusinessChannelTemplateService {
         return BusinessChannelPolicy.STORE.equals(operatorKind)
                 ? BusinessChannelPolicy.requireStoreVisibilityScope(storeVisibilityScope)
                 : storeVisibilityScope;
+    }
+
+    private static String normalizeUrlRule(
+            String urlRule, String accessKind, String operatorKind, String orderKind, String dineInForm) {
+        String normalized = urlRule == null || urlRule.isBlank() ? null : urlRule.trim();
+        boolean target = BusinessChannelPolicy.INTERNAL.equals(accessKind)
+                && BusinessChannelPolicy.STORE.equals(operatorKind)
+                && BusinessChannelPolicy.DINE_IN.equals(orderKind)
+                && "QR".equals(dineInForm);
+        if (!target && normalized != null) {
+            throw problem("VALIDATION_ERROR", 422, "urlRule is only supported for internal store QR dine-in templates");
+        }
+        if (normalized != null && normalized.length() > 2000) {
+            throw problem("VALIDATION_ERROR", 422, "urlRule is too long");
+        }
+        return normalized;
     }
 
 
@@ -1045,6 +1080,7 @@ public class BusinessChannelTemplateService {
                 row.orderKind(),
                 row.dineInForm(),
                 row.providerCode(),
+                row.urlRule(),
                 row.storeVisibilityScope(),
                 row.visibleStoreCount(),
                 row.status(),
@@ -1136,6 +1172,7 @@ public class BusinessChannelTemplateService {
             String orderKind,
             String dineInForm,
             String providerCode,
+            String urlRule,
             String storeVisibilityScope,
             long visibleStoreCount,
             String status,
