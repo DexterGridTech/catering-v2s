@@ -30,7 +30,13 @@ const createInitialState = (input: CreateTopologyStateInput): TopologyState => O
 
 const topologySlice = createSlice({
   name: topologySliceName,
-  initialState: undefined as TopologyState | undefined,
+  // This slice is a reducer/action definition template. Runtime instances
+  // replace the seed with the input-specific state in createTopologySlice.
+  initialState: createInitialState({
+    nodeId: 'topology-action-template',
+    displayName: 'topology action template',
+    surfaceForm: 'laptop',
+  }),
   reducers: {
     setDisplayCount: (state, action: PayloadAction<number | null>): TopologyState => ({...state!, displayCount: action.payload}),
     setMasterLocator: (state, action: PayloadAction<TopologyLocator>): TopologyState => ({...state!, masterLocator: action.payload}),

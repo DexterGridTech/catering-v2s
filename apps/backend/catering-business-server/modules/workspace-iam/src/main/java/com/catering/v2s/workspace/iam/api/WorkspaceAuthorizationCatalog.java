@@ -118,7 +118,7 @@ public final class WorkspaceAuthorizationCatalog {
             capability("EDIT_STORE_CATALOG", "编辑门店商品", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-CATALOG-STORE-ITEMS", "SELECTED_STORE_SCOPE"),
             capability("EDIT_STORE_INVENTORY", "编辑门店库存", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-INVENTORY-STORE-STATUS", "SELECTED_STORE_SCOPE"),
             capability("EDIT_STORE_SALES_MENU", "编辑门店销售菜单", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-SALES-MENU-STORE", "SELECTED_STORE_SCOPE"),
-            capability("EDIT_STORE_SERVICE_POINT_QR", "编辑门店桌台与二维码管理", "STORE_MANAGEMENT", "门店管理", 200, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-STORE-SERVICE-POINT-QR", "SELECTED_STORE_SCOPE")); }
+            capability("EDIT_STORE_SERVICE_POINT_QR", "编辑门店桌台与二维码", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-STORE-SERVICE-POINT-QR", "SELECTED_STORE_SCOPE")); }
     public static List<PageAccessCatalogEntry> pageCatalog() { return List.of(
             page("HOME-GROUP", "集团首页", "工作台", 10, "NONE", List.of("GROUP"), null, false),
             page("HOME-REGION", "大区首页", "工作台", 20, "NONE", List.of("REGION"), null, false),
@@ -143,7 +143,7 @@ public final class WorkspaceAuthorizationCatalog {
             page("PG-INVENTORY-STORE-STATUS", "门店库存管理", "商品与服务", 520, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
             page("PG-CATALOG-BRAND-ITEMS", "品牌商品管理", "商品与服务", 530, "HEAD_COMPANY", List.of("GROUP", "HEAD_COMPANY"), null, true),
             page("PG-SALES-MENU-STORE", "门店销售菜单", "商品与服务", 540, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
-            page("PG-STORE-SERVICE-POINT-QR", "门店桌台与二维码管理", "门店经营", 320, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true)); }
+            page("PG-STORE-SERVICE-POINT-QR", "门店桌台与二维码", "商品与服务", 550, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true)); }
     public static List<UserManagementActionBinding> userManagementActionBindings() { return List.of(
             new UserManagementActionBinding("PG-IAM-GROUP-USERS", "GROUP", UserManagementAction.ROLE_REVOKE, "BC-IAM-GROUP-ROLE-REVOKE"),
             new UserManagementActionBinding("PG-IAM-REGION-USERS", "REGION", UserManagementAction.ROLE_REVOKE, "BC-IAM-REGION-ROLE-REVOKE"),

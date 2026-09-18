@@ -1,0 +1,9 @@
+{
+  "port": 43172,
+  "basePath": "/terminal-topology",
+  "heartbeatIntervalMs": 10000,
+  "heartbeatTimeoutMs": 30000,
+  "callTimeoutMs": 5000,
+  "reconnectBaseDelayMs": 500,
+  "reconnectMaxDelayMs": 10000
+}

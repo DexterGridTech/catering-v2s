@@ -56,6 +56,11 @@ export {
   topologyMaxFrameBytes,
   topologyProtocolVersion,
 } from './foundations/topologyWire';
+export {
+  topologyTransportConfig,
+  topologyTransportServerConfig,
+} from './foundations/topologyTransportConfig';
+export type {TopologyTransportConfig} from './foundations/topologyTransportConfig';
 
 export type {
   ErrorCategory,

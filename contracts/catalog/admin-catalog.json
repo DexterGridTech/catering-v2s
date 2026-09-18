@@ -915,9 +915,9 @@
       "key": "PG-STORE-SERVICE-POINT-QR",
       "kind": "PAGE",
       "consumerFace": "operations-admin",
-      "display": {"label": "门店桌台与二维码管理"},
+      "display": {"label": "门店桌台与二维码"},
       "page": {"kind": "BUSINESS"},
-      "navigation": {"groupKey": "NAV-STORE-OPERATIONS", "order": 320},
+      "navigation": {"groupKey": "NAV-CATALOG-SERVICES", "order": 550},
       "experience": {
         "pageDescription": "维护门店区域、桌台或扫码点，以及二维码配置。",
         "dataNodeCascaderLabel": "可视数据节点",
@@ -1536,9 +1536,9 @@
       "key": "EDIT_STORE_SERVICE_POINT_QR",
       "kind": "ACTION",
       "consumerFace": "operations-admin",
-      "display": {"label": "编辑门店桌台与二维码管理"},
+      "display": {"label": "编辑门店桌台与二维码"},
       "action": {
-        "groupKey": "STORE_MANAGEMENT",
+        "groupKey": "CATALOG_MANAGEMENT",
         "targetPageKey": "PG-STORE-SERVICE-POINT-QR",
         "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT", "STORE"],
         "scopeApplicability": "SELECTED_STORE_SCOPE"

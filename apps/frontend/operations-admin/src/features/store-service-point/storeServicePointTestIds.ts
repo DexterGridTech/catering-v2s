@@ -42,5 +42,5 @@ export const storeServicePointTestIds = {
   qrSave: 'store-service-point-qr-save',
   qrCancel: 'store-service-point-qr-cancel',
   qrResult: 'store-service-point-qr-result',
-  qrResultLink: (ref: string) => `store-service-point-qr-result-link-${slug(ref)}`,
+  qrResultImage: (ref: string) => `store-service-point-qr-result-image-${slug(ref)}`,
 } as const;

@@ -4,13 +4,13 @@ REVIEW_TARGET=IMPLEMENTATION
 RECONCILIATION_KIND=P9_CODE_TO_DESIGN
 EXECUTOR=MAIN_CODEX
 IMPLEMENTATION_AUTHORITY=DEXTER_AUTHORIZED
-STATUS=OPEN
-P9_CODE_TO_DESIGN_STATUS=OPEN
+STATUS=STATIC_REVIEW_PENDING_D14_RUNTIME_AVAILABLE
+P9_CODE_TO_DESIGN_STATUS=MATCHED
 PRE_REPAIR_INDEPENDENT_REVIEW=NO-GO_M/S/N=1/2/1
 INDEPENDENT_IMPLEMENTATION_REVIEW=FRESH_POST_REPAIR_REVIEW_GO_M/S/N=0/0/0
 CLAUDE_CURRENT_BYTE_INTAKE=NO-GO_M/S/N=2/3/2
-CURRENT_FRESH_STATIC_REVIEW=GO_M/S/N=0/0/0
-OPEN_PRODUCT_DECISIONS=2
+CURRENT_FRESH_STATIC_REVIEW=GO_M/S/N=0/0/0_POST_D14
+OPEN_PRODUCT_DECISIONS=0
 BROWSER_L2=NOT_AUTHORIZED_NOT_RUN
 
 ## 1. 范围、授权与口径
@@ -40,8 +40,8 @@ BROWSER_L2=NOT_AUTHORIZED_NOT_RUN
 | P4 | 扩展字段 `SERVICE_POINT` 宿主、集团空间级定义、值与审计 | `modules/extension/`；`modules/organization/`；`ExtensionAcceptanceScenarios.java`；generated host enum/schema | MATCHED |
 | P5 | 资产 stage/release/claim、TABLE-only 图片、无孤儿资产 | `modules/asset/`；`StoreServicePointAssetCommandApi`；`StoreServicePointAcceptanceScenarios.java` | MATCHED |
 | P6 | operations edge、platform-admin host、operations-admin 页面与 Drawer | `apps/frontend/operations-admin/src/features/store-service-point/ui/StoreServicePointPage.tsx`；`storeServicePointTestIds.ts`；既有 foundation 与 SalesMenu list pattern | MATCHED |
-| P7 | focused/backend acceptance、V-1–V-16 场景落点与 11 个 HTTP gate entry 逐项核查 | `StoreServicePointAcceptanceScenarios.java`、`BusinessChannelAcceptanceScenarios.java`、`ExtensionAcceptanceScenarios.java`、`AssetAcceptanceScenarios.java`、`AuditAcceptanceScenarios.java`；当前受管 run 聚焦执行 gate 场景 | MATCHED（代码/场景映射与本次 focused run） |
-| P8 | reset、DEV、seed、owner readback | 见 §5 的受管运行记录与 seed reports | MATCHED |
+| P7 | focused/backend acceptance、V-1–V-16 场景落点与 11 个 HTTP gate entry 逐项核查 | `StoreServicePointAcceptanceScenarios.java`、`BusinessChannelAcceptanceScenarios.java`、`ExtensionAcceptanceScenarios.java`、`AssetAcceptanceScenarios.java`、`AuditAcceptanceScenarios.java`；D-13 后 focused static proof；历史受管 run 仍按 §5 分层 | MATCHED（代码/场景映射；动态证据按历史与未运行分层） |
+| P8 | reset、DEV、seed、owner readback | §5 的历史 reset/seed reports；D-13 后当前仅有受管 DEV start/readiness 与 migration startup | MATCHED（历史运行闭合；D-13 后 reset/seed 未运行） |
 | P9 | 整体三维对账、逐代码与详设对账、交付材料 | 本文件及 `2026-09-18-v2s-store-service-point-qr-implementation-review-handoff-codex.md` | MATCHED |
 
 ## 3. 逐代码与详设对账明细
@@ -83,7 +83,7 @@ BROWSER_L2=NOT_AUTHORIZED_NOT_RUN
 - `StoreServicePointPage.tsx` 复用 SalesMenu 的 master/dependent list 组织：左侧区域 master，右侧当前区域的桌台/扫码点列表；不自动选择第一条，区域/服务点上移下移通过行尾菜单并在首末边界禁用。
 - 区域列表头部只有「新建区域」；依据选中区域类型动态显示「新建桌台」或「新建扫码点」，业务文案不暴露“服务点”。
 - 二维码摘要留在主页面；编辑通过独立 Drawer 打开，主页面不另造二维码详情页；服务点详情使用只读 Descriptions，不使用 disabled Form 冒充详情。
-- 二维码列表/详情只在 `effectiveAvailable=true` 时展示「查看二维码」入口；不可用对象只显示「不可用」边界文案。该入口消费 owner 派生 URL，不把 URL 原文作为普通字段或新增图片生成链路。
+- 二维码列表/详情只在 `effectiveAvailable=true` 时展示由现有 Ant Design `QRCode` 生成的内存图像；不可用对象只显示「不可用」边界文案。合法 URL 使用稳定的 `qrResultImage(ref)` testId，列表尺寸 72、详情尺寸 176；不把 URL 原文作为普通字段，也不新增持久化、下载或资产生成链路。
 - 区域/服务点/二维码 Drawer 使用 foundation dirty lifecycle 和统一 footer；编辑控件不自管 dirty、不单独弹“请先保存”提示。扫码点不挂载桌台属性与图片，表单不出现顺序字段。
 - 逐控件 IA-ID 的位置、容器、SalesMenu 基线样式、选中/排序/边界禁用/失败恢复及创建/编辑 Drawer 已在 `doc/review/platform/2026-09-18-v2s-store-service-point-qr-ia-static-preflight-codex.md` 中逐项标为 `MATCHED_STATIC_PREFLIGHT`。该静态前置门已通过，但 Browser L2 仍未授权。
 
@@ -112,9 +112,9 @@ BROWSER_L2=NOT_AUTHORIZED_NOT_RUN
 
 上述 finding 是修复前 reviewer 的输入，不把该 `NO-GO` 误写成当前最终 verdict；修复后需由新的 fresh reviewer 或 Claude 重新审查当前字节。
 
-### 4.5 Faraday：二维码不可用边界与原始 URL 展示
+### 4.5 Faraday：二维码不可用边界与原始 URL 展示（D-13 前历史）
 
-新的 fresh 只读 reviewer Faraday 在上述四条修复之后重新审查当前字节，给出 `REVIEW_TARGET=IMPLEMENTATION`、`VERDICT=NO-GO`、`M/S/N=1/0/0`。该 finding 经主 agent 重开需求 R-2.8/R-6.14、IA/交互 §4.3/§10、详设 Gate-1.9/Gate-5.4 与当前前端源码后确认成立：owner projection 必须保留 D-12 的 `qrUrl` 生成事实，但区域或服务点不可用时不得把该事实作为二维码展示给用户；同时 IA 要求二维码结果为预览/入口，不能把 URL 原文当作普通用户字段。
+新的 fresh 只读 reviewer Faraday 在上述四条修复之后、D-13 产品追加之前重新审查当时字节，给出 `REVIEW_TARGET=IMPLEMENTATION`、`VERDICT=NO-GO`、`M/S/N=1/0/0`。该 finding 经主 agent 重开需求 R-2.8/R-6.14、IA/交互 §4.3/§10、详设 Gate-1.9/Gate-5.4 与当时前端源码后确认成立：owner projection 必须保留 D-12 的 `qrUrl` 生成事实，但区域或服务点不可用时不得把该事实作为二维码展示给用户；同时 IA 要求二维码结果为预览/入口，不能把 URL 原文当作普通用户字段。
 
 已完成最小根因修复：
 
@@ -122,26 +122,48 @@ BROWSER_L2=NOT_AUTHORIZED_NOT_RUN
 - 可用且配置开启、渠道已选、最终 URL 合规时，统一渲染现有 Ant Design `Typography.Link` 的「查看二维码」入口，使用 `target="_blank"` 与 `rel="noreferrer"`；关闭、未选渠道、URL 不合规仍保持各自既有文案。
 - 列表与详情均传入 owner 返回的 `effectiveAvailable`，并通过 `qrResultLink(ref)` 使用稳定对象身份 testId；新增 `StoreServicePointPage.static.test.ts` 覆盖不可用不展示、有效值走入口且不暴露原始 URL 的静态断言。
 
-该修复没有改变二维码 URL 生成、状态独立性、持久化边界或二维码图片生成范围。修复后的 fresh implementation review 由 Hubble 完成，结果见 §4.6。
+该修复没有改变二维码 URL 生成、状态独立性或持久化边界；但它发生在 D-13 之前，后续二维码图像范围以 §4.7 的当前追加为准。修复后的当时 fresh implementation review 由 Hubble 完成，结果见 §4.6。
 
-### 4.6 Hubble：最新 fresh 独立复审
+### 4.6 Hubble：D-13 前的 fresh 独立复审
 
-Hubble 作为新的 fresh、只读、非作者 reviewer，基于当前字节完成 `REVIEW_TARGET=IMPLEMENTATION` 静态代码逻辑复审，结论为 `VERDICT=GO`、`M/S/N=0/0/0`。其独立核验确认：
+Hubble 作为新的 fresh、只读、非作者 reviewer，在 D-13 追加之前基于当时字节完成 `REVIEW_TARGET=IMPLEMENTATION` 静态代码逻辑复审，结论为 `VERDICT=GO`、`M/S/N=0/0/0`。该结论不覆盖 D-13 的 optional table attributes 与 QRCode image changes；其独立核验确认：
 
 - `StoreServicePointPage.tsx` 的列表与详情都先消费 owner 的 `effectiveAvailable`；不可用对象只显示「不可用」，不渲染二维码入口；可用、配置开启、渠道已选且存在派生 URL 时复用现有 `Typography.Link` 展示「查看二维码」，不把 URL 原文当普通字段。
 - 后端仍保留 D-12 的派生 URL 事实和状态独立生成语义，没有新增二维码图片生成、下载、持久化或 QR entity 链路；`qrResultLink` testId 在列表/详情真实绑定。
 - owner/scope/gate、三态/排序/候选/save recheck、D-10/D-12、`SERVICE_POINT` extension/audit、TABLE-only asset 与 seed/runtime 边界未发现新的阻断逻辑问题。
 
-Hubble 明确将 Browser L2、UAT、部署与本轮未重跑的动态项列为 `NOT_AUTHORIZED/NOT_RUN`，没有把静态结论升级为动态验收。至此，修复前的两次 fresh `NO-GO` 均已处置，当前独立 implementation review 结论为 `GO`；仍须保留 Browser L2 未授权边界。
+Hubble 明确将 Browser L2、UAT、部署与当时未重跑的动态项列为 `NOT_AUTHORIZED/NOT_RUN`，没有把静态结论升级为动态验收。D-13 之后已重新启动 fresh 独立只读 reviewer，当前结论仍待返回；在返回前不把 Hubble 的 `GO` 扩展为当前字节 verdict，仍保留 Browser L2 未授权边界。
 
-## 5. 历史受管运行记录（不覆盖本轮改后字节）
+### 4.7 D-13：桌台属性非必填与二维码图像展示
 
-以下运行记录保留为历史证据。它们发生在本轮当前字节的服务点 keyset 分页、批量 QR 读取、QR loading/failed 显示与相关静态修复之前，因此不能被写成这些改动后的动态 PASS；本轮没有为了补 evidence 擅自重启 DEV、reset 或 seed。
+Dexter 已确认两个范围决策：TABLE 的容纳人数、形态、是否可预约均为非必填；授权新增二维码图像生成与展示。主 agent 已按该决策完成当前字节修改：
+
+- `StoreServicePointService.validatePointAttributes` 与新增 `V20260918_010000_000__allow_optional_store_service_point_table_attributes.sql` 允许 TABLE 三个属性省略、提供后校验、显式清空；SCAN 仍拒绝桌台属性与图片。
+- OpenAPI 当前创建/更新 schema 已保持这些字段可空可省略，acceptance 增加省略、提供、清空和 SCAN 反例。
+- `StoreServicePointPage.tsx` 列表与详情复用 Ant Design `QRCode`，以 owner 派生的合法 URL 在内存中渲染 SVG 图像；列表 72、详情 176，使用 `qrResultImage(ref)`，不新增持久化、下载、导出或资产链路。
+- 当前 focused static、frontend typecheck/architecture、backend `compileJava`/`compileTestJava` 已通过；D-13 之后的 backend acceptance、reset、seed 与 Browser L2 尚未运行。
+
+D-13 修复后的 fresh 独立只读 reviewer Beauvoir 已基于当时字节完成 `REVIEW_TARGET=IMPLEMENTATION` 静态代码逻辑复审，结论为 `VERDICT=GO`、`M/S/N=0/0/0`。其确认 `reservable` 的 null/undefined 三态在表单 hydration、提交 payload 与详情展示中保持一致；QRCode 列表/详情共用 owner 派生合法 URL、`effectiveAvailable` 边界、SVG 图像、72/176 尺寸与 `qrResultImage` testId 均成立；没有发现 URL 文本暴露、二维码持久化/下载/资产链路或 dirty ownership 回归。D-14 之后的当前字节结论见下节。
+
+### 4.8 D-14：目录归属修正
+
+用户反馈确认“编辑门店桌台与二维码管理”不应出现在“门店管理”，页面也不应继续留在“门店经营”；两者都应归入“商品与服务”。主 agent 重开了 admin catalog source 与生成链，确认原字节同时存在两个错误归属：页面为 `NAV-STORE-OPERATIONS`/order=320，操作为 `STORE_MANAGEMENT`/order=200。已将唯一源 `contracts/catalog/admin-catalog.json` 修正为：页面 `NAV-CATALOG-SERVICES`/order=550，操作 `CATALOG_MANAGEMENT`/order=500。capability/page key、角色集合、scope、data node 与 page binding 未改。
+
+`node scripts/generate/edge-codegen.mjs --write` 已重生成当前 Java/TypeScript 目录；随后 `--check` 通过，生成物显示页面与操作均为“商品与服务”。D-14 修改后，既有 D-13 fresh verdict 不自动扩展为当前字节 verdict；需由 fresh 只读 implementation reviewer 对当前生成源/生成物与目录消费边界复核后，才能更新本文件的当前 review 状态。
+
+### 4.9 D-14 后 fresh 独立静态复核
+
+Turing 作为 fresh、只读、非作者 reviewer，基于 D-14 当前字节完成窄范围 `REVIEW_TARGET=IMPLEMENTATION` 复核，结论为 `VERDICT=GO`、`M/S/N=0/0/0`。其确认 source 的 page navigation、action group、Java/TypeScript generated 与 operations/platform 两侧目录消费链一致，且 capability/page key、角色集合、STORE data node、selected-store scope 和 page binding 未漂移。该 GO 只覆盖 D-14 相关静态代码逻辑；动态渲染、Browser L2、UAT、部署与 reset/seed 未由本轮 reviewer 复核。
+
+## 5. 受管运行记录与本轮恢复
+
+以下 reset/seed/backend acceptance 记录保留为历史证据。它们发生在 D-13 当前字节之前，因此不能被写成 D-13 改动后的动态 PASS。本轮没有执行 reset 或 seed；机器重启后仅按受管流程恢复 DEV 与 HTTP/asset 隧道。
 
 ### 5.1 reset、DEV、seed
 
 - reset：`R5_DEV_RESET=PASS`，run manifest：`.runtime/r5/reset/r5-reset-b7a7f262-901e-44ca-ae45-11d47a7ee6e7/run-manifest.json`；`cleanup=PASS_NO_PERSISTENT_RESET_PROCESS`。
 - 最终 DEV：`runId=r5-dev-1789677991497-54436-6c84a838-ad09-44f3-9fa4-5fc06a1c3b54`；根 manifest：`.runtime/r5/run-manifest.json`。拓扑为远端 trusted Java + 远端 localhost PostgreSQL + HTTP/asset-only tunnel + 本机两个 Vite；readiness marker 为 `REMOTE_JAVA_SPRING_BOOT_STARTED_AFTER_FLYWAY`，平台 5174、运营 5175 由受管 runner 启动。当前 DEV 未执行 seed 以外的额外手工命令。
+- 机器重启后的首次 `scripts/dev/restart` 保留为 runner 首败：stop 的 cleanup 已 PASS，但 start 阶段因 `.runtime/r5/run-manifest.json` 在 stop 后被删除而报 `ENOENT`；未将该失败改写为 restart PASS。随后在无 active manifest、旧进程已由受管 stop 清理完成的前提下，直接执行受管 `scripts/dev/start` 成功恢复当前 DEV：`runId=r5-dev-1789701655100-51276-c0ca84d3-7108-4d02-a4a5-6303d6aee47d`，远端 Java readiness=`REMOTE_JAVA_SPRING_BOOT_STARTED_AFTER_FLYWAY`，远端应用已应用 `20260918.010000.000` migration，5174/5175、28080/29000 均由当前 manifest 管理；本机页面与资产 readiness 已分别返回 200。当前 DEV 保持运行，未执行 seed。
 - 最终完整 seed：`.runtime/r5/seed/complete/complete-seed-b5c32122-7430-40f8-82c8-4f99d3d6adb7/seed-report.json`；`business=PASS`、`cleanup=PASS_PRESERVED_DEV_STATE`、`firstFailure=null`。四个组件均 PASS：owner-command、external-collaboration-business-channel、catalog-inventory、sales-menu；各组件 cleanup 均为 `PASS_PRESERVED_DEV_STATE` 或 `PASS_NO_PERSISTENT_SEED_PROCESS`。owner readback 记录了 9 个 extension host、4 个 area、5 个 point；QR post-step 的 candidate/config/readback 也均 PASS。
 - seed 正本为 `scripts/dev/r5-seed-plan.mjs`、`scripts/dev/owner-command-seed-executor.mjs` 与 `doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json`；host 闭集为 9，FLAT 仍为 5，`SERVICE_POINT` 的 flat flags 为 `null`，门店的 `tableManagementEnabled` 显式为 true，并有 owner readback。owner-command report 记录 `extensionDefinitions=9`、`extensionValueEntities=42`、`servicePointAreas=4`、`servicePoints=5`。
 
@@ -187,9 +209,27 @@ Browser L2、UAT、部署均为 `NOT_AUTHORIZED/NOT_RUN`。进入 L2 所需的 I
 
 本轮 Claude 转达的当前字节 review 为 `NO-GO/M/S/N=2/3/2`。其中 M-02（服务点列表 N+1）、S-01（整数 offset 伪游标）、N-01（QR 未读状态混淆）与 N-02（未引用默认值）已按根因修复；S-02 仅为结构/维护性意见，不属于本次要求的代码逻辑修复；Carson 先前针对 disabled QR 保留渠道的 Major 已由后续 Flyway 迁移反证为 `REJECTED_WITH_EVIDENCE`。
 
-本轮新增的 fresh 只读 reviewer Mendel 基于最新字节给出 `REVIEW_TARGET=IMPLEMENTATION`、`VERDICT=GO`、`M/S/N=0/0/0`，确认 keyset 分页、批量 QR 读取、前端 QR 读取状态依赖和最终迁移约束无新的代码逻辑回归。该 GO 只覆盖静态代码逻辑，不替 Dexter 决定以下两项未决产品/范围问题：
+本节旧的 M-01/S-03 产品范围项已由 Dexter 当前决策收口：TABLE 三个属性均非必填，并授权二维码图像生成与展示。它们不再是 OPEN_PRODUCT_DECISIONS。D-13 代码变更、focused proof、当前字节逐代码/详设对账及 fresh 独立静态 review 均已闭合，`P9_逐代码与详设对账=MATCHED`。
 
-- M-01：TABLE 的容纳人数、形态、是否可预约究竟是必填还是可选；当前 owner/数据库要求必填，而前端创建表单未完整表达该要求。
-- S-03：二维码交付物保持现有「查看二维码」入口链接，还是把二维码图像生成纳入范围；当前实现沿用已有入口链接，不新增图像生成能力。
+当前 implementation static verdict 为 `REVIEW_TARGET=IMPLEMENTATION`、`VERDICT=GO`、`M/S/N=0/0/0`，仅覆盖当前源码/契约/测试源的静态逻辑。当前受管 DEV 已恢复并可体验，但 D-13 之后 backend acceptance、reset、seed 与 Browser L2 未运行；Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`，不将 DEV readiness 扩展为业务验收。
 
-因此 `P9_逐代码与详设对账=OPEN`，原因是这两项会改变设计与实现契约，不能以静态 reviewer 的 GO 或历史运行证据代替产品/范围裁决。Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`。
+## 8. D-15：门店桌台与二维码页面体验问题的根因修复
+
+### 8.1 根因与修复范围
+
+- 排序操作导致整页进入 loading 的根因不是浏览器导航或页面 remount，而是生成器对该页面 15 个 service-point 查询/命令入口统一使用全局 `wire/LIST` 失效标签；mutation 后 operating-rule gate 误判为重新读取中，页面因此替换主体内容。修复在 `contracts/policy/store-service-point-rtk-tag-policy.json` 建立资源级 wire tag 正本，由 `scripts/generate/edge-codegen.mjs` 消费并生成 `operations-edge.rtk.ts`。区域、服务点、二维码配置和图片暂存/释放均按资源范围失效，不再触发全局 `wire/LIST`；页面原有 owner readback 保留，读回失败仍明确反馈。
+- 菜单短文案在 `contracts/catalog/admin-catalog.json` 的唯一源中改为「门店桌台与二维码」，并通过 edge codegen 回写生成目录；未手改生成物，也未改变 page key、operation key、权限或门店作用域。
+- 服务点新建/编辑 Drawer 使用现有 `adminWideDrawerSurfaceProps` foundation surface，宽度与销售菜单复杂编辑抽屉基线一致；没有修改共享 foundation，也没有由子控件新增 dirty/关闭守卫。
+- operations-admin 运行时文案中的「扩展字段」「自定义字段」「补充资料」已统一替换为业务侧可理解的「字段配置」「字段筛选」等表达；平台-admin 的扩展字段配置页保留技术术语，因为该处面向字段配置管理者。
+
+### 8.2 当前字节静态证据
+
+- edge codegen `--write` 与 `--check`：PASS，生成文件 403 个；service-point 资源级 tag policy 与生成 RTK endpoint 一致。
+- service-point focused static test：7/7 PASS，覆盖业务侧内联字段、定向 readback、无全局刷新调用、全 operations-admin 运行时术语扫描，以及关键 endpoint 不产生 `wire/LIST`。
+- operations-admin typecheck：PASS；architecture lint：PASS；architecture tests：47 tests，43 pass、4 todo、0 fail；unit：46 files，276 tests；build：PASS。
+- prettier/format check：PASS。
+- 受管 DEV stop：`R5_DEV_STOP=PASS`，cleanup 已完成；当前字节的 start readiness 待本节记录后执行。reset、seed 与 Browser L2 本轮均未执行，Browser L2 仍为 `NOT_AUTHORIZED/NOT_RUN`。
+
+### 8.3 交付前 review 边界
+
+本节只记录 D-15 当前字节的根因修复与静态证据，不把 DEV readiness 等同于业务验收。DEV 启动后仍需 fresh 只读 implementation reviewer 对上述四类行为及同根范围复核；若 reviewer 发现代码逻辑 finding，主 agent 必须重新打开 owning source 修复并重新验证。Git、reset、seed、UAT、部署与 Browser L2 不属于本节授权。

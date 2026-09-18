@@ -11,6 +11,7 @@ import {
 import {
   createEnvelopeId,
   createRequestId,
+  topologyTransportConfig,
   serializeTopologyWireMessage,
 } from '@catering-v2s/kernel-base-contracts'
 import type {
@@ -38,7 +39,7 @@ type TopologyActorInput = Readonly<{
   readonly peerChannel?: TopologyPeerChannel
 }>
 
-const topologyCallTimeoutMs = 5_000
+const topologyCallTimeoutMs = topologyTransportConfig.callTimeoutMs
 
 const hostStatusValue = (
   value: unknown,
@@ -423,10 +424,10 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
     const startingAction = hostStatusActionIfChanged(context, 'starting')
     if (startingAction !== undefined) context.dispatchAction(startingAction)
     const started = await context.platformPorts.topologyHost.start({
-      port: 43172,
-      basePath: '/terminal-topology',
-      heartbeatIntervalMs: 10_000,
-      heartbeatTimeoutMs: 30_000,
+      port: topologyTransportConfig.port,
+      basePath: topologyTransportConfig.basePath,
+      heartbeatIntervalMs: topologyTransportConfig.heartbeatIntervalMs,
+      heartbeatTimeoutMs: topologyTransportConfig.heartbeatTimeoutMs,
       timeoutMs: topologyCallTimeoutMs,
       identity: createTopologyHostIdentity(context),
     })

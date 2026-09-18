@@ -1,5 +1,11 @@
-import {parseTopologyIdentityResponse, type TopologyIdentityResponse} from '@catering-v2s/kernel-base-contracts'
+import {
+  parseTopologyIdentityResponse,
+  topologyTransportServerConfig,
+  type TopologyIdentityResponse,
+  type TransportServerConfig,
+} from '@catering-v2s/kernel-base-contracts'
 import type {TopologyIdentityClient} from '../types/identityClient'
+import {createTransportAddressSelector} from './resolveTransportServerAddresses'
 
 type FetchResponse = Readonly<{
   readonly ok: boolean
@@ -7,7 +13,12 @@ type FetchResponse = Readonly<{
   readonly text: () => Promise<string>
 }>
 
-type FetchLike = (input: string, init: Readonly<{readonly method: 'GET'}>) => Promise<FetchResponse>
+export type FetchLike = (input: string, init: Readonly<{readonly method: 'GET'}>) => Promise<FetchResponse>
+
+export type CreateTopologyIdentityClientOptions = Readonly<{
+  readonly config?: TransportServerConfig
+  readonly fetchLike?: FetchLike
+}>
 
 const readFetch = (): FetchLike => {
   const candidate = (globalThis as unknown as {readonly fetch?: FetchLike}).fetch
@@ -28,13 +39,34 @@ const readIdentity = (response: FetchResponse, raw: string): TopologyIdentityRes
   return parseTopologyIdentityResponse(raw)
 }
 
-export const createTopologyIdentityClient = (fetchLike?: FetchLike): TopologyIdentityClient => Object.freeze({
-  query: async (host: string): Promise<TopologyIdentityResponse> => {
-    const response = await (fetchLike ?? readFetch())(
-      `http://${normalizeHost(host)}:43172/terminal-topology/status`,
-      {method: 'GET'},
-    )
-    return readIdentity(response, await response.text())
-  },
-})
+const replaceHost = (baseUrl: string, host: string): string => {
+  const url = new URL(baseUrl)
+  url.hostname = host
+  return url.toString().replace(/\/$/, '')
+}
 
+export const createTopologyIdentityClient = (
+  options: CreateTopologyIdentityClientOptions = {},
+): TopologyIdentityClient => {
+  const selector = createTransportAddressSelector(options.config ?? topologyTransportServerConfig, 'topology')
+  return Object.freeze({
+    query: async (host: string): Promise<TopologyIdentityResponse> => {
+      const normalizedHost = normalizeHost(host)
+      let lastError: unknown
+      for (const address of selector.resolve()) {
+        try {
+          const response = await (options.fetchLike ?? readFetch())(
+            `${replaceHost(address.baseUrl, normalizedHost)}/status`,
+            {method: 'GET'},
+          )
+          const identity = readIdentity(response, await response.text())
+          selector.markSuccessful(address.addressName)
+          return identity
+        } catch (error) {
+          lastError = error
+        }
+      }
+      throw lastError instanceof Error ? lastError : new Error('Topology identity request failed')
+    },
+  })
+}

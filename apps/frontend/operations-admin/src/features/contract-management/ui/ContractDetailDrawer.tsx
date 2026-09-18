@@ -164,7 +164,7 @@ export function ContractDetailDrawer({
           <Alert
             type="warning"
             showIcon
-            title="扩展字段加载失败"
+            title="字段配置加载失败"
             description="当前仅显示已确认的基础资料。"
             {...testId('operations-contract-detail-extension-error')}
           />

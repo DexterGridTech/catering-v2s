@@ -207,7 +207,7 @@ export function StoreProfilePage({queryContext}: OperationsPageProps) {
         <Alert
           type="warning"
           showIcon
-          title="扩展字段读取失败"
+          title="字段配置读取失败"
           description="当前仅显示已确认的基础资料。"
           style={{marginTop: 16}}
           {...testId('operations-store-profile-extension-error')}

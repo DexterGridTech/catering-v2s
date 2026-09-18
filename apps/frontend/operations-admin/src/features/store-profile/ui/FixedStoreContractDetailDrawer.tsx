@@ -75,7 +75,7 @@ export function FixedStoreContractDetailDrawer({contract, queryContext, onClose}
             <Alert
               type="warning"
               showIcon
-              title="扩展字段读取失败"
+              title="字段配置读取失败"
               description="当前仅显示已确认的基础资料。"
               {...testId('operations-store-profile-contract-detail-extension-error')}
             />

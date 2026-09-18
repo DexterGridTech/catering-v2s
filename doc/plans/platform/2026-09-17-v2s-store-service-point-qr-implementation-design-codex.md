@@ -5,7 +5,7 @@ SKILL_USED=cs-writing-plans@72190c88b2b5a67a96b91d66aa72b9161913e10e8769da3f28a2
 ```text
 DATE=2026-09-17
 DOC_KIND=IMPLEMENTATION_DESIGN
-STATUS=IMPLEMENTATION_COMPLETE_AWAITING_REVIEW
+STATUS=IMPLEMENTATION_COMPLETE_REVIEWED
 BUSINESS_SOURCE=doc/plans/platform/2026-09-17-v2s-store-service-point-qr-requirements-claude.md
 JOURNEY_REFS=doc/decisions/2026-09-17-v2s-store-service-point-qr-journey-codex.md
 IA_REF=doc/plans/platform/2026-09-17-v2s-store-service-point-qr-ia-design-codex.md
@@ -132,7 +132,7 @@ L2_SCRIPT_ADMISSION=BLOCKED（本批当前未授权 Browser L2；静态 testId �
 - Gate-1.3：area code 在同门店 `status <> VOIDED` 范围唯一；point code 同门店 `status <> VOIDED` 范围唯一；部分唯一索引释放 VOIDED code。
 - Gate-1.4：区域 type 变更只有在未作废 point 数量为零时成立；点逐个 `VOIDED` 后可变更；历史 VOIDED point 原 type/ext/image 保留且不进 current collection。
 - Gate-1.5：area 非 `ENABLED` 时所有后代在 readback 中标为不可用，但不改 point 存储 status、extension 或 image；`DISABLED`/`VOIDED` 两种区域各成立。
-- Gate-1.6：point 的 `TABLE` 属性（capacity、shape、reservable、image）只在 TABLE 生效；SCAN 请求不能带 table attributes 或 image；预约开关与 store operating rule 不联动。
+- Gate-1.6：point 的 `TABLE` 属性（capacity、shape、reservable、image）只在 TABLE 生效；capacity、shape、reservable 均可省略，填写时分别校验正整数、形态闭集和布尔值；SCAN 请求不能带 table attributes 或 image；预约开关与 store operating rule 不联动。
 - Gate-1.7：point save 的核心、扩展值、image target/ref、审计、receipt 是同一 owner transaction；stage 失败/owner 失败不会留 staged orphan。
 - Gate-1.8：QR config 是 store singleton，初始 `enabled=false, channelRef=null`；关闭可空，开启必须有 owner 重新校验的 candidate；status 后续变化不清空 stored channelRef。
 - Gate-1.9：QR list/detail projection 不存 URL；每个 point 的 URL 由 business-channel owner composer 读取当前模板规则派生；生成层不检查 channel/template/store 等状态。区域或 point 的不可用展示仍按 R-2.8 单独由 organization projection 判定，不把该展示边界改写成 URL composer 的状态谓词。
@@ -260,7 +260,7 @@ L2_SCRIPT_ADMISSION=BLOCKED（本批当前未授权 Browser L2；静态 testId �
 | channel/template status | candidate owner | candidate only `ENABLED/ENABLED`; generation owner read ignores status | generated status enums | candidate list excludes disabled/voided; existing selected config not cleared; generation not gated by status |
 | binding status | business-channel model | internal candidate explicitly accepts `NOT_REQUIRED` | not exposed as a UI gate | no binding checkbox/filter |
 | URL rule | business-channel template schema | template owner → candidate/generation composer | `urlRule` generated field only where contract needs it | not edited on this page; only derived QR result displayed |
-| URL append/legality | business-channel `QrServicePointUrlComposer` | one method returns valid/invalid projection | no duplicate front-end implementation | shows URL/placeholder only; no local URL parse |
+| URL append/legality | business-channel `QrServicePointUrlComposer` | one method returns valid/invalid projection | no duplicate front-end implementation | renders an in-memory `QRCode` image or the fixed placeholder; no local URL parse |
 | QR config singleton | organization table and owner | owner read/write readback | generated config DTO | main summary read-only; Drawer form draft only |
 | extension host | `ExtensionHostTypes`, definition management host set | definition lookup by workspace + `SERVICE_POINT` | generated host enum/schema | platform definition page only; operations form renders returned fields |
 | extension values | organization point JSONB + `ExtensionSubmission` | definition validation + owner update + explicit audit changes | generated typed extension wire | form only; no dynamic list column/search |
@@ -273,7 +273,7 @@ L2_SCRIPT_ADMISSION=BLOCKED（本批当前未授权 Browser L2；静态 testId �
 
 ## 8. 业务规则 → owner 判定点
 
-本表使用闭区间表示，区间包含两端及其间的全部需求条目；例如 `R-6.10–R-6.14` 代表 `R-6.10`、`R-6.11`、`R-6.12`、`R-6.13`、`R-6.14`。需求第 4–7 节的 67 个 R 条目全部覆盖，未映射项为 0；字母后缀条目按其完整 ID 单独计入，不因区间缩写而省略。
+本表使用闭区间表示，区间包含两端及其间的全部需求条目；例如 `R-6.10–R-6.15` 代表 `R-6.10`、`R-6.11`、`R-6.12`、`R-6.13`、`R-6.14`、`R-6.15`。需求第 4–7 节的 68 个 R 条目全部覆盖，未映射项为 0；字母后缀条目按其完整 ID 单独计入，不因区间缩写而省略。
 
 | 需求条目 | 唯一 owner 判定点 | 结果/反例 |
 | --- | --- | --- |
@@ -286,13 +286,13 @@ L2_SCRIPT_ADMISSION=BLOCKED（本批当前未授权 Browser L2；静态 testId �
 | R-2.1 / R-2.2 | point FK + owner create/update | point 必有 area；存 `pointType`，不只依赖 join |
 | R-2.3 | locked area read + point owner validation + DB check | 两种错误组合都拒绝；两种合法组合都成功 |
 | R-2.3a / R-2.4 | point default/status partial unique index | 新建 ENABLED；store active code unique，voided code release |
-| R-2.5 / R-2.9 | point command/schema and projection | TABLE 才有 capacity/shape/reservable/image；SCAN 不接受/不展示；status 不清值 |
+| R-2.5 / R-2.9 | point command/schema and projection | TABLE 才有 capacity/shape/reservable/image；三项桌台标量均非必填且保留空值；SCAN 不接受/不展示；status 不清值 |
 | R-2.6 | point tri-state command | 和 area 一致，VOIDED 不物理删除 |
 | R-2.7 | schema/table projection exclusion | point/QR table 不有 URL/QR entity ref |
 | R-2.8 | QR projection owner | area 或 point 非 ENABLED 不出二维码位置/出边界文案，不改数据 |
 | R-3.1–R-3.3 | asset owner stage/claim/release + organization point save | TABLE image 可保存；SCAN 无 image；失败无孤儿 |
 | R-4.1 / R-4.2 | point schema/owner only | reservable 是 point scalar；不读、不校验 operating-rule reservation key |
-| R-5.1–R-5.5 | admin catalog + operation scope resolver | page/action 与三门店页四类角色一致；PROJECT/STORE 两向可用 |
+| R-5.1–R-5.5 | admin catalog + operation scope resolver | page/action 与三门店页四类角色一致；页面与操作均归入“商品与服务”（`NAV-CATALOG-SERVICES` / `CATALOG_MANAGEMENT`）；PROJECT/STORE 两向可用 |
 | R-5.6–R-5.9 | frontend page gate + organization owner keyed gate；上一批 52 条 gate 分母由 token gate=true 的 33 条与 sales-menu owner 直调的 19 条组成；其中既有 36 条 token（另含 3 条 preflight=false）按键泛化，sales-menu 19 条直接调用 keyed gate | off 不发 list；本域 11 个 HTTP mutation entry 全部 fail；claim 只作为 point owner 事务内步骤；本域 gate 分母与上一批独立 |
 | R-5.10–R-5.12 | store operating catalog label source | 只改 label；key/parent/default unchanged |
 | R-6.1–R-6.3 | QR singleton table/owner | one row/store；独立于 operating-rule JSON；off+null legal |
@@ -300,7 +300,7 @@ L2_SCRIPT_ADMISSION=BLOCKED（本批当前未授权 Browser L2；静态 testId �
 | R-6.5 / R-6.5a / R-6.5b | candidate SQL predicate | channel/template ENABLED；internal NOT_REQUIRED accepted；only four dimensions+2 statuses |
 | R-6.7–R-6.7b | URL generation projection | only off/no channel/invalid URL no code；selected channel later status does not block generation or clear config |
 | R-6.8–R-6.9e | business-channel template owner + composer | URL rule string; non-target empty; target empty/invalid remains candidate/saveable; generation shows placeholder |
-| R-6.10–R-6.14 | single composer | append/replace fixed params before fragment; all five legal shapes and invalid paths; no URL persistence |
+| R-6.10–R-6.15 | single composer + frontend QR projection | append/replace fixed params before fragment; all five legal shapes and invalid paths; no URL persistence; legal URL is rendered as an in-memory Ant Design `QRCode` image in list/detail |
 | R-7.1–R-7.4 | extension definition owner + organization value/audit owner | SERVICE_POINT management host; not FLAT; group-workspace definition; same four-state audit |
 
 ## 9. owner API 与消费者清单
@@ -381,12 +381,12 @@ L2_SCRIPT_ADMISSION=BLOCKED（本批当前未授权 Browser L2；静态 testId �
 
 ### 10.1 组织表迁移
 
-拟新增：`apps/backend/catering-business-server/src/main/resources/db/migration/V20260917_000000_000__store_service_point_qr.sql`。
+拟新增：`apps/backend/catering-business-server/src/main/resources/db/migration/V20260917_000000_000__store_service_point_qr.sql`；随后以 `V20260918_010000_000__allow_optional_store_service_point_table_attributes.sql` 替换初始迁移中要求 TABLE 三个标量非空的约束，使已授权的非必填语义在数据库层生效。
 
 表与约束：
 
 1. `organization.store_service_point_area`：`area_ref`、workspace/group/store identity、`code`、`name`、`area_type`、`display_order`、`status`、`version`、timestamps；FK 带 workspace/store；check type/status/order；active code partial unique；排序查询索引。
-2. `organization.store_service_point`：`service_point_ref`、workspace/group/store identity、`area_ref`、`code`、`name`、`point_type`、`display_order`、`status`、`seat_capacity`、`table_shape`、`reservable`、`image_asset_ref`、`extension_values JSONB NOT NULL DEFAULT '{}'`、`extension_rule_revision`、version/timestamps；FK 带 workspace/store/area；active store code partial unique；`(area_ref, display_order)` index/unique；TABLE/SCAN nullability check。
+2. `organization.store_service_point`：`service_point_ref`、workspace/group/store identity、`area_ref`、`code`、`name`、`point_type`、`display_order`、`status`、`seat_capacity`、`table_shape`、`reservable`、`image_asset_ref`、`extension_values JSONB NOT NULL DEFAULT '{}'`、`extension_rule_revision`、version/timestamps；FK 带 workspace/store/area；active store code partial unique；`(area_ref, display_order)` index/unique；TABLE 的三个标量可为空，SCAN 的桌台属性与图片引用必须为空。
 3. `organization.store_qr_configuration`：`store_ref` primary key、workspace/group identity、`enabled BOOLEAN NOT NULL DEFAULT FALSE`、`channel_ref UUID NULL`、version/timestamps；store FK；不存 URL。
 
 对既有 store 逐行插入默认 QR singleton（false/null），新建 store 的 organization owner 同一事务插入 singleton；不为既有 service point 回填，因为当前仓不存在该实体。若当前 organization store table 的真实 FK/identity 形态与此表述有差异，实施者必须以当前 persistence 为准停下并更新详设，不创建隐式跨 schema FK。
@@ -471,7 +471,7 @@ L2_SCRIPT_ADMISSION=BLOCKED（本批当前未授权 Browser L2；静态 testId �
 | `storeServicePointTypeCompatibility` | Organization | PROJECT and STORE sessions | TABLE_AREA/SCAN_AREA + both point types | four create requests | 两合法组合 readback success；两不合法 owner problem；DB unchanged |
 | `storeServicePointOrdering` | Organization | STORE session | three ordered areas and points | move first/last/middle up/down | order readback adjacent swap；first up/last down rejected/disabled；同门店隔离 |
 | `storeServicePointAreaAvailability` | Organization | PROJECT session | two areas; each with ENABLED/DISABLED/VOIDED point | area status transitions + reads | all descendants effective unavailable under parent; point stored status/ext/image unchanged; re-enable restores |
-| `storeServicePointTableAttributes` | Organization | STORE edit capability | TABLE + SCAN points | table attrs update and scan forbidden body | table values read back; scan no table field accepted/stored; reservation rule not queried |
+| `storeServicePointTableAttributes` | Organization | STORE edit capability | TABLE + SCAN points | table attrs omitted, supplied, cleared, and scan forbidden body | TABLE with all three scalar attrs omitted succeeds and reads back null; supplied values and explicit clears read back; scan no table field accepted/stored; reservation rule not queried |
 | `storeQrConfigurationLifecycle` | Organization | PROJECT and STORE sessions | QR singleton false/null + eligible channel | get/patch off/null and on/channel | singleton version/readback; on requires channel; off null legal; config independent from rule JSON |
 | `storeQrChannelCandidatePredicate` | BusinessChannel | current store owner session | four one-dimension mismatch channels + enabled valid + internal unbound | dedicated candidate GET | only exact four dimensions + both ENABLED returned; internal NOT_REQUIRED included; no client filtering |
 | `storeQrChannelBoundedRead` | BusinessChannel | operations session | 100 and 101 eligible candidates | candidate GET | exact 100 returns nextCursor null; 101 typed invariant problem, no truncation |
@@ -572,17 +572,37 @@ scripts/verify
 - [x] `SERVICE_POINT` 未加入 flat host；QR generation 与 candidate status predicate 分离；URL 不落库。
 - [x] seed、migration、generated chain、organization point asset ref、audit regression 与 P9 逐代码对账均有计划落点。
 - [x] Claude 静态 DESIGN review：上一轮 NO-GO 的 M-01、S-01、S-02、N-01 已按当前字节处置并纳入实施；本文件不把处置记录当作独立 verdict。
-- [x] fresh 独立 IMPLEMENTATION review：Hubble 已基于当前字节完成 fresh 只读复审，结论为 `GO/M/S/N=0/0/0`；Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`，不以主 agent 收口替代独立 reviewer。
+- [x] fresh 独立 IMPLEMENTATION review：Hubble 已对 D-13 之前的字节完成 fresh 只读复审，结论为 `GO/M/S/N=0/0/0`；D-13 后需重新 review，Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`，不以主 agent 收口替代独立 reviewer。
 - [x] Dexter 本轮直接授权实施及受管 reset/DEV/seed；Browser L2、UAT、部署和 Git 仍未授权。
 
 ## 15. 实施后状态（当前字节）
 
 本详设对应的生产代码、契约/生成物、migration、测试、受管 backend acceptance、reset、DEV 与 `r5-full` seed 已完成；`doc/review/platform/2026-09-18-v2s-store-service-point-qr-implementation-reconciliation-codex.md` 记录当前逐代码与详设对账为 `MATCHED`，并保留业务与 cleanup 的分层结果。
 
-修复前 fresh 独立 reviewer 的 `REVIEW_TARGET=IMPLEMENTATION` 结论为 `NO-GO`、`M/S/N=1/2/1`；四条 finding 已按 owning source 修复，处置记录见对账 §4.4。该修复前结论不作为当前最终 verdict；Hubble 已对修复后的当前字节完成 fresh 独立静态 implementation review，结论为 `GO/M/S/N=0/0/0`。
+修复前 fresh 独立 reviewer 的 `REVIEW_TARGET=IMPLEMENTATION` 结论为 `NO-GO`、`M/S/N=1/2/1`；四条 finding 已按 owning source 修复，处置记录见对账 §4.4。该修复前结论不作为当前最终 verdict；Hubble 已对 D-13 之前的修复字节完成 fresh 独立静态 implementation review，结论为 `GO/M/S/N=0/0/0`，不覆盖当前 D-13 字节。
 
 当前运行状态为受管 DEV 已 PASS 启动并完成最终 seed；Browser L2、UAT、部署和 Git 仍未授权。全仓 `scripts/verify` 的既有 backend Spotless 基线首败与本机 Docker-backed 测试入口 guard 失败均已按失败纪律单列，不升级为本批功能失败或 PASS。
 
-最新 fresh 静态 reviewer Faraday 对当前字节提出 `NO-GO/M/S/N=1/0/0`：QR 展示没有落实 `effectiveAvailable=false` 时不展示二维码，且把合法 URL 当作普通文本。该 finding 已由主 agent 按 R-2.8、R-6.14、IA/交互 §4.3/§10、Gate-1.9/Gate-5.4 重开确认并修复；当前 renderer 先处理不可用边界，可用合法值复用 Ant Design `Typography.Link` 作为「查看二维码」入口，列表与详情共用，D-12 生成事实保持不变。新增静态边界测试。
+最新 fresh 静态 reviewer Faraday 对此前字节提出 `NO-GO/M/S/N=1/0/0`：QR 展示没有落实 `effectiveAvailable=false` 时不展示二维码，且把合法 URL 当作普通文本。该 finding 已由主 agent 按 R-2.8、R-6.14、IA/交互 §4.3/§10、Gate-1.9/Gate-5.4 重开确认并修复；当时的修复先处理不可用边界，并以入口替代普通 URL。2026-09-18 的 D-13 在此基础上进一步授权合法结果直接生成并展示内存 `QRCode` 图像；当前实现与 D-13 及 R-6.15 以 `QRCode` 为准，历史 `Typography.Link` 仅保留为处置记录，不是当前实现。
 
-Hubble 对该修复后的当前字节完成 fresh 独立静态 implementation review，结论为 `GO/M/S/N=0/0/0`；确认列表/详情统一 availability 门控与入口、D-12 后端生成事实、`qrResultLink` 绑定以及其余 owner/权限/资产/审计闭包均无新的阻断 finding。Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`。
+Hubble 对上一版修复字节完成 fresh 独立静态 implementation review，结论为 `GO/M/S/N=0/0/0`；该 verdict 只覆盖当时的入口形态。D-13 改动了当前 QR 呈现范围，故不能把该历史 verdict 自动升级为当前字节的 review 结论；当前实现需在本轮 focused proof 后重新取得 fresh review。Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`。
+
+## 16. 2026-09-18 范围增补（D-13）
+
+Dexter 已明确：桌台容纳人数、形态、是否可预约均为非必填；同时授权二维码生成与展示。当前实现边界因此为：
+
+- OpenAPI create/update request 中三项桌台标量继续为可省略且可显式传 `null`；TABLE owner 对非空值校验正整数、形态闭集和布尔值，SCAN 仍拒绝这些属性。
+- `V20260918_010000_000__allow_optional_store_service_point_table_attributes.sql` 删除初始 TABLE 非空约束并重建为 TABLE 可空、SCAN 全空；原有 capacity 正数检查保留。
+- `StoreServicePointAcceptanceScenarios.storeServicePointTableAttributes` 覆盖 TABLE 三项全部省略、显式清空、填写值以及 SCAN 反例；前端 `seatCapacity` 仅在填写时要求正整数，开关保持统一 Drawer Form 生命周期管理。
+- 合法最终 URL 由列表与详情共用的 `qrDisplayValue` 交给 Ant Design `QRCode(type="svg")` 在内存中直接生成；列表使用 72px、详情使用 176px，并以 `qrResultImage` 绑定真实图像节点。URL、图像、二维码实体仍不落库，不新增下载/批量导出/图片资产链路。
+
+本增补使原 67 个 R 条目覆盖更新为 68 个，`R-6.15` 是唯一新增需求映射；其 focused 编译、静态测试、migration 应用与受管 DEV 恢复已在后续实施收口中完成。D-13 之前的 review 或运行记录不替代当前字节结论。
+
+## 17. 2026-09-18 目录归属修正（D-14）
+
+Dexter 已确认“门店桌台与二维码管理”在平台角色编辑器和运营后台导航中均应位于“商品与服务”一级目录。该修正只改变 admin catalog 的归属与页面顺序，不改变能力身份或授权边界：
+
+- `PG-STORE-SERVICE-POINT-QR` 使用 `NAV-CATALOG-SERVICES`、目录 label“商品与服务”、order=550；
+- `EDIT_STORE_SERVICE_POINT_QR` 使用 `CATALOG_MANAGEMENT`、操作组 label“商品与服务”、order=500；
+- capability/page key、四类角色、STORE data node、selected-store scope 与 page binding 保持原值；
+- 唯一源文件为 `contracts/catalog/admin-catalog.json`，Java/TypeScript 目录由 edge-codegen 生成；平台角色树和 operations-admin 导航都不得再保留“门店管理/门店经营”的独立副本。

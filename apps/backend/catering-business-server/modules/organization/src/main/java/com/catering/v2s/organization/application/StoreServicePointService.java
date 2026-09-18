@@ -780,8 +780,10 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
 
     private static void validatePointAttributes(String pointType, Long capacity, String shape, Boolean reservable, UUID image) {
         if ("TABLE".equals(pointType)) {
-            if (capacity == null || capacity <= 0 || shape == null || shape.isBlank() || reservable == null) throw new BusinessEntityService.OrganizationValidationException();
-            if (!List.of("HALL", "PRIVATE_ROOM", "BOOTH", "OUTDOOR").contains(shape)) throw new BusinessEntityService.OrganizationValidationException();
+            if (capacity != null && capacity <= 0) throw new BusinessEntityService.OrganizationValidationException();
+            if (shape != null && (shape.isBlank() || !List.of("HALL", "PRIVATE_ROOM", "BOOTH", "OUTDOOR").contains(shape))) {
+                throw new BusinessEntityService.OrganizationValidationException();
+            }
         } else if (capacity != null || shape != null || reservable != null || image != null) {
             throw new BusinessEntityService.OrganizationValidationException();
         }

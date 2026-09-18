@@ -16,7 +16,7 @@ export type OperationsProblemCode = OperationsEdgeProblemCode | PublicEdgeProble
  */
 export const OPERATIONS_PROBLEM_FEEDBACK: Record<OperationsProblemCode, ProblemFeedback> = {
   EXTENSION_DEFINITION_REVISION_STALE: {title: '字段配置已变化', detail: '请刷新字段配置后重新查询。'},
-  EXTENSION_FILTER_INVALID: {title: '扩展字段筛选无效', detail: '请检查扩展字段筛选条件后重试。'},
+  EXTENSION_FILTER_INVALID: {title: '字段筛选无效', detail: '请检查字段筛选条件后重试。'},
   ADAPTER_UNBIND_REQUIRED: {title: '需要外部解除授权', detail: '请先完成外部平台解除授权后重试。'},
   ACCOUNT_NOT_BINDABLE: {title: '账号当前不可接受邀请', detail: '该账号当前不可接受邀请，请联系空间管理员。'},
   AUTHORIZATION_REQUIRED: {title: '操作授权已失效', detail: '请重新选择当前数据节点后重试。'},

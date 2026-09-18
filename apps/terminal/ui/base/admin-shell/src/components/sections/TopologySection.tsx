@@ -7,6 +7,7 @@ import type {
   TopologyOperation,
   TopologyOperationEligibility,
 } from '@catering-v2s/kernel-base-contracts'
+import {topologyTransportConfig} from '@catering-v2s/kernel-base-contracts'
 import {areTopologyFactsEqual, topologyReasonMessages} from '@catering-v2s/kernel-base-topology'
 import {type StateRoot} from '@catering-v2s/kernel-base-state'
 import {
@@ -27,8 +28,6 @@ import {adminTestIds} from '../../foundations/adminTestIds'
 import {ADMIN_CONSOLE_FOCUS_SCOPE_ID} from '../../foundations/adminIdentity'
 
 const sectionStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0})
-const topologyPort = 43172
-const topologyBasePath = '/terminal-topology'
 const topologyIds = adminTestIds.topology
 
 const unavailableEligibility = (operation: TopologyOperation): TopologyOperationEligibility => Object.freeze({
@@ -188,7 +187,12 @@ export const TopologySection = ({context}: AdminSectionProps) => {
           onPress={() => {
             if (capability === undefined || identity === undefined) return
             void run('pair', () => capability.pair({
-              locator: {host: host.trim(), port: topologyPort, basePath: topologyBasePath, identity},
+              locator: {
+                host: host.trim(),
+                port: topologyTransportConfig.port,
+                basePath: topologyTransportConfig.basePath,
+                identity,
+              },
             }))
           }}
         >

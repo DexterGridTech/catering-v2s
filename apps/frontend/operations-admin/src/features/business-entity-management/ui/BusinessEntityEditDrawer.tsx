@@ -220,7 +220,7 @@ export function BusinessEntityEditDrawer({
 
   const editLabel = actionLabel(editCapabilityByKind[kind]);
   const entityLabel = kind === 'BRAND' ? '品牌' : kind === 'TENANT' ? '经营租户' : '总公司';
-  const problem = commandProblem ?? (definitionQuery.error ? '扩展字段加载失败，请关闭后重新进入。' : undefined);
+  const problem = commandProblem ?? (definitionQuery.error ? '字段配置加载失败，请关闭后重新进入。' : undefined);
   const definitionReady = Boolean(definitionQuery.data) && !definitionQuery.isFetching;
   const entityManageable = Boolean(entity && canManageBusinessEntity(entity.status));
   return (

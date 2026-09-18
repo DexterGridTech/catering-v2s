@@ -12,10 +12,10 @@ import type {
   TopologyHostPort,
   TopologyHostStatus,
 } from '@catering-v2s/kernel-base-platform-ports'
-import {
-  unavailableAppControlPort as defaultAppControlPort,
-} from '@catering-v2s/kernel-base-platform-ports'
+import {unavailableAppControlPort as defaultAppControlPort} from '@catering-v2s/kernel-base-platform-ports'
 import type {TopologyPeerChannel, TopologyPeerChannelEvent} from '@catering-v2s/kernel-base-transport'
+
+const PORT_DESCRIPTOR_KEY = Symbol.for('catering-v2s.platform-ports.descriptor')
 
 type NativePortResult = Readonly<{
   readonly status: string
@@ -79,21 +79,21 @@ type WebSocketLike = {
 
 type WebSocketConstructor = new (url: string) => WebSocketLike
 
-const nativeHost = (): NativeTopologyHostModule =>
-  requireNativeModule<NativeTopologyHostModule>('TerminalTopologyHost')
+const nativeHost = (): NativeTopologyHostModule => requireNativeModule<NativeTopologyHostModule>('TerminalTopologyHost')
 
-const nativeAppControl = (): NativeAppControlModule =>
-  requireNativeModule<NativeAppControlModule>('TerminalAppControl')
+const nativeAppControl = (): NativeAppControlModule => requireNativeModule<NativeAppControlModule>('TerminalAppControl')
 
 const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
-const bridgeFailure = (input: Readonly<{
-  readonly port: PortFailure['port']
-  readonly capability: string
-  readonly code: string
-  readonly message: string
-}>): PortFailure => ({
+const bridgeFailure = (
+  input: Readonly<{
+    readonly port: PortFailure['port']
+    readonly capability: string
+    readonly code: string
+    readonly message: string
+  }>,
+): PortFailure => ({
   status: 'failed',
   port: input.port,
   capability: input.capability,
@@ -106,31 +106,42 @@ const readNativeResult = <TValue>(
   capability: string,
 ): PortResult<TValue> => {
   if (!isRecord(result) || typeof result.status !== 'string') {
-    return bridgeFailure({port, capability, code: 'TERMINAL_NATIVE_RESULT_INVALID', message: 'native result is invalid'})
+    return bridgeFailure({
+      port,
+      capability,
+      code: 'TERMINAL_NATIVE_RESULT_INVALID',
+      message: 'native result is invalid',
+    })
   }
   if (result.status === 'succeeded' && 'value' in result && typeof result.completedAt === 'number') {
     return result as unknown as PortResult<TValue>
   }
-  if (result.status === 'failed'
-    && typeof result.port === 'string'
-    && typeof result.capability === 'string'
-    && isRecord(result.error)
-    && typeof result.error.code === 'string'
-    && typeof result.error.message === 'string'
-    && typeof result.error.retryable === 'boolean') {
+  if (
+    result.status === 'failed' &&
+    typeof result.port === 'string' &&
+    typeof result.capability === 'string' &&
+    isRecord(result.error) &&
+    typeof result.error.code === 'string' &&
+    typeof result.error.message === 'string' &&
+    typeof result.error.retryable === 'boolean'
+  ) {
     return result as unknown as PortResult<TValue>
   }
-  if (result.status === 'unavailable'
-    && typeof result.port === 'string'
-    && typeof result.capability === 'string'
-    && (result.reason === 'ADAPTER_NOT_INJECTED' || result.reason === 'PLATFORM_UNSUPPORTED')
-    && typeof result.message === 'string') {
+  if (
+    result.status === 'unavailable' &&
+    typeof result.port === 'string' &&
+    typeof result.capability === 'string' &&
+    (result.reason === 'ADAPTER_NOT_INJECTED' || result.reason === 'PLATFORM_UNSUPPORTED') &&
+    typeof result.message === 'string'
+  ) {
     return result as unknown as PortResult<TValue>
   }
-  if (result.status === 'timed-out'
-    && typeof result.port === 'string'
-    && typeof result.capability === 'string'
-    && typeof result.timeoutMs === 'number') {
+  if (
+    result.status === 'timed-out' &&
+    typeof result.port === 'string' &&
+    typeof result.capability === 'string' &&
+    typeof result.timeoutMs === 'number'
+  ) {
     return result as unknown as PortResult<TValue>
   }
   return bridgeFailure({port, capability, code: 'TERMINAL_NATIVE_RESULT_INVALID', message: 'native result is invalid'})
@@ -140,11 +151,13 @@ const readNativeActionResult = (
   result: unknown,
   requestId: Parameters<AppControlPort['resetRuntime']>[0]['requestId'],
 ): PortActionResult<NoOutput, 'SUCCESSOR_RUNTIME_STARTED'> => {
-  if (isRecord(result)
-    && result.status === 'accepted'
-    && result.requestId === requestId
-    && typeof result.acceptedAt === 'number'
-    && result.terminalObservation === 'SUCCESSOR_RUNTIME_STARTED') {
+  if (
+    isRecord(result) &&
+    result.status === 'accepted' &&
+    result.requestId === requestId &&
+    typeof result.acceptedAt === 'number' &&
+    result.terminalObservation === 'SUCCESSOR_RUNTIME_STARTED'
+  ) {
     return Object.freeze({
       status: 'accepted',
       requestId,
@@ -164,8 +177,18 @@ const readConnectionEvent = (value: unknown): TopologyPeerChannelEvent | undefin
   const connectionId = readString(value.connectionId)
   const reason = readString(value.reason)
   if (event === 'open') return {type: 'open', ...(connectionId === undefined ? {} : {connectionId})}
-  if (event === 'close') return {type: 'close', ...(connectionId === undefined ? {} : {connectionId}), ...(reason === undefined ? {} : {reason})}
-  if (event === 'error') return {type: 'error', ...(connectionId === undefined ? {} : {connectionId}), ...(reason === undefined ? {} : {reason})}
+  if (event === 'close')
+    return {
+      type: 'close',
+      ...(connectionId === undefined ? {} : {connectionId}),
+      ...(reason === undefined ? {} : {reason}),
+    }
+  if (event === 'error')
+    return {
+      type: 'error',
+      ...(connectionId === undefined ? {} : {connectionId}),
+      ...(reason === undefined ? {} : {reason}),
+    }
   return undefined
 }
 
@@ -183,61 +206,119 @@ const readWebSocketConstructor = (): WebSocketConstructor => {
   return candidate as WebSocketConstructor
 }
 
-export const createAndroidTopologyHostPort = (): TopologyHostPort => Object.freeze({
-  start: async (input: TopologyHostConfig): Promise<PortResult<TopologyHostAddress>> => {
-    try {
-      const identity = input.identity
-      if (identity === undefined) {
-        return bridgeFailure({port: 'topologyHost', capability: 'start', code: 'TOPOLOGY_IDENTITY_REQUIRED', message: 'topology host identity is required'})
+export const createAndroidTopologyHostPort = (): TopologyHostPort => {
+  const port: TopologyHostPort = {
+    start: async (input: TopologyHostConfig): Promise<PortResult<TopologyHostAddress>> => {
+      try {
+        const identity = input.identity
+        if (identity === undefined) {
+          return bridgeFailure({
+            port: 'topologyHost',
+            capability: 'start',
+            code: 'TOPOLOGY_IDENTITY_REQUIRED',
+            message: 'topology host identity is required',
+          })
+        }
+        const result = await nativeHost().start(
+          input.port,
+          input.basePath,
+          input.heartbeatIntervalMs,
+          input.heartbeatTimeoutMs,
+          identity.nodeId,
+          identity.displayName,
+          identity.instanceMode,
+          identity.displayRole,
+        )
+        return readNativeResult<TopologyHostAddress>(result, 'topologyHost', 'start')
+      } catch (_error) {
+        return bridgeFailure({
+          port: 'topologyHost',
+          capability: 'start',
+          code: 'TOPOLOGY_HOST_BRIDGE_FAILED',
+          message: 'topology host bridge failed',
+        })
       }
-      const result = await nativeHost().start(
-        input.port,
-        input.basePath,
-        input.heartbeatIntervalMs,
-        input.heartbeatTimeoutMs,
-        identity.nodeId,
-        identity.displayName,
-        identity.instanceMode,
-        identity.displayRole,
-      )
-      return readNativeResult<TopologyHostAddress>(result, 'topologyHost', 'start')
-    } catch (_error) {
-      return bridgeFailure({port: 'topologyHost', capability: 'start', code: 'TOPOLOGY_HOST_BRIDGE_FAILED', message: 'topology host bridge failed'})
-    }
-  },
-  stop: async ({timeoutMs}: TopologyHostCall): Promise<PortResult<NoOutput>> => {
-    try {
-      return readNativeResult<NoOutput>(await nativeHost().stop(timeoutMs), 'topologyHost', 'stop')
-    } catch (_error) {
-      return bridgeFailure({port: 'topologyHost', capability: 'stop', code: 'TOPOLOGY_HOST_BRIDGE_FAILED', message: 'topology host bridge failed'})
-    }
-  },
-  getStatus: async ({timeoutMs}: TopologyHostCall): Promise<PortResult<TopologyHostStatus>> => {
-    try {
-      return readNativeResult<TopologyHostStatus>(await nativeHost().getStatus(timeoutMs), 'topologyHost', 'getStatus')
-    } catch (_error) {
-      return bridgeFailure({port: 'topologyHost', capability: 'getStatus', code: 'TOPOLOGY_HOST_BRIDGE_FAILED', message: 'topology host bridge failed'})
-    }
-  },
-  getDiagnosticsSnapshot: async ({timeoutMs}: TopologyHostCall): Promise<PortResult<TopologyHostDiagnostics>> => {
-    try {
-      return readNativeResult<TopologyHostDiagnostics>(await nativeHost().getDiagnosticsSnapshot(timeoutMs), 'topologyHost', 'getDiagnosticsSnapshot')
-    } catch (_error) {
-      return bridgeFailure({port: 'topologyHost', capability: 'getDiagnosticsSnapshot', code: 'TOPOLOGY_HOST_BRIDGE_FAILED', message: 'topology host bridge failed'})
-    }
-  },
-})
+    },
+    stop: async ({timeoutMs}: TopologyHostCall): Promise<PortResult<NoOutput>> => {
+      try {
+        return readNativeResult<NoOutput>(await nativeHost().stop(timeoutMs), 'topologyHost', 'stop')
+      } catch (_error) {
+        return bridgeFailure({
+          port: 'topologyHost',
+          capability: 'stop',
+          code: 'TOPOLOGY_HOST_BRIDGE_FAILED',
+          message: 'topology host bridge failed',
+        })
+      }
+    },
+    getStatus: async ({timeoutMs}: TopologyHostCall): Promise<PortResult<TopologyHostStatus>> => {
+      try {
+        return readNativeResult<TopologyHostStatus>(
+          await nativeHost().getStatus(timeoutMs),
+          'topologyHost',
+          'getStatus',
+        )
+      } catch (_error) {
+        return bridgeFailure({
+          port: 'topologyHost',
+          capability: 'getStatus',
+          code: 'TOPOLOGY_HOST_BRIDGE_FAILED',
+          message: 'topology host bridge failed',
+        })
+      }
+    },
+    getDiagnosticsSnapshot: async ({timeoutMs}: TopologyHostCall): Promise<PortResult<TopologyHostDiagnostics>> => {
+      try {
+        return readNativeResult<TopologyHostDiagnostics>(
+          await nativeHost().getDiagnosticsSnapshot(timeoutMs),
+          'topologyHost',
+          'getDiagnosticsSnapshot',
+        )
+      } catch (_error) {
+        return bridgeFailure({
+          port: 'topologyHost',
+          capability: 'getDiagnosticsSnapshot',
+          code: 'TOPOLOGY_HOST_BRIDGE_FAILED',
+          message: 'topology host bridge failed',
+        })
+      }
+    },
+  }
+  if (__DEV__) {
+    Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
+      value: Object.freeze({
+        port: 'topologyHost',
+        capabilities: Object.freeze([
+          Object.freeze({capability: 'start', state: 'real' as const, source: 'adapter' as const}),
+          Object.freeze({capability: 'stop', state: 'real' as const, source: 'adapter' as const}),
+          Object.freeze({capability: 'getStatus', state: 'real' as const, source: 'adapter' as const}),
+          Object.freeze({capability: 'getDiagnosticsSnapshot', state: 'real' as const, source: 'adapter' as const}),
+        ]),
+      }),
+      enumerable: false,
+      writable: false,
+      configurable: false,
+    })
+  }
+  return Object.freeze(port)
+}
 
-export const createAndroidAppControlPort = (): AppControlPort => Object.freeze({
-  ...defaultAppControlPort,
-  resetRuntime: async ({requestId, timeoutMs}: Parameters<AppControlPort['resetRuntime']>[0]) => {
-    try {
-      return readNativeActionResult(await nativeAppControl().resetRuntime(requestId, timeoutMs), requestId)
-    } catch (_error) {
-      return bridgeFailure({port: 'appControl', capability: 'resetRuntime', code: 'APP_CONTROL_BRIDGE_FAILED', message: 'app control bridge failed'})
-    }
-  },
-})
+export const createAndroidAppControlPort = (): AppControlPort =>
+  Object.freeze({
+    ...defaultAppControlPort,
+    resetRuntime: async ({requestId, timeoutMs}: Parameters<AppControlPort['resetRuntime']>[0]) => {
+      try {
+        return readNativeActionResult(await nativeAppControl().resetRuntime(requestId, timeoutMs), requestId)
+      } catch (_error) {
+        return bridgeFailure({
+          port: 'appControl',
+          capability: 'resetRuntime',
+          code: 'APP_CONTROL_BRIDGE_FAILED',
+          message: 'app control bridge failed',
+        })
+      }
+    },
+  })
 
 export const createAndroidTopologyPeerChannel = (): TopologyPeerChannel => {
   const listeners = new Set<(event: TopologyPeerChannelEvent) => void>()
@@ -274,7 +355,11 @@ export const createAndroidTopologyPeerChannel = (): TopologyPeerChannel => {
     current.onmessage = null
     current.onclose = null
     current.onerror = null
-    try { current.close(1000, reason ?? 'TOPOLOGY_CLIENT_CLOSED') } catch { /* already closed */ }
+    try {
+      current.close(1000, reason ?? 'TOPOLOGY_CLIENT_CLOSED')
+    } catch {
+      /* already closed */
+    }
   }
 
   const dispose = async (): Promise<void> => {
@@ -338,7 +423,8 @@ export const createAndroidTopologyPeerChannel = (): TopologyPeerChannel => {
         'topologyHost',
         'sendFrame',
       )
-      if (result.status !== 'succeeded') throw new Error(result.status === 'failed' ? result.error.message : 'topology host send failed')
+      if (result.status !== 'succeeded')
+        throw new Error(result.status === 'failed' ? result.error.message : 'topology host send failed')
     },
     close: async (reason?: string): Promise<void> => {
       if (socket !== null) {

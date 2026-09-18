@@ -164,8 +164,34 @@ final class StoreServicePointAcceptanceScenarios {
         AreaView tableArea = createArea(context, store, "TABLE_AREA", "Attribute table area", "ATTR-TABLE");
         AreaView scanArea = createArea(context, store, "SCAN_AREA", "Attribute scan area", "ATTR-SCAN");
         PointView table = createTablePoint(context, store, tableArea, "Attribute table", "ATTR-T-1", 4, "PRIVATE_ROOM", true);
+        PointView optionalTable = createPoint(
+                context,
+                store,
+                tableArea,
+                pointBody("Optional table", "ATTR-T-2", "TABLE", null, null));
         PointView scan = createScanPoint(context, store, scanArea, "Attribute scan", "ATTR-S-1");
-        updateTablePoint(context, store, table, 8, "OUTDOOR", true);
+        table = updateTablePoint(context, store, table, 8, "OUTDOOR", true);
+
+        JsonNode optionalReadback = readPoint(context, store, optionalTable.ref());
+        assertTrue(optionalReadback.path("seatCapacity").isNull(), "BUSINESS: table capacity may be omitted");
+        assertTrue(optionalReadback.path("tableShape").isNull(), "BUSINESS: table shape may be omitted");
+        assertTrue(optionalReadback.path("reservable").isNull(), "BUSINESS: table reservability may be omitted");
+
+        Map<String, Object> clearTableAttributes = pointBody(
+                "Attribute table", "ATTR-T-1", "TABLE", "ENABLED", table.version());
+        clearTableAttributes.put("seatCapacity", null);
+        clearTableAttributes.put("tableShape", null);
+        clearTableAttributes.put("reservable", null);
+        BackendAcceptanceTest.Response cleared = context.patch(
+                OPERATIONS_STORE_SERVICE_POINT_UPDATE,
+                pointPath(store.fixture(), table.ref()),
+                store.session().cookie(),
+                clearTableAttributes,
+                idempotency(),
+                OK);
+        assertTrue(cleared.json().path("seatCapacity").isNull(), "BUSINESS: table capacity may be cleared");
+        assertTrue(cleared.json().path("tableShape").isNull(), "BUSINESS: table shape may be cleared");
+        assertTrue(cleared.json().path("reservable").isNull(), "BUSINESS: table reservability may be cleared");
 
         Map<String, Object> invalid = pointBody("Attribute scan", "ATTR-S-1", "SCAN", "ENABLED", scan.version() + 1);
         invalid.put("seatCapacity", 3);

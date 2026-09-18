@@ -20,6 +20,7 @@ import {
   Table,
   Tag,
   Typography,
+  QRCode,
   theme,
 } from 'antd';
 import type {MenuProps, TableColumnsType} from 'antd';
@@ -27,6 +28,7 @@ import {
   AdminImageCollectionEditor,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  adminWideDrawerSurfaceProps,
   adminListState,
   createContentIdempotencyKey,
   CursorPagination,
@@ -39,12 +41,7 @@ import {
 } from '@catering-v2s/admin-ui-foundation';
 import {type Dayjs} from 'dayjs';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {
-  operationsClient,
-  operationsProblemOf,
-  operationsRtk,
-  refreshOperationsCurrentPage,
-} from '../../../app/api/OperationsTransport';
+import {operationsClient, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {
   type ExtensionDefinition,
   type JsonValue,
@@ -92,7 +89,7 @@ type PointFormValues = {
   code: string;
   seatCapacity?: number;
   tableShape?: StoreServicePointShape;
-  reservable?: boolean;
+  reservable?: boolean | null;
   extensionValues?: Record<string, JsonValue | Dayjs | undefined>;
 };
 type QrFormValues = {enabled: boolean; channelRef?: string};
@@ -104,7 +101,8 @@ function qrDisplayValue(
   configuration: QrDisplayConfiguration | undefined,
   effectiveAvailable: boolean,
   readState: QrReadState,
-  linkTestId?: string,
+  size: number,
+  imageTestId?: string,
 ) {
   if (!effectiveAvailable) return <Typography.Text type="secondary">不可用</Typography.Text>;
   if (readState.loading && !configuration) return <Typography.Text type="secondary">二维码配置加载中…</Typography.Text>;
@@ -114,15 +112,14 @@ function qrDisplayValue(
   if (!configuration.channelRef) return '未选择门店渠道';
   if (!value) return '暂未生成二维码';
   return (
-    <Typography.Link
-      href={value}
-      target="_blank"
-      rel="noreferrer"
-      aria-label="打开二维码入口"
-      {...(linkTestId ? testId(linkTestId) : {})}
-    >
-      查看二维码
-    </Typography.Link>
+    <QRCode
+      value={value}
+      type="svg"
+      size={size}
+      bordered={false}
+      aria-label="二维码"
+      {...(imageTestId ? testId(imageTestId) : {})}
+    />
   );
 }
 
@@ -155,6 +152,10 @@ function emptyUuid() {
 function problemText(error: unknown, fallback: string) {
   const problem = operationsProblemOf(error);
   return problem.detail || fallback;
+}
+
+function queryRefetchFailed(value: unknown): boolean {
+  return Boolean(value && typeof value === 'object' && 'error' in value && (value as {error?: unknown}).error);
 }
 
 function statusTag(status: StoreServicePointStatus) {
@@ -332,6 +333,9 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
     skip: !gate.isEnabled || !scopeReady,
   });
   const qrConfiguration = qrQuery.currentData;
+  const refetchAreas = areasQuery.refetch;
+  const refetchPoints = pointsQuery.refetch;
+  const refetchQr = qrQuery.refetch;
 
   const extensionDefinitionRequest = useMemo(
     () =>
@@ -450,7 +454,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
       code: point?.code ?? '',
       seatCapacity: point?.seatCapacity ?? undefined,
       tableShape: point?.tableShape ?? undefined,
-      reservable: point?.reservable ?? false,
+      reservable: point?.reservable ?? undefined,
       extensionValues: hydrateStoreServicePointExtensionValues(extensionDefinition, point?.extensionValues),
     });
     setImageItems(
@@ -485,9 +489,16 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
     resetQrLifecycle();
   }, [qrConfiguration, qrEditOpen, qrForm, resetQrLifecycle]);
 
-  const refresh = useCallback(() => {
-    refreshOperationsCurrentPage();
-  }, []);
+  const readBack = useCallback(
+    async (target: 'areas' | 'area-and-points' | 'points' | 'qr') => {
+      const refetches: Array<Promise<unknown>> =
+        target === 'qr' ? [refetchQr()] : target === 'points' ? [refetchPoints()] : [refetchAreas()];
+      if (target === 'area-and-points' && selectedAreaRef) refetches.push(refetchPoints());
+      const results = await Promise.all(refetches);
+      if (results.some(queryRefetchFailed)) throw new Error('STORE_SERVICE_POINT_READBACK_FAILED');
+    },
+    [refetchAreas, refetchPoints, refetchQr, selectedAreaRef],
+  );
 
   const runAreaMutation = useCallback(
     async (operation: 'create' | 'update', values: AreaFormValues) => {
@@ -523,12 +534,12 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
           headers: {'Idempotency-Key': key},
         });
       }
+      await readBack('area-and-points');
       areaLifecycle.setDirty(false);
       areaLifecycle.closeAfterSuccess();
       setFeedback({type: 'success', message: operation === 'create' ? '区域已创建。' : '区域已保存。'});
-      refresh();
     },
-    [areaEditor, areaLifecycle, queryContext.groupWorkspaceKey, refresh, storeRef, storeWireRef],
+    [areaEditor, areaLifecycle, queryContext.groupWorkspaceKey, readBack, storeRef, storeWireRef],
   );
 
   const changeAreaStatus = useCallback(
@@ -550,13 +561,13 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         body,
         headers: {'Idempotency-Key': key},
       });
+      await readBack('area-and-points');
       setFeedback({
         type: 'success',
         message: status === 'VOIDED' ? '区域已作废。' : `区域已${storeServicePointStatusLabels[status]}。`,
       });
-      refresh();
     },
-    [queryContext.groupWorkspaceKey, refresh, storeWireRef],
+    [queryContext.groupWorkspaceKey, readBack, storeWireRef],
   );
 
   const moveArea = useCallback(
@@ -578,9 +589,10 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         body,
         headers: {'Idempotency-Key': key},
       });
-      refresh();
+      await readBack('areas');
+      setFeedback({type: 'success', message: '区域顺序已更新。'});
     },
-    [queryContext.groupWorkspaceKey, refresh, storeWireRef],
+    [queryContext.groupWorkspaceKey, readBack, storeWireRef],
   );
 
   const releaseStagedImages = useCallback(async () => {
@@ -687,7 +699,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         pointType,
         seatCapacity: pointType === 'TABLE' ? (values.seatCapacity ?? null) : null,
         tableShape: pointType === 'TABLE' ? (values.tableShape ?? null) : null,
-        reservable: pointType === 'TABLE' ? Boolean(values.reservable) : null,
+        reservable: pointType === 'TABLE' ? (values.reservable ?? null) : null,
         imageAssetRef: pointType === 'TABLE' && image?.assetRef ? wireUuid(image.assetRef) : null,
         imageBindGrant: pointType === 'TABLE' ? (image?.bindGrant ?? null) : null,
         extensionValues: serializeStoreServicePointExtensionValues(extensionDefinition, values.extensionValues),
@@ -716,6 +728,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
           headers: {'Idempotency-Key': key},
         });
       }
+      await readBack('points');
       setImageItems([]);
       setPointProblem(undefined);
       pointLifecycle.setDirty(false);
@@ -726,7 +739,6 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
           ? `${titleForArea(pointEditor.areaType)}已保存。`
           : `${titleForArea(pointEditor.areaType)}已创建。`,
       });
-      refresh();
     },
     [
       extensionDefinition,
@@ -734,7 +746,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
       pointEditor,
       pointLifecycle,
       queryContext.groupWorkspaceKey,
-      refresh,
+      readBack,
       selectedAreaRef,
       storeRef,
       storeWireRef,
@@ -760,6 +772,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         body,
         headers: {'Idempotency-Key': key},
       });
+      await readBack('points');
       setFeedback({
         type: 'success',
         message:
@@ -767,9 +780,8 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
             ? `${titleForArea(selectedArea?.areaType)}已作废。`
             : `${titleForArea(selectedArea?.areaType)}已${storeServicePointStatusLabels[status]}。`,
       });
-      refresh();
     },
-    [queryContext.groupWorkspaceKey, refresh, selectedArea?.areaType, storeWireRef],
+    [queryContext.groupWorkspaceKey, readBack, selectedArea?.areaType, storeWireRef],
   );
 
   const movePoint = useCallback(
@@ -791,9 +803,10 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         body,
         headers: {'Idempotency-Key': key},
       });
-      refresh();
+      await readBack('points');
+      setFeedback({type: 'success', message: `${titleForArea(selectedArea?.areaType)}顺序已更新。`});
     },
-    [queryContext.groupWorkspaceKey, refresh, storeWireRef],
+    [queryContext.groupWorkspaceKey, readBack, selectedArea?.areaType, storeWireRef],
   );
 
   const changeQrConfiguration = useCallback(
@@ -816,12 +829,12 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         body,
         headers: {'Idempotency-Key': key},
       });
+      await readBack('qr');
       qrLifecycle.setDirty(false);
       qrLifecycle.closeAfterSuccess();
       setFeedback({type: 'success', message: '二维码配置已保存。'});
-      refresh();
     },
-    [qrConfiguration, qrLifecycle, queryContext.groupWorkspaceKey, refresh, storeWireRef],
+    [qrConfiguration, qrLifecycle, queryContext.groupWorkspaceKey, readBack, storeWireRef],
   );
 
   const askStatusChange = useCallback(
@@ -887,7 +900,10 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
       ].filter(Boolean) as NonNullable<MenuProps['items']>,
       onClick: event => {
         if (event.key === 'edit') setAreaEditor({mode: 'edit', area});
-        if (event.key === 'up' || event.key === 'down') void moveArea(area, event.key === 'up' ? 'UP' : 'DOWN');
+        if (event.key === 'up' || event.key === 'down')
+          void moveArea(area, event.key === 'up' ? 'UP' : 'DOWN').catch(error => {
+            setFeedback({type: 'error', message: problemText(error, '区域顺序更新失败，请重试。')});
+          });
         if (event.key === 'status') askStatusChange('area', area, area.status === 'ENABLED' ? 'DISABLED' : 'ENABLED');
         if (event.key === 'void') askStatusChange('area', area, 'VOIDED');
       },
@@ -938,7 +954,13 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
       onClick: event => {
         if (event.key === 'edit' && selectedArea)
           setPointEditor({mode: 'edit', areaType: selectedArea.areaType, point});
-        if (event.key === 'up' || event.key === 'down') void movePoint(point, event.key === 'up' ? 'UP' : 'DOWN');
+        if (event.key === 'up' || event.key === 'down')
+          void movePoint(point, event.key === 'up' ? 'UP' : 'DOWN').catch(error => {
+            setFeedback({
+              type: 'error',
+              message: problemText(error, `${titleForArea(selectedArea?.areaType)}顺序更新失败，请重试。`),
+            });
+          });
         if (event.key === 'status')
           askStatusChange('point', point, point.status === 'ENABLED' ? 'DISABLED' : 'ENABLED');
         if (event.key === 'void') askStatusChange('point', point, 'VOIDED');
@@ -992,7 +1014,8 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
               qrConfiguration,
               row.effectiveAvailable,
               {loading: qrQuery.isFetching, failed: Boolean(qrQuery.error)},
-              storeServicePointTestIds.qrResultLink(row.pointRef),
+              72,
+              storeServicePointTestIds.qrResultImage(row.pointRef),
             ),
         },
         {
@@ -1358,7 +1381,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         maskClosable={!pointLifecycle.submitting}
         keyboard={!pointLifecycle.submitting}
         closable={!pointLifecycle.submitting}
-        {...adminDrawerSurfaceProps}
+        {...adminWideDrawerSurfaceProps}
         {...testId(storeServicePointTestIds.pointDrawer(pointEditor?.areaType === 'TABLE_AREA' ? 'table' : 'scan'))}
         footer={
           <Space>
@@ -1388,7 +1411,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
           <Alert
             type="error"
             showIcon
-            title="扩展字段配置读取失败"
+            title="字段配置读取失败"
             description="暂时无法获取桌台与扫码点字段配置，请重试。"
             action={<Button onClick={() => void extensionDefinitionQuery.refetch()}>重试</Button>}
           />
@@ -1425,10 +1448,10 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
                 <Form.Item
                   name="seatCapacity"
                   label="容纳人数"
-                  rules={[{type: 'number', min: 0, message: '请输入不小于 0 的人数'}]}
+                  rules={[{type: 'number', min: 1, message: '请输入正整数'}]}
                 >
                   <InputNumber
-                    min={0}
+                    min={1}
                     precision={0}
                     style={{width: '100%'}}
                     {...testId(storeServicePointTestIds.pointCapacity)}
@@ -1440,8 +1463,16 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
                     {...testId(storeServicePointTestIds.pointShape)}
                   />
                 </Form.Item>
-                <Form.Item name="reservable" label="是否可预约" valuePropName="checked">
-                  <Switch {...testId(storeServicePointTestIds.pointReservable)} />
+                <Form.Item name="reservable" label="是否可预约">
+                  <Select
+                    allowClear
+                    placeholder="未设置"
+                    options={[
+                      {value: true, label: '是'},
+                      {value: false, label: '否'},
+                    ]}
+                    {...testId(storeServicePointTestIds.pointReservable)}
+                  />
                 </Form.Item>
                 <PointImageEditor
                   items={imageItems}
@@ -1460,14 +1491,9 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
                 />
               </>
             )}
-            <Card
-              size="small"
-              title="扩展字段"
-              style={{marginTop: 16}}
-              {...testId(storeServicePointTestIds.pointExtension)}
-            >
+            <div style={{marginTop: 16}} {...testId(storeServicePointTestIds.pointExtension)}>
               <ExtensionFormItems definition={extensionDefinition} />
-            </Card>
+            </div>
           </Form>
         )}
       </Drawer>
@@ -1527,7 +1553,13 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
                 </Descriptions.Item>
               )}
               {detailValue.pointType === 'TABLE' && (
-                <Descriptions.Item label="是否可预约">{detailValue.reservable ? '是' : '否'}</Descriptions.Item>
+                <Descriptions.Item label="是否可预约">
+                  {detailValue.reservable === null || detailValue.reservable === undefined
+                    ? '—'
+                    : detailValue.reservable
+                      ? '是'
+                      : '否'}
+                </Descriptions.Item>
               )}
               <Descriptions.Item label="是否可用">{detailValue.effectiveAvailable ? '是' : '否'}</Descriptions.Item>
             </Descriptions>
@@ -1546,7 +1578,8 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
                 qrConfiguration,
                 detailValue.effectiveAvailable,
                 {loading: qrQuery.isFetching, failed: Boolean(qrQuery.error)},
-                storeServicePointTestIds.qrResultLink(detailValue.pointRef),
+                176,
+                storeServicePointTestIds.qrResultImage(detailValue.pointRef),
               )}
             </Card>
           </Space>

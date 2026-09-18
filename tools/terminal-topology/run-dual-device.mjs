@@ -9,13 +9,15 @@ import {fileURLToPath} from 'node:url'
 import WebSocket from 'ws'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
-const topologyPort = 43172
+const topologyConfigPath = path.join(repositoryRoot, 'apps/terminal/kernel/base/contracts/topology-transport.config.json')
+const topologyTransportConfig = JSON.parse(fs.readFileSync(topologyConfigPath, 'utf8'))
+const topologyPort = topologyTransportConfig.port
 // The Android host remains on topologyPort.  The two ADB directions share a
 // host-side bridge, so its local endpoint must not reuse topologyPort:
 // forward(local bridge -> master device topologyPort) and
 // reverse(slave device topologyPort -> local bridge) otherwise collide.
 const hostBridgePort = 43173
-const topologyBasePath = '/terminal-topology'
+const topologyBasePath = topologyTransportConfig.basePath
 // Android's shell-side `uiautomator dump` creates a fresh UiAutomation
 // connection for each invocation.  The stage-one emulator evidence shows
 // that starting the next dump immediately after a UI action can race the

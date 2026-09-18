@@ -166,7 +166,7 @@ export function StoreEditDrawer({
   const problem =
     commandProblem ??
     (definition.error
-      ? '扩展字段加载失败，请关闭后重新进入。'
+      ? '字段配置加载失败，请关闭后重新进入。'
       : candidates.error
         ? '总公司候选加载失败，请关闭后重新进入。'
         : undefined);

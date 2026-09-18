@@ -125,7 +125,7 @@ export function OrganizationEditDrawer({
 
   const title = node?.nodeType === 'REGION' ? organizationRegionEditLabel : organizationProjectEditLabel;
   const definitionReady = Boolean(definition.data) && !definition.isFetching;
-  const displayProblem = problem ?? (definition.error ? '扩展字段加载失败，请关闭后重新进入。' : undefined);
+  const displayProblem = problem ?? (definition.error ? '字段配置加载失败，请关闭后重新进入。' : undefined);
   return (
     <Drawer
       title={title}

@@ -55,7 +55,7 @@ agent 在阶段二完成后重新读取需求、详设、计划、项目 memory�
 | R-3、R-4 | `apps/terminal/kernel/base/topology/src/features/actors/actors.ts`、`apps/terminal/assembly/base/android/src/foundations/nativeTopology.ts`、两 Android app | identity-before-WS、enableSlave、APP/JS restore、固定 host lifecycle；阶段一 timeline 与 CP-2 proof | MATCHED |
 | R-5、R-5a | `apps/terminal/kernel/base/display-context/src/foundations/displayDerivation.ts`、`apps/terminal/ui/feature/sample-member-desk/src/features/actors/actors.ts` | 物理 helper 未改；member-desk 12 个调用点使用 paired secondary 语义，断线不降级；CP-3 red 与阶段一断线/重连 | MATCHED |
 | R-6 | `apps/terminal/kernel/base/display-context/src/features/actors/validateHydratedDisplayRoleActor.ts` | JS restart 后按 display count 校正角色，focused restart matrix；双屏设备重启观察 CHIEF/MASTER | MATCHED |
-| R-7、R-8 | `apps/terminal/kernel/base/contracts/src/foundations/topologyWire.ts`、`apps/terminal/kernel/base/transport`、Android `TerminalTopologyServer.kt` | 本仓字段级 wire、HTTP identity、单 peer、hello、state/full、heartbeat、错误和资源释放；CP-1/CP-2 与阶段一 endpoint/WS | MATCHED |
+| R-7、R-8 | `apps/terminal/kernel/base/contracts/src/foundations/topologyWire.ts`、`apps/terminal/kernel/base/contracts/topology-transport.config.json`、`apps/terminal/kernel/base/transport/src/foundations/`、Android `TerminalTopologyServer.kt` | 字段级 wire、canonical transport config projection、既有四类 transport config 的 address resolution、ordered failover/sticky、bounded retry/cancel/attempt metrics、heartbeat controller、limiter、WS profile/connection-token、HTTP identity、单 peer、hello、state/full、heartbeat 接线、错误和资源释放；CP-1/CP-2 focused/native 与阶段一 endpoint/WS | MATCHED |
 | R-9、R-9a、R-10 | `apps/terminal/kernel/base/runtime/src/foundations/createCommandDispatcher.ts`、`createCommandActorDispatcher.ts`、`apps/terminal/ui/base/render/src/components/SurfaceRoot.tsx` | UI/actor 共用 runtime dispatch boundary；payload 决定 local/peer，receiver 归一 local，routeContext 不过线；CP-3 三条 boundary red | MATCHED |
 | R-11 | `apps/terminal/kernel/feature/sample-member-registry`、`apps/terminal/kernel/base/topology`、`stage1.../result.json` | members 仅 master-to-slave full sync，session/ledger 不跨机；阶段一断线期间变更、重连后恢复 | MATCHED |
 | R-12 | `apps/terminal/kernel/base/topology/src/features/actors/actors.ts` | 配对建立与解绑顺序、持续重连和 locator 清理；阶段一 unpair/reconnect timeline | MATCHED |
@@ -65,7 +65,7 @@ agent 在阶段二完成后重新读取需求、详设、计划、项目 memory�
 | U-7 至 U-10 | 阶段一两个 profile 的 `result.json`、timeline、cleanup-result | enableSlave 因果起 host、跨机 command、1:1 occupancy、断线重连 full recovery 真实设备完成 | MATCHED |
 | U-11、U-12 | display-context focused test/logs、`createPowerStatusBridge` | power command/cancel/re-read 与重启首事件播种保持；设备 runner 不声称未执行的 power UI | MATCHED |
 | U-13、U-14 | CP-3/CP-4 evidence、阶段一 topology/admin、stage2 mobile | 两 App section/allowlist、ledger local、wire 不含 ledger；focused 与设备 UI readback | MATCHED |
-| U-15 | `apps/terminal/kernel/base/transport` contract vectors | 详设已明确本批没有多地址真实消费者；contract 形状有 focused proof，通用 multi-address runtime 行为保持范围内未验证，未被写成 PASS | MATCHED |
+| U-15 | `apps/terminal/kernel/base/transport/test/transportPrimitives.test.ts`、`apps/terminal/kernel/base/transport/test/identityClient.test.ts` | address selector 的 ordered override/sticky、bounded retry/cancel、limiter、WS failover/replaceServers/stale connection-token 与 identity client 的 config projection 有 focused proof；本批仍只有单 master/单 IP 业务消费者，多地址真实 runtime 行为保持 scope-open，未被写成 PASS | MATCHED |
 | U-16、U-17 | 阶段一两个 profile `result.json`、endpoint/log readback | identity 先于 WS、enableSlave 驱动 desired/actual host、JS restart restore、SLAVE 不起 host | MATCHED |
 | U-18 | 阶段二 mobile 两 profile `result.json` 与截图 | 360×640 logical mobile 下 topology tab 恒显，操作 disabled，reason 可读；两个 App 均完成 | MATCHED |
 | U-19 | 阶段一 sample-terminal 与阶段二 dual `stage2-member-stepwise-comparison.json` | 双机单屏与单机双屏按 partKey/state/display 逐步对照，结果 MATCHED；断线保持 secondary 语义 | MATCHED |
@@ -76,7 +76,7 @@ agent 在阶段二完成后重新读取需求、详设、计划、项目 memory�
 
 | D | 详设落点 | source/evidence readback | result |
 |---|---|---|---|
-| D-1 至 D-4 | 详设 §9、§10、计划 §4.4/§4.6 | tab 恒显、operation eligibility、identity、43172 host/error；CP-4 与阶段一/二 | MATCHED |
+| D-1 至 D-4 | 详设 §9、§10、计划 §4.4/§4.6、`apps/terminal/kernel/base/contracts/topology-transport.config.json` | tab 恒显、operation eligibility、identity；端口、basePath、heartbeat、timeout 与退避由 canonical config projection 提供，host/error 文案通过 projection 插值；CP-4 与阶段一/二 | MATCHED |
 | D-5 至 D-10 | 详设 §9、§10.1、§13；计划 CP-1/CP-2/CP-3 | routeContext、APP/JS restore、pair/unpair、native owner 与固定 server | MATCHED |
 | D-11 至 D-15 | 详设 §9、§8 IA；计划 §3/§4 | 依赖顺序、admin 定位、视觉分档、full sync、power confirmation | MATCHED |
 | D-16 至 D-17 | `evaluateTopologyOperation.ts`、member-desk actors、CP-3/CP-4 tests | facts 与 operation result 分离；paired/peerReachable 正交；12 点全切且旧物理 helper 保留 | MATCHED |
@@ -91,8 +91,8 @@ agent 在阶段二完成后重新读取需求、详设、计划、项目 memory�
 |---|---|---|
 | §3.1 CP-0→CP-1→CP-2→CP-3→CP-4→CP-5 | CP evidence、当前源码和阶段运行顺序一致；CP-4 未早于机制门，CP-5 在前置全批对账之后 | MATCHED |
 | §4.1 CP-0 | 依赖/owner/分母、v1 路径与 `OBSOLETE_V1_SOURCE_CLEANUP=NOT_NEEDED` 已记录 | MATCHED |
-| §4.2 CP-1 | contracts/display-context/topology/transport/graph 与 CP-1 evidence | MATCHED |
-| §4.3 CP-2 | native host、reset/restore、desired/actual、无 boot auto-start 与 CP-2 evidence | MATCHED |
+| §4.2 CP-1 | contracts/display-context/topology/transport/graph、`topology-transport.config.json` 与 CP-1 evidence；新增 public projections 已同步 contracts invariant | MATCHED |
+| §4.3 CP-2 | transport primitives、identity client、native host、reset/restore、desired/actual、无 boot auto-start 与 CP-2 evidence；两个 Android App 的 Kotlin compile 通过 | MATCHED |
 | §4.4 CP-3 | route/sync/ledger/member-desk、三条 boundary red 与 CP-3 evidence | MATCHED |
 | §4.5 CP-4 | topology admin、two app allowlist、mobile disabled reason、power 与 CP-4 evidence | MATCHED |
 | §4.6 CP-5 阶段一 | 两台真实单屏 laptop emulator、两个 App profile、business/cleanup 分离、阶段一停点已执行 | MATCHED |
@@ -157,9 +157,21 @@ fresh 结果未返回：第一位任务 `01a0b1e5-1ab1-7e82-91e7-d031d5d8da6f` �
 fallback readback，结果分别为 `MATCHED`。该结果明确标记为 `MAIN_AGENT_FALLBACK`，等效
 关闭 CP-5 步骤级对账执行前提，但不替代后续 Dexter/Claude 的 implementation review。
 
+## 5.1 Claude implementation review 之后的 M-1/S-1 处置
+
+本节是对 `doc/review/platform/2026-09-18-ter-dual-machine-topology-implementation-review-claude.md`
+的源码修复回读，不是新的 Claude verdict，也不把后续动态证据写成已经重跑。
+
+| finding | 处置 | owning source / focused proof | 状态 |
+|---|---|---|---|
+| M-1 transport README/详设/计划声称存在、源码没有 replaceServers、sticky、retry、cancel、heartbeat 等能力 | 真修复。保留 R-7 的通用 transport contract 范围，在 transport 内补入真实、无业务耦合的 address selector、ordered failover/sticky、bounded retry/cancellation/attempt metrics、heartbeat controller、concurrency/rate limiter、WS profile/replaceServers/connection-token；identity client 改为消费 `TransportServerConfig` projection。README、详设 §10.3、计划 CP-1/CP-2 与 public exports/invariant 同步；native/topology 仍拥有实际 wire ping/pong 接线，transport heartbeat 不冒充设备级心跳证据。 | `apps/terminal/kernel/base/transport/src/foundations/resolveTransportServerAddresses.ts`；`createTransportRetryController.ts`；`createTransportHeartbeat.ts`；`createTransportLimiter.ts`；`createTransportWebSocketController.ts`；`createTopologyIdentityClient.ts`；`apps/terminal/kernel/base/transport/test/transportPrimitives.test.ts`（selector/failover/sticky/retry/cancel/heartbeat/limiter/stale-token）；transport typecheck/test、terminal static 已通过。 | MATCHED |
+| S-1 43172/basePath 在七处重复，且 identity client 写死地址 | 真修复。`apps/terminal/kernel/base/contracts/topology-transport.config.json` 是唯一配置住址；`topologyTransportConfig`/`topologyTransportServerConfig` 是 typed projection；TS consumers、runner 和 host error 文案均消费 projection。Kotlin 不再保留默认 port/basePath，实际 `start(...)` 传入的 JS `HostConfig` 是 native 运行时配置；hostBridgePort=43173 明确是 runner 的 ADB bridge，不是 production topology port。 | `apps/terminal/kernel/base/contracts/src/foundations/topologyTransportConfig.ts`；`apps/terminal/kernel/base/topology/src/features/actors/actors.ts`；`createTopologyModule.ts`；`evaluateTopologyOperation.ts`；`apps/terminal/ui/base/admin-shell/src/components/sections/TopologySection.tsx`；`apps/terminal/assembly/base/android/android/src/main/java/com/catering/v2s/terminal/assembly/base/android/TerminalTopologyHostRegistry.kt`；`tools/terminal-topology/run-dual-device.mjs`；contracts/transport/topology/admin focused、static 与两 App Kotlin compile 已通过。 | MATCHED |
+
+补充范围边界：阶段一/阶段二设备运行没有因上述 source-only remediation 盲目重跑；本次改动保持 canonical 初始值和已有 topology wire/runtime 行为不变。既有设备证据仍按其原始源码版本和档位引用，新的 transport 通用多地址行为只由 focused contract proof 支撑，仍是 U-15 `scope-open`。因此本节的 MATCHED 只表示修复后的源码与设计/计划对账及已执行的 focused/static/native supporting proof，不表示 implementation acceptance、release PASS 或新的设备 PASS。
+
 ## 6. 最终交付边界
 
-阶段一和阶段二的动态结果都已真实读取为 `BUSINESS=PASS`、`CLEANUP=PASS`；实现代码、
+阶段一和阶段二的既有动态结果都已真实读取为 `BUSINESS=PASS`、`CLEANUP=PASS`；实现代码、
 focused/static、Android release、双机/双屏/mobile 设备观察和 cleanup 的证据路径已列出。
-这只说明交付材料具备进入 `REVIEW_TARGET=IMPLEMENTATION` 独立评审的输入，不表示
+本轮 M-1/S-1 source remediation 没有重跑阶段设备；这只说明原有交付材料加本轮修复材料具备进入 `REVIEW_TARGET=IMPLEMENTATION` 独立评审的输入，不表示
 implementation acceptance、visual/release 全局 PASS 或 Claude/Dexter 已批准。

@@ -1,3 +1,4 @@
+import {topologyTransportConfig} from '@catering-v2s/kernel-base-contracts'
 import type {
   TopologyFailureReasonCode,
   TopologyDisplayRole,
@@ -63,7 +64,7 @@ export const topologyReasonMessages: Readonly<Record<TopologyFailureReasonCode, 
   TOPOLOGY_PEER_UNREACHABLE: '已配对，副机暂时不可达，系统将持续重连',
   TOPOLOGY_IDENTITY_FAILED: '无法读取对端身份，请检查地址后重试',
   TOPOLOGY_HOST_FAILED: '服务未能按当前设置启动',
-  TOPOLOGY_HOST_PORT_OCCUPIED: '服务端口 43172 被占用，请关闭占用该端口的应用后重试',
+  TOPOLOGY_HOST_PORT_OCCUPIED: `服务端口 ${topologyTransportConfig.port} 被占用，请关闭占用该端口的应用后重试`,
   TOPOLOGY_STALE_LOCATOR: '旧配对记录已清理',
   TOPOLOGY_INVALID_LOCATOR: '配对地址无效，请重新查询后重试',
   TOPOLOGY_ROLE_OCCUPIED: '对端已有配对设备',

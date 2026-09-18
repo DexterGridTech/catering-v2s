@@ -8,19 +8,33 @@ PRE_REPAIR_INDEPENDENT_REVIEW=NO-GO_M/S/N=1/2/1
 LATEST_INDEPENDENT_IMPLEMENTATION_REVIEW=GO_M/S/N=0/0/0
 POST_REPAIR_INDEPENDENT_REVIEW=GO_M/S/N=0/0/0
 CLAUDE_CURRENT_BYTE_INTAKE=NO-GO_M/S/N=2/3/2
-CURRENT_FRESH_STATIC_REVIEW=GO_M/S/N=0/0/0
-CURRENT_STATUS=OPEN_PRODUCT_DECISION
+CURRENT_FRESH_STATIC_REVIEW=GO_M/S/N=0/0/0_POST_D14
+CURRENT_STATUS=STATIC_GO_RUNTIME_AVAILABLE
 BROWSER_L2=NOT_AUTHORIZED_NOT_RUN
 
 ## 背景
 
-本轮交付单元是「门店桌台与二维码管理」的实现结果。Dexter 已根据 Claude 上一轮 `REVIEW_TARGET=DESIGN` 的结论授权进入实施；本轮已完成详设/计划对应的生产代码、契约与生成物、migration、测试、seed 与受管 reset/DEV/backend acceptance。Claude 上一轮指出的 token 分母残留（M-01）以及 asset stage/release 场景归属（S-01）、审计场景文件集（S-02）均已修复并在当前字节重新核对。
+本轮交付单元是「门店桌台与二维码管理」的实现结果。Dexter 已根据 Claude 上一轮 `REVIEW_TARGET=DESIGN` 的结论授权进入实施；本轮已完成详设/计划对应的生产代码、契约与生成物、migration、测试、seed 与受管 reset/DEV/backend acceptance。Claude 上一轮指出的 token 分母残留（M-01）以及 asset stage/release 场景归属（S-01）、审计场景文件集（S-02）均已修复并在当前字节重新核对。之后 Dexter 新增 D-13：桌台三项属性非必填，并授权在列表/详情中直接生成与展示二维码图像；D-13 修复后的 fresh 独立静态 implementation review 已返回 `GO/M/S/N=0/0/0`。本次 D-14 又将页面与编辑操作统一归入“商品与服务”，并已完成当前字节 fresh 静态复核。
 
-实施完成后，fresh 独立只读 reviewer 在修复前的当前字节给出 `REVIEW_TARGET=IMPLEMENTATION`、`VERDICT=NO-GO`、`M/S/N=1/2/1`。四条 finding 已逐条重开 owning source 并完成修复：QR disabled 保留渠道与数据库约束修正；QR 列表/详情配置状态文案区分；服务点扩展审计改为共享四态/标签快照；页面标题恢复 IA 术语。随后新的 fresh reviewer Faraday 对当前修复字节提出 `NO-GO/M/S/N=1/0/0`：不可用对象仍展示 QR URL，且有效值未按 IA 转成入口。该 finding 已重开需求/IA/交互/详设并修复为 `effectiveAvailable` 边界加现有 `Typography.Link` 入口。修复前两次结论均不作为当前最终 verdict；Hubble 已对最新字节完成新的 fresh 独立静态复审，结论为 `REVIEW_TARGET=IMPLEMENTATION`、`VERDICT=GO`、`M/S/N=0/0/0`。
+实施完成后，fresh 独立只读 reviewer 在修复前的当前字节给出 `REVIEW_TARGET=IMPLEMENTATION`、`VERDICT=NO-GO`、`M/S/N=1/2/1`。四条 finding 已逐条重开 owning source 并完成修复：QR disabled 保留渠道与数据库约束修正；QR 列表/详情配置状态文案区分；服务点扩展审计改为共享四态/标签快照；页面标题恢复 IA 术语。随后新的 fresh reviewer Faraday 对 D-13 之前的修复字节提出 `NO-GO/M/S/N=1/0/0`：不可用对象仍展示 QR URL，且有效值未按 IA 转成入口；该 finding 已修复为 `effectiveAvailable` 边界。Hubble 随后对 D-13 之前字节给出 `GO/M/S/N=0/0/0`，但不覆盖本次 D-13 的 optional table attributes 与 QRCode image changes。D-13 当前字节已完成主 agent focused proof，新的 fresh 独立静态复审正在进行；历史 verdict 不作为当前最终 verdict。
 
-本交接不把主 agent 自身的逐代码对账当作独立 review verdict，也不把 Browser L2 未授权项当作实现缺陷或验收 PASS。当前字节另有 Claude 转达的 `NO-GO/M/S/N=2/3/2` finding intake，以及 Mendel 的 fresh 静态 `GO/M/S/N=0/0/0`；前者的 M-01 与 S-03 仍分别需要产品和范围裁决，因此本交接不是已收口的最终交付结论。
+本交接不把主 agent 自身的逐代码对账当作独立 review verdict，也不把 Browser L2 未授权项当作实现缺陷或验收 PASS。当前字节保留 Claude 转达的历史 `NO-GO/M/S/N=2/3/2` finding intake 及 D-13 之前的 fresh review 记录；原先的 M-01/S-03 已由 Dexter 的 D-13 决策收口，不再是当前产品待决项。D-13 当前 fresh reviewer Beauvoir 已确认 `GO/M/S/N=0/0/0`；该 GO 仅覆盖静态代码逻辑，动态边界仍按下文单列。
 
-本轮已确认并修复的代码逻辑项：服务点列表改为 `OpaqueCollectionCursor` keyset 且去除 per-item DB 查询；QR 配置/候选读取移到列表循环外并在内存派生 URL；前端区分 QR 配置 loading/failed；删除未引用的 `createPointDefaults`。Carson 针对初始 QR CHECK 的 finding 已由 `V20260918_000000_000__preserve_store_qr_channel_when_disabled.sql` 的后续约束替换反证，不做错误修复。上述本轮改动尚未追加新的动态 reset/DEV/seed 证据。
+本轮已确认并修复的代码逻辑项：服务点列表改为 `OpaqueCollectionCursor` keyset 且去除 per-item DB 查询；QR 配置/候选读取移到列表循环外并在内存派生 URL；前端区分 QR 配置 loading/failed；删除未引用的 `createPointDefaults`。D-13 追加桌台属性可省略/显式清空、`V20260918_010000_000__allow_optional_store_service_point_table_attributes.sql`，以及列表/详情复用现有 Ant Design `QRCode` 以合法 owner URL 生成 SVG 图像（列表 72、详情 176、`qrResultImage` testId），不新增持久化/下载/资产链路；fresh reviewer 还确认 `reservable` null/undefined 不再被 UI 折叠为 false。Carson 针对初始 QR CHECK 的 finding 已由 `V20260918_000000_000__preserve_store_qr_channel_when_disabled.sql` 的后续约束替换反证，不做错误修复。D-13 后未追加 reset/seed/backend acceptance 动态证据。
+
+### D-13 当前 fresh 静态复审
+
+Beauvoir 为 fresh、只读、非作者 reviewer，基于当前字节完成 `REVIEW_TARGET=IMPLEMENTATION` 静态代码逻辑复审，结论为 `VERDICT=GO`、`M/S/N=0/0/0`。其确认：
+
+- TABLE 的 `seatCapacity/tableShape/reservable` 在 migration、owner、HTTP/OpenAPI、前端 hydration、提交 payload、详情展示与 focused static test 中均保持可省略/可空；`reservable=null` 不再被 UI 强制转换为 `false`，详情显示「—」；
+- 列表与详情共用 QRCode 展示路径，合法 owner URL 只在内存中生成 SVG 图像，`effectiveAvailable`、72/176 尺寸与 `qrResultImage` testId 一致；未发现 URL 文本暴露、二维码持久化、下载/导出或资产链路；
+- SCAN 属性仍由 owner 拒绝，编辑 Drawer 的 dirty/close guard 仍由 `useDrawerFormLifecycle` 统一持有。
+
+该 GO 只覆盖静态源码/契约/测试源审查；动态 acceptance、迁移的独立业务验收、Browser L2、UAT 与部署不由该结论覆盖。
+
+### D-14 当前 fresh 静态复审
+
+Turing 为 fresh、只读、非作者 reviewer，基于 D-14 当前字节完成窄范围 `REVIEW_TARGET=IMPLEMENTATION` 复核，结论为 `GO/M/S/N=0/0/0`。其核对了 `admin-catalog.json` 唯一源、Java/TypeScript generated、operations-admin 菜单消费链、platform-admin 角色页面/操作树消费链，以及 capability/page key、角色、scope、data node 和 binding 未漂移。该结论不覆盖动态渲染、Browser L2、UAT、部署或 reset/seed。
 
 ## 评审目标
 
@@ -32,7 +46,7 @@ BROWSER_L2=NOT_AUTHORIZED_NOT_RUN
 4. QR candidate bounded read、门店归属、四维谓词、保存时 owner 重校验、D-10 候选不预过滤与 D-12 生成层最终 URL 判定是否闭合；
 5. `SERVICE_POINT` extension host、非 flat flags、集团空间定义粒度、扩展值及四态审计是否复用既有 owner/contract；
 6. TABLE-only image、asset stage/release/claim、事务与无孤儿资产边界是否成立；
-7. operations-admin 的 SalesMenu 式双列表、动态「新建桌台/新建扫码点」、排序边界、统一 dirty guard、二维码主页面摘要/独立编辑 Drawer、扫码点无图片及 IA 静态前置记录是否和实现一致；二维码列表/详情是否以 `effectiveAvailable` 隐藏不可用入口，并以「查看二维码」入口而非原始 URL 展示有效结果；
+7. operations-admin 的 SalesMenu 式双列表、动态「新建桌台/新建扫码点」、排序边界、统一 dirty guard、二维码主页面摘要/独立编辑 Drawer、扫码点无图片及 IA 静态前置记录是否和实现一致；二维码列表/详情是否以 `effectiveAvailable` 隐藏不可用结果，并用现有 `QRCode` 以合法 owner URL 生成图像而非展示原始 URL；
 8. seed、reset/DEV、backend acceptance 与当前对账材料是否只报告实际证据，business 与 cleanup 是否分开。
 
 ## 需阅读文件
@@ -69,8 +83,8 @@ BROWSER_L2=NOT_AUTHORIZED_NOT_RUN
 
 ## 当前受管运行证据
 
-- reset：`.runtime/r5/reset/r5-reset-b7a7f262-901e-44ca-ae45-11d47a7ee6e7/run-manifest.json`，`R5_DEV_RESET=PASS`，cleanup=`PASS_NO_PERSISTENT_RESET_PROCESS`；
-- 最终 DEV：run `r5-dev-1789677991497-54436-6c84a838-ad09-44f3-9fa4-5fc06a1c3b54`，`.runtime/r5/run-manifest.json`；远端 Java、HTTP/asset-only tunnel、本机 5174/5175 Vite 均为受管拓扑，readiness=`REMOTE_JAVA_SPRING_BOOT_STARTED_AFTER_FLYWAY`；
+- reset：历史记录 `.runtime/r5/reset/r5-reset-b7a7f262-901e-44ca-ae45-11d47a7ee6e7/run-manifest.json`，`R5_DEV_RESET=PASS`，cleanup=`PASS_NO_PERSISTENT_RESET_PROCESS`；本次 D-13 后未重置；
+- 机器重启后的首次 `scripts/dev/restart` 在受管 stop cleanup PASS 后因 manifest 被删除报 `ENOENT`，未改写为 restart PASS。随后直接执行受管 `scripts/dev/start` 成功恢复当前 DEV：run `r5-dev-1789701655100-51276-c0ca84d3-7108-4d02-a4a5-6303d6aee47d`，`.runtime/r5/run-manifest.json`；远端 Java、HTTP/asset-only tunnel、本机 5174/5175 Vite 均为受管拓扑，readiness=`REMOTE_JAVA_SPRING_BOOT_STARTED_AFTER_FLYWAY`，并已应用 `20260918.010000.000` migration；本次未执行 seed；
 - 完整 seed：`.runtime/r5/seed/complete/complete-seed-b5c32122-7430-40f8-82c8-4f99d3d6adb7/seed-report.json`，`business=PASS`、`cleanup=PASS_PRESERVED_DEV_STATE`、`firstFailure=null`；四个组件均 PASS，owner readback 为 9 个 extension host、4 个 area、5 个 point，QR post-step PASS；
 - post-repair focused backend acceptance：`.runtime/r5/evidence/remote-testcontainers/r5-tc-1789677150302-2592/run-manifest.json`，`storeQrConfigurationLifecycle` 的 `CONTRACT=PASS`、`BUSINESS=PASS`、`DB_OPERATIONS=10`，measurement `DB_OPERATIONS=280`、`SQL_OPERATIONS=195`、`UNCLASSIFIED_SQL=0`，远端 cleanup PASS；
 - Browser L2：`NOT_AUTHORIZED/NOT_RUN`；IA 静态前置比对为 `PASS_STATIC_PREFLIGHT`，不是动态浏览器验收。
@@ -123,7 +137,7 @@ BROWSER_L2=NOT_AUTHORIZED_NOT_RUN
 3. 既有 36 条 token 中 33 条 gate=true、3 条 preflight=false，以及 sales-menu 19 条直调 gate 是否保持两条链分离；52 仅为 gate 分母；
 4. QR candidate bounded read、四维谓词、保存重校验、D-10 候选不预过滤、D-12 仅按最终 URL 合规生成；
 5. SERVICE_POINT extension host/非 flat flags/四态审计；TABLE-only image 与 staged asset 无孤儿；
-6. operations-admin 的 SalesMenu 式双列表、动态新建按钮、上移下移边界、二维码摘要/编辑 Drawer、扫码点无图片、统一 dirty guard，以及 IA 静态前置记录是否与源码一致；
+6. operations-admin 的 SalesMenu 式双列表、动态新建按钮、上移下移边界、二维码摘要/编辑 Drawer、扫码点无图片、统一 dirty guard，以及 IA 静态前置记录是否与源码一致；D-13 的 `QRCode` 列表/详情图像、尺寸、`qrResultImage` testId 与无持久化/下载/资产链路边界是否与当前字节一致；
 7. reset/DEV/seed/backend acceptance 的 business 与 cleanup 是否与实际 manifest 一致；重点区分 post-repair QR focused run 与未在本轮重跑的其他场景。不要把 Browser L2（当前未授权）当作本轮动态验收。
 
 烦请给出明确 `GO` 或 `NO-GO`，并按 `M/S/N` 报告。每条 finding 请写明详设章节、当前源码文件与行号、影响、最小根因修复及是否需要 Dexter 裁决。动态未运行或未授权项请单列，不要升级为实现缺陷。

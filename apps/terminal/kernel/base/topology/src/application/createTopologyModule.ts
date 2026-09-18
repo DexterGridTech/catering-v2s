@@ -1,6 +1,7 @@
 import {
   createEnvelopeId,
   createNodeId,
+  topologyTransportConfig,
   type CommandId,
   type RequestId,
   type SurfaceForm,
@@ -55,10 +56,6 @@ export type CreateTopologyModuleInput = Readonly<{
 }>
 
 const membersSliceName = 'kernel.feature.sample-member-registry.members' as const
-const topologyPort = 43172
-const topologyBasePath = '/terminal-topology'
-const reconnectBaseDelayMs = 500
-const reconnectMaxDelayMs = 10_000
 
 const asCommandId = (value: string): CommandId => value as CommandId
 const asRequestId = (value: string): RequestId => value as RequestId
@@ -284,7 +281,10 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     const mode = selectRuntimeInstanceMode(context.getState())
     if (!active || topology === undefined || topology.masterLocator === null || mode !== 'SLAVE' || topology.repairPending) return
     if (reconnectTimer !== undefined) return
-    const delay = Math.min(reconnectMaxDelayMs, reconnectBaseDelayMs * (2 ** reconnectAttempt))
+    const delay = Math.min(
+      topologyTransportConfig.reconnectMaxDelayMs,
+      topologyTransportConfig.reconnectBaseDelayMs * (2 ** reconnectAttempt),
+    )
     reconnectAttempt += 1
     topologyPeerLog(context, 'reconnect-scheduled', {attempt: reconnectAttempt, delayMs: delay})
     reconnectTimer = setTimeout(() => {

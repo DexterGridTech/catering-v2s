@@ -5,23 +5,10 @@ import java.net.BindException
 
 object TerminalTopologyHostRegistry {
   private const val LOG_TAG = "TER-Topology"
-  private const val DEFAULT_PORT = 43172
-  private const val DEFAULT_BASE_PATH = "/terminal-topology"
-  private const val DEFAULT_HEARTBEAT_INTERVAL_MS = 10_000L
-  private const val DEFAULT_HEARTBEAT_TIMEOUT_MS = 30_000L
 
   private val lock = Any()
   private var server: TerminalTopologyServer? = null
-  private var config: HostConfig = HostConfig(
-    port = DEFAULT_PORT,
-    basePath = DEFAULT_BASE_PATH,
-    heartbeatIntervalMs = DEFAULT_HEARTBEAT_INTERVAL_MS,
-    heartbeatTimeoutMs = DEFAULT_HEARTBEAT_TIMEOUT_MS,
-    nodeId = "",
-    displayName = "",
-    instanceMode = "MASTER",
-    displayRole = "CHIEF",
-  )
+  private var config: HostConfig? = null
   private var currentState = "stopped"
   private var errorCode: String? = null
   private var errorMessage: String? = null
@@ -167,12 +154,15 @@ object TerminalTopologyHostRegistry {
     }
   }
 
-  private fun configMap(): Map<String, Any> = mapOf(
-    "port" to config.port,
-    "basePath" to config.basePath,
-    "heartbeatIntervalMs" to config.heartbeatIntervalMs,
-    "heartbeatTimeoutMs" to config.heartbeatTimeoutMs,
-  )
+  private fun configMap(): Map<String, Any> {
+    val current = config ?: return emptyMap()
+    return mapOf(
+      "port" to current.port,
+      "basePath" to current.basePath,
+      "heartbeatIntervalMs" to current.heartbeatIntervalMs,
+      "heartbeatTimeoutMs" to current.heartbeatTimeoutMs,
+    )
+  }
 
   private fun success(value: Any?): Map<String, Any?> = mapOf(
     "status" to "succeeded",

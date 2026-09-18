@@ -93,7 +93,7 @@ admin-shell ── typed topology capability ── topology actor
                                       └─ TopologyHostPort
 ~~~
 
-display-context 不得依赖 ui-state；topology 不得通过跨包相对路径依赖 feature；transport 只做 framing/session，不做业务或 target 决策。
+display-context 不得依赖 ui-state；topology 不得通过跨包相对路径依赖 feature；transport 负责 contracts 配置解析、framing/session、ordered address failover、sticky address、bounded retry、取消、限流和 connection-token profile，但不读取业务 state、不解释业务 envelope，也不做 command target 决策。
 
 ## 2. CP 总览
 
@@ -327,7 +327,7 @@ Mobile:
 | D-1 | topology tab 在任何机型、状态、角色下恒显示；各操作按 operation eligibility 置灰或拒绝，并显示可读原因；不实现 tab 显隐判断 | admin-shell topology section、operation capability | U-13/U-18；删除 mobile tab 或移除 disabled reason 必红 |
 | D-2 | identity 采用只读 GET /terminal-topology/status；成功只返回 protocolVersion、nodeId、displayName、instanceMode、displayRole；输入 IP 后先查询并展示，用户确认后才进入 WS/pairing；失败不写 pairing | TopologyHostPort/native adapter、contracts parser、admin capability | U-16/U-22；把 identity 查询移到 WS 后、或 status 写 state 必红 |
 | D-3 | allowlist 由两个 integration 各自按实际装配声明；sample-console 为 customerWelcome/customerMember，sample-wallpaper-console 为 waiting/welcome；primary-only 不开放 | integration assembly/topology catalog admission | U-4/U-13/U-19；删除任一 app 的真实 secondary part 或放开 primary-only 必红 |
-| D-4 | 固定 port 43172、basePath /terminal-topology、status 与 ws 路径；heartbeat 10s、timeout 30s、call 5s；退避 500ms 起、10s 封顶、永不放弃。绑定失败若为端口占用，返回独立 TOPOLOGY_HOST_PORT_OCCUPIED、显示“服务端口 43172 被占用，请关闭占用该端口的应用后重试”，不做静默回退端口 | contracts/transport/topology/native | U-7/U-16/U-17；占用端口 red fixture 必须使 host lifecycle 失败且 reason 可读 |
+| D-4 | 固定 port、basePath、status/ws 路径、heartbeat、timeout 和退避边界全部由 contracts 的 `topology-transport.config.json` 导出；绑定失败若为端口占用，返回独立 TOPOLOGY_HOST_PORT_OCCUPIED、按该配置插值显示文案，不做静默回退端口 | contracts/transport/topology/native/runner | U-7/U-16/U-17；占用端口 red fixture 必须使 host lifecycle 失败且 reason 可读；配置投影不得各自复制字面量 |
 | D-5 | Root Surface 首次主表面写 routeContext displayMode/workspace；workspace 仍 resolveWorkspace 派生 | render/root surface | U-3；display-context 不引 ui-state |
 | D-6 | 两 app 使用同一 U 矩阵和 base 能力，不建 role matrix；差异只在 adapter/装配输入 | topology base + app adapter | U-4/U-19 |
 | D-7 | 新 kernel.base.topology；复用 TopologyHostPort；contracts 拥有 wire parser/vectors；transport 拥有 frame/session；两个 app 薄 Kotlin adapter | graph/package.json/README/native paths | static graph、contract focused、native |
@@ -418,7 +418,21 @@ WS frame：
 
 ### 10.3 transport/native
 
-transport 只负责 frame boundary、cancel token、connection identity、heartbeat、replaceServers、sticky address、bounded retry；不读取业务 state、不决定 screen part/command target。
+`kernel-base-contracts/topology-transport.config.json` 是固定网络事实的单一住址，contracts 的
+`topologyTransportConfig` 与 `topologyTransportServerConfig` 负责 typed projection。transport
+通过 `createTransportAddressSelector` 消费既有 `TransportServerConfig`、`TransportServerDefinition`、
+`TransportServerAddress` 和 `ResolveTransportServerConfigOptions`，按配置顺序解析候选地址，支持
+override、ordered failover 和成功地址 sticky。`createTopologyIdentityClient` 使用该 selector，
+因此身份 HTTP 不再拼接固定端口/路径。
+
+transport 的可复用执行原语落在以下真实源码：`runWithBoundedTransportRetry` 提供最大尝试轮次、
+外部 cancellation token、attempt metric 和退避；`createTransportLimiter` 提供并发上限与最小
+启动间隔；`createTransportHeartbeat` 提供按间隔发送序号化 ping、pong 时间戳推进和超时回调；
+`createTransportWebSocketController` 提供 profile 注册、候选地址连接、send、receive
+事件、`replaceServers` 和 connection-token 防旧 connect 覆盖新决策。它们不读取业务 state、不
+解释业务 envelope、不决定 screen part/command target。当前拓扑的 native WebSocket 仍由
+`nativeTopology.ts` 持有；U-15 只证明这些通用 primitives 的 focused contract，不把本批单 IP
+设备运行升级为多地址 runtime acceptance。
 
 native adapter 只负责固定端口 listener、identity endpoint、单 peer WS、frame 转交、status/diagnostics 和 stop 资源释放；重复 start/stop 幂等。CP-0 以实际 Gradle resolution 选择 Android-compatible server 依赖，禁止手写协议 parser。
 

@@ -86,7 +86,7 @@ export function StoreDetailDrawer({
   const statusTarget = selected ? toggleOrganizationStoreStatus(selected.status) : undefined;
   const loading = Boolean(store) && (latestStore.isFetching || definition.isFetching);
   const problem = latestStore.error ? '门店详情暂时无法获取，请关闭后重新进入。' : undefined;
-  const definitionWarning = definition.error ? '扩展字段暂时无法获取，当前仅显示已确认的基础资料。' : undefined;
+  const definitionWarning = definition.error ? '字段配置暂时无法获取，当前仅显示已确认的基础资料。' : undefined;
   const ready = Boolean(selected) && !loading && !problem;
   const operatingRuleValues = useMemo(
     () => completeStoreOperatingRuleValues(selected?.operatingRuleSwitches),
@@ -173,7 +173,7 @@ export function StoreDetailDrawer({
         <Alert
           type="warning"
           showIcon
-          title="扩展字段暂时无法获取"
+          title="字段配置暂时无法获取"
           description={definitionWarning}
           style={{marginBottom: 16}}
           {...testId('operations-store-detail-definition-warning')}

@@ -237,7 +237,7 @@ export function OrganizationStructurePage({queryContext, actionCapabilityKeys}: 
                 <Alert
                   type="error"
                   showIcon
-                  title="扩展字段加载失败"
+                  title="字段配置加载失败"
                   description="请关闭后重新进入。"
                   style={{marginBottom: 16}}
                 />

@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "kind": "store-service-point-rtk-tag-policy",
+  "revision": "STORE_SERVICE_POINT_RTK_TAGS_20260918",
+  "tagType": "wire",
+  "operationCount": 15,
+  "operations": [
+    {
+      "operationId": "getOperationsStoreServicePointAreas",
+      "provides": [
+        {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
+        {"kind": "static", "id": "store-service-point-areas"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsStoreServicePoints",
+      "provides": [
+        {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
+        {"kind": "requestPath", "prefix": "store-service-point-area", "path": "areaRef"},
+        {"kind": "static", "id": "store-service-point-points"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsStoreQrConfiguration",
+      "provides": [
+        {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
+        {"kind": "static", "id": "store-service-point-qr"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsStoreServicePoint",
+      "provides": [
+        {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
+        {"kind": "requestPath", "prefix": "store-service-point-point", "path": "servicePointRef"},
+        {"kind": "static", "id": "store-service-point-detail"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "postOperationsStoreServicePointArea",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
+        {"kind": "static", "id": "store-service-point-areas"}
+      ]
+    },
+    {
+      "operationId": "patchOperationsStoreServicePointArea",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
+        {"kind": "static", "id": "store-service-point-areas"}
+      ]
+    },
+    {
+      "operationId": "postOperationsStoreServicePointAreaStatus",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
+        {"kind": "static", "id": "store-service-point-areas"},
+        {"kind": "static", "id": "store-service-point-points"}
+      ]
+    },
+    {
+      "operationId": "postOperationsStoreServicePointAreaOrder",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
+        {"kind": "static", "id": "store-service-point-areas"}
+      ]
+    },
+    {
+      "operationId": "postOperationsStoreServicePoint",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
+        {"kind": "requestPath", "prefix": "store-service-point-area", "path": "areaRef"},
+        {"kind": "static", "id": "store-service-point-points"}
+      ]
+    },
+    {
+      "operationId": "patchOperationsStoreServicePoint",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
+        {"kind": "requestPath", "prefix": "store-service-point-point", "path": "servicePointRef"},
+        {"kind": "static", "id": "store-service-point-points"},
+        {"kind": "static", "id": "store-service-point-detail"}
+      ]
+    },
+    {
+      "operationId": "postOperationsStoreServicePointStatus",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
+        {"kind": "requestPath", "prefix": "store-service-point-point", "path": "servicePointRef"},
+        {"kind": "static", "id": "store-service-point-points"},
+        {"kind": "static", "id": "store-service-point-detail"}
+      ]
+    },
+    {
+      "operationId": "postOperationsStoreServicePointOrder",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
+        {"kind": "static", "id": "store-service-point-points"}
+      ]
+    },
+    {
+      "operationId": "patchOperationsStoreQrConfiguration",
+      "provides": [],
+      "invalidates": [
+        {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
+        {"kind": "static", "id": "store-service-point-qr"}
+      ]
+    },
+    {
+      "operationId": "stageStoreServicePointImage",
+      "provides": [],
+      "invalidates": []
+    },
+    {
+      "operationId": "releaseStagedStoreServicePointImage",
+      "provides": [],
+      "invalidates": []
+    }
+  ]
+}

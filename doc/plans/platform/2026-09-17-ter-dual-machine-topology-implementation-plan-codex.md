@@ -48,7 +48,7 @@ NOT_AUTHORIZED=扩大需求范围、改变已裁定语义、未列入计划的�
 |---|---|---|
 | shared surface/topology contracts | apps/terminal/kernel/base/contracts | SurfaceForm、wire types/parser/golden vectors |
 | topology kernel | apps/terminal/kernel/base/topology | eligibility、pairing、lifecycle、sync policy、operation capability |
-| transport extensions | apps/terminal/kernel/base/transport | frame、session、heartbeat、retry、cancel、replaceServers |
+| transport extensions | apps/terminal/kernel/base/contracts、apps/terminal/kernel/base/transport | canonical transport config、contracts config resolver、ordered failover、sticky address、frame/session、bounded retry/cancel、concurrency/rate limiting、WS profile/connection-token |
 | display-context extensions | apps/terminal/kernel/base/display-context | SurfaceForm import、root route stamp、power confirm |
 | runtime/state extensions | apps/terminal/kernel/base/runtime、state | dispatch route、receiver normalize、ledger local、full sync |
 | integration assembly changes | apps/terminal/ui/integration/sample-console、sample-wallpaper-console | topology parts/allowlist/assembly capability |
@@ -113,6 +113,8 @@ CP-0 红线：dependency 不可用、四项 allowlist 无法从当前两个 inte
 - apps/terminal/kernel/base/contracts/src/types/display.ts
 - apps/terminal/kernel/base/contracts/src/types/topology.ts
 - apps/terminal/kernel/base/contracts/src/foundations/topologyWire.ts
+- apps/terminal/kernel/base/contracts/topology-transport.config.json
+- apps/terminal/kernel/base/contracts/src/foundations/topologyTransportConfig.ts
 - apps/terminal/kernel/base/display-context/src/foundations/displayDerivation.ts 及其 public type/export
 - apps/terminal/kernel/base/topology/src/foundations/evaluateTopologyOperation.ts
 - apps/terminal/kernel/base/topology/src/features/slices/topology.ts
@@ -126,8 +128,9 @@ CP-0 红线：dependency 不可用、四项 allowlist 无法从当前两个 inte
 3. facts selector 的 secondary 语义严格为物理双屏或 MASTER+paired；peerReachable 不参与该 boolean。pair/unpair/enable-host 分别求值，UI 不得以 paired/reachable 自算 operation allowed。
 4. 不在本批实施 screen-part 的 catalog 冲突检测或 pre-filter；CP-0 只确认 dependency source 已提供的 catalog 输入可被 topology allowlist 消费，避免把前批实现重新并入。
 5. 定义 D-21 的 parser 和 golden vectors：hello、identity、command-request/result/cancel、state-full、ping/pong、closed error；字段缺失、未知 type/field、方向错误、超长 payload 都 fail closed。
-6. 为 topology slice 定义 pairing facts、desired host state、peerReachable 和 repair state；不把 raw native status 直接暴露给 UI。
-7. 同步 graph、直接依赖、root workspace、节点计数、invariants、census 和中文 README；检查 type-only/re-export/dynamic import 方向。
+6. 从 `topology-transport.config.json` 导出 typed `topologyTransportConfig` 与 `topologyTransportServerConfig`；固定 port/basePath、heartbeat、call timeout 和 reconnect bounds 只能从这处投影，不在消费者重复声明。
+7. 为 topology slice 定义 pairing facts、desired host state、peerReachable 和 repair state；不把 raw native status 直接暴露给 UI。
+8. 同步 graph、直接依赖、root workspace、节点计数、invariants、census 和中文 README；检查 type-only/re-export/dynamic import 方向。
 
 CP-1 focused/red：
 
@@ -143,7 +146,12 @@ CP-1 focused/red：
 
 预定落点：
 
-- apps/terminal/kernel/base/transport/src/... topology frame/session/heartbeat
+- apps/terminal/kernel/base/transport/src/foundations/resolveTransportServerAddresses.ts
+- apps/terminal/kernel/base/transport/src/foundations/createTransportRetryController.ts
+- apps/terminal/kernel/base/transport/src/foundations/createTransportLimiter.ts
+- apps/terminal/kernel/base/transport/src/foundations/createTransportWebSocketController.ts
+- apps/terminal/kernel/base/transport/src/foundations/createTopologyIdentityClient.ts
+- apps/terminal/kernel/base/transport/src/... topology frame/session
 - apps/terminal/kernel/base/platform-ports/src/types/topologyHost.ts（只扩展现有 port 所需能力）
 - apps/terminal/assembly/android/sample-terminal/android/app/src/main/java/.../topology/
 - apps/terminal/assembly/android/sample-wallpaper-terminal/android/app/src/main/java/.../topology/
@@ -153,12 +161,14 @@ CP-1 focused/red：
 步骤：
 
 1. 依 CP-0 已确认的 server 依赖实现同构的 Android adapter；若无现成依赖，只使用通过 review 的 Android-compatible 单一 server 依赖，禁止手写 HTTP/WebSocket framing。
-2. adapter 提供固定 port 43172、base path /terminal-topology、只读 status identity endpoint 和单 peer WS；start/stop 幂等，关闭时释放 listener/session；bind 失败若为占用必须返回 TOPOLOGY_HOST_PORT_OCCUPIED。
-3. native host 只通过现有 TopologyHostPort 暴露 status/address/diagnostics；不让 UI 直接调用 start/stop；不新增 BootReceiver、BOOT_COMPLETED 权限或设备级自启。
-4. topology lifecycle actor 以 enableSlave、MASTER、single-screen、laptop 和 desired/actual 指纹串行决定起停；start 后先读真实 address/status，再 connect、hello、snapshot。
-5. 复用 AppControlPort.resetRuntime。pair 中 host/服务稳定后切 slave/vice，再 reset JS；reset 不重建 native host。失败调用 repair，确保 CHIEF→MASTER→clear locator。
-6. 两 app 的 package/application identity、HTTP status、WS frame、错误 code、heartbeat 和日志字段使用同一 contracts vectors；不要从 app 名称分叉协议。
-7. 记录真实 native/readback 日志；敏感字段不写入。
+2. 让 transport 的 address selector 消费既有 `TransportServerConfig` 及其 definition/address/options 类型，按顺序 failover 并记录 sticky 成功地址；identity client 必须走该 selector，不得再拼接固定 URL。
+3. 用 bounded retry controller、外部 cancellation token、attempt metrics、heartbeat controller、concurrency/rate limiter 和 WS profile controller 闭合 R-7 的通用原语；`replaceServers` 必须使旧 connection token 失效，focused fixture 要让慢连接不能覆盖新决策；heartbeat focused fixture 要覆盖序号 ping、pong 更新与超时。
+4. adapter 消费 contracts 导出的 topology config，提供固定 port/base path、只读 status identity endpoint 和单 peer WS；start/stop 幂等，关闭时释放 listener/session；bind 失败若为占用必须返回 TOPOLOGY_HOST_PORT_OCCUPIED。不得在 adapter、runner 或 UI 再声明 port/basePath 字面量。
+5. native host 只通过现有 TopologyHostPort 暴露 status/address/diagnostics；不让 UI 直接调用 start/stop；不新增 BootReceiver、BOOT_COMPLETED 权限或设备级自启。
+6. topology lifecycle actor 以 enableSlave、MASTER、single-screen、laptop 和 desired/actual 指纹串行决定起停；start 后先读真实 address/status，再 connect、hello、snapshot。
+7. 复用 AppControlPort.resetRuntime。pair 中 host/服务稳定后切 slave/vice，再 reset JS；reset 不重建 native host。失败调用 repair，确保 CHIEF→MASTER→clear locator。
+8. 两 app 的 package/application identity、HTTP status、WS frame、错误 code、heartbeat 和日志字段使用同一 contracts vectors；不要从 app 名称分叉协议。
+9. 记录真实 native/readback 日志；敏感字段不写入。
 
 CP-2 focused/native red：
 
@@ -347,7 +357,7 @@ U-1 至 U-22 的真实执行体、red mutation 和证据档位以详设第 11 �
 3. 主 agent 逐代码与详设逐行对账，全部 MATCHED；
 4. U-1..U-22 的执行结果和对应 red mutation 记录；
 5. 双设备 runner 的真实过程/设备证据和 cleanup；
-6. REVIEW_TARGET=IMPLEMENTATION 的另行 implementation review 交接。本计划原始设计阶段只请求 DESIGN review；实施完成后的 implementation review 交接见 `doc/review/platform/2026-09-17-ter-dual-machine-topology-implementation-review-handoff-codex.md`，不宣称 implementation 或 acceptance GO。
+6. REVIEW_TARGET=IMPLEMENTATION 的另行 implementation review 交接。本计划原始设计阶段只请求 DESIGN review；实施完成后的初始交接见 `doc/review/platform/2026-09-17-ter-dual-machine-topology-implementation-review-handoff-codex.md`，本轮 M-1/S-1 复评交接见 `doc/review/platform/2026-09-18-ter-dual-machine-topology-implementation-review-handoff-codex.md`，不宣称 implementation 或 acceptance GO。
 
 ## 9. 计划自查与未决
 

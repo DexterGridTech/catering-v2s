@@ -3,7 +3,7 @@
 ```text
 DATE=2026-09-17
 DOC_KIND=IMPLEMENTATION_PLAN
-STATUS=IMPLEMENTATION_COMPLETE_AWAITING_REVIEW
+STATUS=IMPLEMENTATION_COMPLETE_REVIEWED
 DESIGN=doc/plans/platform/2026-09-17-v2s-store-service-point-qr-implementation-design-codex.md
 BUSINESS_SOURCE=doc/plans/platform/2026-09-17-v2s-store-service-point-qr-requirements-claude.md
 JOURNEY=doc/decisions/2026-09-17-v2s-store-service-point-qr-journey-codex.md
@@ -19,13 +19,15 @@ RUNTIME_AUTHORITY=MANAGED_RESET_DEV_SEED_ONLY
 
 ## 1. 真实用户任务与实施原则
 
-运营管理后台用户要在当前选定门店内维护区域、桌台和扫码点，并在同一页面配置门店二维码下单；运维管理后台用户要在集团空间级定义服务点的纯展示扩展字段。桌台属性本批只保存不消费，二维码 URL 不存储，由渠道模板规则在读取时派生。
+运营管理后台用户要在当前选定门店内维护区域、桌台和扫码点，并在同一页面配置门店二维码下单；运维管理后台用户要在集团空间级定义服务点的纯展示扩展字段。桌台属性本批只保存不消费，容纳人数、形态、是否可预约均非必填；二维码 URL 不存储，由渠道模板规则在读取时派生，合法 URL 在列表/详情结果位置生成二维码图像。
 
 实施保持以下已确认形态：
 
 - 区域列表头部“新建区域”；选中桌台区后从属列表头部“新建桌台”，选中扫码区后“新建扫码点”；未选区域不显示从属新增动作。
 - 区域和从属列表采用 `SalesMenuPage` 的 master/detail、选中态、行末“…”菜单、上移/下移；顺序不进入任何 Drawer 表单。
 - 主页面二维码配置是只读摘要；编辑只能进入独立 Drawer；详情 Drawer 是只读展示；所有编辑 Drawer 统一使用 `useDrawerFormLifecycle`，子控件不自行管理 dirty 或提示“请先保存”。
+- 桌台容纳人数、形态、是否可预约都不是必填项；owner 接受桌台属性的空值，若填写则按正整数/形态闭集/布尔值校验；扫码点仍不接受这些字段。
+- 合法派生 URL 使用现有 Ant Design `QRCode` 在列表与详情结果位置直接生成并展示内存图像；不新增二维码图片资产、URL 持久化、下载或批量导出链路。
 - `SERVICE_POINT` 加入 extension 管理 host 但不加入 `FLAT_VALUES`；本批不做动态列和类型化搜索。
 - candidate 层按四个模板维度和 channel/template 两个 ENABLED 状态过滤；D-10/D-12 生成层只判断最终 URL 合规，不把状态变化变成第四种不出码原因。
 
@@ -103,7 +105,7 @@ RUNTIME_AUTHORITY=MANAGED_RESET_DEV_SEED_ONLY
 2. 建立 area/point/QR read/create/update/status/order operation path，全部 `x-consumer-faces=["operations-admin"]`、owner 为 organization、operations session security；写操作要求 Idempotency-Key，读操作禁止。
 3. 建立 QR candidate path，owner 为 business-channel，禁止 cursor/pageSize；声明四维、双方 status、bounded overflow 和 candidate problem。
 4. 在 `BusinessChannelTemplateCreateRequest` 与 `BusinessChannelTemplateUpdateRequest` 两个 template schema 同时增加 nullable `urlRule`；目标四维模板可为空或合法，非目标维度由 owner 拒绝非空，不能把创建后的二次 PATCH 当作必需步骤。
-5. 在 admin catalog 新增页面 `PG-STORE-SERVICE-POINT-QR`（最终 source key 若 P0 发现冲突则使用同一能力意图的唯一 key），label “门店桌台与二维码管理”，以及 `EDIT_STORE_SERVICE_POINT_QR`；角色 `GROUP/REGION/PROJECT/STORE`、data node `STORE`、selected-store scope 与三个既有门店页一致。
+5. 在 admin catalog 新增页面 `PG-STORE-SERVICE-POINT-QR`（最终 source key 若 P0 发现冲突则使用同一能力意图的唯一 key），label “门店桌台与二维码管理”，以及 `EDIT_STORE_SERVICE_POINT_QR`；页面导航与可执行操作均归入一级目录“商品与服务”（页面使用 `NAV-CATALOG-SERVICES`、order=550；操作使用 `CATALOG_MANAGEMENT`），角色 `GROUP/REGION/PROJECT/STORE`、data node `STORE`、selected-store scope 与三个既有门店页一致。生成的 Java/TypeScript 目录不得手改，必须由 `admin-catalog.json` 经 edge-codegen 产出。
 6. 将 `tableManagementEnabled` 的 label 改为“是否启用桌台和二维码管理”，key/parent/default 不变；保留 R-5.9 要求，把既有 36 条 command token 中 33 条 gate=true 的标志从布尔泛化为 `storeOperatingRuleKey`，3 条 preflight 保持 null；上一批 52 条 gate 分母中的另外 19 条 sales-menu 写入口本来就直调 gate，泛化后直接调用按键 `StoreOperatingRuleGate`，不进入 token chain；新 organization operation 也不进入该 token chain；不得增加桌台专用 token。
 7. 在 error disposition/active edge catalog 登记新增业务 problem，生成后逐 path `x-error-codes` 对账；不要把错误只写在前端 feedback。
 
@@ -132,7 +134,7 @@ node scripts/generate/store-operating-rule-catalog.mjs --self-test
 
 ### 范围
 
-- 新增 `apps/backend/catering-business-server/src/main/resources/db/migration/V20260917_000000_000__store_service_point_qr.sql`（同时包含 `url_rule`、服务点图片 usage 与本批业务表）；
+- 新增 `apps/backend/catering-business-server/src/main/resources/db/migration/V20260917_000000_000__store_service_point_qr.sql`（同时包含 `url_rule`、服务点图片 usage 与本批业务表），并追加 `V20260918_010000_000__allow_optional_store_service_point_table_attributes.sql`，删除初始 TABLE 三个标量非空约束并保留 SCAN 全空约束；
 - organization service/persistence/sql/readback；business-channel template/channel persistence/query projection；asset typed adapter（不新增 asset target persistence）。
 
 执行前必须搜索以上版本是否冲突；冲突不能覆盖或修改历史 migration，只能回到 P0 重新命名并同步文档。
@@ -140,7 +142,7 @@ node scripts/generate/store-operating-rule-catalog.mjs --self-test
 ### 实施内容
 
 1. 创建 `organization.store_service_point_area`、`organization.store_service_point`、`organization.store_qr_configuration`。所有表保留 workspace/group/store identity、version、timestamps；area/point status 只允许 `ENABLED/DISABLED/VOIDED`。
-2. point 保存 `point_type` 冗余值；TABLE 专属列和 image ref；SCAN 约束这些列为空；extension JSONB 默认 `{}` 与 definition revision 同 point 保存。
+2. point 保存 `point_type` 冗余值；TABLE 专属列和 image ref；TABLE 的 capacity/shape/reservable 可为空但非空值由 owner 校验，SCAN 约束这些列为空；extension JSONB 默认 `{}` 与 definition revision 同 point 保存。
 3. area code、point code 使用同门店 `status <> 'VOIDED'` 部分唯一索引；point order 以 area 为范围，area order 以 store 为范围；查询索引支持 order+ref cursor。
 4. area 与 point 的外键必须带 workspace/store 语义，不能以跨 schema read edge 推导写权限；所有当前行保留，不物理删除。
 5. QR singleton 为一店一行，`enabled=false`、`channel_ref=null` 默认；既有 store 做默认插入，新建 store 在 organization owner 同一事务插入。
@@ -165,7 +167,7 @@ node scripts/generate/store-operating-rule-catalog.mjs --self-test
 1. 新增或扩展 `StoreServicePointOwnerApi`，提供 area/point page、detail、create/update/status/order、QR config read/save；所有 command 重新解析 store scope、重读目标和 version、返回 readback。
 2. area type 变更锁 area 与 child read；只统计 `status <> 'VOIDED'` point；非空拒绝，全部 voided 才允许；不要增加未被需求要求的一键清空 operation，逐 point VOIDED 即为“清空”。
 3. area/point status 使用 organization 现有三态 transition 形态；VOIDED 保留原 type、extension、image；current collection 排除 VOIDED 历史 point；area 非 ENABLED 只在 projection 计算 descendants unavailable，不回写 point。
-4. point create/update 读取 area type，owner 强制 `TABLE_AREA↔TABLE`、`SCAN_AREA↔SCAN`；TABLE 才接受 capacity/shape/reservable/image；SCAN 请求带这些字段或 image 时拒绝，不依赖前端。
+4. point create/update 读取 area type，owner 强制 `TABLE_AREA↔TABLE`、`SCAN_AREA↔SCAN`；TABLE 才接受 capacity/shape/reservable/image，前三项均可省略，填写时按类型规则校验；SCAN 请求带这些字段或 image 时拒绝，不依赖前端。
 5. 扩展 `BusinessEntityValueSupport` 的共享 extension audit projection，使新 point 使用同一 `ExtensionDefinitionLookup`、`ExtensionSubmission`、四态、label snapshot、超长截断，不复制第二套 typed validator。若抽取成新 helper，必须保留四个既有 organization entity 的调用路径并做回归。
 6. `OrganizationAuditHistoryService` 增加 service point fixed labels/target；未知历史 field key 保留存储的 label snapshot，不因定义删除使历史审计行消失；核心、extension、image ref、status 变更与 point write 同一 transaction。
 7. 在 `StoreOperatingRuleGate` 增加窄的 `requireStoreOperatingRuleForStoreTarget(workspaceUuid, groupWorkspaceKey, targetType, storeId, ruleKey)`；既有 `requireCatalogManagementForStoreTarget` 保留并委托 `catalogManagementEnabled`，以保持既有异常/错误语义。新 organization owner 在 mutation 前直接调用该 keyed gate，使用 catalog 中的 `tableManagementEnabled`，不经过 `CommandExecutionContextResolver`，也不伪造 organization command token。与此同时按 R-5.9 将既有 36 条 command token 中 33 条 gate=true 的 `storeOperatingRuleGateRequired` 泛化为 `storeOperatingRuleKey`，3 条 preflight 为 null；sales-menu 的 19 条写入口不在 token 链，直接调用 keyed gate 并传 `catalogManagementEnabled`；两条链共享规则 catalog，但不混用分母。
@@ -308,7 +310,7 @@ scripts/verify
 | V-6 | SQL/schema + URL behavior | 无 URL 列；改 template rule 后 read projection 改变 |
 | V-7 | composer focused | 五种合法形态、编码、empty/invalid 两反例 |
 | V-8 | template owner acceptance | 四个单维度负例+完全合法正例 |
-| V-9 | QR generation acceptance | off/no channel/invalid URL 三类；selected channel disabled/voided 仍生成 |
+| V-9 | QR generation acceptance + frontend QR projection | off/no channel/invalid URL 三类；selected channel disabled/voided 仍生成；合法 URL 显示二维码图像，不显示普通 URL 文本 |
 | V-10 | catalog/role acceptance | GROUP/REGION/PROJECT/STORE 四类逐项 |
 | V-11 | extension + audit acceptance | definition/value/readback/audit 四态、label、truncate |
 | V-12 | asset + frontend static | TABLE 成功/失败；SCAN 无 request/entry |
@@ -413,7 +415,7 @@ Finding 必须写明：分类、状态（`CONFIRMED/PARTIALLY_CONFIRMED/REJECTED
 - [x] 已覆盖区域/point/QR/URL/gate/extension/asset 的同根同步面，而非只写用户点名的页面。
 - [x] 已单列业务与 cleanup、reset/DEV/seed 和 Browser L2 边界；reset/DEV/seed 已执行并有受管报告，Browser L2 未授权未执行。
 - [x] Claude DESIGN review：上一轮 NO-GO 的 M-01、S-01、S-02、N-01 已按当前字节处置并纳入实施。
-- [x] fresh 独立 IMPLEMENTATION review：Hubble 已基于当前字节完成 fresh 只读复审，结论为 `GO/M/S/N=0/0/0`；Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`。
+- [x] fresh 独立 IMPLEMENTATION review：Hubble 已对 D-13 之前的字节完成 fresh 只读复审，结论为 `GO/M/S/N=0/0/0`；D-13 后需重新 review，Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`。
 - [x] IMPLEMENTATION_AUTHORITY：Dexter 本轮直接指派为 true；运行仅限受管 reset、DEV、seed。
 
 ## 15. 实施收口记录
@@ -426,6 +428,28 @@ Finding 必须写明：分类、状态（`CONFIRMED/PARTIALLY_CONFIRMED/REJECTED
 
 全仓 `./scripts/verify` 的 backend Spotless line-limit 首败属于既有基线，记录为 `BASELINE_CHECK_NOT_CLOSED`；本机直接运行 Docker-backed Gradle 测试被 `V2S_TESTCONTAINERS_REMOTE_REQUIRED` guard 拒绝，已改用受管远端入口，二者均不改写为功能测试 PASS。
 
-Faraday 随后对当前源码做 fresh 静态复审，给出 `NO-GO/M/S/N=1/0/0`：不可用区域/服务点仍暴露派生二维码 URL，且有效 URL 以普通文本展示。主 agent 已确认并修复：二维码 renderer 以 owner 的 `effectiveAvailable` 先做边界判断；不可用只显示「不可用」，可用合法结果使用现有 Ant Design `Typography.Link` 的「查看二维码」入口；不改写 D-12 生成事实、不新增二维码图片生成链路。新增静态测试覆盖该边界。
+Faraday 随后对 D-13 之前的源码做 fresh 静态复审，给出 `NO-GO/M/S/N=1/0/0`：不可用区域/服务点仍暴露派生二维码 URL，且有效 URL 以普通文本展示。主 agent 已确认并修复了不可用边界；2026-09-18 D-13 又授权合法结果直接复用 Ant Design `QRCode` 生成内存图像，当前以 `QRCode`/`qrResultImage` 为准，历史 `Typography.Link` 仅保留在处置记录中。
 
-Hubble 对该修复后的当前字节完成 fresh 独立静态 implementation review，结论为 `GO/M/S/N=0/0/0`；确认列表/详情统一 availability 门控与入口、D-12 后端生成事实、`qrResultLink` 绑定以及其余 owner/权限/资产/审计闭包均无新的阻断 finding。Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`。
+Hubble 对 D-13 之前的修复字节完成 fresh 独立静态 implementation review，结论为 `GO/M/S/N=0/0/0`；该 verdict 只覆盖当时的入口形态。D-14 后当前字节的 focused proof 与 fresh review 已完成；Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`。
+
+## 16. D-13 实施增补（2026-09-18）
+
+Dexter 已明确桌台容纳人数、形态、是否可预约均为非必填，并授权二维码图像生成与展示。本增补对应以下实施动作：
+
+- organization owner 与 OpenAPI create/update wire 接受三项 TABLE 标量省略或显式 `null`；非空值仍校验正整数、形态闭集和布尔值，SCAN 仍拒绝桌台属性。
+- 新增 `V20260918_010000_000__allow_optional_store_service_point_table_attributes.sql`，删除初始 TABLE 非空约束，保留 capacity 正数检查并维持 SCAN 全空。
+- acceptance 场景补充 TABLE 三项全部省略、显式清空、填写值，以及 SCAN 反例；前端仅对填写的容纳人数校验正整数，统一 Drawer Form 生命周期不变。
+- 列表和详情共享 `qrDisplayValue`，合法最终 URL 使用 Ant Design `QRCode` 的 `type="svg"` 在内存中生成图像；列表尺寸 72、详情尺寸 176，testId 使用 `qrResultImage`。不落库、不下载、不批量导出、不新增二维码图片资产链路。
+
+D-13 的 focused proof、受管 DEV 恢复和 fresh 独立 implementation review 已在后续实施收口中完成；D-14 目录归属修正后的当前字节以本节及实施对账中的最新 review 为准。
+
+## 17. D-14 目录归属修正（2026-09-18）
+
+Dexter 已确认“门店桌台与二维码管理”应归入运营后台的“商品与服务”一级目录。当前字节的目录不变量为：
+
+- 页面 `PG-STORE-SERVICE-POINT-QR` 的 source navigation 为 `NAV-CATALOG-SERVICES`、label 为“商品与服务”、order=550，紧接“门店销售菜单”；
+- 操作 `EDIT_STORE_SERVICE_POINT_QR` 的 source action group 为 `CATALOG_MANAGEMENT`、label 为“商品与服务”、order=500；
+- capability key、page key、角色集合、STORE data node、selected-store scope、页面/操作绑定均不变；仅修正一级目录归属与页面顺序；
+- `contracts/catalog/admin-catalog.json` 是唯一修改入口；`WorkspaceAuthorizationCatalog.java` 与 `generatedAdminCatalog.ts` 只能由 `node scripts/generate/edge-codegen.mjs --write` 生成，并以 `--check` 与 focused 编译校验同步。
+
+角色编辑器的“可执行的操作”树和运营后台页面导航必须同时从上述生成目录读取，不能在任一 app 另行维护目录映射。
