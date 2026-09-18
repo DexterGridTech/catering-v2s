@@ -10,7 +10,7 @@ AUTHORIZED=Dexter 已授权按本详设与计划实施并完成阶段一、阶�
 NOT_AUTHORIZED=扩大需求范围、改变已裁定语义、未列入计划的生产落点、设备级开机自启、seed、UAT、部署及仓库控制动作
 IMPLEMENTATION_AUTHORITY=true
 DESIGN_STATUS=IMPLEMENTATION_AUTHORIZED
-IMPLEMENTATION_STATUS=IN_PROGRESS
+IMPLEMENTATION_STATUS=READY_FOR_IMPLEMENTATION_REVIEW_MAIN_AGENT_FALLBACK
 
 ## 0. 详设边界与 source-of-truth
 
@@ -31,7 +31,7 @@ IMPLEMENTATION_STATUS=IN_PROGRESS
 
 需求稿第 0.3 节的编号裁决和具名裁定在本设计中直接执行，不重新选择：只支持 laptop 加单屏；两个 app 必须跑通；不认证、一主一副；拓扑 tab 恒显；角色是 base 能力而非 App 矩阵；断线持续重连、不退化、不设放弃条件；enableSlave 是主机侧持久标记，APP/JS 启动后恢复，不做设备级开机自启；R-2、R-6、R-9、R-9a、R-11、R-14 的顺序和语义均以需求正本为准。本批不重做其他立项已完成的 screen-part 机制，但必须把它作为运行前置核对。
 
-### 0.3 当前仓内事实与尚缺证据
+### 0.3 当前仓内事实、证据与边界
 
 已从当前源码确认：
 
@@ -42,12 +42,13 @@ IMPLEMENTATION_STATUS=IN_PROGRESS
 - requestLedger 属于 kernel.base.runtime；RequestLifecycleStatus 当前只有 started、completed、partial-failed、timed-out、error，CommandAggregateStatus 当前只有 running、completed、partial-failed、timed-out、error。registered、dispatched、accepted 不是这两个 status union 的值；不能把生命周期日志 phase 当作 status，也不能未经 D-18 证明就作为业务 state 镜像。
 - admin-shell 已有 laptop master-detail、mobile wrap navigation、AdminSectionRenderContext 和默认拒绝的 command boundary；新 section 只能获得 typed 窄 capability。
 
-尚缺证据：
+实施后已确认并保留证据：
 
-- 当前两个 Android app 没有现成的 HTTP/WS server implementation，Gradle 是否已有可复用的 Android server 依赖必须由实施前 CP-0 实际解析确认。
-- POC connectionActor、v2 传输细节、装配层类型环境不是本仓事实，不能作为本批通过依据。
-- 当前没有双设备受管 runner；U-7 至 U-22 必须有真实进程或设备边界，单进程两个 runtime 不合规。
-- 本设计阶段没有运行构建、测试、Web、设备、动态或 cleanup；所有 evidence 是计划态 OPEN 或 NOT_APPLICABLE_WITH_REASON。
+- 两个 Android App 的 host/WS 接线、依赖解析、release run 和真实双设备/单设备形态执行已记录在 CP-2 与 CP-5 evidence；没有手写 HTTP parser 或 WebSocket framing。
+- `tools/terminal-topology/run-dual-device.mjs` 已作为受管 runner 运行；阶段一使用两个真实设备边界，阶段二使用单机双屏与 mobile 形态，两个阶段的 business/cleanup 分开记录。
+- POC connectionActor、v2 传输细节、装配层类型环境仍不是本仓事实；本批结论只引用当前仓源码、focused proof、runner 日志和设备 readback。
+- U-15 的多地址通用 runtime 行为没有当前真实消费者，按详设 U-15 保持 scope-open；U-5 的持久化 VICE 前置由两个 runtime 的 focused restart test 直接证明，双屏设备步骤只作 CHIEF/MASTER supporting readback。
+- 设计原始写作阶段没有运行构建、测试、设备或 cleanup；实施后的分档结果见 `doc/evidence/platform/2026-09-17-ter-dual-machine-topology-cp5-execution-codex.md`，不改写本设计原始意图。
 
 ### 0.4 设计决策与风险
 
@@ -421,7 +422,12 @@ transport 只负责 frame boundary、cancel token、connection identity、heartb
 
 native adapter 只负责固定端口 listener、identity endpoint、单 peer WS、frame 转交、status/diagnostics 和 stop 资源释放；重复 start/stop 幂等。CP-0 以实际 Gradle resolution 选择 Android-compatible server 依赖，禁止手写协议 parser。
 
-## 11. 证据执行体（全部是计划态）
+## 11. 证据执行体（设计基线；实际结果见 CP-5 evidence）
+
+本节保留设计阶段的执行体、反例和档位定义。实施后的真实结果统一见
+`doc/evidence/platform/2026-09-17-ter-dual-machine-topology-cp5-execution-codex.md`
+和 `doc/review/platform/2026-09-17-ter-dual-machine-topology-implementation-reconciliation-codex.md`，
+不把计划态文字改写成运行结果。
 
 | U | 执行体 | 对应缺陷的反例 | 档位/当前 |
 |---|---|---|---|
@@ -429,7 +435,7 @@ native adapter 只负责固定端口 listener、identity endpoint、单 peer WS�
 | U-2 | switchDisplayRole 的 getDisplayInfo port、command result、最终 slice focused | count>1、失败、缺失或非整数仍写 VICE | focused/OPEN |
 | U-3 | Root Surface routeContext 与 display-role admission focused | PRIMARY/SECONDARY/缺 routeContext 的准入边界放宽 | focused/OPEN |
 | U-4 | 两 app 真实 assembly 的 SLAVE+VICE+MAIN catalog/container focused | 任一 app secondary part 空、只测 catalog 不测真实容器 | focused/OPEN |
-| U-5 | 两 runtime 实例的 role hydrate/reset focused/native | 只测 VICE 保留，漏双屏 CHIEF 或 port failure repair | focused/native/OPEN |
+| U-5 | 两 runtime 实例的 role hydrate/reset focused/native | 只测 VICE 保留，漏双屏 CHIEF 或 port failure repair | focused/native（设计档位；实际见 CP-5 evidence） |
 | U-6 | AppControlPort resetRuntime successor-runtime observation | 只看 port succeeded、不验证新 JS runtime 和持久值 | focused/native/OPEN |
 | U-7 | 两真实设备经 enableSlave actor 的 host/hello managed runner | fixture 直接 port.start、移除 lifecycle actor、单进程假双机 | native/Android/OPEN |
 | U-8 | 两 app 双设备 command request/result round trip | 只验发送或用同进程 fake peer；超时/迟到不归一 | native/Android/OPEN |
@@ -439,7 +445,7 @@ native adapter 只负责固定端口 listener、identity endpoint、单 peer WS�
 | U-12 | JS restart 后首个 power event focused | 首个播种事件误切 displayRole | focused/OPEN |
 | U-13 | 两 app 生产 assembly 的 topology tab/render smoke focused | 只测一个 app、tab 声明存在但实际 section 不可渲染 | focused/OPEN |
 | U-14 | requestLedger declaration/readback + wire capture | 什么都不做；session/ledger 出现在 state.full；方向漂移 | focused/native/OPEN |
-| U-15 | transport contract vectors；单 IP 消费者不足时保持未验证 | 只因 API 存在就声称多地址 failover 已验证 | focused/OPEN |
+| U-15 | transport contract vectors；单 IP 消费者不足时保持未验证 | 只因 API 存在就声称多地址 failover 已验证 | focused contract/scope-open（设计档位；实际见对账） |
 | U-16 | identity HTTP readback before WS + cancel path managed scenario | 先开业务 WS、身份来自本地字符串、取消仍写 locator | native/Android/OPEN |
 | U-17 | desired/actual host lifecycle + JS restart + SLAVE negative scenario | 只写 flag、SLAVE 起 host、JS reload 丢 flag | native/Android/OPEN |
 | U-18 | mobile form focused/visual 与 tab presence | 隐藏 tab、误放行 VICE/enable、无可读 reason | focused/visual/OPEN |
@@ -504,7 +510,23 @@ native adapter 只负责固定端口 listener、identity endpoint、单 peer WS�
 |---|---|
 | 业务目标、裁定、硬边界直接来自需求正本 | READY |
 | D-1 至 D-21 有结论、owner、验证和反例 | READY；DR-01 OPEN，DR-02 已由 Codex 代 Dexter 裁决 |
-| U-1 至 U-22 有执行体、红夹具、证据档位 | READY；未执行 |
+| U-1 至 U-22 有执行体、红夹具、证据档位 | IMPLEMENTED；真实结果见 CP-5 evidence 与最终对账 |
 | IA、interaction、两形态、copy、a11y/focus 有落点 | READY_FOR_REVIEW |
-| native server、双设备 runner、设备/release evidence | OPEN；native/runner 尚待 CP-2/CP-5，设备阶段按 Dexter 两阶段授权执行 |
+| native server、双设备 runner、设备/release evidence | CLOSED_FOR_EXECUTION；两阶段 business/cleanup PASS，U-5 设备角色观察标为 supporting |
 | 独立 DESIGN 对抗 review | ROUND_2_COMPLETE；本轮 implementation authorization 已生效，后续独立步骤对账按 CP 执行 |
+
+## 16. 实施后证据更新
+
+CP-0 至 CP-4 的步骤级三维对账和整体测试前的全批三维对账仍以各自 evidence 为准；CP-5
+真实执行记录为：
+
+`doc/evidence/platform/2026-09-17-ter-dual-machine-topology-cp5-execution-codex.md`
+
+阶段一双机单屏 laptop 与阶段二单机双屏/mobile 均已分别完成，两个阶段的最终 profile
+均为 `BUSINESS=PASS`、`CLEANUP=PASS`。主 agent 的逐代码/详设逐行回读、U-1 至 U-22
+证据矩阵和 fresh CP-5 对账状态见：
+
+`doc/review/platform/2026-09-17-ter-dual-machine-topology-implementation-reconciliation-codex.md`
+
+本更新不代表 implementation acceptance 或 Claude/Dexter review 已 GO；U-15 的多地址
+通用行为仍按设计标为本批 scope-open，U-5 的设备步骤没有伪造私有 VICE 存储注入。

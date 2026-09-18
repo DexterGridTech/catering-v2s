@@ -113,6 +113,15 @@ const isExpectedPeer = (state: import('@catering-v2s/kernel-base-state').StateRo
   return expectedNodeId === undefined || expectedNodeId === peerNodeId
 }
 
+const isExpectedMasterAcknowledgement = (
+  state: import('@catering-v2s/kernel-base-state').StateRoot,
+  peerNodeId: string,
+): boolean => {
+  const topology = state[topologySliceName] as TopologyState
+  const expectedNodeId = topology.peerIdentity?.nodeId
+  return expectedNodeId === undefined || expectedNodeId === peerNodeId
+}
+
 const commandResultForRemote = (
   requestId: string | null,
   commandId: string,
@@ -123,6 +132,26 @@ const commandResultForRemote = (
   status,
   actorResults: [],
 })
+
+const topologyPeerLog = (
+  context: RuntimeModuleContext,
+  event: string,
+  ...optional: readonly [
+    Readonly<Record<string, string | number | boolean | null>>?,
+    string?,
+  ]
+): void => {
+  const data = optional[0] ?? {}
+  const connectionId = optional[1]
+  context.platformPorts.logger.withContext({
+    nodeId: context.localNodeId,
+  }).info({
+    category: 'topology.peer',
+    event: `topology.peer.${event}`,
+    message: 'Topology peer lifecycle observed',
+    data: connectionId === undefined ? data : {...data, connectionId},
+  })
+}
 
 export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeModule => {
   const actor = createTopologyActor({identityClient: input.identityClient, peerChannel: input.peerChannel})
@@ -169,15 +198,19 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     pendingPeerCommands.clear()
   }
 
-  const sendMessage = (message: TopologyWireMessage): void => {
+  const sendMessage = (context: RuntimeModuleContext, message: TopologyWireMessage): void => {
     const session = currentSession
-    if (session === undefined || session.state() !== 'open') throw new Error('topology peer session is not open')
+    if (session === undefined || session.state() !== 'open') {
+      topologyPeerLog(context, 'send-rejected', {messageType: message.type, sessionOpen: false}, currentConnectionId)
+      throw new Error('topology peer session is not open')
+    }
+    topologyPeerLog(context, 'frame-sent', {messageType: message.type}, currentConnectionId)
     session.send(message)
   }
 
   const sendHello = (context: RuntimeModuleContext): void => {
     const identity = createLocalIdentity(context.getState())
-    sendMessage({
+    sendMessage(context, {
       type: 'hello',
       protocolVersion: 1,
       wireId: String(createEnvelopeId()),
@@ -199,7 +232,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     if (!force && fingerprint === lastMembersFingerprint) return
     lastMembersFingerprint = fingerprint
     membersSyncRevision += 1
-    sendMessage({
+    sendMessage(context, {
       type: 'state-full',
       protocolVersion: 1,
       wireId: String(createEnvelopeId()),
@@ -214,6 +247,10 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     peerAccepted = true
     reconnectAttempt = 0
     lastReceivedMembersRevision = 0
+    topologyPeerLog(context, 'accepted', {
+      peerMode: peerIdentity?.instanceMode ?? null,
+      peerRole: peerIdentity?.displayRole ?? null,
+    }, currentConnectionId)
     if (peerIdentity !== undefined) dispatchTopologyEvent(context, {event: 'peer-accepted', peerIdentity})
     else dispatchTopologyEvent(context, {event: 'peer-accepted'})
     sendMembersSnapshot(context, true)
@@ -221,10 +258,21 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
 
   const handlePeerLoss = (context: RuntimeModuleContext, reason: string, connectionId?: string): void => {
     if (!active) return
-    if (connectionId !== undefined && currentConnectionId !== undefined && connectionId !== currentConnectionId) return
-    if (connectionId !== undefined && closingConnectionId === connectionId) return
+    if (connectionId !== undefined && currentConnectionId !== undefined && connectionId !== currentConnectionId) {
+      topologyPeerLog(context, 'loss-ignored', {reason, currentConnectionId}, connectionId)
+      return
+    }
+    if (connectionId !== undefined && closingConnectionId === connectionId) {
+      topologyPeerLog(context, 'loss-ignored-closing', {reason}, connectionId)
+      return
+    }
     const previousSession = currentSession
     const lostConnectionId = connectionId ?? currentConnectionId
+    topologyPeerLog(context, 'loss', {
+      reason,
+      peerAccepted,
+      hasSession: previousSession !== undefined,
+    }, lostConnectionId)
     if (lostConnectionId !== undefined) closingConnectionId = lostConnectionId
     peerAccepted = false
     currentSession = undefined
@@ -238,6 +286,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     if (reconnectTimer !== undefined) return
     const delay = Math.min(reconnectMaxDelayMs, reconnectBaseDelayMs * (2 ** reconnectAttempt))
     reconnectAttempt += 1
+    topologyPeerLog(context, 'reconnect-scheduled', {attempt: reconnectAttempt, delayMs: delay})
     reconnectTimer = setTimeout(() => {
       reconnectTimer = undefined
       if (active) schedule(context)
@@ -245,14 +294,23 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
   }
 
   const handleWireMessage = (context: RuntimeModuleContext, message: TopologyWireMessage): void => {
-    if (!peerAccepted && message.type !== 'hello' && message.type !== 'hello-accepted' && message.type !== 'hello-rejected') return
+    topologyPeerLog(context, 'frame-received', {messageType: message.type}, currentConnectionId)
+    if (!peerAccepted && message.type !== 'hello' && message.type !== 'hello-accepted' && message.type !== 'hello-rejected') {
+      topologyPeerLog(context, 'frame-ignored', {messageType: message.type, reason: 'peer-not-accepted'}, currentConnectionId)
+      return
+    }
     if (message.type === 'hello') {
       const state = context.getState()
       const localMode = selectRuntimeInstanceMode(state)
       const acceptable = (localMode === 'MASTER' && message.instanceMode === 'SLAVE')
         || (localMode === 'SLAVE' && message.instanceMode === 'MASTER')
       if (!acceptable || (localMode === 'SLAVE' && !isExpectedPeer(state, message.nodeId))) {
-        sendMessage({
+        topologyPeerLog(context, 'hello-rejected', {
+          localMode,
+          remoteMode: message.instanceMode,
+          reason: acceptable ? 'stale-locator' : 'role-occupied',
+        }, currentConnectionId)
+        sendMessage(context, {
           type: 'hello-rejected',
           protocolVersion: 1,
           wireId: String(createEnvelopeId()),
@@ -264,7 +322,11 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
         handlePeerLoss(context, 'TOPOLOGY_HELLO_REJECTED')
         return
       }
-      sendMessage({
+      topologyPeerLog(context, 'hello-reply', {
+        localMode,
+        remoteMode: message.instanceMode,
+      }, currentConnectionId)
+      sendMessage(context, {
         type: 'hello-accepted',
         protocolVersion: 1,
         wireId: String(createEnvelopeId()),
@@ -281,29 +343,43 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     }
     if (message.type === 'hello-accepted') {
       const state = context.getState()
-      if (selectRuntimeInstanceMode(state) !== 'SLAVE' || !isExpectedPeer(state, message.nodeId)) {
+      const localMode = selectRuntimeInstanceMode(state)
+      const accepted = localMode === 'SLAVE'
+        ? isExpectedPeer(state, message.nodeId)
+        : localMode === 'MASTER' && isExpectedMasterAcknowledgement(state, message.nodeId)
+      if (!accepted) {
+        topologyPeerLog(context, 'hello-accepted-rejected', {reason: 'identity-mismatch'}, currentConnectionId)
         handlePeerLoss(context, 'TOPOLOGY_HELLO_ACCEPTED_IDENTITY_MISMATCH')
         return
       }
-      markPeerAccepted(context, Object.freeze({
-        protocolVersion: 1,
-        nodeId: message.nodeId,
-        displayName: (state[topologySliceName] as TopologyState | undefined)?.displayName ?? 'TER peer',
-        instanceMode: 'MASTER',
-        displayRole: 'CHIEF',
-      }))
+      topologyPeerLog(context, 'hello-accepted-accepted', {localMode}, currentConnectionId)
+      if (localMode === 'SLAVE') {
+        markPeerAccepted(context, Object.freeze({
+          protocolVersion: 1,
+          nodeId: message.nodeId,
+          displayName: (state[topologySliceName] as TopologyState | undefined)?.displayName ?? 'TER peer',
+          instanceMode: 'MASTER',
+          displayRole: 'CHIEF',
+        }))
+      } else {
+        // A MASTER receives this as the acknowledgement to its own hello.
+        // The peer identity was already recorded while handling the peer's hello.
+        markPeerAccepted(context)
+      }
       return
     }
     if (message.type === 'hello-rejected') {
+      topologyPeerLog(context, 'hello-rejected-received', {reason: message.error.code}, currentConnectionId)
       handlePeerLoss(context, message.error.code)
       return
     }
     if (message.type === 'closed-error') {
+      topologyPeerLog(context, 'closed-error-received', {reason: message.error.code}, currentConnectionId)
       handlePeerLoss(context, message.error.code)
       return
     }
     if (message.type === 'ping') {
-      sendMessage({type: 'pong', protocolVersion: 1, wireId: String(createEnvelopeId()), sequence: message.sequence})
+      sendMessage(context, {type: 'pong', protocolVersion: 1, wireId: String(createEnvelopeId()), sequence: message.sequence})
       return
     }
     if (message.type === 'pong') return
@@ -312,6 +388,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
       return
     }
     if (message.type === 'command-result') {
+      topologyPeerLog(context, 'command-result-received', {status: message.status}, currentConnectionId)
       const pending = pendingPeerCommands.get(message.commandId)
       if (pending === undefined) return
       pendingPeerCommands.delete(message.commandId)
@@ -320,22 +397,53 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     }
     if (message.type === 'state-full') {
       const state = context.getState()
-      if (selectRuntimeInstanceMode(state) !== 'SLAVE' || message.direction !== 'master-to-slave') return
-      if (message.revision <= lastReceivedMembersRevision) return
+      if (selectRuntimeInstanceMode(state) !== 'SLAVE' || message.direction !== 'master-to-slave') {
+        topologyPeerLog(context, 'state-full-ignored', {
+          reason: 'direction-or-role-mismatch',
+          sliceName: message.sliceName,
+          revision: message.revision,
+        }, currentConnectionId)
+        return
+      }
+      if (message.revision <= lastReceivedMembersRevision) {
+        topologyPeerLog(context, 'state-full-ignored', {
+          reason: 'stale-revision',
+          sliceName: message.sliceName,
+          revision: message.revision,
+          lastReceivedRevision: lastReceivedMembersRevision,
+        }, currentConnectionId)
+        return
+      }
       const diff = readSyncStateDiff(message.value)
       if (diff === undefined) {
+        topologyPeerLog(context, 'state-full-rejected', {
+          reason: 'invalid-payload',
+          sliceName: message.sliceName,
+          revision: message.revision,
+        }, currentConnectionId)
         handlePeerLoss(context, 'TOPOLOGY_STATE_PAYLOAD_INVALID')
         return
       }
       const applied = context.applyAuthoritativeSync(message.sliceName, diff)
       if (applied.status === 'skipped') {
+        topologyPeerLog(context, 'state-full-rejected', {
+          reason: applied.reason,
+          sliceName: message.sliceName,
+          revision: message.revision,
+        }, currentConnectionId)
         handlePeerLoss(context, `TOPOLOGY_STATE_APPLY_${applied.reason}`)
         return
       }
+      topologyPeerLog(context, 'state-full-applied', {
+        sliceName: message.sliceName,
+        revision: message.revision,
+        changed: applied.changed,
+      }, currentConnectionId)
       lastReceivedMembersRevision = message.revision
       return
     }
     if (message.type === 'command-request') {
+      topologyPeerLog(context, 'command-request-received', {commandName: message.commandName}, currentConnectionId)
       const commandId = asCommandId(message.commandId)
       const requestId = message.requestId === null ? undefined : asRequestId(message.requestId)
       void context.dispatchCommand(
@@ -350,7 +458,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
         },
       ).then(result => {
         if (cancelledRemoteCommands.delete(message.commandId)) return
-        sendMessage({
+        sendMessage(context, {
           type: 'command-result',
           protocolVersion: 1,
           wireId: String(createEnvelopeId()),
@@ -362,7 +470,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
         })
       }).catch(() => {
         if (cancelledRemoteCommands.delete(message.commandId)) return
-        sendMessage({
+        sendMessage(context, {
           type: 'command-result',
           protocolVersion: 1,
           wireId: String(createEnvelopeId()),
@@ -380,10 +488,14 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     peerAccepted = false
     closingConnectionId = undefined
     currentConnectionId = connectionId
+    topologyPeerLog(context, 'session-installed', {hasConnectionId: connectionId !== undefined}, connectionId)
     currentSession = createTopologySession({
       write: raw => { void input.peerChannel?.send(raw).catch(error => handlePeerLoss(context, error instanceof Error ? error.message : 'TOPOLOGY_WRITE_FAILED', connectionId)) },
       onMessage: message => handleWireMessage(context, message),
-      onProtocolError: error => handlePeerLoss(context, error.message, connectionId),
+      onProtocolError: error => {
+        topologyPeerLog(context, 'protocol-error', {errorType: error.name}, connectionId)
+        handlePeerLoss(context, error.message, connectionId)
+      },
       closeTransport: reason => { void input.peerChannel?.close(reason) },
     })
     currentSession.markOpen()
@@ -398,7 +510,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
         return new Promise<CommandDispatchResult>((resolve, reject) => {
           pendingPeerCommands.set(commandId, {resolve, reject})
           try {
-            sendMessage({
+            sendMessage(context, {
               type: 'command-request',
               protocolVersion: 1,
               wireId: String(createEnvelopeId()),
@@ -416,7 +528,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
       },
       cancelCommand: async commandId => {
         if (!peerAccepted || currentSession === undefined) return
-        sendMessage({
+        sendMessage(context, {
           type: 'command-cancel',
           protocolVersion: 1,
           wireId: String(createEnvelopeId()),
@@ -512,9 +624,16 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
       if (input.peerChannel !== undefined) {
         input.peerChannel.listen()
         const unsubscribePeer = input.peerChannel.subscribe(event => {
+          topologyPeerLog(context, 'channel-event', {
+            channelEvent: event.type,
+            reason: event.type === 'message' || !('reason' in event) ? null : event.reason ?? null,
+          }, event.connectionId)
           if (event.type === 'open') installPeerSession(context, event.connectionId)
           else if (event.type === 'message') {
-            if (event.connectionId !== undefined && currentConnectionId !== undefined && event.connectionId !== currentConnectionId) return
+            if (event.connectionId !== undefined && currentConnectionId !== undefined && event.connectionId !== currentConnectionId) {
+              topologyPeerLog(context, 'message-ignored', {reason: 'connection-mismatch', currentConnectionId}, event.connectionId)
+              return
+            }
             try { currentSession?.receive(event.raw) } catch { /* session reports protocol errors */ }
           } else handlePeerLoss(context, event.reason ?? `TOPOLOGY_PEER_${event.type.toUpperCase()}`, event.connectionId)
         })

@@ -353,7 +353,8 @@ class ExtensionDefinitionServiceTest {
                         ExtensionHostTypes.CONTRACT,
                         ExtensionHostTypes.COMMERCIAL_GROUP,
                         ExtensionHostTypes.REGION,
-                        ExtensionHostTypes.PROJECT),
+                        ExtensionHostTypes.PROJECT,
+                        ExtensionHostTypes.SERVICE_POINT),
                 catalog.stream().map(value -> value.hostType()).toList());
         var brand = service.managementDefinition(workspaceId, "extension-test", "BRAND");
         assertEquals(0, brand.version());

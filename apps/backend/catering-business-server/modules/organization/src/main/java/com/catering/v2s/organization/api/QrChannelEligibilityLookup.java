@@ -13,7 +13,7 @@ public interface QrChannelEligibilityLookup {
     Candidate requireEligible(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID channelRef);
 
     /** Returns the derived URL or null when the current template rule is empty/invalid. */
-    String deriveUrl(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID channelRef, UUID servicePointRef);
+    String deriveUrl(Candidate candidate, String groupWorkspaceKey, UUID servicePointRef);
 
     record Candidate(
             UUID channelRef,

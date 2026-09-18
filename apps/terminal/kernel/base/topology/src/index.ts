@@ -7,7 +7,7 @@ export type {TopologyAdminRuntime} from './foundations/createTopologyAdminCapabi
 export {resolveTopologyCommandTarget} from './foundations/resolveCommandTarget'
 export {createTopologyModule} from './application/createTopologyModule'
 export type {CreateTopologyModuleInput} from './application/createTopologyModule'
-export {selectTopologyFacts} from './selectors/selectTopologyFacts'
+export {areTopologyFactsEqual, selectTopologyFacts} from './selectors/selectTopologyFacts'
 export {selectTopologyState, topologySliceName} from './selectors/selectTopologyState'
 export {topologyActions} from './features/slices/topology'
 export {

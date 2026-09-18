@@ -1,5 +1,6 @@
 package com.catering.v2s.app.edge.operations.organization;
 
+import com.catering.v2s.app.edge.extension.ExtensionSubmissionWireMapper;
 import com.catering.v2s.app.edge.generated.wire.StoreQrChannelCandidate;
 import com.catering.v2s.app.edge.generated.wire.StoreQrChannelCandidatePage;
 import com.catering.v2s.app.edge.generated.wire.StoreQrConfigurationUpdateRequest;
@@ -44,6 +45,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -61,7 +63,7 @@ import tools.jackson.databind.ObjectMapper;
 /** Operations-admin edge for the store service-point and QR configuration surface. */
 @RestController
 @RequestMapping("/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}")
-public final class OperationsStoreServicePointController {
+public class OperationsStoreServicePointController {
     private static final String CAPABILITY = "EDIT_STORE_SERVICE_POINT_QR";
     private static final String REQ_CREATE_AREA = "REQ_POST_OPERATIONS_STORE_SERVICE_POINT_AREA";
     private static final String REQ_CREATE_POINT = "REQ_POST_OPERATIONS_STORE_SERVICE_POINT";
@@ -103,6 +105,7 @@ public final class OperationsStoreServicePointController {
     }
 
     @GetMapping("/service-point-areas")
+    @Transactional(readOnly = true)
     public StoreServicePointAreaPage listAreas(
             EdgeRequestContext request,
             @PathVariable String groupWorkspaceKey,
@@ -178,6 +181,7 @@ public final class OperationsStoreServicePointController {
     }
 
     @GetMapping("/service-point-areas/{areaRef}/service-points")
+    @Transactional(readOnly = true)
     public StoreServicePointPage listPoints(
             EdgeRequestContext request,
             @PathVariable String groupWorkspaceKey,
@@ -203,12 +207,14 @@ public final class OperationsStoreServicePointController {
                 session.workspaceUuid(), groupWorkspaceKey, storeRef, null, areaRef, input.name(), input.code(),
                 input.pointType().wire(), StoreServicePointStatus.ENABLED.wire(), longValue(input.seatCapacity()),
                 textValue(input.tableShape()), booleanValue(input.reservable()), input.imageAssetRef(),
-                textValue(input.imageBindGrant()), jsonText(input.extensionValues()), longValue(input.extensionRuleRevision()),
+                textValue(input.imageBindGrant()), ExtensionSubmissionWireMapper.toSubmission(input.extensionValues()),
+                longValue(input.extensionRuleRevision()),
                 null, idempotencyKey, sessions.actor(session), grant(session, REQ_CREATE_POINT, storeRef)));
         return ResponseEntity.status(HttpStatus.CREATED).body(point(result));
     }
 
     @GetMapping("/service-points/{servicePointRef}")
+    @Transactional(readOnly = true)
     public StoreServicePointDetail readPoint(
             EdgeRequestContext request,
             @PathVariable String groupWorkspaceKey,
@@ -232,7 +238,8 @@ public final class OperationsStoreServicePointController {
                 session.workspaceUuid(), groupWorkspaceKey, storeRef, servicePointRef, null, input.name(), input.code(),
                 input.pointType().wire(), input.status().wire(), longValue(input.seatCapacity()), textValue(input.tableShape()),
                 booleanValue(input.reservable()), input.imageAssetRef(), textValue(input.imageBindGrant()),
-                jsonText(input.extensionValues()), longValue(input.extensionRuleRevision()), required(input.expectedVersion(), "expectedVersion"),
+                ExtensionSubmissionWireMapper.toSubmission(input.extensionValues()), longValue(input.extensionRuleRevision()),
+                required(input.expectedVersion(), "expectedVersion"),
                 idempotencyKey, sessions.actor(session), grant(session, REQ_UPDATE_POINT, storeRef)));
         return point(result);
     }
@@ -270,6 +277,7 @@ public final class OperationsStoreServicePointController {
     }
 
     @GetMapping("/qr-configuration")
+    @Transactional(readOnly = true)
     public StoreQrConfigurationView readQr(
             EdgeRequestContext request,
             @PathVariable String groupWorkspaceKey,
@@ -295,6 +303,7 @@ public final class OperationsStoreServicePointController {
     }
 
     @GetMapping("/qr-channel-candidates")
+    @Transactional(readOnly = true)
     public StoreQrChannelCandidatePage qrCandidates(
             EdgeRequestContext request,
             @PathVariable String groupWorkspaceKey,

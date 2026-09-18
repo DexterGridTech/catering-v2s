@@ -56,6 +56,7 @@ const topologyWireErrorCodes: readonly TopologyWireErrorCode[] = [
   'TOPOLOGY_PROTOCOL_REJECTED',
   'TOPOLOGY_TIMEOUT',
   'TOPOLOGY_UNAVAILABLE',
+  'TOPOLOGY_UNPAIRED',
 ]
 
 const isTopologyWireErrorCode = (value: unknown): value is TopologyWireErrorCode =>

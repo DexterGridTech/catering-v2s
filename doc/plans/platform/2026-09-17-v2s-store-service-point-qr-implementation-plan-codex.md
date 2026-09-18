@@ -3,7 +3,7 @@
 ```text
 DATE=2026-09-17
 DOC_KIND=IMPLEMENTATION_PLAN
-STATUS=IMPLEMENTATION_IN_PROGRESS
+STATUS=IMPLEMENTATION_COMPLETE_AWAITING_REVIEW
 DESIGN=doc/plans/platform/2026-09-17-v2s-store-service-point-qr-implementation-design-codex.md
 BUSINESS_SOURCE=doc/plans/platform/2026-09-17-v2s-store-service-point-qr-requirements-claude.md
 JOURNEY=doc/decisions/2026-09-17-v2s-store-service-point-qr-journey-codex.md
@@ -257,7 +257,7 @@ point core + extension JSON + image claim/target/ref + audit + receipt 是一个
 
 在任何 L2 脚本、locator、binding、blueprint action 写入前，先按详设 §3a 逐个 IA-ID 对照全部真实控件：控件必须位于 IA 指定的 surface/container，位置与层级正确，样式与 SalesMenu 基线一致，行为符合 IA 声明的选中、排序、边界禁用、失败恢复；创建与编辑 Drawer 尤其要逐控件核验。任何一项不一致都先修复，不得以 testId 存在替代视觉/行为通过。确认后再逐项补齐区域操作、point 操作、QR Drawer、area/point Drawer、TABLE file input、detail action、retry、cursor；每个真实动作节点必须使用 `storeServicePointTestIds.ts` 的稳定业务身份；复合 Select option 只能在 API 无 option-level data 属性时按既有 `COMPOSITE_OPTION_ANCHOR` 例外记录。
 
-本步骤初始状态：`UI_DESIGN_REVIEW=PASS`、`IA_CONTROL_REVIEW=OPEN`、`TESTID_REVIEW=OPEN`（代码尚未实现）、`L2_SCRIPT_ADMISSION=BLOCKED`。只有逐控件 IA 位置/样式/行为对照、UI focused/static proof 和 fresh 独立复核全部通过后，才能申请/执行 Browser L2；当前授权不包含 L2。
+本步骤状态：`UI_DESIGN_REVIEW=PASS`、`IA_CONTROL_REVIEW=PASS_STATIC_PREFLIGHT`、`TESTID_REVIEW=PASS_STATIC_BINDING`（逐控件记录见 `doc/review/platform/2026-09-18-v2s-store-service-point-qr-ia-static-preflight-codex.md`）、`L2_SCRIPT_ADMISSION=BLOCKED`。静态前置门已按真实控件完成位置/样式/行为对照；只有在 Dexter 另行授权 Browser L2 后，才能继续动态浏览器验证，当前授权仍不包含 L2。
 
 ## 10. P7：focused/unit/static 与 backend acceptance
 
@@ -317,7 +317,7 @@ scripts/verify
 | V-15 | DB + owner acceptance | area and point code separate duplicate/reuse |
 | V-16 | candidate/generation acceptance | four mismatch + four statuses + NOT_REQUIRED + store/tenant/brand status no filter |
 
-## 11. P8：seed、reset/DEV 运行前置（只写设计，不执行）
+## 11. P8：seed、reset/DEV 运行（已执行）
 
 ### 11.1 seed source
 
@@ -339,7 +339,7 @@ scripts/verify
 4. owner readback 验证两级 gate、area/point/QR/extension/channel/image；
 5. 如要 Browser L2，另过 testId/L2 admission，并使用隔离 namespace；不得把 DEV 当 L2/UAT。
 
-本当前设计阶段不做其中任何一步。
+本批已按 Dexter 授权完成上述受管 reset、DEV、seed；具体 business/cleanup 结果、owner readback、manifest 与首败根因记录见 `doc/review/platform/2026-09-18-v2s-store-service-point-qr-implementation-reconciliation-codex.md`。Browser L2 仍未授权，未执行。
 
 ## 12. P9：整体三维对账、逐代码与详设对账、交付门
 
@@ -375,7 +375,7 @@ P0–P8 全部完成且 focused proof 已有后、进入整体测试前，主 ag
 逐代码与详设对账=OPEN
 ```
 
-任何 OPEN 都必须根因修复并重新逐代码对账；带 OPEN 时只能报告“实施未就绪”，不得交付 Dexter/Claude implementation review。当前结果为 `NOT_STARTED`。
+任何 OPEN 都必须根因修复并重新逐代码对账；当前本批逐代码与详设对账结果为 `MATCHED`，逐项记录见 `doc/review/platform/2026-09-18-v2s-store-service-point-qr-implementation-reconciliation-codex.md`。全仓 `scripts/verify` 的既有 backend Spotless 基线失败另行单列，不改写为本批功能 PASS。
 
 ### 12.3 实施后 review handoff 前置
 
@@ -386,7 +386,7 @@ P0–P8 全部完成且 focused proof 已有后、进入整体测试前，主 ag
 - reset/DEV/seed 结果和 owner readback 有真实输出；
 - P9 三维对账 `MATCHED`；
 - `逐代码与详设对账=MATCHED`；
-- fresh 独立 implementation review 已完成并留痕，Claude review 另行转交；
+- 实施结果已整理为可供 Dexter/Claude 独立复审的 handoff；本 agent 不把自身收口代替独立 implementation review；
 - 交付材料标明浏览器 L2/UAT 是否 `NOT_AUTHORIZED/NOT_RUN`，不升级证据档位。
 
 ## 13. 未来交付报告格式
@@ -411,7 +411,21 @@ Finding 必须写明：分类、状态（`CONFIRMED/PARTIALLY_CONFIRMED/REJECTED
 - [x] 已写 P0–P9，P9 含显式“逐代码与详设对账”，范围、执行者、判据和 `MATCHED/OPEN` 结果形态齐全。
 - [x] 已列出 owner、事务、集合形态、失败/恢复、generated chain、资产、扩展字段、审计、seed 和 acceptance 落点。
 - [x] 已覆盖区域/point/QR/URL/gate/extension/asset 的同根同步面，而非只写用户点名的页面。
-- [x] 已单列业务与 cleanup、reset/DEV/seed 和 Browser L2 边界；当前均未执行。
-- [ ] fresh 独立 DESIGN review：待本计划与详设完成后执行。
-- [ ] Dexter/Claude DESIGN review：待独立 review 后转交。
+- [x] 已单列业务与 cleanup、reset/DEV/seed 和 Browser L2 边界；reset/DEV/seed 已执行并有受管报告，Browser L2 未授权未执行。
+- [x] Claude DESIGN review：上一轮 NO-GO 的 M-01、S-01、S-02、N-01 已按当前字节处置并纳入实施。
+- [x] fresh 独立 IMPLEMENTATION review：Hubble 已基于当前字节完成 fresh 只读复审，结论为 `GO/M/S/N=0/0/0`；Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`。
 - [x] IMPLEMENTATION_AUTHORITY：Dexter 本轮直接指派为 true；运行仅限受管 reset、DEV、seed。
+
+## 15. 实施收口记录
+
+本计划已按授权完成生产代码、契约/生成物、migration、测试、受管 backend acceptance、reset、DEV 与 `r5-full` seed。实施后逐代码与详设对账为 `MATCHED`，但该结果不替代独立 implementation review。
+
+修复前 fresh 独立只读 reviewer 曾给出 `REVIEW_TARGET=IMPLEMENTATION`、`VERDICT=NO-GO`、`M/S/N=1/2/1`。四条 finding 已在当前字节完成根因修复：QR disabled 保留 channelRef 并修正数据库约束；列表/详情 QR 文案按配置状态区分；服务点扩展审计改为共享四态与 label snapshot；页面标题与 IA 术语一致。详细处置见 `doc/review/platform/2026-09-18-v2s-store-service-point-qr-implementation-reconciliation-codex.md` §4.4。
+
+当前受管收口结果：reset `R5_DEV_RESET=PASS`；最终 DEV `R5_DEV_START=PASS`；完整 seed `R5_COMPLETE_SEED=PASS` 且 business/cleanup 分别为 `PASS`/`PASS_PRESERVED_DEV_STATE`；post-repair focused backend acceptance 的 `CONTRACT` 与 `BUSINESS` 均为 `PASS`。Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`，不得从本计划升级。
+
+全仓 `./scripts/verify` 的 backend Spotless line-limit 首败属于既有基线，记录为 `BASELINE_CHECK_NOT_CLOSED`；本机直接运行 Docker-backed Gradle 测试被 `V2S_TESTCONTAINERS_REMOTE_REQUIRED` guard 拒绝，已改用受管远端入口，二者均不改写为功能测试 PASS。
+
+Faraday 随后对当前源码做 fresh 静态复审，给出 `NO-GO/M/S/N=1/0/0`：不可用区域/服务点仍暴露派生二维码 URL，且有效 URL 以普通文本展示。主 agent 已确认并修复：二维码 renderer 以 owner 的 `effectiveAvailable` 先做边界判断；不可用只显示「不可用」，可用合法结果使用现有 Ant Design `Typography.Link` 的「查看二维码」入口；不改写 D-12 生成事实、不新增二维码图片生成链路。新增静态测试覆盖该边界。
+
+Hubble 对该修复后的当前字节完成 fresh 独立静态 implementation review，结论为 `GO/M/S/N=0/0/0`；确认列表/详情统一 availability 门控与入口、D-12 后端生成事实、`qrResultLink` 绑定以及其余 owner/权限/资产/审计闭包均无新的阻断 finding。Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`。

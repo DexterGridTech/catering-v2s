@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -132,6 +133,37 @@ final class BusinessEntityValueSupport {
             com.catering.v2s.organization.api.OrganizationEntityReadback after,
             ExtensionDefinitionReadback definition,
             ExtensionSubmission submission) {
+        Map<String, String> beforeValues = before == null || before.extensionValues() == null
+                ? Map.of()
+                : before.extensionValues();
+        Map<String, String> afterValues = after == null || after.extensionValues() == null
+                ? Map.of()
+                : after.extensionValues();
+        return extensionChanges(beforeValues, afterValues, definition, submission);
+    }
+
+    /**
+     * Parses an owner-owned JSON object and applies the same field-level audit semantics as the shared readback form.
+     * Keeping this conversion here lets owners retain their native persistence shape without auditing the whole JSON
+     * document as one opaque scalar.
+     */
+    static List<AuditChange> extensionChanges(
+            String beforeValuesJson,
+            String afterValuesJson,
+            ExtensionDefinitionReadback definition,
+            ExtensionSubmission submission) {
+        return extensionChanges(
+                extensionValues(beforeValuesJson),
+                extensionValues(afterValuesJson),
+                definition,
+                submission);
+    }
+
+    private static List<AuditChange> extensionChanges(
+            Map<String, String> beforeValues,
+            Map<String, String> afterValues,
+            ExtensionDefinitionReadback definition,
+            ExtensionSubmission submission) {
         if (definition == null || definition.fields() == null || definition.fields().isEmpty()) return List.of();
         Map<String, ExtensionSubmission.Mode> intent = submission == null
                 ? Map.of()
@@ -140,16 +172,25 @@ final class BusinessEntityValueSupport {
                                 ExtensionSubmission.ExtensionFieldValue::fieldKey,
                                 ExtensionSubmission.ExtensionFieldValue::mode,
                                 (left, right) -> right));
-        Map<String, String> beforeValues = before == null || before.extensionValues() == null
-                ? Map.of()
-                : before.extensionValues();
-        Map<String, String> afterValues = after == null || after.extensionValues() == null
-                ? Map.of()
-                : after.extensionValues();
         return definition.fields().stream()
                 .map(field -> extensionChange(field, beforeValues, afterValues, intent))
                 .filter(Objects::nonNull)
                 .toList();
+    }
+
+    private static Map<String, String> extensionValues(String source) {
+        if (source == null || source.isBlank()) return Map.of();
+        try {
+            JsonNode parsed = JSON.readTree(source);
+            if (parsed == null || !parsed.isObject()) throw new BusinessEntityService.OrganizationValidationException();
+            Map<String, String> values = new LinkedHashMap<>();
+            parsed.properties().forEach(entry -> values.put(entry.getKey(), entry.getValue().toString()));
+            return values;
+        } catch (BusinessEntityService.OrganizationValidationException failure) {
+            throw failure;
+        } catch (java.io.IOException failure) {
+            throw new BusinessEntityService.OrganizationValidationException(failure);
+        }
     }
 
     private static AuditChange extensionChange(

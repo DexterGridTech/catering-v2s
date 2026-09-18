@@ -7,21 +7,20 @@ import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.audit.contract.AuditEntityTypes;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
+import com.catering.v2s.extension.api.ExtensionSubmission;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.QrChannelEligibilityLookup;
 import com.catering.v2s.organization.api.StoreServicePointAssetLifecycle;
 import com.catering.v2s.organization.api.StoreServicePointOwnerApi;
 import com.catering.v2s.organization.api.StoreOperatingRuleGate;
+import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -39,7 +38,6 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     private static final String AREA = "AREA";
     private static final String POINT = "POINT";
     private static final String QR = "QR_CONFIGURATION";
-    private static final ObjectMapper JSON = new ObjectMapper();
     private static final int PAGE_SIZE = 20;
     private static final String AREA_ENTITY = AuditEntityTypes.STORE_SERVICE_POINT_AREA;
     private static final String POINT_ENTITY = AuditEntityTypes.STORE_SERVICE_POINT;
@@ -71,26 +69,40 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     public AreaPage listAreas(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, String cursor, int pageSize) {
         validatePageSize(pageSize);
         requireStore(workspaceUuid, groupWorkspaceKey, storeRef);
-        int offset = offset(cursor);
+        String identity = pageIdentity("store-service-point-area-page", workspaceUuid, groupWorkspaceKey, storeRef, null);
+        OpaqueCollectionCursor.Position position = decodeCursor(cursor, identity);
         long total = count(
                 "SELECT count(*) FROM organization.store_service_point_area WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND status <> 'VOIDED'",
                 workspaceUuid,
                 groupWorkspaceKey,
                 storeRef);
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(workspaceUuid);
+        arguments.add(groupWorkspaceKey);
+        arguments.add(storeRef);
+        String frontier = "";
+        if (position != null) {
+            long displayOrder = cursorOrder(position);
+            frontier = " AND (display_order > ? OR (display_order = ? AND area_ref > ?))";
+            arguments.add(displayOrder);
+            arguments.add(displayOrder);
+            arguments.add(position.tieBreaker());
+        }
+        arguments.add(pageSize + 1);
         List<AreaRow> rows = jdbc.query(
                 "SELECT area_ref, store_ref, name, code, area_type, status, display_order, version, created_at_epoch_millis, updated_at_epoch_millis "
                         + "FROM organization.store_service_point_area WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND status <> 'VOIDED' "
-                        + "ORDER BY display_order, area_ref LIMIT ? OFFSET ?",
+                        + frontier
+                        + " ORDER BY display_order, area_ref LIMIT ?",
                 StoreServicePointService::areaRow,
-                workspaceUuid,
-                groupWorkspaceKey,
-                storeRef,
-                pageSize + 1,
-                offset);
+                arguments.toArray());
         boolean hasNext = rows.size() > pageSize;
         if (hasNext) rows = new ArrayList<>(rows.subList(0, pageSize));
+        List<AreaRow> pageRows = rows;
         return new AreaPage(
-                indexedAreas(rows, offset, total), hasNext ? cursor(offset + pageSize) : null, total);
+                indexedAreas(pageRows, position != null, hasNext),
+                hasNext ? OpaqueCollectionCursor.encode(identity, Long.toString(pageRows.getLast().displayOrder), pageRows.getLast().areaRef) : null,
+                total);
     }
 
     @Override
@@ -99,33 +111,49 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID areaRef, String cursor, int pageSize) {
         validatePageSize(pageSize);
         requireArea(workspaceUuid, groupWorkspaceKey, storeRef, areaRef, false);
-        int offset = offset(cursor);
+        String identity = pageIdentity("store-service-point-page", workspaceUuid, groupWorkspaceKey, storeRef, areaRef);
+        OpaqueCollectionCursor.Position position = decodeCursor(cursor, identity);
         long total = count(
                 "SELECT count(*) FROM organization.store_service_point WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND area_ref=? AND status <> 'VOIDED'",
                 workspaceUuid,
                 groupWorkspaceKey,
                 storeRef,
                 areaRef);
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(workspaceUuid);
+        arguments.add(groupWorkspaceKey);
+        arguments.add(storeRef);
+        arguments.add(areaRef);
+        String frontier = "";
+        if (position != null) {
+            long displayOrder = cursorOrder(position);
+            frontier = " AND (p.display_order > ? OR (p.display_order = ? AND p.point_ref > ?))";
+            arguments.add(displayOrder);
+            arguments.add(displayOrder);
+            arguments.add(position.tieBreaker());
+        }
+        arguments.add(pageSize + 1);
         List<PointRow> rows = jdbc.query(
                 "SELECT p.point_ref, p.store_ref, p.area_ref, p.name, p.code, p.point_type, p.status, p.display_order, p.seat_capacity, p.table_shape, p.reservable, p.image_asset_ref, p.extension_values::text, p.extension_rule_revision, p.version, p.created_at_epoch_millis, p.updated_at_epoch_millis, a.status AS area_status "
                         + "FROM organization.store_service_point p JOIN organization.store_service_point_area a ON a.area_ref=p.area_ref "
                         + "WHERE p.workspace_uuid=? AND p.group_workspace_key=? AND p.store_ref=? AND p.area_ref=? AND p.status <> 'VOIDED' "
-                        + "ORDER BY p.display_order, p.point_ref LIMIT ? OFFSET ?",
+                        + frontier
+                        + " ORDER BY p.display_order, p.point_ref LIMIT ?",
                 StoreServicePointService::pointRow,
-                workspaceUuid,
-                groupWorkspaceKey,
-                storeRef,
-                areaRef,
-                pageSize + 1,
-                offset);
+                arguments.toArray());
         boolean hasNext = rows.size() > pageSize;
         if (hasNext) rows = new ArrayList<>(rows.subList(0, pageSize));
         List<PointRow> pageRows = rows;
+        QrSnapshot qr = readQrSnapshot(workspaceUuid, groupWorkspaceKey, storeRef);
         return new PointPage(
                 java.util.stream.IntStream.range(0, pageRows.size())
-                        .mapToObj(index -> pointReadback(workspaceUuid, groupWorkspaceKey, pageRows.get(index), false, offset + index))
+                        .mapToObj(index -> pointReadback(
+                                pageRows.get(index),
+                                qrUrl(qr, groupWorkspaceKey, pageRows.get(index).pointRef),
+                                position != null || index > 0,
+                                hasNext || index + 1 < pageRows.size()))
                         .toList(),
-                hasNext ? cursor(offset + pageSize) : null,
+                hasNext ? OpaqueCollectionCursor.encode(identity, Long.toString(pageRows.getLast().displayOrder), pageRows.getLast().pointRef) : null,
                 total);
     }
 
@@ -133,7 +161,12 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     @Transactional(readOnly = true)
     public Point readPoint(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID pointRef) {
         PointRow row = requirePoint(workspaceUuid, groupWorkspaceKey, storeRef, pointRef, false);
-        return pointReadback(workspaceUuid, groupWorkspaceKey, row, true, 0);
+        QrSnapshot qr = readQrSnapshot(workspaceUuid, groupWorkspaceKey, storeRef);
+        return pointReadback(
+                row,
+                qrUrl(qr, groupWorkspaceKey, row.pointRef),
+                hasPointBefore(workspaceUuid, groupWorkspaceKey, row),
+                hasPointAfter(workspaceUuid, groupWorkspaceKey, row));
     }
 
     @Override
@@ -277,7 +310,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         ExtensionPayload extension = extension(
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
-                command.extensionValuesJson(),
+                command.extensionSubmission(),
                 "{}",
                 command.extensionRuleRevision());
         long now = time.currentEpochMillis();
@@ -294,7 +327,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
             throw new BusinessEntityService.OrganizationConflictException(conflict);
         }
         audit(command.workspaceUuid(), command.groupWorkspaceKey(), pointRef, POINT_ENTITY, "SERVICE_POINT_CREATED", command.actor(), now,
-                pointChanges(null, name, code, pointType, "ENABLED", command.seatCapacity(), command.tableShape(), command.reservable(), command.imageAssetRef(), extension.json()));
+                pointChanges(null, name, code, pointType, "ENABLED", command.seatCapacity(), command.tableShape(), command.reservable(), command.imageAssetRef(), extension));
         return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), pointRef);
     }
 
@@ -313,7 +346,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         ExtensionPayload extension = extension(
                 command.workspaceUuid(),
                 command.groupWorkspaceKey(),
-                command.extensionValuesJson(),
+                command.extensionSubmission(),
                 before.extensionValuesJson,
                 command.extensionRuleRevision());
         String status = status(command.status());
@@ -329,8 +362,9 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         }
         if (updated != 1) throw new BusinessEntityService.OrganizationConflictException();
         audit(command.workspaceUuid(), command.groupWorkspaceKey(), before.pointRef, POINT_ENTITY, "SERVICE_POINT_UPDATED", command.actor(), time.currentEpochMillis(),
-                pointChanges(before, command.name(), command.code(), pointType, status, command.seatCapacity(), command.tableShape(), command.reservable(), command.imageAssetRef(), extension.json()));
-        return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef);
+                pointChanges(before, command.name(), command.code(), pointType, status, command.seatCapacity(), command.tableShape(), command.reservable(), command.imageAssetRef(), extension));
+        return readPointAfterMutation(
+                command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef, status);
     }
 
     @Override
@@ -348,7 +382,8 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         if (updated != 1) throw new BusinessEntityService.OrganizationConflictException();
         audit(command.workspaceUuid(), command.groupWorkspaceKey(), before.pointRef, POINT_ENTITY, "SERVICE_POINT_STATUS_CHANGED", command.actor(), time.currentEpochMillis(),
                 List.of(AuditChange.forNullableScalar("status", before.status, target)));
-        return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef);
+        return readPointAfterMutation(
+                command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef, target);
     }
 
     @Override
@@ -385,7 +420,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         int updated = jdbc.update(
                 "INSERT INTO organization.store_qr_configuration(store_ref, workspace_uuid, group_workspace_key, enabled, channel_ref, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?,?,?,?,?,1,?,?) ON CONFLICT (store_ref) DO UPDATE SET enabled=excluded.enabled, channel_ref=excluded.channel_ref, version=organization.store_qr_configuration.version+1, updated_at_epoch_millis=excluded.updated_at_epoch_millis WHERE organization.store_qr_configuration.workspace_uuid=excluded.workspace_uuid AND organization.store_qr_configuration.group_workspace_key=excluded.group_workspace_key AND organization.store_qr_configuration.version=?",
                 command.storeRef(), command.workspaceUuid(), command.groupWorkspaceKey(), command.enabled(),
-                command.enabled() ? command.channelRef() : null, now, now, command.expectedVersion());
+                command.channelRef(), now, now, command.expectedVersion());
         if (updated != 1) throw new BusinessEntityService.OrganizationConflictException();
         audit(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), QR_ENTITY, "QR_CONFIGURATION_UPDATED", command.actor(), now,
                 List.of(AuditChange.forNullableScalar("enabled", Boolean.toString(before.enabled), Boolean.toString(command.enabled())),
@@ -393,24 +428,24 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         return readQrConfiguration(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
     }
 
-    private Point pointReadback(UUID workspaceUuid, String groupWorkspaceKey, PointRow row, boolean detail, int index) {
-        QrRow qr = readQrRow(workspaceUuid, groupWorkspaceKey, row.storeRef);
-        String url = null;
+    private Point pointReadback(PointRow row, String url, boolean canMoveUp, boolean canMoveDown) {
         boolean available = "ENABLED".equals(row.status) && "ENABLED".equals(row.areaStatus);
-        // QR generation is governed only by the final composed URL.  The
-        // point/area lifecycle still controls effectiveAvailable, but it must
-        // not become a fourth "no QR" reason after a channel was selected.
-        if (qr.enabled && qr.channelRef != null) {
-            QrChannelEligibilityLookup provider = qrChannels();
-            url = provider.deriveUrl(workspaceUuid, groupWorkspaceKey, row.storeRef, qr.channelRef, row.pointRef);
-        }
-        boolean canMoveUp = hasPointBefore(workspaceUuid, groupWorkspaceKey, row);
-        boolean canMoveDown = hasPointAfter(workspaceUuid, groupWorkspaceKey, row);
         return new Point(
                 row.pointRef, row.storeRef, row.areaRef, row.name, row.code, row.pointType, row.status, row.displayOrder,
                 row.seatCapacity, row.tableShape, row.reservable, row.imageAssetRef, row.extensionValuesJson,
                 row.extensionRuleRevision, available, url, row.version, row.createdAt, row.updatedAt,
                 canMoveUp, canMoveDown);
+    }
+
+    private Point readPointAfterMutation(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID pointRef, String status) {
+        PointRow row = requirePoint(workspaceUuid, groupWorkspaceKey, storeRef, pointRef, "VOIDED".equals(status));
+        QrSnapshot qr = readQrSnapshot(workspaceUuid, groupWorkspaceKey, storeRef);
+        return pointReadback(
+                row,
+                qrUrl(qr, groupWorkspaceKey, row.pointRef),
+                hasPointBefore(workspaceUuid, groupWorkspaceKey, row),
+                hasPointAfter(workspaceUuid, groupWorkspaceKey, row));
     }
 
     private Area requireAreaRead(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID areaRef) {
@@ -474,26 +509,25 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     private ExtensionPayload extension(
             UUID workspaceUuid,
             String groupWorkspaceKey,
-            String requestedJson,
+            ExtensionSubmission requestedSubmission,
             String currentJson,
             Long requestedRevision) {
-        String source = requestedJson == null || requestedJson.isBlank() ? "{}" : requestedJson;
+        ExtensionSubmission submission = requestedSubmission == null
+                ? new ExtensionSubmission(List.of())
+                : requestedSubmission;
         try {
-            JsonNode node = JSON.readTree(source);
-            if (!node.isObject()) throw new BusinessEntityService.OrganizationValidationException();
-            Map<String, String> requested = node.properties().stream().collect(Collectors.toMap(
-                    Map.Entry::getKey,
-                    entry -> entry.getValue().toString()));
             ExtensionDefinitionReadback definition = null;
             try {
                 definition = definitions.requireDefinition(workspaceUuid, groupWorkspaceKey, EXTENSION_HOST);
             } catch (ExtensionDefinitionService.DefinitionNotFoundException ignored) {
-                if (!requested.isEmpty()) throw new BusinessEntityService.OrganizationValidationException();
+                if (!submission.fields().isEmpty()) throw new BusinessEntityService.OrganizationValidationException();
             }
             if (requestedRevision != null && (definition == null || definition.version() != requestedRevision))
                 throw new BusinessEntityService.OrganizationValidationException();
-            String merged = definition == null ? "{}" : ExtensionDefinitionService.mergeValues(definition, currentJson, requested);
-            return new ExtensionPayload(merged, definition == null ? null : definition.version());
+            String merged = definition == null
+                    ? (currentJson == null || currentJson.isBlank() ? "{}" : currentJson)
+                    : ExtensionDefinitionService.mergeValues(definition, currentJson, submission);
+            return new ExtensionPayload(merged, definition == null ? null : definition.version(), definition, submission);
         } catch (BusinessEntityService.OrganizationValidationException failure) {
             throw failure;
         } catch (Exception failure) {
@@ -533,7 +567,17 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 .stream().filter(change -> !Objects.equals(change.beforeValue(), change.afterValue())).toList();
     }
 
-    private static List<AuditChange> pointChanges(PointRow before, String name, String code, String type, String status, Long capacity, String shape, Boolean reservable, UUID image, String extension) {
+    private static List<AuditChange> pointChanges(
+            PointRow before,
+            String name,
+            String code,
+            String type,
+            String status,
+            Long capacity,
+            String shape,
+            Boolean reservable,
+            UUID image,
+            ExtensionPayload extension) {
         List<AuditChange> changes = new ArrayList<>(List.of(
                 AuditChange.forNullableScalar("name", before == null ? null : before.name, name),
                 AuditChange.forNullableScalar("code", before == null ? null : before.code, code),
@@ -542,24 +586,36 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 AuditChange.forNullableScalar("seatCapacity", before == null || before.seatCapacity == null ? null : before.seatCapacity.toString(), capacity == null ? null : capacity.toString()),
                 AuditChange.forNullableScalar("tableShape", before == null ? null : before.tableShape, shape),
                 AuditChange.forNullableScalar("reservable", before == null || before.reservable == null ? null : before.reservable.toString(), reservable == null ? null : reservable.toString()),
-                AuditChange.forNullableScalar("imageAssetRef", before == null || before.imageAssetRef == null ? null : before.imageAssetRef.toString(), image == null ? null : image.toString()),
-                AuditChange.forNullableScalar("extensionValues", before == null ? null : before.extensionValuesJson, extension)));
-        return changes.stream().filter(change -> !Objects.equals(change.beforeValue(), change.afterValue())).toList();
+                AuditChange.forNullableScalar("imageAssetRef", before == null || before.imageAssetRef == null ? null : before.imageAssetRef.toString(), image == null ? null : image.toString())));
+        List<AuditChange> changed = changes.stream()
+                .filter(change -> !Objects.equals(change.beforeValue(), change.afterValue()))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        if (extension != null && extension.definition() != null) {
+            changed.addAll(BusinessEntityValueSupport.extensionChanges(
+                    before == null ? null : before.extensionValuesJson,
+                    extension.json(),
+                    extension.definition(),
+                    extension.submission()));
+        }
+        return List.copyOf(changed);
     }
 
-    private static int offset(String cursor) {
-        if (cursor == null || cursor.isBlank()) return 0;
+    private static OpaqueCollectionCursor.Position decodeCursor(String cursor, String identity) {
         try {
-            int value = Integer.parseInt(new String(java.util.Base64.getUrlDecoder().decode(cursor)));
-            if (value < 0) throw new NumberFormatException();
-            return value;
-        } catch (IllegalArgumentException failure) {
+            return OpaqueCollectionCursor.decode(cursor, identity);
+        } catch (OpaqueCollectionCursor.InvalidCursor failure) {
             throw new BusinessEntityService.OrganizationValidationException(failure);
         }
     }
 
-    private static String cursor(int offset) {
-        return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(Integer.toString(offset).getBytes());
+    private static long cursorOrder(OpaqueCollectionCursor.Position position) {
+        try {
+            long value = Long.parseLong(position.sortKey());
+            if (value < 0) throw new NumberFormatException();
+            return value;
+        } catch (NumberFormatException failure) {
+            throw new BusinessEntityService.OrganizationValidationException(failure);
+        }
     }
 
     private long count(String sql, Object... args) {
@@ -581,6 +637,18 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 (result, ignored) -> new QrRow(result.getObject("store_ref", UUID.class), result.getBoolean("enabled"), result.getObject("channel_ref", UUID.class), result.getLong("version"), result.getLong("updated_at_epoch_millis")),
                 workspaceUuid, groupWorkspaceKey, storeRef);
         return rows.isEmpty() ? new QrRow(storeRef, false, null, 1, 0) : rows.getFirst();
+    }
+
+    private QrSnapshot readQrSnapshot(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef) {
+        QrRow qr = readQrRow(workspaceUuid, groupWorkspaceKey, storeRef);
+        if (!qr.enabled || qr.channelRef == null) return new QrSnapshot(qr, null, null);
+        QrChannelEligibilityLookup provider = qrChannels();
+        return new QrSnapshot(qr, provider.read(workspaceUuid, groupWorkspaceKey, storeRef, qr.channelRef), provider);
+    }
+
+    private String qrUrl(QrSnapshot snapshot, String groupWorkspaceKey, UUID servicePointRef) {
+        if (!snapshot.qr.enabled || snapshot.qr.channelRef == null || snapshot.channel == null || snapshot.provider == null) return null;
+        return snapshot.provider.deriveUrl(snapshot.channel, groupWorkspaceKey, servicePointRef);
     }
 
     private QrChannelEligibilityLookup qrChannels() {
@@ -646,12 +714,21 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
                 > 0;
     }
 
-    private static List<Area> indexedAreas(List<AreaRow> rows, int offset, long total) {
+    private static String pageIdentity(
+            String operation, UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID areaRef) {
+        return operation + "\u001f"
+                + Objects.toString(workspaceUuid, "<null>") + "\u001f"
+                + Objects.toString(groupWorkspaceKey, "<null>") + "\u001f"
+                + Objects.toString(storeRef, "<null>") + "\u001f"
+                + Objects.toString(areaRef, "<null>") + "\u001f"
+                + PAGE_SIZE + "\u001fdisplay_order,ref";
+    }
+
+    private static List<Area> indexedAreas(List<AreaRow> rows, boolean hasPrevious, boolean hasNext) {
         return java.util.stream.IntStream.range(0, rows.size()).mapToObj(index -> {
             AreaRow row = rows.get(index);
-            long absoluteIndex = offset + index;
             return new Area(row.areaRef, row.storeRef, row.name, row.code, row.areaType, row.status, row.displayOrder, row.version,
-                    row.createdAt, row.updatedAt, absoluteIndex > 0, absoluteIndex + 1 < total);
+                    row.createdAt, row.updatedAt, hasPrevious || index > 0, hasNext || index + 1 < rows.size());
         }).toList();
     }
 
@@ -717,5 +794,11 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     private record AreaRow(UUID areaRef, UUID storeRef, String name, String code, String areaType, String status, long displayOrder, long version, long createdAt, long updatedAt) {}
     private record PointRow(UUID pointRef, UUID storeRef, UUID areaRef, String name, String code, String pointType, String status, long displayOrder, Long seatCapacity, String tableShape, Boolean reservable, UUID imageAssetRef, String extensionValuesJson, Long extensionRuleRevision, long version, long createdAt, long updatedAt, String areaStatus) {}
     private record QrRow(UUID storeRef, boolean enabled, UUID channelRef, long version, long updatedAt) {}
-    private record ExtensionPayload(String json, Long revision) {}
+    private record QrSnapshot(
+            QrRow qr, QrChannelEligibilityLookup.Candidate channel, QrChannelEligibilityLookup provider) {}
+    private record ExtensionPayload(
+            String json,
+            Long revision,
+            ExtensionDefinitionReadback definition,
+            ExtensionSubmission submission) {}
 }

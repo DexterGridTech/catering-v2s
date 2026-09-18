@@ -70,6 +70,24 @@ class BusinessEntityValueSupportTest {
         assertEquals(AuditValueState.VALUE, changes.get(0).afterState());
     }
 
+    @Test
+    void jsonOwnerValuesKeepFieldLabelsAndNullState() {
+        var changes = BusinessEntityValueSupport.extensionChanges(
+                "{\"displayName\":\"旧名称\",\"creditLimit\":100}",
+                "{\"displayName\":\"新名称\",\"creditLimit\":null}",
+                DEFINITION,
+                new ExtensionSubmission(List.of()));
+
+        assertEquals(2, changes.size());
+        assertEquals("显示名称", changes.get(0).fieldLabelSnapshot());
+        assertEquals("旧名称", changes.get(0).beforeValue());
+        assertEquals("新名称", changes.get(0).afterValue());
+        assertEquals(AuditValueState.VALUE, changes.get(0).afterState());
+        assertEquals("信用额度", changes.get(1).fieldLabelSnapshot());
+        assertEquals(AuditValueState.VALUE, changes.get(1).beforeState());
+        assertEquals(AuditValueState.NULL, changes.get(1).afterState());
+    }
+
     private static OrganizationEntityReadback entity(Map<String, String> extensionValues) {
         return new OrganizationEntityReadback(
                 UUID.randomUUID(),

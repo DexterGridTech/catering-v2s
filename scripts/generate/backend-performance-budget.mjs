@@ -112,6 +112,14 @@ export const CONTROLLED_BUDGET_EXCEPTION_DECISION_SCOPE = Object.freeze({
     Object.keys(INVITATION_ASSIGNMENT_P3_MEASURED_MAX_BY_OPERATION),
   ),
   [SALES_MENU_P3_DECISION_REF]: Object.freeze(Object.keys(SALES_MENU_P3_MEASURED_MAX_BY_OPERATION)),
+  'IMPLEMENTATION-AGENT-2026-09-18-STORE-CREATE-P3': Object.freeze(['createOperationsOrganizationStore']),
+  'IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-CREATE-P3': Object.freeze([
+    'postOperationsStoreServicePoint',
+  ]),
+  'IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-PATCH-P3': Object.freeze([
+    'patchOperationsStoreServicePoint',
+  ]),
+  'IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-ASSET-STAGE-P3': Object.freeze(['stageStoreServicePointImage']),
 });
 
 // Source-owned controlled exception records.  Keep this in the budget
@@ -242,10 +250,125 @@ const brandCopyBudgetExceptionRecords = Object.freeze([
   }),
 ]);
 
+// Dexter's 2026-09-18 implementation authorization delegates the already
+// defined fixed, single-operation exception decision for this batch.  The
+// four records below are deliberately separate: the Store create operation
+// retains its complete organization/contract/rule readback, the two service
+// point mutations retain their owner transaction and point readback, and
+// asset staging retains its digest/usage/staging proof.  None of these records
+// changes the generic P3 ceiling or covers the linear batch operation.
+const STORE_SERVICE_POINT_P3_DECISIONS = Object.freeze({
+  createOperationsOrganizationStore: Object.freeze({
+    decisionRef: 'IMPLEMENTATION-AGENT-2026-09-18-STORE-CREATE-P3',
+    measuredMax: 25,
+    businessFactsEvidence: [
+      'source:apps/backend/catering-business-server/src/main/java/com/catering/v2s/organization/application/operations/CreateOperationsOrganizationStoreOperation.java:32-47',
+      'source:apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreService.java:createNow',
+      'business-facts:store-create-rule-json-qr-singleton-extension-audit-organization-contract-rule-readback',
+      'measurement:cp05-three-run-max:createOperationsOrganizationStore:25',
+    ],
+    sharedMechanismsEvidence: [
+      'source:organization:shared-command-receipt-owner-transaction-audit-readback',
+      'source:organization:store-operating-rule-codec-and-qr-singleton-persistence',
+      'measurement:cp05-three-run-exact-operation-set:286:unclassified-sql:0',
+    ],
+    rejectedAlternative:
+      '删除组织详情、合同派生状态或 operating-rule/QR 最终 readback，以硬压到通用 P3=20；这会丢失当前 operation 契约要求的业务事实或让新建后的规则状态无法得到权威确认。',
+    costComparison:
+      '1、20、100 三个批量基数下该 operation 均稳定为 25；同根扫描未发现可安全合并的 owner fan-out，保留完整新建闭包的安全与审计成本高于通用阈值，但只放行该一个 operation。',
+  }),
+  postOperationsStoreServicePoint: Object.freeze({
+    decisionRef: 'IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-CREATE-P3',
+    measuredMax: 27,
+    businessFactsEvidence: [
+      'source:apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreServicePointController.java:195-211',
+      'source:apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreServicePointService.java:createPoint',
+      'business-facts:store-scope-area-type-compatibility-extension-audit-idempotency-owner-readback',
+      'measurement:cp05-three-run-max:postOperationsStoreServicePoint:27',
+    ],
+    sharedMechanismsEvidence: [
+      'source:organization:shared-owner-scope-gate-receipt-extension-audit-version',
+      'source:organization:store-service-point-asset-lifecycle-adapter',
+      'measurement:cp05-three-run-exact-operation-set:286:unclassified-sql:0',
+    ],
+    rejectedAlternative:
+      '删除 area 类型重验、扩展定义校验、审计、幂等/版本或创建后的 point readback，以硬压到通用 P3=20；这会允许错误类型或半成品写入，或者失去权威创建结果。',
+    costComparison:
+      '1、20、100 三个批量基数下该 operation 均稳定为 27；owner 事实、事务和 readback 已复用共享机制，未发现不削弱业务语义的安全 consolidation，例外仅绑定该 create operation。',
+  }),
+  patchOperationsStoreServicePoint: Object.freeze({
+    decisionRef: 'IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-PATCH-P3',
+    measuredMax: 25,
+    businessFactsEvidence: [
+      'source:apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreServicePointController.java:225-241',
+      'source:apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreServicePointService.java:updatePoint',
+      'business-facts:store-scope-version-type-extension-image-claim-audit-owner-readback',
+      'measurement:cp05-three-run-max:patchOperationsStoreServicePoint:25',
+    ],
+    sharedMechanismsEvidence: [
+      'source:organization:shared-owner-scope-gate-receipt-extension-audit-version',
+      'source:asset:shared-stage-claim-release-and-typed-target-core',
+      'measurement:cp05-three-run-exact-operation-set:286:unclassified-sql:0',
+    ],
+    rejectedAlternative:
+      '删除并发锁/版本、扩展校验、图片 claim、审计或更新后的 point readback，以硬压到通用 P3=20；这会破坏保存原子性、资产归属或历史追溯。',
+    costComparison:
+      '1、20、100 三个批量基数下该 operation 均稳定为 25；同根 owner/asset 扫描未发现可消除的重复 fan-out，完整更新闭包的成本只对该 operation 放宽。',
+  }),
+  stageStoreServicePointImage: Object.freeze({
+    decisionRef: 'IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-ASSET-STAGE-P3',
+    measuredMax: 25,
+    businessFactsEvidence: [
+      'source:apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreServicePointController.java:314-340',
+      'source:apps/backend/catering-business-server/modules/asset/src/main/java/com/catering/v2s/platform/asset/application/PlatformAssetService.java:118-140',
+      'business-facts:asset-digest-usage-staging-bind-proof-scope-and-failure-cleanup',
+      'measurement:cp05-three-run-max:stageStoreServicePointImage:25',
+    ],
+    sharedMechanismsEvidence: [
+      'source:asset:PlatformAssetService.shared-stage-content-and-bind-grant',
+      'source:organization:store-service-point-asset-typed-boundary',
+      'measurement:cp05-three-run-exact-operation-set:286:unclassified-sql:0',
+    ],
+    rejectedAlternative:
+      '跳过 digest/usage/租户范围或 staging proof，以硬压到通用 P3=20；这会允许错误资产类型、越界对象或无法补偿的孤儿资产。',
+    costComparison:
+      '1、20、100 三个批量基数下该 operation 均稳定为 25；既有资产 stage 核心已经复用，剩余开销来自不可删除的安全边界，例外只绑定 staging operation。',
+  }),
+});
+
+const storeServicePointBudgetExceptionRecords = Object.freeze(
+  Object.entries(STORE_SERVICE_POINT_P3_DECISIONS).map(([operationId, decision]) =>
+    Object.freeze({
+      operationId,
+      decisionRef: decision.decisionRef,
+      authority: 'IMPLEMENTATION_AGENT',
+      from: 20,
+      to: decision.measuredMax,
+      history: [
+        {
+          from: 20,
+          to: decision.measuredMax,
+          reason:
+            'Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.',
+          decisionRef: decision.decisionRef,
+        },
+      ],
+      businessFactsPreserved: true,
+      businessFactsEvidence: decision.businessFactsEvidence,
+      sharedMechanismsReused: true,
+      sharedMechanismsEvidence: decision.sharedMechanismsEvidence,
+      rejectedAlternative: decision.rejectedAlternative,
+      costComparison: decision.costComparison,
+      narrowScope: operationId,
+    }),
+  ),
+);
+
 export const CONTROLLED_BUDGET_EXCEPTION_RECORDS = Object.freeze([
   ...invitationAssignmentBudgetExceptionRecords,
   ...salesMenuBudgetExceptionRecords,
   ...brandCopyBudgetExceptionRecords,
+  ...storeServicePointBudgetExceptionRecords,
 ]);
 
 const CONTROLLED_BUDGET_EXCEPTION_AUTHORITIES = new Set(['DEXTER', 'IMPLEMENTATION_AGENT']);

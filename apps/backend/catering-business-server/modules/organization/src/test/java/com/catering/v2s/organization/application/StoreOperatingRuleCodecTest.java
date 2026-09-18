@@ -7,13 +7,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.catering.v2s.organization.domain.generated.StoreOperatingRuleCatalog;
+import java.io.Serializable;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class StoreOperatingRuleCodecTest {
     @Test
     void readAddsDefaultsAndIgnoresUnknownPersistedKeys() {
-        Map<String, Object> values = StoreOperatingRuleCodec.resolved(
+        Map<String, Serializable> values = StoreOperatingRuleCodec.resolved(
                 "{\"tableManagementEnabled\":true,\"unknownFutureRule\":true}");
 
         assertTrue((Boolean) values.get("tableManagementEnabled"));
@@ -31,7 +32,7 @@ class StoreOperatingRuleCodecTest {
 
     @Test
     void commandAllowsRetainedChildValueAndMarksOwnerInvalidShape() {
-        Map<String, Object> values = StoreOperatingRuleCatalog.defaults();
+        Map<String, Serializable> values = StoreOperatingRuleCatalog.defaults();
         values.put("tableManagementEnabled", false);
         values.put("tableWaitCallEnabled", true);
         assertDoesNotThrow(() -> StoreOperatingRuleCodec.commandValues(values, true));

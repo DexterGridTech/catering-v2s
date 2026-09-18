@@ -96,7 +96,12 @@ export type TopologyJsonValue =
   | readonly TopologyJsonValue[]
   | Readonly<{readonly [key: string]: TopologyJsonValue}>
 
-export type TopologyWireErrorCode = Exclude<TopologyFailureReasonCode, 'allowed'>
+/**
+ * Wire-only lifecycle signal.  It is deliberately not an operation eligibility
+ * reason: a peer uses it to distinguish an explicit unpair from a transient
+ * transport loss before closing the channel.
+ */
+export type TopologyWireErrorCode = Exclude<TopologyFailureReasonCode, 'allowed'> | 'TOPOLOGY_UNPAIRED'
 
 export type TopologyWireError = Readonly<{
   readonly code: TopologyWireErrorCode

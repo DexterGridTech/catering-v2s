@@ -1,5 +1,6 @@
-import type {RendererCatalog} from '@catering-v2s/ui-base-render'
+import {useRenderContext, type RendererCatalog} from '@catering-v2s/ui-base-render'
 import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state'
+import {useEffect} from 'react'
 import {PrimitiveEmptyState} from '@catering-v2s/ui-base-primitives'
 import {adminTestIds} from '../foundations/adminTestIds'
 import {createAdminSectionCommandBoundary, type AdminSectionCommandBoundary} from '../foundations/adminSectionSelection'
@@ -25,10 +26,25 @@ export const AdminSectionContent = ({
   commandBoundary = createAdminSectionCommandBoundary(),
   topologyCapability,
 }: AdminSectionContentProps) => {
+  const {logger} = useRenderContext()
   const activeBinding = selectedSection === undefined
     ? undefined
     : rendererCatalog.resolve(selectedSection.rendererKey)
   const activeSection = activeBinding?.component as AdminSectionComponent | undefined
+  useEffect(() => {
+    logger.info({
+      category: 'admin.navigation',
+      event: 'admin.section-content-rendered',
+      message: 'Admin section content mounted for the selected catalog entry',
+      data: {
+        partKey: selectedSection?.partKey ?? null,
+        rendererKey: selectedSection?.rendererKey ?? null,
+        componentAvailable: activeSection !== undefined,
+        displayMode: surface.displayMode,
+        surfaceForm: surface.surfaceForm,
+      },
+    })
+  }, [activeSection, logger, selectedSection?.partKey, selectedSection?.rendererKey, surface.displayMode, surface.surfaceForm])
   if (selectedSection === undefined || activeSection === undefined) {
     return (
       <PrimitiveEmptyState testID={`${adminTestIds.content}:empty`} accessibilityLabel="暂无可用诊断节">

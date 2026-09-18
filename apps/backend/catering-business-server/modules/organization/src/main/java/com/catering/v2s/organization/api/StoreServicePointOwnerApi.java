@@ -1,6 +1,7 @@
 package com.catering.v2s.organization.api;
 
 import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.extension.api.ExtensionSubmission;
 import java.util.List;
 import java.util.UUID;
 
@@ -121,7 +122,7 @@ public interface StoreServicePointOwnerApi {
             Boolean reservable,
             UUID imageAssetRef,
             String imageBindGrant,
-            String extensionValuesJson,
+            ExtensionSubmission extensionSubmission,
             Long extensionRuleRevision,
             Long expectedVersion,
             String idempotencyKey,

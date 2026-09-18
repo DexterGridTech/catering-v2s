@@ -9,6 +9,7 @@ import type {
 } from '@catering-v2s/kernel-base-contracts'
 import type {CommandDispatchResult, Runtime} from '@catering-v2s/kernel-base-runtime'
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
+import {resolveSurfaceDisplayMode, resolveWorkspace} from '@catering-v2s/kernel-base-display-context'
 import {evaluateTopologyOperation} from './evaluateTopologyOperation'
 import {selectTopologyFacts} from '../selectors/selectTopologyFacts'
 import {
@@ -76,13 +77,29 @@ const normalizeResult = (result: CommandDispatchResult): TopologyAdminCommandRes
 const failed = (reasonCode: TopologyFailureReasonCode = 'TOPOLOGY_UNAVAILABLE'): TopologyAdminCommandResult =>
   Object.freeze({status: 'error' as const, reasonCode})
 
+const routeContextForCurrentTopology = (runtime: TopologyAdminRuntime) => {
+  const facts = selectTopologyFacts(runtime.getState())
+  return Object.freeze({
+    workspace: resolveWorkspace({instanceMode: facts.instanceMode, displayRole: facts.displayRole}),
+    instanceMode: facts.instanceMode,
+    displayMode: resolveSurfaceDisplayMode({
+      displayIndex: 0,
+      displayRole: facts.displayRole,
+      instanceMode: facts.instanceMode,
+    }),
+  })
+}
+
 const dispatch = async <TPayload extends Parameters<Runtime['dispatchCommand']>[1]>(
   runtime: TopologyAdminRuntime,
   definition: Readonly<{readonly commandName: string}>,
   payload: TPayload,
 ): Promise<TopologyAdminCommandResult> => {
   try {
-    const result = await runtime.dispatchCommand(definition.commandName, payload as StateJsonValue, {requestId: createRequestId()})
+    const result = await runtime.dispatchCommand(definition.commandName, payload as StateJsonValue, {
+      requestId: createRequestId(),
+      routeContext: routeContextForCurrentTopology(runtime),
+    })
     return normalizeResult(result)
   } catch {
     return failed()

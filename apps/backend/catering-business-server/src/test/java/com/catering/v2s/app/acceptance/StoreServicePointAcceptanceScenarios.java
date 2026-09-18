@@ -58,6 +58,12 @@ final class StoreServicePointAcceptanceScenarios {
         assertEquals("DISABLED", disabled.json().path("status").asText(), "BUSINESS: area status is persisted");
         JsonNode after = listAreas(context, store);
         assertEquals(2, after.path("total").asInt(), "BUSINESS: disabled area remains in the active list");
+
+        AreaView voided = transitionArea(context, store, disabled, "VOIDED");
+        assertEquals("VOIDED", voided.json().path("status").asText(),
+                "BUSINESS: voiding an area returns the retained historical row");
+        assertEquals(1, listAreas(context, store).path("total").asInt(),
+                "BUSINESS: a voided area leaves the current list");
     }
 
     @AcceptanceScenario(
@@ -86,6 +92,13 @@ final class StoreServicePointAcceptanceScenarios {
                 "BUSINESS: re-enabling the area restores an enabled point");
         assertFalse(findItem(restoredPage.path("items"), pointDisabled.ref()).path("effectiveAvailable").asBoolean(true),
                 "BUSINESS: re-enabling the area does not rewrite a disabled point");
+
+        PointView voided = transitionPoint(context, store, pointDisabled, "VOIDED");
+        assertEquals("VOIDED", voided.json().path("status").asText(),
+                "BUSINESS: voiding a point returns the retained historical row");
+        JsonNode afterPointVoid = listPoints(context, store, area);
+        assertEquals(1, afterPointVoid.path("total").asInt(),
+                "BUSINESS: a voided point leaves the current list without losing the enabled point");
     }
 
     @AcceptanceScenario(
@@ -260,6 +273,58 @@ final class StoreServicePointAcceptanceScenarios {
         assertEquals(channelRef.toString(), enabled.path("channelRef").asText());
         assertEquals(channelRef.toString(), readQrConfiguration(context, store).path("channelRef").asText(),
                 "BUSINESS: QR selection is read back from the owner");
+
+        JsonNode disabled = updateQrConfiguration(
+                context, store, false, channelRef, enabled.path("version").asLong());
+        assertFalse(disabled.path("enabled").asBoolean(true),
+                "BUSINESS: QR configuration can be switched off");
+        assertEquals(channelRef.toString(), disabled.path("channelRef").asText(),
+                "BUSINESS: switching QR off preserves the selected channel");
+        assertEquals(channelRef.toString(), readQrConfiguration(context, store).path("channelRef").asText(),
+                "BUSINESS: owner readback retains the channel while QR is disabled");
+    }
+
+    @AcceptanceScenario(
+            id = "storeQrChannelCandidatePredicate",
+            module = "BC",
+            operation = "storeQrChannelCandidatePredicate")
+    void storeQrChannelCandidatePredicate(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context, true);
+        List<UUID> matrix = channels.acceptanceCreateStoreQrCandidateMatrix(context, store.fixture(), store.session());
+        JsonNode page = readQrCandidates(context, store);
+
+        assertEquals(1, page.path("items").size(), "BUSINESS: candidate owner returns exactly one eligible channel");
+        assertEquals(matrix.get(0).toString(), page.path("items").get(0).path("channelRef").asText(),
+                "BUSINESS: candidate owner keeps the exact four-dimension match");
+        for (UUID rejected : matrix.subList(1, matrix.size())) {
+            assertTrue(page.toString().indexOf(rejected.toString()) < 0,
+                    "BUSINESS: candidate owner excludes an ineligible channel " + rejected);
+        }
+        assertTrue(page.path("nextCursor").isNull(), "BUSINESS: QR candidate read is bounded without a cursor");
+    }
+
+    @AcceptanceScenario(
+            id = "storeQrChannelBoundedRead",
+            module = "BC",
+            operation = "storeQrChannelBoundedRead")
+    void storeQrChannelBoundedRead(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context, true);
+        channels.acceptanceCreateStoreQrChannels(context, store.fixture(), store.session(), 100, "QR bounded");
+        JsonNode exactLimit = readQrCandidates(context, store);
+        assertEquals(100, exactLimit.path("items").size(), "BUSINESS: bounded QR read returns the exact limit");
+        assertEquals(100, exactLimit.path("total").asInt(), "BUSINESS: bounded QR read reports the exact total");
+        assertTrue(exactLimit.path("nextCursor").isNull(), "BUSINESS: bounded QR read has no continuation cursor");
+
+        channels.acceptanceCreateStoreQrChannels(context, store.fixture(), store.session(), 1, "QR overflow");
+        BackendAcceptanceTest.Response overflow = context.get(
+                OPERATIONS_STORE_QR_CHANNEL_CANDIDATES,
+                qrCandidatesPath(store.fixture()),
+                store.session().cookie(),
+                Set.of(422));
+        assertEquals("QR_CHANNEL_CANDIDATE_OVERFLOW", overflow.problemCode(),
+                "BUSINESS: 101 QR candidates fail with a typed overflow problem");
+        assertTrue(overflow.json().path("items").isMissingNode() || overflow.json().path("items").isNull(),
+                "BUSINESS: overflow does not silently return a truncated candidate list");
     }
 
     @AcceptanceScenario(
@@ -299,6 +364,47 @@ final class StoreServicePointAcceptanceScenarios {
     }
 
     @AcceptanceScenario(
+            id = "storeQrConfigurationOwnerRecheck",
+            module = "ORG",
+            operation = "storeQrConfigurationOwnerRecheck")
+    void storeQrConfigurationOwnerRecheck(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context, true);
+        UUID selectedChannel = channels.acceptanceCreateStoreQrChannel(context, store.fixture(), store.session());
+        JsonNode initial = readQrConfiguration(context, store);
+        JsonNode enabled = updateQrConfiguration(context, store, true, selectedChannel, initial.path("version").asLong());
+
+        BackendAcceptanceTest.Fixture foreignFixture = host.siblingStoreFixture(
+                store.fixture(), Set.of(CAPABILITY, "BC-BUSINESS-CHANNEL-STORE-EDIT"));
+        host.completeInvitation(context, foreignFixture);
+        BackendAcceptanceTest.Session foreignSession = selectStore(context, foreignFixture, host.login(context, foreignFixture));
+        UUID foreignChannel = channels.acceptanceCreateStoreQrChannel(context, foreignFixture, foreignSession);
+
+        BackendAcceptanceTest.Response foreignRejected = context.patch(
+                OPERATIONS_STORE_QR_CONFIGURATION_UPDATE,
+                qrConfigurationPath(store.fixture()),
+                store.session().cookie(),
+                Map.of("enabled", true, "channelRef", foreignChannel, "expectedVersion", enabled.path("version").asLong()),
+                idempotency(),
+                CLIENT_FAILURE);
+        assertTrue(foreignRejected.status() >= 400, "BUSINESS: owner rejects a channel belonging to another store");
+        assertEquals(selectedChannel.toString(), readQrConfiguration(context, store).path("channelRef").asText(),
+                "BUSINESS: rejected foreign selection retains the existing QR configuration");
+
+        channels.acceptanceDisableStoreQrChannel(context, store.fixture(), store.session(), selectedChannel);
+        BackendAcceptanceTest.Response statusRejected = context.patch(
+                OPERATIONS_STORE_QR_CONFIGURATION_UPDATE,
+                qrConfigurationPath(store.fixture()),
+                store.session().cookie(),
+                Map.of("enabled", true, "channelRef", selectedChannel,
+                        "expectedVersion", readQrConfiguration(context, store).path("version").asLong()),
+                idempotency(),
+                CLIENT_FAILURE);
+        assertTrue(statusRejected.status() >= 400, "BUSINESS: owner rechecks the selected channel status at save time");
+        assertEquals(selectedChannel.toString(), readQrConfiguration(context, store).path("channelRef").asText(),
+                "BUSINESS: a failed status recheck does not clear the stored selection");
+    }
+
+    @AcceptanceScenario(
             id = "storeServicePointGateAndRoles",
             module = "ORG",
             operation = "storeServicePointGateAndRoles")
@@ -333,6 +439,26 @@ final class StoreServicePointAcceptanceScenarios {
                 idempotency(),
                 CLIENT_FAILURE);
         assertTrue(rejected.status() >= 400, "BUSINESS: closed store gate rejects direct mutation");
+
+        BackendAcceptanceTest.Response stageRejected = context.multipartStoreServicePointAsset(
+                OPERATIONS_STORE_SERVICE_POINT_ASSET_STAGE,
+                assetStagePath(closed),
+                closedSession.cookie(),
+                "closed-store.png",
+                "image/png",
+                BackendAcceptanceTest.sha256(BackendAcceptanceTest.PNG),
+                BackendAcceptanceTest.PNG,
+                CLIENT_FAILURE);
+        assertTrue(stageRejected.status() >= 400, "BUSINESS: closed store gate rejects service-point image staging");
+
+        BackendAcceptanceTest.Response releaseRejected = context.post(
+                OPERATIONS_STORE_SERVICE_POINT_ASSET_RELEASE,
+                assetReleasePath(closed, UUID.randomUUID()),
+                closedSession.cookie(),
+                Map.of("expectedAssetVersion", 1),
+                idempotency(),
+                CLIENT_FAILURE);
+        assertTrue(releaseRejected.status() >= 400, "BUSINESS: closed store gate rejects staged-image release before asset lookup");
     }
 
     private StoreContext enabledStore(BackendAcceptanceTest.ScenarioContext context) throws Exception {

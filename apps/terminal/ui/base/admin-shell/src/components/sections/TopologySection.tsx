@@ -2,11 +2,12 @@ import {useCallback, useMemo, useState} from 'react'
 import type {
   TopologyAdminCapability,
   TopologyAdminCommandResult,
+  TopologyFacts,
   TopologyIdentity,
   TopologyOperation,
   TopologyOperationEligibility,
 } from '@catering-v2s/kernel-base-contracts'
-import {topologyReasonMessages} from '@catering-v2s/kernel-base-topology'
+import {areTopologyFactsEqual, topologyReasonMessages} from '@catering-v2s/kernel-base-topology'
 import {type StateRoot} from '@catering-v2s/kernel-base-state'
 import {
   PrimitiveButton,
@@ -16,13 +17,14 @@ import {
   PrimitiveInlineAlert,
   PrimitiveInput,
   PrimitiveKeyValueRow,
-  PrimitiveScrollView,
   PrimitiveStatusRow,
   PrimitiveSwitch,
 } from '@catering-v2s/ui-base-primitives'
-import {useUiStateSelector} from '@catering-v2s/ui-base-render'
+import {InputScrollArea, useInputField} from '@catering-v2s/ui-base-input'
+import {useRenderContext, useUiStateSelector} from '@catering-v2s/ui-base-render'
 import type {AdminSectionProps} from '../../types/adminSection'
 import {adminTestIds} from '../../foundations/adminTestIds'
+import {ADMIN_CONSOLE_FOCUS_SCOPE_ID} from '../../foundations/adminIdentity'
 
 const sectionStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0})
 const topologyPort = 43172
@@ -51,16 +53,27 @@ const identityLabel = (identity: TopologyIdentity): string =>
   `${identity.displayName} / ${identity.nodeId} / ${identity.instanceMode} / ${identity.displayRole}`
 
 export const TopologySection = ({context}: AdminSectionProps) => {
+  const {logger} = useRenderContext()
   const capability = context.topologyCapability
   const factsSelector = useMemo(
     () => (_root: StateRoot) => capability?.getSnapshot(),
     [capability],
   )
-  const facts = useUiStateSelector(factsSelector)
-  const [host, setHost] = useState('')
+  const facts = useUiStateSelector<TopologyFacts | undefined>(factsSelector, areTopologyFactsEqual)
   const [identity, setIdentity] = useState<TopologyIdentity | undefined>()
   const [busy, setBusy] = useState<TopologyOperation | null>(null)
   const [error, setError] = useState('')
+  const hostField = useInputField({
+    fieldId: topologyIds.host,
+    testID: topologyIds.host,
+    accessibilityLabel: '主机地址',
+    editable: busy === null,
+    keyboardKind: 'virtual',
+    layout: 'financial',
+    keyboardPlacement: 'surface',
+    focusScopeId: ADMIN_CONSOLE_FOCUS_SCOPE_ID,
+  })
+  const host = hostField.inputProps.value ?? ''
 
   const eligibility = useCallback((operation: TopologyOperation): TopologyOperationEligibility =>
     capability?.getOperationEligibility(operation) ?? unavailableEligibility(operation), [capability])
@@ -73,17 +86,35 @@ export const TopologySection = ({context}: AdminSectionProps) => {
     if (busy !== null || !eligibility(operation).allowed) return
     setBusy(operation)
     setError('')
+    logger.info({
+      category: 'admin.topology',
+      event: 'admin.topology-operation-started',
+      message: 'Topology admin operation started',
+      data: {operation},
+    })
     try {
       const result = await action()
       onCompleted?.(result)
+      logger.info({
+        category: 'admin.topology',
+        event: 'admin.topology-operation-completed',
+        message: 'Topology admin operation completed',
+        data: {operation, status: result.status, reasonCode: result.reasonCode ?? null},
+      })
       const message = resultMessage(operation, result)
       if (message.length > 0) setError(message)
     } catch {
+      logger.error({
+        category: 'admin.topology',
+        event: 'admin.topology-operation-failed',
+        message: 'Topology admin operation failed',
+        data: {operation},
+      })
       setError('拓扑操作未完成，请重试')
     } finally {
       setBusy(null)
     }
-  }, [busy, eligibility])
+  }, [busy, eligibility, logger])
 
   const queryEligibility = eligibility('query-host')
   const pairEligibility = eligibility('pair')
@@ -95,7 +126,7 @@ export const TopologySection = ({context}: AdminSectionProps) => {
 
   return (
     <PrimitiveContainer testID={topologyIds.section} layout="content" bounded style={sectionStyle}>
-      <PrimitiveScrollView testID={topologyIds.scroll}>
+      <InputScrollArea testID={topologyIds.scroll}>
         <PrimitiveHeading testID={topologyIds.title}>{context.catalogEntry.title}</PrimitiveHeading>
         <PrimitiveKeyValueRow
           testID={topologyIds.form}
@@ -125,13 +156,7 @@ export const TopologySection = ({context}: AdminSectionProps) => {
           value={`${facts?.hostActual ?? 'stopped'} / ${facts?.hostDesired ? '期望开启' : '期望关闭'}`}
         />
         <PrimitiveFormField testID={topologyIds.formField} label="主机地址">
-          <PrimitiveInput
-            testID={topologyIds.host}
-            accessibilityLabel="主机地址"
-            value={host}
-            editable={busy === null}
-            onChangeText={setHost}
-          />
+          <PrimitiveInput {...hostField.inputProps} />
         </PrimitiveFormField>
         <PrimitiveButton
           testID={topologyIds.query}
@@ -215,7 +240,7 @@ export const TopologySection = ({context}: AdminSectionProps) => {
           value={pairEligibility.allowed && identity !== undefined ? '可用' : pairDisabledReason}
           tone={pairEligibility.allowed && identity !== undefined ? 'ok' : 'warn'}
         />
-      </PrimitiveScrollView>
+      </InputScrollArea>
     </PrimitiveContainer>
   )
 }

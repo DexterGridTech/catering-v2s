@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {FormalSeedFailure, assertStoreOperatingRuleReadback, createProjectScopeSelector, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateCatalogInventorySeedPrerequisite, validateExtensionDefinitionRevisionChangeCoverage, validateExtensionDefinitionSeedCoverage, validateFormalSeedStaticInputs, validateStoreOperatingRuleSeedCoverage, validateThreeStateSeedCoverage, invocationKeyForTest} from './owner-command-seed-executor.mjs';
+import {FormalSeedFailure, assertStoreOperatingRuleReadback, createDataNodeScopeSelector, createProjectScopeSelector, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateCatalogInventorySeedPrerequisite, validateExtensionDefinitionRevisionChangeCoverage, validateExtensionDefinitionSeedCoverage, validateFormalSeedStaticInputs, validateStoreOperatingRuleSeedCoverage, validateThreeStateSeedCoverage, invocationKeyForTest} from './owner-command-seed-executor.mjs';
 import {loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById} from '../test/seed-report.mjs';
 
 const generatedRegistry = loadGeneratedOperationRegistry(new URL('../../apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json', import.meta.url));
@@ -30,7 +30,7 @@ const fixture = {
           'BC-ORG-BRAND-CREATE', 'BC-ORG-BRAND-STATUS', 'BC-ORG-HEAD-COMPANY-BRAND', 'BC-ORG-HEAD-COMPANY-CREATE',
           'BC-ORG-HEAD-COMPANY-STATUS', 'BC-ORG-PROJECT-CREATE', 'BC-ORG-PROJECT-STATUS', 'BC-ORG-REGION-CREATE',
           'BC-ORG-REGION-STATUS', 'BC-ORG-STORE-CREATE', 'BC-ORG-STORE-STATUS', 'BC-ORG-TENANT-CREATE',
-          'BC-ORG-TENANT-STATUS',
+          'BC-ORG-TENANT-STATUS', 'EDIT_STORE_SERVICE_POINT_QR',
         ]},
         {key: 'role-store', serviceNodeType: 'STORE', status: 'ENABLED'},
         {key: 'role-store-inventory', serviceNodeType: 'STORE', status: 'ENABLED', actionCapabilityKeys: ['EDIT_STORE_INVENTORY']},
@@ -56,10 +56,24 @@ const fixture = {
       tenants: [{key: 'tenant-enabled', status: 'ENABLED'}, {key: 'tenant-disabled', status: 'DISABLED'}, {key: 'tenant-voided', status: 'VOIDED'}],
       headCompanies: [{key: 'head-enabled', status: 'ENABLED'}, {key: 'head-disabled', status: 'DISABLED'}, {key: 'head-voided', status: 'VOIDED'}],
       stores: [
-        {key: 'store-a', status: 'ENABLED', operatingRuleSwitches: {...STORE_OPERATING_RULE_VALUES}},
+        {key: 'store-a', status: 'ENABLED', operatingRuleSwitches: {...STORE_OPERATING_RULE_VALUES, tableManagementEnabled: true}},
         {key: 'store-disabled', status: 'DISABLED', operatingRuleSwitches: {...STORE_OPERATING_RULE_VALUES}},
         {key: 'store-voided', status: 'VOIDED', operatingRuleSwitches: {...STORE_OPERATING_RULE_VALUES}},
       ],
+      storeServicePoints: {
+        store: 'store-a',
+        areas: [
+          {key: 'area-enabled', code: 'AREA-ENABLED', name: '启用桌台区', areaType: 'TABLE_AREA', status: 'ENABLED'},
+          {key: 'area-disabled', code: 'AREA-DISABLED', name: '停用桌台区', areaType: 'TABLE_AREA', status: 'DISABLED'},
+          {key: 'area-voided', code: 'AREA-VOIDED', name: '作废扫码区', areaType: 'SCAN_AREA', status: 'VOIDED'},
+        ],
+        points: [
+          {key: 'point-enabled', area: 'area-enabled', code: 'POINT-ENABLED', name: '启用桌台', pointType: 'TABLE', status: 'ENABLED', seatCapacity: 2, tableShape: 'HALL', reservable: false, image: {fileName: 'point-enabled.png', mediaType: 'image/png'}, extensionValues: {field7: '启用'}},
+          {key: 'point-disabled', area: 'area-disabled', code: 'POINT-DISABLED', name: '停用桌台', pointType: 'TABLE', status: 'DISABLED', seatCapacity: 2, tableShape: 'HALL', reservable: false, image: {fileName: 'point-disabled.png', mediaType: 'image/png'}, extensionValues: {field7: '停用'}},
+          {key: 'point-voided', area: 'area-voided', code: 'POINT-VOIDED', name: '作废扫码点', pointType: 'SCAN', status: 'VOIDED', extensionValues: {field7: '作废'}},
+        ],
+        qr: {enabled: true, channelCode: 'QR-TEST'},
+      },
     },
     extensionDefinitions: [
       {key: 'ext-brand', hostType: 'BRAND', fields: [
@@ -73,7 +87,7 @@ const fixture = {
         {key: 'select', label: '选择字段', type: 'SELECT', listDisplay: true, searchable: true, required: false, options: ['选项一', '选项二'], status: 'ENABLED'},
         {key: 'disabled', label: '停用字段', type: 'TEXT', listDisplay: false, searchable: false, required: false, options: [], status: 'DISABLED'},
       ]},
-      ...['TENANT', 'HEAD_COMPANY', 'STORE', 'CONTRACT', 'COMMERCIAL_GROUP', 'REGION', 'PROJECT'].map((hostType, index) => ({
+      ...['TENANT', 'HEAD_COMPANY', 'STORE', 'CONTRACT', 'COMMERCIAL_GROUP', 'REGION', 'PROJECT', 'SERVICE_POINT'].map((hostType, index) => ({
         hostType,
         fields: [{key: `field${index}`, label: '树或平面字段', type: 'TEXT', listDisplay: FLAT_EXTENSION_HOST_TYPES.has(hostType) ? true : null, searchable: FLAT_EXTENSION_HOST_TYPES.has(hostType) ? false : null, required: false, options: [], status: 'ENABLED'}],
       })),
@@ -178,7 +192,7 @@ test('formal seed maps only a role to a node of the same owner type and preserve
 
 test('only generated owner operations may satisfy the executor input', () => {
   const ids = ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'transitionWorkspaceRoleStatus', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract'];
-  const registry = ids.map((operationId) => ({operationId}));
+  const registry = [...ids, 'getOperationsStoreServicePointAreas', 'postOperationsStoreServicePointArea', 'postOperationsStoreServicePoint', 'postOperationsStoreServicePointStatus', 'postOperationsStoreServicePointAreaStatus', 'getOperationsStoreServicePoint', 'stageStoreServicePointImage', 'getOperationsStoreQrConfiguration'].map((operationId) => ({operationId}));
   assert.equal(validateFormalSeedStaticInputs({fixture, registry}).invitationPlan.length, 5);
   assert.throws(() => validateFormalSeedStaticInputs({fixture, registry: registry.slice(1)}), code('SEED_OPERATION_REGISTRY_MISSING:platformPasswordLogin'));
   assert.throws(() => validateFormalSeedStaticInputs({fixture, registry: registry.filter((entry) => entry.operationId !== 'selectOperationsWorkspaceSessionDataNode')}), code('SEED_OPERATION_REGISTRY_MISSING:selectOperationsWorkspaceSessionDataNode'));
@@ -204,6 +218,26 @@ test('formal seed selects PROJECT scope only on project transitions and rolls ow
   ]);
   const missingVersion = createProjectScopeSelector({initialContextVersion: 'v1', select: async () => ({})});
   await assert.rejects(() => missingVersion({projectRef: 'project-a', stage: 'store-a'}), code('SEED_PROJECT_SCOPE_CONTEXT_VERSION'));
+});
+
+test('formal seed shares context versions when switching between PROJECT and STORE scope', async () => {
+  const calls = [];
+  const selectScope = createDataNodeScopeSelector({
+    initialContextVersion: 'v1',
+    select: async (request) => {
+      calls.push(request);
+      return {contextVersion: `v${calls.length + 1}`};
+    },
+  });
+  await selectScope({dataNodeType: 'PROJECT', dataNodeRef: 'project-a', stage: 'project-a'});
+  await selectScope({dataNodeType: 'STORE', dataNodeRef: 'store-a', stage: 'store-a'});
+  await selectScope({dataNodeType: 'PROJECT', dataNodeRef: 'project-a', stage: 'project-a-again'});
+  await selectScope({dataNodeType: 'PROJECT', dataNodeRef: 'project-a', stage: 'project-a-idempotent'});
+  assert.deepEqual(calls, [
+    {stage: 'project-a', body: {dataNodeRef: 'project-a', dataNodeType: 'PROJECT', requiredContextVersion: 'v1'}},
+    {stage: 'store-a', body: {dataNodeRef: 'store-a', dataNodeType: 'STORE', requiredContextVersion: 'v2'}},
+    {stage: 'project-a-again', body: {dataNodeRef: 'project-a', dataNodeType: 'PROJECT', requiredContextVersion: 'v3'}},
+  ]);
 });
 
 test('project-scoped create requests derive the project from session scope rather than request bodies', async () => {
@@ -307,7 +341,7 @@ test('formal seed fixture covers all extension types, flag combinations, disable
   const fixturePath = new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url);
   const actual = JSON.parse(await import('node:fs/promises').then((fs) => fs.readFile(fixturePath, 'utf8')));
   const coverage = validateExtensionDefinitionSeedCoverage(actual);
-  assert.equal(coverage.hostCount, 8);
+  assert.equal(coverage.hostCount, 9);
   assert.equal(coverage.typeCount, 5);
   assert.equal(coverage.flagCount, 4);
   assert.ok(coverage.disabledFieldCount >= 1);

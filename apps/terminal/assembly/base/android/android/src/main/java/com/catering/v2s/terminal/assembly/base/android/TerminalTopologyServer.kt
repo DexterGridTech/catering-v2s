@@ -207,6 +207,7 @@ class TerminalTopologyServer(
     private fun safeCloseReason(code: NanoWSD.WebSocketFrame.CloseCode?, reason: String?): String = when {
       reason == "TOPOLOGY_TIMEOUT" -> "TOPOLOGY_TIMEOUT"
       reason == "TOPOLOGY_ROLE_OCCUPIED" -> "TOPOLOGY_ROLE_OCCUPIED"
+      reason == "TOPOLOGY_UNPAIRED" -> "TOPOLOGY_UNPAIRED"
       code == NanoWSD.WebSocketFrame.CloseCode.NormalClosure -> "TOPOLOGY_HOST_STOPPED"
       else -> "TOPOLOGY_PEER_UNREACHABLE"
     }
@@ -227,4 +228,3 @@ class TerminalTopologyServer(
     }
   }
 }
-

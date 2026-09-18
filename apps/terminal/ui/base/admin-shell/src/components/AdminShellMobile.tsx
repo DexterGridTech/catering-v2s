@@ -58,6 +58,7 @@ export const AdminShellMobile = ({onClose}: AdminShellProps) => {
       />
       <PrimitiveContainer testID={adminTestIds.content} layout="content" bounded style={contentStyle}>
         <AdminSectionContent
+          key={resolvedSelection.selectedPartKey ?? 'empty'}
           selectedSection={resolvedSelection.selectedSection}
           rendererCatalog={rendererCatalog}
           runtimeFacts={runtimeFacts}

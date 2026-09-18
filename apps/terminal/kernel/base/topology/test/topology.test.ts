@@ -52,6 +52,8 @@ import {
   pairTopologyCommand,
   refreshTopologyDisplayCommand,
   resolveTopologyCommandTarget,
+  areTopologyFactsEqual,
+  selectTopologyFacts,
   setTopologyHostEnabledCommand,
   topologySliceName,
   topologyActions,
@@ -313,6 +315,158 @@ describe('topology operation eligibility', () => {
   })
 })
 
+describe('topology pairing facts', () => {
+  it('treats freshly projected equivalent facts as one subscription value', async () => {
+    const host = new FakeTopologyHost()
+    const {runtime} = createTopologyRuntime({host})
+    await runtime.start()
+    try {
+      const previous = selectTopologyFacts(runtime.getState())
+      const next = selectTopologyFacts(runtime.getState())
+      expect(next).not.toBe(previous)
+      expect(areTopologyFactsEqual(previous, next)).toBe(true)
+      expect(areTopologyFactsEqual(previous, Object.freeze({...next, peerReachable: true}))).toBe(false)
+      expect(areTopologyFactsEqual(undefined, next)).toBe(false)
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('uses the accepted master peer identity for paired semantics and preserves it through transient loss', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const {runtime} = createTopologyRuntime({host, peer})
+    await runtime.start()
+    try {
+      peer.emit({type: 'open', connectionId: 'master-peer-1'})
+      peer.emit({
+        type: 'message',
+        connectionId: 'master-peer-1',
+        raw: JSON.stringify({
+          type: 'hello',
+          protocolVersion: 1,
+          wireId: 'peer-hello-1',
+          nodeId: 'node-slave',
+          displayName: '副机',
+          instanceMode: 'SLAVE',
+          displayRole: 'VICE',
+        }),
+      })
+      await waitForReconciliation()
+
+      expect(selectTopologyFacts(runtime.getState())).toMatchObject({
+        paired: true,
+        peerReachable: true,
+        hasTopologySecondarySurface: true,
+      })
+
+      // Both endpoints send hello.  The MASTER must accept the SLAVE's
+      // hello-accepted acknowledgement on the same connection rather than
+      // treating its already-accepted peer identity as an identity mismatch.
+      peer.emit({
+        type: 'message',
+        connectionId: 'master-peer-1',
+        raw: JSON.stringify({
+          type: 'hello-accepted',
+          protocolVersion: 1,
+          wireId: 'peer-hello-accepted-1',
+          nodeId: 'node-slave',
+        }),
+      })
+      await waitForReconciliation()
+      expect(selectTopologyFacts(runtime.getState())).toMatchObject({
+        paired: true,
+        peerReachable: true,
+      })
+
+      peer.emit({type: 'close', connectionId: 'master-peer-1', reason: 'TOPOLOGY_PEER_UNREACHABLE'})
+      await waitForReconciliation()
+
+      expect(selectTopologyFacts(runtime.getState())).toMatchObject({
+        paired: true,
+        peerReachable: false,
+        hasTopologySecondarySurface: true,
+      })
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('clears the master pairing fact only after an explicit slave unpair close', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const {runtime} = createTopologyRuntime({host, peer})
+    await runtime.start()
+    try {
+      runtime.getStore().dispatch(topologyActions.setPeerIdentity(Object.freeze({
+        ...identity,
+        nodeId: 'node-slave',
+        displayName: '副机',
+        instanceMode: 'SLAVE',
+        displayRole: 'VICE',
+      })))
+      expect(selectTopologyFacts(runtime.getState()).paired).toBe(true)
+
+      peer.emit({type: 'open', connectionId: 'master-peer-2'})
+      peer.emit({type: 'close', connectionId: 'master-peer-2', reason: 'TOPOLOGY_UNPAIRED'})
+      await waitForReconciliation()
+
+      expect(selectTopologyFacts(runtime.getState())).toMatchObject({
+        paired: false,
+        peerReachable: false,
+        hasTopologySecondarySurface: false,
+      })
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('clears the master pairing fact from an explicit slave unpair wire notice', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const {runtime} = createTopologyRuntime({host, peer})
+    await runtime.start()
+    try {
+      peer.emit({type: 'open', connectionId: 'master-peer-wire-unpair'})
+      peer.emit({
+        type: 'message',
+        connectionId: 'master-peer-wire-unpair',
+        raw: JSON.stringify({
+          type: 'hello',
+          protocolVersion: 1,
+          wireId: 'peer-wire-unpair-hello',
+          nodeId: 'node-slave-wire-unpair',
+          displayName: '副机',
+          instanceMode: 'SLAVE',
+          displayRole: 'VICE',
+        }),
+      })
+      await waitForReconciliation()
+      expect(selectTopologyFacts(runtime.getState()).paired).toBe(true)
+
+      peer.emit({
+        type: 'message',
+        connectionId: 'master-peer-wire-unpair',
+        raw: JSON.stringify({
+          type: 'closed-error',
+          protocolVersion: 1,
+          wireId: 'peer-wire-unpair-notice',
+          error: {code: 'TOPOLOGY_UNPAIRED', retryable: false},
+        }),
+      })
+      await waitForReconciliation()
+
+      expect(selectTopologyFacts(runtime.getState())).toMatchObject({
+        paired: false,
+        peerReachable: false,
+        hasTopologySecondarySurface: false,
+      })
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+})
+
 describe('topology runtime target resolution', () => {
   it('uses each payload and peer intent independently of peer reachability', async () => {
     const host = new FakeTopologyHost()
@@ -386,6 +540,44 @@ describe('topology admin capability', () => {
         && event.commandName === 'kernel.base.topology.query-host'
         && event.requestId !== null,
       )).toBe(true)
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('stamps the current local route so pairing can run through the admin capability', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const appControl: AppControlPort = {
+      ...unavailableAppControlPort,
+      resetRuntime: async input => Object.freeze({
+        status: 'accepted' as const,
+        requestId: input.requestId,
+        acceptedAt: completedAt,
+        terminalObservation: 'SUCCESSOR_RUNTIME_STARTED' as const,
+      }),
+    }
+    const {runtime} = createTopologyRuntime({host, peer, appControl})
+    await runtime.start()
+    try {
+      const capability = createTopologyAdminCapability(runtime)
+      const locator: TopologyLocator = Object.freeze({
+        host: '192.0.2.40',
+        port: 43172,
+        basePath: '/terminal-topology',
+        identity: Object.freeze({...identity, nodeId: 'node-master-admin-capability'}),
+      })
+
+      const paired = await capability.pair({locator})
+      expect(paired.status).toBe('completed')
+      expect(selectRuntimeInstanceMode(runtime.getState())).toBe('SLAVE')
+      expect(selectDisplayRole(runtime.getState())).toBe('VICE')
+
+      const unpaired = await capability.unpair()
+      expect(unpaired.status).toBe('completed')
+      expect(selectRuntimeInstanceMode(runtime.getState())).toBe('MASTER')
+      expect(selectDisplayRole(runtime.getState())).toBe('CHIEF')
+      expect(runtime.getState()[topologySliceName]).toMatchObject({masterLocator: null, repairPending: false})
     } finally {
       releaseRuntimeForTest(runtime)
     }
@@ -666,6 +858,13 @@ describe('topology lifecycle integration', () => {
     expect(runtime.getState()[topologySliceName]).toMatchObject({masterLocator: null, repairPending: false})
     expect(selectRuntimeInstanceMode(runtime.getState())).toBe('MASTER')
     expect(selectDisplayRole(runtime.getState())).toBe('CHIEF')
+    expect(peer.closeCalls).toContain('TOPOLOGY_UNPAIRED')
+    expect(peer.sentFrames.some(raw => {
+      const frame = JSON.parse(raw) as {type?: string; error?: {code?: string; retryable?: boolean}}
+      return frame.type === 'closed-error'
+        && frame.error?.code === 'TOPOLOGY_UNPAIRED'
+        && frame.error.retryable === false
+    })).toBe(true)
   })
 
   it('closes the active peer transport when a received frame fails protocol parsing', async () => {

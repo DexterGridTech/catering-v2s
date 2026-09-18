@@ -53,7 +53,15 @@ function isDirectory(target) {
 function walk(root, visitor) {
   if (!isDirectory(root)) return;
   for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
-    if (["build", ".gradle", "node_modules", "dist"].includes(entry.name)) continue;
+    if ([
+      "build",
+      ".gradle",
+      "node_modules",
+      "dist",
+      ".kotlin",
+      ".cxx",
+      ".externalNativeBuild",
+    ].includes(entry.name)) continue;
     const absolute = path.join(root, entry.name);
     visitor(absolute, entry);
     if (entry.isDirectory()) walk(absolute, visitor);

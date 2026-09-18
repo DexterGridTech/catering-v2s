@@ -39,5 +39,8 @@ export const storeServicePointTestIds = {
   qrEnabled: 'store-service-point-qr-enabled',
   qrChannel: 'store-service-point-qr-channel',
   qrChannelOption: (ref: string) => `store-service-point-qr-channel-option-${slug(ref)}`,
+  qrSave: 'store-service-point-qr-save',
+  qrCancel: 'store-service-point-qr-cancel',
   qrResult: 'store-service-point-qr-result',
+  qrResultLink: (ref: string) => `store-service-point-qr-result-link-${slug(ref)}`,
 } as const;

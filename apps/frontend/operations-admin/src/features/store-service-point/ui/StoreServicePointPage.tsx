@@ -27,6 +27,7 @@ import {
   AdminImageCollectionEditor,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  adminListState,
   createContentIdempotencyKey,
   CursorPagination,
   digestFileContent,
@@ -48,6 +49,7 @@ import {
   type ExtensionDefinition,
   type JsonValue,
   type StoreQrChannelCandidate,
+  type StoreQrConfigurationView,
   type StoreServicePoint,
   type StoreServicePointArea,
   type StoreServicePointAreaType,
@@ -62,6 +64,7 @@ import {ACTION_CAPABILITIES} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {useStoreOperatingRuleGate} from '../../store-operating-rules/model/useStoreOperatingRuleGate';
 import {
+  areaTypeForPointType,
   displayExtensionValue,
   enabledStoreServicePointExtensionFields,
   hydrateStoreServicePointExtensionValues,
@@ -93,6 +96,36 @@ type PointFormValues = {
   extensionValues?: Record<string, JsonValue | Dayjs | undefined>;
 };
 type QrFormValues = {enabled: boolean; channelRef?: string};
+type QrDisplayConfiguration = Pick<StoreQrConfigurationView, 'enabled' | 'channelRef'>;
+type QrReadState = {loading: boolean; failed: boolean};
+
+function qrDisplayValue(
+  value: string | null | undefined,
+  configuration: QrDisplayConfiguration | undefined,
+  effectiveAvailable: boolean,
+  readState: QrReadState,
+  linkTestId?: string,
+) {
+  if (!effectiveAvailable) return <Typography.Text type="secondary">不可用</Typography.Text>;
+  if (readState.loading && !configuration) return <Typography.Text type="secondary">二维码配置加载中…</Typography.Text>;
+  if (readState.failed && !configuration) return <Typography.Text type="secondary">二维码配置读取失败</Typography.Text>;
+  if (!configuration) return '暂未生成二维码';
+  if (!configuration.enabled) return '不显示生成结果';
+  if (!configuration.channelRef) return '未选择门店渠道';
+  if (!value) return '暂未生成二维码';
+  return (
+    <Typography.Link
+      href={value}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="打开二维码入口"
+      {...(linkTestId ? testId(linkTestId) : {})}
+    >
+      查看二维码
+    </Typography.Link>
+  );
+}
+
 type StoreServicePointImage = {
   id: string;
   identity: string;
@@ -389,7 +422,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
       return;
     }
     if (selectedAreaRef && areas.some(area => area.areaRef === selectedAreaRef)) return;
-    setSelectedAreaRef(areas[0]?.areaRef);
+    setSelectedAreaRef(undefined);
   }, [areas, gate.isEnabled, scopeReady, selectedAreaRef]);
 
   useEffect(() => {
@@ -480,11 +513,10 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
           : OPERATIONS_ADMIN_OPERATION_IDS.patchOperationsStoreServicePointArea;
       const key = await createContentIdempotencyKey(operationId, {path, body});
       if (operation === 'create') {
-        const created = await operationsClient.postOperationsStoreServicePointArea(path as never, {
+        await operationsClient.postOperationsStoreServicePointArea(path as never, {
           body: body as never,
           headers: {'Idempotency-Key': key},
         });
-        setSelectedAreaRef(String(created.areaRef));
       } else {
         await operationsClient.patchOperationsStoreServicePointArea(path as never, {
           body: body as never,
@@ -770,7 +802,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
       const path = {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeRef: storeWireRef};
       const body = {
         enabled: Boolean(values.enabled),
-        channelRef: values.enabled && values.channelRef ? wireUuid(values.channelRef) : null,
+        channelRef: values.channelRef ? wireUuid(values.channelRef) : null,
         expectedVersion: qrConfiguration.version,
       };
       const key = await createContentIdempotencyKey(
@@ -954,13 +986,25 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
           title: '二维码',
           dataIndex: 'qrUrl',
           key: 'qrUrl',
-          render: (value: string | null) => value || '暂未生成二维码',
+          render: (value: string | null, row) =>
+            qrDisplayValue(
+              value,
+              qrConfiguration,
+              row.effectiveAvailable,
+              {loading: qrQuery.isFetching, failed: Boolean(qrQuery.error)},
+              storeServicePointTestIds.qrResultLink(row.pointRef),
+            ),
         },
         {
           title: '状态',
           dataIndex: 'status',
           key: 'status',
-          render: (value: StoreServicePointStatus) => statusTag(value),
+          render: (value: StoreServicePointStatus, row) => (
+            <Space size={4} wrap>
+              {statusTag(value)}
+              {!row.effectiveAvailable && <Tag>不可用</Tag>}
+            </Space>
+          ),
         },
         {
           title: STORE_SERVICE_POINT_OPERATION_COLUMN_TITLE,
@@ -978,7 +1022,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
           ),
         },
       ] as TableColumnsType<StoreServicePoint>,
-    [detail, pointMenu, selectedArea?.areaType],
+    [detail, pointMenu, qrConfiguration, qrQuery.error, qrQuery.isFetching, selectedArea?.areaType],
   );
 
   const qrOptions = useMemo(() => {
@@ -1028,10 +1072,12 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
     gate.state === 'SCOPE_MISSING' ? (
       <Alert type="info" showIcon title="请先选择门店数据节点。" />
     ) : (
-      <OperationsStoreCatalogManagementDisabledSurface
-        state={gate.state as 'LOADING' | 'FAILED' | 'DISABLED'}
-        onRetry={gate.retry}
-      />
+      <div {...testId(storeServicePointTestIds.operatingRuleGate)}>
+        <OperationsStoreCatalogManagementDisabledSurface
+          state={gate.state as 'LOADING' | 'FAILED' | 'DISABLED'}
+          onRetry={gate.retry}
+        />
+      </div>
     )
   ) : (
     <Space direction="vertical" size={16} style={{display: 'flex'}}>
@@ -1039,13 +1085,11 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         size="small"
         title="二维码配置"
         extra={
-          <Button
-            onClick={() => setQrEditOpen(true)}
-            disabled={!canEdit || !qrConfiguration}
-            {...testId(storeServicePointTestIds.qrEdit)}
-          >
-            编辑
-          </Button>
+          canEdit && qrConfiguration && !qrQuery.isFetching && !qrQuery.error ? (
+            <Button onClick={() => setQrEditOpen(true)} {...testId(storeServicePointTestIds.qrEdit)}>
+              编辑
+            </Button>
+          ) : undefined
         }
         {...testId(storeServicePointTestIds.qrConfig)}
       >
@@ -1071,15 +1115,16 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
           size="small"
           title="区域"
           extra={
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setAreaEditor({mode: 'create'})}
-              disabled={!canEdit}
-              {...testId(storeServicePointTestIds.areaCreate)}
-            >
-              新建区域
-            </Button>
+            canEdit && areasQuery.currentData && !areasQuery.isFetching && !areasQuery.error ? (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setAreaEditor({mode: 'create'})}
+                {...testId(storeServicePointTestIds.areaCreate)}
+              >
+                新建区域
+              </Button>
+            ) : undefined
           }
           {...testId(storeServicePointTestIds.areaList)}
         >
@@ -1152,14 +1197,17 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         </Card>
         <Card
           size="small"
-          title={selectedArea ? `${titleForArea(selectedArea.areaType)}列表` : '请选择区域'}
+          title={selectedArea ? titleForArea(selectedArea.areaType) : '请选择区域'}
           extra={
-            selectedArea ? (
+            selectedArea &&
+            selectedArea.status === 'ENABLED' &&
+            canEdit &&
+            !areasQuery.isFetching &&
+            !areasQuery.error ? (
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={() => setPointEditor({mode: 'create', areaType: selectedArea.areaType})}
-                disabled={!canEdit}
                 {...testId(storeServicePointTestIds.pointCreate)}
               >
                 新建{titleForArea(selectedArea.areaType)}
@@ -1170,24 +1218,28 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         >
           {!selectedArea ? (
             <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="请选择区域" />
-          ) : pointsQuery.isFetching && !pointsQuery.currentData ? (
-            <Spin tip={`${titleForArea(selectedArea.areaType)}加载中…`} />
-          ) : pointsQuery.error ? (
-            <Alert
-              type="error"
-              showIcon
-              title={`${titleForArea(selectedArea.areaType)}列表读取失败`}
-              action={<Button onClick={() => void pointsQuery.refetch()}>重试</Button>}
-            />
           ) : (
             <>
+              {pointsQuery.error && (
+                <Alert
+                  type="error"
+                  showIcon
+                  title={`${titleForArea(selectedArea.areaType)}列表读取失败`}
+                  action={<Button onClick={() => void pointsQuery.refetch()}>重试</Button>}
+                />
+              )}
               <Table<StoreServicePoint>
                 rowKey="pointRef"
                 size="small"
                 pagination={false}
+                {...adminListState({
+                  loading: pointsQuery.isFetching,
+                  failed: Boolean(pointsQuery.error),
+                  emptyText: `暂无${titleForArea(selectedArea.areaType)}`,
+                  testIdPrefix: storeServicePointTestIds.pointList,
+                })}
                 columns={pointColumns}
-                dataSource={points}
-                locale={{emptyText: `暂无${titleForArea(selectedArea.areaType)}`}}
+                dataSource={pointsQuery.error ? [] : points}
               />
               <CursorPagination
                 state={pointCursor}
@@ -1292,7 +1344,9 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         open={Boolean(pointEditor)}
         title={
           pointEditor
-            ? `${pointEditor.mode === 'create' ? '新建' : '编辑'}${titleForArea(pointEditor.areaType)}`
+            ? pointEditor.mode === 'create'
+              ? `新建${titleForArea(pointEditor.areaType)}`
+              : `编辑${titleForArea(pointEditor.areaType)}资料`
             : '编辑'
         }
         onClose={pointLifecycle.requestClose}
@@ -1421,9 +1475,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
       <Drawer
         open={detail.isOpen}
         title={
-          detailValue
-            ? `${titleForArea(selectedArea?.areaType)}详情：${detailValue.name}`
-            : `${titleForArea(selectedArea?.areaType)}详情`
+          detailValue ? `${titleForArea(areaTypeForPointType(detailValue.pointType))}详情：${detailValue.name}` : '详情'
         }
         onClose={detail.close}
         {...adminDrawerSurfaceProps}
@@ -1432,10 +1484,12 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
           detailValue && canEdit ? (
             <Button
               onClick={() => {
-                if (selectedArea) {
-                  detail.close();
-                  setPointEditor({mode: 'edit', areaType: selectedArea.areaType, point: detailValue});
-                }
+                detail.close();
+                setPointEditor({
+                  mode: 'edit',
+                  areaType: areaTypeForPointType(detailValue.pointType),
+                  point: detailValue,
+                });
               }}
               {...testId(storeServicePointTestIds.detailAction)}
             >
@@ -1487,7 +1541,13 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
             )}
             {extensionDefinition && renderExtensionDetails(detailValue)}
             <Card size="small" title="二维码结果" {...testId(storeServicePointTestIds.qrResult)}>
-              <Typography.Text>{detailValue.qrUrl || '暂未生成二维码'}</Typography.Text>
+              {qrDisplayValue(
+                detailValue.qrUrl,
+                qrConfiguration,
+                detailValue.effectiveAvailable,
+                {loading: qrQuery.isFetching, failed: Boolean(qrQuery.error)},
+                storeServicePointTestIds.qrResultLink(detailValue.pointRef),
+              )}
             </Card>
           </Space>
         )}
@@ -1506,7 +1566,11 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         {...testId(storeServicePointTestIds.qrDrawer)}
         footer={
           <Space>
-            <Button onClick={qrLifecycle.requestClose} disabled={qrLifecycle.submitting}>
+            <Button
+              onClick={qrLifecycle.requestClose}
+              disabled={qrLifecycle.submitting}
+              {...testId(storeServicePointTestIds.qrCancel)}
+            >
               取消
             </Button>
             <Button
@@ -1514,6 +1578,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
               loading={qrLifecycle.submitting}
               disabled={!qrConfiguration || candidateQuery.isFetching}
               onClick={() => qrForm.submit()}
+              {...testId(storeServicePointTestIds.qrSave)}
             >
               保存
             </Button>

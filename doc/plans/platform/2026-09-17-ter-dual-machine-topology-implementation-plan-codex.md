@@ -7,7 +7,7 @@ DESIGN_SOURCE=doc/plans/platform/2026-09-17-ter-dual-machine-topology-implementa
 DEPENDENCY_SOURCE=doc/plans/platform/2026-09-16-ter-screen-part-form-resolution-requirements-claude.md
 AUTHORIZED=Dexter 已授权按本计划实施并完成阶段一、阶段二动态验证；本计划不扩大需求范围
 IMPLEMENTATION_AUTHORITY=true
-PLAN_STATUS=IMPLEMENTATION_IN_PROGRESS
+PLAN_STATUS=READY_FOR_IMPLEMENTATION_REVIEW_MAIN_AGENT_FALLBACK
 NOT_AUTHORIZED=扩大需求范围、改变已裁定语义、未列入计划的生产落点、设备级开机自启、seed、UAT、部署、Roadmap 推进及仓库控制动作
 
 ## 1. 计划目标和边界
@@ -347,20 +347,36 @@ U-1 至 U-22 的真实执行体、red mutation 和证据档位以详设第 11 �
 3. 主 agent 逐代码与详设逐行对账，全部 MATCHED；
 4. U-1..U-22 的执行结果和对应 red mutation 记录；
 5. 双设备 runner 的真实过程/设备证据和 cleanup；
-6. REVIEW_TARGET=IMPLEMENTATION 的另行 implementation review 交接。当前这两份文档只请求 DESIGN review，不宣称 implementation 或 acceptance GO。
+6. REVIEW_TARGET=IMPLEMENTATION 的另行 implementation review 交接。本计划原始设计阶段只请求 DESIGN review；实施完成后的 implementation review 交接见 `doc/review/platform/2026-09-17-ter-dual-machine-topology-implementation-review-handoff-codex.md`，不宣称 implementation 或 acceptance GO。
 
 ## 9. 计划自查与未决
 
 | 检查项 | 设计态状态 |
 |---|---|
 | D-1..D-21 有实施落点 | READY；DR-01 OPEN，DR-02 已按四项 allowlist 裁决 |
-| U-1..U-22 有执行体和红夹具 | READY；尚未执行 |
+| U-1..U-22 有执行体和红夹具 | IMPLEMENTED；真实结果见 CP-5 evidence/最终对账 |
 | CP 依赖与机制/管理台先后 | READY；机制 CP-3 先行，UI CP-4 后行 |
 | screen-part dependency | READY_AS_EXTERNAL_DEPENDENCY；不在本批重做 |
 | R-6/D-20 的 APP/JS restore | READY；CP-2 |
-| 双设备受管执行体 | READY_AS_DELIVERABLE；尚未创建/运行 |
+| 双设备受管执行体 | CLOSED_FOR_EXECUTION；`tools/terminal-topology/run-dual-device.mjs` 已运行，阶段一/二 cleanup PASS |
 | 三维对账 | REQUIRED_PER_CP_AND_FULL_BEFORE_TESTS |
 | 逐代码与详设对账 | REQUIRED_BEFORE_REVIEW_HANDOFF |
-| 当前实施 | IN_PROGRESS；CP-0 已开始，已完成候选依赖声明与 Gradle 解析，业务实现尚未进入 |
+| 当前实施 | READY_FOR_IMPLEMENTATION_REVIEW_PENDING_FRESH_RECONCILIATION；CP-0 至 CP-5 已执行，交付前 fresh 对账/交接仍是收口动作 |
 
-任何未决项不因本计划存在而自动关闭。设计 review 前，本轮只交付详设、计划和 review request。
+任何未决项不因本计划存在而自动关闭。实施完成后的真实 evidence、对账和 review request 见下节；本计划不宣称 implementation acceptance。
+
+## 10. 实施后证据更新
+
+实际 CP-5 执行与两阶段证据：
+
+`doc/evidence/platform/2026-09-17-ter-dual-machine-topology-cp5-execution-codex.md`
+
+主 agent 逐代码与详设逐行对账、U-1 至 U-22 矩阵和 CP-5 fresh 对账状态：
+
+`doc/review/platform/2026-09-17-ter-dual-machine-topology-implementation-reconciliation-codex.md`
+
+阶段一和阶段二各自的业务与 cleanup 均已独立读取为 PASS；阶段二没有借用阶段一代跑。
+本更新不构成 implementation acceptance 或 Claude/Dexter review GO。U-5 的双屏设备观察
+明确是 CHIEF/MASTER supporting readback，持久化 VICE 前置由
+`apps/terminal/kernel/base/display-context/test/restart.test.ts` 的双 runtime focused test
+直接证明；U-15 的多地址通用 runtime 行为仍按详设的 scope-open 记录。

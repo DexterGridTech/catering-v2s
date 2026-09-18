@@ -87,28 +87,8 @@ public final class QrChannelEligibilityService implements QrChannelEligibilityLo
 
     @Override
     public String deriveUrl(
-            UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID channelRef, UUID servicePointRef) {
-        CandidateRow row = readRow(workspaceUuid, groupWorkspaceKey, storeRef, channelRef);
-        if (row == null) return null;
-        return appendParameters(row.urlRule, groupWorkspaceKey, servicePointRef);
-    }
-
-    private CandidateRow readRow(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID channelRef) {
-        if (channelRef == null || servicePointMissing(storeRef)) return null;
-        List<CandidateRow> rows = jdbc.query(
-                GROUP_WORKSPACE_QUERY + "  AND c.channel_ref=?",
-                QrChannelEligibilityService::row,
-                workspaceUuid,
-                groupWorkspaceKey,
-                storeRef.toString(),
-                channelRef);
-        return rows.isEmpty() ? null : rows.getFirst();
-    }
-
-    private boolean servicePointMissing(UUID storeRef) {
-        // The service-point reference is intentionally not part of this owner read. The caller already resolved
-        // it in organization; this method only keeps the SQL projection free of a cross-owner write dependency.
-        return storeRef == null;
+            Candidate candidate, String groupWorkspaceKey, UUID servicePointRef) {
+        return candidate == null ? null : appendParameters(candidate.urlRule(), groupWorkspaceKey, servicePointRef);
     }
 
     private static Candidate candidate(CandidateRow row) {

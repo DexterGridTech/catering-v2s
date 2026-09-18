@@ -1,4 +1,4 @@
-import {useMemo} from 'react'
+import {useCallback, useEffect, useMemo} from 'react'
 import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state'
 import {PrimitiveContainer, PrimitiveEmptyState, PrimitiveGrid} from '@catering-v2s/ui-base-primitives'
 import {useRenderContext, useRenderStatus, useSurfaceContext, useUiCatalogContext} from '@catering-v2s/ui-base-render'
@@ -42,7 +42,7 @@ const navigationFrameStyle = Object.freeze({width: 280, minWidth: 220, maxWidth:
 const detailFrameStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0})
 
 const AdminShellLaptopContent = ({onClose}: AdminShellProps) => {
-  const {uiCatalog, rendererCatalog, runtimeFacts, topologyCapability} = useRenderContext()
+  const {logger, uiCatalog, rendererCatalog, runtimeFacts, topologyCapability} = useRenderContext()
   const surface = useSurfaceContext()
   const runtimeStatus = useRenderStatus()
   const catalogContext = useUiCatalogContext(surface.displayMode)
@@ -52,6 +52,37 @@ const AdminShellLaptopContent = ({onClose}: AdminShellProps) => {
     sections: selection.sections,
     requestedPartKey: selection.selectedPartKey,
   })
+  const selectSection = useCallback((partKey: string) => {
+    logger.info({
+      category: 'admin.navigation',
+      event: 'admin.section-requested',
+      message: 'Admin section navigation requested',
+      data: {
+        partKey,
+        displayMode: surface.displayMode,
+        surfaceForm: surface.surfaceForm,
+        workspace: catalogContext?.workspace ?? null,
+        instanceMode: catalogContext?.instanceMode ?? null,
+      },
+    })
+    selection.selectSection(partKey)
+  }, [catalogContext?.instanceMode, catalogContext?.workspace, logger, selection.selectSection, surface.displayMode, surface.surfaceForm])
+
+  useEffect(() => {
+    logger.info({
+      category: 'admin.navigation',
+      event: 'admin.section-rendered',
+      message: 'Admin section selection rendered',
+      data: {
+        requestedPartKey: selection.selectedPartKey,
+        resolvedPartKey: resolvedSelection.selectedPartKey,
+        displayMode: surface.displayMode,
+        surfaceForm: surface.surfaceForm,
+        workspace: catalogContext?.workspace ?? null,
+        instanceMode: catalogContext?.instanceMode ?? null,
+      },
+    })
+  }, [catalogContext?.instanceMode, catalogContext?.workspace, logger, resolvedSelection.selectedPartKey, selection.selectedPartKey, surface.displayMode, surface.surfaceForm])
 
   if (runtimeStatus !== 'started' || catalogContext === undefined) {
     return (
@@ -69,11 +100,12 @@ const AdminShellLaptopContent = ({onClose}: AdminShellProps) => {
           <AdminSectionNavigationLaptop
             sections={selection.sections}
             selectedPartKey={resolvedSelection.selectedPartKey}
-            onSelect={selection.selectSection}
+            onSelect={selectSection}
           />
         </PrimitiveContainer>
         <PrimitiveContainer testID={adminTestIds.content} layout="content" bounded style={detailFrameStyle}>
           <AdminSectionContent
+            key={resolvedSelection.selectedPartKey ?? 'empty'}
             selectedSection={resolvedSelection.selectedSection}
             rendererCatalog={rendererCatalog}
             runtimeFacts={runtimeFacts}

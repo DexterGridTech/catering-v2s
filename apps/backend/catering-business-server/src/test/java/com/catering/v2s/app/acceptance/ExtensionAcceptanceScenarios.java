@@ -22,7 +22,16 @@ import java.nio.charset.StandardCharsets;
 
 final class ExtensionAcceptanceScenarios {
     private static final List<String> HOST_TYPES =
-            List.of("BRAND", "TENANT", "HEAD_COMPANY", "STORE", "CONTRACT", "COMMERCIAL_GROUP", "REGION", "PROJECT");
+            List.of(
+                    "BRAND",
+                    "TENANT",
+                    "HEAD_COMPANY",
+                    "STORE",
+                    "CONTRACT",
+                    "COMMERCIAL_GROUP",
+                    "REGION",
+                    "PROJECT",
+                    "SERVICE_POINT");
 
     private final BackendAcceptanceTest host;
 
@@ -52,7 +61,7 @@ final class ExtensionAcceptanceScenarios {
                 new LinkedHashSet<>(HOST_TYPES),
                 actual,
                 "BUSINESS: extension host catalog is the exact fixed management host set");
-        assertEquals(8, actual.size(), "BUSINESS: fixed host catalog size is a closed-set fact, not a row count");
+        assertEquals(9, actual.size(), "BUSINESS: fixed host catalog size is a closed-set fact, not a row count");
 
         Response unknown = context.get(
                 PLATFORM_EXTENSION_DEFINITION,
@@ -93,7 +102,7 @@ final class ExtensionAcceptanceScenarios {
                 "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey() + "/extension-definitions",
                 platform.cookie(),
                 Set.of(200));
-        assertEquals(8, catalog.json().path("items").size(), "BUSINESS: catalog keeps the fixed eight host categories");
+        assertEquals(9, catalog.json().path("items").size(), "BUSINESS: catalog keeps the fixed nine host categories");
         assertEquals(
                 2,
                 catalog.json().path("items").get(0).path("configuredFieldCount").asInt(),

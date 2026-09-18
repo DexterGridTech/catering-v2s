@@ -1,14 +1,18 @@
-import type {ActorDefinition, ActorExecutionContext, CommandDefinition} from '@catering-v2s/kernel-base-runtime'
+import type {ActorDefinition, ActorExecutionContext, CommandDefinition, CommandDispatchResult} from '@catering-v2s/kernel-base-runtime'
 import {defineActor, onCommand} from '@catering-v2s/kernel-base-runtime'
 import type {TopologyIdentityClient, TopologyPeerChannel} from '@catering-v2s/kernel-base-transport'
-import {readDisplayInfo} from '@catering-v2s/kernel-base-display-context'
+import {readDisplayInfo, resolveWorkspace} from '@catering-v2s/kernel-base-display-context'
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime'
 import {
   selectDisplayRole,
   switchDisplayRoleCommand,
   switchInstanceModeCommand,
 } from '@catering-v2s/kernel-base-display-context'
-import {createRequestId} from '@catering-v2s/kernel-base-contracts'
+import {
+  createEnvelopeId,
+  createRequestId,
+  serializeTopologyWireMessage,
+} from '@catering-v2s/kernel-base-contracts'
 import type {
   TopologyHostAddress,
   TopologyHostStatus,
@@ -123,7 +127,7 @@ const createTopologyHostIdentity = (context: ActorExecutionContext) => {
 const topologyPeerWsUrl = (locator: Readonly<{readonly host: string; readonly port: number; readonly basePath: string}>): string =>
   `ws://${locator.host}:${locator.port}${locator.basePath}/ws`
 
-const childDispatchOptions = (context: ActorExecutionContext): Readonly<{
+const childDispatchOptions = (context: ActorExecutionContext, routeContext = context.command.routeContext): Readonly<{
   readonly requestId?: import('@catering-v2s/kernel-base-contracts').RequestId
   readonly parentCommandId: import('@catering-v2s/kernel-base-contracts').CommandId
   readonly routeContext: import('@catering-v2s/kernel-base-contracts').CommandRouteContext | null
@@ -131,18 +135,93 @@ const childDispatchOptions = (context: ActorExecutionContext): Readonly<{
 }> => ({
   requestId: context.command.requestId ?? undefined,
   parentCommandId: context.command.commandId,
-  routeContext: context.command.routeContext,
+  routeContext,
   target: 'local',
 })
+
+const primaryRouteContext = (context: ActorExecutionContext) => {
+  const state = context.getState()
+  const instanceMode = selectRuntimeInstanceMode(state)
+  const displayRole = selectDisplayRole(state)
+  return Object.freeze({
+    workspace: resolveWorkspace({instanceMode, displayRole}),
+    instanceMode,
+    displayMode: 'PRIMARY' as const,
+  })
+}
+
+const pairingLog = (
+  context: ActorExecutionContext,
+  event: string,
+  data: Readonly<Record<string, string | number | boolean | null>> = {},
+): void => {
+  context.platformPorts.logger.withContext({
+    commandId: context.command.commandId,
+    commandName: context.command.commandName,
+    requestId: context.command.requestId ?? undefined,
+    nodeId: context.localNodeId,
+  }).info({
+    category: 'topology.pairing',
+    event: `topology.pairing.${event}`,
+    message: 'Topology pairing phase observed',
+    data,
+  })
+}
+
+const unpairingLog = (
+  context: ActorExecutionContext,
+  event: string,
+  data: Readonly<Record<string, string | number | boolean | null>> = {},
+): void => {
+  context.platformPorts.logger.withContext({
+    commandId: context.command.commandId,
+    commandName: context.command.commandName,
+    requestId: context.command.requestId ?? undefined,
+    nodeId: context.localNodeId,
+  }).info({
+    category: 'topology.unpairing',
+    event: `topology.unpairing.${event}`,
+    message: 'Topology unpairing phase observed',
+    data,
+  })
+}
+
+const sendExplicitUnpairNotice = async (
+  context: ActorExecutionContext,
+  peerChannel: TopologyPeerChannel | undefined,
+  shouldSend: boolean,
+): Promise<void> => {
+  if (peerChannel === undefined || !shouldSend) return
+  const raw = serializeTopologyWireMessage({
+    type: 'closed-error',
+    protocolVersion: 1,
+    wireId: String(createEnvelopeId()),
+    error: {code: 'TOPOLOGY_UNPAIRED', retryable: false},
+  })
+  await peerChannel.send(raw)
+  unpairingLog(context, 'wire-notice-sent', {reason: 'TOPOLOGY_UNPAIRED'})
+}
+
+const safeErrorCode = (error: unknown): string | null => {
+  if (typeof error !== 'object' || error === null) return null
+  const code = Reflect.get(error, 'code')
+  return typeof code === 'string' ? code : null
+}
 
 const dispatchCompleted = async <TPayload extends StateJsonValue>(input: Readonly<{
   readonly context: ActorExecutionContext
   readonly definition: CommandDefinition<TPayload>
   readonly payload: TPayload
   readonly label: string
-}>): Promise<void> => {
-  const result = await input.context.dispatchCommand(input.definition, input.payload, childDispatchOptions(input.context))
+  readonly routeContext?: import('@catering-v2s/kernel-base-contracts').CommandRouteContext | null
+}>): Promise<CommandDispatchResult> => {
+  const result = await input.context.dispatchCommand(
+    input.definition,
+    input.payload,
+    childDispatchOptions(input.context, input.routeContext),
+  )
   if (result.status !== 'completed') throw new Error(`${input.label} did not complete: ${result.status}`)
+  return result
 }
 
 const repairPairState = async (context: ActorExecutionContext): Promise<boolean> => {
@@ -152,7 +231,13 @@ const repairPairState = async (context: ActorExecutionContext): Promise<boolean>
       await dispatchCompleted({context, definition: switchDisplayRoleCommand, payload: Object.freeze({displayRole: 'CHIEF' as const}), label: 'Pair role repair'})
     }
     if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER') {
-      await dispatchCompleted({context, definition: switchInstanceModeCommand, payload: Object.freeze({instanceMode: 'MASTER' as const}), label: 'Pair mode repair'})
+      await dispatchCompleted({
+        context,
+        definition: switchInstanceModeCommand,
+        payload: Object.freeze({instanceMode: 'MASTER' as const}),
+        label: 'Pair mode repair',
+        routeContext: primaryRouteContext(context),
+      })
     }
   } catch (error) {
     repaired = false
@@ -170,7 +255,7 @@ const repairPairState = async (context: ActorExecutionContext): Promise<boolean>
   return repaired
 }
 
-const resetSlaveRuntime = async (context: ActorExecutionContext): Promise<void> => {
+const resetSlaveRuntime = async (context: ActorExecutionContext) => {
   const result = await context.platformPorts.appControl.resetRuntime({
     requestId: context.command.requestId ?? createRequestId(),
     timeoutMs: topologyCallTimeoutMs,
@@ -178,6 +263,7 @@ const resetSlaveRuntime = async (context: ActorExecutionContext): Promise<void> 
   if (result.status !== 'accepted') {
     throw new Error(`Topology slave runtime reset did not complete: ${result.status}`)
   }
+  return result
 }
 
 export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefinition => defineActor(moduleName, 'operations', [
@@ -197,14 +283,29 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
     context.dispatchAction(topologyActions.setRepairPending(true))
     context.dispatchAction(topologyActions.setMasterLocator(payload.locator))
     context.dispatchAction(topologyActions.setPeerIdentity(payload.locator.identity))
+    pairingLog(context, 'started')
+    let phase = 'state-prepared'
     try {
-      await dispatchCompleted({context, definition: switchInstanceModeCommand, payload: Object.freeze({instanceMode: 'SLAVE' as const}), label: 'Topology instance mode switch'})
-      await dispatchCompleted({context, definition: switchDisplayRoleCommand, payload: Object.freeze({displayRole: 'VICE' as const}), label: 'Topology display role switch'})
+      phase = 'switch-instance-mode'
+      const modeResult = await dispatchCompleted({context, definition: switchInstanceModeCommand, payload: Object.freeze({instanceMode: 'SLAVE' as const}), label: 'Topology instance mode switch'})
+      pairingLog(context, 'instance-mode-completed', {status: modeResult.status})
+      phase = 'switch-display-role'
+      const roleResult = await dispatchCompleted({context, definition: switchDisplayRoleCommand, payload: Object.freeze({displayRole: 'VICE' as const}), label: 'Topology display role switch'})
+      pairingLog(context, 'display-role-completed', {status: roleResult.status})
+      phase = 'flush-persistence'
       const persistence = await context.flushPersistence()
       if (persistence.status !== 'succeeded') throw new Error(`Topology pairing persistence did not complete: ${persistence.status}`)
-      await resetSlaveRuntime(context)
+      pairingLog(context, 'persistence-completed', {status: persistence.status, failureCount: 0})
+      phase = 'runtime-reset'
+      const reset = await resetSlaveRuntime(context)
+      pairingLog(context, 'runtime-reset-accepted', {status: reset.status})
       return null
     } catch (error) {
+      pairingLog(context, 'failed', {
+        phase,
+        errorType: error instanceof Error ? error.name : typeof error,
+        errorCode: safeErrorCode(error),
+      })
       const repaired = await repairPairState(context)
       if (repaired) {
         context.dispatchAction(topologyActions.clearMasterLocator())
@@ -219,19 +320,46 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
     const current = selectTopologyState(context.getState())
     if (current.masterLocator === null) throw new Error('Topology is not paired')
     context.dispatchAction(topologyActions.setRepairPending(true))
+    const shouldNotifyPeer = selectRuntimeInstanceMode(context.getState()) === 'SLAVE'
+    unpairingLog(context, 'started', {
+      instanceMode: selectRuntimeInstanceMode(context.getState()),
+      displayRole: selectDisplayRole(context.getState()),
+      hasLocator: current.masterLocator !== null,
+    })
     try {
       if (selectDisplayRole(context.getState()) !== 'CHIEF') {
         await dispatchCompleted({context, definition: switchDisplayRoleCommand, payload: Object.freeze({displayRole: 'CHIEF' as const}), label: 'Topology display role unpair'})
+        unpairingLog(context, 'display-role-completed', {displayRole: selectDisplayRole(context.getState())})
       }
       if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER') {
-        await dispatchCompleted({context, definition: switchInstanceModeCommand, payload: Object.freeze({instanceMode: 'MASTER' as const}), label: 'Topology instance mode unpair'})
+        await dispatchCompleted({
+          context,
+          definition: switchInstanceModeCommand,
+          payload: Object.freeze({instanceMode: 'MASTER' as const}),
+          label: 'Topology instance mode unpair',
+          routeContext: primaryRouteContext(context),
+        })
+        unpairingLog(context, 'instance-mode-completed', {instanceMode: selectRuntimeInstanceMode(context.getState())})
       }
       context.dispatchAction(topologyActions.clearMasterLocator())
       context.dispatchAction(topologyActions.setRepairPending(false))
+      unpairingLog(context, 'persistence-completed', {
+        instanceMode: selectRuntimeInstanceMode(context.getState()),
+        displayRole: selectDisplayRole(context.getState()),
+        hasLocator: selectTopologyState(context.getState()).masterLocator !== null,
+      })
+      await sendExplicitUnpairNotice(context, input.peerChannel, shouldNotifyPeer)
       await input.peerChannel?.close('TOPOLOGY_UNPAIRED')
+      unpairingLog(context, 'completed', {hasLocator: selectTopologyState(context.getState()).masterLocator !== null})
       return null
     } catch (error) {
       context.dispatchAction(topologyActions.setRepairPending(true))
+      unpairingLog(context, 'failed', {
+        errorType: error instanceof Error ? error.name : typeof error,
+        instanceMode: selectRuntimeInstanceMode(context.getState()),
+        displayRole: selectDisplayRole(context.getState()),
+        hasLocator: selectTopologyState(context.getState()).masterLocator !== null,
+      })
       throw error
     }
   }),
@@ -248,6 +376,11 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
     if (event.event === 'close' || event.event === 'error' || event.event === 'peer-unreachable') {
       context.dispatchAction(topologyActions.setPeerReachable(false))
       context.dispatchAction(topologyActions.bumpPeerConnectionRevision())
+      if (event.reason === 'TOPOLOGY_UNPAIRED' && selectRuntimeInstanceMode(context.getState()) === 'MASTER') {
+        // A transient close preserves the accepted peer identity.  Only the
+        // slave's explicit unpair signal clears the master's pairing fact.
+        context.dispatchAction(topologyActions.clearPeerIdentity())
+      }
     }
     return null
   }),

@@ -49,7 +49,7 @@ describe('topology wire contract', () => {
       {type: 'state-full' as const, protocolVersion: 1 as const, wireId: 'state-1', sliceName: 'kernel.feature.sample-member-registry.members' as const, direction: 'master-to-slave' as const, revision: 1, value: {}},
       {type: 'ping' as const, protocolVersion: 1 as const, wireId: 'ping-1', sequence: 1},
       {type: 'pong' as const, protocolVersion: 1 as const, wireId: 'pong-1', sequence: 1},
-      {type: 'closed-error' as const, protocolVersion: 1 as const, wireId: 'closed-1', error: {code: 'TOPOLOGY_HOST_FAILED' as const, retryable: true}},
+      {type: 'closed-error' as const, protocolVersion: 1 as const, wireId: 'closed-1', error: {code: 'TOPOLOGY_UNPAIRED' as const, retryable: false}},
     ]
     for (const message of messages) {
       expect(parseTopologyWireMessage(serializeTopologyWireMessage(message))).toEqual(message)

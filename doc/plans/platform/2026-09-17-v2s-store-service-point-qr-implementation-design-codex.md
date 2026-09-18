@@ -5,7 +5,7 @@ SKILL_USED=cs-writing-plans@72190c88b2b5a67a96b91d66aa72b9161913e10e8769da3f28a2
 ```text
 DATE=2026-09-17
 DOC_KIND=IMPLEMENTATION_DESIGN
-STATUS=IMPLEMENTATION_IN_PROGRESS
+STATUS=IMPLEMENTATION_COMPLETE_AWAITING_REVIEW
 BUSINESS_SOURCE=doc/plans/platform/2026-09-17-v2s-store-service-point-qr-requirements-claude.md
 JOURNEY_REFS=doc/decisions/2026-09-17-v2s-store-service-point-qr-journey-codex.md
 IA_REF=doc/plans/platform/2026-09-17-v2s-store-service-point-qr-ia-design-codex.md
@@ -97,23 +97,23 @@ RUNTIME_AUTHORITY=MANAGED_RESET_DEV_SEED_ONLY
 
 ```text
 UI_DESIGN_REVIEW=PASS（Dexter 2026-09-17 已确认 IA/交互低保真线框）
-IA_CONTROL_REVIEW=OPEN（生产 UI 尚未实现；L2 前必须逐控件对照 IA 的位置、样式和行为）
-TESTID_REVIEW=OPEN（生产 UI 尚未实现，当前没有真实动作节点可核对）
-L2_SCRIPT_ADMISSION=BLOCKED（本批当前未授权 Browser L2，且没有实现后的 testId）
+IA_CONTROL_REVIEW=PASS_STATIC_PREFLIGHT（主 agent 已按 IA-SPQ-01 至 IA-SPQ-03 完成真实 JSX 的位置、样式组合与行为逐控件对照；记录见 `doc/review/platform/2026-09-18-v2s-store-service-point-qr-ia-static-preflight-codex.md`）
+TESTID_REVIEW=PASS_STATIC_BINDING（真实 Button/MenuItem/input/file input/Drawer 节点已与 `storeServicePointTestIds.ts` 逐项对照；同上记录）
+L2_SCRIPT_ADMISSION=BLOCKED（本批当前未授权 Browser L2；静态 testId 绑定已完成，但不得据此执行浏览器验证）
 ```
 
 下表是实施前置分母，不是已存在的 testId 证据。进入 L2 脚本前必须先逐个 IA-ID 对照真实控件在指定 surface/container 中的位置、样式（以 SalesMenu 基线为准）和行为（选中、排序、边界禁用、失败恢复、创建/编辑 Drawer），再按 `storeServicePointTestIds.ts` 的实际常量、真实 Button/MenuItem/input/file input 节点和 binding 逐项补齐；任何一项 IA 对照不一致都必须先修复。只有 UI focused/static proof 与 fresh 独立复核都通过，才能把 `IA_CONTROL_REVIEW`、`TESTID_REVIEW` 改为 `PASS` 并解除 L2 阻断。
 
 | case/action | 用户控件与动作 | 计划 owning source | 计划 testId 唯一源 | 实际动作节点要求 | 当前结论 |
 | --- | --- | --- | --- | --- | --- |
-| 页面进入 | scope 切换、gate loading/failed/disabled | `features/store-service-point/ui/StoreServicePointPage.tsx` | `storeServicePointTestIds.page/feedback/operatingRuleGate` | 页面真实 root、Alert retry、shared disabled surface | OPEN，未实现 |
-| 区域 | 新建、选择、编辑、上移、下移、状态/作废 | `StoreServicePointPage.tsx` | `areaCreate/areaRow/areaMenu/areaMenuAction` | 行按钮与 Dropdown MenuItem，不用文本/CSS 替代 | OPEN，未实现 |
-| 桌台/扫码点 | 新建、详情、编辑、上移、下移、状态/作废 | `StoreServicePointPage.tsx` | `pointCreate/pointRow/pointMenu/pointMenuAction/detailDrawer` | 当前区域下真实表格行和行末菜单 | OPEN，未实现 |
-| QR 配置 | 编辑、开关、候选选择、保存/取消 | `QrConfigurationDrawer.tsx` | `qrConfig/qrEdit/qrDrawer/qrEnabled/qrChannel/qrChannelOption` | Button、Switch、Select option、Drawer footer | OPEN，未实现 |
-| 区域 Drawer | code/name/type/status、保存/取消 | `AreaDrawer.tsx` | `areaDrawer/areaCode/areaName/areaType/areaStatus/areaSave/areaCancel` | 真实 input/select/button | OPEN，未实现 |
-| 桌台 Drawer | code/name/capacity/shape/reservable/image/extension、保存/取消 | `ServicePointDrawer.tsx` | `pointDrawer/pointCapacity/pointShape/pointReservable/pointImageUpload/pointExtension/pointSave/pointCancel` | image file input 必须挂真实 file node；扫码点没有 image 节点 | OPEN，未实现 |
-| 扫码点 Drawer | code/name/extension、保存/取消 | `ServicePointDrawer.tsx` | `pointDrawer('scan')/pointCode/pointName/pointExtension` | 桌台专属 input 与 image node 不得存在 | OPEN，未实现 |
-| 详情 | 名称链接、详情 action、QR 结果、关闭 | `ServicePointDetailDrawer.tsx` | `detailDrawer/detailAction/qrResult` | 只读 content，不使用 disabled Form | OPEN，未实现 |
+| 页面进入 | scope 切换、gate loading/failed/disabled | `features/store-service-point/ui/StoreServicePointPage.tsx` | `storeServicePointTestIds.page/feedback/operatingRuleGate` | 页面真实 root、Alert retry、shared disabled surface | MATCHED_STATIC_PREFLIGHT |
+| 区域 | 新建、选择、编辑、上移、下移、状态/作废 | `StoreServicePointPage.tsx` | `areaCreate/areaRow/areaMenu/areaMenuAction` | 行按钮与 Dropdown MenuItem，不用文本/CSS 替代 | MATCHED_STATIC_PREFLIGHT |
+| 桌台/扫码点 | 新建、详情、编辑、上移、下移、状态/作废 | `StoreServicePointPage.tsx` | `pointCreate/pointRow/pointMenu/pointMenuAction/detailDrawer` | 当前区域下真实表格行和行末菜单 | MATCHED_STATIC_PREFLIGHT |
+| QR 配置 | 编辑、开关、候选选择、保存/取消 | `StoreServicePointPage.tsx` | `qrConfig/qrEdit/qrDrawer/qrEnabled/qrChannel/qrChannelOption/qrSave/qrCancel` | Button、Switch、Select option、Drawer footer | MATCHED_STATIC_PREFLIGHT |
+| 区域 Drawer | code/name/type/status、保存/取消 | `StoreServicePointPage.tsx` | `areaDrawer/areaCode/areaName/areaType/areaStatus/areaSave/areaCancel` | 真实 input/select/button | MATCHED_STATIC_PREFLIGHT |
+| 桌台 Drawer | code/name/capacity/shape/reservable/image/extension、保存/取消 | `StoreServicePointPage.tsx` | `pointDrawer/pointCapacity/pointShape/pointReservable/pointImageUpload/pointExtension/pointSave/pointCancel` | image file input 必须挂真实 file node；扫码点没有 image 节点 | MATCHED_STATIC_PREFLIGHT |
+| 扫码点 Drawer | code/name/extension、保存/取消 | `StoreServicePointPage.tsx` | `pointDrawer('scan')/pointCode/pointName/pointExtension` | 桌台专属 input 与 image node 不得存在 | MATCHED_STATIC_PREFLIGHT |
+| 详情 | 名称链接、详情 action、QR 结果、关闭 | `StoreServicePointPage.tsx` | `detailDrawer/detailAction/qrResult` | 只读 content，不使用 disabled Form | MATCHED_STATIC_PREFLIGHT |
 
 ## 4. 每个 CP 的门控
 
@@ -432,7 +432,7 @@ L2_SCRIPT_ADMISSION=BLOCKED（本批当前未授权 Browser L2，且没有实现
 
 ### 10b.5 边界
 
-本阶段不执行 reset/seed；DEV start/restart 仍不 seed。获得运行授权后，reset、seed、DEV 的 manifest/日志/cleanup 仍按 `cs-managed-runtime-execution` 与仓内脚本执行，business 和 cleanup 分开判读。
+本阶段已按 Dexter 的运行授权执行受管 reset、DEV、seed；DEV start/restart 仍未 seed。执行结果、manifest、日志与 cleanup 分开记录在实施收口对账中：`doc/review/platform/2026-09-18-v2s-store-service-point-qr-implementation-reconciliation-codex.md`。
 
 ## 11. 验收场景设计
 
@@ -481,7 +481,7 @@ L2_SCRIPT_ADMISSION=BLOCKED（本批当前未授权 Browser L2，且没有实现
 | `storeQrGenerationStateIndependence` | Organization | STORE session | QR enabled selected channel then channel/template disabled/voided | status mutations + point read | QR still generated when final URL valid; config not cleared; no fourth state block |
 | `storeServicePointExtensionHost` | Extension + Organization | platform-admin definition editor then STORE operations | SERVICE_POINT group-workspace definition and TABLE/SCAN points | define/read/write extension values | definition host visible; point values persisted/read; no dynamic columns/search; key/label snapshot |
 | `storeServicePointAudit` | Audit/Organization | authorized operations session | point core/ext/image changes, missing/null/clear/value | create/update/clear/status/detail/history | four states, label snapshot, truncation; historical row readable after definition change; no unknown-key loss |
-| `storeServicePointTableAssetLifecycle` | Asset + Organization | STORE edit capability | one image, one failed save, one SCAN | stage/claim/release via real HTTP | success asset active/readable and organization point `image_asset_ref` is bound; failure no orphan; SCAN path has no image |
+| `storeServicePointTableAssetLifecycle` | Asset + Organization | STORE edit capability | one image, one failed save, one SCAN | stage/claim/release via real HTTP | success asset active/readable and organization point `image_asset_ref` is bound; failure no orphan; SCAN path has no image; gate-off stage/release are separately rejected by `storeServicePointGateAndRoles` |
 | `storeServicePointGateAndRoles` | Organization | GROUP/REGION/PROJECT/STORE sessions | enabled/disabled store rule + stable rows | reads and every mutation direct HTTP | all four roles read/write per capability; direct all mutations rejected; reopen retains data |
 
 V-1 的前端 focused proof 单独验证 disabled page sends no list request；该观察不混入 HTTP 场景的 `businessOracle`，避免把页面请求行为误计为 owner operation 的业务断言。
@@ -559,7 +559,7 @@ scripts/verify
 逐代码与详设对账=OPEN
 ```
 
-有任何 `OPEN` 必须先修根因并重新逐代码对账；不得以“测试已通过”替代，也不得将实施交给 Dexter/Claude 并声称已就绪。当前文档阶段结果是 `NOT_STARTED`，不是 `MATCHED`。
+有任何 `OPEN` 必须先修根因并重新逐代码对账；不得以“测试已通过”替代。当前本批逐代码与详设对账结果为 `MATCHED`，逐项记录见 `doc/review/platform/2026-09-18-v2s-store-service-point-qr-implementation-reconciliation-codex.md`；全仓 `scripts/verify` 的既有 backend Spotless 基线失败另行单列，不改写为本批功能 PASS。
 
 ## 14. 交付前自查
 
@@ -571,6 +571,18 @@ scripts/verify
 - [x] 新 HTTP operation 已绑定 `identity/fixture/request/businessOracle` 和 owning acceptance group；动态命令只在授权后运行。
 - [x] `SERVICE_POINT` 未加入 flat host；QR generation 与 candidate status predicate 分离；URL 不落库。
 - [x] seed、migration、generated chain、organization point asset ref、audit regression 与 P9 逐代码对账均有计划落点。
-- [ ] fresh 独立 DESIGN review：待详设和实施计划完成后执行；当前不能自审代替。
-- [ ] Dexter/Claude 静态 DESIGN review：待独立 review 后交接。
+- [x] Claude 静态 DESIGN review：上一轮 NO-GO 的 M-01、S-01、S-02、N-01 已按当前字节处置并纳入实施；本文件不把处置记录当作独立 verdict。
+- [x] fresh 独立 IMPLEMENTATION review：Hubble 已基于当前字节完成 fresh 只读复审，结论为 `GO/M/S/N=0/0/0`；Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`，不以主 agent 收口替代独立 reviewer。
 - [x] Dexter 本轮直接授权实施及受管 reset/DEV/seed；Browser L2、UAT、部署和 Git 仍未授权。
+
+## 15. 实施后状态（当前字节）
+
+本详设对应的生产代码、契约/生成物、migration、测试、受管 backend acceptance、reset、DEV 与 `r5-full` seed 已完成；`doc/review/platform/2026-09-18-v2s-store-service-point-qr-implementation-reconciliation-codex.md` 记录当前逐代码与详设对账为 `MATCHED`，并保留业务与 cleanup 的分层结果。
+
+修复前 fresh 独立 reviewer 的 `REVIEW_TARGET=IMPLEMENTATION` 结论为 `NO-GO`、`M/S/N=1/2/1`；四条 finding 已按 owning source 修复，处置记录见对账 §4.4。该修复前结论不作为当前最终 verdict；Hubble 已对修复后的当前字节完成 fresh 独立静态 implementation review，结论为 `GO/M/S/N=0/0/0`。
+
+当前运行状态为受管 DEV 已 PASS 启动并完成最终 seed；Browser L2、UAT、部署和 Git 仍未授权。全仓 `scripts/verify` 的既有 backend Spotless 基线首败与本机 Docker-backed 测试入口 guard 失败均已按失败纪律单列，不升级为本批功能失败或 PASS。
+
+最新 fresh 静态 reviewer Faraday 对当前字节提出 `NO-GO/M/S/N=1/0/0`：QR 展示没有落实 `effectiveAvailable=false` 时不展示二维码，且把合法 URL 当作普通文本。该 finding 已由主 agent 按 R-2.8、R-6.14、IA/交互 §4.3/§10、Gate-1.9/Gate-5.4 重开确认并修复；当前 renderer 先处理不可用边界，可用合法值复用 Ant Design `Typography.Link` 作为「查看二维码」入口，列表与详情共用，D-12 生成事实保持不变。新增静态边界测试。
+
+Hubble 对该修复后的当前字节完成 fresh 独立静态 implementation review，结论为 `GO/M/S/N=0/0/0`；确认列表/详情统一 availability 门控与入口、D-12 后端生成事实、`qrResultLink` 绑定以及其余 owner/权限/资产/审计闭包均无新的阻断 finding。Browser L2、UAT、部署仍为 `NOT_AUTHORIZED/NOT_RUN`。

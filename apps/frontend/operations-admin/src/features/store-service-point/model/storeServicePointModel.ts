@@ -88,16 +88,10 @@ export function pointTypeForArea(areaType: StoreServicePointAreaType): StoreServ
   return areaType === 'TABLE_AREA' ? 'TABLE' : 'SCAN';
 }
 
-export function titleForArea(areaType: StoreServicePointAreaType | undefined): string {
-  return areaType === 'TABLE_AREA' ? '桌台' : '扫码点';
+export function areaTypeForPointType(pointType: StoreServicePointType): StoreServicePointAreaType {
+  return pointType === 'TABLE' ? 'TABLE_AREA' : 'SCAN_AREA';
 }
 
-export function createPointDefaults(areaType: StoreServicePointAreaType) {
-  return {
-    pointType: pointTypeForArea(areaType),
-    seatCapacity: undefined,
-    tableShape: undefined,
-    reservable: false,
-    extensionValues: {},
-  } satisfies StoreServicePointExtensionFormValues & {pointType: StoreServicePointType};
+export function titleForArea(areaType: StoreServicePointAreaType | undefined): string {
+  return areaType === 'TABLE_AREA' ? '桌台' : '扫码点';
 }

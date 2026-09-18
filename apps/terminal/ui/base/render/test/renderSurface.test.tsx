@@ -210,7 +210,7 @@ describe('render surface hosts', () => {
       const dispatch = useDispatchCommand()
       return createElement('surface-route-probe', {
         label,
-        invoke: () => dispatch(command, {}),
+        invoke: () => dispatchWithRequestId({dispatchCommand: dispatch, definition: command, payload: {}}),
       })
     }
     const renderer = mount(createElement(

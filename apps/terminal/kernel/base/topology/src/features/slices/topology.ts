@@ -36,6 +36,7 @@ const topologySlice = createSlice({
     setMasterLocator: (state, action: PayloadAction<TopologyLocator>): TopologyState => ({...state!, masterLocator: action.payload}),
     clearMasterLocator: (state): TopologyState => ({...state!, masterLocator: null, peerIdentity: null, peerReachable: false}),
     setPeerIdentity: (state, action: PayloadAction<TopologyIdentity>): TopologyState => ({...state!, peerIdentity: action.payload}),
+    clearPeerIdentity: (state): TopologyState => ({...state!, peerIdentity: null, peerReachable: false}),
     setPeerReachable: (state, action: PayloadAction<boolean>): TopologyState => ({...state!, peerReachable: action.payload}),
     bumpPeerConnectionRevision: (state): TopologyState => ({...state!, peerConnectionRevision: state!.peerConnectionRevision + 1}),
     setHostDesired: (state, action: PayloadAction<boolean>): TopologyState => ({...state!, hostDesired: action.payload}),

@@ -384,20 +384,42 @@ export function validateFormalSeedStaticInputs({fixture, registry}) {
   return Object.freeze({invitationPlan: resolveInvitationCreationPlan(fixture), catalogInventoryPrerequisite, servicePointSeed});
 }
 
-export function createProjectScopeSelector({initialContextVersion, select}) {
-  let selectedProjectRef;
+export function createDataNodeScopeSelector({
+  initialContextVersion,
+  select,
+  dataNodeTypeCode = 'SEED_DATA_NODE_TYPE',
+  dataNodeRefCode = 'SEED_DATA_NODE_ID',
+  stageCode = 'SEED_DATA_NODE_SCOPE_STAGE',
+  contextVersionCode = 'SEED_DATA_NODE_SCOPE_CONTEXT_VERSION',
+}) {
+  let selectedDataNodeType;
+  let selectedDataNodeRef;
   let requiredContextVersion = requireValue(initialContextVersion, 'SEED_SESSION_CONTEXT_VERSION');
-  return async ({projectRef, stage}) => {
-    const nextProjectRef = requireValue(projectRef, 'SEED_PROJECT_SCOPE_ID');
-    if (nextProjectRef === selectedProjectRef) return requiredContextVersion;
+  return async ({dataNodeType, dataNodeRef, stage}) => {
+    const nextDataNodeType = requireValue(dataNodeType, dataNodeTypeCode);
+    const nextDataNodeRef = requireValue(dataNodeRef, dataNodeRefCode);
+    if (nextDataNodeType === selectedDataNodeType && nextDataNodeRef === selectedDataNodeRef) return requiredContextVersion;
     const selected = await select({
-      stage: requireValue(stage, 'SEED_PROJECT_SCOPE_STAGE'),
-      body: {dataNodeRef: nextProjectRef, dataNodeType: 'PROJECT', requiredContextVersion},
+      stage: requireValue(stage, stageCode),
+      body: {dataNodeRef: nextDataNodeRef, dataNodeType: nextDataNodeType, requiredContextVersion},
     });
-    requiredContextVersion = requireValue(selected?.contextVersion, 'SEED_PROJECT_SCOPE_CONTEXT_VERSION');
-    selectedProjectRef = nextProjectRef;
+    requiredContextVersion = requireValue(selected?.contextVersion, contextVersionCode);
+    selectedDataNodeType = nextDataNodeType;
+    selectedDataNodeRef = nextDataNodeRef;
     return requiredContextVersion;
   };
+}
+
+export function createProjectScopeSelector({initialContextVersion, select}) {
+  const selectScope = createDataNodeScopeSelector({
+    initialContextVersion,
+    select,
+    dataNodeTypeCode: 'SEED_PROJECT_SCOPE_TYPE',
+    dataNodeRefCode: 'SEED_PROJECT_SCOPE_ID',
+    stageCode: 'SEED_PROJECT_SCOPE_STAGE',
+    contextVersionCode: 'SEED_PROJECT_SCOPE_CONTEXT_VERSION',
+  });
+  return ({projectRef, stage}) => selectScope({dataNodeType: 'PROJECT', dataNodeRef: projectRef, stage});
 }
 
 export function loadFormalSeedStaticInputs() {
@@ -731,7 +753,7 @@ async function executeFormalSeed() {
     const operationsLogin = await request('operations-login', 'operationsWorkspacePasswordLogin', {groupWorkspaceKey: aurora}, {body: {loginName: canonicalLogin(groupPlan.accountKey), password: credentials.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD}});
     const operationsCookie = requireValue(operationsLogin.cookie, 'SEED_OPERATIONS_SESSION_MISSING');
     const operationsSession = await request('operations-session', 'getOperationsWorkspaceSessionEntry', {groupWorkspaceKey: aurora}, {cookie: operationsCookie});
-    const selectProjectScope = createProjectScopeSelector({
+    const selectDataNodeScope = createDataNodeScopeSelector({
       initialContextVersion: requireValue(operationsSession.json?.contextVersion, 'SEED_SESSION_CONTEXT_VERSION'),
       select: async ({stage, body}) => (await request(stage, 'selectOperationsWorkspaceSessionDataNode', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, body})).json,
     });
@@ -751,7 +773,7 @@ async function executeFormalSeed() {
     for (const head of fixture.stableFixtures.organization.headCompanies) { const extensionValues = extensionValuesFor('gw-aurora', 'HEAD_COMPANY', head.extensionValues); const created = await request(`head-company-${head.key}`, 'createOperationsOrganizationHeadCompany', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: head.code, name: head.name, legalName: `${head.name}有限公司`, unifiedSocialCreditCode: `91320000${head.code.replaceAll('-', '').padEnd(8, '0')}B`, extensionValues: extensionSubmission(extensionValues)}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.HEAD_COMPANY += 1; ids.headCompany[head.key] = created.json; }
     for (const authorization of fixture.stableFixtures.organization.brandAuthorizations) await request(`brand-authorization-${authorization.headCompany}-${authorization.brand}`, 'addOperationsOrganizationHeadCompanyBrandAuthorization', {groupWorkspaceKey: aurora, headCompanyId: requireValue(ids.headCompany[authorization.headCompany]?.id, 'SEED_HEAD_COMPANY_ID')}, {cookie: operationsCookie, expected: [204], body: {brandId: requireValue(ids.brand[authorization.brand]?.id, 'SEED_BRAND_ID')}});
     for (const store of fixture.stableFixtures.organization.stores) {
-      await selectProjectScope({projectRef: requireValue(ids.project[store.project]?.id, 'SEED_PROJECT_ID'), stage: `project-select-store-${store.key}`});
+      await selectDataNodeScope({dataNodeType: 'PROJECT', dataNodeRef: requireValue(ids.project[store.project]?.id, 'SEED_PROJECT_ID'), stage: `project-select-store-${store.key}`});
       const extensionValues = extensionValuesFor('gw-aurora', 'STORE', store.extensionValues);
       const operatingRuleSwitches = storeOperatingRuleValuesForSeed(store);
       const created = await request(`store-${store.key}`, 'createOperationsOrganizationStore', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {brandId: requireValue(ids.brand[store.brand]?.id, 'SEED_BRAND_ID'), tenantId: requireValue(ids.tenant[store.tenant]?.id, 'SEED_TENANT_ID'), headCompanyId: requireValue(ids.headCompany[store.headCompany]?.id, 'SEED_HEAD_COMPANY_ID'), code: store.code, name: store.name, extensionValues: extensionSubmission(extensionValues), operatingRuleSwitches}});
@@ -760,7 +782,8 @@ async function executeFormalSeed() {
     }
     const servicePointFixture = fixture.stableFixtures.organization.storeServicePoints;
     const servicePointStore = fixture.stableFixtures.organization.stores.find((entry) => entry.key === servicePointFixture.store);
-    await selectProjectScope({projectRef: requireValue(ids.project[servicePointStore.project]?.id, 'SEED_SERVICE_POINT_PROJECT_ID'), stage: 'project-select-service-point-store'});
+    await selectDataNodeScope({dataNodeType: 'PROJECT', dataNodeRef: requireValue(ids.project[servicePointStore.project]?.id, 'SEED_SERVICE_POINT_PROJECT_ID'), stage: 'project-select-service-point-store'});
+    await selectDataNodeScope({dataNodeType: 'STORE', dataNodeRef: requireValue(ids.store[servicePointFixture.store]?.id, 'SEED_SERVICE_POINT_STORE_ID'), stage: 'store-select-service-point-store'});
     const servicePointDefinitionReadback = ids.extensionDefinition['gw-aurora:SERVICE_POINT'];
     const servicePointAreas = new Map();
     for (const area of servicePointFixture.areas) {
@@ -807,9 +830,16 @@ async function executeFormalSeed() {
     if (!Array.isArray(servicePointReadback.json?.items) || servicePointReadback.json.items.length !== servicePointFixture.areas.filter((entry) => entry.status !== 'VOIDED').length) throw new FormalSeedFailure('SEED_SERVICE_POINT_AREA_PAGE_READBACK_INVALID');
     for (const point of servicePointFixture.points) {
       const current = servicePointByKey.get(point.key);
+      const extensionValues = extensionValuesFor('gw-aurora', 'SERVICE_POINT', point.extensionValues ?? {});
+      if (point.status === 'VOIDED') {
+        if (current?.pointType !== point.pointType || current?.status !== point.status || current?.name !== point.name)
+          throw new FormalSeedFailure(`SEED_SERVICE_POINT_VOIDED_READBACK_INVALID:${point.key}`);
+        assertExtensionValueReadback({json: current}, extensionValues);
+        continue;
+      }
       const detail = await request(`service-point-readback-${point.key}`, 'getOperationsStoreServicePoint', {groupWorkspaceKey: aurora, storeRef: requireValue(ids.store[servicePointFixture.store]?.id, 'SEED_SERVICE_POINT_STORE_ID'), servicePointRef: requireValue(current?.pointRef, 'SEED_SERVICE_POINT_ID')}, {cookie: operationsCookie, idempotency: false});
       if (detail.json?.pointType !== point.pointType || detail.json?.status !== point.status || detail.json?.name !== point.name) throw new FormalSeedFailure(`SEED_SERVICE_POINT_DETAIL_READBACK_INVALID:${point.key}`);
-      const extensionValues = extensionValuesFor('gw-aurora', 'SERVICE_POINT', point.extensionValues ?? {}); assertExtensionValueReadback(detail, extensionValues);
+      assertExtensionValueReadback(detail, extensionValues);
     }
     phase('owner-store-service-point-readback', 'PASS', {storeKey: servicePointFixture.store, areas: servicePointFixture.areas.length, visibleAreas: servicePointReadback.json.items.length, points: servicePointFixture.points.length});
     // Materialize every declared invitation state through public owner commands.
@@ -878,19 +908,19 @@ async function executeFormalSeed() {
     for (const tenant of fixture.stableFixtures.organization.tenants.filter((entry) => entry.status !== 'ENABLED')) await transition(`tenant-transition-${tenant.key}`, 'transitionOperationsOrganizationTenantStatus', {groupWorkspaceKey: aurora, tenantId: ids.tenant[tenant.key].id}, ids.tenant[tenant.key], tenant.status);
     for (const head of fixture.stableFixtures.organization.headCompanies.filter((entry) => entry.status !== 'ENABLED')) await transition(`head-company-transition-${head.key}`, 'transitionOperationsOrganizationHeadCompanyStatus', {groupWorkspaceKey: aurora, headCompanyId: ids.headCompany[head.key].id}, ids.headCompany[head.key], head.status);
     for (const store of fixture.stableFixtures.organization.stores.filter((entry) => entry.status !== 'ENABLED')) {
-      await selectProjectScope({projectRef: requireValue(ids.project[store.project]?.id, 'SEED_PROJECT_ID'), stage: `project-select-store-disable-${store.key}`});
+      await selectDataNodeScope({dataNodeType: 'PROJECT', dataNodeRef: requireValue(ids.project[store.project]?.id, 'SEED_PROJECT_ID'), stage: `project-select-store-disable-${store.key}`});
       await transition(`store-transition-${store.key}`, 'transitionOperationsOrganizationStoreStatus', {groupWorkspaceKey: aurora, storeId: ids.store[store.key].id}, ids.store[store.key], store.status);
     }
     const contracts = {};
     for (const contract of fixture.stableFixtures.contracts) {
       const store = fixture.stableFixtures.organization.stores.find((entry) => entry.key === contract.store);
-      await selectProjectScope({projectRef: requireValue(ids.project[store.project]?.id, 'SEED_CONTRACT_PROJECT_ID'), stage: `project-select-contract-${contract.key}`});
+      await selectDataNodeScope({dataNodeType: 'PROJECT', dataNodeRef: requireValue(ids.project[store.project]?.id, 'SEED_CONTRACT_PROJECT_ID'), stage: `project-select-contract-${contract.key}`});
       const extensionValues = extensionValuesFor('gw-aurora', 'CONTRACT', contract.extensionValues);
       const created = await request(`contract-${contract.key}`, 'createOperationsContract', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {storeId: requireValue(ids.store[store.key]?.id, 'SEED_CONTRACT_STORE_ID'), phaseName: contract.phaseNameSnapshot ?? null, phaseNameSnapshot: contract.phaseNameSnapshot ?? null, contractNo: contract.contractNo, effectiveFrom: contract.effectiveFrom, effectiveTo: contract.effectiveTo, note: null, extensionValues: extensionSubmission(extensionValues), items: contract.items}});
       assertExtensionValueReadback(created, extensionValues); extensionReadback.CONTRACT += 1;
       contracts[contract.key] = created.json;
       if (contract.status === 'INVALID') {
-        await selectProjectScope({projectRef: requireValue(ids.project[store.project]?.id, 'SEED_CONTRACT_PROJECT_ID'), stage: `project-select-contract-invalidate-${contract.key}`});
+        await selectDataNodeScope({dataNodeType: 'PROJECT', dataNodeRef: requireValue(ids.project[store.project]?.id, 'SEED_CONTRACT_PROJECT_ID'), stage: `project-select-contract-invalidate-${contract.key}`});
         await request(`contract-invalidate-${contract.key}`, 'invalidateOperationsContract', {groupWorkspaceKey: aurora, contractId: requireValue(created.json?.id, 'SEED_CONTRACT_ID')}, {cookie: operationsCookie, body: {expectedVersion: requireValue(created.json?.revision, 'SEED_CONTRACT_VERSION')}});
       }
     }
