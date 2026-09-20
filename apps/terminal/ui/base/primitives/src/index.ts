@@ -4,13 +4,14 @@ export {
   PrimitiveActions,
 } from './components/PrimitiveActions';
 export {PrimitiveButton} from './components/PrimitiveButton';
-export {PrimitiveIcon} from './components/PrimitiveIcon';
+export {PrimitiveIcon, PrimitiveIconBadge} from './components/PrimitiveIcon';
 export {PrimitiveBadge, PrimitiveEmptyState, PrimitiveInlineAlert, PrimitiveProgress, PrimitiveSkeleton, PrimitiveSpinner} from './components/PrimitiveFeedback';
 export {PrimitiveCard, PrimitiveCenter, PrimitiveDivider, PrimitiveGrid, PrimitiveStack} from './components/PrimitiveLayout';
 export {PrimitiveCodeBlock} from './components/PrimitiveCodeBlock';
 export {PrimitiveCheckbox, PrimitiveCodeInput, PrimitiveDropdownSelect, PrimitiveFormField, PrimitivePressOption, PrimitiveRadio, PrimitiveSelect, PrimitiveSwitch, PrimitiveTextarea} from './components/PrimitiveForms';
 export type {PrimitivePressOptionProps} from './components/PrimitiveForms';
-export {PrimitiveDisclosure, PrimitiveRatioBar, PrimitiveSurfaceMap} from './components/PrimitiveAdmin';
+export {PrimitiveDisclosure, PrimitiveFactGrid, PrimitiveRatioBar, PrimitiveStatusLine, PrimitiveSurfaceMap} from './components/PrimitiveAdmin';
+export {adminGeometry, baseTokens} from './theme/tokens';
 export {PrimitiveKeyValueRow, PrimitiveList, PrimitiveSegmentedControl, PrimitiveStatusRow, PrimitiveTable, PrimitiveTabs} from './components/PrimitiveData';
 export {PrimitiveContainer} from './components/PrimitiveContainer';
 export {PrimitiveKeyboardBackdrop} from './components/PrimitiveKeyboardBackdrop';
@@ -33,6 +34,8 @@ export type {
   PrimitiveFeedbackProps,
   PrimitiveFormControlProps,
   PrimitiveFormFieldProps,
+  PrimitiveFactGridProps,
+  PrimitiveFactItem,
   PrimitiveKeyValueRowProps,
   PrimitiveGridProps,
   PrimitiveLayoutProps,
@@ -44,6 +47,7 @@ export type {
   PrimitiveProgressProps,
   PrimitiveRatioBarProps,
   PrimitiveRatioSegment,
+  PrimitiveStatusLineProps,
   PrimitiveRadioProps,
   PrimitiveSegmentedControlProps,
   PrimitiveSelectProps,
@@ -64,6 +68,7 @@ export type {
   PrimitiveImageProps,
   PrimitiveIconName,
   PrimitiveIconProps,
+  PrimitiveIconBadgeProps,
   PrimitiveHeadingProps,
   PrimitiveInputProps,
   PrimitiveInputHandle,

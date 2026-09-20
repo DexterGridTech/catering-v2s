@@ -14,7 +14,7 @@ type ScrollViewWithNativeNodes = RnrScrollViewRef & Readonly<{
 }>;
 
 export const PrimitiveScrollView = forwardRef<PrimitiveScrollViewHandle, PrimitiveScrollViewProps>(
-  ({testID, children, layout = 'fill', onLayout, onScrollOffsetChange}, ref) => {
+  ({testID, children, layout = 'fill', contentPaddingBottom, onLayout, onScrollOffsetChange}, ref) => {
     const nativeScrollViewRef = useRef<RnrScrollViewRef>(null);
     useImperativeHandle(
       ref,
@@ -43,7 +43,9 @@ export const PrimitiveScrollView = forwardRef<PrimitiveScrollViewHandle, Primiti
         className={layout === 'transparent'
           ? baseTokens.scrollTransparent
           : baseTokens.scroll}
-        contentContainerStyle={{gap: baseLayout.scrollContentGap}}
+        contentContainerStyle={contentPaddingBottom === undefined
+          ? {gap: baseLayout.scrollContentGap}
+          : {gap: baseLayout.scrollContentGap, paddingBottom: contentPaddingBottom}}
         onLayout={onLayout}
         onScroll={
           onScrollOffsetChange === undefined

@@ -45,7 +45,7 @@ PRIMARY `320/320`、SECONDARY `213/320`（hardware/surface）。
 
 因此，目标 display 的 raw 分辨率与 density 只用于 carrier 的 context/资源配置和承载事实
 诊断；它不再推导业务画布声明。横屏 sample 的固定逻辑画布由 host 声明为 PRIMARY
-`1280×800`、SECONDARY `960×540`；当前模拟器副屏的 `1280×720 physical px / 213 dpi`
+`1280×800`、SECONDARY `1280×800`；当前模拟器副屏的 `1280×720 physical px / 213 dpi`
 只是硬件显示配置，承载层再把各自画布映射到实际窗口。主屏与副屏共享
 同一个 React host/store，但各自的 surface 必须使用自己的 display/window snapshot；目标
 display hardware density diagnostics、共享 RN render density 与固定画布 scale 是独立步骤。

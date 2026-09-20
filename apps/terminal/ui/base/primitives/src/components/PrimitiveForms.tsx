@@ -1,10 +1,11 @@
-import {useState} from 'react';
+import {useState, type ReactNode} from 'react';
 import {RnrPressable, RnrText, RnrView} from '../vendor/slots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
 import {PrimitiveInput} from './PrimitiveInput';
 import {PrimitiveLabel} from './PrimitiveLabel';
 import {PrimitiveStatus} from './PrimitiveStatus';
+import {PrimitiveIcon} from './PrimitiveIcon';
 import type {
   PrimitiveCheckboxProps,
   PrimitiveDropdownSelectProps,
@@ -137,6 +138,7 @@ export const PrimitiveDropdownSelect = ({
   options,
   value,
   open,
+  appearance = 'default',
   onOpenChange,
   onValueChange,
 }: PrimitiveDropdownSelectProps) => {
@@ -150,15 +152,16 @@ export const PrimitiveDropdownSelect = ({
         accessibilityLabel={accessibilityLabel}
         accessibilityState={{disabled: isBlocked, busy: busy === true, expanded: open}}
         disabled={isBlocked}
+        className={appearance === 'admin-mobile' ? baseTokens.adminMobileSelector : baseTokens.dropdownTrigger}
         onPress={() => {
           if (!isBlocked) onOpenChange?.(!open);
         }}
       >
-        <RnrText className={baseTokens.dropdownValue}>{selected?.label ?? ''}</RnrText>
-        <RnrText className={baseTokens.dropdownChevron}>{open ? '⌃' : '⌄'}</RnrText>
+        <RnrText className={appearance === 'admin-mobile' ? baseTokens.adminMobileSelectorValue : baseTokens.dropdownValue}>{selected?.label ?? ''}</RnrText>
+        <RnrText className={appearance === 'admin-mobile' ? baseTokens.adminMobileSelectorChevron : baseTokens.dropdownChevron}>{open ? '⌃' : '⌄'}</RnrText>
       </RnrPressable>
       {open ? (
-        <RnrView testID={`${assertTestID(testID)}:menu`} className={baseTokens.dropdownMenu}>
+        <RnrView testID={`${assertTestID(testID)}:menu`} className={appearance === 'admin-mobile' ? baseTokens.adminDropdownMenu : baseTokens.dropdownMenu}>
           {options.map(option => (
             <RnrPressable
               key={option.value}
@@ -173,7 +176,9 @@ export const PrimitiveDropdownSelect = ({
                 onOpenChange?.(false);
               }}
             >
-              <RnrText className={option.value === value ? baseTokens.dropdownOptionSelected : baseTokens.dropdownOption}>
+              <RnrText className={appearance === 'admin-mobile'
+                ? option.value === value ? baseTokens.adminDropdownOptionSelected : baseTokens.adminDropdownOption
+                : option.value === value ? baseTokens.dropdownOptionSelected : baseTokens.dropdownOption}>
                 {option.label}
               </RnrText>
             </RnrPressable>
@@ -201,8 +206,9 @@ export type PrimitivePressOptionProps = Readonly<{
   readonly onPress?: () => void;
   readonly accessibilityRole?: 'button' | 'tab';
   /** Presentation-only compact tab treatment for bounded navigation collections. */
-  readonly variant?: 'option' | 'tab';
-  readonly children?: string;
+  readonly variant?: 'option' | 'tab' | 'admin-nav';
+  readonly icon?: import('../types/types').PrimitiveIconName;
+  readonly children?: ReactNode;
 }>;
 
 export const PrimitivePressOption = ({
@@ -214,6 +220,7 @@ export const PrimitivePressOption = ({
   onPress,
   accessibilityRole = 'button',
   variant = 'option',
+  icon,
   children,
 }: PrimitivePressOptionProps) => {
   const [pressed, setPressed] = useState(false);
@@ -226,20 +233,35 @@ export const PrimitivePressOption = ({
       aria-selected={accessibilityRole === 'tab' ? selected : undefined}
       accessibilityState={{selected, disabled: isDisabled, busy: busy === true}}
       disabled={isDisabled}
+      className={variant === 'admin-nav'
+        ? selected ? baseTokens.adminNavItemSelected : baseTokens.adminNavItem
+        : undefined}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
       onPress={() => {
         if (!isDisabled) onPress?.();
       }}
     >
+      {variant === 'admin-nav' && icon !== undefined ? (
+        <PrimitiveIcon
+          testID={`${assertTestID(testID)}:icon`}
+          accessibilityLabel={accessibilityLabel}
+          appearance="admin-shell"
+          icon={icon}
+          size={16}
+        />
+      ) : null}
       <RnrText
         style={pressed ? {opacity: 0.86} : undefined}
-        className={variant === 'tab'
-          ? selected ? baseTokens.tabSelected : baseTokens.tab
-          : selected ? baseTokens.optionSelected : baseTokens.option}
+        className={variant === 'admin-nav'
+          ? selected ? baseTokens.adminNavItemSelectedText : baseTokens.adminNavItemText
+          : variant === 'tab'
+            ? selected ? baseTokens.tabSelected : baseTokens.tab
+            : selected ? baseTokens.optionSelected : baseTokens.option}
       >
         {children}
       </RnrText>
+      {variant === 'admin-nav' && selected ? <RnrView testID={`${assertTestID(testID)}:focus-bar`} className={baseTokens.adminNavFocusBar} /> : null}
     </RnrPressable>
   );
 };

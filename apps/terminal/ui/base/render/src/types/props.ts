@@ -133,6 +133,8 @@ export type RenderProviderProps = Readonly<{
   /** Run-scoped latch shared by the primary surface's successive providers. */
   readonly getPrimarySurfaceReady?: () => boolean
   readonly runtimeFacts: RenderRuntimeFacts
+  /** Owner-provided retry boundary for a failed runtime; the shell never starts runtime itself. */
+  readonly onRuntimeRetry?: () => void | Promise<void>
   /** Narrow topology control surface for the shared admin section. */
   readonly topologyCapability?: TopologyAdminCapability
   readonly dispatchCommand: RenderDispatchCommand

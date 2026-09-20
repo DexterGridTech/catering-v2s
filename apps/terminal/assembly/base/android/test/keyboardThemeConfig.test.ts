@@ -17,6 +17,25 @@ const keyboardColors = Object.freeze([
   'keyboard-focus',
 ]);
 
+const adminColors = Object.freeze([
+  'admin-shell-surface',
+  'admin-shell-foreground',
+  'admin-shell-muted',
+  'admin-shell-border',
+  'admin-content-surface',
+  'admin-content-foreground',
+  'admin-content-muted',
+  'admin-content-border',
+  'admin-inset',
+  'admin-action',
+  'admin-action-start',
+  'admin-action-end',
+  'admin-action-foreground',
+  'admin-focus',
+  'admin-surface-current',
+  'admin-surface-noncurrent',
+]);
+
 describe('Android keyboard theme contract', () => {
   it('keeps sharedColors and both Android app Tailwind configs aligned', () => {
     const sharedConfig = read('apps/terminal/assembly/base/android/config/index.cjs');
@@ -25,6 +44,19 @@ describe('Android keyboard theme contract', () => {
       requireFromTest(new URL('../../../android/sample-wallpaper-terminal/tailwind.config.cjs', import.meta.url).pathname),
     ] as const;
     for (const name of keyboardColors) {
+      const mapping = `rgb(var(--color-${name}) / <alpha-value>)`;
+      expect(sharedConfig).toContain(`'${name}': '${mapping}'`);
+      for (const appConfig of appConfigs) expect(appConfig.theme.extend.colors[name]).toBe(mapping);
+    }
+  });
+
+  it('keeps admin semantic tokens inherited by both Android app configs', () => {
+    const sharedConfig = read('apps/terminal/assembly/base/android/config/index.cjs');
+    const appConfigs = [
+      requireFromTest(new URL('../../../android/sample-terminal/tailwind.config.cjs', import.meta.url).pathname),
+      requireFromTest(new URL('../../../android/sample-wallpaper-terminal/tailwind.config.cjs', import.meta.url).pathname),
+    ] as const;
+    for (const name of adminColors) {
       const mapping = `rgb(var(--color-${name}) / <alpha-value>)`;
       expect(sharedConfig).toContain(`'${name}': '${mapping}'`);
       for (const appConfig of appConfigs) expect(appConfig.theme.extend.colors[name]).toBe(mapping);

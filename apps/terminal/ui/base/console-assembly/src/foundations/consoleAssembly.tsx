@@ -77,6 +77,18 @@ type ConsoleDefinedPart = Readonly<{
   readonly rendererBinding: RendererBinding<any>
 }>
 
+type ConsoleRuntimeBundle = Readonly<{
+  readonly runtime: Runtime
+  readonly uiStateModule: UiStateModule
+  readonly topologyCapability?: TopologyAdminCapability
+}>
+
+type ConsoleRuntimeSubscription = {
+  readonly listener: () => void
+  active: boolean
+  runtimeUnsubscribe: () => void
+}
+
 const supportedSurfaceForms = ['laptop', 'mobile'] as const satisfies readonly SurfaceForm[]
 
 const requiredPlatformPortNames = [
@@ -175,6 +187,8 @@ export const selectPartsForSurfaceForm = (
 export type ConsoleAssembly = Readonly<{
   readonly appName: string
   readonly runtime: Runtime
+  /** Owner-controlled recovery for a terminal failed runtime. */
+  readonly retryRuntime: () => Promise<void>
   readonly surfaceForm: SurfaceForm
   readonly surfaceDeclarations: ConsoleSurfaceDeclarations
   readonly runtimeFacts: RenderRuntimeFacts
@@ -227,12 +241,14 @@ export const createSurfaceForDisplayIndex = (
   assembly: ConsoleAssembly,
   displayIndex: 0 | 1,
 ): ReactElement => {
-  const state = assembly.runtime.getState()
-  const displayMode = resolveSurfaceDisplayMode({
-    displayIndex,
-    displayRole: selectDisplayRole(state),
-    instanceMode: selectRuntimeInstanceMode(state),
-  })
+  const runtime = assembly.runtime
+  const displayMode = runtime.status !== 'started'
+    ? displayIndex === 0 ? 'PRIMARY' : 'SECONDARY'
+    : resolveSurfaceDisplayMode({
+      displayIndex,
+      displayRole: selectDisplayRole(runtime.getState()),
+      instanceMode: selectRuntimeInstanceMode(runtime.getState()),
+    })
   if (displayMode === 'SECONDARY' && assembly.surfaceDeclarations.SECONDARY === undefined) {
     throw new Error(`[${assembly.appName}] display index ${displayIndex} is unavailable for ${assembly.surfaceForm}`)
   }
@@ -343,11 +359,6 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
   assertSecondaryPartsCanBeProjected(selectedParts)
   const uiCatalog = createUiCatalog(selectedParts.map(({catalogEntry}) => catalogEntry))
   const rendererCatalog = createRendererCatalog(selectedParts.map(({rendererBinding}) => rendererBinding))
-  const uiStateModule = createUiStateModule({
-    catalog: uiCatalog,
-    variables: input.variables,
-    surfaceForm: input.surfaceForm,
-  })
   const createRouteContext: NonNullable<RenderProviderProps['createRouteContext']> = (root, displayMode): CommandRouteContext => {
     const catalogContext = createCatalogContext(root, displayMode, input.surfaceForm)
     return Object.freeze({
@@ -408,29 +419,116 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
     },
     getReadiness: getStartupReadiness,
   })
-  const modules: readonly RuntimeModule[] = [
-    createDisplayContextModule({surfaceForm: input.surfaceForm}),
-    uiStateModule,
-    ...input.createApplicationModules({uiStateModule}),
-  ]
-  runtime = createRuntime({
-    localNodeId: createNodeId(),
-    modules,
-    platformPorts: input.platformPorts,
-    state: {
-      runtimeName: input.runtimeName,
-      environmentMode,
-      persistenceKey: input.persistenceKey ?? input.defaultPersistenceKey,
-      persistenceDebounceMs: 300,
-    },
-    resolveCommandTarget: input.resolveCommandTarget,
-  })
-  await runtime.start()
-  if (runtime.status !== 'started') throw new Error(`[${input.errorPrefix}] runtime did not start`)
 
-  const stateSource = createStateSource(runtime)
-  const dispatchCommand = createDispatchCommand(runtime)
-  const topologyCapability = input.createTopologyAdminCapability?.(runtime)
+  const createRuntimeBundle = (): ConsoleRuntimeBundle => {
+    const uiStateModule = createUiStateModule({
+      catalog: uiCatalog,
+      variables: input.variables,
+      surfaceForm: input.surfaceForm,
+    })
+    const modules: readonly RuntimeModule[] = [
+      createDisplayContextModule({surfaceForm: input.surfaceForm}),
+      uiStateModule,
+      ...input.createApplicationModules({uiStateModule}),
+    ]
+    const nextRuntime = createRuntime({
+      localNodeId: createNodeId(),
+      modules,
+      platformPorts: input.platformPorts,
+      state: {
+        runtimeName: input.runtimeName,
+        environmentMode,
+        persistenceKey: input.persistenceKey ?? input.defaultPersistenceKey,
+        persistenceDebounceMs: 300,
+      },
+      resolveCommandTarget: input.resolveCommandTarget,
+    })
+    return Object.freeze({
+      runtime: nextRuntime,
+      uiStateModule,
+      topologyCapability: input.createTopologyAdminCapability?.(nextRuntime),
+    })
+  }
+
+  const runtimeSubscriptions = new Set<ConsoleRuntimeSubscription>()
+  const runtimeRequired = (): Runtime => {
+    if (runtime === undefined) throw new Error(`[${input.errorPrefix}] runtime owner is not initialized`)
+    return runtime
+  }
+  const notifyRuntimeOwnerSubscribers = (): void => {
+    for (const subscription of [...runtimeSubscriptions]) {
+      if (subscription.active) subscription.listener()
+    }
+  }
+  const replaceRuntime = (nextBundle: ConsoleRuntimeBundle): void => {
+    for (const subscription of runtimeSubscriptions) subscription.runtimeUnsubscribe()
+    runtime = nextBundle.runtime
+    uiStateModule = nextBundle.uiStateModule
+    topologyCapability = nextBundle.topologyCapability
+    for (const subscription of runtimeSubscriptions) {
+      if (subscription.active) subscription.runtimeUnsubscribe = nextBundle.runtime.subscribe(subscription.listener)
+    }
+    notifyRuntimeOwnerSubscribers()
+  }
+  const stateSource: RenderProviderProps['stateSource'] = Object.freeze({
+    getStatus: () => runtimeRequired().status,
+    getState: () => runtimeRequired().getState(),
+    subscribe: (listener: () => void): (() => void) => {
+      const subscription: ConsoleRuntimeSubscription = {
+        listener,
+        active: true,
+        runtimeUnsubscribe: runtimeRequired().subscribe(listener),
+      }
+      runtimeSubscriptions.add(subscription)
+      return () => {
+        if (!subscription.active) return
+        subscription.active = false
+        subscription.runtimeUnsubscribe()
+        runtimeSubscriptions.delete(subscription)
+      }
+    },
+  })
+  const dispatchCommand: RenderProviderProps['dispatchCommand'] = (command, options) =>
+    runtimeRequired().dispatchCommand(command.definition, command.payload, {
+      requestId: options.requestId,
+      routeContext: options.routeContext,
+      routeIntent: options.routeIntent,
+    })
+  let uiStateModule: UiStateModule
+  let topologyCapability: TopologyAdminCapability | undefined
+  const initialBundle = createRuntimeBundle()
+  runtime = initialBundle.runtime
+  uiStateModule = initialBundle.uiStateModule
+  topologyCapability = initialBundle.topologyCapability
+  try {
+    await initialBundle.runtime.start()
+  } catch (error) {
+    input.platformPorts.logger.error({
+      category: 'runtime.lifecycle',
+      event: 'runtime.owner-initial-start-failed',
+      message: 'Runtime owner retained a failed runtime for the admin retry boundary',
+      data: {appName: input.appName, status: initialBundle.runtime.status},
+      error: {
+        name: error instanceof Error ? error.name : 'UnknownError',
+        message: error instanceof Error ? error.message.slice(0, 160) : 'Unknown runtime start failure',
+      },
+    })
+  }
+  let retryPromise: Promise<void> | undefined
+  const onRuntimeRetry = (): Promise<void> => {
+    if (retryPromise !== undefined) return retryPromise
+    if (runtimeRequired().status !== 'failed') return Promise.resolve()
+    retryPromise = (async () => {
+      try {
+        const nextBundle = createRuntimeBundle()
+        replaceRuntime(nextBundle)
+        await nextBundle.runtime.start()
+      } finally {
+        retryPromise = undefined
+      }
+    })()
+    return retryPromise
+  }
   let primaryReadyPromise: Promise<void> | null = null
   let primarySurfaceReady = false
   let primarySurfaceMeasuredPromise: Promise<void> | null = null
@@ -642,6 +740,7 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
         onPrimarySurfaceReady={onPrimarySurfaceReady}
         getPrimarySurfaceReady={() => primarySurfaceReady}
         runtimeFacts={runtimeFacts}
+        onRuntimeRetry={onRuntimeRetry}
         topologyCapability={topologyCapability}
         dispatchCommand={dispatchCommand}
         createRouteContext={createRouteContext}
@@ -681,7 +780,8 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
 
   return Object.freeze({
     appName: input.appName,
-    runtime,
+    get runtime(): Runtime { return runtimeRequired() },
+    retryRuntime: onRuntimeRetry,
     surfaceForm: input.surfaceForm,
     surfaceDeclarations: input.surfaceDeclarations,
     runtimeFacts,

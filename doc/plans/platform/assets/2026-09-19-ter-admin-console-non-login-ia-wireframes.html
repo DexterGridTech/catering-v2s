@@ -225,7 +225,7 @@
     };
     const runtimeContent = frame => {
       const dual = frame.state === 'DUAL-SURFACE'; const mobile = frame.form === 'mobile'; const wrap = el('div', 'content'); wrap.append(el('div', 'content-title', '运行状态'), status(dual ? '运行正常 · 检测到两块物理屏' : '运行正常 · 检测到一块物理屏', 'success', 'runtime.overall-status'));
-      wrap.append(el('div', 'kv')); wrap.lastChild.append(kv('运行阶段', '已就绪'), kv('物理屏数量', dual ? '2' : '1', 'runtime.physical-display-count')); const surfaces = el('div', 'surfaces');
+      wrap.append(el('div', 'kv')); wrap.lastChild.append(kv('运行阶段', '已就绪'), kv('环境', 'TEST', 'runtime.environment'), kv('调试态', '关闭', 'runtime.debug'), kv('设备', '可用', 'runtime.device'), kv('显示事实', '已读取', 'runtime.display-status'), kv('物理屏数量', dual ? '2' : '1', 'runtime.physical-display-count')); const surfaces = el('div', 'surfaces');
       surfaces.append(runtimeSurface('主屏', mobile ? 390 : 1280, mobile ? 844 : 800, mobile ? undefined : 1920, mobile ? undefined : 1200, true, mobile ? 'ratio-mobile' : 'ratio-16-10', mobile ? '390:844' : '16:10'));
       if (dual) surfaces.append(runtimeSurface('副屏', 1024, 768, 1536, 1152, false, 'ratio-4-3', '4:3'));
       wrap.append(surfaces); wrap.append(el('div', 'hint', '逻辑尺寸标在框内，物理尺寸标在框外；矩形比例跟随各自 surface 的逻辑宽高。物理值为线框示意，缺失时数字位置显示“未知”，详设须绑定 display-facts owner。')); return wrap;

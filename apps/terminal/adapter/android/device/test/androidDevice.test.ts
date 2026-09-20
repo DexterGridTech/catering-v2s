@@ -50,7 +50,25 @@ describe('createAndroidDevicePort', () => {
       })),
       getDisplayInfo: vi.fn(async () => ({
         status: 'succeeded' as const,
-        value: {displayCount: 2},
+        value: {
+          displayCount: 2,
+          surfaces: [
+            {
+              displayId: 0,
+              role: 'primary' as const,
+              logicalSize: {width: 1280, height: 800},
+              physicalSize: {width: 1920, height: 1200},
+              readiness: 'ready' as const,
+            },
+            {
+              displayId: 1,
+              role: 'secondary' as const,
+              logicalSize: {width: 1920, height: 1080},
+              physicalSize: null,
+              readiness: 'loading' as const,
+            },
+          ],
+        },
         completedAt: 123,
       })),
       getPowerStatus: vi.fn(async () => ({
@@ -85,7 +103,25 @@ describe('createAndroidDevicePort', () => {
     })
     await expect(port.getDisplayInfo({timeoutMs: 1_000})).resolves.toEqual({
       status: 'succeeded',
-      value: {displayCount: 2},
+      value: {
+        displayCount: 2,
+        surfaces: [
+          {
+            displayId: 0,
+            role: 'primary',
+            logicalSize: {width: 1280, height: 800},
+            physicalSize: {width: 1920, height: 1200},
+            readiness: 'ready',
+          },
+          {
+            displayId: 1,
+            role: 'secondary',
+            logicalSize: {width: 1920, height: 1080},
+            physicalSize: null,
+            readiness: 'loading',
+          },
+        ],
+      },
       completedAt: 123,
     })
     await expect(port.getPowerStatus({timeoutMs: 1_000})).resolves.toEqual({

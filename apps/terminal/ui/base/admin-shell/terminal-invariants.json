@@ -11,9 +11,12 @@
     "ADMIN_CONSOLE_FOCUS_SCOPE_ID",
     "ADMIN_CONSOLE_LAYER_ID",
     "ADMIN_CONSOLE_PART_KEY",
+    "ADMIN_DISPLAY_CONTEXT_RAW_PART_KEY",
     "ADMIN_GESTURE_REPETITIONS",
     "ADMIN_GESTURE_SIZE",
     "ADMIN_GESTURE_WINDOW_MS",
+    "ADMIN_PLATFORM_PORTS_PAGE_PART_KEY",
+    "ADMIN_RUNTIME_PAGE_PART_KEY",
     "ADMIN_SECTION_CONTAINER_KEY",
     "ADMIN_TOPOLOGY_SECTION_PART_KEY",
     "ADMIN_PASSWORD_FALLBACK",
@@ -22,6 +25,9 @@
     "adminLauncherPointFromEvent",
     "AdminLogin",
     "AdminNavigationRejectedError",
+    "AdminPageKey",
+    "AdminPageProjection",
+    "AdminPageSpec",
     "AdminSectionComponent",
     "AdminSectionNavigation",
     "AdminSectionProps",
@@ -42,6 +48,7 @@
     "moduleName",
     "normalizeDeviceIdentity",
     "verifyAdminPassword"
+    ,"selectAdminPageProjections"
     ,"selectAdminSections"
     ,"trackAdminGesture", "logicalPointFromWindow"
   ]

@@ -8,7 +8,7 @@
   },
   "publicExports": [
     "LIST_MAX_MOUNTED", "LIST_OVERSCAN_AFTER", "LIST_OVERSCAN_BEFORE", "LIST_VISIBLE_WINDOW",
-    "PrimitiveActions", "PrimitiveActionsProps", "PrimitiveAddressableProps", "PrimitiveBadge", "PrimitiveBadgeProps", "PrimitiveDisclosure", "PrimitiveDisclosureProps", "PrimitiveDropdownSelect", "PrimitiveDropdownSelectProps",
+    "PrimitiveActions", "PrimitiveActionsProps", "PrimitiveAddressableProps", "PrimitiveBadge", "PrimitiveBadgeProps", "PrimitiveDisclosure", "PrimitiveDisclosureProps", "PrimitiveFactGrid", "PrimitiveFactGridProps", "PrimitiveFactItem", "PrimitiveDropdownSelect", "PrimitiveDropdownSelectProps",
     "PrimitiveButton", "PrimitiveButtonProps", "PrimitiveCard", "PrimitiveCenter", "PrimitiveCheckbox", "PrimitiveCheckboxProps", "PrimitiveIcon", "PrimitiveIconName", "PrimitiveIconProps",
     "PrimitiveCodeBlock", "PrimitiveCodeBlockProps", "PrimitiveCodeInput", "PrimitiveContainer", "PrimitiveContainerProps", "PrimitiveImage", "PrimitiveImageProps",
     "PrimitiveDivider", "PrimitiveEmptyState", "PrimitiveFeedbackProps", "PrimitiveFormControlProps", "PrimitiveFormField", "PrimitiveFormFieldProps",
@@ -18,7 +18,7 @@
     "PrimitiveNativeNode", "PrimitiveOption", "PrimitivePressOption", "PrimitivePressOptionProps", "PrimitiveProgress", "PrimitiveProgressProps", "PrimitiveRatioBar", "PrimitiveRatioBarProps", "PrimitiveRatioSegment",
     "PrimitiveRadio", "PrimitiveRadioProps", "PrimitivePinInput", "PrimitivePinInputInteractionEvent", "PrimitivePinInputProps", "PrimitiveScrollView", "PrimitiveScrollViewHandle", "PrimitiveScrollViewProps", "PrimitiveSegmentedControl", "PrimitiveSegmentedControlProps",
     "PrimitiveSelect", "PrimitiveSelectProps", "PrimitiveSkeleton", "PrimitiveSpinner", "PrimitiveStack", "PrimitiveStatus", "PrimitiveStatusProps",
-    "PrimitiveStatusRow", "PrimitiveStatusRowProps", "PrimitiveSurfaceMap", "PrimitiveSurfaceMapProps", "PrimitiveSurfaceMapSurface", "PrimitiveSwitch", "PrimitiveSwitchProps", "PrimitiveTable", "PrimitiveTableColumn", "PrimitiveTableProps",
+    "PrimitiveStatusRow", "PrimitiveStatusRowProps", "PrimitiveStatusLine", "PrimitiveStatusLineProps", "PrimitiveSurfaceMap", "PrimitiveSurfaceMapProps", "PrimitiveSurfaceMapSurface", "PrimitiveSwitch", "PrimitiveSwitchProps", "PrimitiveTable", "PrimitiveTableColumn", "PrimitiveTableProps",
     "PrimitiveTabItem", "PrimitiveTabs", "PrimitiveTabsProps", "PrimitiveTextarea", "PrimitiveTextareaProps", "PrimitiveText", "PrimitiveTextProps", "PrimitiveTone",
     "dependencyModuleNames", "devDependencyModuleNames", "moduleName"
   ]

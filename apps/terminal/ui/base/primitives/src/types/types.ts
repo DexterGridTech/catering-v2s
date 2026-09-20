@@ -24,7 +24,7 @@ export type PrimitiveContainerProps = PrimitiveAddressableProps &
     /** Opts a card into the elevated presentation recipe without changing the default card recipe. */
     readonly elevated?: boolean;
     /** Selects a shared presentation recipe; application colors remain theme-owned. */
-    readonly appearance?: 'default' | 'login';
+    readonly appearance?: 'default' | 'login' | 'admin-root' | 'admin-shell' | 'admin-shell-mobile' | 'admin-content' | 'admin-nav' | 'admin-card' | 'admin-inset';
   }>;
 
 export type PrimitivePinInputInteractionEvent = Readonly<{
@@ -77,6 +77,8 @@ export type PrimitiveScrollViewProps = PrimitiveAddressableProps &
     readonly children?: ReactNode;
     /** Presentation-only viewport background; the existing opaque default remains unchanged. */
     readonly layout?: PrimitiveScrollViewLayout;
+    /** Presentation-only trailing inset for content that must scroll fully above a bounded viewport. */
+    readonly contentPaddingBottom?: number;
     readonly onLayout?: (event: LayoutChangeEvent) => void;
     readonly onScrollOffsetChange?: (offsetY: number) => void;
   }>;
@@ -100,7 +102,7 @@ export type PrimitiveTextProps = PrimitiveAddressableProps &
     readonly accessibilityRole?: PrimitiveTextAccessibilityRole;
     readonly children?: ReactNode;
     /** Selects a shared text recipe; application colors remain theme-owned. */
-    readonly appearance?: 'default' | 'login' | 'login-muted';
+    readonly appearance?: 'default' | 'login' | 'login-muted' | 'admin' | 'admin-muted';
     /** Presentation-only text layout override for composite primitive composition. */
     readonly style?: StyleProp<TextStyle>;
   }>;
@@ -109,7 +111,7 @@ export type PrimitiveHeadingProps = PrimitiveAddressableProps &
   Readonly<{
     readonly children?: ReactNode;
     /** Selects a shared heading recipe; application colors remain theme-owned. */
-    readonly appearance?: 'default' | 'login';
+    readonly appearance?: 'default' | 'login' | 'admin-shell' | 'admin-page' | 'admin-section';
   }>;
 
 export type PrimitiveLabelProps = PrimitiveAddressableProps &
@@ -121,6 +123,7 @@ export type PrimitiveLabelProps = PrimitiveAddressableProps &
 export type PrimitiveInputProps = PrimitiveAddressableProps &
   Readonly<{
     readonly accessibilityLabel?: string;
+    readonly appearance?: 'default' | 'admin';
     readonly editable?: boolean;
     readonly maxLength?: number;
     readonly multiline?: boolean;
@@ -201,7 +204,7 @@ export type PrimitiveButtonProps = PrimitiveAddressableProps &
     /** Compact mobile presentation for the shared virtual keyboard. */
     readonly compact?: boolean;
     /** Selects a shared button recipe; application colors remain theme-owned. */
-    readonly appearance?: 'default' | 'login-primary' | 'login-secondary';
+    readonly appearance?: 'default' | 'login-primary' | 'login-secondary' | 'admin-primary' | 'admin-secondary' | 'admin-icon';
     readonly tone?: PrimitiveTone;
     readonly onPress?: () => void;
     readonly onLayout?: (event: LayoutChangeEvent) => void;
@@ -215,7 +218,7 @@ export type PrimitiveStatusProps = PrimitiveAddressableProps &
   Readonly<{
     readonly children?: ReactNode;
     /** Selects a shared status recipe; application colors remain theme-owned. */
-    readonly appearance?: 'default' | 'login';
+    readonly appearance?: 'default' | 'login' | 'admin';
     readonly tone?: PrimitiveTone;
     readonly onLayout?: (event: LayoutChangeEvent) => void;
     readonly onTextLayout?: (event: TextLayoutEvent) => void;
@@ -233,16 +236,23 @@ export type PrimitiveIconName = 'admin' | 'blocked' | 'check' | 'chevron-down' |
 
 export type PrimitiveIconProps = PrimitiveAddressableProps & Readonly<{
   readonly accessibilityLabel: string;
-  readonly appearance?: 'default' | 'login' | 'keyboard-action';
+    readonly appearance?: 'default' | 'login' | 'keyboard-action' | 'admin-shell' | 'admin-content';
   readonly icon: PrimitiveIconName;
   readonly size?: number;
   /** Presentation-only alignment override for composite primitive composition. */
   readonly style?: StyleProp<ViewStyle>;
 }>;
 
+export type PrimitiveIconBadgeProps = PrimitiveAddressableProps & Readonly<{
+  readonly accessibilityLabel: string;
+  readonly icon: PrimitiveIconName;
+  readonly size?: number;
+}>;
+
 export type PrimitiveLayoutProps = PrimitiveAddressableProps &
   Readonly<{
     readonly children?: ReactNode;
+    readonly appearance?: 'default' | 'admin' | 'admin-inset' | 'admin-header' | 'admin-nav' | 'admin-content';
     /** Presentation-only native layout override for composite primitive composition. */
     readonly style?: StyleProp<ViewStyle>;
   }>;
@@ -251,6 +261,7 @@ export type PrimitiveGridProps = PrimitiveLayoutProps &
   Readonly<{
     readonly accessibilityLabel?: string;
     readonly accessibilityRole?: 'none' | 'tablist';
+    readonly appearance?: 'default' | 'admin-header' | 'admin-nav' | 'admin-content';
   }>;
 
 export type PrimitiveCodeBlockProps = PrimitiveAddressableProps &
@@ -263,6 +274,7 @@ export type PrimitiveFeedbackProps = PrimitiveAddressableProps &
   Readonly<{
     readonly accessibilityLabel?: string;
     readonly children?: ReactNode;
+    readonly appearance?: 'default' | 'admin-status';
     readonly tone?: PrimitiveTone;
   }>;
 
@@ -309,6 +321,7 @@ export type PrimitiveDropdownSelectProps = PrimitiveFormControlProps &
     readonly options: readonly PrimitiveOption[];
     readonly value: string;
     readonly open: boolean;
+    readonly appearance?: 'default' | 'admin-mobile';
     readonly onOpenChange?: (open: boolean) => void;
     readonly onValueChange?: (value: string) => void;
   }>;
@@ -327,11 +340,36 @@ export type PrimitiveRatioBarProps = PrimitiveAddressableProps &
     readonly segments: readonly PrimitiveRatioSegment[];
   }>;
 
+export type PrimitiveStatusLineProps = PrimitiveAddressableProps &
+  Readonly<{
+    readonly accessibilityLabel?: string;
+    readonly tone?: PrimitiveTone;
+    readonly children?: ReactNode;
+  }>;
+
+export type PrimitiveFactItem = Readonly<{
+  readonly key: string;
+  readonly testID?: string;
+  readonly label: string;
+  readonly value: string;
+  readonly tone?: PrimitiveTone;
+}>;
+
+export type PrimitiveFactGridProps = PrimitiveAddressableProps &
+  Readonly<{
+    readonly items: readonly PrimitiveFactItem[];
+    readonly columns?: 1 | 2 | 3;
+  }>;
+
 export type PrimitiveDisclosureProps = PrimitiveAddressableProps &
   Readonly<{
     readonly accessibilityLabel: string;
     readonly label: string;
     readonly summary?: string;
+    readonly summaryTestID?: string;
+    readonly status?: string;
+    readonly statusTestID?: string;
+    readonly triggerTestID?: string;
     readonly expanded: boolean;
     readonly onExpandedChange?: (expanded: boolean) => void;
     readonly children?: ReactNode;
@@ -346,6 +384,10 @@ export type PrimitiveSurfaceMapSurface = Readonly<{
   readonly aspectRatio: number;
   readonly insideLabels: readonly string[];
   readonly outsideLabels: readonly string[];
+  readonly logicWidthLabel?: string;
+  readonly logicHeightLabel?: string;
+  readonly physicalWidthLabel?: string;
+  readonly physicalHeightLabel?: string;
   readonly statusLabel?: string;
   readonly statusTone?: PrimitiveTone;
 }>;
@@ -355,6 +397,7 @@ export type PrimitiveSurfaceMapProps = PrimitiveAddressableProps &
     readonly accessibilityLabel: string;
     readonly surfaces: readonly PrimitiveSurfaceMapSurface[];
     readonly direction?: 'row' | 'column';
+    readonly compact?: boolean;
   }>;
 
 export type PrimitiveTextareaProps = PrimitiveInputProps &
@@ -375,6 +418,7 @@ export type PrimitiveKeyValueRowProps = PrimitiveAddressableProps &
   Readonly<{
     readonly label: string;
     readonly value: string;
+    readonly appearance?: 'default' | 'admin';
   }>;
 
 export type PrimitiveStatusRowProps = PrimitiveKeyValueRowProps &

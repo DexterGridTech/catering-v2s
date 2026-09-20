@@ -140,8 +140,8 @@
 
 | Frame | 内容顺序 | Surface 视觉 |
 | --- | --- | --- |
-| `IA-13 RUNTIME-L-SINGLE-SURFACE` / `IA-14 RUNTIME-M-SINGLE-SURFACE` | 页面标题 → 总体状态 → 物理屏数量 → 一块 surface map → 说明 | 矩形按真实逻辑宽高比；逻辑宽/高写在框内长/高边；物理宽/高写在框外长/高边；缺失值位置显示“未知”；mobile 多 surface 事实使用同一 frame 的 `display-facts-error` 变体，不生成第二块矩形 |
-| `IA-15 RUNTIME-L-DUAL-SURFACE` | 页面标题 → 总体状态 → 两块 surface map 并列 → 说明 | 主屏/副屏标题在框上方；两块矩形比例不同；当前 surface 用 focus 边框，非当前 surface 只显示存在性、角色和“该屏信息未提供”，不补分辨率/就绪态 |
+| `IA-13 RUNTIME-L-SINGLE-SURFACE` / `IA-14 RUNTIME-M-SINGLE-SURFACE` | 页面标题 → 总体状态 → 环境/调试/设备/显示事实状态 → 物理屏数量 → 一块 surface map → 说明 | 矩形按真实逻辑宽高比；逻辑宽/高写在框内长/高边；物理宽/高写在框外长/高边；缺失值位置显示“未知”；mobile 多 surface 事实使用同一 frame 的 `display-facts-error` 变体，不生成第二块矩形 |
+| `IA-15 RUNTIME-L-DUAL-SURFACE` | 页面标题 → 总体状态 → 环境/调试/设备/显示事实状态 → 物理屏数量 → 两块 surface map 并列 → 说明 | 主屏/副屏标题在框上方；两块矩形比例不同；当前 surface 用 focus 边框，非当前 surface 只显示存在性、角色和“该屏信息未提供”，不补分辨率/就绪态 |
 
 ### 4.4 双机拓扑
 

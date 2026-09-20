@@ -72,9 +72,6 @@ export async function createSampleAssembly(
   const nativeLoadingCapability = input.nativeLoadingCapability
   const surfaceForm = input.surfaceForm
   const environmentMode: EnvironmentMode = input.environmentMode ?? (__DEV__ ? 'DEV' : 'PROD')
-  const staffAuthModule = sampleStaffAuthAssembly.createModule()
-  const memberDeskModule = sampleMemberDeskAssembly.createModule()
-  const memberRegistryModule = createSampleMemberRegistryModule()
   return createConsoleAssembly<SampleConsoleReadyPayload>({
     appName: 'sample-console',
     errorPrefix: 'sample-console',
@@ -106,27 +103,30 @@ export async function createSampleAssembly(
     }),
     resolveCommandTarget: resolveTopologyCommandTarget,
     createTopologyAdminCapability,
-    createApplicationModules: ({uiStateModule}) => [
-      createTransportModule(),
-      createTopologyModule({
-        displayName: 'sample-console',
-        moduleName: integrationModuleName,
-        surfaceForm,
-        identityClient: createTopologyIdentityClient(),
-        peerChannel: input.topologyPeerChannel,
-        stateSyncSlices: [...(uiStateModule.stateSlices ?? []), ...(memberRegistryModule.stateSlices ?? [])].reduce<Array<{
-          readonly name: string
-          readonly syncIntent: 'master-to-slave' | 'slave-to-master'
-        }>>((result, slice) => {
-          if (slice.syncIntent !== 'isolated') result.push({name: slice.name, syncIntent: slice.syncIntent})
-          return result
-        }, []),
-      }),
-      createSampleConsoleModule(),
-      createSampleStaffSessionModule(),
-      memberRegistryModule,
-      staffAuthModule,
-      memberDeskModule,
-    ],
+    createApplicationModules: ({uiStateModule}) => {
+      const memberRegistryModule = createSampleMemberRegistryModule()
+      return [
+        createTransportModule(),
+        createTopologyModule({
+          displayName: 'sample-console',
+          moduleName: integrationModuleName,
+          surfaceForm,
+          identityClient: createTopologyIdentityClient(),
+          peerChannel: input.topologyPeerChannel,
+          stateSyncSlices: [...(uiStateModule.stateSlices ?? []), ...(memberRegistryModule.stateSlices ?? [])].reduce<Array<{
+            readonly name: string
+            readonly syncIntent: 'master-to-slave' | 'slave-to-master'
+          }>>((result, slice) => {
+            if (slice.syncIntent !== 'isolated') result.push({name: slice.name, syncIntent: slice.syncIntent})
+            return result
+          }, []),
+        }),
+        createSampleConsoleModule(),
+        createSampleStaffSessionModule(),
+        memberRegistryModule,
+        sampleStaffAuthAssembly.createModule(),
+        sampleMemberDeskAssembly.createModule(),
+      ]
+    },
   })
 }

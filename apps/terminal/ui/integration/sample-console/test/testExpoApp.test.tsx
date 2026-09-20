@@ -106,10 +106,10 @@ describe('test-expo host shell', () => {
       expect(style.flexShrink).toBe(0);
       expect(style.borderWidth).toBeUndefined();
     };
-    for (const [index, frame] of renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'}).entries()) {
+    for (const frame of renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'})) {
       act(() => {
         (frame.props.onLayout as (event: unknown) => void)({
-          nativeEvent: {layout: index === 0 ? {width: 1280, height: 800} : {width: 960, height: 540}},
+          nativeEvent: {layout: {width: 1280, height: 800}},
         });
       });
     }
@@ -145,15 +145,15 @@ describe('test-expo host shell', () => {
     expect(renderer!.root.findAllByProps({testID: 'sample-console:test-expo:surface:PRIMARY'}).length).toBeGreaterThan(
       0,
     );
-    for (const [index, frame] of renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'}).entries()) {
+    for (const frame of renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'})) {
       act(() => {
         (frame.props.onLayout as (event: unknown) => void)({
-          nativeEvent: {layout: index === 0 ? {width: 1280, height: 800} : {width: 960, height: 540}},
+          nativeEvent: {layout: {width: 1280, height: 800}},
         });
       });
     }
     assertFixedSurface('sample-console:test-expo:surface:PRIMARY', 1280, 800);
-    assertFixedSurface('sample-console:test-expo:surface:SECONDARY', 960, 540);
+    assertFixedSurface('sample-console:test-expo:surface:SECONDARY', 1280, 800);
     expect(
       renderer!.root.findByProps({testID: 'sample-console:test-expo:surface-mode:single'}).props.accessibilityState,
     ).toEqual({selected: false});

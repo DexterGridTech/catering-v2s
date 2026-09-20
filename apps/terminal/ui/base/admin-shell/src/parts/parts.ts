@@ -2,10 +2,10 @@ import {definePart} from '@catering-v2s/ui-base-render'
 import type {ComponentType} from 'react'
 import {AdminLayerLaptop} from '../components/AdminLayerLaptop'
 import {AdminLayerMobile} from '../components/AdminLayerMobile'
-import {DisplayContextSectionLaptop} from '../components/sections/DisplayContextSectionLaptop'
-import {DisplayContextSectionMobile} from '../components/sections/DisplayContextSectionMobile'
 import {PlatformPortsSectionLaptop} from '../components/sections/PlatformPortsSectionLaptop'
 import {PlatformPortsSectionMobile} from '../components/sections/PlatformPortsSectionMobile'
+import {DisplayContextSectionLaptop} from '../components/sections/DisplayContextSectionLaptop'
+import {DisplayContextSectionMobile} from '../components/sections/DisplayContextSectionMobile'
 import {RuntimeSectionLaptop} from '../components/sections/RuntimeSectionLaptop'
 import {RuntimeSectionMobile} from '../components/sections/RuntimeSectionMobile'
 import {TopologySectionLaptop} from '../components/sections/TopologySectionLaptop'
@@ -85,8 +85,8 @@ const runtimePart = (surfaceForm: 'laptop' | 'mobile') => createAdminPart({
 const displayContextPart = (surfaceForm: 'laptop' | 'mobile') => createAdminPart({
   partKey: 'admin.console.display-context',
   containerKeys: sectionContainer,
-  title: '显示上下文',
-  description: '显示形态、画布、角色、实例与承载状态',
+  title: '运行状态（显示上下文）',
+  description: '显示运行时状态与设备显示事实的 raw catalog part',
   component: surfaceForm === 'laptop' ? DisplayContextSectionLaptop : DisplayContextSectionMobile,
 }, surfaceForm)
 

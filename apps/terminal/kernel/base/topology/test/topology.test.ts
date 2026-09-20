@@ -62,6 +62,7 @@ import {
   topologyActions,
   topologyHostEventCommand,
   unpairTopologyCommand,
+  topologyReasonMessages,
 } from '../src/index'
 import {pairTopologyCommand} from '../src/features/commands/commands'
 import {moduleName as topologyModuleName} from '../src/moduleName'
@@ -308,6 +309,8 @@ const createTopologyRuntime = (input: Readonly<{
   readonly identityClient?: TopologyIdentityClient
   readonly surfaceForm?: SurfaceForm
   readonly extraModules?: readonly RuntimeModule[]
+  readonly persistenceKey?: string
+  readonly persistenceDebounceMs?: number
 }>): Readonly<{runtime: Runtime; device: DevicePort; events: readonly LogEvent[]}> => {
   const events: LogEvent[] = []
   const device = input.device ?? createTestDevice()
@@ -351,8 +354,8 @@ const createTopologyRuntime = (input: Readonly<{
     state: {
       runtimeName: input.runtimeName ?? 'topology-test',
       environmentMode: 'TEST',
-      persistenceKey: 'topology-test',
-      persistenceDebounceMs: 0,
+      persistenceKey: input.persistenceKey ?? 'topology-test',
+      persistenceDebounceMs: input.persistenceDebounceMs ?? 0,
     },
   })
   return Object.freeze({runtime, device, events})
@@ -822,6 +825,53 @@ describe('topology pairing facts', () => {
   })
 })
 
+describe('topology unpair peer cleanup', () => {
+  it('clears the slave locator from an explicit master unpair notice', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const {runtime} = createTopologyRuntime({host, peer})
+    await runtime.start()
+    try {
+      const locator: TopologyLocator = Object.freeze({
+        host: '192.0.2.46',
+        port: 43172,
+        basePath: '/terminal-topology',
+        identity,
+      })
+      runtime.getStore().dispatch(topologyActions.setMasterLocator(locator))
+      runtime.getStore().dispatch(topologyActions.setPeerIdentity(identity))
+      runtime.getStore().dispatch(topologyActions.setPeerReachable(true))
+      await runtime.dispatchCommand(
+        switchInstanceModeCommand,
+        {instanceMode: 'SLAVE'},
+        {requestId: createRequestId(), routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'}},
+      )
+      await runtime.dispatchCommand(
+        switchDisplayRoleCommand,
+        {displayRole: 'VICE'},
+        {requestId: createRequestId(), routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'}},
+      )
+
+      await runtime.dispatchCommand(
+        topologyHostEventCommand,
+        {event: 'peer-unreachable', reason: 'TOPOLOGY_UNPAIRED'},
+        {requestId: createRequestId()},
+      )
+      await waitForReconciliation()
+
+      expect(runtime.getState()[topologySliceName]).toMatchObject({
+        masterLocator: null,
+        peerIdentity: null,
+        peerReachable: false,
+        repairPending: false,
+      })
+      expect(selectTopologyFacts(runtime.getState())).toMatchObject({paired: false})
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+})
+
 describe('topology runtime target resolution', () => {
   it('uses each payload and peer intent independently of peer reachability', async () => {
     const host = new FakeTopologyHost()
@@ -961,6 +1011,8 @@ describe('topology admin capability', () => {
         available: false,
         reasonCode: 'TOPOLOGY_UNSUPPORTED_FORM',
       })
+      expect(topologyReasonMessages.TOPOLOGY_UNSUPPORTED_FORM).toBe('mobile 形态不支持双机拓扑')
+      expect(topologyReasonMessages.TOPOLOGY_REQUIRES_SINGLE_SCREEN).toBe('双机拓扑要求本机只有一个物理屏')
     } finally {
       releaseRuntimeForTest(mobile.runtime)
     }
@@ -1087,7 +1139,8 @@ describe('topology admin capability', () => {
   })
 
   it('unpairs a MASTER using peerIdentity when masterLocator is absent and clears all pairing facts', async () => {
-    const {runtime} = createTopologyRuntime({host: new FakeTopologyHost()})
+    const peer = new FakePeerChannel()
+    const {runtime} = createTopologyRuntime({host: new FakeTopologyHost(), peer})
     await runtime.start()
     try {
       runtime.getStore().dispatch(topologyActions.setPeerIdentity(identity))
@@ -1109,6 +1162,53 @@ describe('topology admin capability', () => {
         repairPending: false,
       })
       expect(selectTopologyFacts(runtime.getState())).toMatchObject({paired: false})
+      expect(peer.sentFrames.some(raw => {
+        const frame = JSON.parse(raw) as {type?: string; error?: {code?: string; retryable?: boolean}}
+        return frame.type === 'closed-error'
+          && frame.error?.code === 'TOPOLOGY_UNPAIRED'
+          && frame.error.retryable === false
+      })).toBe(true)
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('stops an active MASTER host before returning from unpair to role choice', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const {runtime} = createTopologyRuntime({host, peer})
+    await runtime.start()
+    try {
+      const enabled = await runtime.dispatchCommand(
+        setTopologyHostEnabledCommand,
+        {enabled: true},
+        {requestId: createRequestId()},
+      )
+      expect(enabled.status).toBe('completed')
+      await waitForReconciliation()
+      runtime.getStore().dispatch(topologyActions.setPeerIdentity(identity))
+      runtime.getStore().dispatch(topologyActions.setPeerReachable(true))
+
+      const result = await createTopologyAdminCapability(runtime).unpair()
+
+      expect(result.status).toBe('completed')
+      expect(host.stopCalls.length).toBeGreaterThanOrEqual(1)
+      expect(runtime.getState()[topologySliceName]).toMatchObject({
+        hostDesired: false,
+        hostActual: 'stopped',
+        hostAddress: null,
+        masterLocator: null,
+        peerIdentity: null,
+        peerReachable: false,
+        repairPending: false,
+      })
+      expect(selectTopologyFacts(runtime.getState())).toMatchObject({paired: false})
+      expect(peer.sentFrames.some(raw => {
+        const frame = JSON.parse(raw) as {type?: string; error?: {code?: string; retryable?: boolean}}
+        return frame.type === 'closed-error'
+          && frame.error?.code === 'TOPOLOGY_UNPAIRED'
+          && frame.error.retryable === false
+      })).toBe(true)
     } finally {
       releaseRuntimeForTest(runtime)
     }
@@ -1544,6 +1644,7 @@ describe('topology lifecycle integration', () => {
       displayCount: 1,
       hostDesired: true,
       hostActual: 'running',
+      hostAddress: {host: '192.0.2.10', port: 43172, basePath: '/terminal-topology'},
     })
 
     device.displayCount = 2
@@ -1555,6 +1656,7 @@ describe('topology lifecycle integration', () => {
       displayCount: 2,
       hostDesired: true,
       hostActual: 'stopped',
+      hostAddress: null,
     })
   })
 
@@ -1714,6 +1816,70 @@ describe('topology lifecycle integration', () => {
     })).toBe(true)
   })
 
+  it('flushes final unpair facts before a successor runtime can hydrate stale pairing', async () => {
+    const plainStorage = createProcessMemoryStateStoragePort()
+    const protectedStorage = createProcessMemoryStateStoragePort()
+    const first = createTopologyRuntime({
+      host: new FakeTopologyHost(),
+      plainStorage,
+      protectedStorage,
+      persistenceKey: 'topology-unpair-hydrate-recovery',
+      persistenceDebounceMs: 300,
+      appControl: {
+        ...unavailableAppControlPort,
+        resetRuntime: async input => Object.freeze({
+          status: 'accepted' as const,
+          requestId: input.requestId,
+          acceptedAt: completedAt,
+          terminalObservation: 'SUCCESSOR_RUNTIME_STARTED' as const,
+        }),
+      },
+    })
+    await first.runtime.start()
+    try {
+      const paired = await first.runtime.dispatchCommand(
+        pairTopologyCommand,
+        {locator: Object.freeze({
+          host: '192.0.2.22',
+          port: 43172,
+          basePath: '/terminal-topology',
+          identity: Object.freeze({...identity, nodeId: 'node-hydrate-peer'}),
+        })},
+        {requestId: createRequestId(), routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'}},
+      )
+      expect(paired.status).toBe('completed')
+      first.runtime.getStore().dispatch(topologyActions.setRepairPending(false))
+
+      const unpaired = await createTopologyAdminCapability(first.runtime).unpair()
+      expect(unpaired.status).toBe('completed')
+      expect(selectTopologyFacts(first.runtime.getState())).toMatchObject({paired: false})
+    } finally {
+      releaseRuntimeForTest(first.runtime)
+    }
+
+    const successor = createTopologyRuntime({
+      host: new FakeTopologyHost(),
+      plainStorage,
+      protectedStorage,
+      persistenceKey: 'topology-unpair-hydrate-recovery',
+      persistenceDebounceMs: 300,
+    })
+    await successor.runtime.start()
+    try {
+      expect(selectRuntimeInstanceMode(successor.runtime.getState())).toBe('MASTER')
+      expect(selectDisplayRole(successor.runtime.getState())).toBe('CHIEF')
+      expect(successor.runtime.getState()[topologySliceName]).toMatchObject({
+        masterLocator: null,
+        peerIdentity: null,
+        peerReachable: false,
+        repairPending: false,
+      })
+      expect(selectTopologyFacts(successor.runtime.getState())).toMatchObject({paired: false})
+    } finally {
+      releaseRuntimeForTest(successor.runtime)
+    }
+  })
+
   it('closes the active peer transport when a received frame fails protocol parsing', async () => {
     const host = new FakeTopologyHost()
     const peer = new FakePeerChannel()
@@ -1768,6 +1934,23 @@ describe('topology lifecycle integration', () => {
       hostDesired: true,
       hostActual: 'error',
       hostErrorCode: 'TOPOLOGY_HOST_PORT_OCCUPIED',
+    })
+
+    host.startFailureCode = undefined
+    const retried = await runtime.dispatchCommand(
+      setTopologyHostEnabledCommand,
+      {enabled: true},
+      {requestId: createRequestId()},
+    )
+    expect(retried.status).toBe('completed')
+    await waitForReconciliation()
+
+    expect(host.startCalls).toHaveLength(2)
+    expect(runtime.getState()['kernel.base.topology.state']).toMatchObject({
+      hostDesired: true,
+      hostActual: 'running',
+      hostErrorCode: null,
+      hostAddress: {host: '192.0.2.10', port: 43172, basePath: '/terminal-topology'},
     })
   })
 })

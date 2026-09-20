@@ -1,18 +1,19 @@
 # TER Admin console 非登录区 implementation-facing 详设
 
 ```text
-DESIGN_STATUS=READY_FOR_REVIEW_WITH_ADMISSION_BLOCKERS
+DESIGN_STATUS=ACCEPTED_FOR_IMPLEMENTATION
 REVIEW_TARGET=DESIGN
 IA_ACCEPTANCE=DEXTER_CONFIRMED_2026-09-20
 BUSINESS_SOURCE=doc/plans/platform/2026-09-19-ter-admin-console-non-login-requirements-codex.md
 JOURNEY_REFS=doc/plans/platform/2026-09-19-ter-admin-console-non-login-requirements-codex.md#3-用户旅途分析;#4-需求条目;#5-业务语义与事实边界;#7-后续IA详设必须回答的问题;#8-需求级验收性质
 IA_REF=doc/plans/platform/2026-09-19-ter-admin-console-non-login-ia-frame-inventory-codex.md;doc/plans/platform/2026-09-19-ter-admin-console-non-login-ia-high-fidelity-codex.md
 INTERACTION_REF=doc/plans/platform/2026-09-19-ter-admin-console-non-login-requirements-codex.md#3-用户旅途分析
-AUTHORIZED=编写本批非登录区 implementation-facing 详设、实施计划与 Claude review handoff
-NOT_AUTHORIZED=修改源码、修改测试、修改依赖、构建、Web/Metro/Android/device/DEV/L2/UAT、reset/seed/deploy、release、Git
-IMPLEMENTATION_AUTHORITY=false
+AUTHORIZED=编写本批非登录区 implementation-facing 详设、实施计划与 Claude review handoff；Dexter 2026-09-20 明确授权进入实施
+NOT_AUTHORIZED=构建、Web/Metro/Android/device/DEV/L2/UAT、reset/seed/deploy、release、Git；动态验证仍须按批次边界执行
+IMPLEMENTATION_AUTHORITY=true
+IMPLEMENTATION=STATIC_AND_FOCUSED_GREEN_OWNER_GATES_CLOSED
 INDEPENDENT_DESIGN_REVIEW=COMPLETED_FINDINGS_OPEN_REVIEWED_BY_FRESH_SUBAGENT
-ADMISSION_BLOCKERS=DISPLAY_FACTS_OWNER;TOPOLOGY_PAGE_AVAILABILITY_AND_DIRECT_PAIR_OWNER;MASTER_UNPAIR_GUARD
+ADMISSION_BLOCKERS=DISPLAY_FACTS_OWNER:OPEN_WITH_FOCUSED_OWNER_EVIDENCE;TOPOLOGY_PAGE_AVAILABILITY_AND_DIRECT_PAIR_OWNER:OPEN_WITH_FOCUSED_OWNER_EVIDENCE;MASTER_UNPAIR_GUARD:OPEN_WITH_FOCUSED_OWNER_EVIDENCE
 ```
 
 本文件是 IA 的实现翻译，不另造第二套视觉或用户旅途正本。frame inventory 是用户旅途、可见内容、状态、文案和动作的语义正本；high-fidelity IA 是同一 IA-ID 的位置、尺寸、形状、颜色、图标、字体和视觉 token 正本；本文件只冻结 owner、数据传递、组件公共面、订阅边界、失败形态、代码落点和实施顺序。任何与 IA-ID、用户文案、状态数量、角色动作或 current/non-current surface 边界冲突的实现，必须先修设计/IA，不得由实施者择一。
@@ -37,10 +38,10 @@ ADMISSION_BLOCKERS=DISPLAY_FACTS_OWNER;TOPOLOGY_PAGE_AVAILABILITY_AND_DIRECT_PAI
 | 当前手机导航是可换行 tab 集合 | `apps/terminal/ui/base/admin-shell/src/components/AdminSectionNavigation.tsx` | 必须替换为一个固定在 header 下方、纵向页面内唯一的真实下拉 selector；不能继续把 tab 换行。 |
 | `PrimitiveSelect` 当前按 press 循环下一个 option，`expanded` 固定为 `false` | `apps/terminal/ui/base/primitives/src/components/PrimitiveForms.tsx`、`src/types/types.ts` | 不把它伪称为 dropdown；新增 `PrimitiveDropdownSelect`，保留 `PrimitiveSelect` 旧语义。 |
 | `RenderRuntimeFacts.platformPortCapabilities` 已提供能力单位快照 | `apps/terminal/ui/base/render/src/types/runtimeFacts.ts`、`apps/terminal/kernel/base/platform-ports/src/types/platformPorts.ts` | 端口摘要在 admin-shell 做纯 presentation projection；每个 capability 或一个 synthetic undeclared unit 是一个分母单位。 |
-| `DisplayInfo`/`DisplayInfoRead` 公开面只有 `displayCount` | `apps/terminal/kernel/base/platform-ports/src/types/device.ts`、`apps/terminal/kernel/base/display-context/src/foundations/displayDevice.ts` | IA 要求的逐 surface 逻辑/物理尺寸不能由当前 UI 推导；必须有 display-facts owner，否则 CP-0 停。 |
-| Android adapter 已在日志中记录更丰富的显示值，但 public port 丢弃它们 | `apps/terminal/adapter/android/device/android/src/main/java/com/catering/v2s/terminal/adapter/android/device/TerminalDeviceModule.kt` | 日志不是 UI 数据源；不得直接读日志、复制 current surface 或补算另一块屏。 |
-| topology capability 有 snapshot、operation eligibility、query、pair、unpair、host enable，但没有 page-level availability，且 pair 需要 identity | `apps/terminal/kernel/base/contracts/src/types/topology.ts`、`apps/terminal/kernel/base/topology/src/foundations/createTopologyAdminCapability.ts` | 必须增加 owner 级 page gate 与 direct-pair capability，UI 不可用 representative operation reason 拼整页 gate。 |
-| 主机解绑资格允许但 actor 前置读取错误字段 | `apps/terminal/kernel/base/topology/src/foundations/evaluateTopologyOperation.ts`、`apps/terminal/kernel/base/topology/src/features/actors/actors.ts`、`apps/terminal/kernel/base/topology/src/selectors/selectTopologyFacts.ts` | `selectTopologyFacts` 在 MASTER+peerIdentity 时可得 paired，但 unpair actor 当前只检查 `masterLocator`；CP-0/CP-1 必须先修正为 paired 事实并验证清理集合，否则 IA-24/25/26 不可达。 |
+| 设计时 `DisplayInfo`/`DisplayInfoRead` 公开面只有 `displayCount`；当前实现已扩展逐 surface owner | 设计时 source：`apps/terminal/kernel/base/platform-ports/src/types/device.ts`、`apps/terminal/kernel/base/display-context/src/foundations/displayDevice.ts`；当前实现同路径 | 日志不是 UI 数据源；当前 closure 由 display-context read model、Android adapter、render transfer、consumer test 共同证明，不复制 current surface 或补算另一块屏。 |
+| 设计时 Android adapter 在日志中记录更丰富显示值但 public port 丢弃；当前实现已在 adapter 边界传递 | 设计时 source：`apps/terminal/adapter/android/device/android/src/main/java/com/catering/v2s/terminal/adapter/android/device/TerminalDeviceModule.kt`；当前实现同路径 | 日志不是 UI 数据源；当前 adapter contract test 覆盖双 surface logical/physical/readiness。 |
+| 设计时 topology capability 没有 page-level availability/direct-pair public surface；当前实现已新增 owner API | 设计时 source：`apps/terminal/kernel/base/contracts/src/types/topology.ts`、`apps/terminal/kernel/base/topology/src/foundations/createTopologyAdminCapability.ts`；当前实现同路径 | page gate/direct pair 现在由 topology owner 提供，UI 不从 representative operation reason 拼整页 gate；consumer 与 owner tests 覆盖。 |
+| 设计时主机解绑资格允许但 actor 前置读取错误字段；当前实现已改为 typed `paired` | 设计时 source：`apps/terminal/kernel/base/topology/src/features/actors/actors.ts`、`selectTopologyFacts.ts`；当前实现同路径 | MASTER+peerIdentity focused readback、guard red mutation、三事实清理已闭合；不得退回 masterLocator-only。 |
 | `switch-role` 在 union 中但没有 capability command，evaluator 也没有专门分支 | `apps/terminal/kernel/base/contracts/src/types/topology.ts`、`evaluateTopologyOperation.ts` | 不画 switch-role 按钮；该值在 action matrix 中标为资格-only，直到 owner 有真实 command。 |
 | 两个 integration 各自拥有 theme/global.css 与 Tailwind mapping | `apps/terminal/ui/integration/sample-console/theme/global.css`、`sample-wallpaper-console/theme/global.css` 及各自 `tailwind.config.cjs` | shared primitive/admin-shell 只消费 semantic token；两个 integration 同时提供 token，数值差异由主题 owner 决定。 |
 | Android 两个 app 的 Tailwind 配置继承 `assembly/base/android/config/index.cjs` 的 `sharedColors` | `apps/terminal/assembly/android/sample-terminal/tailwind.config.cjs`、`sample-wallpaper-terminal/tailwind.config.cjs`、`apps/terminal/assembly/base/android/config/index.cjs` | admin token 的实现分母必须包含两份 global.css、两份 integration Tailwind 和 Android sharedColors；不能只改 integration 就宣称 Android 完整。 |
@@ -105,7 +106,7 @@ IA 正本优先级固定为：frame inventory 负责语义字段、状态、文�
 | CP-4 | topology consumer 与全量 action/state frames | ui.base.admin-shell + topology capability consumer | gate、role choice、host/slave states、direct pair、unpair、failure/recovery | CP-1、CP-3 |
 | CP-5 | focused/static 与未来 visual/native/device proof | 主 agent | 代码/详设/IA 对账、测试与后续设备证据清单 | CP-2–CP-4；本次未授权执行 |
 
-CP-1 是硬 admission gate。当前源码尚未提供 display facts 与 topology page-level availability/direct-pair 的公共面，因此本详设允许写出精确 contract 和停机条件，但不把它们伪装成“已有能力”。
+CP-1 是硬 admission gate。本轮实现已按最小 owner contract 扩展 display facts、topology page availability/direct pair，并完成 transfer/consumer/focused readback；fresh independent review 回传前仍不得把该 gate 升级为整体动态通过。
 
 ## 3. 横切机制对照表
 
@@ -221,10 +222,12 @@ type PortUnit = Readonly<{
 | category | 用户名 | 当前 port 映射 |
 | --- | --- | --- |
 | `logs` | 日志与诊断 | `logger`, `logUpload` |
-| `device` | 设备与显示 | `device` |
-| `system` | 系统与存储 | `appControl`, `persistKv`, `persistSecure` |
+| `device` | 设备与系统 | `device` |
+| `system` | 存储与状态 | `appControl`, `persistKv`, `persistSecure` |
 | `connection` | 连接与拓扑 | `connector`, `topologyHost` |
 | `release` | 脚本与更新 | `script`, `hotUpdate` |
+
+页面分类的可见顺序沿用需求正本：日志与诊断、设备与系统、连接与拓扑、存储与状态、脚本与更新；category 映射表本身不改变该顺序。
 
 缺少归类的新增 port 不得落入“其它”而隐藏；纯函数返回 `unmapped` 并让 focused test 变红，先更新设计/分类表。页面只展示摘要、比例条、五个分类 disclosure；展开后展示该 category 的有限 units、名称、状态、来源/原因。视觉稿示例中的数字不是冻结常量，真实总数由 unit projection 得到。
 
@@ -305,7 +308,7 @@ page gate 只有 `available=false` 时才渲染 IA-16/17 的单一 gate card。g
 
 ### 4.6 逐帧实现分母
 
-下表是 implementation、逐代码与详设对账以及后续视觉/设备证据的完整 IA 分母。每个 ID 都必须有对应 renderer/fixture/testID；不能以“同类页面”代替缺失帧。`IA-30`（副机恢复页）和 `IA-31`（通用恢复页）已由产品旅途删除，不是生产分母；`IA-32` 是跨 tab 的 laptop 双屏对照素材，不新增生产页面。
+下表是 implementation、逐代码与详设对账以及后续视觉/设备证据的完整 IA 分母。29 个 production ID 必须有对应 renderer/fixture/testID；IA-32 保留为非生产 cross-tab artifact。当前实现由 `apps/terminal/ui/base/admin-shell/src/foundations/adminFrameRegistry.ts` 冻结 binding kind、renderer、fixture key、root testID 与 control testID，并由 `adminFrameRegistry.test.ts` 用 fixture 驱动 frame selector，锁定 29 个 production frame 加 1 个对照帧。`controlTestIDs` 只绑定实现层 locator，不替代控件形态或真实运行画面证据；IA-14 另以 `single-surface`/`display-facts-error` 互斥 variant 记录正负控件。不能以“同类页面”代替缺失帧。`IA-30`（副机恢复页）和 `IA-31`（通用恢复页）已由产品旅途删除，不是生产分母；`IA-32` 是跨 tab 的 laptop 双屏对照素材，不新增生产页面。
 
 | IA-ID | frame name | owner/形态 | 必须可见或必须不可见 |
 | --- | --- | --- | --- |
@@ -426,9 +429,9 @@ token alias 的完整分母是：两个 integration `theme/global.css`、两个 
 | owner API/read model | 消费者 | 当前状态 |
 | --- | --- | --- |
 | `RenderRuntimeFacts.platformPortCapabilities` | `PlatformPortsSection` projection | 已存在 |
-| `DisplayFactsReadModel` | `RuntimeSection` aggregate | **需 CP-0/CP-1 owner closure** |
-| `TopologyAdminCapability.getPageAvailability` | `TopologySection` page gate | **需 CP-0/CP-1 owner closure** |
-| `TopologyAdminCapability.pairByHost` | `TopologySection` direct pair | **需 CP-0/CP-1 owner closure** |
+| `DisplayFactsReadModel` | `RuntimeSection` aggregate | `MATCHED：owner→console assembly→render transfer→RuntimeSection；focused 61 tests` |
+| `TopologyAdminCapability.getPageAvailability` | `TopologySection` page gate | `MATCHED：owner capability→consumer gate；focused page-gate no-operation-eligibility proof` |
+| `TopologyAdminCapability.pairByHost` | `TopologySection` direct pair | `MATCHED：typed owner command→host input；focused direct-pair/no-query proof` |
 | `TopologyAdminCapability.getSnapshot` | `TopologySection` paired/reconnect/host state | 已存在，但不用于整页资格重组 |
 | `TopologyAdminCapability.getOperationEligibility` | 对应动作 enabled/reason | 已存在；不产生用户查询步骤 |
 | `setHostEnabled`, `unpair` | host/slave action buttons | 已存在 |
@@ -445,10 +448,10 @@ token alias 的完整分母是：两个 integration `theme/global.css`、两个 
 | mobile selector 为真实 dropdown | IA mobile frames | primitives | `AdminShellMobile` | primitive + shell tests | N/A | 新 primitive，不改旧 `PrimitiveSelect` |
 | port unit denominator | platform descriptor source | `describePlatformPortCapabilities` 不变 | `buildPortUnits` | sum/category red tests | fixture capabilities inline | 同步 UI tests |
 | five category mapping | 详设 §4.3 | admin-shell presentation owner | category rows | unmapped category red test | fixture new port | 同步 map/test |
-| all-surface display facts | requirements §5.2/R-9 | display-context/device adapter | render context + runtime page | owner/public-surface tests | dual-display fixture | **CP-0 blocker；不得静默 N/A** |
+| all-surface display facts | requirements §5.2/R-9 | display-context/device adapter | render context + runtime page | owner/public-surface tests | dual-display fixture | **MATCHED_FOCUSED；dynamic/device visual pending** |
 | current/non-current projection | IA/requirements R-9 | admin-shell pure projector | `SurfaceMapModel` | missing non-current fields red test | single/dual facts | 同步 UI tests |
-| topology page gate | requirements R-12 | topology owner capability | topology page | raw/operation bypass red test | mobile/dual/ready snapshots | **CP-0 blocker** |
-| direct pair | requirements R-13/R-14 | topology command owner | host input/pair progress | no-query red test | pair success/failure | **CP-0 blocker** |
+| topology page gate | requirements R-12 | topology owner capability | topology page | raw/operation bypass red test | mobile/dual/ready snapshots | **MATCHED_FOCUSED；dynamic visual pending** |
+| direct pair | requirements R-13/R-14 | topology command owner | host input/pair progress | no-query red test | pair success/failure | **MATCHED_FOCUSED；dynamic visual pending** |
 | topology action matrix | IA topology frames | capability eligibility/commands | host/slave render | role cross-action red tests | role snapshots | 同步 action tests |
 | admin semantic tokens | IA high-fi token table | two integration themes | primitive class names | both theme mapping tests | N/A | CSS/Tailwind/test atomic group |
 | surface/action icons | IA visual grammar | primitives icon registry | page/action components | icon public-surface tests | N/A | only used names |
@@ -505,11 +508,11 @@ Visual/device evidence for IA geometry, theme contrast, focus/pressed behavior, 
 
 | 项目 | 当前状态 | 本批允许 | 本批禁止 |
 | --- | --- | --- | --- |
-| 逐 surface display facts public owner | `OPEN_BLOCKER`；当前 public `DisplayInfo` 只有 `displayCount` | 在 CP-0 复核最小 contract、owner、adapter/test 影响 | 从日志、current surface 或推导值伪造 |
-| topology page-level availability | `OPEN_BLOCKER`；当前 capability 无 page API | 在 topology owner 设计 typed read model | UI 从 representative operation reason 拼 page gate |
-| direct pair without visible identity query | `OPEN_BLOCKER`；当前 `pair` 需要 locator.identity | 在 topology owner 设计 `pairByHost` 并保留内部 identity resolution | 增加第二个用户步骤或 UI 自己造 identity |
-| master unpair guard | `OPEN_BLOCKER`；`selectTopologyFacts` 的 MASTER+peerIdentity 可 paired，但 actor 当前只检查 masterLocator | owner 以 paired 事实作为解绑前置，成功清理 locator/peerIdentity/peerReachable 并 read back；补 red mutation | 让 UI 绕过 owner、只补第二条清除路径或把 MASTER 误判为未配对 |
-| Android admin token mapping | `OPEN_UNTIL_IMPLEMENTATION`；sharedColors 当前没有本批 admin token | CP-2 同步两个 global.css、两个 integration Tailwind 和 sharedColors/config test | 只改 integration 就宣称 Android theme 完整 |
+| 逐 surface display facts public owner | `OPEN_WITH_FOCUSED_OWNER_EVIDENCE`；当前 public contract 含 surfaces | 已形成 owner/read model/adapter/render/consumer/readback 证据；动态继续分档，admission blocker 仍 OPEN | 从日志、current surface 或推导值伪造 |
+| topology page-level availability | `OPEN_WITH_FOCUSED_OWNER_EVIDENCE`；当前 capability 有 page API | 已形成 owner API、consumer gate、page-gate negative proof；admission blocker 仍 OPEN | UI 从 representative operation reason 拼 page gate |
+| direct pair without visible identity query | `OPEN_WITH_FOCUSED_OWNER_EVIDENCE`；用户面仅 host input/direct pair | owner 内部保留 identity resolution，外部只消费 `pairByHost` typed outcome；admission blocker 仍 OPEN | 增加第二个用户步骤或 UI 自己造 identity |
+| master unpair guard | `OPEN_WITH_FOCUSED_OWNER_EVIDENCE`；typed `paired` 前置并清理三事实 | 已形成 owner readback + 三项 red mutation 证据；admission blocker 仍 OPEN | 让 UI 绕过 owner、只补第二条清除路径或把 MASTER 误判为未配对 |
+| Android admin token mapping | `MATCHED_FOCUSED`；sharedColors 与两 app config test 已同步 | 保留两 integration、两 Tailwind、sharedColors/config test 的原子检查 | 只改 integration 就宣称 Android theme 完整 |
 | feature part 是否继续出现在同一用户导航 | 本批不改 feature；base registry 只拥有三页 | 保持 feature assembly/renderer contract，另行 scope | 为了三页 IA 静默删除 feature catalog/renderer |
 | visual/native/device evidence | `OPEN_NOT_AUTHORIZED` | 计划中登记执行体 | 用结构测试宣称 visual/device PASS |
 | L2/testId actual-node proof | `OPEN_UNTIL_IMPLEMENTATION` | 实施后再做 | 现在创建/运行 L2 |
@@ -558,6 +561,6 @@ Visual/device evidence for IA geometry, theme contrast, focus/pressed behavior, 
 - [x] topology page gate、direct pair、主副动作、关闭/解绑回目标选择已冻结。
 - [x] `switch-role` 未被伪造成可执行按钮。
 - [x] shared primitive/theme owner、订阅边界、日志脱敏与 testID 计划已列出。
-- [x] display facts/topology owner blocker 诚实保留，未把当前源码能力写成已具备。
+- [ ] display facts/topology owner blocker 仍为 OPEN；已有 owner/readback/focused red mutation 证据，但不能把 focused 证据写成 admission blocker 已关闭；动态与真实设备证据继续分档保留。
 - [x] 逐 CP 三维对账、全批三维对账、逐代码与详设对账均有明确执行体。
 - [ ] independent design review：当前为 `OPEN_UNTIL_FRESH_REVIEW`，交 Claude 前必须保留该披露，不可改写为已完成。

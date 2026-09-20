@@ -101,6 +101,18 @@ const mountWithNativeGeometry = (
 }
 
 describe('InputScrollArea', () => {
+  it('forwards a presentation-only trailing content inset to the shared scroll primitive', () => {
+    let renderer: ReactTestRenderer | undefined
+    act(() => {
+      renderer = create(<InputScrollArea testID="sample:scroll-padding" contentPaddingBottom={64}>内容</InputScrollArea>)
+    })
+    const scrollView = renderer!.root.findAllByType(ScrollView).find(node => node.props.testID === 'sample:scroll-padding')!
+    expect(scrollView.props.contentContainerStyle).toEqual({gap: 12, paddingBottom: 64})
+    act(() => {
+      renderer!.unmount()
+    })
+  })
+
   it('uses content-local coordinates when a scaled host has a non-zero scroll offset', () => {
     const scrollTo = vi.fn()
     const diagnostics: InputDiagnostic[] = []

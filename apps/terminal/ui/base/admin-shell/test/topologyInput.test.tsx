@@ -6,6 +6,7 @@ import {InputSurfaceFrame, useInputController} from '@catering-v2s/ui-base-input
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {TopologySection} from '../src/components/sections/TopologySection'
 import {ADMIN_CONSOLE_FOCUS_SCOPE_ID} from '../src/foundations/adminIdentity'
+import {adminTestIds} from '../src/foundations/adminTestIds'
 import type {AdminSectionProps} from '../src/types/adminSection'
 
 const topologyFacts = Object.freeze({
@@ -18,6 +19,7 @@ const topologyFacts = Object.freeze({
   hasTopologySecondarySurface: false,
   masterLocator: null,
   peerIdentity: null,
+  hostAddress: null,
   hostDesired: false,
   hostActual: 'stopped' as const,
   hostErrorCode: null,
@@ -97,6 +99,126 @@ describe('TopologySection host input', () => {
     act(() => { renderer.unmount() })
   })
 
+  it('renders the two goal cards without exposing an identity-query action', () => {
+    const renderer = mount()
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.goalChoice})).toBeDefined()
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.goalHost})).toBeDefined()
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.goalSlave})).toBeDefined()
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.pairResult}).type.name).toBe('PrimitiveStatusLine')
+    expect(renderer.root.findAllByProps({testID: adminTestIds.topology.operationFeedback})).toHaveLength(0)
+    expect(renderer.root.findAllByProps({testID: 'terminal.admin:topology:identity-query'})).toHaveLength(0)
+    act(() => { renderer.unmount() })
+  })
+
+  it('renders host-ready address facts and removes direct pairing input', () => {
+    const readyFacts = {
+      ...topologyFacts,
+      hostDesired: true,
+      hostActual: 'running' as const,
+      hostAddress: {host: '192.0.2.10', port: 43172, basePath: '/terminal-topology'},
+    }
+    const readyContext = {
+      ...context,
+      topologyCapability: {...topologyCapability, getSnapshot: () => readyFacts},
+    } as unknown as AdminSectionProps['context']
+    const renderer = mount(vi.spyOn(renderHooks, 'useUiStateSelector').mockReturnValue(readyFacts), readyContext)
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.hostService})).toBeDefined()
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.hostServiceState})).toBeDefined()
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.hostIp})).toBeDefined()
+    expect(renderer.root.findAllByProps({testID: adminTestIds.topology.goalChoice})).toHaveLength(0)
+    expect(renderer.root.findAllByProps({testID: adminTestIds.topology.pair})).toHaveLength(0)
+    act(() => { renderer.unmount() })
+  })
+
+  it('renders typed host failure with a retry action', () => {
+    const failedFacts = {
+      ...topologyFacts,
+      hostDesired: true,
+      hostActual: 'error' as const,
+      hostErrorCode: 'TOPOLOGY_HOST_PORT_OCCUPIED',
+    }
+    const failedContext = {
+      ...context,
+      topologyCapability: {...topologyCapability, getSnapshot: () => failedFacts},
+    } as unknown as AdminSectionProps['context']
+    const renderer = mount(vi.spyOn(renderHooks, 'useUiStateSelector').mockReturnValue(failedFacts), failedContext)
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.failureReason})).toBeDefined()
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.retry})).toBeDefined()
+    act(() => { renderer.unmount() })
+  })
+
+  it('keeps paired reconnecting semantics and exposes unpair for both roles', () => {
+    const pairedFacts = {
+      ...topologyFacts,
+      instanceMode: 'SLAVE' as const,
+      displayRole: 'VICE' as const,
+      paired: true,
+      peerReachable: false,
+      peerIdentity: {
+        protocolVersion: 1 as const,
+        moduleName: 'ui.integration.sample-console',
+        nodeId: 'node-master',
+        displayName: '主机',
+        instanceMode: 'MASTER' as const,
+        displayRole: 'CHIEF' as const,
+      },
+    }
+    const pairedContext = {
+      ...context,
+      topologyCapability: {...topologyCapability, getSnapshot: () => pairedFacts},
+    } as unknown as AdminSectionProps['context']
+    const renderer = mount(vi.spyOn(renderHooks, 'useUiStateSelector').mockReturnValue(pairedFacts), pairedContext)
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.pairing})).toBeDefined()
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.reachability})).toBeDefined()
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.counterparty})).toBeDefined()
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.pairState})).toBeDefined()
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.unpair})).toBeDefined()
+    expect(renderer.root.findAllByProps({testID: adminTestIds.topology.goalChoice})).toHaveLength(0)
+    expect(renderer.root.findAllByProps({testID: adminTestIds.topology.host})).toHaveLength(0)
+    act(() => { renderer.unmount() })
+  })
+
+  it('keeps the pairing result bound to owner facts after a successful unpair', async () => {
+    const pairedFacts = {
+      ...topologyFacts,
+      paired: true,
+      peerReachable: true,
+      peerIdentity: {
+        protocolVersion: 1 as const,
+        moduleName: 'ui.integration.sample-console',
+        nodeId: 'node-slave',
+        displayName: '副机',
+        instanceMode: 'SLAVE' as const,
+        displayRole: 'VICE' as const,
+      },
+    }
+    const unpairedFacts = {...topologyFacts}
+    let currentFacts = pairedFacts
+    const unpair = vi.fn(async () => {
+      currentFacts = unpairedFacts
+      return {status: 'completed' as const}
+    })
+    const pairedContext = {
+      ...context,
+      topologyCapability: {
+        ...topologyCapability,
+        getSnapshot: () => currentFacts,
+        unpair,
+      },
+    } as unknown as AdminSectionProps['context']
+    const selectorSpy = vi.spyOn(renderHooks, 'useUiStateSelector').mockImplementation(() => currentFacts)
+    const renderer = mount(selectorSpy, pairedContext)
+
+    await act(async () => {
+      renderer.root.findByProps({testID: adminTestIds.topology.unpair}).props.onPress()
+      await new Promise(resolve => setTimeout(resolve, 1_900))
+    })
+
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.pairResult}).props.children).toContain('尚未配对')
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.operationFeedback}).props.children).toBe('解绑提交完成，等待状态同步')
+    act(() => { renderer.unmount() })
+  })
+
   it('subscribes to owner topology facts instead of reading a private state selector', () => {
     const selectorSpy = vi.spyOn(renderHooks, 'useUiStateSelector').mockReturnValue(topologyFacts)
     const renderer = mount(selectorSpy)
@@ -120,6 +242,7 @@ describe('TopologySection host input', () => {
     }
     await act(async () => {
       renderer.root.findByProps({testID: 'terminal.admin:topology:pair'}).props.onPress()
+      await new Promise(resolve => setTimeout(resolve, 850))
     })
 
     expect(topologyCapability.pairByHost).toHaveBeenCalledWith({host: '127.0.0.1'})
@@ -127,10 +250,12 @@ describe('TopologySection host input', () => {
   })
 
   it('renders one page gate and no topology action when the owner denies the page', () => {
+    const getOperationEligibility = vi.fn((operation: string) => ({operation, allowed: true, reasonCode: 'allowed' as const}))
     const unavailableContext = {
       ...context,
       topologyCapability: {
         ...topologyCapability,
+        getOperationEligibility,
         getPageAvailability: () => ({available: false as const, reasonCode: 'TOPOLOGY_REQUIRES_SINGLE_SCREEN' as const}),
       },
     } as unknown as AdminSectionProps['context']
@@ -140,6 +265,11 @@ describe('TopologySection host input', () => {
     expect(renderer.root.findAllByProps({testID: 'terminal.admin:topology:host'})).toHaveLength(0)
     expect(renderer.root.findAllByProps({testID: 'terminal.admin:topology:pair'})).toHaveLength(0)
     expect(renderer.root.findAllByProps({testID: 'terminal.admin:topology:unpair'})).toHaveLength(0)
+    expect(renderer.root.findAllByProps({testID: adminTestIds.topology.hostService})).toHaveLength(0)
+    expect(renderer.root.findAllByProps({testID: adminTestIds.topology.pairing})).toHaveLength(0)
+    expect(renderer.root.findAllByProps({testID: adminTestIds.topology.counterparty})).toHaveLength(0)
+    expect(renderer.root.findAllByProps({testID: adminTestIds.topology.displayCount})).toHaveLength(0)
+    expect(getOperationEligibility).not.toHaveBeenCalled()
     act(() => { renderer.unmount() })
   })
 

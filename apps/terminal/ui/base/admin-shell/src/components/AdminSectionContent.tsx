@@ -48,7 +48,7 @@ export const AdminSectionContent = ({
   if (selectedSection === undefined || activeSection === undefined) {
     return (
       <PrimitiveEmptyState testID={`${adminTestIds.content}:empty`} accessibilityLabel="暂无可用诊断节">
-        暂无可用诊断节
+        暂无可用诊断节；请检查当前运行时配置后重试
       </PrimitiveEmptyState>
     )
   }

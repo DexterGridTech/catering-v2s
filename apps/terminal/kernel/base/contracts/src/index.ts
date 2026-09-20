@@ -41,6 +41,7 @@ export type {
   TopologyFacts,
   TopologyIdentity,
   TopologyIdentityResponse,
+  TopologyLocalAddress,
   TopologyInstanceMode,
   TopologyJsonPrimitive,
   TopologyJsonValue,

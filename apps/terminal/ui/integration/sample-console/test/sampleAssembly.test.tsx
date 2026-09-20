@@ -47,7 +47,7 @@ const createSampleAssembly = (input: TestSampleAssemblyInput) => createProductio
 })
 
 const LANDSCAPE_PRIMARY_FRAME = {width: 1280, height: 800} as const
-const LANDSCAPE_SECONDARY_FRAME = {width: 960, height: 540} as const
+const LANDSCAPE_SECONDARY_FRAME = {width: 1280, height: 800} as const
 const PORTRAIT_PRIMARY_FRAME = {width: 360, height: 640} as const
 const LAUNCHER_WINDOW_ORIGIN = {x: 100, y: 200} as const
 
@@ -164,6 +164,31 @@ const press = (renderer: ReactTestRenderer, testID: string): (() => unknown) => 
   return instance.props.onPress
 }
 
+const waitForAdminContent = async (renderer: ReactTestRenderer): Promise<void> => {
+  const pageTestIds = [
+    'admin.console.platform-ports',
+    'admin.console.runtime',
+    'admin.console.topology',
+    'sample.console.admin-test',
+  ]
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    if (pageTestIds.some(testID => renderer.root.findAllByProps({testID}).length > 0)) return
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)) })
+  }
+  throw new Error('admin content did not become available')
+}
+
+const selectMobileAdminSection = async (renderer: ReactTestRenderer, partKey: string): Promise<void> => {
+  await act(async () => {
+    press(renderer, 'terminal.admin:navigation:trigger')()
+    await new Promise(resolve => setTimeout(resolve, 0))
+  })
+  await act(async () => {
+    press(renderer, `terminal.admin:navigation:option:${partKey}`)()
+    await new Promise(resolve => setTimeout(resolve, 0))
+  })
+}
+
 const pressLauncher = (
   renderer: ReactTestRenderer,
   logicalX = 1,
@@ -245,6 +270,7 @@ const authenticateAdmin = async (renderer: ReactTestRenderer): Promise<void> => 
     press(renderer, adminTestIds.verify)()
     await new Promise(resolve => setTimeout(resolve, 0))
   })
+  await waitForAdminContent(renderer)
 }
 
 type TextInputTestInstance = Readonly<{
@@ -448,7 +474,7 @@ describe('sample-console real assembly', () => {
     ])
   })
 
-  it('keeps the production admin test section available in both laptop and mobile', async () => {
+  it('keeps exactly the three canonical admin pages available in both laptop and mobile', async () => {
     const laptopAssembly = await createSampleAssembly({
       platformPorts: createTestPlatformPorts(),
       persistenceKey: `sample-console-admin-laptop-filter-${Date.now()}`,
@@ -470,12 +496,11 @@ describe('sample-console real assembly', () => {
       for (const sectionTestID of [
         adminTestIds.sections.platformPorts,
         adminTestIds.sections.runtime,
-        adminTestIds.sections.displayContext,
-        adminTestIds.sections.sampleConsole,
         adminTestIds.sections.topology,
       ]) {
         expect(laptopRenderer.root.findByProps({testID: sectionTestID})).toBeDefined()
       }
+      expect(laptopRenderer.root.findAllByProps({testID: adminTestIds.sections.sampleConsole})).toHaveLength(0)
       const laptopShell = laptopRenderer.root.findByProps({testID: adminTestIds.shell})
       const laptopShellStyle = StyleSheet.flatten(laptopShell.props.style)
       expect(laptopShellStyle).toMatchObject({flex: 1, width: '100%'})
@@ -516,7 +541,7 @@ describe('sample-console real assembly', () => {
         minHeight: 0,
         minWidth: 0,
       })
-      const laptopSectionHeading = laptopRenderer.root.findAllByProps({testID: 'admin.console.platform-ports:title'})
+      const laptopSectionHeading = laptopRenderer.root.findAllByProps({testID: adminTestIds.ports.title})
         .find(node => node.type === Text)!
       expect(laptopSectionHeading.props).toMatchObject({
         accessibilityRole: 'header',
@@ -526,47 +551,42 @@ describe('sample-console real assembly', () => {
       mobileRenderer = mount(createSurfaceForDisplayIndex(mobileAssembly, 0), PORTRAIT_PRIMARY_FRAME)
       await tapLauncher(mobileRenderer)
       await authenticateAdmin(mobileRenderer)
-      for (const sectionTestID of [
-        adminTestIds.sections.platformPorts,
-        adminTestIds.sections.runtime,
-        adminTestIds.sections.displayContext,
-        adminTestIds.sections.sampleConsole,
-        adminTestIds.sections.topology,
-      ]) {
-        expect(mobileRenderer.root.findByProps({testID: sectionTestID})).toBeDefined()
-      }
+      expect(mobileRenderer.root.findByProps({testID: 'terminal.admin:navigation'})).toBeDefined()
       const mobileShell = mobileRenderer.root.findByProps({testID: adminTestIds.shell})
       const mobileShellStyle = StyleSheet.flatten(mobileShell.props.style)
       expect(mobileShellStyle).toMatchObject({flex: 1, width: '100%'})
       expect(mobileShellStyle).not.toHaveProperty('maxWidth')
-      expect(StyleSheet.flatten(mobileRenderer.root.findByProps({testID: 'terminal.admin:navigation'}).props.style)).toMatchObject({
-        flexWrap: 'wrap',
-      })
       const mobileNavigation = mobileRenderer.root.findByProps({testID: 'terminal.admin:navigation'})
-      expect(mobileNavigation.props.accessibilityRole).toBe('tablist')
-      const mobileSectionTab = mobileRenderer.root.findAllByProps({testID: adminTestIds.sections.runtime})
-        .find(node => node.type === Pressable)!
-      expect(mobileSectionTab.props.accessibilityRole).toBe('tab')
-      expect(mobileSectionTab.props.accessibilityLabel).toBe('选择运行状态')
-      expect(mobileSectionTab.props.accessibilityState).toMatchObject({selected: false})
+      expect(mobileNavigation).toBeDefined()
+      const mobileNavigationTrigger = mobileRenderer.root.findByProps({testID: 'terminal.admin:navigation:trigger'})
+      expect(mobileNavigationTrigger.props.accessibilityRole).toBe('button')
+      expect(mobileNavigationTrigger.props.accessibilityLabel).toBe('选择终端管理页面')
+      expect(mobileNavigationTrigger.props.accessibilityState).toMatchObject({expanded: false})
       await act(async () => {
-        press(mobileRenderer!, adminTestIds.sections.runtime)()
+        press(mobileRenderer!, 'terminal.admin:navigation:trigger')()
         await new Promise(resolve => setTimeout(resolve, 0))
       })
-      const mobileSelectedSectionTab = mobileRenderer.root.findAllByProps({testID: adminTestIds.sections.runtime})
-        .find(node => node.type === Pressable)!
-      expect(mobileSelectedSectionTab.props.accessibilityState).toMatchObject({selected: true})
+      expect(mobileRenderer.root.findByProps({testID: 'terminal.admin:navigation:menu'})).toBeDefined()
+      for (const partKey of [
+        'admin.console.platform-ports',
+        'admin.console.runtime',
+        'admin.console.topology',
+      ]) {
+        expect(mobileRenderer.root.findByProps({testID: `terminal.admin:navigation:option:${partKey}`})).toBeDefined()
+      }
+      expect(mobileRenderer.root.findAllByProps({testID: 'terminal.admin:navigation:option:sample.console.admin-test'})).toHaveLength(0)
       await act(async () => {
-        press(mobileRenderer!, adminTestIds.sections.platformPorts)()
+        press(mobileRenderer!, 'terminal.admin:navigation:option:admin.console.platform-ports')()
         await new Promise(resolve => setTimeout(resolve, 0))
       })
+      expect(mobileRenderer.root.findByProps({testID: 'terminal.admin:navigation:trigger'}).props.accessibilityState).toMatchObject({expanded: false})
       expect(mobileRenderer.root.findByProps({testID: adminTestIds.content})).toBeDefined()
       expect(StyleSheet.flatten(mobileRenderer.root.findByProps({testID: 'admin.console.platform-ports'}).props.style)).toMatchObject({
         flex: 1,
         minHeight: 0,
         minWidth: 0,
       })
-      const mobileSectionHeading = mobileRenderer.root.findAllByProps({testID: 'admin.console.platform-ports:title'})
+      const mobileSectionHeading = mobileRenderer.root.findAllByProps({testID: adminTestIds.ports.title})
         .find(node => node.type === Text)!
       expect(mobileSectionHeading.props).toMatchObject({
         accessibilityRole: 'header',
@@ -701,12 +721,10 @@ describe('sample-console real assembly', () => {
         press(renderer!, adminTestIds.verify)()
         await new Promise(resolve => setTimeout(resolve, 0))
       })
+      await waitForAdminContent(renderer)
       expect(renderer.root.findByProps({testID: adminTestIds.shell})).toBeDefined()
-      expect(renderer.root.findByProps({testID: adminTestIds.sections.sampleConsole})).toBeDefined()
-      await act(async () => {
-        press(renderer!, adminTestIds.sections.runtime)()
-        await new Promise(resolve => setTimeout(resolve, 0))
-      })
+      expect(renderer.root.findByProps({testID: 'terminal.admin:navigation'})).toBeDefined()
+      await selectMobileAdminSection(renderer!, 'admin.console.runtime')
       expect(renderer.root.findByProps({testID: 'admin.console.runtime'})).toBeDefined()
       expect(renderer.root.findAllByProps({testID: 'sample.console.admin-test'})).toHaveLength(0)
       await act(async () => {
@@ -992,11 +1010,8 @@ describe('sample-console real assembly', () => {
       renderer = mount(createSurfaceForDisplayIndex(assembly, 0), PORTRAIT_PRIMARY_FRAME)
       await tapLauncher(renderer)
       await authenticateAdmin(renderer)
-      await act(async () => {
-        await press(renderer!, adminTestIds.sections.sampleConsole)()
-        await new Promise(resolve => setTimeout(resolve, 0))
-      })
-      expect(renderer.root.findByProps({testID: 'sample.console.admin-test'})).toBeDefined()
+      await selectMobileAdminSection(renderer!, 'admin.console.runtime')
+      expect(renderer.root.findByProps({testID: 'admin.console.runtime'})).toBeDefined()
       await new Promise(resolve => setTimeout(resolve, 350))
       const persistedValues = [...plainStorage.writes, ...protectedStorage.writes]
       expect(persistedValues.length).toBeGreaterThan(0)
@@ -1030,11 +1045,8 @@ describe('sample-console real assembly', () => {
       firstRenderer = mount(createSurfaceForDisplayIndex(firstAssembly, 0), PORTRAIT_PRIMARY_FRAME)
       await tapLauncher(firstRenderer)
       await authenticateAdmin(firstRenderer)
-      await act(async () => {
-        press(firstRenderer!, adminTestIds.sections.sampleConsole)()
-        await new Promise(resolve => setTimeout(resolve, 0))
-      })
-      expect(firstRenderer.root.findByProps({testID: 'sample.console.admin-test'})).toBeDefined()
+      await selectMobileAdminSection(firstRenderer!, 'admin.console.runtime')
+      expect(firstRenderer.root.findByProps({testID: 'admin.console.runtime'})).toBeDefined()
       const businessBefore = selectScreen(firstAssembly.runtime.getState(), 'PRIMARY', 'main')
       expect(businessBefore).toBeDefined()
       const businessPartKey = businessBefore!.partKey
@@ -1122,7 +1134,7 @@ describe('sample-console real assembly', () => {
       ])
       const canvas = renderer.root.findByProps({testID: 'ui-base-render:surface-host-canvas'})
       expect(canvas.props.style).toEqual(expect.arrayContaining([
-        expect.objectContaining({width: 960, height: 540}),
+        expect.objectContaining({width: 1280, height: 800}),
       ]))
     } finally {
       if (renderer !== undefined) act(() => { renderer!.unmount() })

@@ -7,8 +7,20 @@ import type {PrimitiveContainerProps} from '../types/types';
 
 export const PrimitiveContainer = ({testID, children, layout = 'fill', bounded = false, elevated = false, appearance = 'default', style}: PrimitiveContainerProps) => {
   const isLoginCard = appearance === 'login' && layout === 'card';
+  const isAdminRoot = appearance === 'admin-root';
+  const isAdminShell = (appearance === 'admin-shell' || appearance === 'admin-shell-mobile') && layout === 'card';
+  const isAdminCard = appearance === 'admin-card' || appearance === 'admin-inset';
+  const isAdminSurface = appearance === 'admin-content' || appearance === 'admin-nav';
   const layoutClassName = isLoginCard
     ? undefined
+    : isAdminRoot
+      ? baseTokens.adminRoot
+      : isAdminShell
+        ? undefined
+        : isAdminCard
+          ? undefined
+          : isAdminSurface
+            ? undefined
     : layout === 'content'
       ? baseTokens.containerContent
       : layout === 'card'
@@ -32,8 +44,22 @@ export const PrimitiveContainer = ({testID, children, layout = 'fill', bounded =
         ? {maxHeight: '100%', minHeight: 0, overflow: 'hidden' as const}
         : undefined
     : undefined;
-  const elevatedClassName = elevated && layout === 'card' && !isLoginCard ? baseTokens.containerElevated : undefined;
-  const appearanceClassName = isLoginCard ? baseTokens.containerLogin : undefined;
+  const elevatedClassName = elevated && layout === 'card' && !isLoginCard && !isAdminCard && !isAdminShell ? baseTokens.containerElevated : undefined;
+  const appearanceClassName = isLoginCard
+    ? baseTokens.containerLogin
+    : appearance === 'admin-shell'
+      ? baseTokens.adminShell
+      : appearance === 'admin-shell-mobile'
+        ? baseTokens.adminShellMobile
+        : appearance === 'admin-content'
+          ? baseTokens.adminContent
+          : appearance === 'admin-nav'
+            ? baseTokens.adminNav
+            : appearance === 'admin-card'
+              ? baseTokens.adminCard
+              : appearance === 'admin-inset'
+                ? baseTokens.adminCardInset
+                : undefined;
 
   const resolvedStyle = style === undefined ? boundedStyle : [style, boundedStyle];
 

@@ -1,7 +1,7 @@
-import {RnrSvgIcon, primitiveIconPaths} from '../vendor/slots'
+import {RnrSvgIcon, RnrView, primitiveIconPaths} from '../vendor/slots'
 import {baseTokens} from '../theme/tokens'
 import {assertTestID} from '../foundations/assertTestID'
-import type {PrimitiveIconProps} from '../types/types'
+import type {PrimitiveIconBadgeProps, PrimitiveIconProps} from '../types/types'
 
 export const PrimitiveIcon = ({testID, accessibilityLabel, appearance = 'default', icon, size = 44, style}: PrimitiveIconProps) => (
   <RnrSvgIcon
@@ -10,6 +10,26 @@ export const PrimitiveIcon = ({testID, accessibilityLabel, appearance = 'default
     path={primitiveIconPaths[icon]}
     size={size}
     style={style}
-    className={appearance === 'login' ? baseTokens.iconLogin : appearance === 'keyboard-action' ? baseTokens.iconKeyboardAction : undefined}
+    className={appearance === 'login'
+      ? baseTokens.iconLogin
+      : appearance === 'keyboard-action'
+        ? baseTokens.iconKeyboardAction
+        : appearance === 'admin-shell'
+          ? 'text-admin-shell-foreground'
+          : appearance === 'admin-content'
+            ? 'text-admin-content-foreground'
+            : undefined}
   />
+)
+
+export const PrimitiveIconBadge = ({testID, accessibilityLabel, icon, size = 16}: PrimitiveIconBadgeProps) => (
+  <RnrView testID={assertTestID(testID)} className={baseTokens.adminBrand}>
+    <PrimitiveIcon
+      testID={`${assertTestID(testID)}:icon`}
+      accessibilityLabel={accessibilityLabel}
+      appearance="admin-shell"
+      icon={icon}
+      size={size}
+    />
+  </RnrView>
 )

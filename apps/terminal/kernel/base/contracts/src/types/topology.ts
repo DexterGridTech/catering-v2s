@@ -71,6 +71,12 @@ export type TopologyIdentityResponse = Readonly<{
   readonly displayRole: TopologyDisplayRole
 }>
 
+export type TopologyLocalAddress = Readonly<{
+  readonly host: string
+  readonly port: number
+  readonly basePath: string
+}>
+
 export type TopologyFacts = Readonly<{
   readonly surfaceForm: SurfaceForm
   readonly displayCount: number | null
@@ -81,6 +87,7 @@ export type TopologyFacts = Readonly<{
   readonly hasTopologySecondarySurface: boolean
   readonly masterLocator: TopologyLocator | null
   readonly peerIdentity: TopologyIdentity | null
+  readonly hostAddress: TopologyLocalAddress | null
   readonly hostDesired: boolean
   readonly hostActual: 'stopped' | 'starting' | 'running' | 'stopping' | 'error'
   readonly hostErrorCode: string | null

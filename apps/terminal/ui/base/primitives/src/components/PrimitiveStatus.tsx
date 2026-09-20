@@ -8,7 +8,9 @@ export const PrimitiveStatus = ({testID, appearance = 'default', children, tone 
   <RnrText
     testID={assertTestID(testID)}
     accessibilityLiveRegion="polite"
-    className={appearance === 'login' && tone === 'neutral' ? baseTokens.statusLogin : toneForegroundClassName(tone, baseTokens.status)}
+    className={appearance === 'login' && tone === 'neutral'
+      ? baseTokens.statusLogin
+      : toneForegroundClassName(tone, appearance === 'admin' ? baseTokens.adminText : baseTokens.status)}
     onLayout={onLayout}
     onTextLayout={onTextLayout}
     style={style}

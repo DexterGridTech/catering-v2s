@@ -51,8 +51,6 @@ export async function createSampleWallpaperConsoleAssembly(
   const nativeLoadingCapability = input.nativeLoadingCapability
   const surfaceForm = input.surfaceForm
   const environmentMode: EnvironmentMode = input.environmentMode ?? (__DEV__ ? 'DEV' : 'PROD')
-  const staffAuthModule = sampleStaffAuthAssembly.createModule()
-  const wallpaperPickerModule = sampleWallpaperPickerAssembly.createModule()
   return createConsoleAssembly<SampleWallpaperConsoleReadyPayload>({
     appName: 'sample-wallpaper-console',
     errorPrefix: 'sample-wallpaper-console',
@@ -107,8 +105,8 @@ export async function createSampleWallpaperConsoleAssembly(
       createSampleWallpaperConsoleModule(),
       createSampleStaffSessionModule(),
       createSampleWallpaperModule(),
-      staffAuthModule,
-      wallpaperPickerModule,
+      sampleStaffAuthAssembly.createModule(),
+      sampleWallpaperPickerAssembly.createModule(),
     ],
     renderChildren: () => <WallpaperBackground />,
   })

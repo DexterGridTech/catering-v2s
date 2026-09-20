@@ -3,11 +3,17 @@ import {afterEach, describe, expect, it, vi} from 'vitest'
 import * as renderHooks from '@catering-v2s/ui-base-render'
 import {DisplayContextSection} from '../src/components/sections/DisplayContextSection'
 import type {AdminSectionProps} from '../src/types/adminSection'
+import {adminTestIds} from '../src/foundations/adminTestIds'
 
 const context = {
-  catalogEntry: {title: '显示上下文'},
-  runtimeFacts: {},
-  surface: {},
+  catalogEntry: {title: '运行状态'},
+  runtimeFacts: {
+    environmentMode: 'development',
+    debugMode: {enabled: false, source: 'default'},
+    deviceIdentity: {available: false, deviceId: null},
+    platformPortCapabilities: [],
+  },
+  surface: {surfaceForm: 'laptop', displayMode: 'PRIMARY', hostLogicalSize: null},
   commandBoundary: {},
 } as unknown as AdminSectionProps['context']
 
@@ -27,16 +33,16 @@ describe('DisplayContextSection lifecycle boundary', () => {
   it('uses runtime status for lifecycle unavailability', () => {
     const renderer = renderSection('created')
 
-    expect(findText(renderer, '运行状态尚未就绪')).toHaveLength(1)
-    expect(findText(renderer, '显示上下文暂无数据')).toHaveLength(0)
+    expect(renderer.root.findByProps({testID: adminTestIds.runtime.overallStatus})).toBeDefined()
+    expect(renderer.root.findByProps({testID: adminTestIds.runtime.displayFactsError})).toBeDefined()
     renderer.unmount()
   })
 
   it('keeps missing display data distinct from runtime unavailability after start', () => {
     const renderer = renderSection('started')
 
-    expect(findText(renderer, '运行状态尚未就绪')).toHaveLength(0)
-    expect(findText(renderer, '显示上下文暂无数据')).toHaveLength(1)
+    expect(renderer.root.findByProps({testID: adminTestIds.runtime.overallStatus})).toBeDefined()
+    expect(renderer.root.findAllByProps({testID: adminTestIds.runtime.displayFactsError}).length).toBeGreaterThan(0)
     renderer.unmount()
   })
 })

@@ -1,19 +1,23 @@
 # TER Admin console 非登录区实施计划
 
 ```text
-PLAN_STATUS=READY_FOR_DESIGN_REVIEW_WITH_ADMISSION_BLOCKERS
+PLAN_STATUS=IMPLEMENTATION_IN_PROGRESS_STAGE1_PARTIAL_STAGE2_BLOCKED
 DESIGN=doc/plans/platform/2026-09-20-ter-admin-console-non-login-implementation-design-codex.md
 BUSINESS_SOURCE=doc/plans/platform/2026-09-19-ter-admin-console-non-login-requirements-codex.md
 IA=doc/plans/platform/2026-09-19-ter-admin-console-non-login-ia-frame-inventory-codex.md;doc/plans/platform/2026-09-19-ter-admin-console-non-login-ia-high-fidelity-codex.md
-IMPLEMENTATION_AUTHORITY=false
-IMPLEMENTATION=NOT_AUTHORIZED
-RUNTIME=NOT_AUTHORIZED
-WEB_METRO_ANDROID_DEVICE=NOT_AUTHORIZED
+IMPLEMENTATION_AUTHORITY=true
+IMPLEMENTATION=STATIC_AND_FOCUSED_GREEN_OWNER_GATES_CLOSED
+RUNTIME=R39_STAGE1_BUSINESS_PASS_CLEANUP_PASS_FRAME_COVERAGE_OPEN
+WEB_METRO_ANDROID_DEVICE=STAGE1_ANDROID_DEVICE_PARTIAL;STAGE2_DEVICE_SHAPES_NOT_VISIBLE
 INDEPENDENT_DESIGN_REVIEW=COMPLETED_FINDINGS_OPEN_REVIEWED_BY_FRESH_SUBAGENT
-ADMISSION_BLOCKERS=DISPLAY_FACTS_OWNER;TOPOLOGY_PAGE_AVAILABILITY_AND_DIRECT_PAIR_OWNER;MASTER_UNPAIR_GUARD
+ADMISSION_BLOCKERS=DISPLAY_FACTS_OWNER:OPEN_WITH_FOCUSED_OWNER_EVIDENCE;TOPOLOGY_PAGE_AVAILABILITY_AND_DIRECT_PAIR_OWNER:OPEN_WITH_FOCUSED_OWNER_EVIDENCE;MASTER_UNPAIR_GUARD:OPEN_WITH_FOCUSED_OWNER_EVIDENCE
 ```
 
-本计划只定义未来实施的可执行顺序、文件分母、测试与对账门。本轮用户授权是“写详设与实施计划并交 review”，不授权改源码、改测试、加依赖、构建或启动任何运行环境。
+本计划定义实施的可执行顺序、文件分母、测试与对账门。Dexter 已于 2026-09-20 明确授权进入实施；当前 CP-0/CP-1 已取得 owner contract、consumer、focused readback 与 red mutation 证据，但三条 admission blocker 仍为 OPEN，不能把 focused 证据写成 blocker 已关闭。r39 已完成第一批 single-screen topology dynamic journey，但 19 帧只真实捕获 16 帧，IA-03/05/07 为 OPEN；第二批仍按双屏/mobile 机器边界待执行。
+
+当前执行状态：`CP-0=PASS_CURRENT_SOURCE_RECONCILIATION`；`CP-1=OWNER_CONTRACT_AND_FOCUSED_PROOF_MATCHED_IMPLEMENTATION_REVIEW_PENDING`；`CP-2..CP-4=IMPLEMENTED_FOCUSED_GREEN`；`CP-5=STAGE1_BUSINESS_PASS_CLEANUP_PASS_FRAME_COVERAGE_OPEN_STAGE2_BLOCKED`。当前接受的动态证据只包括 r39 的真实 Android single-screen run；第一批分母 19 中实际截图 16，IA-03/05/07 为 OPEN；未把历史截图、历史 XML、旧 Web/Android/device 结果升级为第二批动态证据。三条 admission blocker 仍为 OPEN；已有 focused owner/readback/red-mutation 证据不能替代 blocker 的最终关闭。
+
+当前 r39 运行目录：`.runtime/ter-dual-machine-topology/2026-09-20/non-login-stage1-r39/sample-terminal/`。副机 host 输入时看到的退格来自 runner `replaceHost()` 的有限清场：每次替换 16 次 backspace，r39 共 3 次替换即 48 次；`uiActionSettleDelayMs=1500` 使每次退格之间有观察等待，不能误判成业务循环。
 
 ## 1. 目标、范围与不变量
 
@@ -100,7 +104,7 @@ CP-0 关闭条件：源码分母、owner contract、feature 边界、primitive c
 ### 3.3 CP-1 gate
 
 - 逐代码与详设对账只允许 `MATCHED`/`OPEN`；public owner declaration/transfer/consumer/test 全闭合才进 CP-2。
-- fresh 只读子 agent 完成需求+IA+详设+memory 三维对账；缺一维不得把 CP-1 记为完成。
+- fresh 只读子 agent 完成需求+IA+详设+memory 三维对账；本轮已派出 fresh 只读审查，审查回传前 CP-1 保持 `PENDING_REVIEW`，不把 focused 绿升级为整批完成。
 - 本轮若没有 implementation authority，不执行 CP-1，只把上述步骤作为计划；当前计划状态保持 `NOT_AUTHORIZED`。
 
 ## 4. CP-2：shared primitives 与两个 integration theme
@@ -194,11 +198,11 @@ IA frame 对账分母：`IA-16/17` gate，`IA-18` role choice，`IA-19/20/21` ho
 
 ### 6.3 CP-4 gate
 
-完成 topology focused tests 后，fresh reviewer 逐帧核对状态机、用户文案、角色动作、failure/recovery、local IP、no-query 和 mobile gate。再做全批三维对账，之后才允许整体 focused/typecheck；本轮无 implementation authority，不执行。
+完成 topology focused tests 后，fresh reviewer 逐帧核对状态机、用户文案、角色动作、failure/recovery、local IP、no-query 和 mobile gate。再做全批三维对账，之后才允许整体 focused/typecheck；当前实现授权已存在，相关 focused proof 已完成，但 fresh implementation review 仍待实施完成后执行。
 
-## 7. CP-5：验证与证据计划（后续授权后）
+## 7. CP-5：验证与证据计划（当前部分执行）
 
-CP-5 不在本轮执行，但必须提前定义证据层级：
+CP-5 已按 Dexter 授权执行第一批的一部分；下表仍是硬证据分档，当前只把 r39 的真实 single-screen run 记入 Android/native/device 与 cleanup，未把结构测试、历史产物或截图文件名升级为 visual PASS：
 
 | 档位 | 必须证明 | 不得冒充 |
 | --- | --- | --- |
@@ -209,7 +213,7 @@ CP-5 不在本轮执行，但必须提前定义证据层级：
 | visual | IA 与运行截图/geometry/颜色/文案逐帧对账 | 截图单独不能证明业务状态 |
 | cleanup | 受管 process/device/resource 回收与 readback | business PASS 不能替代 cleanup |
 
-CP-5 开工前必须另获动态授权，并遵循受管入口、日志/PID/readback、first failure/last known good、business 与 cleanup 分离。若 display/topology owner contract 未闭合，CP-5 不得以截图掩盖。
+CP-5 后续必须继续遵循受管入口、日志/PID/readback、first failure/last known good、business 与 cleanup 分离。当前第一批 `BUSINESS=PASS`、`CLEANUP=PASS`，但 frame coverage/visual 为 OPEN；第二批需要真实 dual/mobile 设备，不能用第一批形态替代。
 
 ## 8. 每个 CP 的统一闭环
 
@@ -287,4 +291,4 @@ IA 正本优先级声明：frame inventory 是用户旅途、可见字段、状�
 - fresh 独立 design adversarial review 的结果文件或明确 `OPEN` 披露；
 - `scripts/check/claude-review-handoff --file ...` 的 PASS 输出。
 
-当前不得写 `IMPLEMENTATION=COMPLETE`、`VISUAL=PASS`、`ANDROID=PASS` 或 `ACCEPTANCE=PASS`。本轮正确状态是设计文档待独立 review，owner blockers 诚实保留，implementation 未授权。
+当前不得写 `IMPLEMENTATION=COMPLETE`、`VISUAL=PASS`、`ANDROID=PASS` 或 `ACCEPTANCE=PASS`。当前状态是实施进行中、三条 admission blocker 仍 OPEN、第一批动态部分完成且第二批未运行；任一 blocker 无法在 CP-0/CP-1 由 owner 关闭时，必须停下并报告事实、反例、最小替代与边界。

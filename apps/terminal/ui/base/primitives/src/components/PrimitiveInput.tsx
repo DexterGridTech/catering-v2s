@@ -19,6 +19,7 @@ type MeasurableTextInputRef = RnrTextInputRef & Readonly<{
 export const PrimitiveInput = ({
   testID,
   accessibilityLabel,
+  appearance = 'default',
   editable,
   inputRef,
   maxLength,
@@ -83,7 +84,7 @@ export const PrimitiveInput = ({
       selection={selection === undefined ? undefined : {start: selection.start, end: selection.end ?? selection.start}}
       secureTextEntry={secureTextEntry}
       value={value}
-      className={baseTokens.input}
+      className={appearance === 'admin' ? 'min-h-11 rounded-xl border border-admin-content-border bg-admin-inset px-3 text-sm text-admin-content-foreground' : baseTokens.input}
     />
   );
 };

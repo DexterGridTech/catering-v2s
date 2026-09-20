@@ -26,7 +26,7 @@ describe('sample-console package surface', () => {
       orientations: {
         landscape: {
           PRIMARY: {width: 1280, height: 800},
-          SECONDARY: {width: 960, height: 540},
+          SECONDARY: {width: 1280, height: 800},
         },
         portrait: {
           PRIMARY: {width: 360, height: 640},

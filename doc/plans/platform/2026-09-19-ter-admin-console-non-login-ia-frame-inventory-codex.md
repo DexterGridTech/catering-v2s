@@ -180,7 +180,7 @@ ID 跨 laptop/mobile 复用；`L/M` 只属于 frame ID。每个 ID 必须在 HTM
 
 ### 3.3 运行状态与 surface map
 
-`runtime.title`、`runtime.overall-status`、`runtime.physical-display-count`、`runtime.surface-map`、`runtime.surface.shape`、`runtime.surface.aspect-ratio`、`runtime.surface.role`、`runtime.surface.current`、`runtime.surface.logical-size`、`runtime.surface.physical-size`、`runtime.surface.ready-state`、`runtime.surface.legend`、`runtime.mobile.single-surface-boundary`。
+`runtime.title`、`runtime.overall-status`、`runtime.environment`、`runtime.debug`、`runtime.device`、`runtime.display-status`、`runtime.physical-display-count`、`runtime.surface-map`、`runtime.surface.shape`、`runtime.surface.aspect-ratio`、`runtime.surface.role`、`runtime.surface.current`、`runtime.surface.logical-size`、`runtime.surface.physical-size`、`runtime.surface.ready-state`、`runtime.surface.legend`、`runtime.mobile.single-surface-boundary`。
 
 ### 3.4 双机拓扑
 
@@ -196,7 +196,7 @@ HTML 线框中不再只画灰条。每个生产 frame 至少要把以下属性�
 
 1. Panel：标题、全局状态灯、状态文字、关闭入口；laptop 的导航项；mobile 的单个下拉 selector、当前页面名称、展开指示和滚动边界。
 2. Ports：三类总数、分母提示、比例条、每个分类的名称/状态/数量/展开状态；展开时每条能力的名称、状态、原因/来源占位。
-3. Runtime：物理屏数量、每块实际屏幕矩形、矩形上方的主/副标题、当前标记；当前 surface 的逻辑分辨率写在矩形内部对应的长边和高边，物理分辨率写在矩形外对应的长边和高边，就绪/可用状态写在矩形内部；非当前 surface 只显示存在性、角色和“该屏信息未提供”，不显示分辨率或就绪状态；当前物理值缺失时数字位置显示“未知”。mobile 只画一块屏；多 surface 事实复用 mobile runtime 的 display-facts-error 变体，不画副屏占位。
+3. Runtime：总体运行状态、环境、调试态、设备可用性、显示事实状态、物理屏数量、每块实际屏幕矩形、矩形上方的主/副标题、当前标记；当前 surface 的逻辑分辨率写在矩形内部对应的长边和高边，物理分辨率写在矩形外对应的长边和高边，就绪/可用状态写在矩形内部；非当前 surface 只显示存在性、角色和“该屏信息未提供”，不显示分辨率或就绪状态；当前物理值缺失时数字位置显示“未知”。mobile 只画一块屏；多 surface 事实复用 mobile runtime 的 display-facts-error 变体，不画副屏占位。
 4. Topology：当前角色、配对状态、可达状态、服务状态、目标卡片说明、主机 IP 输入、动作按钮、进行中文字、成功结论、失败原因和恢复动作。不可用帧仅画结论与原因。
 5. 每个按钮必须画出动作名称和当前状态（可用、进行中或禁用及原因）；不能只画无文字矩形。
 6. mobile 所有 frame：竖屏外框；顶部固定的单个下拉 selector（不是横排 tab）；内容按标题 → 总结 → 状态 → 主要动作 → 细节/恢复的单列顺序；不出现并排的 panel、双列 action group 或横向溢出。

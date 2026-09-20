@@ -29,13 +29,11 @@ const resolveThemeColor = (value: NativeVariableValue): string | undefined => {
     : value;
 };
 
-const PrimitiveLoginActionGradient = ({testID}: Readonly<{readonly testID: string}>) => {
-  const loginActionStartRaw = useNativeVariable('--color-login-action-start');
-  const loginActionEndRaw = useNativeVariable('--color-login-action-end');
-  const loginActionStart = resolveThemeColor(loginActionStartRaw);
-  const loginActionEnd = resolveThemeColor(loginActionEndRaw);
-  if (loginActionStart === undefined || loginActionEnd === undefined) return null;
-  return <RnrGradientBackground testID={testID} startColor={loginActionStart} endColor={loginActionEnd} />;
+const PrimitiveActionGradient = ({namespace, testID}: Readonly<{readonly namespace: 'login' | 'admin'; readonly testID: string}>) => {
+  const actionStart = resolveThemeColor(useNativeVariable(`--color-${namespace}-action-start`));
+  const actionEnd = resolveThemeColor(useNativeVariable(`--color-${namespace}-action-end`));
+  if (actionStart === undefined || actionEnd === undefined) return null;
+  return <RnrGradientBackground gradientId={`primitive-${namespace}-action-gradient`} testID={testID} startColor={actionStart} endColor={actionEnd} />;
 };
 
 export const PrimitiveButton = ({
@@ -76,6 +74,12 @@ export const PrimitiveButton = ({
           ? baseTokens.buttonLoginPrimary
           : appearance === 'login-secondary'
             ? baseTokens.buttonLoginSecondary
+            : appearance === 'admin-primary'
+              ? baseTokens.adminButton
+              : appearance === 'admin-secondary'
+                ? baseTokens.adminButtonSecondary
+                : appearance === 'admin-icon'
+                  ? baseTokens.adminHeaderClose
             : variant === 'key'
               ? keyboardButtonToken
               : variant === 'key-action'
@@ -94,17 +98,20 @@ export const PrimitiveButton = ({
       onPressOut={() => setPressed(false)}
       style={style === undefined ? pressedStyleOf(variant, pressed) : [style, pressedStyleOf(variant, pressed)]}
     >
-      {appearance === 'login-primary' ? (
-        <PrimitiveLoginActionGradient testID={`${assertTestID(testID)}:gradient`} />
+      {appearance === 'login-primary' || appearance === 'admin-primary' ? (
+        <PrimitiveActionGradient
+          namespace={appearance === 'admin-primary' ? 'admin' : 'login'}
+          testID={`${assertTestID(testID)}:gradient`}
+        />
       ) : null}
       {busy ? <RnrActivityIndicator testID={`${assertTestID(testID)}:busy-indicator`} accessibilityLabel="处理中" /> : null}
-      {busy ? null : icon !== undefined ? (
+      {icon !== undefined && !busy ? (
         <PrimitiveIcon
           testID={`${assertTestID(testID)}:icon`}
           accessibilityLabel={accessibilityLabel ?? icon}
-          appearance="keyboard-action"
+          appearance={appearance === 'admin-icon' ? 'admin-shell' : appearance === 'admin-primary' || appearance === 'admin-secondary' ? 'admin-content' : 'keyboard-action'}
           icon={icon}
-          size={compact ? 19 : 26}
+          size={appearance === 'admin-icon' ? 20 : compact ? 19 : 26}
         />
       ) : (
         <RnrText
@@ -114,6 +121,10 @@ export const PrimitiveButton = ({
               ? baseTokens.buttonLoginPrimaryText
               : appearance === 'login-secondary'
                 ? baseTokens.buttonLoginSecondaryText
+                : appearance === 'admin-primary'
+                  ? baseTokens.adminButtonText
+                  : appearance === 'admin-secondary'
+                    ? baseTokens.adminButtonSecondaryText
                 : variant === 'key-action'
                   ? compact ? baseTokens.keyboardActionTextCompact : baseTokens.keyboardActionText
                   : variant === 'key'

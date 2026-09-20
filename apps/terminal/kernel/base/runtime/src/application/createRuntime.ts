@@ -432,6 +432,9 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
         detachStateSubscription()
         notifyRuntimeSubscribers()
         closeRuntimeSubscriptions()
+        // A failed runtime is terminal. Release module-owned resources before
+        // an outer owner creates a replacement runtime for recovery.
+        resources.release()
         logger.error({
           category: 'runtime.lifecycle',
           event: 'runtime.start.failed',

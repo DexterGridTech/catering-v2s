@@ -15,7 +15,7 @@ command、store 或中文 IME 引擎；本轮所有输入统一走虚拟键盘�
 公共面由 `src/index.ts` 与 `terminal-invariants.json` 同步维护：
 
 - `InputSurfaceFrame` 在一个 Provider 内包裹 content，并把虚拟键盘作为 content 下方的 sibling；
-- `InputScrollArea` 是唯一的输入滚动祖先适配器，负责把 focus 后的字段滚入已收缩可见区；
+- `InputScrollArea` 是唯一的输入滚动祖先适配器，负责把 focus 后的字段滚入已收缩可见区；需要在有界内容区让末尾控件完整滚入视口时，只能通过 presentation-only 的 `contentPaddingBottom` 增加尾部内容 inset，不得另建滚动祖先；
 - `InputProvider` 与 `useInputField` 维护 tokenized field registry、focus owner 与同步快照；
 - `useInputSnapshot` 在提交动作边界同步读取不可变快照，不订阅编辑值；
 - `InputKeyboard` 是业务唯一应使用的键盘呈现入口；它只根据 placement 决定挂在 surface dock 还是调用方的局部布局，状态、owner、按键处理和 `VirtualKeyboard` renderer 始终共用；

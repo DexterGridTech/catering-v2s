@@ -11,9 +11,10 @@ import {calculateScrollOffset, type LayoutRect} from '../foundations/scrollIntoV
 export type InputScrollAreaProps = Readonly<{
   readonly testID: string
   readonly children?: ReactNode
+  readonly contentPaddingBottom?: number
 }>
 
-export const InputScrollArea = ({testID, children}: InputScrollAreaProps) => {
+export const InputScrollArea = ({testID, children, contentPaddingBottom}: InputScrollAreaProps) => {
   const scrollRef = useRef<PrimitiveScrollViewHandle | null>(null)
   const currentOffsetRef = useRef(0)
   const viewportLayoutRef = useRef<Readonly<{readonly width: number; readonly height: number}> | null>(null)
@@ -143,6 +144,7 @@ export const InputScrollArea = ({testID, children}: InputScrollAreaProps) => {
       <PrimitiveScrollView
         ref={scrollRef}
         testID={testID}
+        contentPaddingBottom={contentPaddingBottom}
         onLayout={onViewportLayout}
         onScrollOffsetChange={onScrollOffsetChange}
       >

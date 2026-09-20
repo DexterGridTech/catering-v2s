@@ -56,8 +56,8 @@ export const hasTopologySecondarySurface = (input: Readonly<{
 
 export const topologyReasonMessages: Readonly<Record<TopologyFailureReasonCode, string>> = Object.freeze({
   allowed: '',
-  TOPOLOGY_UNSUPPORTED_FORM: '当前机型不支持双机拓扑',
-  TOPOLOGY_REQUIRES_SINGLE_SCREEN: '双机拓扑要求本机只有一个物理屏幕',
+  TOPOLOGY_UNSUPPORTED_FORM: 'mobile 形态不支持双机拓扑',
+  TOPOLOGY_REQUIRES_SINGLE_SCREEN: '双机拓扑要求本机只有一个物理屏',
   TOPOLOGY_REQUIRES_MASTER: '当前节点不是主机',
   TOPOLOGY_ALREADY_PAIRED: '当前主机已有副机',
   TOPOLOGY_NOT_PAIRED: '尚未配对副机',

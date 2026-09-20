@@ -528,6 +528,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
       const instanceMode = selectRuntimeInstanceMode(state)
       const hostSignature = [
         topology.hostDesired,
+        topology.hostReconcileRevision,
         topology.surfaceForm,
         topology.displayCount,
         instanceMode,

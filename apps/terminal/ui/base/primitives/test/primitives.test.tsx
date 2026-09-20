@@ -144,6 +144,20 @@ describe('ui primitives', () => {
     });
   });
 
+  it('forwards an optional trailing content inset without changing the viewport contract', () => {
+    const renderer = mount(
+      <PrimitiveScrollView testID="sample:scroll-padding" contentPaddingBottom={64}>
+        内容
+      </PrimitiveScrollView>,
+    );
+    const scrollView = renderer.root.findAllByType(ScrollView).find(node => node.props.testID === 'sample:scroll-padding')!;
+    expect(scrollView.props.contentContainerStyle).toEqual({gap: baseLayout.scrollContentGap, paddingBottom: 64});
+    expect(scrollView.props.horizontal).not.toBe(true);
+    act(() => {
+      renderer.unmount();
+    });
+  });
+
   it('renders a masked pin input with stable cells and explicit elevated interaction guards', () => {
     const onPress = vi.fn();
     const onTouchEnd = vi.fn();
@@ -333,6 +347,23 @@ describe('ui primitives', () => {
     expect(useNativeVariableMock).toHaveBeenCalledTimes(2);
     act(() => {
       loginRenderer.unmount();
+    });
+
+    useNativeVariableMock.mockClear();
+    const adminRenderer = mount(
+      <PrimitiveButton
+        testID="sample:admin-primary"
+        accessibilityLabel="开启主机服务"
+        appearance="admin-primary"
+        onPress={() => undefined}
+      >
+        开启主机服务
+      </PrimitiveButton>,
+    );
+    expect(useNativeVariableMock).toHaveBeenCalledWith('--color-admin-action-start');
+    expect(useNativeVariableMock).toHaveBeenCalledWith('--color-admin-action-end');
+    act(() => {
+      adminRenderer.unmount();
     });
   });
 
@@ -577,6 +608,7 @@ describe('ui primitives', () => {
     act(() => { (busy.props.onPress as () => void)(); });
     expect(onPress).not.toHaveBeenCalled();
     expect(busy.props.accessibilityState).toMatchObject({disabled: true, busy: true});
+    expect(renderer.root.findAllByType(Text).some(node => node.props.children === '保存')).toBe(true);
 
     const second = renderer.root.findByProps({testID: 'sample:segments:two'});
     act(() => { (second.props.onPress as () => void)(); });
@@ -649,6 +681,10 @@ describe('ui primitives', () => {
             accessibilityLabel="展开端口"
             label="连接"
             summary="2 项"
+            summaryTestID="sample:disclosure:count"
+            status="已声明"
+            statusTestID="sample:disclosure:status"
+            triggerTestID="sample:disclosure:expand"
             expanded={false}
             onExpandedChange={onExpandedChange}
           >
@@ -658,7 +694,7 @@ describe('ui primitives', () => {
             testID="sample:ratio"
             accessibilityLabel="端口比例"
             total={4}
-            segments={[{key: 'available', label: '可用', value: 2, tone: 'ok'}, {key: 'unavailable', label: '不可用', value: 2, tone: 'warn'}]}
+            segments={[{key: 'available', label: '可用', value: 2, tone: 'ok'}, {key: 'unavailable', label: '不可用', value: 1, tone: 'warn'}, {key: 'undeclared', label: '未声明', value: 1, tone: 'neutral'}]}
           />
           <PrimitiveSurfaceMap
             testID="sample:surface-map"
@@ -680,11 +716,18 @@ describe('ui primitives', () => {
     act(() => { (renderer.root.findByProps({testID: 'sample:dropdown:option:topology'}).props.onPress as () => void)(); });
     expect(renderer.root.findByProps({testID: 'sample:dropdown:trigger'}).props.accessibilityState).toMatchObject({expanded: false});
     expect(renderer.root.findAllByProps({testID: 'sample:disclosure:content'})).toHaveLength(0);
-    act(() => { (renderer.root.findByProps({testID: 'sample:disclosure:trigger'}).props.onPress as () => void)(); });
+    expect(renderer.root.findByProps({testID: 'sample:disclosure:expand'})).toBeDefined();
+    expect(renderer.root.findByProps({testID: 'sample:disclosure:status'})).toBeDefined();
+    expect(renderer.root.findByProps({testID: 'sample:disclosure:count'})).toBeDefined();
+    act(() => { (renderer.root.findByProps({testID: 'sample:disclosure:expand'}).props.onPress as () => void)(); });
     expect(onExpandedChange).toHaveBeenCalledWith(true);
     expect(renderer.root.findAllByType(View).filter(node => node.props.testID === 'sample:ratio:segment:available')).toHaveLength(1);
-    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:PRIMARY'}).props.style).toEqual({aspectRatio: 2});
+    expect(renderer.root.findByProps({testID: 'sample:ratio:segment:undeclared'}).props.className).toContain(baseTokens.adminRatioSegmentUndeclared);
+    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:PRIMARY'}).props.style).toEqual(expect.objectContaining({aspectRatio: 2, minHeight: 176}));
+    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:PRIMARY:card'}).props.style).toBeUndefined();
     expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:SECONDARY:inside:0'})).toBeDefined();
+    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:SECONDARY'}).props.className).toContain(baseTokens.adminSurfaceMapLimited);
+    expect(renderer.root.findAllByProps({testID: 'sample:surface-map:surface:SECONDARY:logic-width'})).toHaveLength(0);
     act(() => { renderer.unmount(); });
   });
 

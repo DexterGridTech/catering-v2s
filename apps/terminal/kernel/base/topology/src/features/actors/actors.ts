@@ -19,6 +19,7 @@ import type {
   TopologyFailureReasonCode,
   TopologyIdentity,
   TopologyIdentityResponse,
+  TopologyLocalAddress,
 } from '@catering-v2s/kernel-base-contracts'
 import type {
   TopologyHostStatus,
@@ -136,6 +137,25 @@ const hostStatusActionIfChanged = (
   return topologyActions.setHostStatus({state: nextState, errorCode: normalizedErrorCode})
 }
 
+const hostAddressFromStatus = (status: TopologyHostStatus): TopologyLocalAddress | undefined => {
+  const address = status.address
+  if (address === undefined) return undefined
+  return Object.freeze({host: address.host, port: address.port, basePath: address.basePath})
+}
+
+const hostAddressActionIfChanged = (
+  context: ActorExecutionContext,
+  next: TopologyLocalAddress | null,
+): ReturnType<typeof topologyActions.setHostAddress> | ReturnType<typeof topologyActions.clearHostAddress> | undefined => {
+  const current = selectTopologyState(context.getState()).hostAddress
+  if (current === null && next === null) return undefined
+  if (current !== null && next !== null
+    && current.host === next.host
+    && current.port === next.port
+    && current.basePath === next.basePath) return undefined
+  return next === null ? topologyActions.clearHostAddress() : topologyActions.setHostAddress(next)
+}
+
 const readHostStatus = async (context: ActorExecutionContext): Promise<
   | Readonly<{readonly status: 'succeeded'; readonly value: TopologyHostStatus}>
   | Readonly<{readonly status: 'failed'; readonly errorCode: string}>
@@ -242,6 +262,27 @@ const sendExplicitUnpairNotice = async (
   })
   await peerChannel.send(raw)
   unpairingLog(context, 'wire-notice-sent', {reason: 'TOPOLOGY_UNPAIRED'})
+}
+
+const flushUnpairPersistence = async (context: ActorExecutionContext): Promise<boolean> => {
+  const persistence = await context.flushPersistence()
+  if (persistence.status !== 'succeeded') {
+    unpairingLog(context, 'persistence-failed', {
+      status: persistence.status,
+      failureCount: persistence.failures.length,
+    })
+    return false
+  }
+  unpairingLog(context, 'persistence-completed', {
+    status: persistence.status,
+    failureCount: 0,
+    instanceMode: selectRuntimeInstanceMode(context.getState()),
+    displayRole: selectDisplayRole(context.getState()),
+    hasLocator: selectTopologyState(context.getState()).masterLocator !== null,
+    hasPeerIdentity: selectTopologyState(context.getState()).peerIdentity !== null,
+    peerReachable: selectTopologyState(context.getState()).peerReachable,
+  })
+  return true
 }
 
 const safeErrorCode = (error: unknown): string | null => {
@@ -416,8 +457,13 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
     if (currentFacts === undefined || !currentFacts.paired) {
       throw topologyFailure(context, 'TOPOLOGY_NOT_PAIRED', 'Topology is not paired')
     }
+    const initialInstanceMode = selectRuntimeInstanceMode(context.getState())
     context.dispatchAction(topologyActions.setRepairPending(true))
-    const shouldNotifyPeer = selectRuntimeInstanceMode(context.getState()) === 'SLAVE'
+    // Both roles expose the same public unpair command. Capture the mode
+    // before the slave path is normalized to MASTER so the remote peer also
+    // receives the authoritative unpair notice.
+    const shouldNotifyPeer = initialInstanceMode === 'MASTER' || initialInstanceMode === 'SLAVE'
+    let peerNoticeSent = false
     unpairingLog(context, 'started', {
       instanceMode: selectRuntimeInstanceMode(context.getState()),
       displayRole: selectDisplayRole(context.getState()),
@@ -426,6 +472,8 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
       peerReachable: current.peerReachable,
     })
     try {
+      const shouldStopMasterHost = initialInstanceMode === 'MASTER'
+        && (current.hostDesired || current.hostActual !== 'stopped')
       if (selectDisplayRole(context.getState()) !== 'CHIEF') {
         await dispatchCompleted({context, definition: switchDisplayRoleCommand, payload: Object.freeze({displayRole: 'CHIEF' as const}), label: 'Topology display role unpair'})
         unpairingLog(context, 'display-role-completed', {displayRole: selectDisplayRole(context.getState())})
@@ -440,16 +488,39 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
         })
         unpairingLog(context, 'instance-mode-completed', {instanceMode: selectRuntimeInstanceMode(context.getState())})
       }
+      // Stopping the MASTER host closes the active peer transport. Deliver the
+      // authoritative unpair notice before that owner lifecycle transition;
+      // otherwise the peer remains configured and reconnects indefinitely.
+      if (shouldStopMasterHost) {
+        await sendExplicitUnpairNotice(context, input.peerChannel, shouldNotifyPeer)
+        peerNoticeSent = true
+        // An unpaired MASTER must not remain in the unsupported cross-product
+        // of role-choice plus an already-running host. Stop the owner-managed
+        // host lifecycle before clearing pairing facts so the command's
+        // successful readback can actually reach the approved role-choice
+        // frame. A failed stop leaves pairing facts intact for recovery.
+        context.dispatchAction(topologyActions.setHostDesired(false))
+        await dispatchCompleted({
+          context,
+          definition: reconcileTopologyHostCommand,
+          payload: Object.freeze({}),
+          label: 'Topology host stop for unpair',
+        })
+        const hostAfterStop = selectTopologyState(context.getState())
+        if (hostAfterStop.hostActual !== 'stopped') {
+          throw topologyFailure(context, 'TOPOLOGY_HOST_FAILED', 'Topology host did not stop during unpair')
+        }
+        unpairingLog(context, 'host-stop-completed', {
+          hostDesired: hostAfterStop.hostDesired,
+          hostActual: hostAfterStop.hostActual,
+        })
+      }
       context.dispatchAction(topologyActions.clearMasterLocator())
       context.dispatchAction(topologyActions.setRepairPending(false))
-      unpairingLog(context, 'persistence-completed', {
-        instanceMode: selectRuntimeInstanceMode(context.getState()),
-        displayRole: selectDisplayRole(context.getState()),
-        hasLocator: selectTopologyState(context.getState()).masterLocator !== null,
-        hasPeerIdentity: selectTopologyState(context.getState()).peerIdentity !== null,
-        peerReachable: selectTopologyState(context.getState()).peerReachable,
-      })
-      await sendExplicitUnpairNotice(context, input.peerChannel, shouldNotifyPeer)
+      if (!(await flushUnpairPersistence(context))) {
+        throw topologyFailure(context, 'TOPOLOGY_UNAVAILABLE', 'Topology unpair persistence did not complete')
+      }
+      if (!peerNoticeSent) await sendExplicitUnpairNotice(context, input.peerChannel, shouldNotifyPeer)
       await input.peerChannel?.close('TOPOLOGY_UNPAIRED')
       unpairingLog(context, 'completed', {
         hasLocator: selectTopologyState(context.getState()).masterLocator !== null,
@@ -489,10 +560,22 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
     if (event.event === 'close' || event.event === 'error' || event.event === 'peer-unreachable') {
       context.dispatchAction(topologyActions.setPeerReachable(false))
       context.dispatchAction(topologyActions.bumpPeerConnectionRevision())
-      if (event.reason === 'TOPOLOGY_UNPAIRED' && selectRuntimeInstanceMode(context.getState()) === 'MASTER') {
-        // A transient close preserves the accepted peer identity.  Only the
-        // slave's explicit unpair signal clears the master's pairing fact.
-        context.dispatchAction(topologyActions.clearPeerIdentity())
+      if (event.reason === 'TOPOLOGY_UNPAIRED') {
+        const instanceMode = selectRuntimeInstanceMode(context.getState())
+        if (instanceMode === 'MASTER') {
+          // A transient close preserves the accepted peer identity. Only an
+          // explicit unpair notice clears the master's pairing fact.
+          context.dispatchAction(topologyActions.clearPeerIdentity())
+        } else if (instanceMode === 'SLAVE') {
+          // The slave owns the persisted locator. Without clearing it, the
+          // reconnect loop can pair the runtimes again after the master has
+          // completed its own unpair operation.
+          context.dispatchAction(topologyActions.clearMasterLocator())
+          context.dispatchAction(topologyActions.setRepairPending(false))
+          if (!(await flushUnpairPersistence(context))) {
+            context.dispatchAction(topologyActions.setRepairPending(true))
+          }
+        }
       }
     }
     return null
@@ -511,8 +594,12 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
       if (status.status === 'succeeded' && status.value.state === 'stopped') {
         const action = hostStatusActionIfChanged(context, 'stopped')
         if (action !== undefined) context.dispatchAction(action)
+        const stoppedAddressAction = hostAddressActionIfChanged(context, null)
+        if (stoppedAddressAction !== undefined) context.dispatchAction(stoppedAddressAction)
         return Object.freeze({state: 'stopped' as const, desired: false})
       }
+      const stoppingAddressAction = hostAddressActionIfChanged(context, null)
+      if (stoppingAddressAction !== undefined) context.dispatchAction(stoppingAddressAction)
       const stoppingAction = hostStatusActionIfChanged(context, 'stopping')
       if (stoppingAction !== undefined) context.dispatchAction(stoppingAction)
       const stopped = await context.platformPorts.topologyHost.stop({timeoutMs: topologyCallTimeoutMs})
@@ -520,19 +607,28 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
         const errorCode = hostFailureCode(stopped)
         const errorAction = hostStatusActionIfChanged(context, 'error', errorCode)
         if (errorAction !== undefined) context.dispatchAction(errorAction)
+        const errorAddressAction = hostAddressActionIfChanged(context, null)
+        if (errorAddressAction !== undefined) context.dispatchAction(errorAddressAction)
         return Object.freeze({state: 'error' as const, desired: false, errorCode})
       }
       const stoppedAction = hostStatusActionIfChanged(context, 'stopped')
       if (stoppedAction !== undefined) context.dispatchAction(stoppedAction)
+      const stoppedAfterStopAddressAction = hostAddressActionIfChanged(context, null)
+      if (stoppedAfterStopAddressAction !== undefined) context.dispatchAction(stoppedAfterStopAddressAction)
       return Object.freeze({state: 'stopped' as const, desired: false})
     }
 
     if (status.status === 'succeeded' && status.value.state === 'running' && status.value.address !== undefined) {
       const runningAction = hostStatusActionIfChanged(context, 'running')
       if (runningAction !== undefined) context.dispatchAction(runningAction)
+      const address = hostAddressFromStatus(status.value)
+      const runningAddressAction = hostAddressActionIfChanged(context, address ?? null)
+      if (runningAddressAction !== undefined) context.dispatchAction(runningAddressAction)
       return Object.freeze({state: 'running' as const, desired: true})
     }
 
+    const startingAddressAction = hostAddressActionIfChanged(context, null)
+    if (startingAddressAction !== undefined) context.dispatchAction(startingAddressAction)
     const startingAction = hostStatusActionIfChanged(context, 'starting')
     if (startingAction !== undefined) context.dispatchAction(startingAction)
     const started = await context.platformPorts.topologyHost.start({
@@ -547,6 +643,8 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
       const errorCode = hostFailureCode(started)
       const errorAction = hostStatusActionIfChanged(context, 'error', errorCode)
       if (errorAction !== undefined) context.dispatchAction(errorAction)
+      const startErrorAddressAction = hostAddressActionIfChanged(context, null)
+      if (startErrorAddressAction !== undefined) context.dispatchAction(startErrorAddressAction)
       return Object.freeze({state: 'error' as const, desired: true, errorCode})
     }
     const settled = await readHostStatus(context)
@@ -554,10 +652,15 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
       const errorCode = settled.status === 'failed' ? settled.errorCode : 'TOPOLOGY_HOST_FAILED'
       const errorAction = hostStatusActionIfChanged(context, 'error', errorCode)
       if (errorAction !== undefined) context.dispatchAction(errorAction)
+      const settleErrorAddressAction = hostAddressActionIfChanged(context, null)
+      if (settleErrorAddressAction !== undefined) context.dispatchAction(settleErrorAddressAction)
       return Object.freeze({state: 'error' as const, desired: true, errorCode})
     }
     const runningAction = hostStatusActionIfChanged(context, 'running')
     if (runningAction !== undefined) context.dispatchAction(runningAction)
+    const address = hostAddressFromStatus(settled.value)
+    const settledAddressAction = hostAddressActionIfChanged(context, address ?? null)
+    if (settledAddressAction !== undefined) context.dispatchAction(settledAddressAction)
     return Object.freeze({state: 'running' as const, desired: true})
   }),
   onCommand(reconcileTopologyPeerCommand, async context => {

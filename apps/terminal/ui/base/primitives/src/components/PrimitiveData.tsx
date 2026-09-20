@@ -18,17 +18,17 @@ export const LIST_OVERSCAN_BEFORE = 4 as const;
 export const LIST_OVERSCAN_AFTER = 4 as const;
 export const LIST_MAX_MOUNTED = 24 as const;
 
-export const PrimitiveKeyValueRow = ({testID, label, value}: PrimitiveKeyValueRowProps) => (
-  <RnrView testID={assertTestID(testID)} className={baseTokens.dataRow}>
-    <RnrText className={baseTokens.dataLabel}>{label}</RnrText>
-    <RnrText className={baseTokens.dataValue}>{value}</RnrText>
+export const PrimitiveKeyValueRow = ({testID, label, value, appearance = 'default'}: PrimitiveKeyValueRowProps) => (
+  <RnrView testID={assertTestID(testID)} className={appearance === 'admin' ? baseTokens.adminDataRow : baseTokens.dataRow}>
+    <RnrText className={appearance === 'admin' ? baseTokens.adminDataLabel : baseTokens.dataLabel}>{label}</RnrText>
+    <RnrText className={appearance === 'admin' ? baseTokens.adminDataValue : baseTokens.dataValue}>{value}</RnrText>
   </RnrView>
 );
 
-export const PrimitiveStatusRow = ({testID, label, value, tone = 'neutral'}: PrimitiveStatusRowProps) => (
-  <RnrView testID={assertTestID(testID)} className={baseTokens.dataRow}>
-    <RnrText className={baseTokens.dataLabel}>{label}</RnrText>
-    <RnrText className={toneForegroundClassName(tone, baseTokens.dataValue)}>{value}</RnrText>
+export const PrimitiveStatusRow = ({testID, label, value, appearance = 'default', tone = 'neutral'}: PrimitiveStatusRowProps) => (
+  <RnrView testID={assertTestID(testID)} className={appearance === 'admin' ? baseTokens.adminDataRow : baseTokens.dataRow}>
+    <RnrText className={appearance === 'admin' ? baseTokens.adminDataLabel : baseTokens.dataLabel}>{label}</RnrText>
+    <RnrText className={toneForegroundClassName(tone, appearance === 'admin' ? baseTokens.adminDataValue : baseTokens.dataValue)}>{value}</RnrText>
   </RnrView>
 );
 

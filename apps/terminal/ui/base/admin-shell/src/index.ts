@@ -4,6 +4,9 @@ export {
   ADMIN_CONSOLE_FOCUS_SCOPE_ID,
   ADMIN_CONSOLE_LAYER_ID,
   ADMIN_CONSOLE_PART_KEY,
+  ADMIN_DISPLAY_CONTEXT_RAW_PART_KEY,
+  ADMIN_PLATFORM_PORTS_PAGE_PART_KEY,
+  ADMIN_RUNTIME_PAGE_PART_KEY,
   ADMIN_SECTION_CONTAINER_KEY,
   ADMIN_TOPOLOGY_SECTION_PART_KEY,
 } from './foundations/adminIdentity';
@@ -17,7 +20,13 @@ export {
   trackAdminGesture,
 } from './foundations/adminLauncher';
 export type {AdminGestureCoordinateSpace} from './foundations/adminLauncher';
-export {AdminNavigationRejectedError, createAdminSectionCommandBoundary, selectAdminSections} from './foundations/adminSectionSelection';
+export {
+  AdminNavigationRejectedError,
+  createAdminSectionCommandBoundary,
+  selectAdminPageProjections,
+  selectAdminSections,
+} from './foundations/adminSectionSelection';
+export type {AdminPageKey, AdminPageProjection, AdminPageSpec} from './foundations/adminSectionSelection';
 export {adminTestIds} from './foundations/adminTestIds';
 export {AdminLayer} from './components/AdminLayer';
 export {AdminLauncher} from './components/AdminLauncher';

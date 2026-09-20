@@ -3,7 +3,7 @@ import {readTerminalSurfaces} from '../src/application/terminalSurfaces'
 
 const landscape = {
   PRIMARY: {width: 1280, height: 800},
-  SECONDARY: {width: 960, height: 540},
+  SECONDARY: {width: 1280, height: 800},
 } as const
 
 describe('terminal surface declaration parser', () => {

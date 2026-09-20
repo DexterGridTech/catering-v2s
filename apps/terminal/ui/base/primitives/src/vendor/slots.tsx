@@ -98,7 +98,7 @@ export const RnrVirtualizedList = <ItemT,>({className, ...props}: RnrVirtualized
 
 export const primitiveIconPaths = Object.freeze({
   admin: 'M6 9V5h12v4M4 9h16v10H4zM8 13h8M8 16h5',
-  blocked: 'M6 6 18 18M18 6 6 18',
+  blocked: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M5.64 5.64l12.72 12.72',
   check: 'M5 12.5 9.5 17 19 7.5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-right': 'm9 6 6 6-6 6',
@@ -142,15 +142,16 @@ export const RnrSvgIcon = ({accessibilityLabel, className, path, size = 20, styl
 
 export type RnrGradientBackgroundProps = Readonly<{
   readonly endColor: string
+  readonly gradientId?: string
   readonly startColor: string
   readonly testID?: string
 }>
 
-export const RnrGradientBackground = ({endColor, startColor, testID}: RnrGradientBackgroundProps) => (
+export const RnrGradientBackground = ({endColor, gradientId = 'primitive-action-gradient', startColor, testID}: RnrGradientBackgroundProps) => (
   <RnrView
     testID={testID}
     pointerEvents="none"
-    className="text-login-action-start text-login-action-end"
+    className="absolute inset-0 w-full h-full"
     style={StyleSheet.absoluteFill}
   >
     <Svg
@@ -160,11 +161,11 @@ export const RnrGradientBackground = ({endColor, startColor, testID}: RnrGradien
       preserveAspectRatio="none"
       style={StyleSheet.absoluteFill}
     >
-      <LinearGradient id="primitive-login-action-gradient" x1="0" y1="0" x2="1" y2="0">
+      <LinearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
         <Stop offset="0" stopColor={startColor} />
         <Stop offset="1" stopColor={endColor} />
       </LinearGradient>
-      <Rect x="0" y="0" width="100%" height="100%" fill="url(#primitive-login-action-gradient)" />
+      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gradientId})`} />
     </Svg>
   </RnrView>
 )

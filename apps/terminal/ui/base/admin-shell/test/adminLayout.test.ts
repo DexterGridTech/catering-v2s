@@ -46,6 +46,28 @@ const openingWithTestId = (source: ts.SourceFile, testId: string): ts.JsxOpening
 }
 
 describe('admin layout structural contract', () => {
+  it('binds the active IA frame marker to the outer panel root', () => {
+    const frame = readSource('src/components/AdminShellFrame.tsx')
+    const outerPanel = jsxOpenings(frame, 'PrimitiveContainer').find(node => attributeText(frame, node, 'testID')?.includes('adminFrameTestId'))
+    expect(outerPanel).toBeDefined()
+    expect(attributeText(frame, outerPanel!, 'layout')).toBe('layout="card"')
+    expect(attributeText(frame, outerPanel!, 'style')).toBe('style={panelStyle}')
+    expect(frame.text).toContain("maxHeight: '100%'")
+    expect(frame.text).toContain("overflow: 'hidden'")
+    const panelFrame = jsxOpenings(frame, 'PrimitiveContainer').find(node => attributeText(frame, node, 'testID')?.includes('adminTestIds.panel.frame'))
+    expect(panelFrame).toBeDefined()
+    for (const sectionPath of [
+      'src/components/sections/PlatformPortsSection.tsx',
+      'src/components/sections/RuntimeSection.tsx',
+      'src/components/sections/TopologySection.tsx',
+    ]) {
+      const section = readSource(sectionPath)
+      expect(section.text, sectionPath).toContain('useReportAdminFrame')
+      expect(section.text, sectionPath).not.toContain('adminFrameTestId(')
+    }
+    expect(frame.text.match(/adminFrameTestId\(/g)).toHaveLength(1)
+  })
+
   it('keeps the admin root as a full canvas and laptop as an explicit row', () => {
     const frame = readSource('src/components/AdminShellFrame.tsx')
     const root = openingWithTestId(frame, 'adminTestIds.shell')
@@ -60,10 +82,13 @@ describe('admin layout structural contract', () => {
     expect(laptop.text).toContain("flexWrap: 'nowrap'")
   })
 
-  it('keeps mobile navigation wrapped and all floating cards individually bounded', () => {
+  it('keeps mobile navigation as one controlled dropdown and all floating cards individually bounded', () => {
     const navigation = readSource('src/components/AdminSectionNavigation.tsx')
-    const mobileNav = jsxOpenings(navigation, 'PrimitiveGrid')[0]
-    expect(attributeText(navigation, mobileNav!, 'style')).toContain('flexWrap: \'wrap\'')
+    const mobileNav = jsxOpenings(navigation, 'PrimitiveDropdownSelect')[0]
+    expect(mobileNav).toBeDefined()
+    expect(attributeText(navigation, mobileNav!, 'testID')).toBe('testID="terminal.admin:navigation"')
+    expect(navigation.text).toContain('const [open, setOpen] = useState(false)')
+    expect(navigation.text).not.toContain('PrimitivePressOption')
 
     const cardPaths = [
       'src/components/AdminLogin.tsx',
@@ -131,7 +156,6 @@ describe('admin layout structural contract', () => {
       'src/components/sections/SampleSection.tsx',
       'src/components/sections/PlatformPortsSection.tsx',
       'src/components/sections/RuntimeSection.tsx',
-      'src/components/sections/DisplayContextSection.tsx',
       'src/components/sections/TopologySection.tsx',
     ]) {
       const section = readSource(sectionPath)

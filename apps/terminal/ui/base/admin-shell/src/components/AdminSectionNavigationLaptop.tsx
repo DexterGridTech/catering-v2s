@@ -1,4 +1,4 @@
-import {PrimitiveGrid, PrimitivePressOption} from '@catering-v2s/ui-base-primitives'
+import {adminGeometry, PrimitiveGrid, PrimitivePressOption} from '@catering-v2s/ui-base-primitives'
 import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state'
 import {adminTestIds} from '../foundations/adminTestIds'
 
@@ -11,7 +11,7 @@ export const AdminSectionNavigationLaptop = ({
   readonly selectedPartKey: string | null
   readonly onSelect: (partKey: string) => void
 }>) => (
-  <PrimitiveGrid testID="terminal.admin:navigation" accessibilityLabel="终端管理分区" style={{flexDirection: 'column', flexWrap: 'nowrap', alignItems: 'stretch'}}>
+  <PrimitiveGrid testID="terminal.admin:navigation" appearance="admin-nav" accessibilityLabel="终端管理分区" style={adminGeometry.navigationList}>
     {sections.map(section => (
       <PrimitivePressOption
         key={section.partKey}
@@ -19,7 +19,8 @@ export const AdminSectionNavigationLaptop = ({
         accessibilityLabel={`选择${section.title}`}
         accessibilityRole="button"
         selected={selectedPartKey === section.partKey}
-        variant="option"
+        variant="admin-nav"
+        icon={section.partKey === 'admin.console.platform-ports' ? 'server' : section.partKey === 'admin.console.runtime' ? 'monitor' : 'link'}
         onPress={() => onSelect(section.partKey)}
       >
         {section.title}

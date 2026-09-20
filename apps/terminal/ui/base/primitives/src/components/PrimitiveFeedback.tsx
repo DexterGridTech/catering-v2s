@@ -76,13 +76,14 @@ export const PrimitiveSkeleton = ({testID, accessibilityLabel = '内容加载中
   />
 );
 
-export const PrimitiveBadge = ({testID, accessibilityLabel, children, tone = 'neutral'}: PrimitiveBadgeProps) => (
+export const PrimitiveBadge = ({testID, accessibilityLabel, children, appearance = 'default', tone = 'neutral'}: PrimitiveBadgeProps) => (
   <RnrView
     testID={assertTestID(testID)}
     accessibilityRole="text"
     accessibilityLabel={accessibilityLabel}
-    className={toneClassName(tone, 'self-start rounded-full border px-2 py-1')}
+    className={toneClassName(tone, appearance === 'admin-status' ? baseTokens.adminStatus : 'self-start rounded-full border px-2 py-1')}
   >
-    <RnrText className={toneForegroundClassName(tone, 'text-xs leading-4 font-medium')}>{children}</RnrText>
+    {appearance === 'admin-status' ? <RnrView className={toneClassName(tone, baseTokens.adminStatusDot)} /> : null}
+    <RnrText className={toneForegroundClassName(tone, appearance === 'admin-status' ? 'text-xs leading-[18px] font-semibold' : 'text-xs leading-4 font-medium')}>{children}</RnrText>
   </RnrView>
 );

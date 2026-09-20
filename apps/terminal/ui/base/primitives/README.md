@@ -135,7 +135,8 @@ export const ScrollArea = ({testID, children}: {testID: string; children: ReactN
 ```
 
 `PrimitiveScrollView` 是受控的纵向 ScrollView wrapper：props 接受强制 `testID`、children、
-通用的 `onScrollOffsetChange` 与 presentation-only 的 `layout`；React ref 暴露
+通用的 `onScrollOffsetChange`、presentation-only 的 `layout` 与可选 `contentPaddingBottom` 尾部内容
+inset；React ref 暴露
 `PrimitiveScrollViewHandle` 的测量与 `scrollTo`，
 不把 `className`、业务字段、屏幕模式或键盘策略暴露给 feature。它使用真实 RN ScrollView，
 因此不会退化成只记录标签的 View；同一列表或表单只能有一个这样的滚动祖先。其

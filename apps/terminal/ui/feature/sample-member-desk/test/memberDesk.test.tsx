@@ -106,7 +106,7 @@ const createStateSource = (root: RuntimeStateRoot) => ({
 
 const mount = (
   element: ReturnType<typeof createElement>,
-  frameLayout: FrameLayout = {width: 960, height: 540},
+  frameLayout: FrameLayout = {width: 1280, height: 800},
 ): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined
   act(() => {
@@ -396,7 +396,7 @@ describe('sample member desk UI feature', () => {
   })
 
   it.each([
-    ['landscape confirm', 'confirm', {width: 960, height: 540}],
+    ['landscape confirm', 'confirm', {width: 1280, height: 800}],
     ['portrait handheld-confirm', 'handheld-confirm', {width: 360, height: 720}],
   ] as const)('keeps the customer numeric input actionable in the %s local frame', (_label, mode, frameLayout) => {
     const {logger} = createLogger()

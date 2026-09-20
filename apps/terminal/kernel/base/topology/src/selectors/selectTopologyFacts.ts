@@ -20,6 +20,7 @@ export const areTopologyFactsEqual = (
     && Object.is(previous.hasTopologySecondarySurface, next.hasTopologySecondarySurface)
     && Object.is(previous.masterLocator, next.masterLocator)
     && Object.is(previous.peerIdentity, next.peerIdentity)
+    && Object.is(previous.hostAddress, next.hostAddress)
     && Object.is(previous.hostDesired, next.hostDesired)
     && Object.is(previous.hostActual, next.hostActual)
     && Object.is(previous.hostErrorCode, next.hostErrorCode)
@@ -51,6 +52,7 @@ export const selectTopologyFacts = (state: StateRoot): TopologyFacts | undefined
     }),
     masterLocator: typedTopology.masterLocator,
     peerIdentity: typedTopology.peerIdentity,
+    hostAddress: typedTopology.hostAddress,
     hostDesired: typedTopology.hostDesired,
     hostActual: typedTopology.hostActual,
     hostErrorCode: typedTopology.hostErrorCode,

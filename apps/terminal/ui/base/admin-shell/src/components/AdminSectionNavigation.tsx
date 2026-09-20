@@ -1,6 +1,6 @@
-import {PrimitiveGrid, PrimitivePressOption} from '@catering-v2s/ui-base-primitives'
+import {useState} from 'react'
+import {PrimitiveDropdownSelect} from '@catering-v2s/ui-base-primitives'
 import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state'
-import {adminTestIds} from '../foundations/adminTestIds'
 
 export const AdminSectionNavigation = ({
   sections,
@@ -10,25 +10,21 @@ export const AdminSectionNavigation = ({
   readonly sections: readonly UiCatalogEntry[]
   readonly selectedPartKey: string | null
   readonly onSelect: (partKey: string) => void
-}>) => (
-  <PrimitiveGrid
-    testID="terminal.admin:navigation"
-    accessibilityRole="tablist"
-    accessibilityLabel="终端管理分区"
-    style={{flexWrap: 'wrap'}}
-  >
-    {sections.map(section => (
-      <PrimitivePressOption
-        key={section.partKey}
-        testID={adminTestIds.section(section.partKey)}
-        accessibilityLabel={`选择${section.title}`}
-        accessibilityRole="tab"
-        selected={selectedPartKey === section.partKey}
-        variant="tab"
-        onPress={() => onSelect(section.partKey)}
-      >
-        {section.title}
-      </PrimitivePressOption>
-    ))}
-  </PrimitiveGrid>
-)
+}>) => {
+  const [open, setOpen] = useState(false)
+  const options = sections.map(section => ({value: section.partKey, label: section.title}))
+  const value = selectedPartKey ?? options[0]?.value ?? ''
+  return (
+    <PrimitiveDropdownSelect
+      testID="terminal.admin:navigation"
+      accessibilityLabel="选择终端管理页面"
+      options={options}
+      value={value}
+      open={open}
+      appearance="admin-mobile"
+      disabled={options.length === 0}
+      onOpenChange={setOpen}
+      onValueChange={onSelect}
+    />
+  )
+}

@@ -84,6 +84,19 @@ const press = (renderer: ReactTestRenderer, testID: string): (() => unknown) => 
   return instance.props.onPress
 }
 
+const waitForAdminContent = async (renderer: ReactTestRenderer): Promise<void> => {
+  const pageTestIds = [
+    'admin.console.platform-ports',
+    'admin.console.runtime',
+    'admin.console.topology',
+  ]
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    if (pageTestIds.some(testID => renderer.root.findAllByProps({testID}).length > 0)) return
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)) })
+  }
+  throw new Error('admin content did not become available')
+}
+
 const authenticateAdmin = async (renderer: ReactTestRenderer): Promise<void> => {
   for (const digit of ['1', '2', '3', '4', '5', '6']) {
     await act(async () => {
@@ -95,6 +108,7 @@ const authenticateAdmin = async (renderer: ReactTestRenderer): Promise<void> => 
     press(renderer, adminTestIds.verify)()
     await new Promise(resolve => setTimeout(resolve, 0))
   })
+  await waitForAdminContent(renderer)
 }
 
 const dispatchOptions = (displayMode: 'PRIMARY' | 'SECONDARY' = 'PRIMARY') => ({
@@ -149,7 +163,7 @@ describe('sample2 wallpaper console assembly', () => {
       expect(laptopPrimary.root.findByProps({testID: 'ui-base-render:surface-host-canvas'}).props.style)
         .toEqual(expect.arrayContaining([expect.objectContaining({width: 1280, height: 800})]))
       expect(laptopSecondary.root.findByProps({testID: 'ui-base-render:surface-host-canvas'}).props.style)
-        .toEqual(expect.arrayContaining([expect.objectContaining({width: 960, height: 540})]))
+        .toEqual(expect.arrayContaining([expect.objectContaining({width: 1280, height: 800})]))
       expect(mobilePrimary.root.findByProps({testID: 'ui-base-render:surface-host-canvas'}).props.style)
         .toEqual(expect.arrayContaining([expect.objectContaining({width: 360, height: 640})]))
       expect(() => createSurfaceForDisplayIndex(mobile, 1)).toThrow(/unavailable for mobile/)
@@ -230,13 +244,31 @@ describe('sample2 wallpaper console assembly', () => {
         expect(renderer.root.findByProps({testID: adminTestIds.login})).toBeDefined()
         expect(renderer.root.findByProps({testID: adminTestIds.debugPassword}).props.children).toMatch(/^（\d{6}）$/)
         await authenticateAdmin(renderer)
-        for (const sectionTestID of [
-          adminTestIds.sections.platformPorts,
-          adminTestIds.sections.runtime,
-          adminTestIds.sections.displayContext,
-          adminTestIds.sections.topology,
-        ]) {
-          expect(renderer.root.findByProps({testID: sectionTestID})).toBeDefined()
+        if (assembly.surfaceForm === 'mobile') {
+          expect(renderer.root.findByProps({testID: 'terminal.admin:navigation'})).toBeDefined()
+          await act(async () => {
+            press(renderer, 'terminal.admin:navigation:trigger')()
+            await new Promise(resolve => setTimeout(resolve, 0))
+          })
+          for (const partKey of [
+            'admin.console.platform-ports',
+            'admin.console.runtime',
+            'admin.console.topology',
+          ]) {
+            expect(renderer.root.findByProps({testID: `terminal.admin:navigation:option:${partKey}`})).toBeDefined()
+          }
+          await act(async () => {
+            press(renderer, 'terminal.admin:navigation:option:admin.console.runtime')()
+            await new Promise(resolve => setTimeout(resolve, 0))
+          })
+        } else {
+          for (const sectionTestID of [
+            adminTestIds.sections.platformPorts,
+            adminTestIds.sections.runtime,
+            adminTestIds.sections.topology,
+          ]) {
+            expect(renderer.root.findByProps({testID: sectionTestID})).toBeDefined()
+          }
         }
         expect(selectLayers(assembly.runtime.getState(), 'PRIMARY'))
           .toEqual(expect.arrayContaining([expect.objectContaining({layerId: ADMIN_CONSOLE_LAYER_ID})]))

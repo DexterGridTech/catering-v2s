@@ -16,7 +16,13 @@ const topologyPort = topologyTransportConfig.port
 // host-side bridge, so its local endpoint must not reuse topologyPort:
 // forward(local bridge -> master device topologyPort) and
 // reverse(slave device topologyPort -> local bridge) otherwise collide.
-const hostBridgePort = 43173
+const hostBridgePort = 43174
+// The direct-pair red mutation uses the device loopback.  The runner must
+// suspend its own reverse first: Android routes loopback aliases through the
+// reverse endpoint too, which would otherwise turn a supposed failure into a
+// real master pairing.  A TEST-NET address is avoided because its connect
+// timeout is longer than the runtime's bounded command window.
+const directPairFailureHost = '127.0.0.1'
 const topologyBasePath = topologyTransportConfig.basePath
 // Android's shell-side `uiautomator dump` creates a fresh UiAutomation
 // connection for each invocation.  The stage-one emulator evidence shows
@@ -41,7 +47,7 @@ const profiles = Object.freeze({
     packageName: 'com.anonymous.sampleterminal',
     activity: 'com.anonymous.sampleterminal/.MainActivity',
     apk: path.join(repositoryRoot, 'apps/terminal/assembly/android/sample-terminal/android/app/build/outputs/apk/release/app-release.apk'),
-    memberJourney: true,
+    memberJourney: false,
   }),
   'sample-wallpaper-terminal': Object.freeze({
     name: 'sample-wallpaper-terminal',
@@ -196,6 +202,7 @@ const device = (role, serial, profile) => ({
   uiObserverDexPushed: false,
   remoteUiObserverDexPath: `/data/local/tmp/ter-no-idle-ui-${process.pid}-${profile.name}-${role}.dex`,
   uiRotation: 0,
+  portOccupantProcess: null,
 })
 
 const adb = (target, commandArgs, label, options = {}) => run(
@@ -566,7 +573,7 @@ const nodeText = node => node?.tag.match(/text="([^"]*)"/)?.[1] ?? ''
 const readUi = async (target, label) => {
   target.remoteUiCreated = true
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const actionReadyAt = (target.lastUiActionAt ?? 0) + uiActionSettleDelayMs
+    const actionReadyAt = (target.lastUiActionAt ?? 0) + (target.lastUiActionSettleDelayMs ?? uiActionSettleDelayMs)
     const observationReadyAt = Math.max(actionReadyAt, target.nextUiObservationAt ?? 0)
     const waitMs = observationReadyAt - Date.now()
     if (waitMs > 0) await sleep(waitMs)
@@ -674,13 +681,13 @@ const waitForStage2Absent = async (target, displayId, resourceId, timeoutMs = 20
   throw new RunnerFailure(`${target.tag} wait absent display ${displayId} ${resourceId}`, 'UI resource did not disappear')
 }
 
-const scrollStage2NodeIntoView = async (target, displayId, resourceId, timeoutMs = 20_000) => {
+const scrollStage2NodeIntoView = async (target, displayId, resourceId, scrollResourceId = 'terminal.admin:topology:scroll', timeoutMs = 20_000) => {
   const deadline = Date.now() + timeoutMs
   let lastXml = ''
   while (Date.now() < deadline) {
     lastXml = await readStage2Ui(target, displayId, `scroll ${resourceId}`)
     const node = nodeForId(lastXml, resourceId)
-    const scroll = nodeForId(lastXml, 'terminal.admin:topology:scroll')
+    const scroll = nodeForId(lastXml, scrollResourceId)
     if (node !== null && scroll !== null) {
       // The Android accessibility bounds already describe the visible
       // ScrollView viewport.  Do not add an artificial inset here: the last
@@ -713,9 +720,20 @@ const scrollStage2NodeIntoView = async (target, displayId, resourceId, timeoutMs
   throw new RunnerFailure(`${target.tag} scroll display ${displayId} ${resourceId}`, 'resource did not become visible in the scroll viewport')
 }
 
+const nudgeStage2Scroll = async (target, displayId, scrollResourceId) => {
+  const observed = await waitForStage2Node(target, displayId, scrollResourceId, current => current.right > current.left && current.bottom > current.top)
+  const displayArgs = displayId === 0 ? [] : ['-d', String(displayId)]
+  const x = Math.floor((observed.node.left + observed.node.right) / 2)
+  const startY = Math.max(observed.node.top + 80, observed.node.bottom - 80)
+  const endY = Math.min(observed.node.bottom - 40, observed.node.top + 100)
+  adb(target, ['shell', 'input', ...displayArgs, 'swipe', String(x), String(Math.floor(startY)), String(x), String(Math.floor(endY)), '350'], `nudge display ${displayId} ${scrollResourceId}`)
+  target.lastUiActionAt = Date.now()
+  await sleep(uiActionSettleDelayMs)
+}
+
 const tapStage2Node = async (target, displayId, resourceId, options = {}) => {
   const observed = options.scrollIntoView === true
-    ? await scrollStage2NodeIntoView(target, displayId, resourceId)
+    ? await scrollStage2NodeIntoView(target, displayId, resourceId, options.scrollResourceId)
     : await waitForStage2Node(target, displayId, resourceId, current => current.right > current.left && current.bottom > current.top)
   if (options.requireEnabled !== false && !observed.node.enabled) throw new RunnerFailure(`${target.tag} tap display ${displayId} ${resourceId}`, 'control is disabled')
   const x = Math.floor((observed.node.left + observed.node.right) / 2)
@@ -805,29 +823,57 @@ const waitForPairRuntimeReset = async target => waitForNode(
     && nodeForId(xml, 'terminal.admin:login') === null,
 )
 
-const scrollNodeIntoView = async (target, resourceId) => {
-  const observed = await waitForNode(target, resourceId, current => current.right > current.left && current.bottom > current.top)
-  const viewportBottom = (target.displayHeight ?? observed.node.bottom) - 96
-  if (observed.node.bottom <= viewportBottom) return observed
+const waitForAdminLayerReset = async target => waitForNode(
+  target,
+  'terminal.admin:launcher',
+  (_node, xml) => nodeForId(xml, 'terminal.admin:shell') === null,
+)
+
+const scrollNodeIntoView = async (target, resourceId, scrollResourceId = 'terminal.admin:topology:scroll') => {
+  // Android can expose a real enabled control at the content boundary with a
+  // zero-height accessibility bounds until its ScrollView is moved.  First
+  // observe the resource itself without a shape predicate; the subsequent
+  // gesture must be driven by the observed topology ScrollView, not by a
+  // guessed screen coordinate.
+  const observed = await waitForNode(target, resourceId)
+  // The laptop emulator exposes a 96px bottom taskbar interaction inset. A
+  // node below this edge may have positive accessibility bounds while its
+  // center tap is delivered to the launcher/taskbar instead of the app.
+  const displayBottom = target.displayHeight === null
+    ? observed.node.bottom
+    : Math.max(0, target.displayHeight - 96)
+  if (observed.node.right > observed.node.left
+    && observed.node.bottom > observed.node.top
+    && observed.node.bottom <= displayBottom) return observed
+
+  const scroll = await waitForNode(target, scrollResourceId, current => current.right > current.left && current.bottom > current.top)
+  // The accessibility bounds are the authoritative visible ScrollView
+  // viewport. Do not subtract a guessed system-inset margin: that rejects a
+  // real control which is inside the ScrollView but below the device-height
+  // heuristic used by the old runner.
+  const viewportBottom = Math.min(scroll.node.bottom, displayBottom)
+  if (observed.node.right > observed.node.left
+    && observed.node.bottom > observed.node.top
+    && observed.node.bottom <= viewportBottom) return observed
 
   // The topology form is a real scroll surface.  A control at the lower edge
   // can have a clickable UiAutomator node while its center falls below the
   // RN viewport/system inset, so a raw center tap is not a delivered gesture.
-  // Scroll using the observed control's x coordinate, then re-read the node;
+  // Scroll using the observed ScrollView bounds, then re-read the node;
   // do not reuse its pre-scroll bounds.
-  const x = Math.floor((observed.node.left + observed.node.right) / 2)
-  const startY = Math.max(220, Math.min(observed.node.top - 48, viewportBottom - 24))
-  const endY = Math.max(180, startY - Math.max(480, observed.node.bottom - viewportBottom + 320))
+  const x = Math.floor((scroll.node.left + scroll.node.right) / 2)
+  const startY = Math.max(scroll.node.top + 80, Math.min(scroll.node.bottom - 24, viewportBottom - 24))
+  const endY = Math.max(scroll.node.top + 40, startY - Math.max(480, observed.node.bottom - viewportBottom + 320))
   if (endY >= startY) throw new RunnerFailure(`${target.tag} scroll ${resourceId}`, 'control could not be moved into the viewport')
   adb(target, ['shell', 'input', 'swipe', String(x), String(startY), String(x), String(endY), '350'], `scroll ${resourceId} into view`)
   target.lastUiActionAt = Date.now()
-  target.nextUiObservationAt = Math.max(target.nextUiObservationAt ?? 0, target.lastUiActionAt + uiActionSettleDelayMs)
+  target.nextUiObservationAt = Math.max(target.nextUiObservationAt ?? 0, target.lastUiActionAt + (target.lastUiActionSettleDelayMs ?? uiActionSettleDelayMs))
   return waitForNode(target, resourceId, current => current.right > current.left && current.bottom > current.top && current.bottom <= viewportBottom)
 }
 
 const tapNode = async (target, resourceId, options = {}) => {
   const observed = options.scrollIntoView === true
-    ? await scrollNodeIntoView(target, resourceId)
+    ? await scrollNodeIntoView(target, resourceId, options.scrollResourceId)
     : await waitForNode(target, resourceId, current => current.right > current.left && current.bottom > current.top)
   const node = observed.node
   if (options.requireEnabled !== false && !node.enabled) throw new RunnerFailure(`${target.tag} tap ${resourceId}`, 'control is disabled')
@@ -835,7 +881,11 @@ const tapNode = async (target, resourceId, options = {}) => {
   const y = Math.floor((node.top + node.bottom) / 2)
   adb(target, ['shell', 'input', 'tap', String(x), String(y)], `tap ${resourceId}`)
   target.lastUiActionAt = Date.now()
-  target.nextUiObservationAt = Math.max(target.nextUiObservationAt ?? 0, target.lastUiActionAt + uiActionSettleDelayMs)
+  target.lastUiActionSettleDelayMs = options.settleDelayMs ?? uiActionSettleDelayMs
+  const nextObservationAt = target.lastUiActionAt + target.lastUiActionSettleDelayMs
+  target.nextUiObservationAt = options.settleDelayMs === undefined
+    ? Math.max(target.nextUiObservationAt ?? 0, nextObservationAt)
+    : nextObservationAt
   return {node, x, y}
 }
 
@@ -845,8 +895,7 @@ const resourceRegion = (xml, resourceId) => {
   return start < 0 ? '' : xml.slice(start, start + 4_096)
 }
 
-const observe = async (record, target, label, expectedIds = [], expectedTexts = []) => {
-  const xml = await readUi(target, label)
+const recordObservation = (record, target, label, xml, expectedIds = [], expectedTexts = []) => {
   const missing = expectedIds.filter(resourceId => nodeForId(xml, resourceId) === null)
   if (missing.length > 0) throw new RunnerFailure(`${target.tag} ${label}`, `missing UI nodes: ${missing.join(', ')}`)
   const missingTexts = expectedTexts.filter(value => !xml.includes(value))
@@ -865,6 +914,9 @@ const observe = async (record, target, label, expectedIds = [], expectedTexts = 
   record.steps.push(step)
   return xml
 }
+
+const observe = async (record, target, label, expectedIds = [], expectedTexts = []) =>
+  recordObservation(record, target, label, await readUi(target, label), expectedIds, expectedTexts)
 
 const captureStage2Screenshot = (target, displayId, label) => {
   const safeLabel = label.replace(/[^a-zA-Z0-9_-]/g, '-')
@@ -904,6 +956,278 @@ const captureStage1Screenshot = (target, label) => {
   return {path: path.relative(repositoryRoot, screenshotPath), width: Number(dimensions[1]), height: Number(dimensions[2]), fileText}
 }
 
+const upsertFrameEvidence = (record, entry) => {
+  record.frameEvidence ??= []
+  const existingIndex = record.frameEvidence.findIndex(candidate => candidate.frameId === entry.frameId)
+  if (existingIndex === -1) record.frameEvidence.push(entry)
+  else record.frameEvidence[existingIndex] = entry
+  writeJson('frame-evidence.json', record.frameEvidence)
+  return entry
+}
+
+const upsertFrameVariantEvidence = (record, frameId, variant, entry) => {
+  record.frameEvidence ??= []
+  const existing = record.frameEvidence.find(candidate => candidate.frameId === frameId)
+  if (existing === undefined) {
+    upsertFrameEvidence(record, {frameId, variants: {[variant]: entry}, status: entry.status, observedAt: new Date().toISOString()})
+    return
+  }
+  existing.variants ??= {}
+  existing.variants[variant] = entry
+  writeJson('frame-evidence.json', record.frameEvidence)
+}
+
+const captureAdminFrame = async (record, target, frameId, label, expectedIds = [], expectedTexts = [], options = {}) => {
+  record.frameEvidence ??= []
+  if (record.frameEvidence.some(entry => entry.frameId === frameId && entry.status === 'MATCHED')) return record.frameEvidence.find(entry => entry.frameId === frameId)
+  const rootId = `terminal.admin:frame:${frameId}`
+  try {
+    const observed = await waitForNode(
+      target,
+      rootId,
+      (current, xml) => current.right > current.left
+        && current.bottom > current.top
+        && expectedIds.every(resourceId => nodeForId(xml, resourceId) !== null)
+        && expectedTexts.every(value => xml.includes(value)),
+      options.timeoutMs ?? 4_000,
+    )
+    // Busy frames can trigger an owner runtime reset immediately after the
+    // successful read. Reuse that fresh hierarchy instead of performing a
+    // second read that may already observe the post-reset surface.
+    const xml = recordObservation(record, target, `frame-${frameId}-${label}`, observed.xml, [rootId, ...expectedIds], expectedTexts)
+    const screenshot = captureStage1Screenshot(target, `frame-${frameId}-${label}`)
+    const entry = {frameId, label, deviceRole: target.role, status: 'MATCHED', screenshot, observedAt: new Date().toISOString()}
+    upsertFrameEvidence(record, entry)
+    record.lastKnownGood = `frame-${frameId}-${label}`
+    return entry
+  } catch (error) {
+    const entry = {
+      frameId,
+      label,
+      deviceRole: target.role,
+      status: 'OPEN',
+      firstFailure: sanitizeDiagnostic(error instanceof Error ? error.message : String(error)),
+      observedAt: new Date().toISOString(),
+    }
+    upsertFrameEvidence(record, entry)
+    if (options.required === true) throw error
+    return entry
+  }
+}
+
+const captureVisiblePanelFrame = async (record, target, frameId, label, variantIds) => {
+  const rootId = `terminal.admin:frame:${frameId}`
+  const current = await readUi(target, `probe ${rootId}`)
+  if (nodeForId(current, rootId) === null) {
+    upsertFrameEvidence(record, {
+      frameId,
+      label,
+      deviceRole: target.role,
+      status: 'OPEN',
+      firstFailure: `${rootId} was not present in the fresh release UI hierarchy; no real frame was captured`,
+      observedAt: new Date().toISOString(),
+    })
+    return false
+  }
+  await captureAdminFrame(record, target, frameId, label, [
+    'terminal.admin:shell:panel',
+    'terminal.admin:shell:header',
+    'terminal.admin:shell:brand',
+    'terminal.admin:shell:title',
+    'terminal.admin:shell:overall-status',
+    'terminal.admin:close',
+    'terminal.admin:navigation',
+    'terminal.admin:section:platform-ports',
+    'terminal.admin:section:runtime',
+    'terminal.admin:section:topology',
+    'terminal.admin:content',
+    ...variantIds,
+  ], [], {required: true})
+  return true
+}
+
+const stage2PanelControls = Object.freeze([
+  'terminal.admin:shell:panel',
+  'terminal.admin:shell:header',
+  'terminal.admin:shell:brand',
+  'terminal.admin:shell:title',
+  'terminal.admin:shell:overall-status',
+  'terminal.admin:close',
+  'terminal.admin:navigation',
+  'terminal.admin:content',
+])
+
+const captureStage2Frame = async (record, target, frameId, label, expectedIds = [], expectedTexts = [], displayId = 0, options = {}) => {
+  const rootId = `terminal.admin:frame:${frameId}`
+  record.frameEvidence ??= []
+  const existing = record.frameEvidence.find(entry => entry.frameId === frameId)
+  if (existing?.status === 'MATCHED' && options.variant === undefined) return existing
+  try {
+    const observed = await waitForStage2Node(
+      target,
+      displayId,
+      rootId,
+      (current, xml) => current.right > current.left
+        && current.bottom > current.top
+        && expectedIds.every(resourceId => nodeForId(xml, resourceId) !== null)
+        && expectedTexts.every(value => xml.includes(value)),
+      options.timeoutMs ?? 8_000,
+    )
+    const xml = observed.xml
+    saveStage2Ui(target, displayId, `frame-${frameId}-${label}`, xml)
+    const screenshot = captureStage2Screenshot(target, displayId, `frame-${frameId}-${label}`)
+    const entry = {
+      frameId,
+      label,
+      deviceRole: target.role,
+      displayId,
+      status: 'MATCHED',
+      screenshot,
+      observedAt: new Date().toISOString(),
+      expectedIds,
+      expectedTexts: expectedTexts.map(sanitizeDiagnostic),
+      observedIds: [...xml.matchAll(/resource-id="([^"]+)"/g)].map(match => match[1]),
+    }
+    if (options.variant !== undefined) upsertFrameVariantEvidence(record, frameId, options.variant, entry)
+    else upsertFrameEvidence(record, entry)
+    record.steps.push({label: `frame-${frameId}-${label}`, deviceRole: target.role, displayId, timestamp: new Date().toISOString(), expectedIds, expectedTexts: expectedTexts.map(sanitizeDiagnostic), observedIds: entry.observedIds, screenshot: screenshot.path})
+    record.lastKnownGood = `frame-${frameId}-${label}`
+    return entry
+  } catch (error) {
+    const entry = {
+      frameId,
+      label,
+      deviceRole: target.role,
+      displayId,
+      status: 'OPEN',
+      firstFailure: sanitizeDiagnostic(error instanceof Error ? error.message : String(error)),
+      observedAt: new Date().toISOString(),
+      expectedIds,
+      expectedTexts: expectedTexts.map(sanitizeDiagnostic),
+    }
+    if (options.variant !== undefined) upsertFrameVariantEvidence(record, frameId, options.variant, entry)
+    else upsertFrameEvidence(record, entry)
+    if (options.required === true) throw error
+    return entry
+  }
+}
+
+const captureStage2ScrolledFrame = async (record, target, frameId, label, summaryIds, detailIds, displayId = 0, scrollResourceId = 'admin.console.platform-ports:scroll') => {
+  const rootId = `terminal.admin:frame:${frameId}`
+  record.frameEvidence ??= []
+  const expectedIds = [...new Set([...summaryIds, ...detailIds])]
+  try {
+    const summary = await waitForStage2Node(
+      target,
+      displayId,
+      rootId,
+      (current, xml) => current.right > current.left
+        && current.bottom > current.top
+        && summaryIds.every(resourceId => nodeForId(xml, resourceId) !== null),
+    )
+    saveStage2Ui(target, displayId, `frame-${frameId}-${label}-summary`, summary.xml)
+    const summaryScreenshot = captureStage2Screenshot(target, displayId, `frame-${frameId}-${label}-summary`)
+    const detailResourceIds = detailIds.filter(resourceId => resourceId !== rootId)
+    const detailViewports = []
+    let observedXml = [summary.xml]
+    for (const [index, resourceId] of detailResourceIds.entries()) {
+      const detail = await scrollStage2NodeIntoView(target, displayId, resourceId, scrollResourceId)
+      const detailLabel = `frame-${frameId}-${label}-detail-${String(index + 1).padStart(2, '0')}`
+      saveStage2Ui(target, displayId, detailLabel, detail.xml)
+      const screenshot = captureStage2Screenshot(target, displayId, detailLabel)
+      detailViewports.push({resourceId, xml: detailLabel + '.xml', screenshot: screenshot.path})
+      observedXml.push(detail.xml)
+    }
+    const observedIds = [...new Set(observedXml.flatMap(xml => [...xml.matchAll(/resource-id="([^"]+)"/g)].map(match => match[1])))]
+    const missingIds = expectedIds.filter(resourceId => !observedIds.includes(resourceId))
+    if (missingIds.length > 0) throw new RunnerFailure(`${target.tag} frame ${frameId} ${label}`, `missing UI nodes after scroll union: ${missingIds.join(', ')}`)
+    const screenshots = [summaryScreenshot.path, ...detailViewports.map(viewport => viewport.screenshot)]
+    const entry = {
+      frameId,
+      label,
+      deviceRole: target.role,
+      displayId,
+      status: 'MATCHED',
+      screenshot: {path: screenshots[screenshots.length - 1]},
+      screenshots,
+      observedAt: new Date().toISOString(),
+      expectedIds,
+      expectedTexts: [],
+      observedIds,
+      viewportEvidence: {
+        summary: `stage2-display-${displayId}-frame-${frameId}-${label}-summary.xml`,
+        details: detailViewports,
+      },
+    }
+    upsertFrameEvidence(record, entry)
+    record.steps.push({label: `frame-${frameId}-${label}`, deviceRole: target.role, displayId, timestamp: new Date().toISOString(), expectedIds, expectedTexts: [], observedIds, screenshots})
+    record.lastKnownGood = `frame-${frameId}-${label}`
+    return entry
+  } catch (error) {
+    const entry = {
+      frameId,
+      label,
+      deviceRole: target.role,
+      displayId,
+      status: 'OPEN',
+      firstFailure: sanitizeDiagnostic(error instanceof Error ? error.message : String(error)),
+      observedAt: new Date().toISOString(),
+      expectedIds,
+      expectedTexts: [],
+    }
+    upsertFrameEvidence(record, entry)
+    return entry
+  }
+}
+
+const markFrameOpen = (record, frameId, label, firstFailure, deviceRole) => {
+  if (record.frameEvidence?.some(entry => entry.frameId === frameId && entry.status === 'MATCHED')) return
+  upsertFrameEvidence(record, {
+    frameId,
+    label,
+    deviceRole,
+    status: 'OPEN',
+    firstFailure,
+    observedAt: new Date().toISOString(),
+  })
+}
+
+const adminFrameDenominator = Object.freeze([
+  ...Array.from({length: 29}, (_value, index) => `IA-${String(index + 1).padStart(2, '0')}`),
+  'IA-32',
+])
+
+const finalizeFrameEvidence = (record, target) => {
+  const firstBatch = new Set(['IA-01', 'IA-03', 'IA-05', 'IA-07', 'IA-09', 'IA-11', 'IA-13', 'IA-18', 'IA-19', 'IA-20', 'IA-21', 'IA-22', 'IA-23', 'IA-24', 'IA-25', 'IA-26', 'IA-27', 'IA-28', 'IA-29'])
+  for (const frameId of adminFrameDenominator) {
+    if (record.frameEvidence?.some(entry => entry.frameId === frameId)) continue
+    const belongsToThisStage = stage === '1' ? firstBatch.has(frameId) : !firstBatch.has(frameId)
+    markFrameOpen(
+      record,
+      frameId,
+      `frame-${frameId}-not-captured`,
+      belongsToThisStage
+        ? 'No frame evidence was produced before this run stopped; first failure is recorded at the run boundary.'
+        : stage === '1'
+          ? 'This frame belongs to the second VM batch and was not run in stage 1.'
+          : 'This frame belongs to the first VM batch and was not run in stage 2.',
+      target.role,
+    )
+  }
+  const matched = record.frameEvidence.filter(entry => entry.status === 'MATCHED').map(entry => entry.frameId)
+  const open = record.frameEvidence.filter(entry => entry.status === 'OPEN').map(entry => entry.frameId)
+  record.frameDenominator = {
+    expected: adminFrameDenominator,
+    count: adminFrameDenominator.length,
+    matched,
+    open,
+    matchedCount: matched.length,
+    openCount: open.length,
+    stage: stage === '1' ? 'first-batch' : 'second-batch',
+  }
+  writeJson('frame-denominator.json', record.frameDenominator)
+}
+
 const progress = (record, label, details = {}) => {
   record.lastKnownGood = label
   record.timeline.push({label, timestamp: new Date().toISOString(), ...details})
@@ -931,6 +1255,7 @@ const stage2OpenAdmin = async (record, target) => {
   await waitForStage2Node(target, 0, 'terminal.admin:verify', currentNode => currentNode.enabled)
   await tapStage2Node(target, 0, 'terminal.admin:verify')
   await waitForStage2Node(target, 0, 'terminal.admin:shell')
+  await stage2CapturePanel(record, target)
   record.timeline.push({label: 'stage2-admin-authenticated', deviceRole: target.role, timestamp: new Date().toISOString(), debugPasswordObserved: true})
 }
 
@@ -944,17 +1269,222 @@ const stage2CloseAdmin = async target => {
   await waitForStage2Absent(target, 0, 'terminal.admin:shell')
 }
 
+const stage2OpenSection = async (target, partKey) => {
+  const sectionName = partKey.replace('admin.console.', '')
+  const sectionId = `terminal.admin:section:${sectionName}`
+  const sectionTitleId = {
+    'admin.console.platform-ports': 'terminal.admin:ports:title',
+    'admin.console.runtime': 'terminal.admin:runtime:title',
+    'admin.console.topology': 'terminal.admin:topology:title',
+  }[partKey]
+  if (sectionTitleId === undefined) throw new RunnerFailure(`${target.tag} ${partKey} navigation`, `no stage2 title mapping exists for ${partKey}`)
+  const current = await readStage2Ui(target, 0, `stage2 ${partKey} preflight`)
+  if (nodeForId(current, sectionTitleId) !== null) return
+  if (nodeForId(current, sectionId) !== null) {
+    await tapStage2Node(target, 0, sectionId)
+  } else if (nodeForId(current, 'terminal.admin:navigation:trigger') !== null) {
+    await tapStage2Node(target, 0, 'terminal.admin:navigation:trigger')
+    await tapStage2Node(target, 0, `terminal.admin:navigation:option:${partKey}`)
+  } else {
+    throw new RunnerFailure(`${target.tag} ${partKey} navigation`, `section ${sectionId} and mobile navigation trigger were both unavailable`)
+  }
+  await waitForStage2Node(target, 0, sectionTitleId)
+}
+
+const stage2CapturePanel = async (record, target) => {
+  const frameId = stage2Shape === 'dual' ? 'IA-01' : 'IA-02'
+  const navigationIds = stage2Shape === 'dual'
+    ? ['terminal.admin:section:platform-ports', 'terminal.admin:section:runtime', 'terminal.admin:section:topology']
+    : ['terminal.admin:navigation:trigger']
+  await captureStage2Frame(record, target, frameId, 'panel-normal', [...stage2PanelControls, ...navigationIds], [], 0, {required: true})
+  for (const [variantFrameId, variantLabel, variantIds] of stage2Shape === 'dual'
+    ? [
+      ['IA-03', 'panel-empty', ['terminal.admin:panel:empty', 'terminal.admin:panel:empty:reason']],
+      ['IA-05', 'panel-loading', ['terminal.admin:panel:loading', 'terminal.admin:panel:loading:content', 'terminal.admin:panel:loading:spinner', 'terminal.admin:panel:loading:skeleton', 'terminal.admin:panel:loading:message']],
+      ['IA-07', 'panel-error', ['terminal.admin:panel:error', 'terminal.admin:panel:error:content', 'terminal.admin:panel:error:reason', 'terminal.admin:panel:retry']],
+    ]
+    : [
+      ['IA-04', 'panel-empty', ['terminal.admin:panel:empty', 'terminal.admin:panel:empty:reason']],
+      ['IA-06', 'panel-loading', ['terminal.admin:panel:loading', 'terminal.admin:panel:loading:content', 'terminal.admin:panel:loading:spinner', 'terminal.admin:panel:loading:skeleton', 'terminal.admin:panel:loading:message']],
+      ['IA-08', 'panel-error', ['terminal.admin:panel:error', 'terminal.admin:panel:error:content', 'terminal.admin:panel:error:reason', 'terminal.admin:panel:retry']],
+    ]) {
+    const current = await readStage2Ui(target, 0, `stage2 probe ${variantLabel}`)
+    if (nodeForId(current, `terminal.admin:frame:${variantFrameId}`) !== null) {
+      await captureStage2Frame(record, target, variantFrameId, variantLabel, [...stage2PanelControls, ...navigationIds, ...variantIds], [], 0)
+    } else {
+      markFrameOpen(record, variantFrameId, variantLabel, 'No release UI state transition exposed this panel fixture after authentication; no runtime mutation was authorized to fabricate it.', target.role)
+    }
+  }
+}
+
+const stage2CaptureRuntime = async (record, target) => {
+  await stage2OpenSection(target, 'admin.console.runtime')
+  if (stage2Shape === 'dual') {
+    await captureStage2Frame(record, target, 'IA-15', 'runtime-dual-surface', [
+      'terminal.admin:section:runtime',
+      'terminal.admin:runtime:title',
+      'terminal.admin:runtime:overall-status',
+      'admin.console.runtime:facts',
+      'terminal.admin:runtime:surface-map',
+      'terminal.admin:runtime:surface-map:surface:PRIMARY',
+      'terminal.admin:runtime:surface-map:surface:SECONDARY',
+      'terminal.admin:runtime:surface-map:surface:SECONDARY:inside:0',
+      'terminal.admin:runtime:surface-map:surface:SECONDARY:inside:1',
+    ], ['2'])
+    return
+  }
+  const normal = await captureStage2ScrolledFrame(record, target, 'IA-14', 'runtime-mobile-single-surface', [
+    'terminal.admin:section:runtime',
+    'terminal.admin:runtime:title',
+    'terminal.admin:runtime:overall-status',
+    'admin.console.runtime:facts',
+    'terminal.admin:runtime:surface-map',
+    'admin.console.runtime:surface-card',
+    'terminal.admin:runtime:mobile:single-surface-boundary',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:card',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:label',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:role',
+  ], [
+    'terminal.admin:frame:IA-14',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:0',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:1',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:2',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:logic-width',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:logic-height',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:outside:0',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:outside:1',
+    'terminal.admin:runtime:surface:legend',
+  ], 0, 'admin.console.runtime:scroll')
+  const current = await readStage2Ui(target, 0, 'stage2 probe mobile display-facts-error variant')
+  if (nodeForId(current, 'terminal.admin:runtime:display-facts-error') !== null) {
+    await captureStage2Frame(record, target, 'IA-14', 'runtime-mobile-display-facts-error', [
+      'terminal.admin:section:runtime',
+      'terminal.admin:runtime:title',
+      'admin.console.runtime:facts',
+      'terminal.admin:runtime:display-facts-error',
+    ], [], 0, {variant: 'display-facts-error'})
+  } else {
+    upsertFrameVariantEvidence(record, 'IA-14', 'display-facts-error', {
+      frameId: 'IA-14',
+      label: 'runtime-mobile-display-facts-error',
+      deviceRole: target.role,
+      displayId: 0,
+      status: 'OPEN',
+      firstFailure: 'Mobile release runtime exposed one physical display and no multi-surface fact claim; the display-facts-error input condition was unavailable.',
+      observedAt: new Date().toISOString(),
+    })
+  }
+  return normal
+}
+
+const stage2CapturePorts = async (record, target) => {
+  await stage2OpenSection(target, 'admin.console.platform-ports')
+  const frameId = stage2Shape === 'dual' ? 'IA-09' : 'IA-10'
+  const baseIds = [
+    `terminal.admin:section:platform-ports`,
+    'terminal.admin:ports:title',
+    'terminal.admin:ports:overall-status',
+    'admin.console.platform-ports:total',
+    'terminal.admin:ports:summary:ratio-bar',
+    'terminal.admin:ports:summary-grid',
+    'admin.console.platform-ports:scroll',
+  ]
+  await captureStage2Frame(record, target, frameId, 'ports-overview', baseIds)
+  await tapStage2Node(target, 0, 'terminal.admin:ports:category:logs:expand', {scrollIntoView: true, scrollResourceId: 'admin.console.platform-ports:scroll'})
+    await captureStage2ScrolledFrame(record, target, stage2Shape === 'dual' ? 'IA-11' : 'IA-12', 'ports-logs-expanded', [
+    ...baseIds,
+    'terminal.admin:ports:category:logs:row',
+    'terminal.admin:ports:item:logger:undeclared:name',
+    'terminal.admin:ports:item:logger:undeclared:status',
+    'terminal.admin:ports:item:logger:undeclared:reason',
+    'terminal.admin:ports:item:logger:undeclared:source',
+  ], [
+    'terminal.admin:frame:' + (stage2Shape === 'dual' ? 'IA-11' : 'IA-12'),
+    'terminal.admin:ports:category:logs:row',
+    'terminal.admin:ports:item:logUpload:undeclared:name',
+    'terminal.admin:ports:item:logUpload:undeclared:status',
+    'terminal.admin:ports:item:logUpload:undeclared:reason',
+    'terminal.admin:ports:item:logUpload:undeclared:source',
+  ], 0, 'admin.console.platform-ports:scroll')
+}
+
+const stage2RunDualAdminFrames = async (record, target) => {
+  await stage2OpenAdmin(record, target)
+  await stage2CaptureRuntime(record, target)
+  await stage2CapturePorts(record, target)
+  await stage2OpenTopology(record, target)
+  const topology = await captureStage2Frame(record, target, 'IA-16', 'topology-dual-screen-unavailable', [
+    'terminal.admin:section:topology',
+    'terminal.admin:topology:title',
+    'terminal.admin:topology:page-gate',
+    'terminal.admin:topology:page-gate:card',
+    'terminal.admin:topology:page-gate:icon',
+    'terminal.admin:topology:page-gate-reason',
+  ], ['双机拓扑要求本机只有一个物理屏'])
+  const runtime = record.frameEvidence?.find(entry => entry.frameId === 'IA-15' && entry.status === 'MATCHED')
+  if (runtime?.screenshot !== undefined && topology.screenshot !== undefined) {
+    const artifact = {
+      frameId: 'IA-32',
+      label: 'cross-tab-dual-physical',
+      deviceRole: target.role,
+      bindingKind: 'artifact-only',
+      status: 'MATCHED',
+      sourceFrames: ['IA-15', 'IA-16'],
+      screenshots: [runtime.screenshot, topology.screenshot],
+      displayShape: record.devices.stage2.displays,
+      note: '真实 dual-screen runtime 与同一设备 topology 不可用页的跨 tab 对照；不是结构测试或截图差分 oracle。',
+      observedAt: new Date().toISOString(),
+    }
+    writeJson('IA-32-cross-tab-dual-physical.json', artifact)
+    upsertFrameEvidence(record, artifact)
+  } else {
+    markFrameOpen(record, 'IA-32', 'cross-tab-dual-physical', 'IA-15 runtime 或 IA-16 topology 的真实截图缺失，无法形成跨 tab 对照。', target.role)
+  }
+  captureStage2Screenshot(target, 0, 'dual-topology-unavailable')
+  await stage2CloseAdmin(target)
+}
+
 const stage2OpenTopology = async (record, target) => {
   const current = await readStage2Ui(target, 0, 'stage2 topology preflight')
-  if (nodeForId(current, 'terminal.admin:topology:form') !== null) return
-  await tapStage2Node(target, 0, 'terminal.admin:section:topology')
-  await waitForStage2Node(target, 0, 'terminal.admin:topology:form')
+  if (nodeForId(current, 'terminal.admin:topology:title') !== null || nodeForId(current, 'terminal.admin:topology:page-gate') !== null) return
+  if (nodeForId(current, 'terminal.admin:section:topology') !== null) {
+    await tapStage2Node(target, 0, 'terminal.admin:section:topology')
+  } else if (nodeForId(current, 'terminal.admin:navigation:trigger') !== null) {
+    // Mobile uses the bounded dropdown navigation instead of the laptop
+    // section grid. Select the real option exposed by the primitive; do not
+    // invent laptop-only section nodes in the mobile UI hierarchy.
+    await tapStage2Node(target, 0, 'terminal.admin:navigation:trigger')
+    await tapStage2Node(target, 0, 'terminal.admin:navigation:option:admin.console.topology')
+  } else {
+    throw new RunnerFailure(`${target.tag} topology navigation`, 'neither laptop section nor mobile navigation trigger was observable')
+  }
+  // The navigation button remains mounted and selected while the content
+  // section is switching. Waiting for that already-present node can observe
+  // the previous runtime section and turn a real page transition into a
+  // false missing-control failure. Wait for the topology page's own title,
+  // then distinguish the unavailable page-gate contract from the available
+  // page's result/feedback contract.
+  const topology = await waitForStage2Node(target, 0, 'terminal.admin:topology:title')
+  const unavailable = nodeForId(topology.xml, 'terminal.admin:topology:page-gate') !== null
+  const expectedIds = unavailable
+    ? [
+      'terminal.admin:section:topology',
+      'terminal.admin:topology:title',
+      'terminal.admin:topology:page-gate',
+      'terminal.admin:topology:page-gate-reason',
+    ]
+    : [
+      'terminal.admin:section:topology',
+      'terminal.admin:topology:title',
+      'terminal.admin:topology:pair-result',
+      'terminal.admin:topology:goal-choice',
+      'terminal.admin:topology:goal:host',
+      'terminal.admin:topology:goal:slave',
+    ]
   await observeStage2(record, target, 0, 'stage2-topology-open', [
-    'terminal.admin:topology:form',
-    'terminal.admin:topology:paired',
-    'terminal.admin:topology:reachable',
-    'terminal.admin:topology:host-status',
-  ])
+    ...expectedIds,
+  ], unavailable ? ['当前功能不可用'] : [])
 }
 
 const stage2TapVirtualText = async (target, displayId, value) => {
@@ -990,11 +1520,12 @@ const stage2RestartAndCheckChief = async (record, target) => {
   adb(target, ['shell', 'am', 'start', '-W', '-n', target.profile.activity], 'stage2 dual-screen restart launch')
   await waitForStage2Node(target, 0, 'terminal.admin:launcher')
   await stage2OpenAdmin(record, target)
-  await tapStage2Node(target, 0, 'terminal.admin:section:display-context')
+  await tapStage2Node(target, 0, 'terminal.admin:section:runtime')
   await observeStage2(record, target, 0, 'dual-screen-hydrate-chief', [
-    'admin.console.display-context:role',
-    'admin.console.display-context:instance',
-  ], ['CHIEF', 'MASTER'])
+    'terminal.admin:frame:IA-15',
+    'terminal.admin:runtime:surface-map',
+    'terminal.admin:runtime:surface-map:surface:SECONDARY',
+  ], ['2'])
   captureStage2Screenshot(target, 0, 'dual-screen-hydrate-chief')
   progress(record, 'dual-screen-restart-restores-chief-master', {deviceRole: target.role, displayCount: 2, process: processIdentity(target)})
   await stage2CloseAdmin(target)
@@ -1115,31 +1646,23 @@ const compareStage2MemberJourney = (record) => {
 
 const stage2RunMobileTopology = async (record, target) => {
   await stage2OpenAdmin(record, target)
+  await stage2CaptureRuntime(record, target)
+  await stage2CapturePorts(record, target)
   await stage2OpenTopology(record, target)
-  const xml = await observeStage2(record, target, 0, 'mobile-topology-tab-visible', [
-    'terminal.admin:topology:form',
+  await captureStage2Frame(record, target, 'IA-17', 'mobile-topology-tab-visible', [
+    'terminal.admin:section:topology',
     'terminal.admin:topology:title',
-    'terminal.admin:topology:query',
-  ])
-  const controls = ['terminal.admin:topology:query', 'terminal.admin:topology:pair', 'terminal.admin:topology:unpair', 'terminal.admin:topology:enable']
-  const disabled = []
+    'terminal.admin:topology:page-gate',
+    'terminal.admin:topology:page-gate-reason',
+  ], ['mobile 形态不支持双机拓扑'])
+  const controls = ['terminal.admin:topology:host', 'terminal.admin:topology:pair', 'terminal.admin:topology:unpair', 'terminal.admin:topology:enable']
+  const absent = []
   for (const id of controls) {
-    await scrollStage2NodeIntoView(target, 0, id)
-    const controlXml = await readStage2Ui(target, 0, `mobile control ${id}`)
-    const node = nodeForId(controlXml, id)
-    disabled.push({id, enabled: node?.enabled ?? null})
-    if (node?.enabled !== false) throw new RunnerFailure('mobile topology eligibility', `operation ${id} is not disabled in the real UI`)
-  }
-  if (disabled.some(item => item.enabled !== false)) throw new RunnerFailure('mobile topology eligibility', `an unsupported topology operation is enabled: ${JSON.stringify(disabled)}`)
-  const reasonIds = ['terminal.admin:topology:reason', 'terminal.admin:topology:query-reason', 'terminal.admin:topology:pair-reason']
-  for (const id of reasonIds) {
-    await scrollStage2NodeIntoView(target, 0, id)
-    const reasonXml = await readStage2Ui(target, 0, `mobile reason ${id}`)
-    if (!reasonXml.includes('当前机型不支持双机拓扑')) throw new RunnerFailure('mobile topology reason', `${id} did not expose a readable unsupported-form reason`)
-    await observeStage2(record, target, 0, `mobile-topology-${id}-readable-reason`, [id], ['当前机型不支持双机拓扑'])
+    await waitForStage2Absent(target, 0, id)
+    absent.push({id, present: false})
   }
   captureStage2Screenshot(target, 0, 'mobile-topology-tab-visible-disabled')
-  progress(record, 'mobile-topology-tab-visible-disabled-with-readable-reason', {deviceRole: target.role, disabled})
+  progress(record, 'mobile-topology-tab-visible-with-readable-reason-and-absent-actions', {deviceRole: target.role, absent})
   await stage2CloseAdmin(target)
 }
 
@@ -1159,19 +1682,67 @@ const openAdmin = async (record, target) => {
       await sleep(110)
     }
     if (Date.now() - started >= 1_800) throw new RunnerFailure(`${target.tag} admin launcher`, 'five-tap gesture exceeded its time window')
-    current = (await waitForNode(target, 'terminal.admin:login')).xml
   }
+  // The login shell can mount before its debug-password instruction has been
+  // rendered. Wait for the actual six-digit text, not merely the login node,
+  // so a re-entry after a runtime reset cannot consume a partially rendered
+  // accessibility tree.
+  current = (await waitForNode(
+    target,
+    'terminal.admin:login',
+    (_node, xml) => /请输入(?:六位)?动态口令（\d{6}）/.test(xml),
+  )).xml
+  await captureVisiblePanelFrame(record, target, 'IA-03', 'panel-empty-before-auth', [
+    'terminal.admin:panel:empty',
+    'terminal.admin:panel:empty:reason',
+  ])
+  await captureVisiblePanelFrame(record, target, 'IA-05', 'panel-loading-before-auth', [
+    'terminal.admin:panel:loading',
+    'terminal.admin:panel:loading:content',
+    'terminal.admin:panel:loading:spinner',
+    'terminal.admin:panel:loading:skeleton',
+    'terminal.admin:panel:loading:message',
+  ])
+  await captureVisiblePanelFrame(record, target, 'IA-07', 'panel-error-before-auth', [
+    'terminal.admin:panel:error',
+    'terminal.admin:panel:error:content',
+    'terminal.admin:panel:error:reason',
+    'terminal.admin:panel:retry',
+  ])
   // Android accessibility may flatten the nested debug-password Text node
   // into the instruction node, so the release observation is keyed by the
   // visible six-digit instruction rather than by the nested resource-id.
   const password = current.match(/请输入(?:六位)?动态口令（(\d{6})）/)?.[1] ?? null
   if (password === null) throw new RunnerFailure(`${target.tag} admin login`, 'debug password display was not available in the release app')
   for (const digit of password) {
-    await tapNode(target, `ui.base.input:virtual-keyboard:text-${digit}`)
+    await tapNode(target, `ui.base.input:virtual-keyboard:text-${digit}`, {settleDelayMs: 0})
   }
+  // The shared virtual keyboard owns the final input focus.  Its complete
+  // action closes the keyboard before the verify button can receive a real
+  // surface tap; tapping the button while the keyboard is still present hits
+  // the covered numeric-key region instead of the admin action.
+  await tapNode(target, 'ui.base.input:virtual-keyboard:complete', {settleDelayMs: 0})
   await waitForNode(target, 'terminal.admin:verify', current => current.enabled)
   await tapNode(target, 'terminal.admin:verify')
   await waitForNode(target, 'terminal.admin:shell')
+  await captureVisiblePanelFrame(record, target, 'IA-03', 'panel-empty-after-auth', [
+    'terminal.admin:panel:empty',
+    'terminal.admin:panel:empty:reason',
+  ])
+  await captureVisiblePanelFrame(record, target, 'IA-05', 'panel-loading-after-auth', [
+    'terminal.admin:panel:loading',
+    'terminal.admin:panel:loading:content',
+    'terminal.admin:panel:loading:spinner',
+    'terminal.admin:panel:loading:skeleton',
+    'terminal.admin:panel:loading:message',
+  ])
+  await captureVisiblePanelFrame(record, target, 'IA-07', 'panel-error-after-auth', [
+    'terminal.admin:panel:error',
+    'terminal.admin:panel:error:content',
+    'terminal.admin:panel:error:reason',
+    'terminal.admin:panel:retry',
+  ])
+  await captureAdminFrame(record, target, 'IA-01', 'panel-normal', ['terminal.admin:shell:header', 'terminal.admin:shell:brand', 'terminal.admin:shell:overall-status'])
   record.timeline.push({label: 'admin-authenticated', deviceRole: target.role, timestamp: new Date().toISOString(), debugPasswordObserved: true})
 }
 
@@ -1182,14 +1753,16 @@ const closeAdmin = async target => {
 
 const openTopology = async (record, target) => {
   const current = await readUi(target, 'topology preflight')
-  if (nodeForId(current, 'terminal.admin:topology:form') !== null) return
+  if (nodeForId(current, 'terminal.admin:topology:title') !== null || nodeForId(current, 'terminal.admin:topology:page-gate') !== null) return
   await tapNode(target, 'terminal.admin:section:topology')
-  await waitForNode(target, 'terminal.admin:topology:form')
+  await waitForNode(target, 'terminal.admin:section:topology')
   await observe(record, target, 'topology-open', [
-    'terminal.admin:topology:form',
-    'terminal.admin:topology:paired',
-    'terminal.admin:topology:reachable',
-    'terminal.admin:topology:host-status',
+    'terminal.admin:section:topology',
+    'terminal.admin:topology:title',
+    'terminal.admin:topology:pair-result',
+    'terminal.admin:topology:goal-choice',
+    'terminal.admin:topology:goal:host',
+    'terminal.admin:topology:goal:slave',
   ])
 }
 
@@ -1252,6 +1825,68 @@ const ensureReverse = (slave, record) => {
   record.resources.reverse = `tcp:${topologyPort}->tcp:${hostBridgePort}`
 }
 
+const suspendOwnedReverseForPairFailure = (slave, record) => {
+  if (record.resources.reverseOwned !== true || record.resources.reverseSuspended === true) {
+    throw new RunnerFailure('direct-pair failure mutation', 'owned slave topology reverse was not active')
+  }
+  adb(slave, ['reverse', '--remove', `tcp:${topologyPort}`], 'suspend owned slave topology reverse for direct-pair failure')
+  record.resources.reverseSuspended = true
+  appendCommandLog({phase: 'device-mutation', deviceRole: slave.role, label: 'suspend owned slave topology reverse for direct-pair failure', command: 'adb', argumentCount: 5, status: 0, result: 'passed', timedOut: false, stdoutBytes: 0, stderr: '', durationMs: 0})
+}
+
+const restoreOwnedReverseAfterPairFailure = (slave, record) => {
+  if (record.resources.reverseOwned !== true || record.resources.reverseSuspended !== true) return
+  adb(slave, ['reverse', `tcp:${topologyPort}`, `tcp:${hostBridgePort}`], 'restore owned slave topology reverse after direct-pair failure')
+  record.resources.reverseSuspended = false
+  appendCommandLog({phase: 'device-mutation', deviceRole: slave.role, label: 'restore owned slave topology reverse after direct-pair failure', command: 'adb', argumentCount: 5, status: 0, result: 'passed', timedOut: false, stdoutBytes: 0, stderr: '', durationMs: 0})
+}
+
+const startPortOccupant = async (target, record) => {
+  if (record.resources.portOccupant?.owned === true) throw new RunnerFailure('host service red mutation', 'owned port occupant is already active')
+  const listeners = textOf(adb(target, ['shell', 'ss', '-ltn'], 'host service port preflight', {allowFailure: true}))
+  if (new RegExp(`:${topologyPort}\\b`).test(listeners)) throw new RunnerFailure('host service port preflight', `topology port ${topologyPort} is already occupied by an unknown process`)
+  const child = spawn('adb', ['-s', target.serial, 'shell', 'toybox', 'nc', '-l', '-p', String(topologyPort)], {
+    cwd: repositoryRoot,
+    stdio: ['pipe', 'ignore', 'pipe'],
+  })
+  target.portOccupantProcess = child
+  await sleep(800)
+  if (child.exitCode !== null || child.killed === true) {
+    target.portOccupantProcess = null
+    throw new RunnerFailure('host service red mutation', `owned ADB port occupant exited before host-service attempt: code=${child.exitCode ?? 'unknown'}`)
+  }
+  const liveListeners = textOf(adb(target, ['shell', 'ss', '-ltn'], 'verify owned host service port listener', {allowFailure: true}))
+  if (!new RegExp(`:${topologyPort}\\b`).test(liveListeners)) {
+    child.kill('SIGTERM')
+    target.portOccupantProcess = null
+    throw new RunnerFailure('host service red mutation', `owned ADB port occupant did not expose listener ${topologyPort}`)
+  }
+  appendCommandLog({phase: 'device-mutation', deviceRole: target.role, label: 'start owned host service port occupant', command: 'adb', argumentCount: 7, status: 0, result: 'passed', timedOut: false, stdoutBytes: 0, stderrBytes: '', durationMs: 800})
+  record.resources.portOccupant = {owned: true, deviceRole: target.role, localPid: child.pid ?? null, port: topologyPort, command: 'adb shell toybox nc -l -p <topologyPort>', stdinHeldOpen: true}
+  writeJson('port-occupant.json', record.resources.portOccupant)
+}
+
+const stopPortOccupant = async (target, record) => {
+  const occupant = record.resources.portOccupant
+  if (occupant?.owned !== true) return
+  const child = target.portOccupantProcess
+  if (child !== null) {
+    child.stdin?.end()
+    if (child.exitCode === null) child.kill('SIGTERM')
+    await new Promise(resolve => {
+      const timer = setTimeout(resolve, 2_000)
+      child.once('exit', () => { clearTimeout(timer); resolve() })
+    })
+    if (child.exitCode === null) child.kill('SIGKILL')
+    target.portOccupantProcess = null
+  }
+  const listeners = textOf(adb(target, ['shell', 'ss', '-ltn'], 'verify owned host service port listener stopped', {allowFailure: true}))
+  if (new RegExp(`:${topologyPort}\\b`).test(listeners)) throw new RunnerFailure('host service red mutation cleanup', `owned port listener ${topologyPort} remains`)
+  appendCommandLog({phase: 'device-mutation', deviceRole: target.role, label: 'stop owned host service port occupant', command: 'adb', argumentCount: 5, status: 0, result: 'passed', timedOut: false, stdoutBytes: 0, stderrBytes: '', durationMs: 0})
+  record.resources.portOccupant = {...occupant, owned: false, stoppedAt: new Date().toISOString()}
+  writeJson('port-occupant.json', record.resources.portOccupant)
+}
+
 const probeEndpointBoundary = async record => {
   const identity = await endpointRequest('GET', '/status')
   let parsed
@@ -1297,7 +1932,7 @@ const restartAndCheckHost = async (record, target) => {
   await waitForNode(target, 'terminal.admin:launcher')
   await openAdmin(record, target)
   await openTopology(record, target)
-  await assertTopologyValue(record, target, 'host-after-js-restart', 'terminal.admin:topology:host-status', 'running')
+  await assertTopologyValue(record, target, 'host-after-js-restart', 'terminal.admin:topology:host-service:state', '运行中')
   progress(record, 'host-desired-actual-js-restart', {deviceRole: target.role, process: processIdentity(target)})
 }
 
@@ -1311,15 +1946,45 @@ const fillHost = async target => {
     await tapNode(target, `ui.base.input:virtual-keyboard:text-${character}`)
   }
   await tapNode(target, 'ui.base.input:virtual-keyboard:complete')
-  await waitForNode(target, 'terminal.admin:topology:query', node => node.enabled)
+  await waitForNode(target, 'terminal.admin:topology:pair', node => node.enabled)
+}
+
+const replaceHost = async (target, value) => {
+  await tapNode(target, 'terminal.admin:topology:host')
+  // Read the real terminal-owned input value before clearing. A fixed
+  // backspace count made the device evidence look like the runner was stuck
+  // pressing backspace and added needless UI action/observation races.
+  const current = await readUi(target, 'read topology host before replacement')
+  const currentValue = nodeText(nodeForId(current, 'terminal.admin:topology:host'))
+  const clearCount = Math.min(32, currentValue.length)
+  for (let index = 0; index < clearCount; index += 1) await tapNode(target, 'ui.base.input:virtual-keyboard:backspace')
+  for (const character of value) await tapNode(target, `ui.base.input:virtual-keyboard:text-${character}`)
+  await tapNode(target, 'ui.base.input:virtual-keyboard:complete')
+  await waitForNode(target, 'terminal.admin:topology:pair', node => node.enabled)
 }
 
 const pairDevices = async (record, master, slave) => {
   await openAdmin(record, master)
   await openTopology(record, master)
-  await assertTopologyValue(record, master, 'master-host-initially-stopped', 'terminal.admin:topology:host-status', 'stopped')
-  await tapNode(master, 'terminal.admin:topology:enable')
-  await assertTopologyValue(record, master, 'master-host-running', 'terminal.admin:topology:host-status', 'running')
+  await captureAdminFrame(record, master, 'IA-18', 'topology-role-choice', ['terminal.admin:topology:goal-choice', 'terminal.admin:topology:goal:host', 'terminal.admin:topology:goal:slave'], [], {required: true})
+  await tapNode(master, 'terminal.admin:section:platform-ports')
+  await captureAdminFrame(record, master, 'IA-09', 'ports-overview', ['terminal.admin:ports:summary:ratio-bar'], [], {required: true})
+  await tapNode(master, 'terminal.admin:ports:category:logs:expand', {scrollIntoView: true, scrollResourceId: 'admin.console.platform-ports:scroll'})
+  await captureAdminFrame(record, master, 'IA-11', 'ports-logs-expanded', ['terminal.admin:ports:category:logs:row', 'terminal.admin:ports:item:logger:undeclared:name', 'terminal.admin:ports:item:logUpload:undeclared:name'], [], {required: true})
+  await tapNode(master, 'terminal.admin:section:runtime')
+  await captureAdminFrame(record, master, 'IA-13', 'runtime-single-surface', ['terminal.admin:runtime:surface-map', 'terminal.admin:runtime:physical-display-count'], [], {required: true})
+  await tapNode(master, 'terminal.admin:section:topology')
+  await assertTopologyValue(record, master, 'master-host-initially-stopped', 'terminal.admin:topology:pair-result', '尚未配对')
+  await startPortOccupant(master, record)
+  await tapNode(master, 'terminal.admin:topology:action:host-enable', {scrollIntoView: true, settleDelayMs: 0})
+  await captureAdminFrame(record, master, 'IA-19', 'host-starting', ['terminal.admin:topology:host-service', 'terminal.admin:topology:host-service:state'], [], {timeoutMs: 2_000})
+  await waitForNode(master, 'terminal.admin:topology:host-service:state', (_node, xml) => resourceRegion(xml, 'terminal.admin:topology:host-service:state').includes('服务开启失败'), 10_000)
+  await captureAdminFrame(record, master, 'IA-21', 'host-error', ['terminal.admin:topology:host-service', 'terminal.admin:topology:failure:reason', 'terminal.admin:topology:retry'], [], {required: true})
+  await stopPortOccupant(master, record)
+  await tapNode(master, 'terminal.admin:topology:retry', {settleDelayMs: 0})
+  await captureAdminFrame(record, master, 'IA-19', 'host-retry-starting', ['terminal.admin:topology:host-service:state'], [], {timeoutMs: 2_000})
+  await assertTopologyValue(record, master, 'master-host-running', 'terminal.admin:topology:host-service:state', '运行中')
+  await captureAdminFrame(record, master, 'IA-20', 'host-ready', ['terminal.admin:topology:host-service', 'terminal.admin:topology:host-service:state', 'terminal.admin:topology:host-ip'], [], {required: true})
   ensureForward(master, record)
   ensureReverse(slave, record)
   await probeEndpointBoundary(record)
@@ -1328,33 +1993,37 @@ const pairDevices = async (record, master, slave) => {
   await restartAndCheckHost(record, master)
   await openAdmin(record, slave)
   await openTopology(record, slave)
-  await fillHost(slave)
-  await tapNode(slave, 'terminal.admin:topology:query')
-  await waitForNode(slave, 'terminal.admin:topology:identity', (_node, xml) => {
-    const region = resourceRegion(xml, 'terminal.admin:topology:identity')
-    return region.includes('MASTER') && region.includes('CHIEF')
-  })
-  await observe(record, slave, 'slave-identity-before-ws', ['terminal.admin:topology:identity'], ['MASTER', 'CHIEF'])
-  await tapNode(slave, 'terminal.admin:topology:pair')
+  suspendOwnedReverseForPairFailure(slave, record)
+  try {
+    await replaceHost(slave, directPairFailureHost)
+    await tapNode(slave, 'terminal.admin:topology:pair', {settleDelayMs: 0})
+    await waitForNode(slave, 'terminal.admin:frame:IA-23', () => true, 15_000)
+    await captureAdminFrame(record, slave, 'IA-23', 'direct-pair-error', ['terminal.admin:topology:failure:reason', 'terminal.admin:topology:alert', 'terminal.admin:topology:retry'], [], {required: true})
+  } finally {
+    restoreOwnedReverseAfterPairFailure(slave, record)
+  }
+  await replaceHost(slave, hostAliasForAndroidEmulator)
+  await tapNode(slave, 'terminal.admin:topology:pair', {scrollIntoView: true, settleDelayMs: 0})
+  await waitForNode(slave, 'terminal.admin:frame:IA-22')
+  await captureAdminFrame(record, slave, 'IA-22', 'direct-pair-submitted', ['terminal.admin:topology:pairing', 'terminal.admin:topology:pair-state', 'terminal.admin:topology:pairing:facts', 'terminal.admin:topology:host-ip', 'terminal.admin:topology:role', 'terminal.admin:topology:pairing:hint'], [], {required: true})
   // Pairing resets the slave JS runtime into its VICE surface.  A clean
   // slave has no active customer workflow, so its post-reset content is the
   // valid content failure `container-empty: main`, not `sample.auth.login`.
   // Wait for the admin shell to be unloaded; openAdmin then deliberately
   // reopens the login flow and authenticates it through the real UI.
-  await waitForPairRuntimeReset(slave)
+  await waitForAdminLayerReset(slave)
   progress(record, 'identity-before-ws-pair-and-slave-reset', {deviceRole: 'slave', slaveProcess: processIdentity(slave)})
 
   await openAdmin(record, slave)
   await openTopology(record, slave)
-  await assertTopologyValue(record, slave, 'slave-paired', 'terminal.admin:topology:paired', '已配对')
-  await assertTopologyValue(record, slave, 'slave-reachable', 'terminal.admin:topology:reachable', '可达')
-  await tapNode(slave, 'terminal.admin:section:display-context')
-  await observe(record, slave, 'slave-role-after-pair', ['admin.console.display-context:role', 'admin.console.display-context:instance'], ['VICE', 'SLAVE'])
-  await tapNode(slave, 'terminal.admin:section:topology')
-  await waitForNode(slave, 'terminal.admin:topology:form')
+  await assertTopologyValue(record, slave, 'slave-paired', 'terminal.admin:topology:pair-state', '已配对')
+  await assertTopologyValue(record, slave, 'slave-reachable', 'terminal.admin:topology:reachability', '可达')
+  await assertTopologyValue(record, slave, 'slave-role-after-pair', 'terminal.admin:topology:role', '副机')
 
-  await assertTopologyValue(record, master, 'master-paired', 'terminal.admin:topology:paired', '已配对')
-  await assertTopologyValue(record, master, 'master-peer-reachable', 'terminal.admin:topology:reachable', '可达')
+  await assertTopologyValue(record, master, 'master-paired', 'terminal.admin:topology:pair-state', '已配对')
+  await assertTopologyValue(record, master, 'master-peer-reachable', 'terminal.admin:topology:reachability', '可达')
+  await captureAdminFrame(record, master, 'IA-24', 'master-paired-reachable', ['terminal.admin:topology:pairing', 'terminal.admin:topology:reachability', 'terminal.admin:topology:counterparty', 'terminal.admin:topology:unpair'], [], {required: true})
+  await captureAdminFrame(record, slave, 'IA-27', 'slave-paired-reachable', ['terminal.admin:topology:pairing', 'terminal.admin:topology:reachability', 'terminal.admin:topology:counterparty', 'terminal.admin:topology:unpair'], [], {required: true})
   await probeRoleOccupancy(record)
   await closeAdmin(slave)
   progress(record, 'single-master-single-slave-role-occupancy', {deviceRole: 'master'})
@@ -1506,7 +2175,7 @@ const runMemberJourney = async (record, master, slave) => {
 
 const ensureAdminTopology = async (record, target) => {
   const current = await readUi(target, 'ensure topology preflight')
-  if (nodeForId(current, 'terminal.admin:topology:form') !== null) return
+  if (nodeForId(current, 'terminal.admin:topology:title') !== null || nodeForId(current, 'terminal.admin:topology:page-gate') !== null) return
   await openAdmin(record, target)
   await openTopology(record, target)
 }
@@ -1517,43 +2186,87 @@ const runDisconnectRecovery = async (record, master, slave) => {
   await ensureAdminTopology(record, slave)
   adb(master, ['forward', '--remove', `tcp:${hostBridgePort}`], 'remove topology forward for disconnect')
   record.resources.forwardOwned = false
-  await assertTopologyValue(record, slave, 'paired-during-disconnect', 'terminal.admin:topology:paired', '已配对')
-  await assertTopologyValue(record, slave, 'unreachable-during-disconnect', 'terminal.admin:topology:reachable', '重连中')
-  await observe(record, master, 'master-paired-during-disconnect', ['terminal.admin:topology:paired'], ['已配对'])
+  await assertTopologyValue(record, slave, 'paired-during-disconnect', 'terminal.admin:topology:pair-state', '已配对')
+  await assertTopologyValue(record, slave, 'unreachable-during-disconnect', 'terminal.admin:topology:reachability', '重连中')
+  await observe(record, master, 'master-paired-during-disconnect', ['terminal.admin:topology:pair-state', 'terminal.admin:topology:reachability'], ['已配对', '重连中'])
+  await captureAdminFrame(record, master, 'IA-25', 'master-paired-reconnecting', ['terminal.admin:topology:pairing', 'terminal.admin:topology:reachability', 'terminal.admin:topology:counterparty', 'terminal.admin:topology:unpair'], ['重连中'], {required: true})
+  await captureAdminFrame(record, slave, 'IA-28', 'slave-paired-reconnecting', ['terminal.admin:topology:pairing', 'terminal.admin:topology:reachability', 'terminal.admin:topology:counterparty', 'terminal.admin:topology:unpair'], ['重连中'], {required: true})
   progress(record, 'disconnect-preserves-paired-and-secondary-semantics', {deviceRole: 'slave'})
   ensureForward(master, record)
-  await assertTopologyValue(record, slave, 'reachable-after-reconnect', 'terminal.admin:topology:reachable', '可达')
-  await assertTopologyValue(record, master, 'master-reachable-after-reconnect', 'terminal.admin:topology:reachable', '可达')
+  await assertTopologyValue(record, slave, 'reachable-after-reconnect', 'terminal.admin:topology:reachability', '可达')
+  await assertTopologyValue(record, master, 'master-reachable-after-reconnect', 'terminal.admin:topology:reachability', '可达')
   progress(record, 'reconnect-full-recovery', {deviceRole: 'slave'})
 }
 
-const runUnpairAndStop = async (record, master, slave) => {
+const runSlaveUnpairCoverage = async (record, master, slave) => {
+  await ensureAdminTopology(record, master)
   await ensureAdminTopology(record, slave)
-  await assertTopologyValue(record, slave, 'slave-unpair-ready', 'terminal.admin:topology:paired', '已配对')
-  await tapNode(slave, 'terminal.admin:topology:unpair', {scrollIntoView: true})
-  // Do not close the admin surface after the tap. Unpair changes SLAVE back
-  // to MASTER, which resets the JS
-  // runtime and therefore removes the current admin page. The observable
-  // boundary is the real post-reset admin login surface, not a stale topology
-  // value; waiting for that login also prevents the runner from claiming a
-  // state transition that was only inferred from the tap. Unpair resets the
-  // topology runtime into the admin authentication layer; `sample.auth.login`
-  // is the customer feature login and is not the post-reset surface here.
-  await waitForNode(slave, 'terminal.admin:login')
-  // The business surface behind the login is not required to be anonymous: a
-  // confirmed customer workflow may remain on its welcome screen after
-  // topology unpair. Re-authenticate through the real admin UI, then assert
-  // the persisted unpaired state from the fresh topology page.
+  await assertTopologyValue(record, master, 'master-repaired-before-slave-unpair', 'terminal.admin:topology:pair-state', '已配对')
+  await assertTopologyValue(record, slave, 'slave-repaired-before-slave-unpair', 'terminal.admin:topology:pair-state', '已配对')
+  // The slave's unpair control is already rendered with its center inside
+  // the device viewport. Requiring an additional scroll-to-bottom predicate
+  // can reject this valid visible node when Android reports the scroll view's
+  // original content bounds; use the observed enabled bounds directly.
+  await tapNode(slave, 'terminal.admin:topology:unpair', {settleDelayMs: 0})
+  await waitForNode(slave, 'terminal.admin:frame:IA-29', () => true, 5_000)
+  await captureAdminFrame(record, slave, 'IA-29', 'slave-unpairing-guard-frame', ['terminal.admin:topology:pairing', 'terminal.admin:topology:pair-state', 'terminal.admin:topology:unpair'], ['处理中'], {required: true})
+  // Switching the slave back to MASTER/CHIEF can naturally unload the admin
+  // layer and return the runtime to its primary surface. Re-enter through the
+  // real launcher/login boundary before asserting the post-unpair IA-18 state.
+  await waitForAdminLayerReset(slave)
+  await ensureAdminTopology(record, slave)
+  await waitForNode(slave, 'terminal.admin:frame:IA-18', (_node, xml) => nodeForId(xml, 'terminal.admin:topology:goal-choice') !== null, 10_000)
+  await observe(record, slave, 'slave-role-choice-after-unpair', ['terminal.admin:frame:IA-18', 'terminal.admin:topology:goal-choice', 'terminal.admin:topology:goal:host', 'terminal.admin:topology:goal:slave'], [])
+  await assertTopologyValue(record, slave, 'slave-unpaired-after-own-unpair', 'terminal.admin:topology:pair-result', '尚未配对')
+  await assertTopologyValue(record, master, 'master-unpaired-after-slave-event', 'terminal.admin:topology:pair-result', '尚未配对')
+  progress(record, 'slave-unpair-order-and-peer-clear', {deviceRole: 'slave'})
+}
+
+const rePairAfterSlaveUnpair = async (record, master, slave) => {
+  // A real slave unpair normalizes that node back to MASTER/CHIEF. Re-pair it
+  // from that owner state before exercising the independent master-unpair
+  // journey; attempting pair while it is still SLAVE is correctly denied by
+  // the topology owner and cannot produce a real IA-22 transition.
+  await ensureAdminTopology(record, master)
+  await assertTopologyValue(record, master, 'master-host-still-running-after-slave-unpair', 'terminal.admin:topology:host-service:state', '运行中')
+  await ensureAdminTopology(record, slave)
+  await replaceHost(slave, hostAliasForAndroidEmulator)
+  await tapNode(slave, 'terminal.admin:topology:pair', {scrollIntoView: true, settleDelayMs: 0})
+  await waitForNode(slave, 'terminal.admin:frame:IA-22', () => true, 15_000)
+  await waitForPairRuntimeReset(slave)
   await openAdmin(record, slave)
   await openTopology(record, slave)
-  await assertTopologyValue(record, slave, 'slave-unpaired', 'terminal.admin:topology:paired', '未配对')
-  await tapNode(slave, 'terminal.admin:section:display-context')
-  await observe(record, slave, 'slave-role-restored-after-unpair', ['admin.console.display-context:role', 'admin.console.display-context:instance'], ['CHIEF', 'MASTER'])
+  await assertTopologyValue(record, slave, 'slave-repaired-after-slave-unpair', 'terminal.admin:topology:pair-state', '已配对')
+  // The peer event can unload the master's admin layer while its topology
+  // facts are being reconciled.  Re-enter through the real launcher/login
+  // boundary before reading the master's paired state; do not treat a login
+  // overlay as a topology assertion failure.
   await ensureAdminTopology(record, master)
-  await assertTopologyValue(record, master, 'master-unpaired-after-peer-event', 'terminal.admin:topology:paired', '未配对')
-  await tapNode(master, 'terminal.admin:topology:enable')
-  await assertTopologyValue(record, master, 'master-host-stopped', 'terminal.admin:topology:host-status', 'stopped')
-  progress(record, 'unpair-order-and-host-stop', {deviceRole: 'master'})
+  await assertTopologyValue(record, master, 'master-repaired-after-slave-unpair', 'terminal.admin:topology:pair-state', '已配对')
+  progress(record, 'repaired-after-slave-unpair-before-master-unpair', {deviceRole: 'slave'})
+}
+
+const runUnpairAndStop = async (record, master, slave) => {
+  await ensureAdminTopology(record, master)
+  await assertTopologyValue(record, master, 'master-unpair-ready', 'terminal.admin:topology:pair-state', '已配对')
+  await tapNode(master, 'terminal.admin:topology:unpair', {scrollIntoView: true, settleDelayMs: 0})
+  await waitForNode(master, 'terminal.admin:frame:IA-26', () => true, 5_000)
+  await captureAdminFrame(record, master, 'IA-26', 'master-unpairing-guard-frame', ['terminal.admin:topology:pairing', 'terminal.admin:topology:pair-state', 'terminal.admin:topology:unpair'], ['处理中'], {required: true})
+  // MASTER unpair normalizes neither app role nor runtime surface. The
+  // approved journey returns the same admin topology page to role choice;
+  // waiting for the role-choice frame observes the owner state transition
+  // instead of inventing an admin-login reset boundary.
+  await waitForNode(master, 'terminal.admin:frame:IA-18', (_node, xml) => nodeForId(xml, 'terminal.admin:topology:goal-choice') !== null, 10_000)
+  await observe(record, master, 'master-role-choice-after-unpair', ['terminal.admin:frame:IA-18', 'terminal.admin:topology:goal-choice', 'terminal.admin:topology:goal:host', 'terminal.admin:topology:goal:slave'], [])
+  captureStage1Screenshot(master, 'master-role-choice-after-unpair')
+  await assertTopologyValue(record, master, 'master-unpaired', 'terminal.admin:topology:pair-result', '尚未配对')
+  await ensureAdminTopology(record, slave)
+  await assertTopologyValue(record, slave, 'slave-unpaired-after-peer-event', 'terminal.admin:topology:pair-result', '尚未配对')
+  await waitForAbsent(master, 'terminal.admin:topology:host-service', 10_000)
+  await waitForAbsent(master, 'terminal.admin:topology:enable', 10_000)
+  await waitForNode(master, 'terminal.admin:topology:action:host-enable', node => node.enabled, 10_000)
+  progress(record, 'master-unpair-order-and-host-stop', {deviceRole: 'master', hostService: 'absent', recoveryAction: 'terminal.admin:topology:action:host-enable'})
+
   adb(master, ['forward', '--remove', `tcp:${hostBridgePort}`], 'remove topology forward after host stop', {allowFailure: true})
   record.resources.forwardOwned = false
 }
@@ -1577,7 +2290,7 @@ const captureFailure = async (record, targets) => {
 }
 
 const captureTopologyLogcat = (target, record) => {
-  const result = adb(target, ['logcat', '-d', '-v', 'epoch'], 'topology anomaly logcat', {allowFailure: true})
+  const result = adb(target, ['logcat', '-d', '-v', 'epoch', '-t', '5000'], 'topology anomaly logcat', {allowFailure: true})
   const processIds = new Set()
   const addProcessId = value => {
     if (typeof value === 'string' && /^\d+$/.test(value)) processIds.add(value)
@@ -1599,6 +2312,14 @@ const captureTopologyLogcat = (target, record) => {
 
 const cleanupProfile = async (record, targets) => {
   const errors = []
+  if (record.resources.portOccupant?.owned === true) {
+    try {
+      const owner = targets.find(target => target.role === record.resources.portOccupant.deviceRole) ?? targets[0]
+      await stopPortOccupant(owner, record)
+    } catch (error) {
+      errors.push(`owned port occupant cleanup: ${sanitizeDiagnostic(error instanceof Error ? error.message : String(error))}`)
+    }
+  }
   for (const target of targets) {
     if (target.uiObserver !== null) {
       const stopped = await target.uiObserver.stop()
@@ -1672,7 +2393,7 @@ const runProfile = async profile => {
     timeline: [],
     steps: [],
     devices: {},
-    resources: {forward: null, forwardOwned: false, reverse: null, reverseOwned: false},
+    resources: {forward: null, forwardOwned: false, reverse: null, reverseOwned: false, reverseSuspended: false, portOccupant: null},
     endpoint: null,
     roleOccupancy: null,
   }
@@ -1704,6 +2425,8 @@ const runProfile = async profile => {
     await pairDevices(record, master, slave)
     if (profile.memberJourney) await runMemberJourney(record, master, slave)
     await runDisconnectRecovery(record, master, slave)
+    await runSlaveUnpairCoverage(record, master, slave)
+    await rePairAfterSlaveUnpair(record, master, slave)
     await runUnpairAndStop(record, master, slave)
     record.business = 'PASS'
   } catch (error) {
@@ -1712,6 +2435,7 @@ const runProfile = async profile => {
     record.brokenBoundary = record.lastKnownGood ?? 'before-first-known-good'
     await captureFailure(record, targets)
   } finally {
+    finalizeFrameEvidence(record, master)
     for (const target of targets) captureTopologyLogcat(target, record)
     await cleanupProfile(record, targets)
     record.finishedAt = new Date().toISOString()
@@ -1809,17 +2533,12 @@ const runStage2Profile = async profile => {
       if (profile.memberJourney) {
         await stage2RunMemberJourney(record, target)
         record.stepwiseComparison = compareStage2MemberJourney(record)
-      } else {
-        await stage2OpenAdmin(record, target)
-        await stage2OpenTopology(record, target)
-        await observeStage2(record, target, 0, 'dual-wallpaper-topology-smoke', ['terminal.admin:topology:form', 'terminal.admin:topology:title'])
-        captureStage2Screenshot(target, 0, 'dual-wallpaper-topology-smoke')
-        await stage2CloseAdmin(target)
-        progress(record, 'dual-wallpaper-topology-smoke', {deviceRole: target.role})
       }
+      await stage2RunDualAdminFrames(record, target)
     } else {
       await stage2RunMobileTopology(record, target)
     }
+    finalizeFrameEvidence(record, target)
     record.business = 'PASS'
   } catch (error) {
     record.business = 'FAIL'
@@ -1827,6 +2546,7 @@ const runStage2Profile = async profile => {
     record.brokenBoundary = record.lastKnownGood ?? 'before-first-known-good'
     await captureStage2Failure(record, target)
   } finally {
+    finalizeFrameEvidence(record, target)
     await cleanupStage2Profile(record, target)
     record.finishedAt = new Date().toISOString()
     writeJson('result.json', record)
