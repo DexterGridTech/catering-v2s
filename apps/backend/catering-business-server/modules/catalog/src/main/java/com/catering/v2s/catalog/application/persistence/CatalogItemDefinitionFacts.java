@@ -37,22 +37,17 @@ public class CatalogItemDefinitionFacts {
         Map<UUID, ArrayNode> result = emptyArrays(refs);
         Map<UUID, ObjectNode> assignments = new LinkedHashMap<>();
         jdbc.query(
-                CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_ASSIGNMENT_ITEM_REF_ITEM_ATTRIBUTE_ASSIGNMENT_REF_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_N_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_CODE_NAME_VALUE_TYPE
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_TRIBUTE_DEFINITION_OPTION_REF_OPTION_ROW_NAME
+                CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_ASSIGNMENT_ITEM_REF_ASSIGNMENT_ITEM_ATTRIBUTE_ASSIGNMENT_REF_DEFINITION_ATTRIBUTE_DEFINITION_REF_ASSIGNMENT_ITEM_ATTRIBUTE_ASSIGNMENT_REF_DEFINITION_ATTRIBUTE_DEFINITION_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DEFINITION_CODE_DEFINITION_NAME_DEFINITION_VALUE_TYPE_ASSIGNMENT_TEXT_VALUE_SELECTION_ATTRIBUTE_DEFINITION_OPTION_REF_SELECTION_ATTRIBUTE_DEFINITION_OPTION_REF_OPTION_ROW_NAME
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_FROM_CLAUSE_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_ASSIGNMENT
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_JOIN_CATALOG_ATTRIBUTE_DEFINITION_DEFINITION_ATTRIBUTE_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_REF_ASSIGNMENT_ATTRIBUTE_DEFINITION_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ITEM_ATTRIBUTE_SELECTION_SELECTION_ITEM_ATTRIBUTE
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ASSIGNMENT_REF_ASSIGNMENT_ITEM_ATTRIBUTE_ASSIGNMENT_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ATTRIBUTE_DEFINITION_OPTIO_OPTION_ROW_ATTRIBUTE
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ATTRIBUTE_DEFINITION_OPTION_REF_SELECTION
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_JOIN_CATALOG_CATALOG_ATTRIBUTE_DEFINITION_DEFINITION_ON_DEFINITION_ATTRIBUTE_DEFINITION_REF_ASSIGNMENT_ATTRIBUTE_DEFINITION_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_LEFT_JOIN_CATALOG_CATALOG_ITEM_ATTRIBUTE_SELECTION_SELECTION_ON_ITEM_ATTRIBUTE_ASSIGNMENT_REF_ASSIGNMENT_ITEM_ATTRIBUTE_ASSIGNMENT_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_LEFT_JOIN_CATALOG_CATALOG_ATTRIBUTE_DEFINITION_OPTION_OPTION_ROW_ON_OPTION_ROW_ATTRIBUTE_DEFINITION_REF_DEFINITION_ATTRIBUTE_DEFINITION_REF_DEFINITION_ATTRIBUTE_DEFINITION_REF_AND_OPTION_ROW
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ATTRIBUTE_DEFINITION_OPTION_REF_SELECTION
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_WHERE_ASSIGNMENT_ITEM_REF
                         + placeholders(refs)
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_ASSIGNMENT_ITEM_REF_DEFINITION_CODE
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_OPTION_ROW_DISPLAY_ORDER_ATTRIBUTE_DEFINITION_OPTION_REF,
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_OPTION_ROW_DISPLAY_ORDER_ATTRIBUTE_DEFINITION_OPTION_REF,
                 statement -> bind(statement, refs),
                 rows -> {
                     while (rows.next()) {
@@ -97,22 +92,21 @@ public class CatalogItemDefinitionFacts {
         Map<UUID, LinkedHashSet<UUID>> selectedOptionsByAssignment = new LinkedHashMap<>();
         Map<UUID, CopyAttributeDefinitionBuilder> definitions = new LinkedHashMap<>();
         jdbc.query(
-                CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_ASSIGNMENT_ITEM_REF_ITEM_ATTRIBUTE_ASSIGNMENT_REF_DEFINITION_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_REF_DEFINITION_CODE_NAME
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_TEXT_VALUE_SELECTION_ATTRIBUTE_DEFINITION_OPTION_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_OPTION_ROW
+                CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_ASSIGNMENT_ITEM_REF_ASSIGNMENT_ITEM_ATTRIBUTE_ASSIGNMENT_REF_DEFINITION_ATTRIBUTE_DEFINITION_REF_DEFINITION_CODE_DEFINITION_VALUE_TYPE_DEFINITION_VERSION_ASSIGNMENT
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_TEXT_VALUE_SELECTION_ATTRIBUTE_DEFINITION_OPTION_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_OPTION_ROW
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_FROM_CLAUSE_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_ASSIGNMENT_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ATTRIBUTE_DEFINITION_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_ATTRIBUTE_DEFINITION_REF_ASSIGNMENT
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ITEM_ATTRIBUTE_SELECTION_SELECTION
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ATTRIBUTE_DEFINITION_DEFINITION
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DEFINITION_ATTRIBUTE_DEFINITION_REF_ASSIGNMENT
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ITEM_ATTRIBUTE_SELECTION_SELECTION
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_SELECTION_ITEM_ATTRIBUTE_ASSIGNMENT_REF_ASSIGNMENT
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ATTRIBUTE_DEFINITION_OPTIO_OPTION_ROW
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_OPTION_ROW_ATTRIBUTE_DEFINITION_REF_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_DATA_NODE_REF_BRAND_REF_ASSIGNMENT
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ATTRIBUTE_DEFINITION_OPTIO_OPTION_ROW
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_OPTION_ROW_ATTRIBUTE_DEFINITION_REF_DEFINITION
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DEFINITION_DATA_NODE_REF_BRAND_REF_ASSIGNMENT
                         + placeholders(refs)
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_ASSIGNMENT_ITEM_REF_DEFINITION_CODE_ALTERNATE_A
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_SELECTION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_OPTION_ROW_ATTRIBUTE_DEFINITION_OPTION_REF,
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_OPTION_ROW_ATTRIBUTE_DEFINITION_OPTION_REF,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -169,26 +163,22 @@ public class CatalogItemDefinitionFacts {
         Map<String, ObjectNode> values = new LinkedHashMap<>();
         jdbc.query(
                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_CONFIG_ITEM_REF_ITEM_ORDER_OPTION_CONFIG_REF_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_NAME_SELECTION_MODE_CONFIG
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CONFIG_MIN_SELECTION_COUNT_MAX_SELECTION_COUNT
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DISPLAY_ORDER
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_OVERRIDE
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_OVERRIDE_PREPARATION_EFFECT_TEXT
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DEFINITION_NAME_SELECTION_MODE_CONFIG
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONFIG_MIN_SELECTION_COUNT_MAX_SELECTION_COUNT
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_VALUE_REF_VALUE_DEFINITION_NAME_VALUE_DEFINITION_DISPLAY_ORDER_VALUE_DEFINITION_NAME_VALUE_DEFINITION_DISPLAY_ORDER
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_OVERRIDE
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_OVERRIDE_PREPARATION_EFFECT_TEXT
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_FROM_CLAUSE_CATALOG_ITEM_ORDER_OPTION_CONFIG_CONFIG
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_JOIN_CATALOG_ORDER_OPTION_DEFINITION_DEFINITION_ORDER_OPTION_DEFIN
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ITION_REF_CONFIG_ORDER_OPTION_DEFINITION_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_JOIN_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_DEFINITION_ON_DEFINITION_ORDER_OPTION_DEFINITION_REF_CONFIG_ORDER_OPTION_DEFINITION_REF
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_JOIN_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_DEFINITION
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ALTERNATIVE_ORDER_OPTION_DEFINITION_REF_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE_ITEM_ORD
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ER_OPTION_CONFIG_REF_CONFIG_ITEM_ORDER_OPTION_CONFIG_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONDITION_OVERRIDE
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_LEFT_JOIN_CATALOG_CATALOG_ITEM_ORDER_OPTION_VALUE_OVERRIDE_OVERRIDE_ON_ITEM_ORDER_OPTION_CONFIG_REF_CONFIG_ITEM_ORDER_OPTION_CONFIG_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_AND_OVERRIDE_ORDER_OPTION_DEFINITION_VALUE_REF_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_VALUE_REF_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_VALUE_REF
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_WHERE_CONFIG_ITEM_REF
                         + placeholders(refs)
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_CONFIG_ITEM_REF_DISPLAY_ORDER_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_VALUE_REF,
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DEFINITION_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_VALUE_REF,
                 statement -> bind(statement, refs),
                 rows -> {
                     while (rows.next()) {
@@ -265,33 +255,33 @@ public class CatalogItemDefinitionFacts {
         ArrayNode result = mapper.createArrayNode();
         jdbc.query(
                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CTE_RELATED_ITEMS_ITEM_REF_MATERIAL_MATERIAL_ITEM_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_CONFIG_CONFIG
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_REF_CONFIG
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ORDER_OPTION_DEFINITION_MA_MATERIAL
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ITEM_ORDER_OPTION_CONFIG_CONFIG
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_DEFINITION
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_REF_CONFIG
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ORDER_OPTION_DEFINITION_MA_MATERIAL
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ALTERNATIVE_ORDER_OPTION_DEFINITION_VALUE_REF
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_WHERE_CONFIG_ITEM_REF_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MAPPINGS_SORT_ORDER_OBJECT_TYPE_SOURCE_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ORDER_OPTION_DEFINITION_VA
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_VALUE_REF_CODE
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MAPPINGS_SORT_ORDER_OBJECT_TYPE_SOURCE_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ORDER_OPTION_DEFINITION_VA
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_VALUE_REF_CODE
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_FROM_CLAUSE_CATALOG_ITEM_ORDER_OPTION_CONFIG_CONFIG_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_DEFINITION_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_REF_CONFIG_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CONFIG_ITEM_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ITEM_MATERIAL_MATERIAL_ITEM_REF_MATERIAL_ITEM
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_CONFIG_CONFIG_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_DEFINITION_ALTERNATE_B
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_REF_CONFIG_ALTERNATE_B
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ORDER_OPTION_DEFINITION_MA_MATERIAL_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_DEFINITION_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_REF_CONFIG_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONFIG_ITEM_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ITEM_MATERIAL_MATERIAL_ITEM_REF_MATERIAL_ITEM
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ITEM_ORDER_OPTION_CONFIG_CONFIG_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_DEFINITION_ALTERNATE_B
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_REF_CONFIG_ALTERNATE_B
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ORDER_OPTION_DEFINITION_MA_MATERIAL_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ALTERNATE_A
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ALTERNATIVE_ORDER_OPTION_DEFINITION_VALUE_REF_ALTERNATE_A
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_JOIN_CATALOG_ITEM_MATERIAL_ITEM
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ITEM_ITEM_REF_MATERIAL_MATERIAL_ITEM_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ITEM_ITEM_REF_MATERIAL_MATERIAL_ITEM_REF
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_WHERE_CONFIG_ITEM_REF_PRODUCT_SKU_SKU
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_FROM_CLAUSE_RELATED_ITEMS_SKU_ITEM_ITEM_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_SKU_STATUS_VOIDED_OBJECT_TYPE
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MAPPINGS_SORT_ORDER_SOURCE_REF,
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SKU_STATUS_VOIDED_OBJECT_TYPE
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MAPPINGS_SORT_ORDER_SOURCE_REF,
                 statement -> {
                     statement.setObject(1, itemRef);
                     statement.setObject(2, itemRef);
@@ -318,8 +308,7 @@ public class CatalogItemDefinitionFacts {
     public void replaceAttributeAssignments(String scope, String brand, UUID itemRef, ArrayNode submitted) {
         List<AttributeAssignment> assignments = normalizeAttributes(submitted);
         Map<UUID, UUID> existing = jdbc.query(
-                CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_CATALOG_ITEM_ATTRIBUTE
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ASSIGNMENT_ITEM_REF,
+                CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_ATTRIBUTE_DEFINITION_REF_ITEM_ATTRIBUTE_ASSIGNMENT_REF_FROM_CATALOG_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_WHERE_ITEM_REF_CATALOG_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_WHERE_ITEM_REF,
                 rows -> {
                     Map<UUID, UUID> values = new LinkedHashMap<>();
                     while (rows.next()) values.put(rows.getObject(1, UUID.class), rows.getObject(2, UUID.class));
@@ -379,25 +368,24 @@ public class CatalogItemDefinitionFacts {
         if (!inserts.isEmpty())
             jdbc.batchUpdate(
                     CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_INSERT_INTO_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT
-                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ATTRIBUTE_DEFINITION_REF_TEXT_VALUE,
+                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ATTRIBUTE_DEFINITION_REF_TEXT_VALUE,
                     inserts);
         if (!updates.isEmpty())
             jdbc.batchUpdate(
                     CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_UPDATE_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_TEXT_VALUE
-                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ITEM_ATTRIBUTE_ASSIGNMENT_REF,
+                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ITEM_ATTRIBUTE_ASSIGNMENT_REF,
                     updates);
         if (!selections.isEmpty())
             jdbc.batchUpdate(
                     CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_INSERT_INTO_CATALOG_ITEM_ATTRIBUTE_SELECTION
-                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ATTRIBUTE_DEFINITION_OPTION_REF,
+                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ATTRIBUTE_DEFINITION_OPTION_REF,
                     selections);
     }
 
     public void replaceOrderOptionConfigs(String scope, String brand, UUID itemRef, ArrayNode submitted) {
         List<OrderOptionConfig> configs = normalizeOrderOptions(submitted);
         Map<UUID, UUID> existing = jdbc.query(
-                CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_CATALOG_ITEM_ORDER_OP
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_TION_CONFIG_ITEM_REF,
+                CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_ORDER_OPTION_DEFINITION_REF_ITEM_ORDER_OPTION_CONFIG_REF_FROM_CATALOG_CATALOG_ITEM_ORDER_OPTION_CONFIG_WHERE_ITEM_REF_CATALOG_CATALOG_ITEM_ORDER_OPTION_CONFIG_WHERE_ITEM_REF,
                 rows -> {
                     Map<UUID, UUID> values = new LinkedHashMap<>();
                     while (rows.next()) values.put(rows.getObject(1, UUID.class), rows.getObject(2, UUID.class));
@@ -464,7 +452,7 @@ public class CatalogItemDefinitionFacts {
         if (!refsRequiringOverrideDelete.isEmpty())
             jdbc.update(
                     CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DELETE_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_DELETE_FROM_CATALOG_CATALOG_
-                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ITEM_ORDER_OPTION_CONFIG_REF
+                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ITEM_ORDER_OPTION_CONFIG_REF
                             + placeholders(refsRequiringOverrideDelete)
                             + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_ALTERNATE_B,
                     refsRequiringOverrideDelete.toArray());
@@ -478,18 +466,18 @@ public class CatalogItemDefinitionFacts {
             jdbc.batchUpdate(
                     CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_INSERT_INTO_CATALOG_ITEM_ORDER_OPTION_CONFIG
                             + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ALTERNATIVE_ORDER_OPTION_DEFINITION_REF
-                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MAX_SELECTION_COUNT
+                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MAX_SELECTION_COUNT
                             + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUES,
                     inserts);
         if (!updates.isEmpty())
             jdbc.batchUpdate(
                     CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_UPDATE_CATALOG_ITEM_ORDER_OPTION_CONFIG_DISPLAY_ORDER_IS_REQUIRED
-                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MIN_SELECTION_COUNT,
+                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MIN_SELECTION_COUNT,
                     updates);
         if (!overrides.isEmpty())
             jdbc.batchUpdate(
                     CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_INSERT_INTO_CATALOG_ITEM_ORDER_OPTION_VALUE_OV
-                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ITEM_ORDER_OPTION_VALUE_OVERRIDE_R
+                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ITEM_ORDER_OPTION_VALUE_OVERRIDE_R
                             + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ALTERNATIVE_ORDER_OPTION_DEFINITION_VALUE_REF_IS_DEFAULT_EXTRA_PRICE,
                     overrides);
     }
@@ -567,10 +555,8 @@ public class CatalogItemDefinitionFacts {
         List<UUID> refs = distinct(itemRefs);
         return jdbc.query(
                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_CATALOG_ITEM_ORDER_OPTION_CONFIG
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_JOIN_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_ROW_ORDER_OPTION_D
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_EFINITION_REF_CONFIG_ORDER_OPTION_DEFINITION_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_JOIN_CATALOG_ORDER_OPTION_DEFINITION_MA_MATERIAL_ORDER_OPTION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_VALUE_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_JOIN_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_VALUE_VALUE_ROW_ON_VALUE_ROW_ORDER_OPTION_DEFINITION_REF_CONFIG_ORDER_OPTION_DEFINITION_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_JOIN_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_MATERIAL_MATERIAL_ON_MATERIAL_ORDER_OPTION_DEFINITION_VALUE_REF_VALUE_ROW_ORDER_OPTION_DEFINITION_VALUE_REF
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_WHERE_CONFIG_ITEM_REF_ALTERNATE_B
                         + placeholders(refs)
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_MATERIAL_MATERIAL_ITEM_REF,
@@ -619,37 +605,37 @@ public class CatalogItemDefinitionFacts {
         Map<UUID, CopyOrderOptionDefinitionBuilder> definitionBuilders = new LinkedHashMap<>();
         jdbc.query(
                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_CONFIG_ITEM_REF_ITEM_ORDER_OPTION_CONFIG_REF_DEFINITION_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_CODE_NAME_SELECTION_MODE
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CONFIG_DISPLAY_ORDER_IS_REQUIRED_MIN_SELECTION_COUNT
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CONFIG
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_DEFINITION_CODE_NAME_DISPLAY_ORDER
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_OVERRIDE_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ALTERNATE_B
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ITEM_CODE_MATERIAL_STOCK_TARGET_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ALTERNATE_C
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DEFINITION_CODE_NAME_SELECTION_MODE
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONFIG_DISPLAY_ORDER_IS_REQUIRED_MIN_SELECTION_COUNT
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONFIG
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_DEFINITION_CODE_NAME_DISPLAY_ORDER
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_OVERRIDE_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ALTERNATE_B
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ITEM_CODE_MATERIAL_STOCK_TARGET_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ALTERNATE_C
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_FROM_CLAUSE_CATALOG_ITEM_ORDER_OPTION_CONFIG_CONFIG_ALTERNATE_B
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ORDER_OPTION_DEFINITION_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_ORDER_OPTION_DEFINITION_REF_CONFIG
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_DEFINITION_ALTERNATE_C
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_REF_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_LEFT_JOIN
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_OVERRIDE_ITEM_ORDER_OPTION_CONFIG_REF_CONFIG
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_OVERRIDE_ALTERNATE_B
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ORDER_OPTION_DEFINITION_DEFINITION
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DEFINITION_ORDER_OPTION_DEFINITION_REF_CONFIG
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_DEFINITION_ALTERNATE_C
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_REF_DEFINITION
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_LEFT_JOIN
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_OVERRIDE_ITEM_ORDER_OPTION_CONFIG_REF_CONFIG
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_OVERRIDE_ALTERNATE_B
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ALTERNATIVE_ORDER_OPTION_DEFINITION_VALUE_REF_ALTERNATE_B
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ORDER_OPTION_DEFINITION_MA_MATERIAL_ALTERNATE_B
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ALTERNATE_D
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ORDER_OPTION_DEFINITION_MA_MATERIAL_ALTERNATE_B
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ALTERNATE_D
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ALTERNATIVE_CATALOG_ITEM
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ITEM_ITEM_REF_MATERIAL_MATERIAL_ITEM_REF_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ITEM_ITEM_REF_MATERIAL_MATERIAL_ITEM_REF_ALTERNATE_A
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_WHERE_DEFINITION_DATA_NODE_REF_BRAND_REF_CONFIG
                         + placeholders(refs)
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_ORDER_BY
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CONFIG_ITEM_REF_DISPLAY_ORDER_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_ORDER_OPTION_DEFINITION_REF_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_DEFINITION_DISPLAY_ORDER
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_VALUE_REF_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ORDER_OPTION_DEFINITION_MATERIAL_R,
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONFIG_ITEM_REF_DISPLAY_ORDER_DEFINITION
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DEFINITION_ORDER_OPTION_DEFINITION_REF_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_DEFINITION_DISPLAY_ORDER
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_DEFINITION_ORDER_OPTION_DEFINITION_VALUE_REF_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ORDER_OPTION_DEFINITION_MATERIAL_R,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -853,7 +839,7 @@ public class CatalogItemDefinitionFacts {
                     CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_INSERT_INTO_CATALOG_ORDER_OPTION_DEFINITION
                             +
                             /* format-wrap */
-                            CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_BRAND_REF_CODE_NAME_SELECTION_MODE
+                            CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_BRAND_REF_CODE_NAME_SELECTION_MODE
                             +
                             /* format-wrap */
                             CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_UPDATE_UPDATED_AT_EPOCH_MILLIS
@@ -876,7 +862,7 @@ public class CatalogItemDefinitionFacts {
                         CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_INSERT_INTO_CATALOG_ORDER_OPTION_DEFINITION_VA
                                 +
                                 /* format-wrap */
-                                CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ORDER_OPTION_DEFINITION_REF_DATA_NODE_REF_BRAND_REF_CODE
+                                CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ORDER_OPTION_DEFINITION_REF_DATA_NODE_REF_BRAND_REF_CODE
                                 +
                                 /* format-wrap */
                                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUES_ALTERNATE_A
@@ -923,12 +909,11 @@ public class CatalogItemDefinitionFacts {
                             CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_INSERT_INTO_CATALOG_ORDER_OPTION_DEFINITION_MA
                                     +
                                     /* format-wrap */
-                                    CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ATERIAL_REF
+                                    CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ATERIAL_REF
                                     +
                                     /* format-wrap */
-                                    CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_STOCK_TARGET_REF
-                                    + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CONSUMPTION_UNIT_REF
-                                    + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION,
+                                    CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_STOCK_TARGET_REF
+                                    + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_VALUES_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_VALUES,
                             targetMaterialRef,
                             targetValueRef,
                             targetMaterialItemRef,
@@ -1028,8 +1013,7 @@ public class CatalogItemDefinitionFacts {
         if (definitionRefs == null || definitionRefs.isEmpty()) return Map.of();
         List<UUID> refs = distinct(definitionRefs);
         Map<UUID, CopyOrderOptionDefinition> definitions = jdbc.query(
-                CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_CATALOG_ORDER_OPT
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ION_DEFINITION
+                CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_ORDER_OPTION_DEFINITION_REF_CODE_NAME_SELECTION_MODE_VERSION_FROM_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_VERSION_FROM_CATALOG_CATALOG_ORDER_OPTION_DEFINITION
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_WHERE_DATA_NODE_REF_BRAND_REF_ORDER_OPTION_DEFINITION_REF
                         + placeholders(refs)
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_CODE_ORDER_OPTION_DEFINITION_REF,
@@ -1076,24 +1060,24 @@ public class CatalogItemDefinitionFacts {
         Map<String, CopyOrderOptionDefinitionBuilder> definitions = new LinkedHashMap<>();
         jdbc.query(
                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_DEFINITION_ORDER_OPTION_DEFINITION_REF_CODE_NAME
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_SELECTION_MODE_VERSION_VALUE_ROW
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_ROW_CODE_NAME_DISPLAY_ORDER
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ALTERNATE_E
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ITEM_CODE_MATERIAL_STOCK_TARGET_REF_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ALTERNATE_F
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DEFINITION_SELECTION_MODE_VERSION_VALUE_ROW
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_ROW_CODE_NAME_DISPLAY_ORDER
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ALTERNATE_E
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ITEM_CODE_MATERIAL_STOCK_TARGET_REF_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ALTERNATE_F
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_FROM_CLAUSE_CATALOG_ORDER_OPTION_DEFINITION_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_ROW
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_ROW_ORDER_OPTION_DEFINITION_REF_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ORDER_OPTION_DEFINITION_MA_MATERIAL_ALTERNATE_C
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ORDER_OPTION_DEFINITION_VALUE_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_ROW_ORDER_OPTION_DEFINITION_VALUE_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ITEM_MATERIAL_ITEM_ITEM_REF_MATERIAL
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_ROW
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_ROW_ORDER_OPTION_DEFINITION_REF_DEFINITION
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ORDER_OPTION_DEFINITION_MA_MATERIAL_ALTERNATE_C
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ORDER_OPTION_DEFINITION_VALUE_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_ROW_ORDER_OPTION_DEFINITION_VALUE_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ITEM_MATERIAL_ITEM_ITEM_REF_MATERIAL
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_WHERE_DEFINITION_DATA_NODE_REF_BRAND_REF_CODE
                         + placeholders
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_DEFINITION_CODE_ORDER_OPTION_DEFINITION_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_ROW_DISPLAY_ORDER_ORDER_OPTION_DEFINITION_VALUE_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ORDER_OPTION_DEFINITION_MATERIAL_R_ALTERNATE_A,
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_ROW_DISPLAY_ORDER_ORDER_OPTION_DEFINITION_VALUE_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ORDER_OPTION_DEFINITION_MATERIAL_R_ALTERNATE_A,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -1159,16 +1143,15 @@ public class CatalogItemDefinitionFacts {
         String placeholders = placeholders(refs);
         jdbc.query(
                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_VALUE_ROW
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CODE_VALUE_ROW_NAME_DISPLAY_ORDER
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_MATERIAL_ITEM_REF_MATERIAL_ITEM_CODE
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ALTERNATE_G
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_ROW
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ORDER_OPTION_DEFINITION_MA
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ITEM
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_MATERIAL_ITEM_ITEM_REF_MATERIAL_MATERIAL_ITEM_REF_ALTERNATE_B
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CODE_VALUE_ROW_NAME_DISPLAY_ORDER
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_MATERIAL_ITEM_REF_MATERIAL_ITEM_CODE
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ALTERNATE_G
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_ROW
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ORDER_OPTION_DEFINITION_MATERIAL_MATERIAL_ON_MATERIAL_ORDER_OPTION_DEFINITION_VALUE_REF_VALUE_ROW_ORDER_OPTION_DEFINITION_VALUE_REF_LEFT_JOIN_CATALOG_LEFT_JOIN_CATALOG_CATALOG_ITEM
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_MATERIAL_ITEM_ITEM_REF_MATERIAL_MATERIAL_ITEM_REF_ALTERNATE_B
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ALTERNATIVE_ORDER_OPTION_DEFINITION_REF_ALTERNATE_A + placeholders + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_ORDER_BY_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_ROW_ORDER_OPTION_DEFINITION_REF_DISPLAY_ORDER
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_ROW_ORDER_OPTION_DEFINITION_REF_DISPLAY_ORDER
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ALTERNATIVE_ORDER_OPTION_DEFINITION_VALUE_REF_ALTERNATE_C,
                 statement -> bind(statement, refs),
                 rows -> {
@@ -1287,9 +1270,8 @@ public class CatalogItemDefinitionFacts {
         List<UUID> sourceItems = distinct(copiedItemRefs.keySet());
         List<CopyAttributeAssignment> assignments = jdbc.query(
                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_CATALOG_ASSIGNMENT_ITEM_REF_ATTRIBUTE_DEFINITION_REF_TEXT_VALUE
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_ASSIGNMENT
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_JOIN_CATALOG_ATTRIBUTE_DEFINITION_DEFINITION_ATTRIBUTE_DEFINITION_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_REF_ASSIGNMENT_ATTRIBUTE_DEFINITION_REF_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_ASSIGNMENT
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_JOIN_CATALOG_CATALOG_ATTRIBUTE_DEFINITION_DEFINITION_ON_DEFINITION_ATTRIBUTE_DEFINITION_REF_ASSIGNMENT_ATTRIBUTE_DEFINITION_REF_ALTERNATE_A
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_WHERE_DEFINITION_DATA_NODE_REF_BRAND_REF_ASSIGNMENT
                         + placeholders(sourceItems)
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_ASSIGNMENT_ITEM_REF_ATTRIBUTE_DEFINITION_REF,
@@ -1340,8 +1322,7 @@ public class CatalogItemDefinitionFacts {
                 for (CopyAttributeOption option : source.options()) {
                     UUID targetOptionRef = UUID.randomUUID();
                     jdbc.update(
-                            CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_INSERT_INTO_CATALOG_ATTRIBUTE_DEFINITION_OPTIO
-                                    + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ATTRIBUTE_DEFINITION_REF_NAME_DISPLAY_ORDER,
+                            CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_INSERT_INTO_CATALOG_CATALOG_ATTRIBUTE_DEFINITION_OPTION_ATTRIBUTE_DEFINITION_OPTION_REF_ATTRIBUTE_DEFINITION_REF_NAME_DISPLAY_ORDER_VALUES_ATTRIBUTE_DEFINITION_REF_NAME_DISPLAY_ORDER_VALUES,
                             targetOptionRef,
                             targetRef,
                             option.name(),
@@ -1364,8 +1345,7 @@ public class CatalogItemDefinitionFacts {
             UUID targetItemRef = copiedItemRefs.get(source.itemRef());
             UUID targetAssignmentRef = UUID.randomUUID();
             jdbc.update(
-                    CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_INSERT_INTO_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_ALTERNATE_A
-                            + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_TTRIBUTE_DEFINITION_REF_TEXT_VALUE,
+                    CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_INSERT_INTO_CATALOG_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_ITEM_ATTRIBUTE_ASSIGNMENT_REF_ITEM_REF_ATTRIBUTE_DEFINITION_REF_TEXT_VALUE_VALUES_ITEM_REF_ATTRIBUTE_DEFINITION_REF_TEXT_VALUE_VALUES,
                     targetAssignmentRef,
                     targetItemRef,
                     required(definitionMappings, source.definitionRef(), "商品属性复制引用未完成映射"),
@@ -1374,8 +1354,7 @@ public class CatalogItemDefinitionFacts {
                     .getOrDefault(source.itemRef(), Map.of())
                     .getOrDefault(source.definitionRef(), List.of()))
                 jdbc.update(
-                        CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_INSERT_INTO_CATALOG_ITEM_ATTRIBUTE_SELECTION_ALTERNATE_A
-                                + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_TE_DEFINITION_OPTION_REF,
+                        CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_INSERT_INTO_CATALOG_CATALOG_ITEM_ATTRIBUTE_SELECTION_ITEM_ATTRIBUTE_ASSIGNMENT_REF_ATTRIBUTE_DEFINITION_OPTION_REF_ITEM_ATTRIBUTE_ASSIGNMENT_REF_ATTRIBUTE_DEFINITION_OPTION_REF_VALUES,
                         targetAssignmentRef,
                         required(optionMappings, sourceOptionRef, "商品属性选项复制引用未完成映射"));
         }
@@ -1442,8 +1421,8 @@ public class CatalogItemDefinitionFacts {
         Map<UUID, List<CopyAttributeOption>> optionsByDefinition = copyAttributeOptionsByDefinitions(refs);
         Map<UUID, CopyAttributeDefinition> definitions = jdbc.query(
                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_ATTRIBUTE_DEFINITION_REF_CODE_NAME_VALUE_TYPE
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ATTRIBUTE_DEFINITION_DATA_NODE_REF_BRAND_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ATTRIBUTE_DEFINITION_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ATTRIBUTE_DEFINITION_DATA_NODE_REF_BRAND_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ATTRIBUTE_DEFINITION_REF
                         + placeholders(refs) + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_ALTERNATE_D,
                 statement -> {
                     statement.setString(1, scope);
@@ -1478,14 +1457,14 @@ public class CatalogItemDefinitionFacts {
                 Collections.nCopies(codes.size(), CatalogItemDefinitionFactsSql.PARAMETER_PLACEHOLDER));
         Map<UUID, CopyAttributeDefinitionBuilder> definitions = jdbc.query(
                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_DEFINITION_ATTRIBUTE_DEFINITION_REF_CODE_NAME
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_OPTION_ROW_NAME_DISPLAY_ORDER
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DEFINITION
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_OPTION_ROW_NAME_DISPLAY_ORDER
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_FROM_CLAUSE_CATALOG_ATTRIBUTE_DEFINITION_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ATTRIBUTE_DEFINITION_OPTIO_OPTION_ROW_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_OPTION_ROW_ATTRIBUTE_DEFINITION_REF_DEFINITION_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_DATA_NODE_REF_BRAND_REF_CODE
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ATTRIBUTE_DEFINITION_OPTIO_OPTION_ROW_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_OPTION_ROW_ATTRIBUTE_DEFINITION_REF_DEFINITION_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DEFINITION_DATA_NODE_REF_BRAND_REF_CODE
                         + placeholders + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_DEFINITION_CODE_ATTRIBUTE_DEFINITION_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_OPTION_ROW_DISPLAY_ORDER_ATTRIBUTE_DEFINITION_OPTION_REF_ALTERNATE_A,
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_OPTION_ROW_DISPLAY_ORDER_ATTRIBUTE_DEFINITION_OPTION_REF_ALTERNATE_A,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -1525,7 +1504,7 @@ public class CatalogItemDefinitionFacts {
         Map<UUID, List<CopyAttributeOption>> result = new LinkedHashMap<>();
         jdbc.query(
                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_CATALOG
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ATTRIBUTE_DEFINITION_OPTIO + placeholders
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ATTRIBUTE_DEFINITION_OPTIO + placeholders
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_ATTRIBUTE_DEFINITION_REF,
                 statement -> bind(statement, refs),
                 rows -> {
@@ -1552,12 +1531,12 @@ public class CatalogItemDefinitionFacts {
         Map<UUID, Map<UUID, List<UUID>>> result = new LinkedHashMap<>();
         jdbc.query(
                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ASSIGNMENT_ITEM_REF_ATTRIBUTE_DEFINITION_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ASSIGNMENT_ITEM_REF_ATTRIBUTE_DEFINITION_REF
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_SELECTION_ATTRIBUTE_DEFINITION_OPTION_REF
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_FROM_CLAUSE_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_ASSIGNMENT_ALTERNATE_B
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ITEM_ATTRIBUTE_SELECTION_SELECTION_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ITEM_ATTRIBUTE_SELECTION_SELECTION_ALTERNATE_A
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_SELECTION_ITEM_ATTRIBUTE_ASSIGNMENT_REF_ASSIGNMENT_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ASSIGNMENT_ITEM_REF_ALTERNATE_A + placeholders
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ASSIGNMENT_ITEM_REF_ALTERNATE_A + placeholders
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_ASSIGNMENT_ITEM_REF_ATTRIBUTE_DEFINITION_REF_ALTERNATE_A
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_SELECTION_ATTRIBUTE_DEFINITION_OPTION_REF_ALTERNATE_A,
                 statement -> bind(statement, refs),
@@ -1581,13 +1560,11 @@ public class CatalogItemDefinitionFacts {
         if (refs.isEmpty()) return Map.of();
         Map<UUID, AttributeDefinition> definitions = jdbc.query(
                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_DEFINITION_ATTRIBUTE_DEFINITION_REF_VALUE_TYPE_STATUS
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_OPTION_ROW_ATTRIBUTE_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ATTRIBUTE_DEFINITION_OPTION_REF_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ATTRIBUTE_DEFINITION_OPTIO_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_REF_DEFINITION_ATTRIBUTE_DEFINITION_REF_DATA_NODE_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_BRAND_REF_ATTRIBUTE_DEFINITION_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_OPTION_ROW_ATTRIBUTE_DEFINITION_OPTION_REF_FROM_CATALOG_CATALOG_ATTRIBUTE_DEFINITION_DEFINITION_LEFT_JOIN_CATALOG_ATTRIBUTE_DEFINITION_DEFINITION_LEFT_JOIN
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_CATALOG_ATTRIBUTE_DEFINITION_OPTION_OPTION_ROW_ON_OPTION_ROW_ATTRIBUTE_DEFINITION_REF_DEFINITION_ATTRIBUTE_DEFINITION_REF_WHERE_DEFINITION_WHERE_DEFINITION_DATA_NODE_REF_AND
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DEFINITION_BRAND_REF_ATTRIBUTE_DEFINITION_REF
                         + placeholders(refs) + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_DEFINITION_ATTRIBUTE_DEFINITION_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_OPTION_ROW_DISPLAY_ORDER_ATTRIBUTE_DEFINITION_OPTION_REF_ALTERNATE_B,
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_OPTION_ROW_DISPLAY_ORDER_ATTRIBUTE_DEFINITION_OPTION_REF_ALTERNATE_B,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -1627,12 +1604,12 @@ public class CatalogItemDefinitionFacts {
         Map<UUID, OrderOptionDefinition> definitions = jdbc.query(
                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_DEFINITION_ORDER_OPTION_DEFINITION_REF_SELECTION_MODE_STATUS
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ALTERNATIVE_CATALOG_ORDER_OPTION_DEFINITION
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_ROW_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_ROW_ORDER_OPTION_DEFINITION_REF_DEFINITION_ALTERNATE_A
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_DATA_NODE_REF_BRAND_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_DEFINITION_ORDER_OPTION_DEFINITION_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_ROW_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_ROW_ORDER_OPTION_DEFINITION_REF_DEFINITION_ALTERNATE_A
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DEFINITION_DATA_NODE_REF_BRAND_REF
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_DEFINITION_ORDER_OPTION_DEFINITION_REF
                         + placeholders(refs) + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CLOSE_PAREN_DEFINITION_ORDER_OPTION_DEFINITION_REF
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_VALUE_ROW_DISPLAY_ORDER_ORDER_OPTION_DEFINITION_VALUE_REF_ALTERNATE_A,
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_VALUE_ROW_DISPLAY_ORDER_ORDER_OPTION_DEFINITION_VALUE_REF_ALTERNATE_A,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -1667,7 +1644,7 @@ public class CatalogItemDefinitionFacts {
                 CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_VALUE_ROW_ORDER_OPTION_DEFINITION_VALUE_REF
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_FROM_CLAUSE_CATALOG_ORDER_OPTION_DEFINITION_VA_VALUE_ROW
                         + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_WHERE_VALUE_ROW_ORDER_OPTION_DEFINITION_REF_DISPLAY_ORDER
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_ORDER_OPTION_DEFINITION_VALUE_REF,
+                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_ORDER_OPTION_DEFINITION_VALUE_REF,
                 rows -> {
                     LinkedHashSet<UUID> values = new LinkedHashSet<>();
                     while (rows.next()) {
@@ -1680,8 +1657,7 @@ public class CatalogItemDefinitionFacts {
 
     private List<UUID> optionRefs(UUID definitionRef) {
         return jdbc.query(
-                CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_CATALOG_ATTRIBUTE_DEFINITION_OPTIO
-                        + CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_CONTINUATION_IBUTE_DEFINITION_REF,
+                CatalogItemDefinitionFactsSql.CATALOG_ITEM_DEFINITION_FACTS_SELECT_ATTRIBUTE_DEFINITION_OPTION_REF_FROM_CATALOG_CATALOG_ATTRIBUTE_DEFINITION_OPTION_WHERE_BY_DISPLAY_ORDER_ATTRIBUTE_DEFINITION_OPTION_REF,
                 (rows, row) -> rows.getObject(1, UUID.class),
                 definitionRef);
     }

@@ -936,7 +936,7 @@ vertical layout，经营入口与菜单控制共享同一个 `Card title="经营
 | `SM-L2-015 / recover-menu-failures`         | `STORE_SCOPE_TRIGGER`, `SALES_MENU_MODE`, `SALES_MENU_PAGE`, `SALES_MENU_CHANNEL_SELECTOR`, `SALES_MENU_SELECTOR`, `SALES_MENU_SECTION_LIST`, `SALES_MENU_SECTION`, `SALES_MENU_ITEM_TABLE`, `SALES_MENU_ITEM`, `SALES_MENU_ITEM_EDITOR`, `SALES_MENU_ITEM_ACTION`, `SALES_MENU_ITEM_MENU_ACTION`, `SALES_MENU_ITEM_DISPLAY_NAME`, `SALES_MENU_ITEM_MEDIA_EDITOR`, `SALES_MENU_ITEM_MEDIA_UPLOAD`, `SALES_MENU_ITEM_MEDIA_LIST`, `SALES_MENU_ITEM_MEDIA_CHOICE`, `SALES_MENU_ITEM_CLOSE`, `SALES_MENU_ITEM_DISCARD_CONFIRM`, `SALES_MENU_ITEM_DISCARD_CANCEL`, `SALES_MENU_MENU_PUBLISH`, `SALES_MENU_PUBLISH_DRAWER`, `SALES_MENU_PUBLISH_SUBMIT`, `SALES_MENU_ITEM_SAVE` | 公共 STORE scope 确认；保存、排序、上传/释放、发布等失败/重试及关闭焦点触点；`DataScopeSelector.tsx`、`roleHomeTestIds.ts`、`SalesMenuPage.tsx`、`salesMenuTestIds.ts`                                                | static failure/focus/dirty-close traces；scope static；typecheck    | Round 2 final report         | `PASS` |
 | `SM-L2-016 / verify-sales-menu-scope`       | `STORE_SCOPE_TRIGGER`, `SALES_MENU_PAGE`, `SALES_MENU_CHANNEL_SELECTOR`, `SALES_MENU_SELECTOR`, `SALES_MENU_SECTION_LIST`, `SALES_MENU_MANAGER`, `SALES_MENU_MANAGER_OPEN`, `SALES_MENU_MANAGER_ACTION`, `SALES_MENU_MENU_SCHEDULE`, `SALES_MENU_MENU_PUBLISH`, `SALES_MENU_MANAGER_CREATE`                                                                                                                                                                                                                                                                                                                                                                                | 公共 STORE scope 确认；只读账号的 manager 入口、禁用写控件、scope surface 与 foreign channel 不泄露；`DataScopeSelector.tsx`、`roleHomeTestIds.ts`、`SalesMenuPage.tsx`、`salesMenuTestIds.ts`                        | static UI-01/UI-20；scope static；typecheck                         | Round 2 final report         | `PASS` |
 
-当前分母复算：18 个 case/action、231 个声明控件条目、65 个 case-used unique control key、75 个 locator binding control key；生成 P1 self-test
+当前分母复算：20 个 case/action、231 个声明控件条目、83 个 case-used unique control key、95 个 locator binding control key；生成 P1 self-test
 和 spec control union 均为 `PASS`。Round 2 final report 已逐项确认公共 STORE scope、直接按钮/MenuItem、动态行
 identity、候选 Checkbox、AntD Radio 与 Upload 的节点证据；`Segmented` 这种不暴露 option-level data attribute 的既有
 复合控件，只能使用已证明的 option label anchor，并在触点中明确记录其复合控件性质，不能泛化成外层 wrapper 例外。
@@ -954,7 +954,7 @@ identity、候选 Checkbox、AntD Radio 与 Upload 的节点证据；`Segmented`
 | spec                                         | `apps/frontend/operations-admin/src/tests/l2/sales-menu.spec.ts` 只消费 generated profile，不手写 case id 列表                                                                                       |
 | runner                                       | 保留 `scripts/test/browser-l2`/`browser-l2-runtime.mjs` 唯一入口；增加显式 `--suite sales-menu` 与窄 `salesMenuSuite` adapter；共用 lifecycle/secret/join/progress/cleanup，不建第二 runner/registry |
 
-L2 case exact-set 固定为以下 18 条；31 条 UI 检查映射到 case，但“UI 数=case 数”不是规则：
+L2 case exact-set 固定为以下 20 条；31 条 UI 检查映射到 case，但“UI 数=case 数”不是规则：
 
 | caseId                                        | 覆盖 UI           | 用户动作与业务 oracle                                                                                                                               |
 | --------------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -976,6 +976,8 @@ L2 case exact-set 固定为以下 18 条；31 条 UI 检查映射到 case，但�
 | `sales-menu-operation-records`                | 18,31             | 普通四列表；21 rows Cursor；无详情/诊断入口；success/failed facts准确                                                                               |
 | `sales-menu-failure-recovery-and-focus`       | 02,05,09,19,23,30 | save/sort/upload/publish failure保持输入/权威顺序；关闭归还焦点；dirty close保护；未声明network=0                                                   |
 | `sales-menu-auth-and-scope-isolation`         | 01,24             | 无 capability/foreign store/project channel从真实 UI被拒；无 owner write/leak；shell scope lock                                                     |
+| `business-channel-external-dine-in-template` | channel template  | 项目外部到店点餐模板详情显示正确 capability/provider 事实；不显示 POS、扫码或自助机形态；provider 查询带 DINE_IN/STORE 谓词 |
+| `business-channel-store-all-and-sales-menu-exclusion` | store channel / menu entry | 门店经营渠道列表与销售菜单候选各自使用正确用途；外部到店渠道可在经营渠道读取但不进入销售菜单候选 |
 
 每个 action 声明 testId、generated operation、required/forbidden/background network、owner readback 和失败不变事实；runner 产出 case/action/request/completion/DB-section join。readiness/finalize/run/cleanup、secret 0600、repository byte binding、per-case progress 与四项 cleanup 完全沿用项目 L2 标准。当前轮不生成 active readiness、不执行浏览器。
 

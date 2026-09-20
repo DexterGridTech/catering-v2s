@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "@catering-v2s/kernel-base-display-context": "workspace:*",
-    "@catering-v2s/kernel-base-topology": "workspace:*",
     "@catering-v2s/kernel-base-runtime": "workspace:*",
     "@catering-v2s/kernel-base-state": "workspace:*",
+    "@catering-v2s/kernel-base-topology": "workspace:*",
     "@catering-v2s/kernel-base-ui-state": "workspace:*",
     "@catering-v2s/kernel-feature-sample-member-registry": "workspace:*",
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*",

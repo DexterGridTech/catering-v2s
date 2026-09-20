@@ -27,7 +27,7 @@ public class ContractAuditHistoryPersistence {
     public AuditHistoryPage read(AuditReadScope scope, AuditTarget target, long page, long pageSize) {
         Boolean exists = jdbc.query(
                 ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_SELECT_STORE_CONTRACT_TEXT_WORKSPACE_UUID
-                        + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY,
+                        + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setString(1, target.entityRef());
                     statement.setObject(2, scope.workspaceUuid());
@@ -38,18 +38,18 @@ public class ContractAuditHistoryPersistence {
             throw new com.catering.v2s.contract.application.ContractCommandService.ContractNotFoundException();
         long total = jdbc.queryForObject(
                 ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_SELECT_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_CONTINUATION_ENTITY_TYPE_STORE_CONTRACT_ENTITY_REF_TEXT,
+                        + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_ENTITY_TYPE_STORE_CONTRACT_ENTITY_REF_TEXT,
                 Long.class,
                 scope.workspaceUuid(),
                 scope.groupWorkspaceKey(),
                 target.entityRef());
         List<AuditHistoryItem> items = jdbc.query(
                 ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_SELECT_OCCURRED_AT_EPOCH_MILLIS
-                        + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_CONTINUATION_AUDIT_EVENT_CHANGES_JSON_TEXT_WORKSPACE_UUID
-                        + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_ALTERNATE_A
+                        + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_AUDIT_EVENT_CHANGES_JSON_TEXT_WORKSPACE_UUID
+                        + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_GROUP_WORKSPACE_KEY_ALTERNATE_A
                         + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_CONDITION_ENTITY_TYPE
                         + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_DESC_DIRECTION
-                        + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_CONTINUATION_ID_DESC_LIMIT_OFFSET,
+                        + ContractAuditHistoryServiceSql.CONTRACT_AUDIT_HISTORY_SERVICE_ID_DESC_LIMIT_OFFSET,
                 (r, n) -> new AuditHistoryItem(
                         r.getObject("id", UUID.class),
                         r.getLong("occurred_at_epoch_millis"),

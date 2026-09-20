@@ -3,6 +3,8 @@ import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
   adminDrawerSurfaceProps,
+  formatCanonicalDateTime,
+  LIFECYCLE_LABELS,
   testId,
   useOverlayLock,
 } from '@catering-v2s/admin-ui-foundation';
@@ -112,13 +114,17 @@ export function AdministratorDetailDrawer({
             {key: 'loginName', label: '登录账号', children: admin.loginName},
             {key: 'userName', label: '姓名', children: admin.userName},
             {key: 'mobile', label: '手机号', children: admin.mobile ?? '未填写'},
-            {key: 'status', label: '状态', children: admin.status === 'ACTIVE' ? '已启用' : '已停用'},
+            {
+              key: 'status',
+              label: '状态',
+              children: admin.status === 'ACTIVE' ? LIFECYCLE_LABELS.ENABLED : LIFECYCLE_LABELS.DISABLED,
+            },
             {
               key: 'lastLoginAt',
               label: '最近登录',
-              children: admin.lastLoginAt ? new Date(admin.lastLoginAt).toLocaleString('zh-CN') : '暂无',
+              children: formatCanonicalDateTime(admin.lastLoginAt),
             },
-            {key: 'updatedAt', label: '更新时间', children: new Date(admin.updatedAt).toLocaleString('zh-CN')},
+            {key: 'updatedAt', label: '更新时间', children: formatCanonicalDateTime(admin.updatedAt)},
             {key: 'audit', label: '审计摘要', children: admin.auditSummary},
           ]}
         />

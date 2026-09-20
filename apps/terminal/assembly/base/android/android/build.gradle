@@ -23,4 +23,5 @@ dependencies {
   // dependency here makes the module's compile contract truthful; app-level
   // declarations remain explicit for the two Expo hosts.
   implementation("org.nanohttpd:nanohttpd-websocket:2.3.1")
+  testImplementation 'junit:junit:4.13.2'
 }

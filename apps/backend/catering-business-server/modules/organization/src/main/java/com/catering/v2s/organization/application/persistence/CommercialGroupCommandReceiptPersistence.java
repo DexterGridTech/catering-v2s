@@ -16,7 +16,7 @@ public class CommercialGroupCommandReceiptPersistence {
     public Receipt read(UUID workspaceUuid, String idempotencyKey) {
         return jdbc.query(
                 CommercialGroupCommandReceiptServiceSql.COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_SELECT_COMMERCIAL_GROUP_COMMAND_RECEIPT
-                        + CommercialGroupCommandReceiptServiceSql.COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_CONTINUATION_WORKSPACE_UUID_IDEMPOTENCY_KEY,
+                        + CommercialGroupCommandReceiptServiceSql.COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_WORKSPACE_UUID_IDEMPOTENCY_KEY,
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, idempotencyKey);
@@ -27,7 +27,7 @@ public class CommercialGroupCommandReceiptPersistence {
     public int replaceResponse(String responseJson, UUID workspaceUuid, String idempotencyKey) {
         return jdbc.update(
                 CommercialGroupCommandReceiptServiceSql.COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_UPDATE_COMMERCIAL_GROUP_COMMAND_RECEIPT_RESPONSE_JSON
-                        + CommercialGroupCommandReceiptServiceSql.COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_CONTINUATION_WORKSPACE_UUID_IDEMPOTENCY_KEY_ALTERNATE_A,
+                        + CommercialGroupCommandReceiptServiceSql.COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_WORKSPACE_UUID_IDEMPOTENCY_KEY_ALTERNATE_A,
                 responseJson,
                 workspaceUuid,
                 idempotencyKey);
@@ -42,7 +42,7 @@ public class CommercialGroupCommandReceiptPersistence {
             long createdAtEpochMillis) {
         return jdbc.update(
                 CommercialGroupCommandReceiptServiceSql.COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_INSERT_INTO_COMMERCIAL_GROUP_COMMAND_RECEIPT
-                        + CommercialGroupCommandReceiptServiceSql.COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_CONTINUATION_COMMERCIAL_GROUP_UUID
+                        + CommercialGroupCommandReceiptServiceSql.COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_COMMERCIAL_GROUP_UUID
                         + CommercialGroupCommandReceiptServiceSql.COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_VALUES
                         + CommercialGroupCommandReceiptServiceSql.COMMERCIAL_GROUP_COMMAND_RECEIPT_SERVICE_OPEN_PAREN_SUCCEEDED,
                 workspaceUuid,

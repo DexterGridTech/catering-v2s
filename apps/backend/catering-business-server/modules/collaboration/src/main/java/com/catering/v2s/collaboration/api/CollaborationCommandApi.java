@@ -1,5 +1,6 @@
 package com.catering.v2s.collaboration.api;
 
+import com.catering.v2s.platform.foundation.contract.OwnerProblem;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import java.util.Objects;
@@ -162,7 +163,7 @@ public interface CollaborationCommandApi {
     /** The adapter reports revocation as a fact; it does not send a URL, signature or raw provider payload. */
     record RevocationCallbackCommand(UUID bindingRef, String adapterIdentity, String idempotencyKey) {}
 
-    final class Problem extends RuntimeException {
+    final class Problem extends RuntimeException implements OwnerProblem {
         private static final long serialVersionUID = 1L;
         private final String code;
         private final int status;
@@ -179,10 +180,12 @@ public interface CollaborationCommandApi {
             this.status = status;
         }
 
+        @Override
         public String code() {
             return code;
         }
 
+        @Override
         public int status() {
             return status;
         }

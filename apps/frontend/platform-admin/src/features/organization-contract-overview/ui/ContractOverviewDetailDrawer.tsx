@@ -3,6 +3,8 @@ import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
   adminDrawerSurfaceProps,
+  displayFieldValue,
+  formatCanonicalDateTime,
   NameCodeText,
   testId,
   useOverlayLock,
@@ -98,7 +100,11 @@ export function ContractOverviewDetailDrawer({
               label: '经营租户',
               children: <NameCodeText name={item.tenantRef.name} code={item.tenantRef.code} />,
             },
-            {key: 'date', label: '起止日期', children: `${item.effectiveFrom ?? '—'} 至 ${item.effectiveTo ?? '—'}`},
+            {
+              key: 'date',
+              label: '起止日期',
+              children: `${displayFieldValue(item.effectiveFrom)} 至 ${displayFieldValue(item.effectiveTo)}`,
+            },
             {
               key: 'items',
               label: '货号',
@@ -114,16 +120,16 @@ export function ContractOverviewDetailDrawer({
                 '—'
               ),
             },
-            {key: 'note', label: '备注', children: item.note || '—'},
+            {key: 'note', label: '备注', children: displayFieldValue(item.note)},
             {
               key: 'createdAt',
               label: '创建时间',
-              children: new Date(item.createdAt).toLocaleString('zh-CN', {timeZone: 'Asia/Shanghai'}),
+              children: formatCanonicalDateTime(item.createdAt),
             },
             {
               key: 'updatedAt',
               label: '更新时间',
-              children: new Date(item.updatedAt).toLocaleString('zh-CN', {timeZone: 'Asia/Shanghai'}),
+              children: formatCanonicalDateTime(item.updatedAt),
             },
             ...extensionItems,
           ]}

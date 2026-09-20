@@ -20,6 +20,7 @@ const ASSERTION_PATH = "contracts/policy/catalog-inventory-assertion-matrix.json
 const API_SCENARIO_PATH = "contracts/policy/catalog-inventory-api-scenarios.json";
 const L2_SCENARIO_PATH = "contracts/policy/catalog-inventory-l2-scenarios.json";
 const L2_CASE_BLUEPRINT_PATH = "contracts/policy/catalog-inventory-l2-case-blueprint.json";
+const L2_LOCATOR_BINDING_PATH = "contracts/policy/catalog-inventory-l2-locator-bindings.json";
 const OPERATION_DESIGN_PATH = "doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json";
 const DESIGN_PATH = "doc/plans/platform/2026-08-23-v2s-catalog-library-workbench-implementation-design-codex.md";
 const OPENAPI_ROOT_PATH = "contracts/openapi/catalog-inventory.openapi.json";
@@ -90,6 +91,123 @@ function allKeys(value, output = new Set()) {
 function noForbiddenLocatorFields(value) {
   const forbidden = new Set(["locator", "testId", "css", "xpath", "role", "selector"]);
   return ![...allKeys(value)].some((key) => forbidden.has(key));
+}
+const L2_TEST_ID_FACTORIES = Object.freeze({
+  CATALOG_MEDIA: "media: (businessIdentity",
+  CATALOG_ITEM_ROW: "catalogItemRowTestId",
+  CATALOG_ITEM_SELECTION: "catalogItemSelectionTestId",
+  CATALOG_CATEGORY_NODE: "categoryNode(node.code)",
+  CATALOG_CATEGORY_EXPANDER: "categoryExpander(node.code)",
+  CATALOG_PRODUCTION_TAG_NODE: "productionTagNode(node.code)",
+  CATALOG_ITEM_TAB: "catalogItemTabTestId",
+});
+const L2_OPTION_TEST_ID_FACTORIES = Object.freeze({
+  CATALOG_VIEW_SWITCH: "catalogTestIdControls.workbench.viewTable",
+  INVENTORY_STOCK_VIEW: "inventoryStockViewTestId",
+  INVENTORY_ACTION_DIRECTION: "inventoryActionDirectionTestId",
+});
+const L2_INTERACTION_ACTION_NODES = Object.freeze({
+  STORE_SCOPE: "SCOPE_TRIGGER_SELECTOR_OPTION_CONFIRM",
+  HEAD_COMPANY_SCOPE: "SCOPE_TRIGGER_SELECTOR_OPTION_CONFIRM",
+  CATALOG_TREE_CATEGORY_NODE: "TREE_TITLE",
+  CATALOG_TREE_CATEGORY_EXPANDER: "TREE_SWITCHER_ICON",
+  CATALOG_TREE_PRODUCTION_TAG_NODE: "TREE_TITLE",
+  CATALOG_VIEW_SWITCH: "COMPOSITE_OPTION_ANCHOR",
+  CATALOG_BASIC_TAB: "TAB_LABEL_ANCHOR",
+  CATALOG_SKU_TAB: "TAB_LABEL_ANCHOR",
+  CATALOG_ORDER_OPTIONS_TAB: "TAB_LABEL_ANCHOR",
+  CATALOG_PRODUCTION_PROMPTS_TAB: "TAB_LABEL_ANCHOR",
+  CATALOG_INVENTORY_BOM_TAB: "TAB_LABEL_ANCHOR",
+  CATALOG_DICTIONARY_OPEN_CREATE: "BUTTON",
+  CATALOG_PAGINATION: "PAGINATION_CONTROL_GROUP",
+  CATALOG_PAGINATION_NEXT: "PAGINATION_BUTTON",
+  CATALOG_PAGINATION_PREVIOUS: "PAGINATION_BUTTON",
+  INVENTORY_STOCK_VIEW: "COMPOSITE_OPTION_ANCHOR",
+  INVENTORY_ACTION_DIRECTION: "RADIO_OPTION_ANCHOR",
+  CATALOG_BATCH_STATUS_ACTION: "MENU_ITEM",
+});
+const L2_SCOPE_TOUCH_PHASES = Object.freeze(["TRIGGER", "SELECTOR", "OPTION", "CONFIRM"]);
+const L2_SCOPE_FIXED_TEST_IDS = Object.freeze({
+  STORE_SCOPE: Object.freeze([
+    "operations-data-scope-trigger",
+    "operations-data-scope-region",
+    "operations-data-scope-project",
+    "operations-data-scope-store",
+    "operations-data-scope-confirm",
+  ]),
+  HEAD_COMPANY_SCOPE: Object.freeze([
+    "operations-data-scope-trigger",
+    "operations-data-scope-head-company",
+    "operations-data-scope-confirm",
+  ]),
+});
+function assertL2LocatorBindingSourceFiles(bindings) {
+  expect(bindings?.kind === "catalog-inventory-l2-locator-bindings" && bindings.controls && typeof bindings.controls === "object", "P1_L2_LOCATOR_BINDING_SOURCE_DOCUMENT_INVALID");
+  for (const [controlKey, binding] of Object.entries(bindings.controls)) {
+    expect(Array.isArray(binding?.sourceFiles) && binding.sourceFiles.length > 0, "P1_L2_LOCATOR_BINDING_SOURCE_MISSING:" + controlKey);
+    expect(!binding.parentTestId && !binding.role && !binding.name && !binding.names, "P1_L2_LOCATOR_BINDING_ROLE_FALLBACK_FORBIDDEN:" + controlKey);
+    for (const sourceFile of binding.sourceFiles)
+      expect(typeof sourceFile === "string" && fs.existsSync(abs(sourceFile)), "P1_L2_LOCATOR_BINDING_SOURCE_NOT_FOUND:" + controlKey + ":" + sourceFile);
+  }
+}
+function assertL2ScopeBinding(controlKey, binding, source) {
+  const expected = L2_SCOPE_FIXED_TEST_IDS[controlKey];
+  if (!expected) return;
+  expect(binding.actualActionNode === "SCOPE_TRIGGER_SELECTOR_OPTION_CONFIRM", "P1_L2_SCOPE_ACTION_NODE_INVALID:" + controlKey);
+  expect(JSON.stringify(binding.touchPhases) === JSON.stringify(L2_SCOPE_TOUCH_PHASES), "P1_L2_SCOPE_PHASES_INVALID:" + controlKey);
+  expect(JSON.stringify([...(binding.touchTestIds || [])].sort()) === JSON.stringify([...expected].sort()), "P1_L2_SCOPE_TOUCH_IDS_INVALID:" + controlKey);
+  expect(binding.touchOptionTestIdFactory === "roleHomeTestIds.dataScope.option", "P1_L2_SCOPE_OPTION_FACTORY_INVALID:" + controlKey);
+  expect(source.includes("roleHomeTestIds.dataScope"), "P1_L2_SCOPE_SOURCE_MISSING:" + controlKey);
+}
+function assertL2LocatorBindingFactories(bindings) {
+  for (const [controlKey, binding] of Object.entries(bindings.controls)) {
+    const source = binding.sourceFiles.map((sourceFile) => fs.readFileSync(abs(sourceFile), "utf8")).join("\n");
+    assertL2ScopeBinding(controlKey, binding, source);
+    if (binding?.interaction) {
+      expect(L2_INTERACTION_ACTION_NODES[controlKey] === binding.actualActionNode, "P1_L2_INTERACTION_ACTION_NODE_INVALID:" + controlKey);
+      expect(typeof binding.focusedStaticProof === "string" && fs.existsSync(abs(binding.focusedStaticProof)), "P1_L2_INTERACTION_STATIC_PROOF_INVALID:" + controlKey);
+    }
+    if (binding.testIdFactory) {
+      expect(L2_TEST_ID_FACTORIES[binding.testIdFactory], "P1_L2_LOCATOR_BINDING_FACTORY_UNKNOWN:" + controlKey + ":" + binding.testIdFactory);
+      expect(!binding.testIdTemplate, "P1_L2_LOCATOR_BINDING_FACTORY_TEMPLATE_CONFLICT:" + controlKey);
+      expect(source.includes(L2_TEST_ID_FACTORIES[binding.testIdFactory]), "P1_L2_LOCATOR_BINDING_FACTORY_SOURCE_MISSING:" + controlKey + ":" + binding.testIdFactory);
+    }
+    if (binding.optionTestIdFactory) {
+      expect(L2_OPTION_TEST_ID_FACTORIES[binding.optionTestIdFactory], "P1_L2_LOCATOR_BINDING_OPTION_FACTORY_UNKNOWN:" + controlKey + ":" + binding.optionTestIdFactory);
+      expect(binding.actualActionNode === "COMPOSITE_OPTION_ANCHOR" || binding.actualActionNode === "RADIO_OPTION_ANCHOR", "P1_L2_LOCATOR_BINDING_OPTION_ACTION_NODE_INVALID:" + controlKey);
+      expect(source.includes(L2_OPTION_TEST_ID_FACTORIES[binding.optionTestIdFactory]), "P1_L2_LOCATOR_BINDING_OPTION_FACTORY_SOURCE_MISSING:" + controlKey + ":" + binding.optionTestIdFactory);
+    }
+    if (binding.testIdFactory === "CATALOG_ITEM_TAB") {
+      expect(binding.actualActionNode === "TAB_LABEL_ANCHOR", "P1_L2_TAB_ACTION_NODE_INVALID:" + controlKey);
+      expect(typeof binding.focusedStaticProof === "string" && fs.existsSync(abs(binding.focusedStaticProof)), "P1_L2_TAB_STATIC_PROOF_INVALID:" + controlKey);
+      expect(fs.readFileSync(abs(binding.focusedStaticProof), "utf8").includes("data-active={activeTab === tab.tabKey"), "P1_L2_TAB_STATIC_PROOF_MARKER_MISSING:" + controlKey);
+    }
+  }
+}
+function assertL2LocatorBindingSourceGuard() {
+  const bindings = readJson(L2_LOCATOR_BINDING_PATH);
+  assertL2LocatorBindingSourceFiles(bindings);
+  assertL2LocatorBindingFactories(bindings);
+  const firstControlKey = Object.keys(bindings.controls)[0];
+  const sourceMutation = structuredClone(bindings);
+  sourceMutation.controls[firstControlKey].sourceFiles = ["apps/frontend/operations-admin/src/features/catalog-management/ui/does-not-exist.tsx"];
+  let sourceRejected = false;
+  try { assertL2LocatorBindingSourceFiles(sourceMutation); } catch { sourceRejected = true; }
+  expect(sourceRejected, "P1_L2_LOCATOR_BINDING_SOURCE_RED_MUTATION_NOT_REJECTED");
+  const factoryBinding = Object.entries(bindings.controls).find(([, binding]) => binding?.testIdFactory);
+  expect(factoryBinding, "P1_L2_LOCATOR_BINDING_FACTORY_REQUIRED");
+  const factoryMutation = structuredClone(bindings);
+  factoryMutation.controls[factoryBinding[0]].testIdTemplate = "catalog-template-${itemCode}";
+  let factoryRejected = false;
+  try { assertL2LocatorBindingFactories(factoryMutation); } catch { factoryRejected = true; }
+  expect(factoryRejected, "P1_L2_LOCATOR_BINDING_FACTORY_RED_MUTATION_NOT_REJECTED");
+  const scopeBinding = Object.entries(bindings.controls).find(([controlKey]) => L2_SCOPE_FIXED_TEST_IDS[controlKey]);
+  expect(scopeBinding, "P1_L2_SCOPE_BINDING_REQUIRED");
+  const scopeMutation = structuredClone(bindings);
+  delete scopeMutation.controls[scopeBinding[0]].touchPhases;
+  let scopeRejected = false;
+  try { assertL2LocatorBindingFactories(scopeMutation); } catch { scopeRejected = true; }
+  expect(scopeRejected, "P1_L2_SCOPE_RED_MUTATION_NOT_REJECTED");
 }
 function validateSchemaInstance(value, schema, currentPath, definitions) {
   if (schema.$ref) {
@@ -512,6 +630,7 @@ function validate(root = ROOT) {
   const l2Scenarios = readJson(L2_SCENARIO_PATH);
   const operationDesign = readJson(OPERATION_DESIGN_PATH);
   const openapi = readJson(OPENAPI_ROOT_PATH);
+  assertL2LocatorBindingSourceGuard();
 
   expect(shape.revision === REVISION, "P1_SHAPE_REVISION");
   expect(designCoverage.schemaVersion === 1 && designCoverage.kind === "catalog-inventory-design-byte-coverage", "P1_DESIGN_COVERAGE_POLICY_IDENTITY");
@@ -758,6 +877,7 @@ function walk(directory) {
 }
 
 function selfTest() {
+  assertL2LocatorBindingSourceGuard();
   const good = readJson(SHAPE_PATH);
   const expectRed = (condition, code) => { if (condition) fail("SELF_TEST_NOT_RED:" + code); };
   const redShape = JSON.parse(JSON.stringify(good)); redShape.shapeKeys.pop(); expectRed(redShape.shapeKeys.length === 7, "SHAPE_COUNT");

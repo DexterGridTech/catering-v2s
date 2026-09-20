@@ -53,8 +53,14 @@ export function CatalogWorkbenchToolbar({
         <Segmented
           value={view}
           options={[
-            {label: '树表视图', value: 'TREE_TABLE'},
-            {label: '仅表格', value: 'TABLE_ONLY'},
+            {
+              label: <span {...testId(catalogTestIdControls.workbench.viewTree)}>树表视图</span>,
+              value: 'TREE_TABLE',
+            },
+            {
+              label: <span {...testId(catalogTestIdControls.workbench.viewTable)}>仅表格</span>,
+              value: 'TABLE_ONLY',
+            },
           ]}
           onChange={value => onViewChange(value as 'TREE_TABLE' | 'TABLE_ONLY')}
           {...testId(catalogTestIds.control.viewSwitch)}
@@ -68,6 +74,11 @@ export function CatalogWorkbenchToolbar({
               value: brand.id,
               label: <NameCodeText name={brand.name} code={brand.code} />,
             }))}
+            optionRender={option => (
+              <span {...testId(catalogTestIdControls.workbench.brandOption(String(option.value)))}>
+                {option.label}
+              </span>
+            )}
             onChange={onBrandChange}
             style={catalogFieldWidth('regular')}
             {...testId(catalogTestIds.control.brandSwitch)}
@@ -76,7 +87,7 @@ export function CatalogWorkbenchToolbar({
       </Space>
       <Space wrap>
         <Button onClick={onOpenConfig} {...testId(catalogTestIdControls.workbench.openConfig)}>
-          商品基础数据
+          商品元数据
         </Button>
         {surface === 'store' && canWrite && canBrandCopy && (
           <Button onClick={onOpenBrandCopy} {...testId(catalogTestIdControls.workbench.openBrandCopy)}>

@@ -1,5 +1,4 @@
-import {Alert, Modal} from 'antd';
-import {testId, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {StatusChangeConfirm, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useState} from 'react';
 import type {GroupWorkspaceDetail} from '../../../app/api/generated/platform-edge';
 import {platformClient, platformProblemOf, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
@@ -61,30 +60,20 @@ export function WorkspaceStatusModal({
     }
   };
   return (
-    <Modal
+    <StatusChangeConfirm
       title={`确认${action}集团空间？`}
       open={Boolean(workspace)}
+      actionLabel={action}
+      submitting={busy}
+      problem={problem ? `${problem.title}: ${problem.detail}` : undefined}
+      problemTestId="platform-workspace-status-error"
+      cancelLabel="返回"
       onCancel={onClose}
-      onOk={() => void submit()}
-      maskClosable={!busy}
-      keyboard={!busy}
-      confirmLoading={busy}
-      okText="确认"
-      cancelText="返回"
-      okButtonProps={testId('platform-workspace-status-confirm')}
-      cancelButtonProps={testId('platform-workspace-status-return')}
-      destroyOnHidden
+      onConfirm={() => void submit()}
+      confirmTestId="platform-workspace-status-confirm"
+      cancelTestId="platform-workspace-status-return"
     >
-      {problem && (
-        <Alert
-          type="error"
-          showIcon
-          title={problem.title}
-          description={problem.detail}
-          {...testId('platform-workspace-status-error')}
-        />
-      )}
-      将集团空间状态变更为“已{action}”。
-    </Modal>
+      将集团空间状态变更为“{action}”。
+    </StatusChangeConfirm>
   );
 }

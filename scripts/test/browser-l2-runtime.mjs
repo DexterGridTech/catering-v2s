@@ -319,6 +319,20 @@ const L2_BASE_PRODUCTION_TAG = Object.freeze({
   name: 'L2基础生产标签',
   status: 'ENABLED',
 });
+const L2_STORE_OPERATING_RULE_SWITCHES = Object.freeze({
+  catalogManagementEnabled: true,
+  externalCatalogSyncEnabled: false,
+  openPlatformDeveloperCode: '',
+  reservationEnabled: false,
+  reservationDepositEnabled: false,
+  queueCallEnabled: false,
+  tableManagementEnabled: false,
+  tableStatusEnabled: false,
+  tableWaitCallEnabled: false,
+  banquetOrderEnabled: false,
+  pickupCallEnabled: false,
+  receivableEnabled: false,
+});
 
 function fail(code, detail = '') {
   const error = new Error(detail ? `${code}:${detail}` : code);
@@ -2246,6 +2260,29 @@ export function materializeReadbackFactTemplate(value, bindings, location = 'fac
   );
 }
 
+function unchangedReadbackFactTemplateForJourneyState(datasetExpected, journeyState) {
+  const relationMap = datasetExpected?.unchangedReadbackVersionRelationByJourneyState;
+  if (relationMap === undefined) return datasetExpected?.unchangedReadback?.factTemplate;
+  if (!relationMap || typeof relationMap !== 'object' || Array.isArray(relationMap))
+    fail('L2_OWNER_FIXTURE_VERSION_RELATION_MAP_INVALID', String(journeyState));
+  const relation = relationMap[journeyState];
+  if (relation === undefined) return datasetExpected?.unchangedReadback?.factTemplate;
+  if (relation !== 'EXACT_PRE_STATE' && relation !== 'SAME_AS_FIXTURE_MUTATION')
+    fail('L2_OWNER_FIXTURE_VERSION_RELATION_INVALID', `${journeyState}:${String(relation)}`);
+  const baseTemplate = datasetExpected?.unchangedReadback?.factTemplate;
+  if (!baseTemplate || typeof baseTemplate !== 'object' || Array.isArray(baseTemplate))
+    fail('L2_OWNER_FIXTURE_FACT_TEMPLATE_INVALID', `${journeyState}:unchangedReadback`);
+  const item = baseTemplate.item;
+  if (!item || typeof item !== 'object' || Array.isArray(item))
+    fail('L2_OWNER_FIXTURE_VERSION_RELATION_TARGET_INVALID', `${journeyState}:item`);
+  return {...baseTemplate, item: {...item, version: {relation}}};
+}
+
+function unchangedReadbackVersionRuleForJourneyState(datasetExpected, journeyState) {
+  const relation = datasetExpected?.unchangedReadbackVersionRelationByJourneyState?.[journeyState];
+  return relation ?? datasetExpected?.unchangedReadback?.versionRule;
+}
+
 function templateBindingNames(value, names = new Set()) {
   if (Array.isArray(value)) {
     value.forEach(entry => templateBindingNames(entry, names));
@@ -2428,8 +2465,7 @@ function makeTestLogin(identity, credentials = null) {
       values?.V2S_L2_OPERATIONS_READONLY_PASSWORD ?? `l2-operations-readonly-password-${digest.slice(0, 24)}`,
     headOperationsUsername: values?.V2S_L2_HEAD_OPERATIONS_LOGIN ?? `l2-head-${digest.slice(0, 12)}`,
     headOperationsPassword: values?.V2S_L2_HEAD_OPERATIONS_PASSWORD ?? `l2-head-password-${digest.slice(0, 24)}`,
-    projectOperationsUsername:
-      values?.V2S_L2_PROJECT_OPERATIONS_LOGIN ?? `l2-project-${digest.slice(0, 12)}`,
+    projectOperationsUsername: values?.V2S_L2_PROJECT_OPERATIONS_LOGIN ?? `l2-project-${digest.slice(0, 12)}`,
     projectOperationsPassword:
       values?.V2S_L2_PROJECT_OPERATIONS_PASSWORD ?? `l2-project-password-${digest.slice(0, 24)}`,
     otp: values?.V2S_L2_TEST_OTP ?? '246810',
@@ -2803,9 +2839,13 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
         code: 'L2-STORE',
         name: 'L2验证门店',
         extensionValues: {},
+        operatingRuleSwitches: L2_STORE_OPERATING_RULE_SWITCHES,
       },
     },
   );
+  if (store.json?.operatingRuleSwitches?.catalogManagementEnabled !== true) {
+    fail('L2_STORE_CATALOG_MANAGEMENT_READBACK_INVALID');
+  }
   org.storeRef = requiredObjectValue(store.json, ['id', 'storeId', 'nodeRef'], 'L2_STORE_REF_MISSING');
 
   const headLoginName = credentials.values.V2S_L2_HEAD_OPERATIONS_LOGIN;
@@ -3804,6 +3844,8 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
     const scaffold = {
       rootCategoryRef: createdCategories.get(rootObject.code),
       childCategoryRef: createdCategories.get(childObject.code),
+      rootCategoryCode: rootObject.code,
+      childCategoryCode: childObject.code,
       rootCategoryText: rootObject.name ?? rootObject.code,
       childCategoryText: childObject.name ?? childObject.code,
       tagRefs,
@@ -4395,8 +4437,11 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
       requiredFields: [...unchangedReadback.requiredFields],
       factPaths: [...unchangedReadback.factPaths],
       ownerReaders: [...unchangedReadback.ownerReaders],
-      versionRule: unchangedReadback.versionRule,
-      facts: materializeReadbackFactTemplate(unchangedReadback.factTemplate, factBindings),
+      versionRule: unchangedReadbackVersionRuleForJourneyState(datasetExpected, journeyState),
+      facts: materializeReadbackFactTemplate(
+        unchangedReadbackFactTemplateForJourneyState(datasetExpected, journeyState),
+        factBindings,
+      ),
     };
     const facts = {
       fixtureRef: row.fixtureRef,
@@ -4417,13 +4462,17 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
       keyword: itemCode,
       treeNodeText: scaffold.childCategoryText,
       treeParentNodeText: scaffold.rootCategoryText,
+      treeNodeCode: scaffold.childCategoryCode,
+      treeParentNodeCode: scaffold.rootCategoryCode,
       productionTagTreeNodeText: fixtureProductionTagName,
+      productionTagTreeNodeCode: fixtureProductionTagCode,
       brandName: 'L2验证品牌',
       sourceItemCode: sourceBinding?.code ?? null,
       sourceScope: sourceBinding ? {kind: 'HEAD_COMPANY', headCompanyName: 'L2验证总公司'} : undefined,
       sourceBaselineVersion: sourceBinding?.version ?? undefined,
       createCode: identityPlan.createSuccessCode,
       createName: `L2新建商品 ${suffix}`,
+      createShapeKey: 'STANDARD_SALE_COUNTED',
       createShapeLabel: '普通销售商品',
       productionTagName,
       productionTagCode,
@@ -4481,6 +4530,13 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
       actionInput,
       expectedReadback: strictExpectedReadback,
       unchangedReadback: strictUnchangedReadback,
+      ...(datasetExpected.unchangedReadbackVersionRelationByJourneyState
+        ? {
+            unchangedReadbackVersionRelationByJourneyState: {
+              ...datasetExpected.unchangedReadbackVersionRelationByJourneyState,
+            },
+          }
+        : {}),
       recoveryReadbackKind: datasetExpected.recoveryReadbackKind,
     };
     cases[row.caseId] = facts;
@@ -6360,6 +6416,14 @@ function createPlaywrightEnvironment({state, credentials, suite = state.suite ??
     [config.casesEnv]: config.scenarioPath,
     [config.bindingsEnv]: config.bindingPath,
     [config.executionEnv]: config.executionPath,
+    R5_L2_CATALOG_INVENTORY_CASES: scenarioPath,
+    R5_L2_CATALOG_INVENTORY_BINDINGS: bindingPath,
+    R5_L2_CATALOG_INVENTORY_EXECUTION: executionPath,
+    R5_L2_CATALOG_INVENTORY_ACTIVATION_CANDIDATE: activationCandidatePath,
+    R5_L2_SALES_MENU_CASES: salesMenuScenarioPath,
+    R5_L2_SALES_MENU_BINDINGS: salesMenuBindingPath,
+    R5_L2_SALES_MENU_EXECUTION: salesMenuExecutionPath,
+    R5_L2_SALES_MENU_ACTIVATION_CANDIDATE: salesMenuActivationCandidatePath,
     R5_L2_TIMING_BUDGET_REPORT: state.timingReportPath,
     R5_L2_EXPECT_TIMEOUT_MS: String(expectTimeoutMs),
     R5_L2_PLAYWRIGHT_OUTPUT_DIR: playwrightArtifactDirectoryForRun(state.runDirectory),
@@ -6914,8 +6978,13 @@ function buildL2JoinArtifact({
     const declaredActionIds = declaredActions
       .map(entry => entry?.actionId)
       .filter(value => typeof value === 'string' && value.length > 0);
+    // ACTION_TOUCH is also a real control touch: action helpers deliberately
+    // record the semantic control and its action in one event. Treating only
+    // CONTROL_TOUCH as a control would make case-local closure pass while the
+    // final join falsely reports missing controls for action-only paths.
+    const controlTouchEvents = [...controlTouches, ...actionTouches];
     const touchedControlKeys = [
-      ...new Set(controlTouches.map(entry => entry.controlKey).filter(value => typeof value === 'string')),
+      ...new Set(controlTouchEvents.map(entry => entry.controlKey).filter(value => typeof value === 'string')),
     ];
     const touchedActionIds = [
       ...new Set(
@@ -6928,7 +6997,7 @@ function buildL2JoinArtifact({
     const unexpectedTouchedActionIds = touchedActionIds.filter(actionId => !declaredActionIds.includes(actionId));
     const actualTestIds = [
       ...new Set(
-        controlTouches.map(entry => entry.testId).filter(value => typeof value === 'string' && value.length > 0),
+        controlTouchEvents.map(entry => entry.testId).filter(value => typeof value === 'string' && value.length > 0),
       ),
     ];
     const result = resultRows.find(row => row.caseId === caseId);
@@ -7034,7 +7103,7 @@ function buildL2JoinArtifact({
       start?.kind === 'CASE_START' &&
       complete?.kind === 'CASE_COMPLETE' &&
       caseCompletions.length > 0 &&
-      controlTouches.length > 0 &&
+      controlTouchEvents.length > 0 &&
       actionTouches.length > 0 &&
       actionExactSetComplete &&
       missingDeclaredControlKeys.length === 0 &&
@@ -7122,7 +7191,9 @@ function buildL2JoinArtifact({
     declaredControlKeyCount: Object.values(declaredControlKeysByCase).flat().length,
     declaredActionCount: Object.values(declaredActionsByCase).flat().length,
     actualControlKeyCount: new Set(
-      joinEvents.filter(entry => entry.kind === 'CONTROL_TOUCH').map(entry => entry.controlKey),
+      joinEvents
+        .filter(entry => entry.kind === 'CONTROL_TOUCH' || entry.kind === 'ACTION_TOUCH')
+        .map(entry => entry.controlKey),
     ).size,
     missingDeclaredControlKeyCount: cases.reduce((count, entry) => count + entry.missingDeclaredControlKeys.length, 0),
     unexpectedTouchedControlKeyCount: cases.reduce(
@@ -7729,7 +7800,7 @@ async function runBrowserL2(suite = 'catalog-inventory', args = []) {
         entry =>
           entry.result !== 'passed' ||
           entry.testIds.length === 0 ||
-          entry.controlTouchCount === 0 ||
+          entry.touchedControlKeys.length === 0 ||
           entry.actionTouchCount === 0 ||
           entry.missingDeclaredControlKeys.length > 0 ||
           entry.unexpectedTouchedControlKeys.length > 0 ||
@@ -8222,7 +8293,17 @@ function selfTest() {
         : [];
     return [
       {kind: 'CASE_START', ...shared},
-      {kind: 'CONTROL_TOUCH', ...shared, controlKey: 'SELF_TEST_CONTROL', testId: 'catalog-self-test-control'},
+      ...(index === 0
+        ? [
+            {kind: 'CONTROL_TOUCH', ...shared, controlKey: 'SELF_TEST_CONTROL', testId: 'catalog-self-test-control'},
+            {
+              kind: 'CONTROL_TOUCH',
+              ...shared,
+              controlKey: 'SELF_TEST_CONTROL_ONLY',
+              testId: 'catalog-self-test-control-only',
+            },
+          ]
+        : []),
       {kind: 'ACTION_START', ...shared, actionId, actionKind: 'USER_JOURNEY'},
       {
         kind: 'ACTION_TOUCH',
@@ -8265,7 +8346,12 @@ function selfTest() {
     joinEvents: selfTestJoinEvents,
     httpEvents: selfTestHttpEvents,
     dbEvents: selfTestDbEvents,
-    declaredControlKeysByCase: Object.fromEntries(activeIds.map(caseId => [caseId, ['SELF_TEST_CONTROL']])),
+    declaredControlKeysByCase: Object.fromEntries(
+      activeIds.map((caseId, index) => [
+        caseId,
+        index === 0 ? ['SELF_TEST_CONTROL', 'SELF_TEST_CONTROL_ONLY'] : ['SELF_TEST_CONTROL'],
+      ]),
+    ),
     declaredActionsByCase: Object.fromEntries(
       activeIds.map(caseId => [caseId, [{actionId: `${caseId}:self-test-action`, kind: 'USER_JOURNEY'}]]),
     ),
@@ -8306,7 +8392,14 @@ function selfTest() {
     },
     {
       code: 'CONTROL_TOUCH',
-      joinEvents: selfTestJoinEvents.filter((entry, index) => index !== 1),
+      joinEvents: selfTestJoinEvents.filter(
+        entry =>
+          !(
+            entry.kind === 'CONTROL_TOUCH' &&
+            entry.caseId === activeIds[0] &&
+            entry.controlKey === 'SELF_TEST_CONTROL_ONLY'
+          ),
+      ),
       httpEvents: selfTestHttpEvents,
       dbEvents: selfTestDbEvents,
     },
@@ -8372,7 +8465,12 @@ function selfTest() {
       joinEvents: red.joinEvents,
       httpEvents: red.httpEvents,
       dbEvents: red.dbEvents,
-      declaredControlKeysByCase: Object.fromEntries(activeIds.map(caseId => [caseId, ['SELF_TEST_CONTROL']])),
+      declaredControlKeysByCase: Object.fromEntries(
+        activeIds.map((caseId, index) => [
+          caseId,
+          index === 0 ? ['SELF_TEST_CONTROL', 'SELF_TEST_CONTROL_ONLY'] : ['SELF_TEST_CONTROL'],
+        ]),
+      ),
       declaredActionsByCase: Object.fromEntries(
         activeIds.map(caseId => [caseId, [{actionId: `${caseId}:self-test-action`, kind: 'USER_JOURNEY'}]]),
       ),

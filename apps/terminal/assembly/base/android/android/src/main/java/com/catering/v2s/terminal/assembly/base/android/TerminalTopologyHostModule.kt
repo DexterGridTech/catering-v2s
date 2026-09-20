@@ -1,5 +1,7 @@
 package com.catering.v2s.terminal.assembly.base.android
 
+import android.util.Log
+import com.facebook.react.bridge.ReadableMap
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -12,16 +14,23 @@ class TerminalTopologyHostModule : Module() {
       basePath: String,
       heartbeatIntervalMs: Double,
       heartbeatTimeoutMs: Double,
-      nodeId: String,
-      displayName: String,
-      instanceMode: String,
-      displayRole: String ->
+      identity: ReadableMap ->
+      val nodeId = requiredIdentityValue(identity, "nodeId")
+      val moduleName = requiredIdentityValue(identity, "moduleName")
+      val displayName = requiredIdentityValue(identity, "displayName")
+      val instanceMode = requiredIdentityValue(identity, "instanceMode")
+      val displayRole = requiredIdentityValue(identity, "displayRole")
+      Log.i(
+        LOG_TAG,
+        "event=topology-host-start-request port=${port.toInt()} moduleName=$moduleName instanceMode=$instanceMode displayRole=$displayRole",
+      )
       TerminalTopologyHostRegistry.start(
         port = port.toInt(),
         basePath = basePath,
         heartbeatIntervalMs = heartbeatIntervalMs.toLong(),
         heartbeatTimeoutMs = heartbeatTimeoutMs.toLong(),
         nodeId = nodeId,
+        moduleName = moduleName,
         displayName = displayName,
         instanceMode = instanceMode,
         displayRole = displayRole,
@@ -60,7 +69,14 @@ class TerminalTopologyHostModule : Module() {
   }
 
   private companion object {
+    const val LOG_TAG = "TER-Topology"
     const val TOPOLOGY_CONNECTION = "onTopologyConnection"
     const val TOPOLOGY_FRAME = "onTopologyFrame"
+
+    fun requiredIdentityValue(identity: ReadableMap, key: String): String {
+      val value = identity.getString(key)
+      require(!value.isNullOrEmpty()) { "topology host identity field '$key' is required" }
+      return value
+    }
   }
 }

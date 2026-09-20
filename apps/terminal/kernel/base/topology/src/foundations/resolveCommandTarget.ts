@@ -20,19 +20,18 @@ const readDisplayMode = (value: unknown): DisplayMode | undefined => {
  */
 export const resolveTopologyCommandTarget: CommandTargetResolver = input => {
   const facts = selectTopologyFacts(input.state)
+  if (facts === undefined) return undefined
   const displayMode = readDisplayMode(input.payload) ?? input.routeContext?.displayMode
 
   if (input.routeIntent === 'peer-intent') {
-    return facts.instanceMode === 'SLAVE' && facts.paired ? 'peer' : undefined
-  }
-
-  if (
-    displayMode === 'SECONDARY'
-    && facts.instanceMode === 'MASTER'
-    && facts.paired
-    && (facts.displayCount === null || facts.displayCount === 1)
-  ) {
-    return 'peer'
+    // A peer-intent comes from an interactive secondary surface.  The
+    // primary surface on a SLAVE is the local BRANCH workspace and must stay
+    // local.  Secondary content is owned by the peer's MAIN actor and is
+    // projected through state sync; only a secondary interaction travels back
+    // to that owner.
+    return facts.instanceMode === 'SLAVE' && facts.paired && displayMode === 'SECONDARY'
+      ? 'peer'
+      : undefined
   }
 
   return undefined

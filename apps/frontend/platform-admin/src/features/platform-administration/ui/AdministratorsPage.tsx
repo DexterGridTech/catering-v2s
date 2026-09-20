@@ -3,6 +3,8 @@ import {Alert, Button, Card, Tag, Typography} from 'antd';
 import {
   adminListState,
   createPageQueryIdentity,
+  formatCanonicalDateTime,
+  LIFECYCLE_LABELS,
   testId,
   useAsyncGenerationGuard,
   useDetailDrawer,
@@ -231,11 +233,11 @@ export function AdministratorsPage() {
               title: '状态',
               dataIndex: 'status',
               valueType: 'select',
-              valueEnum: {ACTIVE: {text: '已启用'}, DISABLED: {text: '已停用'}},
+              valueEnum: {ACTIVE: {text: LIFECYCLE_LABELS.ENABLED}, DISABLED: {text: LIFECYCLE_LABELS.DISABLED}},
               fieldProps: {...testId('platform-admin-filter-status'), style: {width: 120}},
               render: (_, row) => (
-                <Tag color={row.status === 'ACTIVE' ? 'success' : 'default'}>
-                  {row.status === 'ACTIVE' ? '已启用' : '已停用'}
+                <Tag color={row.status === 'ACTIVE' ? 'success' : 'warning'}>
+                  {row.status === 'ACTIVE' ? LIFECYCLE_LABELS.ENABLED : LIFECYCLE_LABELS.DISABLED}
                 </Tag>
               ),
             },
@@ -243,17 +245,17 @@ export function AdministratorsPage() {
               key: 'lastLoginAt',
               title: '最近登录',
               dataIndex: 'lastLoginAt',
-              valueType: 'dateTime',
               sorter: true,
               search: false,
+              render: (_, row) => formatCanonicalDateTime(row.lastLoginAt),
             },
             {
               key: 'updatedAt',
               title: '更新时间',
               dataIndex: 'updatedAt',
-              valueType: 'dateTime',
               sorter: true,
               search: false,
+              render: (_, row) => formatCanonicalDateTime(row.updatedAt),
             },
           ]}
           onChange={(tablePagination, _, sorter, extra) => {

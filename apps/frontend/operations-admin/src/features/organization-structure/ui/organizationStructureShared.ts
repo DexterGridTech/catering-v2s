@@ -6,6 +6,7 @@ import {
 } from '../../../app/api/generated/operations-edge';
 import {ApiFailure} from '../../../app/api/OperationsTransport';
 import {ACTION_CAPABILITIES, adminCatalog, operationsPageDesignKeys} from '../../../app/catalog/generatedAdminCatalog';
+import {lifecycleLabel} from '@catering-v2s/admin-ui-foundation';
 
 export type HierarchyRow = {
   id: string;
@@ -104,9 +105,7 @@ export function nodeTypeLabel(nodeType: HierarchyRow['nodeType']) {
 }
 
 export function organizationStatusLabel(status?: HierarchyRow['status']) {
-  if (status === 'ENABLED') return '已启用';
-  if (status === 'DISABLED') return '已停用';
-  return '—';
+  return status ? lifecycleLabel(status) : '—';
 }
 
 export function projectPhaseDrafts(phases: string[]): ProjectPhaseDraft[] {

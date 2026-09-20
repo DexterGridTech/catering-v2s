@@ -1,5 +1,4 @@
-import {Alert, Modal} from 'antd';
-import {testId, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {StatusChangeConfirm, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useState} from 'react';
 import {platformClient, platformProblemOf, type PlatformApiProblem} from '../../../app/api/PlatformTransport';
 import type {PlatformAdminDetail} from '../../../app/api/generated/platform-edge';
@@ -54,29 +53,19 @@ export function AdministratorStatusModal({
   };
   const action = admin?.status === 'ACTIVE' ? '停用' : '启用';
   return (
-    <Modal
+    <StatusChangeConfirm
       title={`确认${action}“${admin?.userName ?? ''}”？`}
       open={Boolean(admin)}
+      actionLabel={action}
+      submitting={busy}
+      problem={problem ? `${problem.title}: ${problem.detail}` : undefined}
+      problemTestId="platform-admin-status-error"
       onCancel={onClose}
-      onOk={() => void submit()}
-      maskClosable={!busy}
-      keyboard={!busy}
-      confirmLoading={busy}
-      okText="确认"
-      cancelText="取消"
-      okButtonProps={testId('platform-admin-status-confirm')}
-      cancelButtonProps={testId('platform-admin-status-cancel')}
-      destroyOnHidden
+      onConfirm={() => void submit()}
+      confirmTestId="platform-admin-status-confirm"
+      cancelTestId="platform-admin-status-cancel"
     >
-      {problem && (
-        <Alert
-          type="error"
-          showIcon
-          title={problem.title}
-          description={problem.detail}
-          {...testId('platform-admin-status-error')}
-        />
-      )}
-    </Modal>
+      将管理员状态变更为“{action}”。
+    </StatusChangeConfirm>
   );
 }

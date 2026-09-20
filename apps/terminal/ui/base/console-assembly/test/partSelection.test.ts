@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest'
 import {definePart} from '@catering-v2s/ui-base-render'
 import {adminShellAssembly} from '@catering-v2s/ui-base-admin-shell'
-import {selectPartsForSurfaceForm} from '../src/foundations/consoleAssembly'
+import {assertSecondaryPartsCanBeProjected, selectPartsForSurfaceForm} from '../src/foundations/consoleAssembly'
 
 const makePart = (partKey: string, surfaceForm: readonly ('laptop' | 'mobile')[], rendererKey: string) =>
   definePart({
@@ -74,6 +74,22 @@ describe('console assembly surface-form admission', () => {
 
     expect(() => selectPartsForSurfaceForm([empty], 'laptop')).toThrow(/empty surfaceForm/)
     expect(() => selectPartsForSurfaceForm([duplicate], 'laptop')).toThrow(/duplicate surfaceForm/)
+  })
+
+  it('rejects a SECONDARY part that cannot render on a projected SLAVE surface', () => {
+    const missingSlave = makeRawPart('sample.secondary-without-slave', ['laptop'])
+    const invalidProjection = {
+      ...missingSlave,
+      catalogEntry: {
+        ...missingSlave.catalogEntry,
+        displayModes: ['SECONDARY'] as const,
+        instanceModes: ['MASTER'] as const,
+      },
+    }
+
+    expect(() => assertSecondaryPartsCanBeProjected([invalidProjection])).toThrow(
+      /SECONDARY part must allow SLAVE projection: sample\.secondary-without-slave/,
+    )
   })
 
   it('rejects overlap in the real R-10a admin sibling fixture for either requested form', () => {

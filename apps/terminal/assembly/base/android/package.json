@@ -17,8 +17,8 @@
     "@catering-v2s/adapter-android-device": "workspace:*",
     "@catering-v2s/adapter-android-dual-screen": "workspace:*",
     "@catering-v2s/adapter-android-persist-kv": "workspace:*",
-    "@catering-v2s/kernel-base-transport": "workspace:*",
     "@catering-v2s/kernel-base-platform-ports": "workspace:*",
+    "@catering-v2s/kernel-base-transport": "workspace:*",
     "expo-splash-screen": "~57.0.9"
   },
   "peerDependencies": {

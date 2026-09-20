@@ -772,6 +772,41 @@ screen 的 `containerKey` 在 definition 里（`primaryRootContainer` / `seconda
 
 ---
 
+### 4-D · feature 端按 workspace 的 slice 写入归属
+
+**正式写入归属规则（Dexter）**：`MAIN` 只能主机的 actor 执行 command 写入 slice。`BRANCH` 只能
+副机的 actor 执行 command 写入 slice。
+
+这条规则是唯一的写入 owner 判定：`MAIN ↔ MASTER`、`BRANCH ↔ SLAVE`。投影方向由它自然导出：
+`MAIN` 由主机向副机下行，`BRANCH` 由副机向主机上行；投影接收侧只能应用 owner 已写入的 state，
+不能把投影当成本地业务 command 再执行一次。
+
+1. **副屏由主机 state 驱动**：单机双屏使用共享 store；双机双屏使用 workspace descriptor 已声明
+   的 `MAIN → SLAVE` 投影。副屏用户操作回到主机，由主机 actor 执行业务 command 并写 `MAIN`。
+   副机不得仅因拓扑事件在本地猜测、重放或另写一份副屏业务事实。
+2. **副机切到主屏后走 `BRANCH`**：`SLAVE + PRIMARY` 的 UI 由 `BRANCH` workspace 驱动，command
+   由副机 actor 本地处理；对应投影方向是 `BRANCH → MASTER`。feature 不支持该分支时，必须显式
+   提供不可用/找不到页的 catalog 结果，不得静默读取 `MAIN`、把操作发回 peer，或以空白内容伪装支持。
+3. **写入门必须在公共 content write seam 判定**：凡由 content actor 写 slice 的路径，都必须同时
+   具备 workspace 与执行方 `instanceMode`，并在 `MAIN/MASTER`、`BRANCH/SLAVE` 不匹配时 fail closed。
+   这条门覆盖所有 feature，不以逐 feature 的人工约定替代。
+   `resolveWorkspace`回答本机当前渲染哪个 workspace，刻意允许 `SLAVE + VICE → MAIN`；
+   `workspaceOwnedByInstanceMode`回答执行方可写哪个 workspace，`SLAVE` 始终只拥有 `BRANCH`。
+   两者不是同义函数，禁止用渲染 workspace 代替写入 owner 判定。
+4. **物理屏数 helper 不等于拓扑资格**：只表达本机物理屏数的 helper 继续保持物理语义，不能用它
+   代替“主机已配对副机”的拓扑资格；需要拓扑资格时统一使用 topology 事实与操作级 evaluator。
+
+**最小反例**：主机已配对但本机只有一块物理屏时，主机把 `showScreen(SECONDARY)` 直接发给副机，
+由副机 actor 写自己的 `MAIN`；或者副机收到拓扑恢复事件后自行重放 secondary placement；或者副机
+处于 `PRIMARY/BRANCH` 时仍使用 `peer-intent`。这些写法都违反同一条 workspace 写入归属规则。
+
+**证据要求**：实现或 review 必须证明：(a) 单机双屏中 `MAIN` 由主机 actor 写入并驱动 secondary；
+(b) 双机中 `MAIN` 由主机写入，经 descriptor 投影驱动副机 secondary，副屏操作回传主机；
+(c) 副机 `PRIMARY/BRANCH` 的 UI 与 command 本地闭环，且 `BRANCH` 写入者是副机 actor。上述
+语义不能用路径/字符串门冒充，必须有公共 write-seam 门与 focused 行为证据。
+
+---
+
 ## 5 · 明确不做的
 
 | 候选 | 否掉理由 |

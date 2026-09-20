@@ -7,6 +7,7 @@ import {PrimitiveLabel} from './PrimitiveLabel';
 import {PrimitiveStatus} from './PrimitiveStatus';
 import type {
   PrimitiveCheckboxProps,
+  PrimitiveDropdownSelectProps,
   PrimitiveFormFieldProps,
   PrimitiveFormControlProps,
   PrimitiveInputProps,
@@ -125,6 +126,61 @@ export const PrimitiveSelect = ({
     >
       <RnrText className={baseTokens.option}>{selected?.label ?? ''}</RnrText>
     </RnrPressable>
+  );
+};
+
+export const PrimitiveDropdownSelect = ({
+  testID,
+  accessibilityLabel,
+  disabled,
+  busy,
+  options,
+  value,
+  open,
+  onOpenChange,
+  onValueChange,
+}: PrimitiveDropdownSelectProps) => {
+  const selected = options.find(option => option.value === value);
+  const isBlocked = disabled === true || busy === true;
+  return (
+    <RnrView testID={assertTestID(testID)} className={baseTokens.dropdown}>
+      <RnrPressable
+        testID={`${assertTestID(testID)}:trigger`}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityState={{disabled: isBlocked, busy: busy === true, expanded: open}}
+        disabled={isBlocked}
+        onPress={() => {
+          if (!isBlocked) onOpenChange?.(!open);
+        }}
+      >
+        <RnrText className={baseTokens.dropdownValue}>{selected?.label ?? ''}</RnrText>
+        <RnrText className={baseTokens.dropdownChevron}>{open ? '⌃' : '⌄'}</RnrText>
+      </RnrPressable>
+      {open ? (
+        <RnrView testID={`${assertTestID(testID)}:menu`} className={baseTokens.dropdownMenu}>
+          {options.map(option => (
+            <RnrPressable
+              key={option.value}
+              testID={`${assertTestID(testID)}:option:${option.value}`}
+              accessibilityRole="menuitem"
+              accessibilityLabel={option.label}
+              accessibilityState={{selected: option.value === value, disabled: isBlocked}}
+              disabled={isBlocked}
+              onPress={() => {
+                if (isBlocked) return;
+                onValueChange?.(option.value);
+                onOpenChange?.(false);
+              }}
+            >
+              <RnrText className={option.value === value ? baseTokens.dropdownOptionSelected : baseTokens.dropdownOption}>
+                {option.label}
+              </RnrText>
+            </RnrPressable>
+          ))}
+        </RnrView>
+      ) : null}
+    </RnrView>
   );
 };
 

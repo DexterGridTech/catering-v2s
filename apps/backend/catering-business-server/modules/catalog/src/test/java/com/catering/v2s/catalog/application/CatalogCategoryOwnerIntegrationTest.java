@@ -184,7 +184,8 @@ class CatalogCategoryOwnerIntegrationTest {
         assertEquals(
                 0,
                 jdbc.queryForObject(
-                        "SELECT COUNT(*) FROM catalog.catalog_category WHERE data_node_ref=? AND brand_ref=? AND code=?",
+                        "SELECT COUNT(*) FROM catalog.catalog_category "
+                                + "WHERE data_node_ref=? AND brand_ref=? AND code=?",
                         Integer.class,
                         SCOPE.toString(),
                         BRAND,

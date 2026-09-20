@@ -19,7 +19,8 @@
 - `src/application/terminalSurfaces.ts`：从本包 `package.json` 读取并校验逻辑画布；laptop 为
   `1280×800` / `960×540`，mobile 只有 `PRIMARY 360×640`。
 - `src/features/actors/actors.ts`：唯一 placement owner。登录或恢复认证时显示主屏 picker、
-  副屏 welcome；匿名或登出时显示副屏 waiting（副屏不可用时不派发）。
+  副屏 welcome；匿名或登出时显示副屏 waiting。副屏资格读取 topology 的公开事实（本机双屏或
+  MASTER 已配对副机），不把物理屏 helper 当作跨机资格。
 - `src/parts/parts.ts` 与 `src/components/`：副屏 waiting/welcome 两个透明 section part。
 - `theme/`：本应用的 19 个语义 token；action 使用红色，error 仍是错误语义。
 - `app.json` 与 `assets/favicon.png`：仅供本包 Expo Web 预览消费的浏览器标题图标配置；不声明
@@ -44,6 +45,8 @@ const secondary = createSurfaceForDisplayIndex(assembly, 1)
 
 调用方可通过可选的 `terminalSurfaces` 整份覆盖本包默认配置；未传入时使用本包 `package.json`，而具体形态仍由本包按 `surfaceForm` 选择。
 本包 `package.json` 的 `showAdminPassword` 控制 admin 登录提示旁是否显示当前动态口令；调用方显式传入的值优先。
+本 integration 注入的 `moduleName` 是 topology 配对身份的一部分；只允许相同 integration 的另一节点配对，
+不使用 assembly 包名替代它。跨机内容由主机写入 MAIN 后按声明的 sync 方向投影，副机不在 feature actor 中本地重放主机的副屏命令。
 
 本包通过同一个 shared admin console assembly 接入 topology capability；其 SECONDARY/SLAVE allowlist
 只有 `waiting` 与 `welcome`，mobile 不创建 SECONDARY，其他壁纸业务 parts 不因 topology 接入而改变。
@@ -80,3 +83,5 @@ Android 形态迭代应在 `adapter/android/dual-screen` 的形态判定与 laun
 再由 assembly 显式传入 `surfaceForm`；不要在本包按屏幕宽度自行判定。任何新 UI 应继续使用
 primitives、既有 LayerStack/Input 管线和 command/actor 写路径，不得直接调用 state setter、
 新增背景 stack、图片 seam、overlay 或隐藏的第二打开路径。
+
+虚拟键盘复用 shared primitives 的 `keyboard-*` 语义 token；键面与 dock 使用跨 integration 的中性色，focus 边框由本应用 theme 提供，避免键盘 renderer 持有 sample 身份色。

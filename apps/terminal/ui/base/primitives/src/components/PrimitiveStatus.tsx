@@ -4,11 +4,11 @@ import {toneForegroundClassName} from '../foundations/toneClassName';
 import {assertTestID} from '../foundations/assertTestID';
 import type {PrimitiveStatusProps} from '../types/types';
 
-export const PrimitiveStatus = ({testID, children, tone = 'neutral', onLayout, onTextLayout, style}: PrimitiveStatusProps) => (
+export const PrimitiveStatus = ({testID, appearance = 'default', children, tone = 'neutral', onLayout, onTextLayout, style}: PrimitiveStatusProps) => (
   <RnrText
     testID={assertTestID(testID)}
     accessibilityLiveRegion="polite"
-    className={toneForegroundClassName(tone, baseTokens.status)}
+    className={appearance === 'login' && tone === 'neutral' ? baseTokens.statusLogin : toneForegroundClassName(tone, baseTokens.status)}
     onLayout={onLayout}
     onTextLayout={onTextLayout}
     style={style}

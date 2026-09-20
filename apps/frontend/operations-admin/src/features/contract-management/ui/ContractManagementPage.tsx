@@ -7,6 +7,7 @@ import {
   createPageQueryIdentity,
   EllipsisTooltip,
   ExtensionFilterInvalidSummary,
+  formatCanonicalDateTime,
   clearInvalidExtensionFilterFields,
   isExtensionDefinitionRevisionAtLeast,
   reconcileExtensionFilterValues,
@@ -298,7 +299,7 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
         title: '更新时间',
         dataIndex: 'updatedAt',
         search: false,
-        render: (_, row) => new Date(row.updatedAt).toLocaleString('zh-CN'),
+        render: (_, row) => formatCanonicalDateTime(row.updatedAt),
       },
       {
         title: '门店',

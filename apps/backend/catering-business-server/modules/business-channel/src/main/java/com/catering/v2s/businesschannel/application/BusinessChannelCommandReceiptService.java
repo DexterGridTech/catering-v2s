@@ -3,7 +3,7 @@ package com.catering.v2s.businesschannel.application;
 import com.catering.v2s.businesschannel.api.BusinessChannelCommandApi;
 import com.catering.v2s.businesschannel.application.persistence.BusinessChannelCommandReceiptPersistence;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
+import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
@@ -47,7 +47,7 @@ public final class BusinessChannelCommandReceiptService {
             throw problem("VALIDATION_ERROR", 422, "operationId is required");
         if (canonicalRequest == null) throw new IllegalArgumentException("canonicalRequest is required");
 
-        String requestHash = Sha256Hex.digest(canonicalRequest);
+        String requestHash = CommandReceiptSupport.requestHash(canonicalRequest);
         persistence.lock(workspaceUuid, groupWorkspaceKey, idempotencyKey);
         BusinessChannelCommandReceiptPersistence.Receipt prior = persistence
                 .find(workspaceUuid, groupWorkspaceKey, idempotencyKey)
@@ -76,7 +76,8 @@ public final class BusinessChannelCommandReceiptService {
 
     private static <T> T read(String responseJson, Class<T> responseType) {
         try {
-            return JSON.readValue(responseJson, responseType);
+            return CommandReceiptSupport.deserializeNullable(
+                    JSON, responseJson, responseType, "business-channel command receipt is not readable");
         } catch (Exception failure) {
             throw problem("RECEIPT_CORRUPT", 500, "business-channel command receipt is not readable", failure);
         }
@@ -84,7 +85,8 @@ public final class BusinessChannelCommandReceiptService {
 
     private static String write(Object value) {
         try {
-            return JSON.writeValueAsString(value);
+            return CommandReceiptSupport.serialize(
+                    JSON, value, "business-channel command readback is not writable");
         } catch (Exception failure) {
             throw problem("RECEIPT_CORRUPT", 500, "business-channel command readback is not writable", failure);
         }

@@ -14,6 +14,7 @@ describe('display-context module and public surface', () => {
       'getSwitchInstanceModeEligibility',
       'moduleName',
       'powerStatusChangedCommand',
+      'readDisplayFacts',
       'readDisplayInfo',
       'requestPowerRoleChangeCommand',
       'resolvePowerRoleTarget',

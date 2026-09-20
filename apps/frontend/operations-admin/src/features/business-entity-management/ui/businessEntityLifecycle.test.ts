@@ -8,7 +8,7 @@ import {
 
 describe('business entity lifecycle presentation', () => {
   it('covers the three lifecycle labels and terminal action boundary', () => {
-    expect(businessEntityLifecycleLabels).toEqual({ENABLED: '启用', DISABLED: '停用', VOIDED: '标记删除'});
+    expect(businessEntityLifecycleLabels).toEqual({ENABLED: '启用', DISABLED: '停用', VOIDED: '作废'});
     expect(canManageBusinessEntity('ENABLED')).toBe(true);
     expect(canManageBusinessEntity('DISABLED')).toBe(true);
     expect(canManageBusinessEntity('VOIDED')).toBe(false);

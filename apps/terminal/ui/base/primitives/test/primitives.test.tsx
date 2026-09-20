@@ -1,6 +1,6 @@
-import {createRef} from 'react';
+import {createRef, useState} from 'react';
 import {act, create, type TestInstance, type ReactTestRenderer} from 'react-test-renderer';
-import {Image, Pressable, ScrollView, Text, TextInput, View, VirtualizedList} from 'react-native';
+import {Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, VirtualizedList} from 'react-native';
 import Svg, {Path} from 'react-native-svg';
 import {describe, expect, it, vi} from 'vitest';
 import {
@@ -8,6 +8,8 @@ import {
   PrimitiveActions,
   PrimitiveBadge,
   PrimitiveContainer,
+  PrimitiveDisclosure,
+  PrimitiveDropdownSelect,
   PrimitiveEmptyState,
   PrimitiveGrid,
   PrimitiveInlineAlert,
@@ -17,16 +19,24 @@ import {
   PrimitiveHeading,
   PrimitiveInput,
   PrimitiveImage,
+  PrimitiveKeyboardBackdrop,
+  PrimitiveKeyboardSurface,
   type PrimitiveInputHandle,
   PrimitiveLabel,
+  PrimitivePinInput,
   PrimitivePressOption,
+  PrimitiveRatioBar,
   PrimitiveScrollView,
   type PrimitiveScrollViewHandle,
   PrimitiveStatus,
+  PrimitiveSurfaceMap,
   PrimitiveText,
 } from '../src/index';
 import {baseLayout, baseTokens} from '../src/theme/tokens';
 import {primitiveIconPaths, RnrSvgIcon} from '../src/vendor/slots';
+
+const {useNativeVariableMock} = vi.hoisted(() => ({useNativeVariableMock: vi.fn(() => undefined)}));
+vi.mock('../src/vendor/nativeVariable', () => ({useNativeVariable: useNativeVariableMock}));
 
 const mount = (element: Parameters<typeof create>[0]): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined;
@@ -117,9 +127,75 @@ describe('ui primitives', () => {
       minHeight: 0,
       overflow: 'hidden',
     });
+    expect(byTestID('sample:layout-card')?.props.className).not.toContain(baseTokens.containerElevated);
+
+    const elevatedRenderer = mount(
+      <PrimitiveContainer testID="sample:elevated-card" layout="card" bounded elevated />,
+    );
+    const elevatedView = elevatedRenderer.root.findAllByType(View).find(node => node.props.testID === 'sample:elevated-card')!;
+    expect(elevatedView.props.className).toBe(
+      `${baseTokens.containerCard} ${baseTokens.containerBoundedCard} ${baseTokens.containerElevated}`,
+    );
+    act(() => {
+      elevatedRenderer.unmount();
+    });
     act(() => {
       renderer.unmount();
     });
+  });
+
+  it('renders a masked pin input with stable cells and explicit elevated interaction guards', () => {
+    const onPress = vi.fn();
+    const onTouchEnd = vi.fn();
+    const onClick = vi.fn();
+    const renderer = mount(
+      <PrimitivePinInput
+        testID="sample:pin"
+        cellTestIDPrefix="sample:pin"
+        accessibilityLabel="输入动态口令"
+        value="12"
+        length={6}
+        focusedIndex={2}
+        onPress={onPress}
+        onTouchEnd={onTouchEnd}
+        onClick={onClick}
+      />,
+    );
+    const pressable = renderer.root.findAllByType(Pressable).find(node => node.props.testID === 'sample:pin')!;
+    expect(pressable.props.onPress).toBe(onPress);
+    expect(pressable.props.onTouchEnd).toBe(onTouchEnd);
+    expect(pressable.props.onClick).toBeUndefined();
+    expect(renderer.root.findByProps({testID: 'sample:pin:cells'})).toBeDefined();
+    expect(renderer.root.findByProps({testID: 'sample:pin:digit:0'}).props.children).toBe('*');
+    expect(renderer.root.findByProps({testID: 'sample:pin:digit:1'}).props.children).toBe('*');
+    expect(renderer.root.findByProps({testID: 'sample:pin:digit:2'}).props.children).toBe('');
+    expect(renderer.root.findAllByType(View).some(node => node.props.className === baseTokens.pinCellFocused)).toBe(true);
+    act(() => {
+      (pressable.props.onPress as (() => void) | undefined)?.();
+    });
+    expect(onPress).toHaveBeenCalledTimes(1);
+    act(() => {
+      renderer.unmount();
+    });
+
+    vi.stubGlobal('document', {});
+    const browserRenderer = mount(
+      <PrimitivePinInput
+        testID="sample:browser-pin"
+        cellTestIDPrefix="sample:browser-pin"
+        value=""
+        length={6}
+        onTouchEnd={onTouchEnd}
+        onClick={onClick}
+      />,
+    );
+    const browserPressable = browserRenderer.root.findAllByType(Pressable).find(node => node.props.testID === 'sample:browser-pin')!;
+    expect(browserPressable.props.onClick).toBe(onClick);
+    expect(browserPressable.props.onTouchEnd).toBeUndefined();
+    act(() => {
+      browserRenderer.unmount();
+    });
+    vi.unstubAllGlobals();
   });
 
   it('keeps the scroll viewport opaque by default and supports an explicit transparent variant', () => {
@@ -173,6 +249,7 @@ describe('ui primitives', () => {
       (button.props.onPressIn as (() => void) | undefined)?.();
     });
     const pressedButton = renderer.root.findAllByType(Pressable).find(node => node.props.testID === 'sample:key')!;
+    expect(pressedButton.props.className).toContain('border-2 border-keyboard-focus');
     expect(pressedButton.props.style).toEqual({opacity: 0.78, transform: [{scale: 0.985}]});
     act(() => {
       (pressedButton.props.onPressOut as (() => void) | undefined)?.();
@@ -186,6 +263,137 @@ describe('ui primitives', () => {
     act(() => {
       renderer.unmount();
     });
+  });
+
+  it('shows the theme focus outline for every pressed keyboard key and action', () => {
+    const renderer = mount(
+      <>
+        <PrimitiveButton testID="sample:pressed-key" accessibilityLabel="1" onPress={() => undefined} variant="key">
+          1
+        </PrimitiveButton>
+        <PrimitiveButton testID="sample:pressed-action" accessibilityLabel="删除" onPress={() => undefined} variant="key-action">
+          删除
+        </PrimitiveButton>
+      </>,
+    );
+
+    const pressable = (testID: string) => renderer.root.findAllByType(Pressable).find(node => node.props.testID === testID)!;
+    expect(pressable('sample:pressed-key').props.className).not.toContain('border-2 border-keyboard-focus');
+    expect(pressable('sample:pressed-action').props.className).not.toContain('border-2 border-keyboard-focus');
+
+    act(() => {
+      (pressable('sample:pressed-key').props.onPressIn as (() => void) | undefined)?.();
+      (pressable('sample:pressed-action').props.onPressIn as (() => void) | undefined)?.();
+    });
+
+    expect(pressable('sample:pressed-key').props.className).toContain('border-2 border-keyboard-focus');
+    expect(pressable('sample:pressed-action').props.className).toContain('border-2 border-keyboard-focus');
+
+    act(() => {
+      (pressable('sample:pressed-key').props.onPressOut as (() => void) | undefined)?.();
+      (pressable('sample:pressed-action').props.onPressOut as (() => void) | undefined)?.();
+    });
+
+    expect(pressable('sample:pressed-key').props.className).not.toContain('border-2 border-keyboard-focus');
+    expect(pressable('sample:pressed-action').props.className).not.toContain('border-2 border-keyboard-focus');
+    act(() => {
+      renderer.unmount();
+    });
+  });
+
+  it('does not subscribe keyboard buttons to login gradient variables', () => {
+    useNativeVariableMock.mockClear();
+    const renderer = mount(
+      <>
+        <PrimitiveButton testID="sample:keyboard-key" accessibilityLabel="1" onPress={() => undefined} variant="key">
+          1
+        </PrimitiveButton>
+        <PrimitiveButton testID="sample:keyboard-action" accessibilityLabel="删除" onPress={() => undefined} variant="key-action">
+          删除
+        </PrimitiveButton>
+      </>,
+    );
+
+    expect(useNativeVariableMock).not.toHaveBeenCalled();
+    act(() => {
+      renderer.unmount();
+    });
+
+    useNativeVariableMock.mockClear();
+    const loginRenderer = mount(
+      <PrimitiveButton
+        testID="sample:login-primary"
+        accessibilityLabel="登录"
+        appearance="login-primary"
+        onPress={() => undefined}
+      >
+        登录
+      </PrimitiveButton>,
+    );
+    expect(useNativeVariableMock).toHaveBeenCalledTimes(2);
+    act(() => {
+      loginRenderer.unmount();
+    });
+  });
+
+  it('renders the semantic keyboard surface and selected modifier recipe', () => {
+    const stopNative = vi.fn();
+    const renderer = mount(
+      <PrimitiveKeyboardSurface testID="sample:keyboard-surface" onTouchEnd={stopNative} onClick={() => undefined}>
+        <PrimitiveButton testID="sample:selected-key" accessibilityLabel="大写锁定" variant="key-action" selected>
+          ⇪
+        </PrimitiveButton>
+      </PrimitiveKeyboardSurface>,
+    );
+    const surface = renderer.root.findAllByType(View).find(node => node.props.testID === 'sample:keyboard-surface')!;
+    const selected = renderer.root.findAllByType(Pressable).find(node => node.props.testID === 'sample:selected-key')!;
+    expect(surface.props.className).toBe(baseTokens.keyboardDock);
+    expect(typeof surface.props.onTouchEnd).toBe('function');
+    expect(surface.props.onClick).toBeUndefined();
+    expect(baseTokens.keyboardAction).toContain('bg-keyboard-action');
+    expect(baseTokens.keyboardActionSelected).toContain('bg-keyboard-action');
+    expect(baseTokens.keyboardDock).toContain('rounded-[20px]');
+    expect(selected.props.className).toBe(baseTokens.keyboardActionSelected);
+    expect(selected.props.accessibilityState).toMatchObject({selected: true});
+    act(() => {
+      (surface.props.onTouchEnd as ((event: {readonly stopPropagation: () => void}) => void) | undefined)?.({stopPropagation: stopNative});
+    });
+    expect(stopNative).toHaveBeenCalledTimes(1);
+    act(() => { renderer.unmount(); });
+  });
+
+  it('provides a full-width semantic backdrop for an inset keyboard dock', () => {
+    const renderer = mount(
+      <PrimitiveKeyboardBackdrop testID="sample:keyboard-backdrop" style={{height: 219}} />,
+    );
+    const backdrop = renderer.root.findAllByType(View).find(node => node.props.testID === 'sample:keyboard-backdrop')!;
+    expect(backdrop.props.className).toBe(baseTokens.keyboardBackdrop);
+    expect(StyleSheet.flatten(backdrop.props.style)).toEqual({height: 219});
+    act(() => { renderer.unmount(); });
+  });
+
+  it('restores the document stub after selecting the browser keyboard boundary', () => {
+    const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
+    try {
+      Object.defineProperty(globalThis, 'document', {configurable: true, value: {}});
+      const stopWeb = vi.fn();
+      const renderer = mount(
+        <PrimitiveKeyboardSurface testID="sample:web-keyboard-surface" onTouchEnd={() => undefined} onClick={event => event.stopPropagation()} />,
+      );
+      const surface = renderer.root.findAllByType(View).find(node => node.props.testID === 'sample:web-keyboard-surface')!;
+      expect(surface.props.onTouchEnd).toBeUndefined();
+      expect(typeof surface.props.onClick).toBe('function');
+      (surface.props.onClick as ((event: {readonly stopPropagation: () => void}) => void) | undefined)?.({stopPropagation: stopWeb});
+      expect(stopWeb).toHaveBeenCalledTimes(1);
+      act(() => { renderer.unmount(); });
+    } finally {
+      if (originalDocument === undefined) {
+        delete (globalThis as {document?: unknown}).document;
+      } else {
+        Object.defineProperty(globalThis, 'document', originalDocument);
+      }
+    }
+    expect(Object.getOwnPropertyDescriptor(globalThis, 'document')).toEqual(originalDocument);
   });
 
   it('passes input presentation props and the real focus seam to TextInput', () => {
@@ -417,6 +625,80 @@ describe('ui primitives', () => {
     expect(svg.props.accessibilityLabel).toBe('信息');
     expect(path.props.d).toBe(primitiveIconPaths.info);
     expect(String(path.props.d).length).toBeGreaterThan(0);
+    act(() => { renderer.unmount(); });
+  });
+
+  it('keeps dropdown, disclosure, ratio, and surface-map behavior controlled by callers', () => {
+    const onExpandedChange = vi.fn();
+    const Probe = () => {
+      const [open, setOpen] = useState(false);
+      const [value, setValue] = useState('runtime');
+      return (
+        <>
+          <PrimitiveDropdownSelect
+            testID="sample:dropdown"
+            accessibilityLabel="选择页面"
+            options={[{value: 'runtime', label: '运行状态'}, {value: 'topology', label: '双机拓扑'}]}
+            value={value}
+            open={open}
+            onOpenChange={setOpen}
+            onValueChange={setValue}
+          />
+          <PrimitiveDisclosure
+            testID="sample:disclosure"
+            accessibilityLabel="展开端口"
+            label="连接"
+            summary="2 项"
+            expanded={false}
+            onExpandedChange={onExpandedChange}
+          >
+            <PrimitiveText testID="sample:disclosure:body">详情</PrimitiveText>
+          </PrimitiveDisclosure>
+          <PrimitiveRatioBar
+            testID="sample:ratio"
+            accessibilityLabel="端口比例"
+            total={4}
+            segments={[{key: 'available', label: '可用', value: 2, tone: 'ok'}, {key: 'unavailable', label: '不可用', value: 2, tone: 'warn'}]}
+          />
+          <PrimitiveSurfaceMap
+            testID="sample:surface-map"
+            accessibilityLabel="显示屏"
+            direction="row"
+            surfaces={[
+              {key: 'PRIMARY', label: '当前屏', roleLabel: '主屏', current: true, present: true, aspectRatio: 2, insideLabels: ['1920×1080'], outsideLabels: ['2560×1440'], statusLabel: '已就绪', statusTone: 'ok'},
+              {key: 'SECONDARY', label: '副屏', roleLabel: '副屏', current: false, present: true, aspectRatio: 1.5, insideLabels: ['该屏信息未提供'], outsideLabels: []},
+            ]}
+          />
+        </>
+      );
+    };
+    const renderer = mount(<Probe />);
+    const trigger = renderer.root.findByProps({testID: 'sample:dropdown:trigger'});
+    expect(trigger.props.accessibilityState).toMatchObject({expanded: false});
+    act(() => { (trigger.props.onPress as () => void)(); });
+    expect(renderer.root.findByProps({testID: 'sample:dropdown:menu'})).toBeDefined();
+    act(() => { (renderer.root.findByProps({testID: 'sample:dropdown:option:topology'}).props.onPress as () => void)(); });
+    expect(renderer.root.findByProps({testID: 'sample:dropdown:trigger'}).props.accessibilityState).toMatchObject({expanded: false});
+    expect(renderer.root.findAllByProps({testID: 'sample:disclosure:content'})).toHaveLength(0);
+    act(() => { (renderer.root.findByProps({testID: 'sample:disclosure:trigger'}).props.onPress as () => void)(); });
+    expect(onExpandedChange).toHaveBeenCalledWith(true);
+    expect(renderer.root.findAllByType(View).filter(node => node.props.testID === 'sample:ratio:segment:available')).toHaveLength(1);
+    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:PRIMARY'}).props.style).toEqual({aspectRatio: 2});
+    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:SECONDARY:inside:0'})).toBeDefined();
+    act(() => { renderer.unmount(); });
+  });
+
+  it('renders a visible invalid state when ratio segments do not conserve the total', () => {
+    const renderer = mount(
+      <PrimitiveRatioBar
+        testID="sample:invalid-ratio"
+        accessibilityLabel="端口比例"
+        total={4}
+        segments={[{key: 'available', label: '可用', value: 1, tone: 'ok'}]}
+      />,
+    );
+    expect(renderer.root.findByProps({testID: 'sample:invalid-ratio:invalid'})).toBeDefined();
+    expect(renderer.root.findAllByProps({testID: 'sample:invalid-ratio:segment:available'})).toHaveLength(0);
     act(() => { renderer.unmount(); });
   });
 

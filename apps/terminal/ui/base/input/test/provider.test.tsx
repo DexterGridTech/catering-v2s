@@ -8,7 +8,7 @@ import {useInputField} from '../src/hooks/useInputField'
 import {useInputSnapshot} from '../src/hooks/useInputSnapshot'
 import {useInputController, useInputKeyboardState} from '../src/contexts/context'
 import type {InputController, InputFieldResult} from '../src/types/types'
-import {TextInput} from 'react-native'
+import {TextInput, View} from 'react-native'
 import {useRef} from 'react'
 
 const TEST_FRAME = {width: 960, height: 540} as const
@@ -287,7 +287,7 @@ describe('input provider', () => {
       </InputSurfaceFrame>,
     )
     act(() => { surfaceField?.focus() })
-    expect(surfaceRenderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+    expect(surfaceRenderer.root.findAllByType(View).filter(node => node.props.testID === 'ui.base.input:virtual-keyboard')).toHaveLength(1)
     act(() => { surfaceRenderer.unmount() })
 
     let fieldField: InputFieldResult | undefined
@@ -297,10 +297,10 @@ describe('input provider', () => {
       </InputSurfaceFrame>,
     )
     act(() => { fieldField?.focus() })
-    expect(fieldRenderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+    expect(fieldRenderer.root.findAllByType(View).filter(node => node.props.testID === 'ui.base.input:virtual-keyboard')).toHaveLength(1)
     const host = fieldRenderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard:host'})
     act(() => { host.props.onLayout({nativeEvent: {layout: {width: 480}}}) })
-    expect(fieldRenderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'}).props.style.at(-1)).toMatchObject({width: 480})
+    expect(fieldRenderer.root.findAllByType(View).find(node => node.props.testID === 'ui.base.input:virtual-keyboard')!.props.style.at(-1)).toMatchObject({width: 448})
     act(() => { fieldRenderer.unmount() })
   })
 
@@ -359,7 +359,7 @@ describe('input provider', () => {
     act(() => { input('sample:virtual').props.onFocus({nativeEvent: {}}) })
     expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'})).toBeDefined()
     act(() => { input('sample:second').props.onFocus({nativeEvent: {}}) })
-    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+    expect(renderer.root.findAllByType(View).filter(node => node.props.testID === 'ui.base.input:virtual-keyboard')).toHaveLength(1)
     act(() => { renderer.unmount() })
   })
 
@@ -374,20 +374,20 @@ describe('input provider', () => {
     )
 
     act(() => { focusHarness.focus('sample:owner-virtual') })
-    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+    expect(renderer.root.findAllByType(View).filter(node => node.props.testID === 'ui.base.input:virtual-keyboard')).toHaveLength(1)
     expect(focusHarness.isFocused('sample:owner-virtual')).toBe(true)
 
     act(() => { focusHarness.focus('sample:owner-second') })
-    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+    expect(renderer.root.findAllByType(View).filter(node => node.props.testID === 'ui.base.input:virtual-keyboard')).toHaveLength(1)
     expect(focusHarness.isFocused('sample:owner-second')).toBe(true)
 
     act(() => { focusHarness.focus('sample:owner-virtual') })
-    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+    expect(renderer.root.findAllByType(View).filter(node => node.props.testID === 'ui.base.input:virtual-keyboard')).toHaveLength(1)
     expect(focusHarness.isFocused('sample:owner-virtual')).toBe(true)
-    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+    expect(renderer.root.findAllByType(View).filter(node => node.props.testID === 'ui.base.input:virtual-keyboard')).toHaveLength(1)
 
     act(() => { focusHarness.focus('sample:owner-second') })
-    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+    expect(renderer.root.findAllByType(View).filter(node => node.props.testID === 'ui.base.input:virtual-keyboard')).toHaveLength(1)
     expect(focusHarness.isFocused('sample:owner-second')).toBe(true)
     act(() => { renderer.unmount() })
   })

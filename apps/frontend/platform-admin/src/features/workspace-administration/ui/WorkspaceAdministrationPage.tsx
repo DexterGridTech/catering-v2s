@@ -1,5 +1,12 @@
 import {Alert, Button, Card, Descriptions, Space, Spin, Tag, Typography} from 'antd';
-import {contextScopedQueryArgs, testId} from '@catering-v2s/admin-ui-foundation';
+import {
+  contextScopedQueryArgs,
+  displayFieldValue,
+  formatCanonicalDateTime,
+  lifecycleColor,
+  lifecycleLabel,
+  testId,
+} from '@catering-v2s/admin-ui-foundation';
 import {useMemo} from 'react';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {platformProblemOf, platformRtk} from '../../../app/api/PlatformTransport';
@@ -97,13 +104,9 @@ function WorkspaceOverviewForSelection({groupWorkspaceKey}: {groupWorkspaceKey: 
                 {
                   key: 'status',
                   label: '状态',
-                  children: (
-                    <Tag color={data.status === 'ENABLED' ? 'success' : 'default'}>
-                      {data.status === 'ENABLED' ? '已启用' : '已停用'}
-                    </Tag>
-                  ),
+                  children: <Tag color={lifecycleColor(data.status)}>{lifecycleLabel(data.status)}</Tag>,
                 },
-                {key: 'updated', label: '最近更新', children: new Date(data.updatedAt).toLocaleString('zh-CN')},
+                {key: 'updated', label: '最近更新', children: formatCanonicalDateTime(data.updatedAt)},
               ]}
             />
           )}
@@ -123,7 +126,11 @@ function WorkspaceOverviewForSelection({groupWorkspaceKey}: {groupWorkspaceKey: 
                   label: '初始化状态',
                   children: data.commercialGroup?.initialized ? '已初始化' : '尚未初始化',
                 },
-                {key: 'groupName', label: '集团名称', children: data.commercialGroup?.root?.groupName ?? '—'},
+                {
+                  key: 'groupName',
+                  label: '集团名称',
+                  children: displayFieldValue(data.commercialGroup?.root?.groupName),
+                },
               ]}
             />
           )}

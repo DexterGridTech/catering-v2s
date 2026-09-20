@@ -3,6 +3,10 @@ import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
   adminDrawerSurfaceProps,
+  displayFieldValue,
+  formatCanonicalDateTime,
+  lifecycleColor,
+  lifecycleLabel,
   NameCodeText,
   testId,
   useOverlayLock,
@@ -123,15 +127,11 @@ export function WorkspaceDetailDrawer({
                 '未配置'
               ),
             },
-            {key: 'notes', label: '备注', children: workspace.notes ?? '—'},
+            {key: 'notes', label: '备注', children: displayFieldValue(workspace.notes)},
             {
               key: 'status',
               label: '状态',
-              children: (
-                <Tag color={workspace.status === 'ENABLED' ? 'success' : 'default'}>
-                  {workspace.status === 'ENABLED' ? '已启用' : '已停用'}
-                </Tag>
-              ),
+              children: <Tag color={lifecycleColor(workspace.status)}>{lifecycleLabel(workspace.status)}</Tag>,
             },
             {
               key: 'group',
@@ -145,8 +145,8 @@ export function WorkspaceDetailDrawer({
                 '尚未初始化'
               ),
             },
-            {key: 'created', label: '创建时间', children: new Date(workspace.createdAt).toLocaleString('zh-CN')},
-            {key: 'updated', label: '更新时间', children: new Date(workspace.updatedAt).toLocaleString('zh-CN')},
+            {key: 'created', label: '创建时间', children: formatCanonicalDateTime(workspace.createdAt)},
+            {key: 'updated', label: '更新时间', children: formatCanonicalDateTime(workspace.updatedAt)},
           ]}
         />
       )}

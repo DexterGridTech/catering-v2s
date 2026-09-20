@@ -132,7 +132,7 @@ describe('catalog unit void control', () => {
   it('does not send an already referenced unit into a predictable void rejection', () => {
     expect(catalogUnitVoidControlState({canWrite: true, isReferenced: true, isTransitioning: false})).toEqual({
       disabled: true,
-      reason: '该计量单位正在使用，不能删除；可以停用。',
+      reason: '该计量单位正在使用，不能作废；可以停用。',
     });
   });
 

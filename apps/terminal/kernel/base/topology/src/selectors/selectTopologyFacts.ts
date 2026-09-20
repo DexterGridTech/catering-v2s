@@ -2,7 +2,7 @@ import type {StateRoot} from '@catering-v2s/kernel-base-state'
 import {selectDisplayRole} from '@catering-v2s/kernel-base-display-context'
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime'
 import {hasTopologySecondarySurface} from '../foundations/evaluateTopologyOperation'
-import {selectTopologyState} from './selectTopologyState'
+import {moduleName} from '../moduleName'
 import type {TopologyFacts} from '@catering-v2s/kernel-base-contracts'
 
 export const areTopologyFactsEqual = (
@@ -23,33 +23,37 @@ export const areTopologyFactsEqual = (
     && Object.is(previous.hostDesired, next.hostDesired)
     && Object.is(previous.hostActual, next.hostActual)
     && Object.is(previous.hostErrorCode, next.hostErrorCode)
+    && Object.is(previous.payloadFailure, next.payloadFailure)
 }
 
-export const selectTopologyFacts = (state: StateRoot): TopologyFacts => {
-  const topology = selectTopologyState(state)
+export const selectTopologyFacts = (state: StateRoot): TopologyFacts | undefined => {
+  const topology = state[`${moduleName}.state`] as unknown
+  if (topology === undefined || topology === null) return undefined
+  const typedTopology = topology as import('../types/state').TopologyState
   const instanceMode = selectRuntimeInstanceMode(state)
   const displayRole = selectDisplayRole(state)
   // A slave owns the persisted locator; a master learns its pairing from the
   // accepted peer identity.  Reachability is intentionally independent and is
   // not part of the paired fact.
-  const paired = topology.masterLocator !== null
-    || (instanceMode === 'MASTER' && topology.peerIdentity !== null)
+  const paired = typedTopology.masterLocator !== null
+    || (instanceMode === 'MASTER' && typedTopology.peerIdentity !== null)
   return Object.freeze({
-    surfaceForm: topology.surfaceForm,
-    displayCount: topology.displayCount,
+    surfaceForm: typedTopology.surfaceForm,
+    displayCount: typedTopology.displayCount,
     instanceMode,
     displayRole,
     paired,
-    peerReachable: topology.peerReachable,
+    peerReachable: typedTopology.peerReachable,
     hasTopologySecondarySurface: hasTopologySecondarySurface({
-      displayCount: topology.displayCount,
+      displayCount: typedTopology.displayCount,
       instanceMode,
       paired,
     }),
-    masterLocator: topology.masterLocator,
-    peerIdentity: topology.peerIdentity,
-    hostDesired: topology.hostDesired,
-    hostActual: topology.hostActual,
-    hostErrorCode: topology.hostErrorCode,
+    masterLocator: typedTopology.masterLocator,
+    peerIdentity: typedTopology.peerIdentity,
+    hostDesired: typedTopology.hostDesired,
+    hostActual: typedTopology.hostActual,
+    hostErrorCode: typedTopology.hostErrorCode,
+    payloadFailure: typedTopology.payloadFailure,
   })
 }

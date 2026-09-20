@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {FormalSeedFailure, assertStoreOperatingRuleReadback, createDataNodeScopeSelector, createProjectScopeSelector, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateCatalogInventorySeedPrerequisite, validateExtensionDefinitionRevisionChangeCoverage, validateExtensionDefinitionSeedCoverage, validateFormalSeedStaticInputs, validateStoreOperatingRuleSeedCoverage, validateThreeStateSeedCoverage, invocationKeyForTest} from './owner-command-seed-executor.mjs';
+import {FormalSeedFailure, assertStoreOperatingRuleReadback, createDataNodeScopeSelector, createProjectScopeSelector, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateCatalogInventorySeedPrerequisite, validateExtensionDefinitionRevisionChangeCoverage, validateExtensionDefinitionSeedCoverage, validateFormalSeedStaticInputs, validateStoreOperatingRuleSeedCoverage, validateStoreServicePointSeedCoverage, validateThreeStateSeedCoverage, invocationKeyForTest} from './owner-command-seed-executor.mjs';
 import {loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById} from '../test/seed-report.mjs';
 
 const generatedRegistry = loadGeneratedOperationRegistry(new URL('../../apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json', import.meta.url));
@@ -190,12 +190,13 @@ test('formal seed maps only a role to a node of the same owner type and preserve
   assert.throws(() => resolveInvitationCreationPlan({...fixture, executionPlan: {invitationPlans: fixture.executionPlan.invitationPlans.map((entry) => entry.invitationKey === 'reissued' ? {...entry, nodeKey: 'missing'} : entry)}}), code('SEED_INVITATION_PLAN_REFERENCE_INVALID'));
 });
 
-test('only generated owner operations may satisfy the executor input', () => {
+test('only generated owner operations may satisfy the executor input', async () => {
   const ids = ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'transitionWorkspaceRoleStatus', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract'];
   const registry = [...ids, 'getOperationsStoreServicePointAreas', 'postOperationsStoreServicePointArea', 'postOperationsStoreServicePoint', 'postOperationsStoreServicePointStatus', 'postOperationsStoreServicePointAreaStatus', 'getOperationsStoreServicePoint', 'stageStoreServicePointImage', 'getOperationsStoreQrConfiguration'].map((operationId) => ({operationId}));
-  assert.equal(validateFormalSeedStaticInputs({fixture, registry}).invitationPlan.length, 5);
-  assert.throws(() => validateFormalSeedStaticInputs({fixture, registry: registry.slice(1)}), code('SEED_OPERATION_REGISTRY_MISSING:platformPasswordLogin'));
-  assert.throws(() => validateFormalSeedStaticInputs({fixture, registry: registry.filter((entry) => entry.operationId !== 'selectOperationsWorkspaceSessionDataNode')}), code('SEED_OPERATION_REGISTRY_MISSING:selectOperationsWorkspaceSessionDataNode'));
+  const actual = JSON.parse(await import('node:fs/promises').then((fs) => fs.readFile(new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url), 'utf8')));
+  assert.equal(validateFormalSeedStaticInputs({fixture: actual, registry}).invitationPlan.length, 20);
+  assert.throws(() => validateFormalSeedStaticInputs({fixture: actual, registry: registry.slice(1)}), code('SEED_OPERATION_REGISTRY_MISSING:platformPasswordLogin'));
+  assert.throws(() => validateFormalSeedStaticInputs({fixture: actual, registry: registry.filter((entry) => entry.operationId !== 'selectOperationsWorkspaceSessionDataNode')}), code('SEED_OPERATION_REGISTRY_MISSING:selectOperationsWorkspaceSessionDataNode'));
 });
 
 test('formal seed selects PROJECT scope only on project transitions and rolls owner context versions', async () => {
@@ -345,6 +346,21 @@ test('formal seed fixture covers all extension types, flag combinations, disable
   assert.equal(coverage.typeCount, 5);
   assert.equal(coverage.flagCount, 4);
   assert.ok(coverage.disabledFieldCount >= 1);
+});
+
+test('formal seed keeps table-only attributes optional in the fixture and validator', async () => {
+  const fixturePath = new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url);
+  const actual = JSON.parse(await import('node:fs/promises').then((fs) => fs.readFile(fixturePath, 'utf8')));
+  const legacy = actual.stableFixtures.organization.storeServicePoints.points.find((entry) => entry.key === 'point-table-legacy');
+  assert.equal(legacy.pointType, 'TABLE');
+  assert.equal(Object.hasOwn(legacy, 'seatCapacity'), false);
+  assert.equal(Object.hasOwn(legacy, 'tableShape'), false);
+  assert.equal(Object.hasOwn(legacy, 'reservable'), false);
+  assert.equal(Object.hasOwn(legacy, 'image'), false);
+  assert.equal(validateStoreServicePointSeedCoverage(actual).pointCount, 5);
+  const malformed = structuredClone(actual);
+  malformed.stableFixtures.organization.storeServicePoints.points[0].seatCapacity = 'four';
+  assert.throws(() => validateStoreServicePointSeedCoverage(malformed), code('SEED_STORE_TABLE_POINT_ATTRIBUTES_INVALID'));
 });
 
 test('formal seed changes and reads back one definition revision after owner values exist', async () => {

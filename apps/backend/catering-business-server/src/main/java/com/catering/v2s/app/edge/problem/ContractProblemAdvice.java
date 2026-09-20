@@ -23,6 +23,7 @@ import com.catering.v2s.organization.application.OrganizationTaskPathService;
 import com.catering.v2s.organization.api.StoreOperatingRuleGate;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
 import com.catering.v2s.platform.asset.application.PlatformAssetService.AssetIdempotencyConflictException;
+import com.catering.v2s.platform.foundation.contract.OwnerProblem;
 import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
 import com.catering.v2s.platform.iam.application.PlatformCommandReceiptService;
 import com.catering.v2s.platform.iam.application.PlatformCommandReceiptService.PlatformIdempotencyConflictException;
@@ -86,16 +87,9 @@ public final class ContractProblemAdvice {
         ProductionTagOwnerApi.Problem.class
     })
     ResponseEntity<Problem> catalogInventory(RuntimeException exception, HttpServletRequest request) {
-        String code = exception instanceof CatalogOwnerApi.Problem catalog
-                ? catalog.code()
-                : exception instanceof InventoryOwnerApi.Problem inventory
-                        ? inventory.code()
-                        : ((ProductionTagOwnerApi.Problem) exception).code();
-        int status = exception instanceof CatalogOwnerApi.Problem catalog
-                ? catalog.status()
-                : exception instanceof InventoryOwnerApi.Problem inventory
-                        ? inventory.status()
-                        : ((ProductionTagOwnerApi.Problem) exception).status();
+        OwnerProblem ownerProblem = (OwnerProblem) exception;
+        String code = ownerProblem.code();
+        int status = ownerProblem.status();
         log.atWarn()
                 .addKeyValue("event", "CATALOG_OWNER_PROBLEM")
                 .addKeyValue("code", code)
@@ -119,7 +113,7 @@ public final class ContractProblemAdvice {
                                 ? "none"
                                 : exception.getCause().getClass().getSimpleName());
         String detail = catalogInventoryDetail(code, exception);
-        JsonNode details = exception instanceof InventoryOwnerApi.Problem inventory ? inventory.details() : null;
+        JsonNode details = ownerProblem.details();
         return problem(HttpStatus.valueOf(status), code, detail, request, details);
     }
 

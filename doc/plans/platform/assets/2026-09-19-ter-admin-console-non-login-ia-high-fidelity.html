@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TER Admin console 非登录区高保真 IA</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --page: #080c12;
+      --page-panel: #101721;
+      --page-border: #243244;
+      --page-text: #ecf3ff;
+      --page-muted: #94a8c2;
+      --page-focus: #3b82f6;
+      --success: #5d9a7d;
+      --ok: #5d9a7d;
+      --success-bg: #e7f1eb;
+      --warning: #b39a64;
+      --warning-bg: #f4efe4;
+      --danger: #c68b94;
+      --danger-bg: #f5e7e9;
+      --info: #7896b8;
+      --info-bg: #e8eef5;
+      --radius-shell: 20px;
+      --radius-card: 16px;
+      --radius-control: 12px;
+      --shadow-login: 0 18px 36px rgba(3, 9, 18, .24), 0 3px 8px rgba(3, 9, 18, .12);
+      --shadow-card: 0 8px 18px rgba(3, 9, 18, .14), 0 1px 3px rgba(3, 9, 18, .12);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--page-text); background: radial-gradient(circle at 15% 0%, #18263a 0, var(--page) 34rem), var(--page); }
+    button, select, input { font: inherit; }
+    button { cursor: default; }
+    .page { max-width: 1600px; margin: 0 auto; padding: 30px 34px 70px; }
+    .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 22px; margin-bottom: 22px; }
+    h1 { margin: 0; font-size: 29px; line-height: 1.2; letter-spacing: -.025em; }
+    .page-head p { margin: 9px 0 0; max-width: 860px; color: var(--page-muted); font-size: 14px; line-height: 1.55; }
+    .toolbar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    .theme-switch { display: inline-flex; overflow: hidden; border: 1px solid var(--page-border); border-radius: 12px; background: #111a26; }
+    .theme-switch button { border: 0; padding: 9px 13px; color: #a9bad0; background: transparent; font-size: 12px; font-weight: 700; }
+    .theme-switch button.active { color: white; background: #2e5fae; }
+    .status-pill { display: inline-flex; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid var(--page-border); border-radius: 12px; color: #c4d3e8; background: #111a26; font-size: 12px; }
+    .status-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #44d39a; box-shadow: 0 0 0 3px rgba(68,211,154,.13); }
+    .notice { margin-bottom: 22px; padding: 13px 15px; border: 1px solid #355174; border-radius: 14px; color: #cbd9eb; background: rgba(24, 43, 69, .68); font-size: 12px; line-height: 1.55; }
+    .notice strong { color: white; }
+    .bridge { margin-bottom: 34px; }
+    .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 0 0 12px; }
+    .section-head h2 { margin: 0; font-size: 18px; line-height: 1.3; }
+    .section-head p { margin: 0; color: var(--page-muted); font-size: 12px; }
+    .bridge-grid { display: grid; grid-template-columns: minmax(280px, 1fr) 34px minmax(280px, 1.1fr); align-items: center; gap: 16px; }
+    .bridge-arrow { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--page-border); border-radius: 50%; color: #a9c8ee; background: #111a26; font-size: 18px; }
+    .bridge-card { min-height: 184px; padding: 20px; border: 1px solid var(--page-border); border-radius: 20px; background: #0e151f; box-shadow: 0 14px 28px rgba(0,0,0,.18); }
+    .bridge-caption { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 16px; color: var(--page-muted); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .bridge-caption .token { color: #e0ecff; }
+    .login-mini { width: min(100%, 330px); margin: 0 auto; padding: 18px; border: 1px solid var(--login-border); border-radius: 20px; color: var(--login-fg); background: var(--login-surface); box-shadow: var(--shadow-login); }
+    .login-mini h3 { margin: 0 0 6px; font-size: 21px; line-height: 1.25; }
+    .login-mini p { margin: 0 0 14px; color: var(--login-muted); font-size: 11px; }
+    .pin-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-bottom: 13px; }
+    .pin { height: 28px; border: 1px solid var(--login-border); border-radius: 8px; background: rgba(255,255,255,.06); }
+    .pin.filled { color: var(--login-fg); background: var(--login-action); box-shadow: inset 0 0 0 1px var(--login-focus); }
+    .login-mini .main-action, .mini-shell .main-action { border: 0; border-radius: 10px; color: var(--action-fg); background: linear-gradient(100deg, var(--action-start), var(--action-end)); font-weight: 800; }
+    .login-mini .main-action { width: 100%; height: 31px; font-size: 11px; }
+    .mini-shell { display: grid; grid-template-columns: 94px 1fr; overflow: hidden; min-height: 143px; border: 1px solid var(--shell-border); border-radius: 20px; color: var(--content-fg); background: var(--content-bg); box-shadow: var(--shadow-login); }
+    .mini-shell header { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; height: 39px; padding: 0 13px; color: var(--shell-fg); background: var(--shell-surface); border-bottom: 1px solid var(--shell-border); }
+    .mini-shell header strong { font-size: 13px; }
+    .mini-shell header .mini-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+    .mini-shell header i { margin-left: auto; color: var(--shell-muted); font-style: normal; font-size: 13px; }
+    .mini-nav { padding: 9px 6px; background: var(--shell-surface); }
+    .mini-nav div { margin-bottom: 5px; padding: 6px 7px; border-radius: 8px; color: var(--shell-muted); font-size: 9px; }
+    .mini-nav div.active { color: var(--action-fg); background: var(--action); font-weight: 800; }
+    .mini-content { padding: 12px; background: var(--content-bg); }
+    .mini-content h4 { margin: 0 0 10px; color: var(--content-fg); font-size: 15px; }
+    .mini-row { display: flex; align-items: center; justify-content: space-between; min-height: 24px; margin-bottom: 5px; padding: 0 8px; border: 1px solid var(--content-border); border-radius: 8px; color: var(--content-muted); background: var(--content-elevated); font-size: 9px; }
+    .mini-row b { color: var(--content-fg); }
+    .token-callout { margin-top: 12px; color: var(--page-muted); font-size: 11px; line-height: 1.45; text-align: center; }
+    .token-callout b { color: #d6e8ff; }
+    .gallery-section { margin-top: 32px; }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(430px, 1fr)); gap: 20px; align-items: start; }
+    .frame-card { min-width: 0; padding: 12px; border: 1px solid var(--page-border); border-radius: 16px; background: rgba(13, 20, 30, .84); box-shadow: 0 9px 18px rgba(0,0,0,.16); }
+    .frame-card.mobile-card { max-width: 520px; }
+    .frame-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 2px 9px; }
+    .frame-meta code { color: #d7e7ff; font-size: 11px; font-weight: 800; }
+    .frame-meta span { color: #8297b1; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .frame-stage { position: relative; overflow: hidden; width: 100%; aspect-ratio: 16 / 10; border: 1px solid #263a52; border-radius: 13px; background: #dce4ee; }
+    .frame-stage.mobile { width: min(100%, 310px); margin: 0 auto; aspect-ratio: 390 / 844; border-radius: 21px; }
+    .shell { position: absolute; inset: 0; overflow: hidden; color: var(--content-fg); background: var(--content-bg); }
+    .shell-header { display: flex; align-items: center; gap: 10px; height: 11%; min-height: 42px; padding: 0 3.1%; color: var(--shell-fg); background: var(--shell-surface); border-bottom: 1px solid var(--shell-border); }
+    .shell-header .brand-mark { display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid var(--shell-border); border-radius: 8px; color: var(--action-fg); background: linear-gradient(135deg, var(--action-start), var(--action-end)); font-size: 12px; font-weight: 900; }
+    .shell-header .title { font-size: clamp(12px, 1.5vw, 20px); font-weight: 800; letter-spacing: -.02em; }
+    .shell-header .state { display: inline-flex; align-items: center; gap: 6px; margin-left: 7px; color: var(--shell-muted); font-size: clamp(8px, .95vw, 12px); }
+    .shell-header .state .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+    .shell-header .close { display: grid; place-items: center; width: 28px; height: 28px; margin-left: auto; border: 1px solid var(--shell-border); border-radius: 9px; color: var(--shell-muted); background: transparent; font-size: 15px; }
+    .shell-main.laptop-main { display: grid; grid-template-columns: 24% 1fr; height: 89%; }
+    .shell-main.mobile-main { height: 89%; padding: 10px 10px 0; overflow: hidden; }
+    .side-nav { overflow: hidden; padding: 12px 10px; color: var(--shell-muted); background: var(--shell-surface); border-right: 1px solid var(--shell-border); }
+    .side-nav .nav-label { margin: 0 8px 9px; color: var(--shell-muted); font-size: clamp(8px, .88vw, 11px); font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+    .nav-item { display: flex; align-items: center; gap: 8px; min-height: 35px; margin-bottom: 5px; padding: 0 9px; border: 1px solid transparent; border-radius: 10px; color: var(--shell-muted); font-size: clamp(8px, 1vw, 13px); font-weight: 700; }
+    .nav-item .nav-icon { display: grid; place-items: center; width: 16px; color: currentColor; font-size: 12px; }
+    .nav-item.active { color: var(--action-fg); background: linear-gradient(100deg, var(--action-start), var(--action-end)); box-shadow: 0 6px 12px color-mix(in srgb, var(--action) 25%, transparent); }
+    .mobile-selector { display: flex; align-items: center; justify-content: space-between; min-height: 42px; margin-bottom: 10px; padding: 0 12px; border: 1px solid var(--focus); border-radius: 12px; color: var(--content-fg); background: var(--content-elevated); box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 18%, transparent); font-size: 11px; font-weight: 800; }
+    .mobile-selector small { color: var(--content-muted); font-size: 13px; }
+    .content-area { min-width: 0; overflow: hidden; padding: clamp(12px, 2.4%, 25px); background: var(--content-bg); }
+    .mobile-main .content-area { padding: 0; }
+    .content-scroll { height: 100%; overflow: hidden; }
+    .page-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .page-title h2 { margin: 0; color: var(--content-fg); font-size: clamp(15px, 1.75vw, 23px); line-height: 1.25; letter-spacing: -.025em; }
+    .page-title p { margin: 4px 0 0; color: var(--content-muted); font-size: clamp(8px, .92vw, 12px); line-height: 1.45; }
+    .page-title .title-status { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; color: var(--content-muted); font-size: clamp(8px, .92vw, 12px); font-weight: 700; }
+    .title-status .dot, .status-line .dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--ok); }
+    .title-status .dot.warn, .status-line .dot.warn { background: var(--warning); }
+    .title-status .dot.bad, .status-line .dot.bad { background: var(--danger); }
+    .title-status .dot.info, .status-line .dot.info { background: var(--info); }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+    .admin-card { min-width: 0; padding: 13px; border: 1px solid var(--content-border); border-radius: 16px; color: var(--content-fg); background: var(--content-elevated); box-shadow: var(--shadow-card); }
+    .admin-card.inset { box-shadow: none; background: var(--content-inset); }
+    .admin-card.tight { padding: 10px; }
+    .admin-card h3 { margin: 0 0 6px; color: var(--content-fg); font-size: clamp(10px, 1.1vw, 15px); line-height: 1.35; }
+    .admin-card p { margin: 0; color: var(--content-muted); font-size: clamp(8px, .92vw, 12px); line-height: 1.45; }
+    .status-line { display: flex; align-items: center; gap: 6px; color: var(--content-muted); font-size: clamp(8px, .92vw, 12px); line-height: 1.4; }
+    .status-line strong { color: var(--content-fg); }
+    .big-number { margin-top: 6px; color: var(--content-fg); font-size: clamp(21px, 3vw, 35px); font-weight: 850; letter-spacing: -.04em; }
+    .action-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+    .action { min-height: 31px; padding: 0 11px; border: 1px solid var(--content-border); border-radius: 10px; color: var(--content-fg); background: var(--content-elevated); font-size: clamp(8px, .88vw, 11px); font-weight: 800; }
+    .action.primary { color: var(--action-fg); border-color: transparent; background: linear-gradient(100deg, var(--action-start), var(--action-end)); box-shadow: 0 6px 12px color-mix(in srgb, var(--action) 25%, transparent); }
+    .action.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 34%, var(--content-border)); background: var(--danger-bg); }
+    .action:disabled { color: var(--content-muted); background: var(--content-inset); opacity: .62; }
+    .empty-card, .loading-card, .error-card { display: grid; place-items: center; min-height: 180px; padding: 18px; border: 1px dashed var(--content-border); border-radius: 16px; text-align: center; }
+    .empty-card .empty-icon, .loading-card .spinner, .error-card .error-icon { display: grid; place-items: center; width: 34px; height: 34px; margin-bottom: 8px; border-radius: 12px; color: var(--action); background: var(--content-inset); font-size: 17px; font-weight: 900; }
+    .loading-card .spinner { border: 3px solid var(--content-border); border-top-color: var(--action); border-radius: 50%; }
+    .error-card .error-icon { color: var(--danger); background: var(--danger-bg); }
+    .empty-card h3, .loading-card h3, .error-card h3 { margin: 0 0 5px; font-size: 14px; }
+    .empty-card p, .loading-card p, .error-card p { max-width: 370px; margin: 0; color: var(--content-muted); font-size: 11px; line-height: 1.5; }
+    .summary-strip { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-bottom: 10px; }
+    .summary-cell { padding: 10px; border: 1px solid var(--content-border); border-radius: 13px; background: var(--content-elevated); }
+    .summary-cell strong { display: block; margin-bottom: 2px; font-size: clamp(17px, 2.3vw, 28px); line-height: 1; }
+    .summary-cell span { color: var(--content-muted); font-size: clamp(8px, .82vw, 11px); }
+    .summary-cell.ok strong { color: var(--ok); }
+    .summary-cell.bad strong { color: var(--danger); }
+    .summary-cell.neutral strong { color: var(--content-muted); }
+    .ratio-bar { display: flex; overflow: hidden; height: 12px; margin: 9px 0 6px; border: 1px solid var(--content-border); border-radius: 7px; background: var(--content-inset); }
+    .ratio-bar span { height: 100%; }
+    .ratio-bar .available { width: 58%; background: var(--ok); }
+    .ratio-bar .unavailable { width: 25%; background: var(--danger); }
+    .ratio-bar .undeclared { width: 17%; background: #aeb9c5; }
+    .ratio-legend { display: flex; justify-content: space-between; color: var(--content-muted); font-size: 8px; }
+    .category-list { display: grid; gap: 7px; }
+    .category-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto 16px; align-items: center; gap: 8px; min-height: 37px; padding: 0 10px; border: 1px solid var(--content-border); border-radius: 11px; background: var(--content-elevated); }
+    .category-row strong { overflow: hidden; color: var(--content-fg); font-size: clamp(9px, .92vw, 12px); text-overflow: ellipsis; white-space: nowrap; }
+    .category-row .count { color: var(--content-muted); font-size: 9px; }
+    .category-row .state { color: var(--ok); font-size: 9px; font-weight: 800; }
+    .category-row .state.warn { color: var(--warning); }
+    .category-row .state.bad { color: var(--danger); }
+    .chevron { color: var(--content-muted); font-size: 14px; }
+    .port-list { display: grid; gap: 5px; margin-top: 6px; padding: 7px; border: 1px solid var(--content-border); border-radius: 12px; background: var(--content-inset); }
+    .port-item { display: grid; grid-template-columns: 12px minmax(0,1fr) auto minmax(0,auto); gap: 7px; align-items: center; min-height: 25px; color: var(--content-muted); font-size: 9px; }
+    .port-item .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+    .port-item .dot.bad { background: var(--danger); }
+    .port-item .reason { color: var(--danger); font-size: 8px; }
+    .surface-row { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 13px; }
+    .mobile-shell .surface-row { grid-template-columns: 1fr; justify-items: center; }
+    .surface-card { min-width: 0; padding: 11px; border: 1px solid var(--content-border); border-radius: 16px; background: var(--content-elevated); }
+    .mobile-shell .surface-card { width: 100%; max-width: 320px; justify-self: center; }
+    .surface-card.current { border-color: var(--focus); box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 20%, transparent), var(--shadow-card); }
+    .surface-head { display: flex; justify-content: space-between; align-items: baseline; gap: 5px; margin-bottom: 10px; }
+    .surface-head strong { color: var(--content-fg); font-size: clamp(10px, 1.1vw, 14px); }
+    .surface-head span { color: var(--focus); font-size: 8px; font-weight: 800; }
+    .surface-wrap { position: relative; padding: 15px 17px 15px; }
+    .surface-shape { position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: var(--ratio, 16 / 10); min-height: 70px; border: 2px solid var(--focus); border-radius: 10px; color: var(--content-fg); background: linear-gradient(140deg, color-mix(in srgb, var(--focus) 9%, var(--content-elevated)), var(--content-inset)); }
+    .surface-shape .logic-width { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); color: var(--content-muted); font-size: 8px; white-space: nowrap; }
+    .surface-shape .logic-height { position: absolute; right: -17px; top: 50%; transform: translateY(-50%) rotate(90deg); color: var(--content-muted); font-size: 8px; white-space: nowrap; }
+    .surface-shape .inside { display: grid; gap: 3px; place-items: center; text-align: center; }
+    .surface-shape .inside strong { font-size: clamp(9px, 1vw, 12px); }
+    .surface-shape .inside span { color: var(--content-muted); font-size: 8px; }
+    .physical-width { position: absolute; top: 0; left: 50%; transform: translateX(-50%); color: var(--content-muted); font-size: 7px; white-space: nowrap; }
+    .physical-height { position: absolute; right: -3px; bottom: -2px; transform: rotate(90deg); color: var(--content-muted); font-size: 7px; white-space: nowrap; }
+    .surface-caption { display: flex; justify-content: space-between; gap: 5px; margin-top: 8px; color: var(--content-muted); font-size: 8px; }
+    .surface-caption b { color: var(--content-fg); }
+    .surface-card.secondary .surface-shape { border-color: var(--content-border); background: var(--content-inset); }
+    .surface-card.secondary .surface-shape .inside strong { color: var(--content-muted); font-size: 10px; }
+    .surface-card.secondary .surface-shape .inside span { font-size: 8px; }
+    .surface-card.secondary .surface-wrap { padding-top: 15px; }
+    .surface-card.secondary .surface-shape { aspect-ratio: 1.66; }
+    .surface-limited-info { display: grid; place-items: center; min-height: 74px; margin: 10px 0 8px; border: 1px solid var(--content-border); border-radius: 10px; color: var(--content-muted); background: var(--content-inset); text-align: center; }
+    .surface-limited-info strong { font-size: 10px; }
+    .surface-limited-info span { margin-top: 3px; font-size: 8px; }
+    .runtime-hint { margin: 9px 0 0; color: var(--content-muted); font-size: 8px; line-height: 1.45; }
+    .surface-legend { display: flex; flex-wrap: wrap; gap: 7px 12px; margin-top: 10px; color: var(--content-muted); font-size: 8px; }
+    .surface-legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .surface-legend i { width: 7px; height: 7px; border-radius: 50%; background: var(--focus); }
+    .surface-legend i.muted { background: var(--content-border); }
+    .topology-gate { display: grid; place-items: center; min-height: 230px; padding: 18px; text-align: center; }
+    .topology-gate > div { display: grid; justify-items: center; width: 100%; margin-inline: auto; text-align: center; }
+    .topology-gate .gate-icon { display: grid; place-items: center; width: 47px; height: 47px; margin-bottom: 11px; border: 1px solid color-mix(in srgb, var(--warning) 35%, var(--content-border)); border-radius: 16px; color: var(--warning); background: var(--warning-bg); font-size: 21px; }
+    .topology-gate h3 { margin: 0 0 6px; font-size: clamp(13px, 1.45vw, 19px); }
+    .topology-gate p { max-width: 360px; margin: 0; color: var(--content-muted); font-size: clamp(9px, .95vw, 12px); line-height: 1.5; }
+    .role-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    .role-card { padding: 12px; border: 1px solid var(--content-border); border-radius: 16px; background: var(--content-elevated); }
+    .role-card .role-icon { display: grid; place-items: center; width: 29px; height: 29px; margin-bottom: 8px; border-radius: 10px; color: var(--action); background: var(--content-inset); font-size: 13px; font-weight: 900; }
+    .role-card h3 { margin: 0 0 4px; font-size: clamp(10px, 1.1vw, 14px); }
+    .role-card p { min-height: 31px; margin: 0; color: var(--content-muted); font-size: 9px; line-height: 1.45; }
+    .field { display: grid; gap: 4px; margin-top: 9px; }
+    .field label { color: var(--content-muted); font-size: 8px; font-weight: 800; }
+    .field input { width: 100%; height: 31px; padding: 0 9px; border: 1px solid var(--content-border); border-radius: 9px; outline: 0; color: var(--content-fg); background: var(--content-inset); font-size: 10px; }
+    .topology-state { display: grid; gap: 10px; }
+    .topology-state .state-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border: 1px solid var(--content-border); border-radius: 15px; background: var(--content-elevated); }
+    .identity { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .identity .avatar { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 10px; color: var(--action-fg); background: linear-gradient(135deg, var(--action-start), var(--action-end)); font-size: 12px; font-weight: 900; }
+    .identity strong { display: block; color: var(--content-fg); font-size: clamp(10px, 1vw, 13px); }
+    .identity small { display: block; margin-top: 2px; color: var(--content-muted); font-size: 8px; }
+    .state-badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 7px; border-radius: 999px; color: var(--ok); background: var(--success-bg); font-size: 8px; font-weight: 800; white-space: nowrap; }
+    .state-badge.warn { color: var(--warning); background: var(--warning-bg); }
+    .state-badge.progress { color: var(--info); background: var(--info-bg); }
+    .state-badge.bad { color: var(--danger); background: var(--danger-bg); }
+    .state-badge i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .fact-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 7px; }
+    .fact { min-width: 0; padding: 8px; border: 1px solid var(--content-border); border-radius: 11px; background: var(--content-inset); }
+    .fact span { display: block; overflow: hidden; color: var(--content-muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+    .fact strong { display: block; overflow: hidden; margin-top: 3px; color: var(--content-fg); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .operation { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 10px 11px; border: 1px solid var(--content-border); border-radius: 13px; background: var(--content-elevated); }
+    .operation p { margin: 0; color: var(--content-muted); font-size: 9px; line-height: 1.4; }
+    .operation p strong { color: var(--content-fg); }
+    .feedback { padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--content-border)); border-radius: 10px; color: var(--danger); background: var(--danger-bg); font-size: 9px; line-height: 1.45; }
+    .cross .content-area { padding-top: 18px; }
+    .cross-note { margin-top: 9px; padding: 8px 10px; border-left: 3px solid var(--warning); color: var(--content-muted); background: var(--warning-bg); font-size: 8px; line-height: 1.45; }
+    .frame-footer { margin-top: 9px; color: #7890ad; font-size: 10px; line-height: 1.4; }
+    .frame-footer b { color: #bed4ef; }
+    .legend-card { margin-top: 26px; padding: 16px 18px; border: 1px solid var(--page-border); border-radius: 16px; background: rgba(13,20,30,.82); }
+    .legend-card h2 { margin: 0 0 12px; font-size: 15px; }
+    .legend-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 7px; color: var(--page-muted); font-size: 11px; }
+    .legend-item i { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); }
+    .legend-item i.warn { background: var(--warning); }
+    .legend-item i.bad { background: var(--danger); }
+    .legend-item i.info { background: var(--info); }
+    @media (max-width: 820px) {
+      .page { padding: 22px 15px 50px; }
+      .page-head { display: block; }
+      .toolbar { justify-content: flex-start; margin-top: 15px; }
+      .bridge-grid { grid-template-columns: 1fr; }
+      .bridge-arrow { margin: auto; transform: rotate(90deg); }
+      .gallery { grid-template-columns: 1fr; }
+      .frame-card { width: 100%; }
+      .legend-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+    @media (max-width: 520px) {
+      .grid-2, .grid-3, .surface-row, .role-grid { grid-template-columns: 1fr; }
+      .summary-strip { gap: 5px; }
+      .summary-cell { padding: 8px; }
+    }
+  </style>
+</head>
+<body data-theme="sample-console">
+  <div class="page">
+    <header class="page-head">
+      <div>
+        <h1>TER Admin console · 非登录区高保真 IA</h1>
+        <p>同一套登录语言进入 Admin panel：圆角、描边、elevated 阴影、标题层级、主操作渐变和语义状态灯保持连续；只由 integration theme 注入品牌颜色。</p>
+      </div>
+      <div class="toolbar">
+        <div class="theme-switch" role="group" aria-label="integration theme">
+          <button type="button" data-theme-button="sample-console" class="active">sample-console</button>
+          <button type="button" data-theme-button="sample-wallpaper-console">sample-wallpaper</button>
+        </div>
+        <div class="status-pill"><span class="dot"></span><span>PROPOSED · 仅 IA 确认</span></div>
+      </div>
+    </header>
+
+    <div class="notice"><strong>视觉连续性核对：</strong>下方先展示已确认的登录卡与已登录 shell 的 token 连接，再展示全部 29 个 production frame 与 1 个跨 tab 对照工件。主题切换只改变语义 token 值，不改变布局、控件层级和用户旅途；本稿不修改源码、不代表实现完成。</div>
+
+    <section class="bridge">
+      <div class="section-head"><h2>Style bridge · 登录前 → 登录后</h2><p>同一 `PrimitiveContainer elevated` 语法；同一 20/16 圆角、细描边、状态灯和 action family</p></div>
+      <div class="bridge-grid">
+        <div class="bridge-card">
+          <div class="bridge-caption"><span>PRE-LOGIN</span><span class="token">login tokens</span></div>
+          <div class="login-mini">
+            <h3>Admin 登录</h3>
+            <p>请输入动态口令 · 6 位 PIN</p>
+            <div class="pin-row"><span class="pin filled">•</span><span class="pin filled">•</span><span class="pin filled">•</span><span class="pin"></span><span class="pin"></span><span class="pin"></span></div>
+            <button class="main-action" type="button">登录</button>
+          </div>
+        </div>
+        <div class="bridge-arrow" aria-hidden="true">→</div>
+        <div class="bridge-card">
+          <div class="bridge-caption"><span>POST-LOGIN</span><span class="token">admin semantic aliases</span></div>
+          <div class="mini-shell">
+            <header><span class="brand-mark">T</span><strong>终端管理</strong><span class="mini-dot"></span><span class="state">正常</span><i>×</i></header>
+            <nav class="mini-nav"><div class="active">◉ 端口</div><div>▣ 运行状态</div><div>⌁ 双机拓扑</div></nav>
+            <div class="mini-content"><h4>平台端口</h4><div class="mini-row"><b>可用</b><span>7 / 12</span></div><div class="mini-row"><b>不可用</b><span>3 / 12</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="token-callout">当前 theme：<b data-theme-name>sample-console</b> · shell surface / action / focus 仍来自同一个 integration token 家族</div>
+    </section>
+
+    <main id="gallery"></main>
+
+    <section class="legend-card">
+      <h2>状态语义图例（颜色只是辅助，文字始终同时出现）</h2>
+      <div class="legend-grid">
+        <div class="legend-item"><i></i><span>正常 / 可用 / 可达</span></div>
+        <div class="legend-item"><i class="warn"></i><span>等待 / 重连 / 暂时不可用</span></div>
+        <div class="legend-item"><i class="bad"></i><span>失败 / 不可用 / 错误</span></div>
+        <div class="legend-item"><i class="info"></i><span>进行中 / 信息</span></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const themes = {
+      'sample-console': {
+        name: 'sample-console',
+        loginSurface: '#101d31', loginFg: '#f5f8ff', loginMuted: '#a0b4d0', loginBorder: '#587cb0', loginFocus: '#1e40af',
+        shellSurface: '#101d31', shellFg: '#f5f8ff', shellMuted: '#a0b4d0', shellBorder: '#587cb0',
+        action: '#2563eb', actionStart: '#2b80fb', actionEnd: '#50e4fd', actionFg: '#ffffff', focus: '#1e40af',
+        contentBg: '#ffffff', contentElevated: '#ffffff', contentInset: '#e2e8f0', contentFg: '#0f172a', contentMuted: '#475569', contentBorder: '#cbd5e1',
+      },
+      'sample-wallpaper-console': {
+        name: 'sample-wallpaper-console',
+        loginSurface: '#ffffff', loginFg: '#0f172a', loginMuted: '#475569', loginBorder: '#cbd5e1', loginFocus: '#e11d48',
+        shellSurface: '#ffffff', shellFg: '#0f172a', shellMuted: '#475569', shellBorder: '#cbd5e1',
+        action: '#9f1239', actionStart: '#e11d48', actionEnd: '#9f1239', actionFg: '#ffffff', focus: '#e11d48',
+        contentBg: '#ffffff', contentElevated: '#ffffff', contentInset: '#fff1f2', contentFg: '#0f172a', contentMuted: '#475569', contentBorder: '#cbd5e1',
+      }
+    };
+    const frameGroups = [
+      {
+        title: 'Panel 框体', note: '统一 panel 框体与状态分支；mobile 使用固定下拉 selector。',
+        frames: [
+          ['IA-01','PANEL-L-NORMAL','laptop','panel','normal'], ['IA-02','PANEL-M-NORMAL','mobile','panel','normal'],
+          ['IA-03','PANEL-L-EMPTY','laptop','panel','empty'], ['IA-04','PANEL-M-EMPTY','mobile','panel','empty'],
+          ['IA-05','PANEL-L-LOADING','laptop','panel','loading'], ['IA-06','PANEL-M-LOADING','mobile','panel','loading'],
+          ['IA-07','PANEL-L-ERROR','laptop','panel','error'], ['IA-08','PANEL-M-ERROR','mobile','panel','error'],
+        ]
+      },
+      {
+        title: '平台端口', note: '按端口可用性总览与能力分类呈现状态。',
+        frames: [
+          ['IA-09','PORTS-L-OVERVIEW','laptop','ports','overview'], ['IA-10','PORTS-M-OVERVIEW','mobile','ports','overview'],
+          ['IA-11','PORTS-L-CATEGORY-EXPANDED','laptop','ports','expanded'], ['IA-12','PORTS-M-CATEGORY-EXPANDED','mobile','ports','expanded'],
+        ]
+      },
+      {
+        title: '运行状态', note: '按真实 surface 比例呈现当前屏事实；非当前 surface 不补充缺失数据。',
+        frames: [
+          ['IA-13','RUNTIME-L-SINGLE-SURFACE','laptop','runtime','single'], ['IA-14','RUNTIME-M-SINGLE-SURFACE','mobile','runtime','single'],
+          ['IA-15','RUNTIME-L-DUAL-SURFACE','laptop','runtime','dual'],
+        ]
+      },
+      {
+        title: '双机拓扑', note: 'laptop 提供主机服务与直接配对旅途；mobile 固定为不可用。',
+        frames: [
+          ['IA-16','TOPOLOGY-L-UNAVAILABLE','laptop','topology','unavailable'], ['IA-17','TOPOLOGY-M-UNAVAILABLE','mobile','topology','unavailable'],
+          ['IA-18','TOPOLOGY-L-ROLE-CHOICE','laptop','topology','role-choice'], ['IA-19','TOPOLOGY-L-HOST-STARTING','laptop','topology','host-starting'],
+          ['IA-20','TOPOLOGY-L-HOST-READY','laptop','topology','host-ready'], ['IA-21','TOPOLOGY-L-HOST-ERROR','laptop','topology','host-error'],
+          ['IA-22','TOPOLOGY-L-PAIRING','laptop','topology','pairing'], ['IA-23','TOPOLOGY-L-PAIR-ERROR','laptop','topology','pair-error'],
+          ['IA-24','TOPOLOGY-L-MASTER-PAIRED-REACHABLE','laptop','topology','master-reachable'], ['IA-25','TOPOLOGY-L-MASTER-PAIRED-RECONNECTING','laptop','topology','master-reconnecting'],
+          ['IA-26','TOPOLOGY-L-UNPAIRING-MASTER','laptop','topology','master-unpairing'], ['IA-27','TOPOLOGY-L-SLAVE-PAIRED-REACHABLE','laptop','topology','slave-reachable'],
+          ['IA-28','TOPOLOGY-L-SLAVE-PAIRED-RECONNECTING','laptop','topology','slave-reconnecting'], ['IA-29','TOPOLOGY-L-UNPAIRING-SLAVE','laptop','topology','slave-unpairing'],
+        ]
+      },
+      {
+        title: '跨 tab 对照工件', note: '用于核对运行状态与拓扑不可用语义。',
+        frames: [['IA-32','CROSS-TAB-L-DUAL-PHYSICAL','laptop','cross','dual-physical']]
+      }
+    ];
+
+    const esc = (value) => String(value).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const navItems = [['◉','平台端口'],['▣','运行状态'],['⌁','双机拓扑']];
+    const statusMap = { normal:['正常','ok'], empty:['等待数据','warn'], loading:['加载中','info'], error:['需要处理','bad'] };
+    const statusBadge = (text, tone='ok') => `<span class="state-badge ${tone === 'ok' ? '' : tone}"><i></i>${esc(text)}</span>`;
+    const statusLine = (text, tone='ok') => `<div class="status-line"><span class="dot ${tone === 'ok' ? '' : tone}"></span><span>${text}</span></div>`;
+    const button = (text, tone='secondary') => `<button type="button" class="action ${tone}"${tone === 'disabled' ? ' disabled' : ''}>${esc(text)}</button>`;
+    const pageTitle = (title, subtitle='', stateText='', tone='ok') => `<div class="page-title"><div><h2>${esc(title)}</h2>${subtitle ? `<p>${esc(subtitle)}</p>` : ''}</div>${stateText ? `<div class="title-status"><span class="dot ${tone === 'ok' ? '' : tone}"></span>${esc(stateText)}</div>` : ''}</div>`;
+    const card = (title, body, extra='') => `<section class="admin-card ${extra}"><h3>${title}</h3>${body}</section>`;
+
+    function shellNavigation(active, mobile) {
+      if (mobile) return `<div class="mobile-selector"><span>当前页面：${esc(active)}</span><small>⌄</small></div>`;
+      return `<aside class="side-nav">${navItems.map(([icon,label]) => `<div class="nav-item ${label === active ? 'active' : ''}"><span class="nav-icon">${icon}</span><span>${label}</span></div>`).join('')}</aside>`;
+    }
+    function shell(frame, inner) {
+      const mobile = frame.form === 'mobile';
+      const active = frame.kind === 'ports' ? '平台端口' : frame.kind === 'runtime' ? '运行状态' : frame.kind === 'topology' ? '双机拓扑' : '平台端口';
+      return `<div class="shell ${mobile ? 'mobile-shell' : 'laptop-shell'}"><header class="shell-header"><span class="brand-mark">T</span><span class="title">终端管理</span><span class="state"><span class="dot"></span>状态：可操作</span><button class="close" type="button">×</button></header><div class="shell-main ${mobile ? 'mobile-main' : 'laptop-main'}">${mobile ? '' : shellNavigation(active, false)}<section class="content-area"><div class="content-scroll">${mobile ? shellNavigation(active, true) : ''}${inner}</div></section></div></div>`;
+    }
+    function panel(frame, variant) {
+      const [stateText, tone] = statusMap[variant];
+      let body;
+      if (variant === 'normal') body = `${pageTitle('面板状态')}<div class="admin-card"><div class="status-line"><span class="dot"></span><strong>终端状态：可操作</strong></div><div class="fact-grid" style="margin-top:10px"><div class="fact"><span>当前 tab</span><strong>平台端口</strong></div><div class="fact"><span>内容区</span><strong>可滚动</strong></div></div><p style="margin-top:10px;color:var(--content-muted);font-size:9px">关闭入口固定在右上角；selector 固定在内容顶部。</p></div>`;
+      if (variant === 'empty') body = `${pageTitle('面板状态')}<div class="empty-card"><div><div class="empty-icon">◌</div><div class="status-line" style="justify-content:center"><span class="dot warn"></span><strong>暂无内容</strong></div><p>当前没有可显示的终端信息</p></div></div>`;
+      if (variant === 'loading') body = `${pageTitle('面板状态')}<div class="loading-card"><div><div class="spinner"></div><div class="status-line" style="justify-content:center"><span class="dot info"></span><strong>正在读取终端状态…</strong></div><p>数据准备完成后显示摘要</p></div></div>`;
+      if (variant === 'error') body = `${pageTitle('面板状态')}<div class="error-card"><div><div class="error-icon">!</div><div class="status-line" style="justify-content:center"><span class="dot bad"></span><strong>终端状态读取失败</strong></div><p>无法读取当前状态</p>${button('重试','primary')}</div></div>`;
+      return body;
+    }
+    function ports(frame, variant) {
+      const overview = `<div class="admin-card tight"><div class="status-line"><span class="dot"></span><strong>能力状态总览</strong></div><div class="ratio-bar"><span class="available"></span><span class="unavailable"></span><span class="undeclared"></span></div><div class="summary-strip" style="margin-top:9px"><div class="summary-cell ok"><strong>7</strong><span>可用</span></div><div class="summary-cell bad"><strong>3</strong><span>不可用</span></div><div class="summary-cell neutral"><strong>2</strong><span>未声明</span></div></div></div>`;
+      const categories = [['日志与诊断','2 可用 · 1 不可用','bad'],['设备与系统','3 可用 · 1 未声明','warn'],['连接与拓扑','2 可用','ok'],['存储与状态','1 可用 · 1 不可用','bad'],['脚本与更新','1 可用','ok']];
+      const rows = `<div class="category-list" style="margin-top:10px">${categories.map(([name,value,tone]) => `<div class="category-row"><strong>${name}</strong><span class="count">${value}</span><span class="state ${tone === 'bad' ? 'bad' : tone === 'warn' ? 'warn' : ''}">${variant === 'expanded' && name.startsWith('日志') ? '收起⌃' : '展开⌄'}</span><span class="chevron">›</span></div>${variant === 'expanded' && name.startsWith('日志') ? `<div class="port-list"><div class="port-item"><i class="dot"></i><span>terminal.log</span><span>可用</span><span class="reason">来源：platform</span></div><div class="port-item"><i class="dot bad"></i><span>terminal.trace</span><span>不可用</span><span class="reason">原因：宿主未提供</span></div></div>` : ''}`).join('')}</div>`;
+      return pageTitle('平台端口') + overview + rows;
+    }
+    function surfaceCard(role, current, ratio, logic, physical, ready, limited=false) {
+      if (limited) return `<div class="surface-card secondary"><div class="surface-head"><strong>${role}</strong><span>非当前 surface</span></div><div class="surface-limited-info"><strong>该屏信息未提供</strong><span>仅保留存在性与角色</span></div></div>`;
+      return `<div class="surface-card ${current ? 'current' : ''}"><div class="surface-head"><strong>${role}</strong><span>${current ? '当前 surface' : '非当前 surface'}</span></div><div class="surface-wrap"><span class="physical-width">物理长：${physical.split('×')[0]}</span><div class="surface-shape" style="--ratio:${ratio}"><span class="logic-width">逻辑长：${logic.split('×')[0]}</span><span class="logic-height">逻辑高：${logic.split('×')[1]}</span><div class="inside"><strong>${ready}</strong><span>可用状态：正常<br />比例：${ratio.replace(' / ', ':')}</span></div></div><span class="physical-height">物理高：${physical.split('×')[1]}</span></div><div class="surface-caption"><span><b>角色</b> ${role}</span><span><b>状态</b> ${ready}</span></div></div>`;
+    }
+    function runtime(frame, variant) {
+      const isMobile = frame.form === 'mobile';
+      const runtimeHint = '逻辑尺寸标在框内，物理尺寸标在框外；矩形比例跟随各自 surface 的逻辑宽高。物理值为线框示意，缺失时数字位置显示“未知”，详设须绑定 display-facts owner。';
+      const body = variant === 'dual' ? `<div class="fact-grid" style="margin-bottom:10px"><div class="fact"><span>运行阶段</span><strong>已就绪</strong></div><div class="fact"><span>物理屏数量</span><strong>2</strong></div></div><div class="surface-row">${surfaceCard('主屏', true, '16 / 10', '1280 × 800', '1920 × 1200', '已就绪')}${surfaceCard('副屏', false, '16 / 9', '', '', '', true)}</div><p class="runtime-hint">${runtimeHint}</p>` : `<div class="fact-grid" style="margin-bottom:10px"><div class="fact"><span>运行阶段</span><strong>已就绪</strong></div><div class="fact"><span>物理屏数量</span><strong>1</strong></div></div><div class="surface-row">${surfaceCard('主屏', true, isMobile ? '390 / 844' : '16 / 10', isMobile ? '390 × 844' : '1280 × 800', isMobile ? '未知 × 未知' : '1920 × 1200', '已就绪')}</div><p class="runtime-hint">${runtimeHint}</p>`;
+      const stateText = variant === 'dual' ? '运行正常 · 检测到两块物理屏' : '运行正常 · 检测到一块物理屏';
+      return pageTitle('运行状态') + statusLine(stateText, 'ok') + body;
+    }
+    function topologyAligned(frame, variant) {
+      if (variant === 'unavailable') {
+        const reason = frame.form === 'mobile' ? 'mobile 形态不支持双机拓扑' : '双机拓扑要求本机只有一个物理屏';
+        return `<div class='topology-gate admin-card'><div><div class='gate-icon'>⊘</div><h3>当前功能不可用</h3><p>${reason}</p></div></div>`;
+      }
+      if (variant === 'role-choice') return `<div class='topology-state'><div class='admin-card'><div class='status-line'><span class='dot warn'></span><strong>尚未配对 · 请选择当前机器的用途</strong></div><div class='role-grid' style='margin-top:11px'><div class='role-card'><div class='role-icon'>⌂</div><h3>作为主机</h3><p>开启主机服务，等待副机输入地址后配对。</p>${button('开启主机服务','primary')}</div><div class='role-card'><div class='role-icon'>⇄</div><h3>作为副机</h3><p>输入主机 IP，提交后直接发起配对。无需先查询身份。</p><div class='field'><label>主机 IP 地址</label><input value='192.168.1.20' readonly /></div>${button('直接配对','primary')}</div></div></div></div>`;
+      if (variant === 'host-starting') return `<div class='topology-state'><div class='admin-card'><div class='status-line'><span class='dot info'></span><strong>正在开启主机服务…</strong></div><p style='margin-top:8px'>当前机器将作为主机，服务准备完成后等待副机配对。</p><div class='action-row'>${button('开启中…','disabled')}</div></div></div>`;
+      if (variant === 'host-ready') return `<div class='topology-state'><div class='admin-card'><div class='status-line'><span class='dot'></span><strong>主机服务已开启 · 等待副机配对</strong></div><div class='fact-grid' style='margin-top:10px'><div class='fact'><span>当前角色</span><strong>主机</strong></div><div class='fact'><span>服务状态</span><strong>运行中</strong></div><div class='fact'><span>本机 IP 地址</span><strong>192.168.1.10</strong></div></div><div class='admin-card inset' style='margin-top:9px'>请在副机上输入这台主机的 IP 地址并直接配对。</div><div class='action-row'>${button('关闭主机服务','primary')}</div><p style='margin-top:8px;color:var(--content-muted);font-size:9px'>关闭服务后回到未配对目标选择。</p></div></div>`;
+      if (variant === 'host-error') return `<div class='topology-state'><div class='admin-card'><div class='status-line'><span class='dot bad'></span><strong>主机服务未能开启</strong></div><div class='feedback' style='margin-top:9px'>原因：主机服务暂时不可用<br />下一步：检查平台端口后重试。</div><div class='action-row'>${button('重试开启主机服务','primary')} ${button('返回目标选择')}</div></div></div>`;
+      if (variant === 'pairing') return `<div class='topology-state'><div class='admin-card'><div class='status-line'><span class='dot info'></span><strong>正在与主机配对…</strong></div><div class='fact-grid' style='margin-top:10px'><div class='fact'><span>主机 IP</span><strong>192.168.1.20</strong></div><div class='fact'><span>当前目标</span><strong>作为副机</strong></div></div><p style='margin-top:9px;color:var(--content-muted);font-size:9px'>正在建立连接并确认配对结果，请勿重复提交。</p></div></div>`;
+      if (variant === 'pair-error') return `<div class='topology-state'><div class='admin-card'><div class='status-line'><span class='dot bad'></span><strong>配对未完成</strong></div><div class='field'><label>主机 IP 地址</label><input value='192.168.1.20' readonly /></div><div class='feedback' style='margin-top:9px'>原因：无法连接到该主机或地址不可用<br />请修改地址后直接重试。</div><div class='action-row'>${button('直接重试配对','primary')} ${button('返回目标选择')}</div></div></div>`;
+      const isMaster = variant.includes('master');
+      const role = isMaster ? '主机' : '副机';
+      const reconnecting = variant.includes('reconnecting');
+      const unpairing = variant.includes('unpairing');
+      const state = unpairing ? '正在解除配对' : reconnecting ? '已配对 · 正在重连' : '已配对 · 对端可达';
+      const tone = unpairing || reconnecting ? 'warn' : 'ok';
+      const info = `<div class='fact-grid' style='margin-top:10px'><div class='fact'><span>配对状态</span><strong>${unpairing ? '处理中' : '已配对'}</strong></div><div class='fact'><span>对端连接</span><strong>${reconnecting ? '重连中' : '可达'}</strong></div><div class='fact'><span>当前角色</span><strong>${role}</strong></div><div class='fact'><span>对端</span><strong>已配对设备</strong></div></div>`;
+      const result = unpairing ? '正在解除配对，完成后将回到可选择目标的状态。' : isMaster ? '当前机器负责主机服务；副机内容由配对链路同步。' : '当前机器作为副机；可主动解除配对，解除后恢复为主机候选。';
+      return `<div class='topology-state'><div class='admin-card'><div class='status-line'><span class='dot ${tone}'></span><strong>${role} · ${state}</strong></div>${info}<div class='admin-card inset' style='margin-top:9px'>${result}</div>${unpairing ? '' : `<div class='action-row'>${button('解除配对','primary')}</div>`}</div></div>`;
+    }
+    function cross(frame) {
+      return `<div class="grid-2"><div class="admin-card"><h3>运行状态</h3>${statusLine('检测到两块物理屏','ok')}<div class="surface-row" style="margin-top:8px">${surfaceCard('主屏',true,'16 / 10','1280 × 800','1920 × 1200','已就绪')}${surfaceCard('副屏',false,'16 / 9','1280 × 720','1920 × 1080','已就绪')}</div></div><div class="admin-card"><h3>双机拓扑</h3><div class="topology-gate" style="min-height:145px;padding:9px"><div><div class="gate-icon" style="width:32px;height:32px;font-size:15px;margin:0 auto 6px">⊘</div><h3 style="font-size:13px">当前功能不可用</h3><p style="font-size:9px">双机拓扑要求本机只有一个物理屏。</p></div></div></div></div>`;
+    }
+    function renderInner(frame) {
+      if (frame.kind === 'panel') return panel(frame, frame.variant);
+      if (frame.kind === 'ports') return ports(frame, frame.variant);
+      if (frame.kind === 'runtime') return runtime(frame, frame.variant);
+      if (frame.kind === 'topology') return topologyAligned(frame, frame.variant);
+      return cross(frame);
+    }
+    function renderFrame(raw) {
+      const [id, name, form, kind, variant] = raw;
+      const frame = { id, name, form, kind, variant };
+      const mobile = form === 'mobile';
+      return `<article class="frame-card ${mobile ? 'mobile-card' : ''}" data-frame-id="${id}"><div class="frame-meta"><code>${id} · ${name}</code><span>${form}</span></div><div class="frame-stage ${mobile ? 'mobile' : 'laptop'}">${shell(frame, renderInner(frame))}</div><div class="frame-footer"><b>高保真核对点：</b>${kind === 'topology' ? '状态结论先于动作；角色与可达性分开；mobile 只显示不可用 gate。' : kind === 'runtime' ? '真实宽高比；逻辑尺寸在框内，物理尺寸在框外。' : kind === 'ports' ? '总数与比例条优先，分类展开后只显示有限明细。' : '保持登录卡的 shell、卡片、状态灯与 action family。'}</div></article>`;
+    }
+    function render() {
+      document.getElementById('gallery').innerHTML = frameGroups.map(group => `<section class="gallery-section"><div class="section-head"><h2>${group.title}</h2><p>${group.note}</p></div><div class="gallery">${group.frames.map(renderFrame).join('')}</div></section>`).join('');
+    }
+    function applyTheme(name) {
+      const t = themes[name];
+      const root = document.documentElement;
+      const vars = {
+        '--login-surface': t.loginSurface, '--login-fg': t.loginFg, '--login-muted': t.loginMuted, '--login-border': t.loginBorder, '--login-focus': t.loginFocus,
+        '--shell-surface': t.shellSurface, '--shell-fg': t.shellFg, '--shell-muted': t.shellMuted, '--shell-border': t.shellBorder,
+        '--login-action': t.action,
+        '--action': t.action, '--action-start': t.actionStart, '--action-end': t.actionEnd, '--action-fg': t.actionFg, '--focus': t.focus,
+        '--content-bg': t.contentBg, '--content-elevated': t.contentElevated, '--content-inset': t.contentInset, '--content-fg': t.contentFg, '--content-muted': t.contentMuted, '--content-border': t.contentBorder,
+      };
+      Object.entries(vars).forEach(([key, value]) => root.style.setProperty(key, value));
+      document.body.dataset.theme = name;
+      document.querySelectorAll('[data-theme-button]').forEach((button) => button.classList.toggle('active', button.dataset.themeButton === name));
+      document.querySelectorAll('[data-theme-name]').forEach((node) => node.textContent = name);
+    }
+    document.querySelectorAll('[data-theme-button]').forEach((button) => button.addEventListener('click', () => applyTheme(button.dataset.themeButton)));
+    render();
+    applyTheme('sample-console');
+  </script>
+</body>
+</html>

@@ -45,12 +45,12 @@ public final class BusinessChannelTaskReadServiceSql {
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_WHERE_ID_IN = "WHERE id IN (";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CLOSE_PAREN_WORKSPACE_UUID_GROUP_WORKSPACE_KEY = ") AND workspace_uuid=? AND group_workspace_key=? ";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_UNION_CHILD_SOURCE_REF_PARENT_PARENT_ID = "UNION ALL SELECT child.source_ref, parent.id, parent.parent_id, ";
-    public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CONTINUATION_PARENT_NODE_TYPE_STATUS_CHILD = "parent.node_type, parent.status, child.depth+1 ";
+    public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_PARENT_NODE_TYPE_STATUS_CHILD = "parent.node_type, parent.status, child.depth+1 ";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_FROM_CLAUSE_ANCESTRY_PARENT_CHILD_PARENT_ID = "FROM organization.organization_node parent JOIN ancestry child ON parent.id=child.parent_id ";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY = "WHERE parent.workspace_uuid=? AND parent.group_workspace_key=? ) ";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_SELECT_ANCESTRY_SOURCE_REF_NODE_TYPE_STATUS_DEPTH = "SELECT source_ref, node_type, id, status FROM ancestry ORDER BY source_ref, depth DESC";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION_CHANNEL_REF = " AND c.channel_ref > ?";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CONDITION = " AND (";
     public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_PARAMETER_PLACEHOLDER = " ? OR (";
-    public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CONTINUATION_CHANNEL_REF = " = ? AND c.channel_ref > ?))";
+    public static final String BUSINESS_CHANNEL_TASK_READ_SERVICE_CHANNEL_REF = " = ? AND c.channel_ref > ?))";
 }

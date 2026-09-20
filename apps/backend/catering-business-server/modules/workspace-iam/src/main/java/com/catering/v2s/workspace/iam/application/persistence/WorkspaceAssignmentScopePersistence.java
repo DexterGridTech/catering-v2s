@@ -20,7 +20,7 @@ public class WorkspaceAssignmentScopePersistence {
             UUID workspaceUuid, String groupWorkspaceKey, UUID assignmentId) {
         return jdbc.query(
                 WorkspaceAssignmentScopeServiceSql.WORKSPACE_ASSIGNMENT_SCOPE_SERVICE_SELECT_ROLE_ASSIGNMENT_SERVICE_NODE_TYPE_SERVICE_NODE_ID
-                        + WorkspaceAssignmentScopeServiceSql.WORKSPACE_ASSIGNMENT_SCOPE_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ACTIVE,
+                        + WorkspaceAssignmentScopeServiceSql.WORKSPACE_ASSIGNMENT_SCOPE_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ACTIVE,
                 statement -> {
                     statement.setObject(1, assignmentId);
                     statement.setObject(2, workspaceUuid);

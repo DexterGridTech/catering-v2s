@@ -13,6 +13,7 @@ import {
   type DevicePort,
   type DeviceInfo,
   type DisplayInfo,
+  type DisplaySurfaceInfo,
   type LogEvent,
   type PlatformPorts,
   type PortResult,
@@ -71,8 +72,21 @@ const success = <TValue>(value: TValue): PortResult<TValue> => ({
   completedAt: nowTimestampMs(),
 })
 
+const defaultDisplaySurfaces = (displayCount: number): readonly DisplaySurfaceInfo[] => Object.freeze(
+  Array.from({length: displayCount}, (_, displayIndex) => Object.freeze({
+    displayId: displayIndex,
+    role: displayIndex === 0 ? 'primary' as const : 'secondary' as const,
+    logicalSize: Object.freeze(displayIndex === 0
+      ? {width: 1280, height: 800}
+      : {width: 1024, height: 768}),
+    physicalSize: null,
+    readiness: 'ready' as const,
+  })),
+)
+
 export const createTestPlatformPorts = (input: Readonly<{
   readonly displayCount?: number
+  readonly displaySurfaces?: readonly DisplaySurfaceInfo[]
   readonly deviceInfo?: DeviceInfo
   readonly onGetDeviceInfo?: () => void
   readonly displayInfoGate?: Promise<void>
@@ -99,7 +113,11 @@ export const createTestPlatformPorts = (input: Readonly<{
         && displayInfoCalls > (input.displayInfoGateAfterCalls ?? 0)) {
         await input.displayInfoGate
       }
-      return success({displayCount: input.displayCount ?? 1})
+      const displayCount = input.displayCount ?? 1
+      return success({
+        displayCount,
+        surfaces: input.displaySurfaces ?? defaultDisplaySurfaces(displayCount),
+      })
     },
   }, 'device') as DevicePort
   const logger = withTestPortDescriptor({

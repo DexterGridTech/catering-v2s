@@ -13,8 +13,29 @@ export interface DeviceIdentity {
   readonly available: boolean;
   readonly deviceId: string | null;
 }
+
+export type DisplaySize = Readonly<{
+  readonly width: number
+  readonly height: number
+}>
+
+export type DisplayReadiness = 'ready' | 'loading' | 'unavailable' | 'unknown'
+
+/**
+ * Public display facts supplied by the platform adapter.  The display
+ * context owner turns these adapter facts into its admin-facing read model;
+ * callers must not infer a missing surface from another surface's values.
+ */
+export interface DisplaySurfaceInfo {
+  readonly displayId: number | null
+  readonly role: 'primary' | 'secondary' | 'unknown'
+  readonly logicalSize: DisplaySize | null
+  readonly physicalSize: DisplaySize | null
+  readonly readiness: DisplayReadiness
+}
 export interface DisplayInfo {
   readonly displayCount: number;
+  readonly surfaces?: readonly DisplaySurfaceInfo[]
 }
 export interface ProcessorStatus {
   readonly logicalProcessorCount: number;

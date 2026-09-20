@@ -1,6 +1,7 @@
 import {Alert, Button, Drawer, Form, Input, InputNumber, Select, Space, Switch, Typography} from 'antd';
 import {
   adminDrawerSurfaceProps,
+  displayFieldValue,
   NameCodeText,
   testId,
   useDrawerFormLifecycle,
@@ -230,7 +231,7 @@ export function ContractEditDrawer({
         </Form.Item>
         <Form.Item label="合同编号">
           <Typography.Text {...testId('operations-contract-edit-number')}>
-            {contract?.contractNo ?? '—'}
+            {displayFieldValue(contract?.contractNo)}
           </Typography.Text>
         </Form.Item>
         <Form.Item

@@ -2,10 +2,12 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import {validateFixtureContract} from "./r5-fixture-contract.mjs";
 
 const root = path.resolve(import.meta.dirname, "../..");
 const profile = JSON.parse(fs.readFileSync(path.join(root, "scripts/dev/profiles/r5-full.json"), "utf8"));
 const fixture = JSON.parse(fs.readFileSync(path.join(root, "doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json"), "utf8"));
+const fixtureContract = validateFixtureContract(fixture);
 const isChineseBusinessText = (value) => typeof value === "string" && /[\u3400-\u9fff]/.test(value) && !/[A-Za-z]/.test(value);
 const requireChineseBusinessText = (value, label) => {
   if (!isChineseBusinessText(value)) throw new Error(`R5_SEED_BUSINESS_LABEL_INVALID:${label}`);
@@ -155,11 +157,19 @@ const validateStoreServicePointSeedCoverage = (source) => {
       throw new Error("R5_SEED_STORE_SERVICE_POINT_INVALID");
     }
     if (point.pointType === "TABLE") {
-      if (!Number.isInteger(point.seatCapacity) || point.seatCapacity <= 0 || !["HALL", "PRIVATE_ROOM", "BOOTH", "OUTDOOR"].includes(point.tableShape)
-        || typeof point.reservable !== "boolean" || !point.image || typeof point.image.fileName !== "string" || typeof point.image.mediaType !== "string") {
+      if ((point.seatCapacity !== undefined && point.seatCapacity !== null
+        && (!Number.isInteger(point.seatCapacity) || point.seatCapacity <= 0))
+        || (point.tableShape !== undefined && point.tableShape !== null
+          && !["HALL", "PRIVATE_ROOM", "BOOTH", "OUTDOOR"].includes(point.tableShape))
+        || (point.reservable !== undefined && point.reservable !== null && typeof point.reservable !== "boolean")
+        || (point.image !== undefined && point.image !== null
+          && (typeof point.image !== "object" || typeof point.image.fileName !== "string" || typeof point.image.mediaType !== "string"))) {
         throw new Error("R5_SEED_STORE_TABLE_POINT_ATTRIBUTES_INVALID");
       }
-    } else if (point.seatCapacity !== undefined || point.tableShape !== undefined || point.reservable !== undefined || point.image !== undefined) {
+    } else if ((point.seatCapacity !== undefined && point.seatCapacity !== null)
+      || (point.tableShape !== undefined && point.tableShape !== null)
+      || (point.reservable !== undefined && point.reservable !== null)
+      || (point.image !== undefined && point.image !== null)) {
       throw new Error("R5_SEED_STORE_SCAN_POINT_TABLE_ATTRIBUTES_FORBIDDEN");
     }
     pointKeys.add(point.key); pointCodes.add(point.code);
@@ -184,11 +194,14 @@ if (process.argv.includes("--self-test")) {
   try { validateSalesMenuSeedRolePrerequisites(permissionRedMutation); } catch (error) { rejected = String(error.message) === "R5_SEED_ROLE_PERMISSION_CAPABILITY_MISSING:role-store:EDIT_STORE_SALES_MENU"; }
   if (!rejected) throw new Error("R5_SEED_ROLE_PERMISSION_RED_MUTATION_MISSED");
   const servicePointRedMutation = structuredClone(fixture);
-  servicePointRedMutation.stableFixtures.organization.storeServicePoints.points[0].pointType = "SCAN";
+  servicePointRedMutation.stableFixtures.organization.storeServicePoints.points[0].seatCapacity = "four";
   rejected = false;
   try { validateStoreServicePointSeedCoverage(servicePointRedMutation); } catch (error) { rejected = String(error.message) === "R5_SEED_STORE_SERVICE_POINT_INVALID"; }
+  if (!rejected) {
+    try { validateStoreServicePointSeedCoverage(servicePointRedMutation); } catch (error) { rejected = String(error.message) === "R5_SEED_STORE_TABLE_POINT_ATTRIBUTES_INVALID"; }
+  }
   if (!rejected) throw new Error("R5_SEED_STORE_SERVICE_POINT_RED_MUTATION_MISSED");
-  process.stdout.write("R5_SEED_PLAN_SELF_TEST=PASS; RED=TECHNICAL_ENGLISH_DISPLAY_TEXT,SALES_MENU_ROLE_CAPABILITY,STORE_SERVICE_POINT_TYPE\n");
+  process.stdout.write("R5_SEED_PLAN_SELF_TEST=PASS; RED=TECHNICAL_ENGLISH_DISPLAY_TEXT,SALES_MENU_ROLE_CAPABILITY,STORE_SERVICE_POINT_OPTIONAL_ATTRIBUTE_TYPE\n");
 }
 if (fixture.stableFixtures.workspaceIam.roles.length !== 8) throw new Error("R5_SEED_ROLE_EXPERIENCE_DENOMINATOR_DRIFT");
 for (const roleKey of ["role-store-inventory", "role-store-manager"]) if (!fixture.stableFixtures.workspaceIam.roles.some((role) => role.key === roleKey)) throw new Error(`R5_SEED_ROLE_EXPERIENCE_MISSING:${roleKey}`);
@@ -204,7 +217,7 @@ for (const [label, entries] of [
   ["workspaceIam.roles", fixture.stableFixtures.workspaceIam.roles],
   ["workspaceIam.accounts", fixture.stableFixtures.workspaceIam.accounts],
 ]) requireThreeStateCoverage(entries, label);
-const facts = {platformAdmins: fixture.stableFixtures.platformAdmins.length, groupWorkspaces: fixture.stableFixtures.groupWorkspaces.length, activeAssets: fixture.stableFixtures.assets.filter((entry) => entry.status === "ACTIVE").length, extensionDefinitions: fixture.stableFixtures.extensionDefinitions.length, commercialGroups: fixture.stableFixtures.organization.commercialGroups.length, regions: fixture.stableFixtures.organization.regions.length, projects: fixture.stableFixtures.organization.projects.length, brands: fixture.stableFixtures.organization.brands.length, tenants: fixture.stableFixtures.organization.tenants.length, headCompanies: fixture.stableFixtures.organization.headCompanies.length, stores: fixture.stableFixtures.organization.stores.length, storeServicePointAreas: fixture.stableFixtures.organization.storeServicePoints.areas.length, storeServicePoints: fixture.stableFixtures.organization.storeServicePoints.points.length, roles: fixture.stableFixtures.workspaceIam.roles.length, accounts: fixture.stableFixtures.workspaceIam.accounts.length, assignments: fixture.stableFixtures.workspaceIam.assignments.length, invitationStateFixtures: fixture.stableFixtures.workspaceIam.invitationStates.length, contracts: fixture.stableFixtures.contracts.length};
-for (const [key, expected] of Object.entries(profile.expectedCounts)) if (facts[key] !== expected) throw new Error(`R5_SEED_PROFILE_DRIFT:${key}:${facts[key]}!=${expected}`);
+const facts = fixtureContract.actual;
+if (Object.hasOwn(profile, "expectedCounts")) throw new Error("R5_SEED_PROFILE_COUNT_MIRROR_FORBIDDEN");
 if (fixture.scenarioPrerequisitePolicy.denominator !== profile.scenarioDenominator) throw new Error("R5_SEED_SCENARIO_DENOMINATOR_DRIFT");
 process.stdout.write(`R5_SEED_DRY_RUN=PASS; PROFILE=${profile.profile}; SCENARIOS=${profile.scenarioDenominator}; FIXTURES=${Object.keys(facts).length}; STAGES=${fixture.seedStages.map((stage) => stage.id).join(",")}\n`);

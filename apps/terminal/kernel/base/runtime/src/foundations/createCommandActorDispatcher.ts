@@ -136,22 +136,55 @@ export const createCommandActorDispatcher = (
     }
 
     const startedAt = nowTimestampMs()
+    const isStartupReadyCommand = command.commandName === 'ui.integration.sample-console.startup-ready'
+    if (isStartupReadyCommand) {
+      input.commandLogger(lifecycleContext).info({
+        category: 'startup.ready-dispatch',
+        event: 'startup.ready-actor-running-start',
+        message: 'PRIMARY startup-ready actor running transition started',
+        data: {actorKey},
+      })
+    }
     const runningRecord = input.emitActorRunning({
       kind: 'actor.running',
       context: lifecycleContext,
       actorKey,
       startedAt,
     }, observer)
+    if (isStartupReadyCommand) {
+      input.commandLogger(lifecycleContext).info({
+        category: 'startup.ready-dispatch',
+        event: 'startup.ready-actor-running-end',
+        message: 'PRIMARY startup-ready actor running transition completed',
+        data: {actorKey, ledgerWriteFailed: runningRecord !== undefined},
+      })
+    }
     if (runningRecord !== undefined
       && runningRecord.status === 'error'
       && runningRecord.error?.key === input.ledgerWriteFailureErrorKey) {
       return runningRecord
     }
     let timedOut = false
+    if (isStartupReadyCommand) {
+      input.commandLogger(lifecycleContext).info({
+        category: 'startup.ready-dispatch',
+        event: 'startup.ready-actor-execution-create-start',
+        message: 'PRIMARY startup-ready actor execution setup started',
+        data: {actorKey},
+      })
+    }
     // Promise executors run synchronously, so the timer is assigned before
     // the promise can be observed or any cleanup callback can be registered.
     let timer!: ReturnType<typeof setTimeout>
     const execution = Promise.resolve().then(async () => {
+      if (isStartupReadyCommand) {
+        input.commandLogger(lifecycleContext).info({
+          category: 'startup.ready-dispatch',
+          event: 'startup.ready-actor-handler-start',
+          message: 'PRIMARY startup-ready actor handler started',
+          data: {actorKey},
+        })
+      }
       const context: ActorExecutionContext<TPayload> = {
         runtimeId: input.runtimeId,
         localNodeId: input.localNodeId,
@@ -264,8 +297,55 @@ export const createCommandActorDispatcher = (
         resolve({status: 'timed-out', result: null, error: null})
       }, definition.timeoutMs)
     })
+    if (isStartupReadyCommand) {
+      input.commandLogger(lifecycleContext).info({
+        category: 'startup.ready-dispatch',
+        event: 'startup.ready-actor-timeout-created',
+        message: 'PRIMARY startup-ready actor timeout created',
+        data: {actorKey, timeoutMs: definition.timeoutMs},
+      })
+    }
     const unregisterTimeout = input.registerResource?.(() => clearTimeout(timer))
-    const settled = await Promise.race([execution, timeout])
+    if (isStartupReadyCommand) {
+      input.commandLogger(lifecycleContext).info({
+        category: 'startup.ready-dispatch',
+        event: 'startup.ready-actor-resource-registered',
+        message: 'PRIMARY startup-ready actor resource registered',
+        data: {actorKey},
+      })
+      setTimeout(() => {
+        input.commandLogger(lifecycleContext).info({
+          category: 'startup.ready-dispatch',
+          event: 'startup.ready-actor-zero-delay-timer',
+          message: 'PRIMARY startup-ready actor zero-delay timer fired',
+          data: {actorKey},
+        })
+      }, 0)
+      input.commandLogger(lifecycleContext).info({
+        category: 'startup.ready-dispatch',
+        event: 'startup.ready-actor-race-create-start',
+        message: 'PRIMARY startup-ready actor race creation started',
+        data: {actorKey},
+      })
+    }
+    const racePromise = Promise.race([execution, timeout])
+    if (isStartupReadyCommand) {
+      input.commandLogger(lifecycleContext).info({
+        category: 'startup.ready-dispatch',
+        event: 'startup.ready-actor-race-created',
+        message: 'PRIMARY startup-ready actor race created',
+        data: {actorKey},
+      })
+    }
+    const settled = await racePromise
+    if (isStartupReadyCommand) {
+      input.commandLogger(lifecycleContext).info({
+        category: 'startup.ready-dispatch',
+        event: 'startup.ready-actor-race-settled',
+        message: 'PRIMARY startup-ready actor race settled',
+        data: {actorKey},
+      })
+    }
     clearTimeout(timer)
     unregisterTimeout?.()
 

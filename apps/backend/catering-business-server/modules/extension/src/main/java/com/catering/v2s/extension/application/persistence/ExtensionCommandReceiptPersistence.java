@@ -24,8 +24,8 @@ public class ExtensionCommandReceiptPersistence {
             String requestHash) {
         return jdbc.update(
                 ExtensionCommandReceiptServiceSql.EXTENSION_COMMAND_RECEIPT_SERVICE_INSERT_INTO_EXTENSION_COMMAND_RECEIPT
-                        + ExtensionCommandReceiptServiceSql.EXTENSION_COMMAND_RECEIPT_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY
-                        + ExtensionCommandReceiptServiceSql.EXTENSION_COMMAND_RECEIPT_SERVICE_CONTINUATION_CREATED_AT_EPOCH_MILLIS_IN_PROGRESS
+                        + ExtensionCommandReceiptServiceSql.EXTENSION_COMMAND_RECEIPT_SERVICE_GROUP_WORKSPACE_KEY
+                        + ExtensionCommandReceiptServiceSql.EXTENSION_COMMAND_RECEIPT_SERVICE_CREATED_AT_EPOCH_MILLIS_IN_PROGRESS
                         + ExtensionCommandReceiptServiceSql.EXTENSION_COMMAND_RECEIPT_SERVICE_JOIN_CONDITION_WORKSPACE_UUID_IDEMPOTENCY_KEY,
                 key,
                 workspaceUuid,
@@ -38,7 +38,7 @@ public class ExtensionCommandReceiptPersistence {
     public Receipt find(UUID workspaceUuid, String key) {
         return jdbc.query(
                 ExtensionCommandReceiptServiceSql.EXTENSION_COMMAND_RECEIPT_SERVICE_SELECT_EXTENSION_COMMAND_RECEIPT
-                        + ExtensionCommandReceiptServiceSql.EXTENSION_COMMAND_RECEIPT_SERVICE_CONTINUATION_WORKSPACE_UUID_IDEMPOTENCY_KEY,
+                        + ExtensionCommandReceiptServiceSql.EXTENSION_COMMAND_RECEIPT_SERVICE_WORKSPACE_UUID_IDEMPOTENCY_KEY,
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, key);
@@ -51,8 +51,8 @@ public class ExtensionCommandReceiptPersistence {
     public int complete(UUID workspaceUuid, String key, String responseJson) {
         return jdbc.update(
                 ExtensionCommandReceiptServiceSql.EXTENSION_COMMAND_RECEIPT_SERVICE_UPDATE_EXTENSION_COMMAND_RECEIPT_RESPONSE_JSON
-                        + ExtensionCommandReceiptServiceSql.EXTENSION_COMMAND_RECEIPT_SERVICE_CONTINUATION_STATE_SUCCEEDED_WORKSPACE_UUID_IDEMPOTENCY_KEY
-                        + ExtensionCommandReceiptServiceSql.EXTENSION_COMMAND_RECEIPT_SERVICE_CONTINUATION_STATE_IN_PROGRESS,
+                        + ExtensionCommandReceiptServiceSql.EXTENSION_COMMAND_RECEIPT_SERVICE_STATE_SUCCEEDED_WORKSPACE_UUID_IDEMPOTENCY_KEY
+                        + ExtensionCommandReceiptServiceSql.EXTENSION_COMMAND_RECEIPT_SERVICE_STATE_IN_PROGRESS,
                 responseJson,
                 workspaceUuid,
                 key);

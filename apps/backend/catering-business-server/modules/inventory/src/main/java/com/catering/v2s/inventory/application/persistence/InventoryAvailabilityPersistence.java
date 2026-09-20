@@ -56,7 +56,7 @@ public class InventoryAvailabilityPersistence {
         String sql = InventoryAvailabilityServiceSql.SELECT_PREFIX
                 + InventoryAvailabilityServiceSql.TARGET_SELECT_COLUMNS
                 + InventoryAvailabilityServiceSql.INVENTORY_AVAILABILITY_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF
-                + InventoryAvailabilityServiceSql.INVENTORY_AVAILABILITY_SERVICE_CONTINUATION_BRAND_REF_DEFINITION_STATUS_ENABLED
+                + InventoryAvailabilityServiceSql.INVENTORY_AVAILABILITY_SERVICE_BRAND_REF_DEFINITION_STATUS_ENABLED
                 + predicates
                 + InventoryAvailabilityServiceSql.SQL_CLOSE_PAREN;
         if (requireCompleteConsumptionUnit) {

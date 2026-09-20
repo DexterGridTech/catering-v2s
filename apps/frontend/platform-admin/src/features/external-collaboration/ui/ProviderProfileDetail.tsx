@@ -1,8 +1,12 @@
 import {ReloadOutlined} from '@ant-design/icons';
-import {Alert, Button, Card, Descriptions, Modal, Space, Tabs, Tag} from 'antd';
+import {Alert, Button, Card, Descriptions, Space, Tabs} from 'antd';
 import {
   closedCodeLabel,
+  displayFieldValue,
   isKnownClosedCode,
+  LifecycleStatusTag,
+  LIFECYCLE_LABELS,
+  StatusChangeConfirm,
   testId,
   useRefreshVersion,
   useSubmissionLifecycle,
@@ -25,7 +29,7 @@ import {
   unbindKindLabels,
 } from '../model/collaborationCodeLabels';
 
-const enablementStatusLabels = {ENABLED: '已启用', DISABLED: '已停用'} as const;
+const enablementStatusLabels = {ENABLED: LIFECYCLE_LABELS.ENABLED, DISABLED: LIFECYCLE_LABELS.DISABLED} as const;
 
 export function ProviderProfileDetail({
   groupWorkspaceKey,
@@ -43,6 +47,7 @@ export function ProviderProfileDetail({
   const contentTabRefreshVersion = useRefreshVersion(platformContentTabRefreshSignal);
   const {refetch} = query;
   const [pendingStatus, setPendingStatus] = useState<NonNullable<typeof profile>['enablementStatus']>();
+  const [requestedStatus, setRequestedStatus] = useState<NonNullable<typeof profile>['enablementStatus']>();
   const [retryStatus, setRetryStatus] = useState<NonNullable<typeof profile>['enablementStatus']>();
   const [problem, setProblem] = useState<PlatformApiProblem>();
   const [readbackProblem, setReadbackProblem] = useState<PlatformApiProblem>();
@@ -111,144 +116,153 @@ export function ProviderProfileDetail({
     );
   }
   return (
-    <div className="platform-master-detail-detail-content" {...testId('platform-provider-profile-detail')}>
-      {(problem || readProblem) && (
-        <Alert
-          type="error"
-          showIcon
-          title={(problem ?? readProblem)?.title}
-          description={(problem ?? readProblem)?.detail}
-          action={
-            problem && retryStatus ? (
-              <Button icon={<ReloadOutlined />} onClick={() => void saveStatus(retryStatus)}>
-                重试
+    <>
+      <div className="platform-master-detail-detail-content" {...testId('platform-provider-profile-detail')}>
+        {(problem || readProblem) && (
+          <Alert
+            type="error"
+            showIcon
+            title={(problem ?? readProblem)?.title}
+            description={(problem ?? readProblem)?.detail}
+            action={
+              problem && retryStatus ? (
+                <Button icon={<ReloadOutlined />} onClick={() => void saveStatus(retryStatus)}>
+                  重试
+                </Button>
+              ) : (
+                <Button icon={<ReloadOutlined />} onClick={() => void refreshReadback()}>
+                  重试
+                </Button>
+              )
+            }
+            style={{marginBottom: 16}}
+            {...testId('platform-provider-profile-detail-error')}
+          />
+        )}
+        <Card
+          className="platform-master-detail-detail-card"
+          title="接入档案详情"
+          extra={
+            <Space>
+              <Button
+                type={profile.enablementStatus === 'ENABLED' ? 'primary' : 'default'}
+                loading={pendingStatus === 'ENABLED'}
+                disabled={!enablementStatusKnown || profile.enablementStatus === 'ENABLED' || Boolean(pendingStatus)}
+                onClick={() => setRequestedStatus('ENABLED')}
+                {...testId('platform-provider-profile-enable')}
+              >
+                启用
               </Button>
-            ) : (
-              <Button icon={<ReloadOutlined />} onClick={() => void refreshReadback()}>
-                重试
+              <Button
+                danger
+                type={profile.enablementStatus === 'DISABLED' ? 'primary' : 'default'}
+                loading={pendingStatus === 'DISABLED'}
+                disabled={!enablementStatusKnown || profile.enablementStatus === 'DISABLED' || Boolean(pendingStatus)}
+                onClick={() => setRequestedStatus('DISABLED')}
+                {...testId('platform-provider-profile-disable')}
+              >
+                停用
               </Button>
-            )
+              <Button onClick={() => void refreshReadback()} disabled={Boolean(pendingStatus)}>
+                刷新
+              </Button>
+            </Space>
           }
-          style={{marginBottom: 16}}
-          {...testId('platform-provider-profile-detail-error')}
-        />
+        >
+          <Tabs
+            items={[
+              {
+                key: 'detail',
+                label: '详情',
+                children: (
+                  <Space direction="vertical" size={16} style={{display: 'flex'}}>
+                    <Descriptions
+                      bordered
+                      size="small"
+                      column={1}
+                      items={[
+                        {key: 'name', label: '档案名称', children: profile.displayName},
+                        {key: 'code', label: '档案编码', children: profile.providerCode},
+                        {
+                          key: 'system',
+                          label: '所属外部系统',
+                          children: displayFieldValue(profile.externalSystemDisplayName),
+                        },
+                        {
+                          key: 'scope',
+                          label: '支持的业务',
+                          children:
+                            profile.businessScope.length > 0
+                              ? profile.businessScope
+                                  .map(value => closedCodeLabel(providerBusinessScopeLabels, value))
+                                  .join('、')
+                              : '—',
+                        },
+                        {
+                          key: 'nodes',
+                          label: '可绑定的业务节点',
+                          children:
+                            profile.bindableNodeTypes.length > 0
+                              ? profile.bindableNodeTypes
+                                  .map(value => closedCodeLabel(organizationNodeTypeLabels, value))
+                                  .join('、')
+                              : '—',
+                        },
+                        {
+                          key: 'auth',
+                          label: '认证方式',
+                          children: closedCodeLabel(authenticationKindLabels, profile.authenticationKind),
+                        },
+                        {
+                          key: 'unbind',
+                          label: '解绑方式',
+                          children: closedCodeLabel(unbindKindLabels, profile.unbindKind),
+                        },
+                        {
+                          key: 'catalog',
+                          label: '目录标记',
+                          children: closedCodeLabel(catalogStatusLabels, profile.catalogStatus),
+                        },
+                        {
+                          key: 'status',
+                          label: '当前空间状态',
+                          children: <LifecycleStatusTag status={profile.enablementStatus} />,
+                        },
+                      ]}
+                    />
+                  </Space>
+                ),
+              },
+              {
+                key: 'bindings',
+                label: '绑定关系',
+                children: <OwnerBindingList groupWorkspaceKey={groupWorkspaceKey} profile={profile} />,
+              },
+            ]}
+            {...testId('platform-provider-profile-tabs')}
+          />
+        </Card>
+      </div>
+      {requestedStatus && (
+        <StatusChangeConfirm
+          open
+          title={`${requestedStatus === 'ENABLED' ? '启用' : '停用'}接入档案`}
+          actionLabel={requestedStatus === 'ENABLED' ? '启用' : '停用'}
+          submitting={Boolean(pendingStatus)}
+          problem={problem?.detail}
+          onCancel={() => setRequestedStatus(undefined)}
+          onConfirm={() => {
+            const targetStatus = requestedStatus;
+            setRequestedStatus(undefined);
+            void saveStatus(targetStatus);
+          }}
+          confirmTestId="platform-provider-profile-status-confirm"
+          cancelTestId="platform-provider-profile-status-cancel"
+          modalTestId="platform-provider-profile-status-modal"
+        >
+          确认{requestedStatus === 'ENABLED' ? '启用' : '停用'}当前接入档案吗？
+        </StatusChangeConfirm>
       )}
-      <Card
-        className="platform-master-detail-detail-card"
-        title="接入档案详情"
-        extra={
-          <Space>
-            <Button
-              type={profile.enablementStatus === 'ENABLED' ? 'primary' : 'default'}
-              loading={pendingStatus === 'ENABLED'}
-              disabled={!enablementStatusKnown || profile.enablementStatus === 'ENABLED' || Boolean(pendingStatus)}
-              onClick={() =>
-                Modal.confirm({
-                  title: '启用接入档案',
-                  content: '确认启用当前接入档案吗？',
-                  okText: '确认启用',
-                  cancelText: '取消',
-                  onOk: () => saveStatus('ENABLED'),
-                })
-              }
-              {...testId('platform-provider-profile-enable')}
-            >
-              启用
-            </Button>
-            <Button
-              danger
-              type={profile.enablementStatus === 'DISABLED' ? 'primary' : 'default'}
-              loading={pendingStatus === 'DISABLED'}
-              disabled={!enablementStatusKnown || profile.enablementStatus === 'DISABLED' || Boolean(pendingStatus)}
-              onClick={() =>
-                Modal.confirm({
-                  title: '停用接入档案',
-                  content: '确认停用当前接入档案吗？',
-                  okText: '确认停用',
-                  cancelText: '取消',
-                  okButtonProps: {danger: true},
-                  onOk: () => saveStatus('DISABLED'),
-                })
-              }
-              {...testId('platform-provider-profile-disable')}
-            >
-              停用
-            </Button>
-            <Button onClick={() => void refreshReadback()} disabled={Boolean(pendingStatus)}>
-              刷新
-            </Button>
-          </Space>
-        }
-      >
-        <Tabs
-          items={[
-            {
-              key: 'detail',
-              label: '详情',
-              children: (
-                <Space direction="vertical" size={16} style={{display: 'flex'}}>
-                  <Descriptions
-                    bordered
-                    size="small"
-                    column={1}
-                    items={[
-                      {key: 'name', label: '档案名称', children: profile.displayName},
-                      {key: 'code', label: '档案编码', children: profile.providerCode},
-                      {key: 'system', label: '所属外部系统', children: profile.externalSystemDisplayName || '—'},
-                      {
-                        key: 'scope',
-                        label: '支持的业务',
-                        children:
-                          profile.businessScope.length > 0
-                            ? profile.businessScope
-                                .map(value => closedCodeLabel(providerBusinessScopeLabels, value))
-                                .join('、')
-                            : '—',
-                      },
-                      {
-                        key: 'nodes',
-                        label: '可绑定的业务节点',
-                        children:
-                          profile.bindableNodeTypes.length > 0
-                            ? profile.bindableNodeTypes
-                                .map(value => closedCodeLabel(organizationNodeTypeLabels, value))
-                                .join('、')
-                            : '—',
-                      },
-                      {
-                        key: 'auth',
-                        label: '认证方式',
-                        children: closedCodeLabel(authenticationKindLabels, profile.authenticationKind),
-                      },
-                      {
-                        key: 'unbind',
-                        label: '解绑方式',
-                        children: closedCodeLabel(unbindKindLabels, profile.unbindKind),
-                      },
-                      {
-                        key: 'catalog',
-                        label: '目录标记',
-                        children: closedCodeLabel(catalogStatusLabels, profile.catalogStatus),
-                      },
-                      {
-                        key: 'status',
-                        label: '当前空间状态',
-                        children: <Tag>{closedCodeLabel(enablementStatusLabels, profile.enablementStatus)}</Tag>,
-                      },
-                    ]}
-                  />
-                </Space>
-              ),
-            },
-            {
-              key: 'bindings',
-              label: '绑定关系',
-              children: <OwnerBindingList groupWorkspaceKey={groupWorkspaceKey} profile={profile} />,
-            },
-          ]}
-          {...testId('platform-provider-profile-tabs')}
-        />
-      </Card>
-    </div>
+    </>
   );
 }

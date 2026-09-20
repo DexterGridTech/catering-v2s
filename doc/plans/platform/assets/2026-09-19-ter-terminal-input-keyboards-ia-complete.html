@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>TER virtual keyboard IA matrix</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --backdrop: #000000;
+        --surface: #131719;
+        --key: #282d31;
+        --border: #373e42;
+        --foreground: #f8fafc;
+        --muted: #b6c3d8;
+        --focus: #3b82f6;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: var(--backdrop); }
+      body {
+        width: 2000px;
+        height: 1600px;
+        color: var(--foreground);
+        font-family: Inter, "SF Pro Display", Arial, sans-serif;
+      }
+      #board { position: relative; width: 2000px; height: 1600px; padding: 42px 58px; }
+      h1 { margin: 0; font-size: 46px; line-height: 1.05; letter-spacing: -1px; }
+      .subtitle { margin-top: 10px; color: var(--muted); font-size: 24px; }
+      .legend { position: absolute; top: 45px; right: 60px; display: flex; align-items: center; gap: 18px; color: var(--muted); font-size: 18px; }
+      .swatch { width: 28px; height: 28px; border-radius: 7px; background: var(--focus); box-shadow: 0 0 0 1px #60a5fa; }
+      .state-key { display: inline-flex; min-width: 62px; height: 34px; padding: 0 12px; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid var(--border); background: var(--key); color: var(--foreground); font-size: 15px; font-weight: 700; }
+      .state-key.selected { border: 2px solid var(--focus); }
+      .state-key.pressed { opacity: .78; transform: scale(.985); }
+      .column-title { position: absolute; top: 142px; font-size: 28px; font-weight: 800; letter-spacing: 1px; }
+      .column-title.laptop { left: 58px; }
+      .column-title.mobile { left: 1190px; }
+      .row { position: absolute; left: 58px; right: 58px; display: grid; grid-template-columns: 1030px 1fr; gap: 100px; align-items: start; }
+      .row.full { top: 196px; }
+      .row.alpha { top: 500px; }
+      .row.numeric { top: 800px; }
+      .row.financial { top: 1100px; }
+      .layout-name { margin-bottom: 9px; font-size: 24px; font-weight: 800; letter-spacing: .8px; }
+      .layout-caption { margin-bottom: 12px; color: var(--muted); font-size: 16px; }
+      .keyboard-panel { display: grid; gap: 8px; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 8px 18px rgba(0,0,0,.28); }
+      .laptop-panel { width: 820px; }
+      .mobile-column { padding-left: 0; }
+      .mobile-panel { width: 500px; }
+      .keys { display: grid; gap: 8px; }
+      .keys.ten { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+      .keys.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .keys.bottom { margin-top: 0; }
+      .key { min-width: 0; height: 48px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 9px; background: var(--key); color: var(--foreground); font-size: 21px; line-height: 1; font-weight: 700; white-space: nowrap; }
+      .key.action { font-size: 16px; }
+      .key.icon { font-size: 26px; }
+      .key.selected { border: 2px solid var(--focus); }
+      .key.pressed { opacity: .78; transform: scale(.985); }
+      .key.action.pressed { opacity: .72; }
+      .key.compact { height: 38px; font-size: 17px; border-radius: 7px; }
+      .key.compact.action { font-size: 12px; }
+      .key.compact.icon { font-size: 19px; }
+      .financial-bottom { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+      .compound { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .numeric-panel { width: 560px; }
+      .mobile-column .numeric-panel, .mobile-column .financial-panel { width: 330px; }
+      .numeric-panel .key, .financial-panel .key { height: 48px; }
+      .mobile-column .keyboard-panel { padding: 10px; border-radius: 17px; gap: 5px; }
+      .mobile-column .keys { gap: 4px; }
+      .mobile-column .financial-bottom { gap: 4px; }
+      .mobile-column .compound { gap: 4px; }
+      .mobile-column .numeric-panel .key, .mobile-column .financial-panel .key { height: 38px; }
+      .section-note { position: absolute; right: 62px; bottom: 32px; color: var(--muted); font-size: 17px; }
+    </style>
+  </head>
+  <body>
+    <main id="board">
+      <h1>Restaurant Terminal</h1>
+      <div class="subtitle">Virtual Keyboards · Laptop and Mobile IA Matrix · Consistent, Touch-Friendly, Ready for Service.</div>
+      <div class="legend">
+        <span class="swatch"></span><span>theme focus / selection</span>
+        <span class="state-key">idle</span><span class="state-key selected">selected</span><span class="state-key pressed">pressed</span>
+      </div>
+      <div class="column-title laptop">LAPTOP</div>
+      <div class="column-title mobile">MOBILE</div>
+
+      <script>
+        const layouts = {
+          full: {
+            caption: 'Numbers, letters and actions · 4 rows',
+            rows: [
+              ['1','2','3','4','5','6','7','8','9','0'],
+              ['Q','W','E','R','T','Y','U','I','O','P'],
+              ['CAPS','A','S','D','F','G','H','J','K','L'],
+              ['SHIFT','Z','X','C','V','B','N','M','⌫','↵'],
+            ], selected: '5',
+          },
+          alpha: {
+            caption: 'Letters only · reduced height · 3 rows',
+            rows: [
+              ['Q','W','E','R','T','Y','U','I','O','P'],
+              ['CAPS','A','S','D','F','G','H','J','K','L'],
+              ['SHIFT','Z','X','C','V','B','N','M','⌫','↵'],
+            ], selected: 'R',
+          },
+          numeric: {
+            caption: 'Simple number pad · 3-column bottom row',
+            rows: [['1','2','3'],['4','5','6'],['7','8','9']],
+            bottom: ['⌫','0','↵'], selected: '0',
+          },
+          financial: {
+            caption: 'Number pad with sign, decimal and grouped actions',
+            rows: [['1','2','3'],['4','5','6'],['7','8','9']],
+            bottom: [['−','·'],'0',['⌫','↵']], selected: '9',
+          },
+        };
+        const keyClass = (label, compact, selected) => {
+          const action = ['CAPS','SHIFT','⇪','⇧','⌫','↵','−','·'].includes(label);
+          const icon = ['⌫','↵'].includes(label);
+          return `key${compact ? ' compact' : ''}${action ? ' action' : ''}${icon ? ' icon' : ''}${selected ? ' selected' : ''}`;
+        };
+        const mobileLabel = (label, mobile) => {
+          if (!mobile) return label;
+          if (label === 'CAPS') return '⇪';
+          if (label === 'SHIFT') return '⇧';
+          return label;
+        };
+        const key = (label, mobile, selected, pressed = false) => `<div class="${keyClass(label, mobile, selected)}${pressed ? ' pressed' : ''}">${mobileLabel(label, mobile)}</div>`;
+        const panel = (layoutName, mobile) => {
+          const d = layouts[layoutName];
+          const compact = mobile;
+          const rows = d.rows.map(row => `<div class="keys ${row.length === 10 ? 'ten' : 'three'}">${row.map(label => key(label, mobile, label === d.selected)).join('')}</div>`).join('');
+          let bottom = '';
+          if (d.bottom) {
+            if (layoutName === 'financial') {
+              bottom = `<div class="financial-bottom">${d.bottom.map((entry, index) => index === 1 ? key(entry, mobile, entry === d.selected) : `<div class="compound">${entry.map(label => key(label, mobile, label === d.selected)).join('')}</div>`).join('')}</div>`;
+            } else {
+              bottom = `<div class="keys three bottom">${d.bottom.map(label => key(label, mobile, label === d.selected)).join('')}</div>`;
+            }
+          }
+          return `<div class="keyboard-panel ${mobile ? 'mobile-panel' : (layoutName === 'numeric' || layoutName === 'financial' ? 'numeric-panel' : 'laptop-panel')} ${layoutName}-panel">${rows}${bottom}</div>`;
+        };
+        const render = (layoutName, mobile) => {
+          const row = document.querySelector(`.row.${layoutName}`);
+          const column = row.querySelector(mobile ? '.mobile-column' : '.laptop-column');
+          column.innerHTML = `<div class="layout-name">${layoutName.toUpperCase()}</div><div class="layout-caption">${layouts[layoutName].caption}</div>${panel(layoutName, mobile)}`;
+        };
+        const mount = () => {
+          for (const name of Object.keys(layouts)) { render(name, false); render(name, true); }
+        };
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
+        else mount();
+      </script>
+
+      <section class="row full"><div class="laptop-column"></div><div class="mobile-column"></div></section>
+      <section class="row alpha"><div class="laptop-column"></div><div class="mobile-column"></div></section>
+      <section class="row numeric"><div class="laptop-column"></div><div class="mobile-column"></div></section>
+      <section class="row financial"><div class="laptop-column"></div><div class="mobile-column"></div></section>
+      <div class="section-note">Mobile CAPS = ⇪ · Mobile SHIFT = ⇧ · pressed opacity: key .78 / action .72 · icons and state treatments are shared semantics.</div>
+    </main>
+  </body>
+</html>

@@ -1,5 +1,6 @@
 package com.catering.v2s.platform.iam.application.persistence;
 
+import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -16,7 +17,7 @@ public class PlatformCommandReceiptPersistence {
     public record Receipt(String requestHash, String responseJson) {}
 
     public void lock(String idempotencyKey) {
-        jdbc.queryForList(PlatformCommandReceiptServiceSql.LOCK, idempotencyKey);
+        AdvisoryLock.acquireHashText(jdbc, idempotencyKey);
     }
 
     public Optional<Receipt> find(String idempotencyKey) {

@@ -106,6 +106,27 @@ body {
   padding: 4px;
 }
 
+/* Keep block-node titles inside the fixed navigation card. Long titles must not
+ * expand the Tree flex item into the adjacent workbench surface. */
+.catalog-navigation-tree {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.catalog-navigation-tree .ant-tree-list-holder-inner,
+.catalog-navigation-tree .ant-tree-treenode,
+.catalog-navigation-tree .ant-tree-node-content-wrapper,
+.catalog-navigation-tree .ant-tree-title {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.catalog-navigation-tree .ant-tree-title {
+  display: block;
+  width: 100%;
+}
+
 .operations-required-scope-placeholder {
   min-height: 240px;
   padding: 24px;

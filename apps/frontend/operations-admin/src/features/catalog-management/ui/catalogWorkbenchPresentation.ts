@@ -4,6 +4,7 @@ export type CatalogWorkbenchTreeNode = {
   key: Key;
   title: ReactNode;
   selectable?: boolean;
+  switcherIcon?: ReactNode;
   children?: CatalogWorkbenchTreeNode[];
 };
 

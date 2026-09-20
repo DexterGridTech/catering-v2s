@@ -14,6 +14,7 @@ import {buildSeedReport, loadGeneratedOperationRegistry, materializeGeneratedOpe
 import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManagedDiagnosticEvents, validateManagedDiagnosticTransport} from './managed-diagnostic-protocol.mjs';
 import {canonicalStartToken} from './managed-process-tree.mjs';
 import {validateRemoteJavaControl} from './r5-remote-java.mjs';
+import {validateFixtureContract} from './r5-fixture-contract.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const fixturePath = path.join(root, 'doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json');
@@ -202,9 +203,19 @@ export function validateStoreServicePointSeedCoverage(fixture) {
       fail('SEED_STORE_SERVICE_POINT_INVALID');
     }
     if (point.pointType === 'TABLE') {
-      if (!Number.isInteger(point.seatCapacity) || point.seatCapacity < 1 || !['HALL', 'PRIVATE_ROOM', 'BOOTH', 'OUTDOOR'].includes(point.tableShape)
-        || typeof point.reservable !== 'boolean' || !point.image?.fileName || !point.image?.mediaType) fail('SEED_STORE_TABLE_POINT_ATTRIBUTES_INVALID');
-    } else if (point.seatCapacity !== undefined || point.tableShape !== undefined || point.reservable !== undefined || point.image !== undefined) {
+      if ((point.seatCapacity !== undefined && point.seatCapacity !== null
+        && (!Number.isInteger(point.seatCapacity) || point.seatCapacity < 1))
+        || (point.tableShape !== undefined && point.tableShape !== null
+          && !['HALL', 'PRIVATE_ROOM', 'BOOTH', 'OUTDOOR'].includes(point.tableShape))
+        || (point.reservable !== undefined && point.reservable !== null && typeof point.reservable !== 'boolean')
+        || (point.image !== undefined && point.image !== null
+          && (typeof point.image !== 'object' || !point.image.fileName || !point.image.mediaType))) {
+        fail('SEED_STORE_TABLE_POINT_ATTRIBUTES_INVALID');
+      }
+    } else if ((point.seatCapacity !== undefined && point.seatCapacity !== null)
+      || (point.tableShape !== undefined && point.tableShape !== null)
+      || (point.reservable !== undefined && point.reservable !== null)
+      || (point.image !== undefined && point.image !== null)) {
       fail('SEED_STORE_SCAN_POINT_TABLE_ATTRIBUTES_FORBIDDEN');
     }
     pointKeys.add(point.key); pointCodes.add(point.code);
@@ -366,6 +377,7 @@ export function resolveInvitationCreationPlan(fixture) {
 
 export function validateFormalSeedStaticInputs({fixture, registry}) {
   if (fixture?.profile?.id !== 'r5-full' || fixture?.profile?.version !== 1) fail('SEED_PROFILE_CONTRACT_INVALID');
+  validateFixtureContract(fixture);
   validateThreeStateSeedCoverage(fixture);
   validateExtensionDefinitionSeedCoverage(fixture);
   validateExtensionDefinitionRevisionChangeCoverage(fixture);
@@ -808,8 +820,13 @@ async function executeFormalSeed() {
       }
       const extensionValues = extensionValuesFor('gw-aurora', 'SERVICE_POINT', point.extensionValues ?? {});
       const created = await request(`service-point-${point.key}`, 'postOperationsStoreServicePoint', {groupWorkspaceKey: aurora, storeRef: requireValue(ids.store[servicePointFixture.store]?.id, 'SEED_SERVICE_POINT_STORE_ID'), areaRef: requireValue(servicePointAreas.get(point.area)?.areaRef, 'SEED_SERVICE_POINT_AREA_ID')}, {cookie: operationsCookie, expected: [201], body: {name: point.name, code: point.code, pointType: point.pointType, seatCapacity: point.seatCapacity ?? null, tableShape: point.tableShape ?? null, reservable: point.reservable ?? null, imageAssetRef: staged?.assetRef ?? null, imageBindGrant: staged?.bindGrant ?? null, extensionValues, extensionRuleRevision: servicePointDefinitionReadback?.revision ?? null}});
+      const actualNullable = (value) => value ?? null;
       if (created.json?.name !== point.name || created.json?.code !== point.code || created.json?.pointType !== point.pointType || created.json?.status !== 'ENABLED'
-        || created.json?.areaRef !== servicePointAreas.get(point.area)?.areaRef || (point.pointType === 'TABLE' && created.json?.imageAssetRef !== staged?.assetRef)) throw new FormalSeedFailure(`SEED_SERVICE_POINT_READBACK_INVALID:${point.key}`);
+        || created.json?.areaRef !== servicePointAreas.get(point.area)?.areaRef
+        || actualNullable(created.json?.seatCapacity) !== actualNullable(point.seatCapacity)
+        || actualNullable(created.json?.tableShape) !== actualNullable(point.tableShape)
+        || actualNullable(created.json?.reservable) !== actualNullable(point.reservable)
+        || actualNullable(created.json?.imageAssetRef) !== actualNullable(staged?.assetRef)) throw new FormalSeedFailure(`SEED_SERVICE_POINT_READBACK_INVALID:${point.key}`);
       assertExtensionValueReadback(created, extensionValues); extensionReadback.SERVICE_POINT += 1;
       servicePointByKey.set(point.key, created.json); ids.servicePoint.points[point.key] = created.json;
     }

@@ -423,17 +423,21 @@
       "caseId": "catalog-find-success",
       "scenarioId": "CI-L2-019",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -471,27 +475,31 @@
           "maxRequestCount": 4
         }
       ],
-      "caseDbOperationUpperBound": 243,
-      "caseExpectedDbMs": 10376.1,
+      "caseDbOperationUpperBound": 256,
+      "caseExpectedDbMs": 10931.2,
       "caseLocalActionMs": 750,
-      "caseTimeoutMs": 23000
+      "caseTimeoutMs": 24000
     },
     {
       "caseId": "catalog-find-failure",
       "scenarioId": "CI-L2-019",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems"
       ],
       "maxRequestCount": [
         {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
+        {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
         },
@@ -528,27 +536,31 @@
           "maxRequestCount": 4
         }
       ],
-      "caseDbOperationUpperBound": 243,
-      "caseExpectedDbMs": 10376.1,
+      "caseDbOperationUpperBound": 256,
+      "caseExpectedDbMs": 10931.2,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 23000
+      "caseTimeoutMs": 24000
     },
     {
       "caseId": "catalog-find-recovery",
       "scenarioId": "CI-L2-019",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsCatalogItem"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -590,27 +602,31 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 289,
-      "caseExpectedDbMs": 12340.300000000001,
+      "caseDbOperationUpperBound": 302,
+      "caseExpectedDbMs": 12895.400000000001,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 27000
+      "caseTimeoutMs": 28000
     },
     {
       "caseId": "catalog-view-success",
       "scenarioId": "CI-L2-020",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsCatalogItem"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -652,27 +668,31 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 289,
-      "caseExpectedDbMs": 12340.300000000001,
+      "caseDbOperationUpperBound": 302,
+      "caseExpectedDbMs": 12895.400000000001,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 27000
+      "caseTimeoutMs": 28000
     },
     {
       "caseId": "catalog-view-failure",
       "scenarioId": "CI-L2-020",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsCatalogItem"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 2
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -683,7 +703,7 @@
         },
         {
           "operationId": "getOperationsWorkspaceSessionEntry",
-          "maxRequestCount": 2
+          "maxRequestCount": 3
         },
         {
           "operationId": "getOperationsCatalogShapeManifest",
@@ -714,27 +734,31 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 296,
-      "caseExpectedDbMs": 12639.2,
+      "caseDbOperationUpperBound": 333,
+      "caseExpectedDbMs": 14219.1,
       "caseLocalActionMs": 750,
-      "caseTimeoutMs": 27000
+      "caseTimeoutMs": 30000
     },
     {
       "caseId": "catalog-view-recovery",
       "scenarioId": "CI-L2-020",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsCatalogItem"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 2
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -745,11 +769,11 @@
         },
         {
           "operationId": "getOperationsWorkspaceSessionEntry",
-          "maxRequestCount": 2
+          "maxRequestCount": 3
         },
         {
           "operationId": "getOperationsCatalogShapeManifest",
-          "maxRequestCount": 3
+          "maxRequestCount": 4
         },
         {
           "operationId": "getOperationsCatalogDictionary",
@@ -776,28 +800,32 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 289,
-      "caseExpectedDbMs": 12340.300000000001,
+      "caseDbOperationUpperBound": 333,
+      "caseExpectedDbMs": 14219.1,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 27000
+      "caseTimeoutMs": 31000
     },
     {
       "caseId": "catalog-create-success",
       "scenarioId": "CI-L2-021",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "createOperationsCatalogItem",
         "getOperationsCatalogItem"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -820,7 +848,7 @@
         },
         {
           "operationId": "getOperationsCatalogCategoryCandidates",
-          "maxRequestCount": 2
+          "maxRequestCount": 3
         },
         {
           "operationId": "getOperationsCatalogWorkbenchContext",
@@ -841,30 +869,38 @@
         {
           "operationId": "getOperationsCatalogItem",
           "maxRequestCount": 2
+        },
+        {
+          "operationId": "listOperationsCatalogUnits",
+          "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 317,
-      "caseExpectedDbMs": 13535.900000000001,
+      "caseDbOperationUpperBound": 347,
+      "caseExpectedDbMs": 14816.900000000001,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 30000
+      "caseTimeoutMs": 33000
     },
     {
       "caseId": "catalog-create-failure",
       "scenarioId": "CI-L2-021",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "createOperationsCatalogItem",
         "getOperationsCatalogItem"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -910,28 +946,32 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 317,
-      "caseExpectedDbMs": 13535.900000000001,
+      "caseDbOperationUpperBound": 330,
+      "caseExpectedDbMs": 14091.000000000002,
       "caseLocalActionMs": 750,
-      "caseTimeoutMs": 29000
+      "caseTimeoutMs": 30000
     },
     {
       "caseId": "catalog-create-recovery",
       "scenarioId": "CI-L2-021",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "createOperationsCatalogItem",
         "getOperationsCatalogItem"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -954,7 +994,7 @@
         },
         {
           "operationId": "getOperationsCatalogCategoryCandidates",
-          "maxRequestCount": 2
+          "maxRequestCount": 3
         },
         {
           "operationId": "getOperationsCatalogWorkbenchContext",
@@ -975,24 +1015,28 @@
         {
           "operationId": "getOperationsCatalogItem",
           "maxRequestCount": 2
+        },
+        {
+          "operationId": "listOperationsCatalogUnits",
+          "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 317,
-      "caseExpectedDbMs": 13535.900000000001,
-      "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 30000
+      "caseDbOperationUpperBound": 347,
+      "caseExpectedDbMs": 14816.900000000001,
+      "caseLocalActionMs": 1250,
+      "caseTimeoutMs": 33000
     },
     {
       "caseId": "catalog-edit-success",
       "scenarioId": "CI-L2-022",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsCatalogItem",
@@ -1001,6 +1045,10 @@
         "saveOperationsCatalogItem"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -1054,22 +1102,22 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 351,
-      "caseExpectedDbMs": 14987.7,
+      "caseDbOperationUpperBound": 364,
+      "caseExpectedDbMs": 15542.800000000001,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 33000
+      "caseTimeoutMs": 34000
     },
     {
       "caseId": "catalog-edit-failure",
       "scenarioId": "CI-L2-022",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsCatalogItem",
@@ -1077,6 +1125,10 @@
         "saveOperationsCatalogItem"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -1126,28 +1178,32 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 388,
-      "caseExpectedDbMs": 16567.600000000002,
-      "caseLocalActionMs": 750,
-      "caseTimeoutMs": 35000
+      "caseDbOperationUpperBound": 401,
+      "caseExpectedDbMs": 17122.7,
+      "caseLocalActionMs": 1000,
+      "caseTimeoutMs": 37000
     },
     {
       "caseId": "catalog-edit-recovery",
       "scenarioId": "CI-L2-022",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsCatalogItem",
         "listOperationsCatalogUnits"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -1193,22 +1249,22 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 298,
-      "caseExpectedDbMs": 12724.6,
+      "caseDbOperationUpperBound": 311,
+      "caseExpectedDbMs": 13279.7,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 28000
+      "caseTimeoutMs": 30000
     },
     {
       "caseId": "catalog-config-success",
       "scenarioId": "CI-L2-023",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsCatalogItem",
@@ -1217,6 +1273,10 @@
         "createOperationsProductionTag"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -1270,22 +1330,22 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 379,
-      "caseExpectedDbMs": 16183.300000000001,
+      "caseDbOperationUpperBound": 392,
+      "caseExpectedDbMs": 16738.4,
       "caseLocalActionMs": 1500,
-      "caseTimeoutMs": 36000
+      "caseTimeoutMs": 37000
     },
     {
       "caseId": "catalog-config-failure",
       "scenarioId": "CI-L2-023",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsCatalogItem",
@@ -1294,6 +1354,10 @@
         "createOperationsProductionTag"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -1347,22 +1411,22 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 354,
-      "caseExpectedDbMs": 15115.800000000001,
+      "caseDbOperationUpperBound": 367,
+      "caseExpectedDbMs": 15670.900000000001,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 33000
+      "caseTimeoutMs": 34000
     },
     {
       "caseId": "catalog-config-recovery",
       "scenarioId": "CI-L2-023",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsCatalogItem",
@@ -1371,6 +1435,10 @@
         "createOperationsProductionTag"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -1424,27 +1492,31 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 386,
-      "caseExpectedDbMs": 16482.2,
+      "caseDbOperationUpperBound": 399,
+      "caseExpectedDbMs": 17037.300000000003,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 36000
+      "caseTimeoutMs": 37000
     },
     {
       "caseId": "catalog-batch-success",
       "scenarioId": "CI-L2-024",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "batchTransitionOperationsCatalogItemStatus"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -1487,28 +1559,32 @@
           "cardinality": 3
         }
       ],
-      "caseDbOperationUpperBound": 273,
-      "caseExpectedDbMs": 11657.1,
+      "caseDbOperationUpperBound": 286,
+      "caseExpectedDbMs": 12212.2,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 26000
+      "caseTimeoutMs": 27000
     },
     {
       "caseId": "catalog-batch-failure",
       "scenarioId": "CI-L2-024",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "batchTransitionOperationsCatalogItemStatus",
         "saveOperationsCatalogItem"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -1555,27 +1631,31 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 318,
-      "caseExpectedDbMs": 13578.6,
+      "caseDbOperationUpperBound": 331,
+      "caseExpectedDbMs": 14133.7,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 30000
+      "caseTimeoutMs": 31000
     },
     {
       "caseId": "catalog-batch-recovery",
       "scenarioId": "CI-L2-024",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "batchTransitionOperationsCatalogItemStatus"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -1618,22 +1698,22 @@
           "cardinality": 3
         }
       ],
-      "caseDbOperationUpperBound": 273,
-      "caseExpectedDbMs": 11657.1,
+      "caseDbOperationUpperBound": 286,
+      "caseExpectedDbMs": 12212.2,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 26000
+      "caseTimeoutMs": 27000
     },
     {
       "caseId": "catalog-copy-success",
       "scenarioId": "CI-L2-025",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsBrandCatalogCopyCandidates",
@@ -1642,6 +1722,10 @@
       ],
       "maxRequestCount": [
         {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
+        {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
         },
@@ -1690,22 +1774,22 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 394,
-      "caseExpectedDbMs": 16823.800000000003,
+      "caseDbOperationUpperBound": 407,
+      "caseExpectedDbMs": 17378.9,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 37000
+      "caseTimeoutMs": 38000
     },
     {
       "caseId": "catalog-copy-failure",
       "scenarioId": "CI-L2-025",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsBrandCatalogCopyCandidates",
@@ -1714,6 +1798,10 @@
         "saveOperationsCatalogItem"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -1767,22 +1855,22 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 439,
-      "caseExpectedDbMs": 18745.300000000003,
+      "caseDbOperationUpperBound": 452,
+      "caseExpectedDbMs": 19300.4,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 40000
+      "caseTimeoutMs": 42000
     },
     {
       "caseId": "catalog-copy-recovery",
       "scenarioId": "CI-L2-025",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsBrandCatalogCopyCandidates",
@@ -1791,6 +1879,10 @@
         "saveOperationsCatalogItem"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -1844,28 +1936,32 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 522,
-      "caseExpectedDbMs": 22289.4,
+      "caseDbOperationUpperBound": 535,
+      "caseExpectedDbMs": 22844.5,
       "caseLocalActionMs": 1250,
-      "caseTimeoutMs": 48000
+      "caseTimeoutMs": 49000
     },
     {
       "caseId": "catalog-governance-success",
       "scenarioId": "CI-L2-026",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsCatalogItem",
         "transitionOperationsCatalogItemStatus"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -1911,28 +2007,32 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 302,
-      "caseExpectedDbMs": 12895.400000000001,
+      "caseDbOperationUpperBound": 315,
+      "caseExpectedDbMs": 13450.5,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 28000
+      "caseTimeoutMs": 29000
     },
     {
       "caseId": "catalog-governance-failure",
       "scenarioId": "CI-L2-026",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsCatalogItem"
       ],
       "maxRequestCount": [
         {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
+        {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
         },
@@ -1973,28 +2073,32 @@
           "maxRequestCount": 2
         }
       ],
-      "caseDbOperationUpperBound": 289,
-      "caseExpectedDbMs": 12340.300000000001,
+      "caseDbOperationUpperBound": 302,
+      "caseExpectedDbMs": 12895.400000000001,
       "caseLocalActionMs": 750,
-      "caseTimeoutMs": 27000
+      "caseTimeoutMs": 28000
     },
     {
       "caseId": "catalog-governance-recovery",
       "scenarioId": "CI-L2-026",
       "operationIds": [
+        "getOperationsOrganizationStoreOperatingRule",
         "getOperationsWorkspaceLoginEntry",
         "operationsWorkspacePasswordLogin",
         "getOperationsWorkspaceSessionEntry",
         "getOperationsCatalogShapeManifest",
         "getOperationsCatalogDictionary",
         "getOperationsCatalogCategoryCandidates",
-        "getOperationsCatalogWorkbenchContext",
         "getOperationsCatalogNavigation",
         "getOperationsCatalogItems",
         "getOperationsCatalogItem",
         "transitionOperationsCatalogItemStatus"
       ],
       "maxRequestCount": [
+        {
+          "operationId": "getOperationsOrganizationStoreOperatingRule",
+          "maxRequestCount": 1
+        },
         {
           "operationId": "getOperationsWorkspaceLoginEntry",
           "maxRequestCount": 1
@@ -2040,12 +2144,12 @@
           "maxRequestCount": 1
         }
       ],
-      "caseDbOperationUpperBound": 302,
-      "caseExpectedDbMs": 12895.400000000001,
+      "caseDbOperationUpperBound": 315,
+      "caseExpectedDbMs": 13450.5,
       "caseLocalActionMs": 1000,
-      "caseTimeoutMs": 28000
+      "caseTimeoutMs": 29000
     }
   ],
-  "fullRunExpectedMs": 642213.6,
-  "fullRunTimeoutMs": 1285000
+  "fullRunExpectedMs": 659836.3,
+  "fullRunTimeoutMs": 1320000
 }

@@ -4,6 +4,8 @@ import {
   adminListState,
   closedCodeLabel,
   createRefreshSignal,
+  displayFieldValue,
+  LifecycleStatusTag,
   testId,
   useAsyncGenerationGuard,
   useRefreshVersion,
@@ -150,7 +152,7 @@ export function ProjectBusinessChannelPage({queryContext}: OperationsPageProps) 
         key: 'templateCode',
         sorter: true,
         sortOrder: templateSort.sortKey === 'TEMPLATE_CODE' ? proSortOrder(templateSort.sortDirection) : undefined,
-        render: (_value: unknown, row: BusinessChannelTemplateView) => row.templateCode || '—',
+        render: (_value: unknown, row: BusinessChannelTemplateView) => displayFieldValue(row.templateCode),
       },
       {
         title: '接入类型',
@@ -194,9 +196,7 @@ export function ProjectBusinessChannelPage({queryContext}: OperationsPageProps) 
         key: 'status',
         sorter: true,
         sortOrder: templateSort.sortKey === 'STATUS' ? proSortOrder(templateSort.sortDirection) : undefined,
-        render: (_value: unknown, row: BusinessChannelTemplateView) => (
-          <Tag>{closedCodeLabel(lifecycleStatusLabels, row.status)}</Tag>
-        ),
+        render: (_value: unknown, row: BusinessChannelTemplateView) => <LifecycleStatusTag status={row.status} />,
       },
     ],
     [templateSort.sortDirection, templateSort.sortKey],

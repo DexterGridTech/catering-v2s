@@ -587,6 +587,37 @@ final class OrganizationAcceptanceScenarios {
     }
 
     @AcceptanceScenario(
+            id = "org.platform-organization-hierarchy-preserves-voided-status",
+            module = "ORG",
+            operation = "getPlatformOrganizationHierarchyTree")
+    void platformOrganizationHierarchyPreservesVoidedStatus(BackendAcceptanceTest.ScenarioContext context)
+            throws Exception {
+        BackendAcceptanceTest.Fixture fixture = host.fixture("PROJECT", Set.of("BC-ORG-PROJECT-STATUS"));
+        host.completeInvitation(context, fixture);
+        BackendAcceptanceTest.Session operations = host.login(context, fixture);
+        Response voided = context.post(
+                OPERATIONS_ORGANIZATION_NODE_STATUS,
+                "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey()
+                        + "/hierarchy/" + fixture.projectId() + "/status",
+                operations.cookie(),
+                Map.of("targetStatus", "VOIDED", "expectedVersion", 1),
+                Set.of(200));
+        assertEquals("VOIDED", voided.json().path("status").asText(), "BUSINESS: project becomes voided");
+
+        host.ensurePlatformAdministrator();
+        BackendAcceptanceTest.Session platform = host.platformLogin(context);
+        Response hierarchy = context.get(
+                PLATFORM_ORGANIZATION_HIERARCHY,
+                "/api/platform/group-workspaces/" + fixture.groupWorkspaceKey()
+                        + "/organization-overview/hierarchy",
+                platform.cookie(),
+                Set.of(200));
+        JsonNode project = findNodeById(hierarchy.json().path("regions"), fixture.projectId().toString());
+        assertNotNull(project, "BUSINESS: platform hierarchy keeps the voided project");
+        assertEquals("VOIDED", project.path("status").asText(), "BUSINESS: platform hierarchy preserves status");
+    }
+
+    @AcceptanceScenario(
             id = "extension.authorization-scope-isolation",
             module = "EXTENSION",
             operation = "getOperationsOrganizationBrands")
@@ -676,6 +707,16 @@ final class OrganizationAcceptanceScenarios {
         assertTrue(
                 item.has("extensionRuleRevision"),
                 "BUSINESS: flat platform page exposes the applied definition revision");
+    }
+
+    private static JsonNode findNodeById(JsonNode nodes, String id) {
+        if (!nodes.isArray()) return null;
+        for (JsonNode node : nodes) {
+            if (id.equals(node.path("id").asText())) return node;
+            JsonNode match = findNodeById(node.path("children"), id);
+            if (match != null) return match;
+        }
+        return null;
     }
 
     private void organizationExtensionFilteredList(

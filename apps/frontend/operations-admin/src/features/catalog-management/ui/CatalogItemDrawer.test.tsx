@@ -35,6 +35,7 @@ import {
 import {catalogUiProblemFeedback} from '../model/catalogUiProblemFeedback';
 import {operationsStore} from '../../../app/state/OperationsStore';
 import {CatalogItemCompositeEditor} from './CatalogItemCompositeEditor';
+import type {CatalogManifest} from '../model/catalogItemSurfaceTypes';
 
 // The focused surfaces below do not mount ProList. Keep its unrelated CJS
 // package boundary out of this SSR-oriented component test.
@@ -861,11 +862,32 @@ describe('catalog identification and preparation editor boundaries', () => {
         ],
       },
     ];
+    const compositeManifest: CatalogManifest = {
+      shapeKeys: ['COMPOSITE'],
+      fields: [
+        {
+          fieldKey: 'compositeComponentSku',
+          dataPath: 'compositeGroups[].components[].productSkuRef',
+          label: '组件规格',
+          controlKind: 'select',
+          tabKey: 'composite-content',
+          admittedShapes: ['COMPOSITE'],
+          helpText: '选择已选组件商品中的规格。',
+        },
+      ],
+      enumLabels: {catalogItemStatus: {ENABLED: '启用', DISABLED: '停用'}},
+      fieldRules: {COMPOSITE: [{field: 'compositeComponentSku', visible: true}]},
+      tabRules: {COMPOSITE: {visible: ['composite-content']}},
+      typeEffects: {},
+      identifierRules: {},
+      preparationRules: {},
+    };
     const markup = renderToStaticMarkup(
       <Provider store={operationsStore}>
         <CatalogItemCompositeEditor
           mode="edit"
           shapeKey="COMPOSITE"
+          manifest={compositeManifest}
           values={values}
           readOnlyValues={[]}
           onChange={() => undefined}
@@ -884,13 +906,19 @@ describe('catalog identification and preparation editor boundaries', () => {
     expect(markup).toContain('套餐分组');
     expect(markup).toContain('添加内容');
     expect(markup).toContain('选择商品');
-    expect(markup).toContain('规格');
+    expect(markup).toContain('组件选择');
+    expect(markup).toContain('<strong>组件选择</strong>');
+    expect(markup).toContain('<strong>规格</strong>');
+    expect(markup).toContain('选择已选组件商品中的规格。');
+    expect(markup).not.toContain('组件规格');
     expect(markup).toContain('默认内容');
     const source = readFileSync(new URL('./CatalogItemCompositeEditor.tsx', import.meta.url), 'utf8');
     expect(source).not.toContain('scroll={{x: 1336}}');
     expect(source).toContain('<Row gutter={24} align="top">');
     expect(source).toContain('<Col flex="280px">');
     expect(source).toContain("aria-current={active ? 'page' : undefined}");
+    expect(source).toContain('labelOverride="规格"');
+    expect(source).not.toContain('<Typography.Text strong>规格</Typography.Text>');
     expect(source).not.toContain('CompositeCandidateSelectionModal');
   });
 });

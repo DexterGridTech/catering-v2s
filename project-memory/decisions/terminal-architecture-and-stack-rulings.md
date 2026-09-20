@@ -8,7 +8,7 @@ consumerFaces: ["all"]
 owners: ["platform","frontend-platform","product"]
 impacts: ["architecture","governance","runtime"]
 triggers: ["task-start","implementation","review"]
-assertions: ["TER_SAME_GOVERNANCE_AS_MAIN_REPO","TER_FOUR_LAYER_NESTED_STRUCTURE","TER_SINGLE_VM_SINGLE_STORE_MULTI_SURFACE","TER_PAIR_TOPOLOGY_WITH_DETACHABLE_SECONDARY","TER_STACK_RULINGS_T1_T13","TER_SCRIPT_EXECUTE_UNRESTRICTED","TER_EVENT_TO_COMMAND_ACTOR_PATTERN","TER_KERNEL_UI_FEATURE_ONE_TO_MANY"]
+assertions: ["TER_SAME_GOVERNANCE_AS_MAIN_REPO","TER_FOUR_LAYER_NESTED_STRUCTURE","TER_SINGLE_VM_SINGLE_STORE_MULTI_SURFACE","TER_PAIR_TOPOLOGY_WITH_DETACHABLE_SECONDARY","TER_FEATURE_TOPOLOGY_OWNERSHIP","TER_STACK_RULINGS_T1_T13","TER_SCRIPT_EXECUTE_UNRESTRICTED","TER_EVENT_TO_COMMAND_ACTOR_PATTERN","TER_KERNEL_UI_FEATURE_ONE_TO_MANY"]
 sourceRefs: ["doc/platform/terminal-coding-standard.md","doc/review/platform/2026-08-28-newposv1-package-analysis-claude/00-ter-build-order-claude.md"]
 ---
 
@@ -41,6 +41,11 @@ TER = `apps/terminal`，v2s 仓内的终端产品工程。设计输入是对 POC
 - `TER_PAIR_TOPOLOGY_WITH_DETACHABLE_SECONDARY`：跨机拓扑**仍是一主一副 pair**
   （"多 peer 图网络"是已被证伪的方向）；副屏（平板）**可拿下来、监听接电状态当主屏用** ——
   即 POC 已实现的 standalone slave + powerDisplaySwitch，`SLAVE && PRIMARY → BRANCH`。
+- `TER_FEATURE_TOPOLOGY_OWNERSHIP`：正式写入归属规则是：**`MAIN` 只能主机的 actor 执行 command
+  写入 slice。`BRANCH` 只能副机的 actor 执行 command 写入 slice。** 正本见
+  `doc/platform/terminal-coding-standard.md` §4-D。由此导出 `MAIN → SLAVE` 与 `BRANCH → MASTER`
+  的 projection 方向；不得以物理屏数 helper、拓扑事件重放或 `peer-intent` 代替 workspace 写入
+  owner 判定。
 - `TER_STACK_RULINGS_T1_T13`：技术栈裁定编号 `T-1`…`T-13`，正本在 sourceRefs 的建设顺序文档 §4B.10 —
   Expo SDK 57，**RN 版本取实施当时 `latest` 官方模板的解析结果，不手工钉死**
   （Dexter 2026-08-29 裁定用 latest）——2026-08-29 快照为 **RN 0.86.3**，

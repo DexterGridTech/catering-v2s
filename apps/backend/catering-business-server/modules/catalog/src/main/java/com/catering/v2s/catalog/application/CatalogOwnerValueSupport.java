@@ -2,6 +2,7 @@ package com.catering.v2s.catalog.application;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerTypes;
+import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
 import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -79,37 +80,27 @@ final class CatalogOwnerValueSupport {
     }
 
     private static int parsePageSize(ObjectNode request, String key, int fallback) {
-        JsonNode value = request == null ? null : request.get(key);
-        if (value == null || value.isNull() || value.asText().isBlank()) return fallback;
         try {
-            int parsed = Integer.parseInt(value.asText());
-            if (parsed < 1 || parsed > 100) throw new NumberFormatException();
-            return parsed;
-        } catch (NumberFormatException ex) {
-            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, key + " must be between 1 and 100", ex);
+            return CollectionRequestSupport.pageSize(request, key, fallback);
+        } catch (CollectionRequestSupport.InvalidRequestValue failure) {
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, failure.getMessage(), failure);
         }
     }
 
     private static long parseCursor(ObjectNode request, String key) {
-        JsonNode value = request == null ? null : request.get(key);
-        if (value == null || value.isNull() || value.asText().isBlank()) return 0L;
         try {
-            long parsed = Long.parseLong(value.asText());
-            if (parsed < 0) throw new NumberFormatException();
-            return parsed;
-        } catch (NumberFormatException ex) {
-            throw new CatalogOwnerApi.Problem(
-                    "VALIDATION_ERROR", 422, key + " must be a non-negative opaque cursor", ex);
+            return CollectionRequestSupport.cursor(request, key);
+        } catch (CollectionRequestSupport.InvalidRequestValue failure) {
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, failure.getMessage(), failure);
         }
     }
 
     private static boolean parseBoolean(ObjectNode request, String key, boolean fallback) {
-        JsonNode value = request == null ? null : request.get(key);
-        if (value == null || value.isNull() || value.asText().isBlank()) return fallback;
-        if (value.isBoolean()) return value.asBoolean();
-        if ("true".equalsIgnoreCase(value.asText())) return true;
-        if ("false".equalsIgnoreCase(value.asText())) return false;
-        throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, key + " must be boolean");
+        try {
+            return CollectionRequestSupport.booleanValue(request, key, fallback);
+        } catch (CollectionRequestSupport.InvalidRequestValue failure) {
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, failure.getMessage(), failure);
+        }
     }
 
     private static List<UUID> uuidArray(JsonNode value, String field) {
@@ -140,8 +131,7 @@ final class CatalogOwnerValueSupport {
     }
 
     private static String optional(ObjectNode request, String key) {
-        JsonNode value = request == null ? null : request.get(key);
-        return value == null || value.isNull() ? null : value.asText();
+        return CollectionRequestSupport.optional(request, key);
     }
 
     static List<String> validatedLocalCopySections(ArrayNode selectedSections) {

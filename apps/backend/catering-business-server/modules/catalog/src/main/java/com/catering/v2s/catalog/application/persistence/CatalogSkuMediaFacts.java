@@ -115,8 +115,8 @@ public class CatalogSkuMediaFacts {
         }
         Boolean found = jdbc.queryForObject(
                 CatalogSkuMediaFactsSql.CATALOG_SKU_MEDIA_FACTS_SELECT_CATALOG_SKU_MEDIA_SKU
-                        + CatalogSkuMediaFactsSql.CATALOG_SKU_MEDIA_FACTS_CONTINUATION_CATALOG_ITEM_SKU_PRODUCT_SKU_REF_MEDIA_ITEM
-                        + CatalogSkuMediaFactsSql.CATALOG_SKU_MEDIA_FACTS_CONTINUATION_ITEM_ITEM_REF_SKU_MEDIA
+                        + CatalogSkuMediaFactsSql.CATALOG_SKU_MEDIA_FACTS_CATALOG_ITEM_SKU_PRODUCT_SKU_REF_MEDIA_ITEM
+                        + CatalogSkuMediaFactsSql.CATALOG_SKU_MEDIA_FACTS_ITEM_ITEM_REF_SKU_MEDIA
                         + scope + CatalogSkuMediaFactsSql.CATALOG_SKU_MEDIA_FACTS_CLOSE_PAREN_ALTERNATE_A,
                 Boolean.class,
                 arguments.toArray());
@@ -137,8 +137,8 @@ public class CatalogSkuMediaFacts {
         }
         return Set.copyOf(jdbc.query(
                 CatalogSkuMediaFactsSql.CATALOG_SKU_MEDIA_FACTS_SELECT_CATALOG_SKU_MEDIA_ASSET_REF_SKU
-                        + CatalogSkuMediaFactsSql.CATALOG_SKU_MEDIA_FACTS_CONTINUATION_CATALOG_ITEM_SKU_PRODUCT_SKU_REF_MEDIA_ITEM_ALTERNATE_A
-                        + CatalogSkuMediaFactsSql.CATALOG_SKU_MEDIA_FACTS_CONTINUATION_ITEM_ITEM_REF_SKU_MEDIA_ALTERNATE_A
+                        + CatalogSkuMediaFactsSql.CATALOG_SKU_MEDIA_FACTS_CATALOG_ITEM_SKU_PRODUCT_SKU_REF_MEDIA_ITEM_ALTERNATE_A
+                        + CatalogSkuMediaFactsSql.CATALOG_SKU_MEDIA_FACTS_ITEM_ITEM_REF_SKU_MEDIA_ALTERNATE_A
                         + placeholders + CatalogSkuMediaFactsSql.CATALOG_SKU_MEDIA_FACTS_CLOSE_PAREN_ITEM_STATUS_VOIDED + scope,
                 (rows, row) -> rows.getObject(1, UUID.class),
                 arguments.toArray()));

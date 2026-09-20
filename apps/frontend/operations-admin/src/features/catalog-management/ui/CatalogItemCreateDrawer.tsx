@@ -227,11 +227,12 @@ export function CatalogItemCreateDrawer({open, queryContext, brandRef, initialVa
             loading={manifestQuery.isLoading}
             options={shapeOptions}
             optionRender={option =>
-              option.data.disabled ? (
-                <span style={{color: '#999'}}>{option.label}（权益域尚未开放）</span>
-              ) : (
-                option.label
-              )
+              <span
+                style={option.data.disabled ? {color: '#999'} : undefined}
+                {...testId(catalogTestIdControls.create.shapeOption(String(option.value)))}
+              >
+                {option.data.disabled ? `${option.label}（权益域尚未开放）` : option.label}
+              </span>
             }
             {...testId(catalogTestIds.control.createShape)}
           />

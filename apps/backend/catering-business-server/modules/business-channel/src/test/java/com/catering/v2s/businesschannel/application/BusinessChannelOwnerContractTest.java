@@ -94,6 +94,7 @@ class BusinessChannelOwnerContractTest {
                 null,
                 null,
                 null,
+                null,
                 List.of(),
                 41L,
                 "business-channel-stale-01",

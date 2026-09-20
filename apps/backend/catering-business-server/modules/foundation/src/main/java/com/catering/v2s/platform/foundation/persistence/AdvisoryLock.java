@@ -18,10 +18,20 @@ public final class AdvisoryLock {
     private AdvisoryLock() {}
 
     public static void acquire(JdbcTemplate jdbc, String namespace, String scopeKey, String idempotencyKey) {
+        acquireHashTextPair(jdbc, namespace + ":" + scopeKey, idempotencyKey);
+    }
+
+    /** Acquires a two-part text key while preserving the PostgreSQL hash pair semantics. */
+    public static void acquireHashTextPair(JdbcTemplate jdbc, String firstKey, String secondKey) {
         jdbc.queryForList(
                 "SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), hashtext(CAST(? AS text)))",
-                namespace + ":" + scopeKey,
-                idempotencyKey);
+                firstKey,
+                secondKey);
+    }
+
+    /** Acquires a single text key using the PostgreSQL advisory-lock hash function. */
+    public static void acquireHashText(JdbcTemplate jdbc, String key) {
+        jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtext(?))", key);
     }
 
     public static void acquire(JdbcTemplate jdbc, int namespaceTag, UUID ref) {

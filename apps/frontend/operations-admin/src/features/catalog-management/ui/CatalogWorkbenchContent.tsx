@@ -49,7 +49,11 @@ export function CatalogWorkbenchContent({
           showIcon
           title="当前范围无权访问商品数据"
           description="请切换到有权限的数据节点或品牌；系统不会展示其他范围的商品。"
-          action={<Button onClick={onRefresh}>重试</Button>}
+          action={
+            <Button {...testId(catalogTestIds.control.workbenchRetry)} onClick={onRefresh}>
+              重试
+            </Button>
+          }
           style={{marginBottom: 16}}
           {...testId(catalogTestIds.static.inventoryWorkbenchScopeForbidden)}
         />

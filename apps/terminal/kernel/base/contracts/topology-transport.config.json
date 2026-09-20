@@ -5,5 +5,13 @@
   "heartbeatTimeoutMs": 30000,
   "callTimeoutMs": 5000,
   "reconnectBaseDelayMs": 500,
-  "reconnectMaxDelayMs": 10000
+  "reconnectMaxDelayMs": 10000,
+  "compressionThresholdBytes": 16384,
+  "compressionMinimumSavingsBytes": 1024,
+  "compressionMinimumSavingsRatio": 0.1,
+  "chunkTargetBytes": 49152,
+  "reassemblyMaxBytes": 8388608,
+  "reassemblyMaxInflightTransfers": 2,
+  "reassemblyTimeoutMs": 15000,
+  "peerCommandMaxInflight": 256
 }

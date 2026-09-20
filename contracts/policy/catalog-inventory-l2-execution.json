@@ -2,13 +2,47 @@
   "schemaVersion": 1,
   "kind": "catalog-inventory-l2-execution-profile",
   "revision": "CATALOG_INVENTORY_L2_REBUILD_20260816",
-  "mode": "FRAMEWORK_ONLY",
-  "enabledCaseIds": [],
+  "mode": "INCREMENTAL",
+  "enabledCaseIds": [
+    "catalog-find-success",
+    "catalog-find-failure",
+    "catalog-find-recovery",
+    "catalog-view-success",
+    "catalog-view-failure",
+    "catalog-view-recovery",
+    "catalog-create-success",
+    "catalog-create-failure",
+    "catalog-create-recovery",
+    "catalog-edit-success",
+    "catalog-edit-failure",
+    "catalog-edit-recovery",
+    "catalog-config-success",
+    "catalog-config-failure",
+    "catalog-config-recovery",
+    "catalog-batch-success",
+    "catalog-batch-failure",
+    "catalog-batch-recovery",
+    "catalog-copy-success",
+    "catalog-copy-failure",
+    "catalog-copy-recovery",
+    "catalog-governance-success",
+    "catalog-governance-failure",
+    "catalog-governance-recovery"
+  ],
   "sourceOfTruth": "contracts/policy/catalog-inventory-l2-case-blueprint.json",
   "noSeedRuntimeInput": true,
   "activationCandidate": {
     "path": "contracts/policy/catalog-inventory-l2-activation-candidate.json",
     "digest": "cb0cd0f0cc8128c21b9393d02b8aaa7e837f8759be3321611ac146dbcf9c65a5"
   },
-  "enablementRule": "P1 enables only the candidate exact set after a matching PASS held readiness manifest; generated output is never hand-edited."
+  "enablementRule": "P1 enables only the candidate exact set after a matching PASS held readiness manifest; generated output is never hand-edited.",
+  "readiness": {
+    "manifestPath": ".runtime/browser-l2/l2-1789835475599-71400-ae68ae31-8562-43e7-9da3-1288563ee661/readiness-manifest.json",
+    "runBinding": {
+      "runId": "l2-1789835475599-71400-ae68ae31-8562-43e7-9da3-1288563ee661",
+      "namespace": "v2s_l2_909e4178067f4d67",
+      "database": "catering_v2s_l2_909e4178067f4d67",
+      "assetPrefix": "s3://catering-v2s-r5-assets/catering-v2s/l2/l2-1789835475599-71400-ae68ae31-8562-43e7-9da3-1288563ee661/"
+    }
+  }
 }

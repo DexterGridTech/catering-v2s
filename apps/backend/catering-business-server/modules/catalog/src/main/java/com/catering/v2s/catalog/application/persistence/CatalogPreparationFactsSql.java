@@ -8,8 +8,8 @@ public final class CatalogPreparationFactsSql {
     public static final String CATALOG_PREPARATION_FACTS_SELECT_CATALOG_SKU_PRODUCT_SKU_REF_PREPARATION_OVERRIDE_TEXT = "SELECT product_sku_ref,preparation_override::text FROM catalog.catalog_sku WHERE product_sku_ref IN (";
     public static final String CATALOG_PREPARATION_FACTS_SELECT_CONFIG_ITEM_REF_OVERRIDE_ORDER_OPTION_DEFINITION_VALUE_REF = "SELECT config.item_ref,override.order_option_definition_value_ref,override.preparation_effect::text ";
     public static final String CATALOG_PREPARATION_FACTS_FROM_CLAUSE_CATALOG_ITEM_ORDER_OPTION_CONFIG_CONFIG = "FROM catalog.catalog_item_order_option_config config JOIN ";
-    public static final String CATALOG_PREPARATION_FACTS_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE = "catalog.catalog_item_order_option_value_override override ON ";
-    public static final String CATALOG_PREPARATION_FACTS_CONTINUATION_OVERRIDE_ITEM_ORDER_OPTION_CONFIG_REF_CONFIG = "override.item_order_option_config_ref=config.item_order_option_config_ref ";
+    public static final String CATALOG_PREPARATION_FACTS_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE = "catalog.catalog_item_order_option_value_override override ON ";
+    public static final String CATALOG_PREPARATION_FACTS_OVERRIDE_ITEM_ORDER_OPTION_CONFIG_REF_CONFIG = "override.item_order_option_config_ref=config.item_order_option_config_ref ";
     public static final String CATALOG_PREPARATION_FACTS_WHERE_CONFIG_ITEM_REF = "WHERE config.item_ref IN (";
     public static final String CATALOG_PREPARATION_FACTS_CLOSE_PAREN_OVERRIDE_PREPARATION_EFFECT = ") AND override.preparation_effect IS NOT NULL ";
     public static final String CATALOG_PREPARATION_FACTS_ORDER_BY_CONFIG_ITEM_REF_OVERRIDE_ORDER_OPTION_DEFINITION_VALUE_REF = "ORDER BY config.item_ref,override.order_option_definition_value_ref";
@@ -34,9 +34,9 @@ public final class CatalogPreparationFactsSql {
     public static final String CATALOG_PREPARATION_FACTS_CLOSE_PAREN = ")";
     public static final String CATALOG_PREPARATION_FACTS_CLOSE_PAREN_ALTERNATE_A = ")";
     public static final String CATALOG_PREPARATION_FACTS_CLOSE_PAREN_EFFECT_CONFIG_ITEM_REF_OVERRIDE = ") UNION ALL SELECT 'EFFECT',config.item_ref,override.order_option_definition_value_ref,";
-    public static final String CATALOG_PREPARATION_FACTS_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_CONFIG = "override.preparation_effect::text FROM catalog.catalog_item_order_option_config config JOIN ";
-    public static final String CATALOG_PREPARATION_FACTS_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE_ALTERNATE_A = "catalog.catalog_item_order_option_value_override override ON ";
-    public static final String CATALOG_PREPARATION_FACTS_CONTINUATION_OVERRIDE_ITEM_ORDER_OPTION_CONFIG_REF_CONFIG_ALTERNATE_A = "override.item_order_option_config_ref=config.item_order_option_config_ref WHERE ";
-    public static final String CATALOG_PREPARATION_FACTS_CONTINUATION_CONFIG_ITEM_REF = "config.item_ref IN (";
+    public static final String CATALOG_PREPARATION_FACTS_CATALOG_ITEM_ORDER_OPTION_CONFIG = "override.preparation_effect::text FROM catalog.catalog_item_order_option_config config JOIN ";
+    public static final String CATALOG_PREPARATION_FACTS_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE_ALTERNATE_A = "catalog.catalog_item_order_option_value_override override ON ";
+    public static final String CATALOG_PREPARATION_FACTS_OVERRIDE_ITEM_ORDER_OPTION_CONFIG_REF_CONFIG_ALTERNATE_A = "override.item_order_option_config_ref=config.item_order_option_config_ref WHERE ";
+    public static final String CATALOG_PREPARATION_FACTS_CONFIG_ITEM_REF = "config.item_ref IN (";
     public static final String CATALOG_PREPARATION_FACTS_CLOSE_PAREN_OVERRIDE_PREPARATION_EFFECT_ALTERNATE_A = ") AND override.preparation_effect IS NOT NULL";
 }

@@ -1032,7 +1032,7 @@ public class BusinessChannelService {
 
     private static void requireMutable(String status) {
         if (BusinessChannelPolicy.VOIDED.equals(status)) {
-            throw problem("VOIDED_RECORD_IMMUTABLE", 409, "该业务渠道已标记删除，不能继续修改");
+            throw problem("VOIDED_RECORD_IMMUTABLE", 409, "该业务渠道已作废，不能继续修改");
         }
     }
 

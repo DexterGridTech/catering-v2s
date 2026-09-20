@@ -1615,7 +1615,7 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     }),
     getOperationsStoreQrChannelCandidates: build.query<FaceOperationContracts["getOperationsStoreQrChannelCandidates"]["response"], FaceOperationRequest<"getOperationsStoreQrChannelCandidates">>({
       query: (request) => toWireRequest(request),
-      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+      providesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"static","id":"store-service-point-qr-channel-candidates"}] as const, request),
     }),
     getOperationsStoreQrConfiguration: build.query<FaceOperationContracts["getOperationsStoreQrConfiguration"]["response"], FaceOperationRequest<"getOperationsStoreQrConfiguration">>({
       query: (request) => toWireRequest(request),

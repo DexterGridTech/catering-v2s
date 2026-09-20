@@ -1,6 +1,11 @@
 import {Alert, Button, Descriptions, Drawer, Skeleton, Space, Tag} from 'antd';
 import {useEffect, useRef} from 'react';
-import {adminWideDrawerSurfaceProps, NameCodeText, testId} from '@catering-v2s/admin-ui-foundation';
+import {
+  adminWideDrawerSurfaceProps,
+  NameCodeText,
+  StatusChangeConfirm,
+  testId,
+} from '@catering-v2s/admin-ui-foundation';
 import {catalogEnumLabel} from '../model/catalogManifestLabels';
 import type {CatalogItemDrawerProps} from '../model/catalogItemSurfaceTypes';
 import {catalogTestIds} from '../catalogTestIds';
@@ -144,6 +149,29 @@ export function CatalogItemEditorWorkspace(props: CatalogItemDrawerProps) {
         onClose={state.closeConfiguration}
         onAfterClose={state.afterConfigurationClose}
       />
+      {state.pendingVoidSku && (
+        <StatusChangeConfirm
+          open
+          title={
+            <span>
+              作废规格“
+              <NameCodeText name={state.pendingVoidSku.skuName} code={state.pendingVoidSku.skuCode} />
+              ”？
+            </span>
+          }
+          actionLabel="作废"
+          dangerous={Boolean(state.pendingVoidSku)}
+          submitting={Boolean(state.voidingSkuRef)}
+          problem={state.problem}
+          onCancel={() => state.setPendingVoidSku(undefined)}
+          onConfirm={() => void state.confirmVoidSku()}
+          confirmTestId="catalog-sku-void-confirm"
+          cancelTestId="catalog-sku-void-cancel"
+          modalTestId="catalog-sku-void-modal"
+        >
+          作废后该规格不再占用商品编码；此操作不可逆，商品其他事实不会被清空。
+        </StatusChangeConfirm>
+      )}
     </Drawer>
   );
 }

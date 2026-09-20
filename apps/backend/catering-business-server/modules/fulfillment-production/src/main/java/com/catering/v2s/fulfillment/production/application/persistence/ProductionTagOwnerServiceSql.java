@@ -26,15 +26,15 @@ public final class ProductionTagOwnerServiceSql {
 
     public static final String CREATE_TYPED_TAG = "WITH receipt_lock AS MATERIALIZED (SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), "
             + "hashtext(CAST(? AS text)))), prior_receipt AS MATERIALIZED (SELECT operation_id,request_hash,"
-            + "response::text AS response FROM fulfillment_production.command_receipt CROSS JOIN receipt_lock "
+            + "response_json::text AS response FROM fulfillment_production.command_receipt CROSS JOIN receipt_lock "
             + "WHERE data_node_ref=? AND idempotency_key=?), inserted_tag AS (INSERT INTO "
             + "fulfillment_production.production_tag_definition(tag_ref,data_node_ref,brand_ref,code,name,"
             + "created_at_epoch_millis,updated_at_epoch_millis) SELECT ?,?,?,?,?,?,? WHERE NOT EXISTS "
             + "(SELECT 1 FROM prior_receipt) RETURNING tag_ref,code,name,status,version), written_receipt AS "
             + "(INSERT INTO fulfillment_production.command_receipt(receipt_ref,data_node_ref,idempotency_key,"
-            + "operation_id,request_hash,response,created_at_epoch_millis) SELECT ?,?,?,?,?,jsonb_build_object("
+            + "operation_id,request_hash,response_json,created_at_epoch_millis) SELECT ?,?,?,?,?,jsonb_build_object("
             + "'tagRef',tag_ref,'code',code,'name',name,'status',status,'version',version),? FROM inserted_tag "
-            + "RETURNING response::text AS response) SELECT prior_receipt.operation_id,prior_receipt.request_hash,"
+            + "RETURNING response_json::text AS response) SELECT prior_receipt.operation_id,prior_receipt.request_hash,"
             + "prior_receipt.response AS replay_response,written_receipt.response AS written_response "
             + "FROM receipt_lock "
             + "LEFT JOIN prior_receipt ON TRUE LEFT JOIN written_receipt ON TRUE";
@@ -44,7 +44,7 @@ public final class ProductionTagOwnerServiceSql {
             + "FROM fulfillment_production.production_tag_definition CROSS JOIN receipt_lock WHERE data_node_ref=? "
             + "AND brand_ref=? AND code=? FOR UPDATE), prior_receipt AS MATERIALIZED "
             + "(SELECT operation_id,request_hash,"
-            + "response::text AS response FROM fulfillment_production.command_receipt "
+            + "response_json::text AS response FROM fulfillment_production.command_receipt "
             + "CROSS JOIN receipt_lock WHERE "
             + "data_node_ref=? AND idempotency_key=?), updated_tag AS (UPDATE "
             + "fulfillment_production.production_tag_definition tag SET ";
@@ -53,9 +53,9 @@ public final class ProductionTagOwnerServiceSql {
             + "AND current.status <> 'VOIDED' AND current.version=? AND NOT EXISTS (SELECT 1 FROM prior_receipt) "
             + "RETURNING tag.tag_ref,tag.code,tag.name,tag.status,tag.version), written_receipt AS (INSERT INTO "
             + "fulfillment_production.command_receipt(receipt_ref,data_node_ref,idempotency_key,"
-            + "operation_id,request_hash,response,created_at_epoch_millis) SELECT ?,?,?,?,?,"
+            + "operation_id,request_hash,response_json,created_at_epoch_millis) SELECT ?,?,?,?,?,"
             + "jsonb_build_object('tagRef',tag_ref,'code',code,'name',name,'status',status,'version',version),? "
-            + "FROM updated_tag RETURNING response::text AS response) SELECT current_tag.tag_ref,"
+            + "FROM updated_tag RETURNING response_json::text AS response) SELECT current_tag.tag_ref,"
             + "current_tag.status,"
             + "current_tag.version,prior_receipt.operation_id,prior_receipt.request_hash,"
             + "prior_receipt.response AS replay_response,written_receipt.response AS written_response "
@@ -93,10 +93,10 @@ public final class ProductionTagOwnerServiceSql {
             + "brand_ref=? AND code=?";
     public static final String READ_TAG_STATUS = "SELECT status FROM fulfillment_production.production_tag_definition WHERE data_node_ref=? AND "
             + "brand_ref=? AND code=?";
-    public static final String READ_RECEIPT_REPLAY = "SELECT operation_id,request_hash,response::text FROM fulfillment_production.command_receipt WHERE "
+    public static final String READ_RECEIPT_REPLAY = "SELECT operation_id,request_hash,response_json::text FROM fulfillment_production.command_receipt WHERE "
             + "data_node_ref=? AND idempotency_key=?";
     public static final String WRITE_RECEIPT = "INSERT INTO "
             + "fulfillment_production.command_receipt(receipt_ref,data_node_ref,idempotency_key,operation_i"
             + "d,re"
-            + "quest_hash,response,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)";
+            + "quest_hash,response_json,created_at_epoch_millis) VALUES(?,?,?,?,?,CAST(? AS JSONB),?)";
 }

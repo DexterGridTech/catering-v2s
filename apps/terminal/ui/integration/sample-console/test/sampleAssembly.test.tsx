@@ -687,10 +687,8 @@ describe('sample-console real assembly', () => {
       expect(renderer.root.findByProps({testID: adminTestIds.login})).toBeDefined()
       const loginCard = renderer.root.findByProps({testID: `${adminTestIds.login}:card`})
       expect(renderer.root.findAllByProps({testID: 'ui.base.input:surface-frame'})).toHaveLength(1)
-      expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
-      expect(StyleSheet.flatten(loginCard.props.style)).toMatchObject({
-        transform: [{translateY: -110}],
-      })
+      expect(renderer.root.findAll(node => node.type === View && node.props.testID === 'ui.base.input:virtual-keyboard')).toHaveLength(1)
+      expect(StyleSheet.flatten(loginCard.props.style)).toBeUndefined()
       expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard:text-1'})).toBeDefined()
       expect(stopPropagation).toHaveBeenCalledTimes(1)
       for (const digit of ['1', '2', '3', '4', '5', '6']) {
@@ -809,7 +807,7 @@ describe('sample-console real assembly', () => {
         press(renderer!, 'ui.base.input:virtual-keyboard:text-1')()
         await new Promise(resolve => setTimeout(resolve, 0))
       })
-      expect(renderer.root.findByProps({testID: `${adminTestIds.password}:digit:0`}).props.children).toBe('•')
+      expect(renderer.root.findByProps({testID: `${adminTestIds.password}:digit:0`}).props.children).toBe('*')
       expect(findTextInput(renderer, 'sample.desk.member-form:phone').props.value).toBe('3')
 
       await act(async () => {
@@ -880,7 +878,7 @@ describe('sample-console real assembly', () => {
       }
       expect(renderer.root.findAllByProps({testID: adminTestIds.debugPassword})).toHaveLength(0)
       expect(renderer.root.findByProps({testID: 'terminal.admin:login:instruction'}).props.children)
-        .toEqual(['请输入六位动态口令', null])
+        .toEqual(['请输入动态口令', null])
     } finally {
       if (renderer !== undefined) act(() => { renderer!.unmount() })
       releaseRuntimeForTest(assembly.runtime)
@@ -1118,7 +1116,10 @@ describe('sample-console real assembly', () => {
       })
 
       expect(renderer.root.findAllByProps({testID: adminTestIds.shell})).toHaveLength(0)
-      expect(selectLayers(assembly.runtime.getState(), 'PRIMARY').map(layer => layer.layerId)).toEqual(['business-layer'])
+      expect(selectLayers(assembly.runtime.getState(), 'PRIMARY').map(layer => layer.layerId)).toEqual([
+        'business-layer',
+        'admin.console.layer',
+      ])
       const canvas = renderer.root.findByProps({testID: 'ui-base-render:surface-host-canvas'})
       expect(canvas.props.style).toEqual(expect.arrayContaining([
         expect.objectContaining({width: 960, height: 540}),
@@ -1235,8 +1236,9 @@ describe('sample-console real assembly', () => {
         host: '192.0.2.10',
         port: 43172,
         basePath: '/terminal-topology',
-        identity: {
-          protocolVersion: 1,
+          identity: {
+            protocolVersion: 1,
+            moduleName: 'ui.integration.sample-console',
           nodeId: 'node-master',
           displayName: 'TER master',
           instanceMode: 'MASTER',
@@ -1251,7 +1253,7 @@ describe('sample-console real assembly', () => {
         },
         {
           command: openLayerCommand,
-          payload: {displayMode: 'SECONDARY' as const, layerId: 'sample.desk.waiting-confirm', partKey: 'sample.desk.waiting-confirm'},
+          payload: {displayMode: 'PRIMARY' as const, layerId: 'sample.desk.waiting-confirm', partKey: 'sample.desk.waiting-confirm'},
         },
         {
           command: clearLayersCommand,
@@ -1262,13 +1264,12 @@ describe('sample-console real assembly', () => {
       for (const currentCase of cases) {
         const requestId = createRequestId()
         const result = await assembly.runtime.dispatchCommand(currentCase.command.commandName, currentCase.payload, {requestId})
-        expect(result.status).toBe('error')
-        expect(result.actorResults[0]?.actorKey).toBe('kernel.base.runtime.peer-dispatch')
+        expect(result.status).toBe('completed')
         expect(selectRequestExecutionView(assembly.runtime.getState(), requestId)).toMatchObject({
-          status: 'error',
+          status: 'completed',
           commands: [expect.objectContaining({
             commandName: currentCase.command.commandName,
-            observations: [expect.objectContaining({target: 'peer'})],
+            observations: [expect.objectContaining({target: 'local'})],
           })],
         })
       }

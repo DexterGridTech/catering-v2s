@@ -1,7 +1,7 @@
 import {Alert, Descriptions, Form, Input, InputNumber, Modal, Select, Typography} from 'antd';
 import type {FormInstance} from 'antd';
 import type {ReactNode} from 'react';
-import {testId} from '@catering-v2s/admin-ui-foundation';
+import {StatusChangeConfirm, testId} from '@catering-v2s/admin-ui-foundation';
 import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 import {catalogFieldWidth} from './catalogFieldWidths';
 
@@ -13,7 +13,7 @@ type FormValues = {
   precision?: number;
 };
 type UnitEditValues = Pick<FormValues, 'code' | 'name' | 'unitDimension' | 'precision'>;
-type StatusRow = {name: string; status: string};
+type StatusRow = {name: string; status: string; targetStatus?: 'ENABLED' | 'DISABLED' | 'VOIDED'};
 
 /**
  * The configuration drawer's only second-level task surfaces. Each modal
@@ -81,7 +81,8 @@ export function CatalogDictionaryAtomModals({
   onChangeStatus: () => void;
   onCancelStatus: () => void;
 }) {
-  const statusAction = statusChange?.row.status === 'ENABLED' ? '停用' : '启用';
+  const statusTarget = statusChange?.row.targetStatus;
+  const statusAction = statusTarget === 'VOIDED' ? '作废' : statusTarget === 'DISABLED' ? '停用' : '启用';
   return (
     <>
       {canWrite && creatingKind && (
@@ -251,29 +252,29 @@ export function CatalogDictionaryAtomModals({
         </Modal>
       )}
       {canWrite && statusChange && (
-        <Modal
+        <StatusChangeConfirm
           title={`${statusAction}“${statusChange.row.name}”`}
           open
-          okText={`确认${statusAction}`}
-          okButtonProps={{danger: statusAction === '停用'}}
-          maskClosable={!statusSaveLoading}
-          cancelText="取消"
-          confirmLoading={statusSaveLoading}
-          onOk={onChangeStatus}
+          actionLabel={statusAction}
+          dangerous={statusTarget === 'VOIDED'}
+          submitting={statusSaveLoading}
+          problem={problem}
+          onConfirm={onChangeStatus}
           onCancel={onCancelStatus}
-          {...testId(catalogTestIds.static.dictionaryStatusChangeModal)}
+          confirmTestId={catalogTestIdControls.common.confirmYes}
+          cancelTestId={catalogTestIdControls.common.confirmNo}
+          modalTestId={catalogTestIds.static.dictionaryStatusChangeModal}
         >
-          {problem && (
-            <Alert type="error" showIcon title="状态更新未完成" description={problem} style={{marginBottom: 16}} />
-          )}
           <Typography.Paragraph>
-            {statusChange.row.status === 'ENABLED'
-              ? statusChange.dictionaryKind === 'UNIT'
-                ? '停用后，新建商品、规格与库存配置不会再提供该单位；已经保存的配置和历史快照不受影响。'
-                : '停用后，新建商品时不会再提供该条目；已经保存的商品引用不受影响。'
-              : '启用后，该条目会重新出现在新建商品的候选列表中。'}
+            {statusTarget === 'VOIDED'
+              ? '作废后会保留历史记录，不会自动创建新记录；如需新增，请在列表中手动新建。'
+              : statusTarget === 'DISABLED'
+                ? statusChange.dictionaryKind === 'UNIT'
+                  ? '停用后，新建商品、规格与库存配置不会再提供该单位；已经保存的配置和历史快照不受影响。'
+                  : '停用后，新建商品时不会再提供该条目；已经保存的商品引用不受影响。'
+                : '启用后，该条目会重新出现在新建商品的候选列表中。'}
           </Typography.Paragraph>
-        </Modal>
+        </StatusChangeConfirm>
       )}
     </>
   );

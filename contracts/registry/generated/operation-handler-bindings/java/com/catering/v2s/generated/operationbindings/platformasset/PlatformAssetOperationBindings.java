@@ -13,6 +13,8 @@ public final class PlatformAssetOperationBindings {
     OperationBindingTypes.Wire.PublicAssetReference getPublicAssetContent(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.NoBody request);
     OperationBindingTypes.Wire.NoContent releasePlatformStagedAsset(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.NoBody request);
     OperationBindingTypes.Wire.PlatformAssetStagingResult stagePlatformAsset(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.PlatformAssetStageMultipart request);
+    OperationBindingTypes.Wire.StoreServicePointAssetReleaseReadback releaseStagedStoreServicePointImage(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointAssetReleaseRequest request);
+    OperationBindingTypes.Wire.StoreServicePointAssetStageReadback stageStoreServicePointImage(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointAssetStageRequest request);
   }
 
   private final OwnerLocalAdapters adapters;
@@ -24,6 +26,8 @@ public final class PlatformAssetOperationBindings {
   public static final OperationBindingTypes.OperationDescriptor GET_PUBLIC_ASSET_CONTENT_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getPublicAssetContent", "platform-asset", "edge-face");
   public static final OperationBindingTypes.OperationDescriptor RELEASE_PLATFORM_STAGED_ASSET_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("releasePlatformStagedAsset", "platform-asset", "edge-face");
   public static final OperationBindingTypes.OperationDescriptor STAGE_PLATFORM_ASSET_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("stagePlatformAsset", "platform-asset", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor RELEASE_STAGED_STORE_SERVICE_POINT_IMAGE_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("releaseStagedStoreServicePointImage", "platform-asset", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor STAGE_STORE_SERVICE_POINT_IMAGE_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("stageStoreServicePointImage", "platform-asset", "edge-face");
 
   private static void requireReadDescriptor(OperationBindingTypes.OperationDescriptor descriptor) {
     if (descriptor == null) throw new IllegalArgumentException("descriptor is required");
@@ -49,5 +53,13 @@ public final class PlatformAssetOperationBindings {
 
   public OperationBindingTypes.Wire.PlatformAssetStagingResult stagePlatformAsset(OperationBindingTypes.PlatformCommandContext context, OperationBindingTypes.Wire.PlatformAssetStageMultipart request) {
     return adapters.stagePlatformAsset(STAGE_PLATFORM_ASSET_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.StoreServicePointAssetReleaseReadback releaseStagedStoreServicePointImage(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointAssetReleaseRequest request) {
+    return adapters.releaseStagedStoreServicePointImage(RELEASE_STAGED_STORE_SERVICE_POINT_IMAGE_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.StoreServicePointAssetStageReadback stageStoreServicePointImage(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointAssetStageRequest request) {
+    return adapters.stageStoreServicePointImage(STAGE_STORE_SERVICE_POINT_IMAGE_DESCRIPTOR, context, request);
   }
 }

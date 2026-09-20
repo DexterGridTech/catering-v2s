@@ -20,6 +20,8 @@ import type {
   ScreenPlacement,
   UiContentState,
 } from '../types/content'
+import {nowTimestampMs} from '@catering-v2s/kernel-base-contracts'
+import type {SyncRecordState, SyncValueEnvelope} from '@catering-v2s/kernel-base-state'
 
 const contentBaseName = `${moduleName}.content`
 const displayModes: readonly DisplayMode[] = ['PRIMARY', 'SECONDARY']
@@ -311,6 +313,68 @@ const serializeLayerEntries = (
   SECONDARY: serializeLayers(state.contentSets.SECONDARY.layers),
 })
 
+const contentSyncKey = (kind: 'containers' | 'layers', displayMode: DisplayMode): string =>
+  `${kind}.${displayMode}`
+
+const serializeContentSyncEntries = (
+  state: Readonly<UiContentState>,
+): SyncRecordState => {
+  const updatedAt = nowTimestampMs()
+  const result: Record<string, SyncValueEnvelope> = {}
+  for (const [displayMode, value] of Object.entries(serializeContentEntries(state))) {
+    if (value !== undefined) result[contentSyncKey('containers', displayMode as DisplayMode)] = {value, updatedAt}
+  }
+  for (const [displayMode, value] of Object.entries(serializeLayerEntries(state))) {
+    if (value !== undefined) result[contentSyncKey('layers', displayMode as DisplayMode)] = {value, updatedAt}
+  }
+  return result
+}
+
+const readContentSyncValue = (
+  entries: Readonly<Partial<Record<string, SyncValueEnvelope>>>,
+  key: string,
+  emptyValue: StateJsonValue,
+): StateJsonValue => {
+  const envelope = entries[key]
+  if (envelope === undefined || envelope.tombstone === true) return emptyValue
+  return envelope.value
+}
+
+const applyContentSyncEntries = (input: Readonly<{
+  readonly state: Readonly<UiContentState>
+  readonly entries: Readonly<Partial<Record<string, SyncValueEnvelope>>>
+  readonly workspace: WorkspaceKey
+  readonly onHydrationDiagnostic: ContentHydrationDiagnosticSink
+}>): UiContentState => {
+  const {state, entries, workspace, onHydrationDiagnostic} = input
+  const containers: Partial<Record<string, StateJsonValue>> = {}
+  const layers: Partial<Record<string, StateJsonValue>> = {}
+  for (const displayMode of displayModes) {
+    containers[displayMode] = readContentSyncValue(
+      entries,
+      contentSyncKey('containers', displayMode),
+      {},
+    )
+    layers[displayMode] = readContentSyncValue(
+      entries,
+      contentSyncKey('layers', displayMode),
+      [],
+    )
+  }
+  const withContainers = applyPersistedContentEntries({
+    state,
+    entries: containers,
+    workspace,
+    onHydrationDiagnostic,
+  })
+  return applyPersistedLayerEntries({
+    state: withContainers,
+    entries: layers,
+    workspace,
+    onHydrationDiagnostic,
+  })
+}
+
 const parsePlacement = (value: StateJsonValue): ScreenPlacement | undefined => {
   const record = readObject(value)
   if (record === undefined || !isNonEmptyString(record.partKey)) return undefined
@@ -567,7 +631,17 @@ const createContentDescriptor = (input: Readonly<{
       }),
     },
   ],
-  syncIntent: 'isolated',
+  syncIntent: workspace === 'MAIN' ? 'master-to-slave' : 'slave-to-master',
+  sync: {
+    kind: 'record',
+    getEntries: serializeContentSyncEntries,
+    applyEntries: (state, entries) => applyContentSyncEntries({
+      state,
+      entries,
+      workspace,
+      onHydrationDiagnostic,
+    }),
+  },
   }
 }
 

@@ -3,7 +3,7 @@ package com.catering.v2s.extension.application;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.application.persistence.ExtensionCommandReceiptPersistence;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
+import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
@@ -38,13 +38,17 @@ public class ExtensionCommandReceiptService {
             Supplier<ExtensionDefinitionReadback> command) {
         if (key == null || key.length() < 16 || key.length() > 128)
             throw new ExtensionDefinitionService.DefinitionInvalidException();
-        String requestHash = sha256(request);
+        String requestHash = CommandReceiptSupport.requestHash(request);
         ExtensionCommandReceiptPersistence.Receipt existing =
                 claim(key, workspaceUuid, groupWorkspaceKey, entityType, requestHash);
         if (existing != null) {
             if (!existing.requestHash().equals(requestHash)) throw new ExtensionIdempotencyConflictException();
             try {
-                return JSON.readValue(existing.responseJson(), ExtensionDefinitionReadback.class);
+                return CommandReceiptSupport.deserializeNullable(
+                        JSON,
+                        existing.responseJson(),
+                        ExtensionDefinitionReadback.class,
+                        "extension command receipt is not readable");
             } catch (Exception failure) {
                 throw new ExtensionReceiptCorruptException(failure);
             }
@@ -53,7 +57,10 @@ public class ExtensionCommandReceiptService {
             ExtensionDefinitionReadback response = command.get();
             int updated;
             try {
-                updated = persistence.complete(workspaceUuid, key, JSON.writeValueAsString(response));
+                updated = persistence.complete(
+                        workspaceUuid,
+                        key,
+                        CommandReceiptSupport.serialize(JSON, response, "extension command readback is not writable"));
             } catch (Exception failure) {
                 throw new ExtensionReceiptCorruptException(failure);
             }
@@ -68,7 +75,7 @@ public class ExtensionCommandReceiptService {
     private ExtensionCommandReceiptPersistence.Receipt claim(
             String key, UUID workspaceUuid, String groupWorkspaceKey, String entityType, String requestHash) {
         int claimed = persistence.claim(key, workspaceUuid, groupWorkspaceKey, entityType, requestHash);
-        if (claimed == 1) {
+        if (CommandReceiptSupport.claimOutcome(claimed) == CommandReceiptSupport.ClaimOutcome.CLAIMED) {
             return null;
         }
         ExtensionCommandReceiptPersistence.Receipt existing = persistence.find(workspaceUuid, key);
@@ -80,7 +87,7 @@ public class ExtensionCommandReceiptService {
 
     private static String sha256(String value) {
         try {
-            return Sha256Hex.digest(value);
+            return CommandReceiptSupport.requestHash(value);
         } catch (Exception failure) {
             throw new ExtensionReceiptCorruptException(failure);
         }

@@ -21,9 +21,9 @@ public class WorkspaceAuditAuthorizationPersistence {
         return switch (entityType) {
             case "WORKSPACE_ACCOUNT" -> jdbc.query(
                     WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_SELECT_TARGET_SERVICE_NODE_TYPE_SERVICE_NODE_ID
-                            + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_CONTINUATION_ROLE_ASSIGNMENT_TARGET
+                            + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_ROLE_ASSIGNMENT_TARGET
                             + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_WHERE_TARGET_ACCOUNT_ID_WORKSPACE_UUID
-                            + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_CONTINUATION_TARGET_GROUP_WORKSPACE_KEY
+                            + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_TARGET_GROUP_WORKSPACE_KEY
                             + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_CONDITION_TARGET_STATUS_ACTIVE,
                     (row, index) -> new SubjectTarget(row.getString(1), row.getObject(2, UUID.class)),
                     subjectId,
@@ -31,11 +31,11 @@ public class WorkspaceAuditAuthorizationPersistence {
                     groupWorkspaceKey);
             case "WORKSPACE_INVITATION" -> jdbc.query(
                     WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_SELECT_INVITATION_TARGET_SERVICE_NODE_TYPE_SERVICE_NODE_ID
-                            + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_CONTINUATION_INVITATION
+                            + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_INVITATION
                             + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_JOIN_INVITATION_ASSIGNMENT_INTENT_TARGET
-                            + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_CONTINUATION_TARGET_INVITATION_ID_INVITATION
+                            + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_TARGET_INVITATION_ID_INVITATION
                             + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_WHERE_INVITATION_WORKSPACE_UUID
-                            + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_CONTINUATION_INVITATION_GROUP_WORKSPACE_KEY,
+                            + WorkspaceAuditAuthorizationServiceSql.WORKSPACE_AUDIT_AUTHORIZATION_SERVICE_INVITATION_GROUP_WORKSPACE_KEY,
                     (row, index) -> new SubjectTarget(row.getString(1), row.getObject(2, UUID.class)),
                     subjectId,
                     workspaceUuid,

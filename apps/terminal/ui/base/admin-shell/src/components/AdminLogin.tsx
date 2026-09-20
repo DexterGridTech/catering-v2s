@@ -1,15 +1,16 @@
 import {useEffect, useRef, useState} from 'react'
-import {Pressable} from 'react-native'
 import {
   PrimitiveActions,
   PrimitiveButton,
   PrimitiveContainer,
   PrimitiveCenter,
-  PrimitiveGrid,
   PrimitiveHeading,
+  PrimitiveIcon,
+  PrimitivePinInput,
   PrimitiveStatus,
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives'
+import type {PrimitivePinInputInteractionEvent} from '@catering-v2s/ui-base-primitives'
 import {useInputController, useInputField, useInputKeyboardState} from '@catering-v2s/ui-base-input'
 import type {DebugMode, RuntimeDeviceIdentity} from '@catering-v2s/ui-base-render'
 import {ADMIN_CONSOLE_FOCUS_SCOPE_ID} from '../foundations/adminIdentity'
@@ -45,10 +46,6 @@ export const AdminLogin = ({identity, debugMode, showAdminPassword, onAuthentica
   })
   const password = field.inputProps.value ?? ''
   const [error, setError] = useState<string | null>(null)
-  const keyboardOpen = keyboardState.activeFieldId === PASSWORD_FIELD_ID && keyboardState.visible
-  const keyboardLift = keyboardOpen
-    ? Math.min(Math.max(Math.round(keyboardState.height * 0.5), 72), 144)
-    : 0
 
   useEffect(() => {
     if (keyboardState.activeFieldId === PASSWORD_FIELD_ID) {
@@ -88,61 +85,67 @@ export const AdminLogin = ({identity, debugMode, showAdminPassword, onAuthentica
     field.focus()
   }
 
+  const stopSurfaceDismiss = (event: PrimitivePinInputInteractionEvent) => event.stopPropagation()
+
   return (
     <PrimitiveCenter testID={adminTestIds.login} style={layerFrameStyle}>
       <PrimitiveContainer
         testID={`${adminTestIds.login}:card`}
         layout="card"
         bounded
-        style={keyboardLift > 0 ? {transform: [{translateY: -keyboardLift}]} : undefined}
+        elevated
+        appearance="login"
       >
-      <PrimitiveHeading testID="terminal.admin:login:title">终端管理</PrimitiveHeading>
-      <PrimitiveText testID="terminal.admin:login:instruction">
-        请输入六位动态口令
+      <PrimitiveIcon
+        testID="terminal.admin:login:icon"
+        accessibilityLabel="管理员登录"
+        appearance="login"
+        icon="admin"
+        style={{alignSelf: 'center'}}
+      />
+      <PrimitiveHeading appearance="login" testID="terminal.admin:login:title">管理员登录</PrimitiveHeading>
+      <PrimitiveText appearance="login-muted" testID="terminal.admin:login:instruction">
+        请输入动态口令
         {debugPassword !== null ? (
-          <PrimitiveText testID={adminTestIds.debugPassword}>{`（${debugPassword}）`}</PrimitiveText>
+          <PrimitiveText appearance="login-muted" testID={adminTestIds.debugPassword}>{`（${debugPassword}）`}</PrimitiveText>
           ) : null}
       </PrimitiveText>
-      <Pressable
+      <PrimitivePinInput
         testID={adminTestIds.passwordInput}
-        accessibilityRole="button"
         accessibilityLabel="输入六位动态口令"
+        appearance="login"
+        cellTestIDPrefix={adminTestIds.password}
+        value={password}
+        length={6}
+        maskCharacter="*"
+        focusedIndex={keyboardState.activeFieldId === PASSWORD_FIELD_ID ? Math.min(password.length, 5) : undefined}
+        invalid={error !== null}
         onPress={focusPassword}
-        onTouchEnd={event => event.stopPropagation()}
-        style={{width: '100%'}}
-      >
-        <PrimitiveGrid testID={`${adminTestIds.password}:cells`}>
-          {Array.from({length: 6}, (_value, index) => (
-            <PrimitiveText
-              key={index}
-              testID={`${adminTestIds.password}:digit:${index}`}
-              accessibilityLabel={`第${index + 1}位${index < password.length ? '已填写' : '未填写'}`}
-            >
-              {index < password.length ? '•' : '○'}
-            </PrimitiveText>
-          ))}
-        </PrimitiveGrid>
-      </Pressable>
+        onTouchEnd={stopSurfaceDismiss}
+        onClick={stopSurfaceDismiss}
+      />
+      <PrimitiveText appearance="login-muted" testID="terminal.admin:login:hint">请输入 6 位动态口令</PrimitiveText>
       {identity.available === false ? (
-        <PrimitiveStatus testID="terminal.admin:login:fallback">设备标识不可用，已启用降级口令</PrimitiveStatus>
+        <PrimitiveStatus appearance="login" testID="terminal.admin:login:fallback">设备标识不可用，已启用降级口令</PrimitiveStatus>
       ) : null}
       {clockUnavailable ? (
-        <PrimitiveStatus testID="terminal.admin:login:clock-error" tone="error">无法读取设备时间</PrimitiveStatus>
+        <PrimitiveStatus appearance="login" testID="terminal.admin:login:clock-error" tone="error">无法读取设备时间</PrimitiveStatus>
       ) : null}
       {error !== null && !clockUnavailable ? (
-        <PrimitiveStatus testID="terminal.admin:login:error" tone="error">{error}</PrimitiveStatus>
+        <PrimitiveStatus appearance="login" testID="terminal.admin:login:error" tone="error">{error}</PrimitiveStatus>
       ) : null}
-      <PrimitiveActions testID="terminal.admin:login:actions">
+      <PrimitiveActions orientation="column" testID="terminal.admin:login:actions">
         <PrimitiveButton
           testID={adminTestIds.verify}
           accessibilityLabel="验证动态口令"
+          appearance="login-primary"
           disabled={password.length !== 6 || clockUnavailable}
           onPress={submit}
         >
-          验证
+          确认
         </PrimitiveButton>
-        <PrimitiveButton testID={adminTestIds.close} accessibilityLabel="关闭终端管理" onPress={onClose}>
-          关闭
+        <PrimitiveButton appearance="login-secondary" testID={adminTestIds.close} accessibilityLabel="取消管理员登录" onPress={onClose}>
+          取消
         </PrimitiveButton>
       </PrimitiveActions>
       </PrimitiveContainer>

@@ -48,7 +48,13 @@
           "caseId": "CI-L2-001-04",
           "fixtureRef": "FIXTURE-SCENARIO-CI-L2-001",
           "journey": "商品树与结果域",
-          "controlKeys": ["CATALOG_TREE", "CATALOG_TREE_SEARCH", "CATALOG_RESULT_TABLE"],
+          "controlKeys": [
+            "CATALOG_TREE",
+            "CATALOG_TREE_CATEGORY_NODE",
+            "CATALOG_TREE_CATEGORY_EXPANDER",
+            "CATALOG_TREE_SEARCH",
+            "CATALOG_RESULT_TABLE"
+          ],
           "steps": ["打开商品工作台", "读取商品视图与分类树", "展开树节点", "确认结果域标题与表格同步"],
           "businessOracle": ["树节点是结果域选择而不是写入入口", "结果表展示当前结果域"]
         },
@@ -78,7 +84,13 @@
           "caseId": "CI-L2-002-01",
           "fixtureRef": "FIXTURE-WORKBENCH-QUERY",
           "journey": "树节点后域内搜索",
-          "controlKeys": ["CATALOG_TREE", "CATALOG_LOCAL_SEARCH", "CATALOG_RESULT_TABLE"],
+          "controlKeys": [
+            "CATALOG_TREE",
+            "CATALOG_TREE_CATEGORY_NODE",
+            "CATALOG_TREE_CATEGORY_EXPANDER",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_RESULT_TABLE"
+          ],
           "steps": [
             "选择 owner fixture 的树节点",
             "在当前结果域逐字符输入关键词",
@@ -472,7 +484,8 @@
             "INVENTORY_ACTION_INCREASE",
             "INVENTORY_ACTION_ADJUST",
             "INVENTORY_ACTION_CONFIGURE",
-            "INVENTORY_ACTION_MODAL"
+            "INVENTORY_ACTION_MODAL",
+            "INVENTORY_ACTION_DIRECTION"
           ],
           "steps": [
             "从详情依次打开盘点、增加、调整、快捷配置",
@@ -491,7 +504,8 @@
             "INVENTORY_NEGATIVE_PREVIEW",
             "INVENTORY_ACTION_SUBMIT",
             "INVENTORY_ACTION_CONFIGURE",
-            "INVENTORY_CONFIG_CONVERSION"
+            "INVENTORY_CONFIG_CONVERSION",
+            "INVENTORY_ACTION_DIRECTION"
           ],
           "steps": ["打开人工调整", "输入会形成负库存的数量", "读取阻断/预警和保留输入", "打开快捷配置并验证正换算"],
           "businessOracle": ["禁止负库存时不能提交", "盘点单位换算为正数且不改余额事实"]
@@ -538,7 +552,13 @@
           "caseId": "CI-L2-016-01",
           "fixtureRef": "FIXTURE-WORKBENCH-QUERY",
           "journey": "商品列表分页 generation",
-          "controlKeys": ["CATALOG_LOCAL_SEARCH", "CATALOG_RESULT_TABLE", "CATALOG_PAGINATION"],
+          "controlKeys": [
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_RESULT_TABLE",
+            "CATALOG_PAGINATION",
+            "CATALOG_PAGINATION_NEXT",
+            "CATALOG_PAGINATION_PREVIOUS"
+          ],
           "steps": ["逐字符提交商品查询", "进入下一页", "返回上一页", "读取当前结果域和筛选条件"],
           "businessOracle": ["cursor 栈按页推进/回退", "页面不显示旧 generation 行"]
         },
@@ -583,7 +603,8 @@
             "INVENTORY_ACTION_ADJUST",
             "INVENTORY_ACTION_MODAL",
             "INVENTORY_ACTION_SUBMIT",
-            "INVENTORY_ACTION_RESULT"
+            "INVENTORY_ACTION_RESULT",
+            "INVENTORY_ACTION_DIRECTION"
           ],
           "steps": ["打开库存调整", "输入数量和受控原因", "提交期间尝试关闭/点击遮罩", "完成后读取结果并恢复详情焦点"],
           "businessOracle": ["提交期间 overlay 不被误关闭", "结果面完成后才允许返回详情"]
@@ -623,7 +644,15 @@
           "caseId": "catalog-find-success",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-FIND",
           "journey": "查找成功",
-          "controlKeys": ["CATALOG_TREE", "CATALOG_TREE_SEARCH", "CATALOG_LOCAL_SEARCH", "CATALOG_RESULT_TABLE"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_TREE",
+            "CATALOG_TREE_PRODUCTION_TAG_NODE",
+            "CATALOG_TREE_SEARCH",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_RESULT_TABLE"
+          ],
           "steps": ["选择生产标签树节点", "在当前结果域搜索商品编码", "读取包含商品形态与生产信息的结果行"],
           "businessOracle": ["请求只带当前生产标签结果域", "结果行显示商品名、编码、分类、标签和十列业务事实"]
         },
@@ -631,7 +660,16 @@
           "caseId": "catalog-find-failure",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-FIND",
           "journey": "查找失败",
-          "controlKeys": ["CATALOG_TREE", "CATALOG_LOCAL_SEARCH", "CATALOG_RESULT_TABLE", "CATALOG_WORKBENCH_PROBLEM"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_TREE",
+            "CATALOG_TREE_PRODUCTION_TAG_NODE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_RESULT_TABLE",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_WORKBENCH_PROBLEM"
+          ],
           "steps": ["保留生产标签和关键词", "触发受控查询失败", "读取失败提示", "确认结果不被伪装成空列表"],
           "businessOracle": ["失败提示使用业务语言", "生产标签和关键词仍保留"]
         },
@@ -639,7 +677,17 @@
           "caseId": "catalog-find-recovery",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-FIND",
           "journey": "查找恢复",
-          "controlKeys": ["CATALOG_TREE", "CATALOG_LOCAL_SEARCH", "CATALOG_WORKBENCH_RETRY", "CATALOG_RESULT_TABLE"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_TREE",
+            "CATALOG_TREE_PRODUCTION_TAG_NODE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_WORKBENCH_RETRY",
+            "CATALOG_RESULT_TABLE",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_DRAWER"
+          ],
           "steps": ["点击重试", "读取恢复后的生产标签结果域", "展开一个有规格的父商品", "读取每个 SKU 独立子行"],
           "businessOracle": ["重试不清空当前生产标签结果域", "父商品与 SKU 子行共享十列表头且父选择不包含子 SKU"]
         }
@@ -654,7 +702,14 @@
           "caseId": "catalog-view-success",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-VIEW",
           "journey": "查看成功",
-          "controlKeys": ["CATALOG_ITEM_ROW", "CATALOG_ITEM_VIEW_DRAWER", "CATALOG_ITEM_TABS"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_VIEW_DRAWER",
+            "CATALOG_ITEM_TABS"
+          ],
           "steps": ["从列表打开商品", "读取首屏摘要", "查看规格、制作信息和库存与 BOM", "核对商品形态与价格单位"],
           "businessOracle": ["详情没有禁用输入控件", "合法未设置价格显示为未设置而非缺陷"]
         },
@@ -662,7 +717,15 @@
           "caseId": "catalog-view-failure",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-VIEW",
           "journey": "查看失败",
-          "controlKeys": ["CATALOG_ITEM_VIEW_DRAWER", "CATALOG_ITEM_PROBLEM", "CATALOG_ITEM_PROBLEM_RETRY"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_VIEW_DRAWER",
+            "CATALOG_ITEM_PROBLEM",
+            "CATALOG_ITEM_PROBLEM_RETRY"
+          ],
           "steps": ["触发详情读取失败", "读取持久错误面", "确认没有展示半套事实"],
           "businessOracle": ["错误面不暴露内部字段或技术编码", "失败不伪造商品详情"]
         },
@@ -670,7 +733,15 @@
           "caseId": "catalog-view-recovery",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-VIEW",
           "journey": "查看恢复",
-          "controlKeys": ["CATALOG_ITEM_VIEW_DRAWER", "CATALOG_ITEM_PROBLEM_RETRY", "CATALOG_ITEM_TABS"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_VIEW_DRAWER",
+            "CATALOG_ITEM_PROBLEM_RETRY",
+            "CATALOG_ITEM_TABS"
+          ],
           "steps": ["点击重试", "读取完整业务详情", "关闭详情抽屉", "确认焦点回到原商品行"],
           "businessOracle": ["重试恢复原商品上下文", "关闭后焦点位置可继续操作"]
         }
@@ -686,8 +757,14 @@
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-CREATE",
           "journey": "新建成功",
           "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_DRAWER",
             "CATALOG_CREATE_OPEN",
             "CATALOG_CREATE_SHAPE",
+            "CATALOG_CREATE_CATEGORY",
             "CATALOG_CREATE_SUBMIT",
             "CATALOG_ITEM_EDIT_DRAWER"
           ],
@@ -704,7 +781,18 @@
           "caseId": "catalog-create-failure",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-CREATE",
           "journey": "新建失败",
-          "controlKeys": ["CATALOG_CREATE_OPEN", "CATALOG_CREATE_SHAPE", "CATALOG_CREATE_SUBMIT"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_DRAWER",
+            "CATALOG_CREATE_OPEN",
+            "CATALOG_CREATE_SHAPE",
+            "CATALOG_CREATE_CATEGORY",
+            "CATALOG_CREATE_SUBMIT",
+            "CATALOG_DIRTY_DISCARD"
+          ],
           "steps": ["提交冲突的编码", "读取失败提示", "确认输入内容仍在表单中"],
           "businessOracle": ["失败提示定位到业务字段", "失败后事实未创建"]
         },
@@ -713,12 +801,18 @@
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-CREATE",
           "journey": "新建恢复",
           "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_DRAWER",
             "CATALOG_CREATE_OPEN",
+            "CATALOG_CREATE_SHAPE",
             "CATALOG_CREATE_CATEGORY",
             "CATALOG_CREATE_SUBMIT",
             "CATALOG_ITEM_EDIT_DRAWER"
           ],
-          "steps": ["修正编码", "保留分类树选择", "重新提交", "读取商品编辑区段"],
+          "steps": ["读取商品形态选项", "修正编码", "保留分类树选择", "重新提交", "读取商品编辑区段"],
           "businessOracle": ["恢复不丢失分类选择", "成功 readback 后商品编码与形态一致"]
         }
       ]
@@ -733,6 +827,11 @@
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-EDIT",
           "journey": "编辑成功",
           "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_DRAWER",
             "CATALOG_ITEM_VIEW_DRAWER",
             "CATALOG_ITEM_EDIT_DRAWER",
             "CATALOG_ITEM_EDIT",
@@ -748,13 +847,23 @@
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-EDIT",
           "journey": "编辑失败",
           "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
             "CATALOG_ITEM_VIEW_DRAWER",
             "CATALOG_ITEM_EDIT_DRAWER",
             "CATALOG_ITEM_EDIT",
             "CATALOG_ITEM_SAVE",
-            "CATALOG_ITEM_PROBLEM"
+            "CATALOG_ITEM_PROBLEM",
+            "CATALOG_DIRTY_DISCARD"
           ],
-          "steps": ["提交版本已变化的草稿", "读取具体失败提示", "确认商品版本与生产标签未改变"],
+          "steps": [
+            "提交版本已变化的草稿",
+            "读取具体失败提示并确认草稿仍保留",
+            "明确放弃草稿",
+            "重新打开商品并读取权威版本与生产标签"
+          ],
           "businessOracle": ["版本冲突不自动覆盖", "失败后保留当前草稿供继续编辑"]
         },
         {
@@ -762,6 +871,10 @@
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-EDIT",
           "journey": "草稿恢复",
           "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
             "CATALOG_ITEM_VIEW_DRAWER",
             "CATALOG_ITEM_EDIT_DRAWER",
             "CATALOG_ITEM_EDIT",
@@ -789,6 +902,12 @@
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-CONFIG",
           "journey": "配置成功",
           "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_EDIT",
+            "CATALOG_ITEM_TABS",
             "CATALOG_ITEM_VIEW_DRAWER",
             "CATALOG_ITEM_EDIT_DRAWER",
             "CATALOG_ITEM_PRODUCTION_TAG_MANAGE",
@@ -796,6 +915,7 @@
             "CATALOG_CONFIG_PRODUCTION_TAGS",
             "CATALOG_CONFIG_SEARCH",
             "CATALOG_CONFIG_STATUS",
+            "CATALOG_DICTIONARY_OPEN_CREATE",
             "CATALOG_DICTIONARY_CODE",
             "CATALOG_DICTIONARY_CREATE"
           ],
@@ -818,11 +938,18 @@
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-CONFIG",
           "journey": "配置失败",
           "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_EDIT",
+            "CATALOG_ITEM_TABS",
             "CATALOG_ITEM_VIEW_DRAWER",
             "CATALOG_ITEM_EDIT_DRAWER",
             "CATALOG_ITEM_PRODUCTION_TAG_MANAGE",
             "CATALOG_DICTIONARY_DRAWER",
             "CATALOG_CONFIG_PRODUCTION_TAGS",
+            "CATALOG_DICTIONARY_OPEN_CREATE",
             "CATALOG_DICTIONARY_CODE",
             "CATALOG_DICTIONARY_CREATE"
           ],
@@ -839,11 +966,18 @@
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-CONFIG",
           "journey": "配置恢复",
           "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_EDIT",
+            "CATALOG_ITEM_TABS",
             "CATALOG_ITEM_VIEW_DRAWER",
             "CATALOG_ITEM_EDIT_DRAWER",
             "CATALOG_ITEM_PRODUCTION_TAG_MANAGE",
             "CATALOG_DICTIONARY_DRAWER",
             "CATALOG_CONFIG_PRODUCTION_TAGS",
+            "CATALOG_DICTIONARY_OPEN_CREATE",
             "CATALOG_DICTIONARY_CODE",
             "CATALOG_DICTIONARY_CREATE"
           ],
@@ -854,7 +988,10 @@
             "直接继续编辑原区段",
             "读取原区段、触发控件焦点和新候选"
           ],
-          "businessOracle": ["关闭维护面板后父编辑保持打开且草稿不丢", "焦点回到原维护控件，停用条目不进入新候选但既有绑定仍可见"]
+          "businessOracle": [
+            "关闭维护面板后父编辑保持打开且草稿不丢",
+            "焦点回到原维护控件，停用条目不进入新候选但既有绑定仍可见"
+          ]
         }
       ]
     },
@@ -867,7 +1004,20 @@
           "caseId": "catalog-batch-success",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-BATCH",
           "journey": "批量全成功",
-          "controlKeys": ["CATALOG_RESULT_TABLE", "CATALOG_BATCH_OPEN", "CATALOG_BATCH_MODAL", "CATALOG_BATCH_OUTCOME"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_RESULT_TABLE",
+            "CATALOG_ITEM_SELECTION",
+            "CATALOG_BATCH_OPEN",
+            "CATALOG_BATCH_STATUS_ACTION",
+            "CATALOG_BATCH_MODAL",
+            "CATALOG_BATCH_SUBMIT",
+            "CATALOG_BATCH_STATUS_CONFIRM",
+            "CATALOG_BATCH_PROGRESS",
+            "CATALOG_BATCH_OUTCOME"
+          ],
           "steps": ["选择多个父商品", "查看提交前影响摘要", "提交批量操作", "读取成功数量和逐项结果"],
           "businessOracle": ["SKU 子行不可被批量选中", "结果按父商品逐项 readback"]
         },
@@ -875,7 +1025,19 @@
           "caseId": "catalog-batch-failure",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-BATCH",
           "journey": "批量部分失败",
-          "controlKeys": ["CATALOG_BATCH_MODAL", "CATALOG_BATCH_PROGRESS", "CATALOG_BATCH_OUTCOME"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_SELECTION",
+            "CATALOG_BATCH_OPEN",
+            "CATALOG_BATCH_STATUS_ACTION",
+            "CATALOG_BATCH_MODAL",
+            "CATALOG_BATCH_SUBMIT",
+            "CATALOG_BATCH_STATUS_CONFIRM",
+            "CATALOG_BATCH_PROGRESS",
+            "CATALOG_BATCH_OUTCOME"
+          ],
           "steps": [
             "用真实 owner 命令改变一个已选商品的版本",
             "提交仍持有旧版本的批量操作",
@@ -889,7 +1051,21 @@
           "caseId": "catalog-batch-recovery",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-BATCH",
           "journey": "批量结果恢复",
-          "controlKeys": ["CATALOG_BATCH_OUTCOME", "CATALOG_BATCH_REFRESH_ERROR", "CATALOG_RESULT_TABLE"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_SELECTION",
+            "CATALOG_BATCH_OPEN",
+            "CATALOG_BATCH_STATUS_ACTION",
+            "CATALOG_BATCH_MODAL",
+            "CATALOG_BATCH_SUBMIT",
+            "CATALOG_BATCH_STATUS_CONFIRM",
+            "CATALOG_BATCH_PROGRESS",
+            "CATALOG_BATCH_OUTCOME",
+            "CATALOG_BATCH_REFRESH_ERROR",
+            "CATALOG_RESULT_TABLE"
+          ],
           "steps": ["让列表刷新失败", "读取业务结果仍保留", "重试刷新", "核对结果域与逐项回执"],
           "businessOracle": ["刷新失败与业务执行结果分开", "重试不重复执行批量命令"]
         }
@@ -904,7 +1080,16 @@
           "caseId": "catalog-copy-success",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-COPY",
           "journey": "复制成功",
-          "controlKeys": ["CATALOG_COPY_OPEN", "CATALOG_COPY_DRAWER", "CATALOG_COPY_PREFLIGHT", "CATALOG_COPY_EXECUTE"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_COPY_OPEN",
+            "CATALOG_COPY_DRAWER",
+            "CATALOG_COPY_SELECTION",
+            "CATALOG_COPY_PREFLIGHT",
+            "CATALOG_COPY_EXECUTE",
+            "CATALOG_COPY_RESULT"
+          ],
           "steps": ["选择来源商品", "选择要复制的事实族", "完成预检", "执行复制", "读取目标商品完整事实"],
           "businessOracle": ["复制步骤顺序固定", "预检 token 与所有输入绑定"]
         },
@@ -912,7 +1097,16 @@
           "caseId": "catalog-copy-failure",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-COPY",
           "journey": "复制失败",
-          "controlKeys": ["CATALOG_COPY_DRAWER", "CATALOG_COPY_PREFLIGHT", "CATALOG_COPY_PREFLIGHT_PROBLEM"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_COPY_OPEN",
+            "CATALOG_COPY_DRAWER",
+            "CATALOG_COPY_SELECTION",
+            "CATALOG_COPY_PREFLIGHT",
+            "CATALOG_COPY_EXECUTE",
+            "CATALOG_COPY_PREFLIGHT_PROBLEM"
+          ],
           "steps": [
             "完成检查影响",
             "用真实 owner 命令变更目标版本",
@@ -927,7 +1121,11 @@
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-COPY",
           "journey": "复制恢复",
           "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_COPY_OPEN",
             "CATALOG_COPY_DRAWER",
+            "CATALOG_COPY_SELECTION",
             "CATALOG_COPY_PREFLIGHT",
             "CATALOG_COPY_PREFLIGHT_PROBLEM",
             "CATALOG_COPY_EXECUTE",
@@ -953,7 +1151,16 @@
           "caseId": "catalog-governance-success",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-GOVERNANCE",
           "journey": "治理成功",
-          "controlKeys": ["CATALOG_ITEM_VIEW_DRAWER", "CATALOG_ITEM_STATUS_ACTION", "CATALOG_LIFECYCLE_CONFIRM"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_VIEW_DRAWER",
+            "CATALOG_ITEM_STATUS_ACTION",
+            "CATALOG_LIFECYCLE_CONFIRM",
+            "CATALOG_RESULT_TABLE"
+          ],
           "steps": ["打开商品生命周期动作", "读取影响摘要", "确认停用或作废", "读取最新状态"],
           "businessOracle": ["动作来自 owner actionAvailability", "成功后状态和版本 readback 一致"]
         },
@@ -961,7 +1168,16 @@
           "caseId": "catalog-governance-failure",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-GOVERNANCE",
           "journey": "治理被阻断",
-          "controlKeys": ["CATALOG_ITEM_VIEW_DRAWER", "CATALOG_ITEM_STATUS_ACTION", "CATALOG_ITEM_VOID_BLOCK_REASONS"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_VIEW_DRAWER",
+            "CATALOG_ITEM_TABS",
+            "CATALOG_ITEM_STATUS_ACTION",
+            "CATALOG_ITEM_VOID_BLOCK_REASONS"
+          ],
           "steps": ["打开被 BOM 或套餐引用的商品动作", "读取引用影响", "确认作废没有入口且不发生状态更新"],
           "businessOracle": ["阻断原因显示被谁使用", "失败后版本、状态和引用不变"]
         },
@@ -969,7 +1185,16 @@
           "caseId": "catalog-governance-recovery",
           "fixtureRef": "FIXTURE-CATALOG-LIBRARY-GOVERNANCE",
           "journey": "治理恢复",
-          "controlKeys": ["CATALOG_ITEM_VIEW_DRAWER", "CATALOG_ITEM_STATUS_ACTION", "CATALOG_LIFECYCLE_CONFIRM"],
+          "controlKeys": [
+            "STORE_SCOPE",
+            "CATALOG_STORE_ROUTE",
+            "CATALOG_LOCAL_SEARCH",
+            "CATALOG_ITEM_ROW",
+            "CATALOG_ITEM_VIEW_DRAWER",
+            "CATALOG_ITEM_STATUS_ACTION",
+            "CATALOG_LIFECYCLE_CONFIRM",
+            "CATALOG_RESULT_TABLE"
+          ],
           "steps": ["fixture 解除阻断事实后重新打开动作", "确认影响摘要更新", "提交治理动作", "读取状态和列表徽标"],
           "businessOracle": ["候选状态来自最新 owner readback", "状态变化不隐式删除历史引用"]
         }

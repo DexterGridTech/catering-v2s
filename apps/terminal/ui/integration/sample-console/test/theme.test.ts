@@ -22,11 +22,14 @@ describe('sample-console app theme wiring', () => {
     const semanticNames = [
       'canvas',
       'surface',
+      'surface-elevated',
+      'surface-inset',
       'foreground',
       'muted-foreground',
       'border',
       'action',
       'action-foreground',
+      'focus',
       'ok-foreground',
       'ok-background',
       'ok-border',
@@ -39,6 +42,13 @@ describe('sample-console app theme wiring', () => {
       'info-foreground',
       'info-background',
       'info-border',
+      'keyboard-surface',
+      'keyboard-key',
+      'keyboard-action',
+      'keyboard-key-foreground',
+      'keyboard-action-foreground',
+      'keyboard-border',
+      'keyboard-focus',
     ]
 
     for (const semanticName of semanticNames) {
@@ -50,6 +60,44 @@ describe('sample-console app theme wiring', () => {
     expect(primitiveTokens).toContain('border-border')
     expect(primitiveTokens).toContain('bg-action')
     expect(primitiveTokens).toContain('text-action-foreground')
+    expect(primitiveTokens).toContain('bg-transparent')
+    expect(primitiveTokens).toContain('bg-keyboard-surface')
+    expect(primitiveTokens).toContain('bg-keyboard-key')
+    expect(primitiveTokens).toContain('bg-keyboard-action')
+    expect(primitiveTokens).toContain('border-keyboard-focus')
+  })
+
+  it('keeps focus treatment owned by each integration theme', () => {
+    const sampleConsoleCss = readFileSync(new URL('../theme/global.css', import.meta.url), 'utf8')
+    const wallpaperCss = readFileSync(new URL('../../sample-wallpaper-console/theme/global.css', import.meta.url), 'utf8')
+    const token = (source: string, name: string): string => {
+      const match = source.match(new RegExp(`--color-${name}:\\s*([^;]+)`))
+      if (match === null) throw new Error(`missing token ${name}`)
+      return match[1]!.trim()
+    }
+    expect(token(sampleConsoleCss, 'focus')).not.toBe(token(wallpaperCss, 'focus'))
+  })
+
+  it('keeps keyboard planes neutral and lets focus follow the integration theme', () => {
+    const sampleConsoleCss = readFileSync(new URL('../theme/global.css', import.meta.url), 'utf8')
+    const wallpaperCss = readFileSync(new URL('../../sample-wallpaper-console/theme/global.css', import.meta.url), 'utf8')
+    const token = (source: string, name: string): string => {
+      const match = source.match(new RegExp(`--color-${name}:\\s*([^;]+)`))
+      if (match === null) throw new Error(`missing token ${name}`)
+      return match[1]!.trim()
+    }
+    for (const name of [
+      'keyboard-surface',
+      'keyboard-key',
+      'keyboard-action',
+      'keyboard-key-foreground',
+      'keyboard-action-foreground',
+      'keyboard-border',
+    ]) {
+      expect(token(sampleConsoleCss, name)).toBe(token(wallpaperCss, name))
+    }
+    expect(token(sampleConsoleCss, 'keyboard-key')).toBe(token(sampleConsoleCss, 'keyboard-action'))
+    expect(token(sampleConsoleCss, 'keyboard-focus')).not.toBe(token(wallpaperCss, 'keyboard-focus'))
   })
 
   it('renders the app surface through the primitive semantic token path', async () => {

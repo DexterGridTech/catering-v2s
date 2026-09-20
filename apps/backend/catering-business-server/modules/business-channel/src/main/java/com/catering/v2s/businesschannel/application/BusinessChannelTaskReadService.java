@@ -8,10 +8,10 @@ import com.catering.v2s.businesschannel.api.BusinessChannelOwnerApi;
 import com.catering.v2s.businesschannel.api.BusinessChannelReadback;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
+import com.catering.v2s.platform.foundation.collection.CanonicalCursorIdentity;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -459,10 +458,12 @@ public class BusinessChannelTaskReadService {
     }
 
     private static String canonical(String operation, Object... values) {
-        return operation + "\u001f"
-                + Arrays.stream(values)
-                        .map(value -> Objects.toString(value, "<null>"))
-                        .collect(Collectors.joining("\u001f"));
+        String[] components = new String[values.length + 1];
+        components[0] = operation;
+        for (int index = 0; index < values.length; index++) {
+            components[index + 1] = values[index] == null ? null : values[index].toString();
+        }
+        return CanonicalCursorIdentity.encode(components);
     }
 
     private static BusinessChannelCommandApi.Problem problem(String code, int status, String message) {

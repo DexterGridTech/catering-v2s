@@ -130,7 +130,7 @@ L2_SCRIPT_ADMISSION=BLOCKED（本批当前未授权 Browser L2；静态 testId �
 - Gate-1.1：三张表均带 workspace/group/store identity、version、created/updated、三态；无物理 delete path。
 - Gate-1.2：area type `TABLE_AREA`/`SCAN_AREA`；point type `TABLE`/`SCAN`；owner 在 create/update 读取所属 area 的当前类型并校验；DB check 作为第二层。
 - Gate-1.3：area code 在同门店 `status <> VOIDED` 范围唯一；point code 同门店 `status <> VOIDED` 范围唯一；部分唯一索引释放 VOIDED code。
-- Gate-1.4：区域 type 变更只有在未作废 point 数量为零时成立；点逐个 `VOIDED` 后可变更；历史 VOIDED point 原 type/ext/image 保留且不进 current collection。
+- Gate-1.4：区域 type 的直接 owner 命令仍只有在未作废 point 数量为零时成立；点逐个 `VOIDED` 后可变更；历史 VOIDED point 原 type/ext/image 保留且不进 current collection。运营管理后台编辑区域时只读展示 type，不提供修改控件。
 - Gate-1.5：area 非 `ENABLED` 时所有后代在 readback 中标为不可用，但不改 point 存储 status、extension 或 image；`DISABLED`/`VOIDED` 两种区域各成立。
 - Gate-1.6：point 的 `TABLE` 属性（capacity、shape、reservable、image）只在 TABLE 生效；capacity、shape、reservable 均可省略，填写时分别校验正整数、形态闭集和布尔值；SCAN 请求不能带 table attributes 或 image；预约开关与 store operating rule 不联动。
 - Gate-1.7：point save 的核心、扩展值、image target/ref、审计、receipt 是同一 owner transaction；stage 失败/owner 失败不会留 staged orphan。
@@ -510,7 +510,7 @@ scripts/verify
 4. `SERVICE_POINT` 加入管理 host/闭集但不加入 `FLAT_VALUES`；本批不做动态列和类型化搜索。
 5. TABLE 图片单值采用既有 collection editor `maxImageCount=1` 与 typed command target；organization point 的 `image_asset_ref` 是唯一关联，不新建 asset storage 或 target association table。
 6. 扫码点不含图片；其 Drawer 不渲染 image field 或 disabled placeholder。
-7. “清空区域”通过 point 行的独立作废命令完成，不新增一个未被用户明确要求的批量删除/清空 operation；区域类型更新仍由 owner 以未作废 child count 最终裁决。若 Dexter 另要求一键批量作废，必须创建新的产品/范围裁决并重算 gate 分母。
+7. “清空区域”通过 point 行的独立作废命令完成，不新增一个未被用户明确要求的批量删除/清空 operation；区域类型的直接更新仍由 owner 以未作废 child count 最终裁决，但运营管理后台编辑区域不提供类型修改控件。若 Dexter 另要求一键批量作废，必须创建新的产品/范围裁决并重算 gate 分母。
 
 以下不是未决，而是实现时的硬停机条件：真实源码若没有可以安全扩展的 asset stage/claim/release core、organization owner 无法在同一事务锁定 point 并以 `STORE` target 完成 claim、无法让 PROJECT/STORE 两类角色读取，或现有 URL parser 无法同时满足 D-10/D-12 的单一谓词，不能由实施者自行新增 asset target 表或 fallback；回到 Dexter/设计 review。
 

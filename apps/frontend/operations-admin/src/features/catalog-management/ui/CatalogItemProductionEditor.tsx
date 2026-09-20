@@ -6,7 +6,7 @@ import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import {wireUuid} from '../../../app/api/wireUuid';
 import type {CatalogOrderOptionConfig, CatalogSkuRow} from '../model/catalogModel';
-import {catalogTestIds} from '../catalogTestIds';
+import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 import {testId} from '@catering-v2s/admin-ui-foundation';
 import {
   clonePreparationProfile,
@@ -90,6 +90,11 @@ export function PreparationProfileEditor({
             allowClear
             value={selectedTagRef}
             options={tagOptions}
+            optionRender={option => (
+              <span {...testId(catalogTestIdControls.edit.productionTagOption(String(option.value)))}>
+                {option.label}
+              </span>
+            )}
             loading={tagsLoading}
             showSearch
             filterOption={false}

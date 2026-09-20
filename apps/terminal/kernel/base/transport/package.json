@@ -13,7 +13,8 @@
     "@catering-v2s/kernel-base-contracts": "workspace:*",
     "@catering-v2s/kernel-base-platform-ports": "workspace:*",
     "@catering-v2s/kernel-base-runtime": "workspace:*",
-    "@catering-v2s/kernel-base-state": "workspace:*"
+    "@catering-v2s/kernel-base-state": "workspace:*",
+    "fflate": "0.8.3"
   },
   "devDependencies": {
     "typescript": "~6.0.3",

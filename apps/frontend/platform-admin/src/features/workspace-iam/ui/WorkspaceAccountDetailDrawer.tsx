@@ -3,6 +3,7 @@ import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
   adminDrawerSurfaceProps,
+  formatCanonicalDateTime,
   NameCodePathText,
   testId,
   useOverlayLock,
@@ -33,7 +34,7 @@ type Props = {
 const accountStatusLabel = (status: WorkspaceAccount['status']) => workspaceIamLifecycleLabels[status];
 const assignmentStatusLabel = (status: WorkspaceAccount['assignments'][number]['status']) =>
   status === 'ACTIVE' ? '有效' : '已撤销';
-const time = (value: number | null | undefined) => (value ? new Date(value).toLocaleString('zh-CN') : '—');
+const time = (value: number | null | undefined) => formatCanonicalDateTime(value);
 
 /** The detail readback is the only source for account and assignment actions. */
 export function WorkspaceAccountDetailDrawer({

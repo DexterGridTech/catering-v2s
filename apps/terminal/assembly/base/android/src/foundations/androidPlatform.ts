@@ -6,6 +6,7 @@ import {
   unavailableLogUploadPort,
   unavailableScriptPort,
   type NativeLoadingCapability,
+  type LoggerPort,
   type PlatformPorts,
   type EnvironmentMode,
 } from '@catering-v2s/kernel-base-platform-ports'
@@ -30,6 +31,7 @@ export type AndroidPlatformBinding = Readonly<{
 export const createAndroidPlatformBinding = (persistenceKey: string): AndroidPlatformBinding => {
   const environmentMode: EnvironmentMode = __DEV__ ? 'DEV' : 'PROD'
   const nativeLoadingCapability = createAndroidNativeLoadingCapability()
+  let platformLogger: LoggerPort | undefined
   const platformPorts = createPlatformPorts({
     environmentMode,
     bindings: {
@@ -42,9 +44,10 @@ export const createAndroidPlatformBinding = (persistenceKey: string): AndroidPla
       connector: unavailableConnectorPort,
       hotUpdate: unavailableHotUpdatePort,
       logUpload: unavailableLogUploadPort,
-      topologyHost: createAndroidTopologyHostPort(),
+      topologyHost: createAndroidTopologyHostPort(() => platformLogger),
     },
   })
+  platformLogger = platformPorts.logger
   const topologyPeerChannel = createAndroidTopologyPeerChannel()
   return Object.freeze({
     environmentMode,

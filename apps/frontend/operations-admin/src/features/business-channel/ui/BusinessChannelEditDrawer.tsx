@@ -121,7 +121,7 @@ export function BusinessChannelEditDrawer({
       {problem && <Alert type="error" showIcon title="经营渠道编辑未完成" description={problem} />}
       {channel && !channelStatusKnown && <Alert type="error" showIcon title="当前渠道状态无法识别，已停止编辑。" />}
       {channelStatusKnown && channel?.status === 'VOIDED' && (
-        <Alert type="info" showIcon title="该业务渠道已标记删除，不能继续编辑。" />
+        <Alert type="info" showIcon title="该业务渠道已作废，不能继续编辑。" />
       )}
       <Form
         form={form}

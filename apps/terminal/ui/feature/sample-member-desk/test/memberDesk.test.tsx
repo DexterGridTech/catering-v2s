@@ -7,8 +7,10 @@ import {createRequestId, type TopologyLocator} from '@catering-v2s/kernel-base-c
 import type {CommandDispatchResult, Runtime} from '@catering-v2s/kernel-base-runtime'
 import {createDisplayContextModule} from '@catering-v2s/kernel-base-display-context'
 import {createTransportModule} from '@catering-v2s/kernel-base-transport'
-import {createTopologyModule, topologyActions} from '@catering-v2s/kernel-base-topology'
-import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session'
+import {createTopologyModule, topologyActions, topologyHostEventCommand} from '@catering-v2s/kernel-base-topology'
+import {
+  createSampleStaffSessionModule,
+} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry'
 import {loginSucceededCommand} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {
@@ -31,9 +33,12 @@ import {
   confirmMemberCommand,
   submitMemberCommand,
 } from '@catering-v2s/kernel-feature-sample-member-registry'
+import {memberActions as memberStateActions} from '../../../../kernel/feature/sample-member-registry/src/features/slices/slice'
 import {deskSystemFailureObservedCommand} from '../src/features/commands/commands'
 import {createTestRuntime} from '../../../../kernel/feature/sample-member-registry/test/support'
 import {releaseRuntimeForTest} from '../../../../kernel/base/runtime/src/testing'
+import {setDisplayRoleAction} from '../../../../kernel/base/display-context/src/features/slices/displayRole'
+import {setRuntimeInstanceModeAction} from '../../../../kernel/base/runtime/src/features/slices/runtimeInstanceMode'
 
 type RuntimeStateRoot = ReturnType<Runtime['getState']>
 const nativeLoadingCapability: NativeLoadingCapability = Object.freeze({
@@ -216,7 +221,7 @@ describe('sample member desk UI feature', () => {
     const runtime = createTestRuntime([
       createDisplayContextModule(),
       createTransportModule(),
-      createTopologyModule({displayName: 'sample member desk topology test', surfaceForm: 'laptop'}),
+      createTopologyModule({displayName: 'sample member desk topology test', moduleName: 'ui.integration.sample-console', surfaceForm: 'laptop'}),
       createUiStateModule({catalog, variables: [], surfaceForm: 'laptop'}),
       createSampleStaffSessionModule(),
       createSampleMemberRegistryModule(),
@@ -228,6 +233,7 @@ describe('sample member desk UI feature', () => {
       basePath: '/terminal-topology',
       identity: {
         protocolVersion: 1,
+        moduleName: 'ui.integration.sample-console',
         nodeId: 'node-member-desk-peer',
         displayName: 'Peer',
         instanceMode: 'SLAVE',
@@ -245,6 +251,97 @@ describe('sample member desk UI feature', () => {
       expect(result.status).toBe('completed')
       expect(selectScreen(runtime.getState(), 'PRIMARY', 'main')).toMatchObject({partKey: 'sample.desk.member-list'})
       expect(selectScreen(runtime.getState(), 'SECONDARY', 'main')).toMatchObject({partKey: 'sample.desk.customer-welcome'})
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('keeps the customer surface on a paired single-screen slave before staff login', async () => {
+    const catalog = createUiCatalog(sampleMemberDeskAssembly.parts.map(part => part.catalogEntry))
+    const runtime = createTestRuntime([
+      createDisplayContextModule(),
+      createTransportModule(),
+      createTopologyModule({displayName: 'sample member desk slave topology test', moduleName: 'ui.integration.sample-console', surfaceForm: 'laptop'}),
+      createUiStateModule({catalog, variables: [], surfaceForm: 'laptop'}),
+      createSampleStaffSessionModule(),
+      createSampleMemberRegistryModule(),
+      createSampleMemberDeskModule(),
+    ])
+    const locator: TopologyLocator = {
+      host: '192.0.2.61',
+      port: 43172,
+      basePath: '/terminal-topology',
+      identity: {
+        protocolVersion: 1,
+        moduleName: 'ui.integration.sample-console',
+        nodeId: 'node-member-desk-master',
+        displayName: 'Master',
+        instanceMode: 'MASTER',
+        displayRole: 'CHIEF',
+      },
+    }
+    try {
+      await runtime.start()
+      runtime.getStore().dispatch(topologyActions.setMasterLocator(locator))
+      // This fixture represents the persisted single-screen slave boundary;
+      // the display-context command path owns validation of these values.
+      runtime.getStore().dispatch(setRuntimeInstanceModeAction('SLAVE'))
+      runtime.getStore().dispatch(setDisplayRoleAction('VICE'))
+      const result = await runtime.dispatchCommand(topologyHostEventCommand, {event: 'peer-accepted'}, {requestId: createRequestId()})
+      expect(result.status).toBe('completed')
+      expect(selectScreen(runtime.getState(), 'SECONDARY', 'main')).toBeUndefined()
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('reconciles the customer surface after a recovered members state transfer', async () => {
+    const catalog = createUiCatalog(sampleMemberDeskAssembly.parts.map(part => part.catalogEntry))
+    const runtime = createTestRuntime([
+      createDisplayContextModule(),
+      createTransportModule(),
+      createTopologyModule({displayName: 'sample member desk recovered state test', moduleName: 'ui.integration.sample-console', surfaceForm: 'laptop'}),
+      createUiStateModule({catalog, variables: [], surfaceForm: 'laptop'}),
+      createSampleStaffSessionModule(),
+      createSampleMemberRegistryModule(),
+      createSampleMemberDeskModule(),
+    ])
+    const locator: TopologyLocator = {
+      host: '192.0.2.62',
+      port: 43172,
+      basePath: '/terminal-topology',
+      identity: {
+        protocolVersion: 1,
+        moduleName: 'ui.integration.sample-console',
+        nodeId: 'node-member-desk-recovered-state',
+        displayName: 'Master',
+        instanceMode: 'MASTER',
+        displayRole: 'CHIEF',
+      },
+    }
+    try {
+      await runtime.start()
+      runtime.getStore().dispatch(topologyActions.setMasterLocator(locator))
+      runtime.getStore().dispatch(setRuntimeInstanceModeAction('SLAVE'))
+      runtime.getStore().dispatch(setDisplayRoleAction('VICE'))
+
+      runtime.getStore().dispatch(memberStateActions.setPending({name: 'Alice', phone: '010-0000-0000'}))
+      const pendingResult = await runtime.dispatchCommand(
+        topologyHostEventCommand,
+        {event: 'state-transfer-recovered'},
+        {requestId: createRequestId()},
+      )
+      expect(pendingResult.status).toBe('completed')
+      expect(selectScreen(runtime.getState(), 'SECONDARY', 'main')).toBeUndefined()
+
+      runtime.getStore().dispatch(memberStateActions.clearPending())
+      const clearedResult = await runtime.dispatchCommand(
+        topologyHostEventCommand,
+        {event: 'state-transfer-recovered'},
+        {requestId: createRequestId()},
+      )
+      expect(clearedResult.status).toBe('completed')
+      expect(selectScreen(runtime.getState(), 'SECONDARY', 'main')).toBeUndefined()
     } finally {
       releaseRuntimeForTest(runtime)
     }
@@ -803,7 +900,7 @@ describe('sample member desk UI feature', () => {
     const runtime = createTestRuntime([
       createDisplayContextModule(),
       createTransportModule(),
-      createTopologyModule({displayName: 'sample member desk test', surfaceForm: 'mobile'}),
+      createTopologyModule({displayName: 'sample member desk test', moduleName: 'ui.integration.sample-console', surfaceForm: 'mobile'}),
       createUiStateModule({catalog, variables: [], surfaceForm: 'mobile'}),
       createSampleStaffSessionModule(),
       createSampleMemberRegistryModule(),

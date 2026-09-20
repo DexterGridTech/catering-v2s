@@ -3,6 +3,7 @@ package com.catering.v2s.fulfillment.production.api;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.platform.foundation.contract.OwnerProblem;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
@@ -130,7 +131,7 @@ public interface ProductionTagOwnerApi {
 
     JsonNode preflightCopy(WorkspaceExecutionContext<CatalogAuthorizationScope> context, ObjectNode request);
 
-    final class Problem extends RuntimeException {
+    final class Problem extends RuntimeException implements OwnerProblem {
         private final String code;
         private final int status;
 
@@ -146,10 +147,12 @@ public interface ProductionTagOwnerApi {
             this.status = status;
         }
 
+        @Override
         public String code() {
             return code;
         }
 
+        @Override
         public int status() {
             return status;
         }

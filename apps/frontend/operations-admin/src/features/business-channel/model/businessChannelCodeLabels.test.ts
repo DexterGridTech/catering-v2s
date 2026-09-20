@@ -27,7 +27,7 @@ describe('business-channel code labels', () => {
   });
 
   it('keeps business wording in the shared grouped export', () => {
-    expect(businessChannelCodeLabels.status.VOIDED).toBe('标记删除');
+    expect(businessChannelCodeLabels.status.VOIDED).toBe('作废');
     expect(businessChannelCodeLabels.dineInForm.QR).toBe('扫码');
   });
 

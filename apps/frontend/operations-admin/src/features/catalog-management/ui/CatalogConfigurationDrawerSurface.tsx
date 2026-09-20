@@ -36,7 +36,7 @@ export function CatalogConfigurationDrawerSurface({
 }) {
   return (
     <Drawer
-      title={presentation === 'EDITOR_CHILD' ? '维护商品基础数据' : '商品配置'}
+      title={presentation === 'EDITOR_CHILD' ? '维护商品元数据' : '商品配置'}
       open={open}
       onClose={onRequestClose}
       afterOpenChange={visible => {
@@ -69,7 +69,7 @@ export function CatalogConfigurationDrawerSurface({
           <div
             id="catalog-configuration-content"
             role="tabpanel"
-            aria-label={presentation === 'EDITOR_CHILD' ? '商品基础数据内容' : '商品配置内容'}
+            aria-label={presentation === 'EDITOR_CHILD' ? '商品元数据内容' : '商品配置内容'}
             aria-labelledby={`catalog-configuration-tab-${currentLibrary}`}
             style={{flex: '1 1 auto', minWidth: 0, minHeight: 0, overflowY: 'auto', paddingLeft: 24}}
           >

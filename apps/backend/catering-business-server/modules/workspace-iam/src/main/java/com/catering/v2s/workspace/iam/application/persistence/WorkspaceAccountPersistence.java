@@ -30,8 +30,8 @@ public class WorkspaceAccountPersistence {
     public WorkspaceAccountReadback require(UUID workspaceUuid, String key, UUID accountId) {
         return jdbc.query(
                 WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_SELECT_WORKSPACE_UUID
-                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CONTINUATION_WORKSPACE_ACCOUNT_DISPLAY_NAME_STATUS_VERSION
-                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
+                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_WORKSPACE_ACCOUNT_DISPLAY_NAME_STATUS_VERSION
+                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, accountId);
                     statement.setObject(2, workspaceUuid);
@@ -47,13 +47,13 @@ public class WorkspaceAccountPersistence {
             UUID workspaceUuid, String key, UUID accountId, String status, long expectedVersion) {
         StatusTransition transition = jdbc.query(
                 WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CTE_WORKSPACE_ACCOUNT_CURRENT_STATUS
-                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_UPDATED
-                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CONTINUATION_WORKSPACE_ACCOUNT_STATUS_VERSION
+                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_UPDATED
+                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_WORKSPACE_ACCOUNT_STATUS_VERSION
                         + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                         + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CONDITION_VERSION_STATUS_VOIDED_WORKSPACE_UUID
-                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED
-                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CONTINUATION_LOGIN_NAME_NORMALIZED_DISPLAY_NAME_STATUS_VERSION
-                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CONTINUATION_CURRENT_PREVIOUS_STATUS_EXISTING_ID_SENTINEL
+                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED
+                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_LOGIN_NAME_NORMALIZED_DISPLAY_NAME_STATUS_VERSION
+                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CURRENT_PREVIOUS_STATUS_EXISTING_ID_SENTINEL
                         + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_JOIN_CONDITION_UPDATED_ON_TRUE_LEFT_JOIN_UPDATED_ON,
                 statement -> {
                     statement.setObject(1, accountId);
@@ -75,7 +75,7 @@ public class WorkspaceAccountPersistence {
         if (transition != null && transition.updated() != null && !"ENABLED".equals(status)) {
             jdbc.update(
                     WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_UPDATE_WORKSPACE_SESSION_STATUS_REVOKED_REVOKED_AT_EPOCH_MILLIS
-                            + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CONTINUATION_ACCOUNT_ID_STATUS_ACTIVE,
+                            + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_ACCOUNT_ID_STATUS_ACTIVE,
                     time.currentEpochMillis(),
                     accountId);
         }
@@ -106,7 +106,7 @@ public class WorkspaceAccountPersistence {
     public void revokeAssignmentSessions(UUID accountId, UUID assignmentId) {
         jdbc.update(
                 WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_UPDATE_WORKSPACE_SESSION_STATUS_REVOKED_REVOKED_AT_EPOCH_MILLIS_ALTERNATE_A
-                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CONTINUATION_ACCOUNT_ID_CURRENT_ASSIGNMENT_ID_STATUS_ACTIVE,
+                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_ACCOUNT_ID_CURRENT_ASSIGNMENT_ID_STATUS_ACTIVE,
                 time.currentEpochMillis(),
                 accountId,
                 assignmentId);
@@ -115,7 +115,7 @@ public class WorkspaceAccountPersistence {
     public UUID accountIdByAssignment(UUID workspaceUuid, String key, UUID assignmentId) {
         return jdbc.query(
                 WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_SELECT_ROLE_ASSIGNMENT_ACCOUNT_ID_WORKSPACE_UUID
-                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY,
+                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, assignmentId);
                     statement.setObject(2, workspaceUuid);
@@ -153,10 +153,10 @@ public class WorkspaceAccountPersistence {
             List<AuditChange> changes) {
         jdbc.update(
                 WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE
-                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CONTINUATION_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
-                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CONTINUATION_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_WORKSPACE_ACCOUNT
+                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
+                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_WORKSPACE_ACCOUNT
                         + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_PARAMETER_PLACEHOLDER
-                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CONTINUATION_CAST_AS_JSONB,
+                        + WorkspaceAccountServiceSql.WORKSPACE_ACCOUNT_SERVICE_CAST_AS_JSONB,
                 UUID.randomUUID(),
                 workspaceUuid,
                 key,

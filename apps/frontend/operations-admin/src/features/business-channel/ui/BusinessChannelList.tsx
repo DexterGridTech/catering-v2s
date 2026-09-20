@@ -3,6 +3,8 @@ import {ProTable, type ProColumns} from '@ant-design/pro-components';
 import {
   adminListState,
   closedCodeLabel,
+  displayFieldValue,
+  LifecycleStatusTag,
   testId,
   useAsyncGenerationGuard,
   useRefreshVersion,
@@ -126,7 +128,7 @@ export function BusinessChannelList({
         key: 'channelCode',
         sorter: true,
         sortOrder: sort.sortKey === 'CHANNEL_CODE' ? proSortOrder(sort.sortDirection) : undefined,
-        render: (_value: unknown, row: BusinessChannelView) => row.channelCode || '—',
+        render: (_value: unknown, row: BusinessChannelView) => displayFieldValue(row.channelCode),
       },
       {
         title: '来源模板',
@@ -134,7 +136,7 @@ export function BusinessChannelList({
         key: 'templateName',
         sorter: true,
         sortOrder: sort.sortKey === 'TEMPLATE_NAME' ? proSortOrder(sort.sortDirection) : undefined,
-        render: (_value: unknown, row: BusinessChannelView) => templateNames?.get(row.templateRef) ?? '—',
+        render: (_value: unknown, row: BusinessChannelView) => displayFieldValue(templateNames?.get(row.templateRef)),
       },
       {
         title: '状态',
@@ -142,9 +144,7 @@ export function BusinessChannelList({
         key: 'status',
         sorter: true,
         sortOrder: sort.sortKey === 'STATUS' ? proSortOrder(sort.sortDirection) : undefined,
-        render: (_value: unknown, row: BusinessChannelView) => (
-          <Tag>{closedCodeLabel(lifecycleStatusLabels, row.status)}</Tag>
-        ),
+        render: (_value: unknown, row: BusinessChannelView) => <LifecycleStatusTag status={row.status} />,
       },
       {
         title: '绑定状态',

@@ -4,6 +4,16 @@
 
 编码规范唯一正本入口：后台见 [`doc/platform/backend-coding-standard.md`](doc/platform/backend-coding-standard.md)，前端见 [`doc/platform/frontend-coding-standard.md`](doc/platform/frontend-coding-standard.md)。本文件只提供指针，不复制规范内容。
 
+本批双机拓扑基建加固的外部/仓外边界登记如下；这些行只记录事实与触发条件，不授权后续实施。
+
+| id | currentBoundary | deferredReason | risk | activationTrigger | futureAcceptanceEvidence | decisionSource |
+|---|---|---|---|---|---|---|
+| TER_TOPOLOGY_PAIRING_TRUST | 当前 pairing locator 使用 activation token 形态，不做认证或授信握手 | 双机样例范围明确不做认证；token 不是身份授信 | 恶意网络环境不能依赖该样例拓扑提供信任 | TOPOLOGY_AUTHENTICATION_AUTHORIZED | 明确认证协议、凭据生命周期、重放/撤销与双设备证据 | `doc/plans/platform/2026-09-17-ter-dual-machine-topology-requirements-claude.md` §0.3 |
+| TER_TOPOLOGY_PROTOCOL_NEGOTIATION | 当前 protocolVersion 为固定值，版本不一致行为未定义 | 本批只保留版本字段，不新增协商流程 | 两机版本不一致时可能无法建立兼容连接 | TOPOLOGY_PROTOCOL_NEGOTIATION_REQUIRED | 版本协商、拒绝/降级语义与跨版本测试 | `doc/plans/platform/2026-09-17-ter-dual-machine-topology-requirements-claude.md` §8.4 |
+| TER_DUAL_SCREEN_JS_RELOAD | 双屏 JS reload 与已注册 surface 的恢复依赖 ReactHostImpl 行为，当前无设备结论 | 该仓外行为不能由静态源码推出 | reload 后主/副屏生命周期可能不同步 | TER_DUAL_SCREEN_JS_RELOAD_IMPLEMENTATION_AUTHORIZED | 单机双屏冷启动、reload、UI XML/timeline 与 cleanup 证据 | `doc/plans/platform/2026-09-17-ter-dual-machine-topology-requirements-claude.md` §8.4 |
+| TER_DUAL_SCREEN_SECONDARY_RESTORE | 副屏 Presentation 是否在 JS 重启后自行恢复仍属 UNVERIFIED | 需要单机双屏设备观察；不得以双机单屏替代 | 副屏可能停留在空白或旧 surface | TER_DUAL_SCREEN_SECONDARY_RESTORE_FIX_AUTHORIZED | 修复 owner、生命周期与 generation-safe restore 的设备复测 | `doc/plans/platform/2026-09-17-ter-dual-machine-topology-requirements-claude.md` §8.4 |
+| TER_NANOHTTPD_REPLACEMENT | 当前保留 NanoHTTPD 2.3.1 与既有 NanoWSD 文本管道 | 依 Dexter 裁定本批不换 HTTP/WS 依赖 | 上游停更，新漏洞缺少补丁通道 | TER_NANOHTTPD_REPLACEMENT_AUTHORIZED | 替代库兼容性、Android 构建、HTTP/WS/close/stats 与设备证据 | `doc/plans/platform/2026-09-18-ter-dual-machine-topology-infrastructure-hardening-requirements-claude.md` §0.2 |
+
 | id | currentBoundary | deferredReason | risk | activationTrigger | futureAcceptanceEvidence | decisionSource |
 |---|---|---|---|---|---|---|
 | CI_EXECUTION_PLATFORM | `scripts/verify` 由 Codex/Claude 本地显式执行，无 CI 平台 | solo+AI 阶段先保留证据语义 | 人工漏跑验证 | CI_PROVIDER_SELECTED | provider workflow 运行 verify、保存 business/cleanup 与失败红例 | [{"path":"doc/plans/platform/2026-07-24-v2s-carryover-manifest-claude.md","anchor":"### H.1 现在就做(仅三件 + 一个顺手项)"}] |

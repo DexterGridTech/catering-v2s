@@ -16,7 +16,7 @@ public class OrganizationHierarchyCommandReceiptPersistence {
     public Receipt read(UUID workspaceUuid, String idempotencyKey) {
         return jdbc.query(
                 OrganizationHierarchyCommandReceiptServiceSql.ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_SELECT_ORGANIZATION_COMMAND_RECEIPT
-                        + OrganizationHierarchyCommandReceiptServiceSql.ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_CONTINUATION_WORKSPACE_UUID_IDEMPOTENCY_KEY,
+                        + OrganizationHierarchyCommandReceiptServiceSql.ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_WORKSPACE_UUID_IDEMPOTENCY_KEY,
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, idempotencyKey);
@@ -27,7 +27,7 @@ public class OrganizationHierarchyCommandReceiptPersistence {
     public int replaceResponse(String responseJson, UUID workspaceUuid, String idempotencyKey) {
         return jdbc.update(
                 OrganizationHierarchyCommandReceiptServiceSql.ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_UPDATE_ORGANIZATION_COMMAND_RECEIPT_RESPONSE_JSON
-                        + OrganizationHierarchyCommandReceiptServiceSql.ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_CONTINUATION_WORKSPACE_UUID_IDEMPOTENCY_KEY_ALTERNATE_A,
+                        + OrganizationHierarchyCommandReceiptServiceSql.ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_WORKSPACE_UUID_IDEMPOTENCY_KEY_ALTERNATE_A,
                 responseJson,
                 workspaceUuid,
                 idempotencyKey);
@@ -42,7 +42,7 @@ public class OrganizationHierarchyCommandReceiptPersistence {
             long createdAtEpochMillis) {
         return jdbc.update(
                 OrganizationHierarchyCommandReceiptServiceSql.ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_INSERT_INTO_ORGANIZATION_COMMAND_RECEIPT
-                        + OrganizationHierarchyCommandReceiptServiceSql.ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_CONTINUATION_ENTITY_ID
+                        + OrganizationHierarchyCommandReceiptServiceSql.ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_ENTITY_ID
                         + OrganizationHierarchyCommandReceiptServiceSql.ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_PARAMETER_PLACEHOLDER
                         + OrganizationHierarchyCommandReceiptServiceSql.ORGANIZATION_HIERARCHY_COMMAND_RECEIPT_SERVICE_PARAMETER_PLACEHOLDER_SUCCEEDED,
                 workspaceUuid,

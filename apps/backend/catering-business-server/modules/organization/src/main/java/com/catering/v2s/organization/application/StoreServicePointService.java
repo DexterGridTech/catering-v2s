@@ -2,9 +2,10 @@ package com.catering.v2s.organization.application;
 
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
-import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.audit.contract.AuditChangePolicy;
 import com.catering.v2s.audit.contract.AuditEntityTypes;
+import com.catering.v2s.audit.contract.AuditEvent;
+import com.catering.v2s.audit.contract.AuditTarget;
 import com.catering.v2s.extension.api.ExtensionDefinitionLookup;
 import com.catering.v2s.extension.api.ExtensionDefinitionReadback;
 import com.catering.v2s.extension.api.ExtensionSubmission;
@@ -14,6 +15,8 @@ import com.catering.v2s.organization.api.QrChannelEligibilityLookup;
 import com.catering.v2s.organization.api.StoreServicePointAssetLifecycle;
 import com.catering.v2s.organization.api.StoreServicePointOwnerApi;
 import com.catering.v2s.organization.api.StoreOperatingRuleGate;
+import com.catering.v2s.organization.application.persistence.OrganizationAuditEventWriter;
+import com.catering.v2s.platform.foundation.collection.CanonicalCursorIdentity;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -48,6 +51,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     private final ObjectProvider<QrChannelEligibilityLookup> qrChannels;
     private final ObjectProvider<StoreServicePointAssetLifecycle> assets;
     private final StoreOperatingRuleGate operatingRules;
+    private final OrganizationAuditEventWriter auditEvents;
 
     public StoreServicePointService(
             JdbcTemplate jdbc,
@@ -62,6 +66,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         this.qrChannels = qrChannels;
         this.assets = assets;
         this.operatingRules = operatingRules;
+        this.auditEvents = new OrganizationAuditEventWriter(jdbc);
     }
 
     @Override
@@ -282,13 +287,14 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         AreaRow before = requireAreaForUpdate(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), command.targetRef());
         if (!claim(command.workspaceUuid(), command.groupWorkspaceKey(), command.idempotencyKey(), canonical(command), before.areaRef, AREA))
             return requireAreaRead(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.areaRef);
+        requireExpectedVersion(before.version, command.expectedVersion());
         List<AreaRow> rows = jdbc.query(
                 "SELECT area_ref, store_ref, name, code, area_type, status, display_order, version, created_at_epoch_millis, updated_at_epoch_millis FROM organization.store_service_point_area WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND status <> 'VOIDED' ORDER BY display_order, area_ref FOR UPDATE",
                 StoreServicePointService::areaRow, command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef());
         int index = indexOf(rows, before.areaRef);
         int neighbor = "UP".equals(command.direction()) ? index - 1 : index + 1;
         if (index < 0 || neighbor < 0 || neighbor >= rows.size()) return requireAreaRead(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.areaRef);
-        swapOrders("organization.store_service_point_area", rows.get(index), rows.get(neighbor));
+        swapOrders("organization.store_service_point_area", rows.get(index), rows.get(neighbor), time.currentEpochMillis());
         return requireAreaRead(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.areaRef);
     }
 
@@ -393,13 +399,14 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         PointRow before = requirePointForUpdate(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), command.targetRef());
         if (!claim(command.workspaceUuid(), command.groupWorkspaceKey(), command.idempotencyKey(), canonical(command), before.pointRef, POINT))
             return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef);
+        requireExpectedVersion(before.version, command.expectedVersion());
         List<PointRow> rows = jdbc.query(
                 "SELECT p.point_ref, p.store_ref, p.area_ref, p.name, p.code, p.point_type, p.status, p.display_order, p.seat_capacity, p.table_shape, p.reservable, p.image_asset_ref, p.extension_values::text, p.extension_rule_revision, p.version, p.created_at_epoch_millis, p.updated_at_epoch_millis, a.status AS area_status FROM organization.store_service_point p JOIN organization.store_service_point_area a ON a.area_ref=p.area_ref WHERE p.workspace_uuid=? AND p.group_workspace_key=? AND p.store_ref=? AND p.area_ref=? AND p.status <> 'VOIDED' ORDER BY p.display_order, p.point_ref FOR UPDATE",
                 StoreServicePointService::pointRow, command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.areaRef);
         int index = indexOfPoints(rows, before.pointRef);
         int neighbor = "UP".equals(command.direction()) ? index - 1 : index + 1;
         if (index < 0 || neighbor < 0 || neighbor >= rows.size()) return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef);
-        swapOrders("organization.store_service_point", rows.get(index), rows.get(neighbor));
+        swapOrders("organization.store_service_point", rows.get(index), rows.get(neighbor), time.currentEpochMillis());
         return readPoint(command.workspaceUuid(), command.groupWorkspaceKey(), command.storeRef(), before.pointRef);
     }
 
@@ -552,10 +559,15 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     private void audit(UUID workspaceUuid, String groupWorkspaceKey, UUID entityRef, String entityType, String action, AuditActor actor, long now, List<AuditChange> changes) {
         AuditChangePolicy policy = new AuditChangePolicy(entityType, action, changes.stream().map(AuditChange::fieldKey).collect(Collectors.toSet()));
         AuditActor effectiveActor = actor == null ? AuditActor.system() : actor;
-        jdbc.update(
-                "INSERT INTO organization.audit_event(id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json) VALUES (?,?,?,?,?,?,?,?,?,?,?::jsonb)",
-                UUID.randomUUID(), workspaceUuid, groupWorkspaceKey, entityType, entityRef.toString(), effectiveActor.actorType(), effectiveActor.actorId(), effectiveActor.displaySnapshot(), action, now,
-                AuditChangeJson.write(policy.allow(changes)));
+        auditEvents.write(new AuditEvent(
+                UUID.randomUUID(),
+                workspaceUuid,
+                groupWorkspaceKey,
+                new AuditTarget(entityType, entityRef.toString()),
+                effectiveActor,
+                action,
+                now,
+                policy.allow(changes)));
     }
 
     private static List<AuditChange> changes(AreaRow before, String name, String code, String type, String status) {
@@ -716,12 +728,14 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
 
     private static String pageIdentity(
             String operation, UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID areaRef) {
-        return operation + "\u001f"
-                + Objects.toString(workspaceUuid, "<null>") + "\u001f"
-                + Objects.toString(groupWorkspaceKey, "<null>") + "\u001f"
-                + Objects.toString(storeRef, "<null>") + "\u001f"
-                + Objects.toString(areaRef, "<null>") + "\u001f"
-                + PAGE_SIZE + "\u001fdisplay_order,ref";
+        return CanonicalCursorIdentity.encode(
+                operation,
+                workspaceUuid == null ? null : workspaceUuid.toString(),
+                groupWorkspaceKey,
+                storeRef == null ? null : storeRef.toString(),
+                areaRef == null ? null : areaRef.toString(),
+                Integer.toString(PAGE_SIZE),
+                "display_order,ref");
     }
 
     private static List<Area> indexedAreas(List<AreaRow> rows, boolean hasPrevious, boolean hasNext) {
@@ -740,14 +754,28 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         return java.util.stream.IntStream.range(0, rows.size()).filter(index -> ref.equals(rows.get(index).pointRef)).findFirst().orElse(-1);
     }
 
-    private void swapOrders(String table, AreaRow one, AreaRow two) {
-        jdbc.update("UPDATE " + table + " SET display_order=? WHERE area_ref=?", two.displayOrder, one.areaRef);
-        jdbc.update("UPDATE " + table + " SET display_order=? WHERE area_ref=?", one.displayOrder, two.areaRef);
+    private void swapOrders(String table, AreaRow one, AreaRow two, long now) {
+        int firstUpdated = jdbc.update(
+                "UPDATE " + table + " SET display_order=?, version=version+1, updated_at_epoch_millis=? WHERE area_ref=?",
+                two.displayOrder, now, one.areaRef);
+        int secondUpdated = jdbc.update(
+                "UPDATE " + table + " SET display_order=?, version=version+1, updated_at_epoch_millis=? WHERE area_ref=?",
+                one.displayOrder, now, two.areaRef);
+        if (firstUpdated != 1 || secondUpdated != 1) throw new BusinessEntityService.OrganizationConflictException();
     }
 
-    private void swapOrders(String table, PointRow one, PointRow two) {
-        jdbc.update("UPDATE " + table + " SET display_order=? WHERE point_ref=?", two.displayOrder, one.pointRef);
-        jdbc.update("UPDATE " + table + " SET display_order=? WHERE point_ref=?", one.displayOrder, two.pointRef);
+    private void swapOrders(String table, PointRow one, PointRow two, long now) {
+        int firstUpdated = jdbc.update(
+                "UPDATE " + table + " SET display_order=?, version=version+1, updated_at_epoch_millis=? WHERE point_ref=?",
+                two.displayOrder, now, one.pointRef);
+        int secondUpdated = jdbc.update(
+                "UPDATE " + table + " SET display_order=?, version=version+1, updated_at_epoch_millis=? WHERE point_ref=?",
+                one.displayOrder, now, two.pointRef);
+        if (firstUpdated != 1 || secondUpdated != 1) throw new BusinessEntityService.OrganizationConflictException();
+    }
+
+    private static void requireExpectedVersion(long actual, long expected) {
+        if (actual != expected) throw new BusinessEntityService.OrganizationConflictException();
     }
 
     private static String canonical(Object command) {

@@ -27,8 +27,8 @@ command、store 或中文 IME 引擎；本轮所有输入统一走虚拟键盘�
   input/feature 不传 `className`。
 - 四种布局都把功能键放入连续的键区，不另起空的动作行：full 的 caps 在 home row 起始处，
   shift 在末行起始处，backspace/complete 在末端；alpha 的 shift 在末行起始处。numeric
-  与 financial 的前三行都是 `123`、`456`、`789` 三列；numeric 的末端复合区仍是一行三列，
-  `0` 横跨前两列，右侧一列内部左右放 backspace/complete；financial 的末端复合区也是
+  与 financial 的前三行都是 `123`、`456`、`789` 三列；numeric 的末端复合区是一行三列，
+  依次为 backspace、`0`、complete，且三者都是独立一列；financial 的末端复合区也是
   一行三列，第一列内部左右放 `-/.`，第二列为 `0`，第三列内部左右放 backspace/complete。
   这样每个末行按键保持一行高度，动作键始终在最右侧，且数字列与符号列按 `7/8/9` 对齐。该排列参考 V1 POC 的连续软键盘心智，
   但只保留当前 input contract 已有的 key，不新增 space 或 enter。
@@ -48,8 +48,9 @@ command、store 或中文 IME 引擎；本轮所有输入统一走虚拟键盘�
 - surface content 的非输入点击会通过 input owner 主动清理当前 field 并收起键盘；虚拟键盘 dock 是 sibling，
   不把业务按钮或文案变成 input 特例；需要把键盘放进字段/卡片局部布局时仍使用同一个 `InputKeyboard`，不新增 input owner、状态或事件管线；
 - `PrimitiveButton` 在 primitives 内用自身的 `onPressIn`/`onPressOut` 保存局部 pressed 状态并
-  提供反馈：普通键透明度变为 `0.78`、动作键变为 `0.72` 并轻微缩放到 `0.985`；它只影响
-  当前按键，不触发表单字段或整个键盘的额外状态更新。
+  提供反馈：普通键透明度变为 `0.78`、动作键变为 `0.72` 并轻微缩放到 `0.985`，同时显示
+  integration 提供的主题 focus 边框；释放后恢复普通边框。它只影响当前按键，不触发表单
+  字段或整个键盘的额外状态更新。
 - `InputSurfaceFrame` 的表面收键盘是被动 touch/click 观察，不参与 responder 协商，因此不会抢
   `ScrollView` 或业务后代的手势；真实输入节点阻断该观察事件。Web 上 `PrimitiveInput` 仍把同一个
   输入边界处理器接到 `onClick`，Android/native 则由 `onPressIn` 与 touch-end 边界共同保持相同语义；
@@ -120,3 +121,5 @@ feature 生产源码也不得直接 import React Native。`ui-base-input` 只声
 修改公共面时必须同步 `src/index.ts`、`terminal-invariants.json` 与本 README，并运行本包
 `typecheck` 与 focused tests。模型红向量与真实树结果分开报告；测试通过不等于 Android/Web 行为
 已验证，动态证据必须按平台单独收集。
+
+虚拟键盘 renderer 统一复用 primitives 的 `PrimitiveKeyboardBackdrop`、`PrimitiveKeyboardSurface`、`PrimitiveButton` 与 `PrimitiveIcon`；backdrop 覆盖键盘完整高度但保持透明，surface 保持 IA 要求的内缩卡片几何与不透明键盘面。alpha 的 CAPS 是持久锁定键，普通字符输入不触发键盘整体刷新。surface 的 native touch 与 Web click 事件由 input 侧传入，primitive 只做结构化透传，不读取 input controller。

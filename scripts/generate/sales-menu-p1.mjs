@@ -30,6 +30,62 @@ const generatedPaths = Object.freeze({
   timing: 'contracts/policy/sales-menu-l2-timing-budget.json',
 });
 
+const SALES_MENU_PAGE_OPERATING_RULE = Object.freeze({
+  operationId: 'getOperationsOrganizationStoreOperatingRule',
+  maxRequestCount: 1,
+});
+
+function pageOperatingRuleVisits(caseRow) {
+  const controlKeys = new Set(caseRow?.controlKeys ?? []);
+  return [
+    controlKeys.has('BUSINESS_CHANNEL_STORE_PAGE') ? 'business-channel-store' : null,
+    controlKeys.has('SALES_MENU_PAGE') ? 'sales-menu' : null,
+  ].filter(Boolean);
+}
+
+function requiresSalesMenuPageOperatingRule(caseRow) {
+  return pageOperatingRuleVisits(caseRow).length > 0;
+}
+
+function withSalesMenuPageOperatingRule(network, caseRow = null) {
+  const caseId = caseRow?.caseId ?? null;
+  const pageVisitCount = caseRow ? pageOperatingRuleVisits(caseRow).length : 1;
+  if (caseRow !== null && !requiresSalesMenuPageOperatingRule(caseRow)) {
+    if (
+      network?.required?.includes(SALES_MENU_PAGE_OPERATING_RULE.operationId) ||
+      network?.requests?.some(entry => entry?.operationId === SALES_MENU_PAGE_OPERATING_RULE.operationId)
+    )
+      fail('SALES_MENU_P1_PAGE_OPERATING_RULE_NOT_APPLICABLE', caseId);
+    return {
+      ...network,
+      required: [...(network?.required ?? [])],
+      requests: [...(network?.requests ?? [])],
+    };
+  }
+  const existing = network?.requests?.find(entry => entry?.operationId === SALES_MENU_PAGE_OPERATING_RULE.operationId);
+  return {
+    ...network,
+    required: [...new Set([...(network?.required ?? []), SALES_MENU_PAGE_OPERATING_RULE.operationId])],
+    requests: existing
+      ? [...(network?.requests ?? [])]
+      : [...(network?.requests ?? []), {...SALES_MENU_PAGE_OPERATING_RULE, maxRequestCount: pageVisitCount}],
+  };
+}
+
+function assertSalesMenuPageOperatingRuleRequired(network, caseRow) {
+  const caseId = caseRow?.caseId ?? caseRow;
+  if (!network?.required?.includes(SALES_MENU_PAGE_OPERATING_RULE.operationId))
+    fail('SALES_MENU_P1_PAGE_OPERATING_RULE_REQUIRED_MISSING', caseId);
+  const request = network?.requests?.find(entry => entry?.operationId === SALES_MENU_PAGE_OPERATING_RULE.operationId);
+  if (!request) fail('SALES_MENU_P1_PAGE_OPERATING_RULE_REQUEST_MISSING', caseId);
+  const expectedMaxRequestCount = pageOperatingRuleVisits(caseRow).length;
+  if (request.maxRequestCount !== expectedMaxRequestCount)
+    fail(
+      'SALES_MENU_P1_PAGE_OPERATING_RULE_BUDGET_MISMATCH',
+      `${caseId}:expected=${expectedMaxRequestCount}:actual=${request.maxRequestCount}`,
+    );
+}
+
 function fail(code, detail = '') {
   throw new Error(detail ? `${code}:${detail}` : code);
 }
@@ -79,7 +135,66 @@ function sourceContainsBinding(source, binding) {
   });
 }
 
+const SALES_INTERACTION_ACTION_NODES = Object.freeze({
+  STORE_SCOPE_TRIGGER: 'SCOPE_TRIGGER',
+  STORE_SCOPE_HEAD_COMPANY_SELECTOR: 'SELECT_INPUT',
+  STORE_SCOPE_HEAD_COMPANY_OPTION: 'SELECT_OPTION',
+  STORE_SCOPE_REGION_SELECTOR: 'SELECT_INPUT',
+  STORE_SCOPE_REGION_OPTION: 'SELECT_OPTION',
+  STORE_SCOPE_PROJECT_SELECTOR: 'SELECT_INPUT',
+  STORE_SCOPE_PROJECT_OPTION: 'SELECT_OPTION',
+  STORE_SCOPE_STORE_SELECTOR: 'SELECT_INPUT',
+  STORE_SCOPE_STORE_OPTION: 'SELECT_OPTION',
+  STORE_SCOPE_CONFIRM: 'BUTTON',
+  SALES_MENU_CHANNEL_SELECTOR: 'SELECT_TRIGGER_AND_OPTION_ROOT',
+  SALES_MENU_MODE: 'VISIBLE_SEGMENTED_OPTION_LABEL',
+  SALES_MENU_SELECTOR: 'NATIVE_SELECT_INPUT_AND_OPTION_ROOT',
+  SALES_MENU_ITEM_MIN_QUANTITY: 'INPUT_NUMBER',
+  SALES_MENU_ITEM_QUANTITY_STEP: 'INPUT_NUMBER',
+  SALES_MENU_ITEM_DETAIL_MEDIA_CHOICE: 'NATIVE_BUTTON',
+});
+
+const SALES_STORE_SCOPE_CONTROL_KEYS = Object.freeze(['STORE_SCOPE_TRIGGER']);
+
+const SALES_PROJECT_SCOPE_CONTROL_KEYS = Object.freeze(['STORE_SCOPE_TRIGGER']);
+
+function expectedScopeControlKeysForCase(caseId) {
+  return caseId === 'business-channel-external-dine-in-template'
+    ? SALES_PROJECT_SCOPE_CONTROL_KEYS
+    : SALES_STORE_SCOPE_CONTROL_KEYS;
+}
+
+const SALES_SCOPE_CONTROL_KEYS = new Set([
+  'STORE_SCOPE_TRIGGER',
+  'STORE_SCOPE_HEAD_COMPANY_SELECTOR',
+  'STORE_SCOPE_HEAD_COMPANY_OPTION',
+  'STORE_SCOPE_REGION_SELECTOR',
+  'STORE_SCOPE_REGION_OPTION',
+  'STORE_SCOPE_PROJECT_SELECTOR',
+  'STORE_SCOPE_PROJECT_OPTION',
+  'STORE_SCOPE_STORE_SELECTOR',
+  'STORE_SCOPE_STORE_OPTION',
+  'STORE_SCOPE_CONFIRM',
+]);
+
+function validateScopeControlDenominator(row) {
+  const declared = (row.controlKeys ?? []).filter(key => SALES_SCOPE_CONTROL_KEYS.has(key));
+  const expected = expectedScopeControlKeysForCase(row.caseId);
+  if (JSON.stringify(declared) !== JSON.stringify(expected))
+    fail(
+      'SALES_MENU_P1_SCOPE_CONTROL_DENOMINATOR_MISMATCH',
+      `${row.caseId}:expected=${expected.join(',')}:actual=${declared.join(',')}`,
+    );
+}
+
 function validateTestControlInteractionBindings(controls) {
+  for (const [controlKey, binding] of Object.entries(controls)) {
+    if (!binding?.interaction) continue;
+    if (SALES_INTERACTION_ACTION_NODES[controlKey] !== binding.actualActionNode)
+      fail('SALES_MENU_P1_INTERACTION_ACTION_NODE_INVALID', controlKey);
+    if (typeof binding.focusedStaticProof !== 'string' || !fs.existsSync(absolute(binding.focusedStaticProof)))
+      fail('SALES_MENU_P1_INTERACTION_STATIC_PROOF_INVALID', controlKey);
+  }
   const mode = controls.SALES_MENU_MODE;
   if (
     mode?.interaction !== 'COMPOSITE_OPTION_ANCHOR' ||
@@ -303,6 +418,7 @@ function validateBlueprint(blueprint, fixture, {readiness = null} = {}) {
   for (const row of caseRows) {
     if (!fixture.caseFixtures[row.fixtureRef])
       fail('SALES_MENU_P1_FIXTURE_REF_MISSING', `${row.caseId}:${row.fixtureRef}`);
+    validateScopeControlDenominator(row);
     for (const key of row.controlKeys ?? [])
       if (!bindingKeys.has(key)) fail('SALES_MENU_P1_CONTROL_BINDING_MISSING', `${row.caseId}:${key}`);
     const actions = row.parameter?.declaredActions;
@@ -316,14 +432,18 @@ function validateBlueprint(blueprint, fixture, {readiness = null} = {}) {
     if (actionIds.has(actions[0].actionId)) fail('SALES_MENU_P1_ACTION_DUPLICATE', actions[0].actionId);
     actionIds.add(actions[0].actionId);
     const operationIds = row.parameter?.operationIds;
-    const network = row.parameter?.network;
+    const network = withSalesMenuPageOperatingRule(row.parameter?.network, row);
+    if (requiresSalesMenuPageOperatingRule(row)) assertSalesMenuPageOperatingRuleRequired(network, row);
     const required = network?.required;
     const requests = network?.requests;
+    const expectedRequired = requiresSalesMenuPageOperatingRule(row)
+      ? [...new Set([...operationIds, SALES_MENU_PAGE_OPERATING_RULE.operationId])]
+      : [...new Set(operationIds)];
     if (
       !Array.isArray(operationIds) ||
       operationIds.length === 0 ||
       !Array.isArray(required) ||
-      JSON.stringify(operationIds) !== JSON.stringify(required)
+      JSON.stringify(expectedRequired) !== JSON.stringify(required)
     )
       fail('SALES_MENU_P1_NETWORK_OPERATION_MISMATCH', row.caseId);
     if (!Array.isArray(requests) || requests.length !== new Set(requests.map(entry => entry?.operationId)).size)
@@ -334,13 +454,15 @@ function validateBlueprint(blueprint, fixture, {readiness = null} = {}) {
     // render the shared asset preview. Their late responses may land inside a
     // user-action window, so they must be explicit in each case's network
     // denominator rather than treated as unexplained noise by the action gate.
-    for (const sharedOperationId of [
+    const sharedOperationIds = [
       'getOperationsStoreBusinessChannels',
       'getOperationsBusinessChannelTemplates',
       'getOperationsWorkspaceSessionEntry',
       'getPublicAssetContent',
-    ]) {
-      const declared = new Set([...operationIds, ...(network?.backgroundAllowed ?? [])]);
+    ];
+    if (requiresSalesMenuPageOperatingRule(row)) sharedOperationIds.push(SALES_MENU_PAGE_OPERATING_RULE.operationId);
+    for (const sharedOperationId of sharedOperationIds) {
+      const declared = new Set([...operationIds, ...(network?.required ?? []), ...(network?.backgroundAllowed ?? [])]);
       if (!declared.has(sharedOperationId))
         fail('SALES_MENU_P1_SHARED_PAGE_OPERATION_UNDECLARED', `${row.caseId}:${sharedOperationId}`);
       if (!requests.some(entry => entry?.operationId === sharedOperationId))
@@ -351,7 +473,11 @@ function validateBlueprint(blueprint, fixture, {readiness = null} = {}) {
       if (!requestIds.has(backgroundOperationId))
         fail('SALES_MENU_P1_BACKGROUND_OPERATION_BUDGET_MISSING', `${row.caseId}:${backgroundOperationId}`);
     }
-    for (const operationId of new Set([...operationIds, ...(network?.backgroundAllowed ?? [])])) {
+    for (const operationId of new Set([
+      ...operationIds,
+      ...(network?.required ?? []),
+      ...(network?.backgroundAllowed ?? []),
+    ])) {
       if (!operationMap.has(operationId)) fail('SALES_MENU_P1_CASE_ROUTE_DRIFT', `${row.caseId}:${operationId}`);
       if (operationConsumers.has(operationId))
         operationConsumers.set(operationId, (operationConsumers.get(operationId) ?? 0) + 1);
@@ -445,17 +571,25 @@ function derive(blueprint, fixture, readiness) {
     businessRequirement: scenario.businessRequirement,
     primaryVerifier: 'browser-business',
     cases: scenario.cases.map(row => {
+      const network = withSalesMenuPageOperatingRule(row.parameter.network, row);
       const operationRoutes = Object.fromEntries(
-        (row.parameter.operationIds ?? []).map(operationId => [
-          operationId,
-          {method: operationMap.get(operationId).method, path: operationMap.get(operationId).path},
-        ]),
+        [...(row.parameter.operationIds ?? []), ...(network.required ?? []), ...(network.backgroundAllowed ?? [])].map(
+          operationId => [
+            operationId,
+            {method: operationMap.get(operationId).method, path: operationMap.get(operationId).path},
+          ],
+        ),
       );
       return {
         caseId: row.caseId,
         fixtureRef: row.fixtureRef,
         parameterization: 'sales-menu-blueprint-case',
-        parameter: {...row.parameter, controlKeys: [...(row.controlKeys ?? [])], operationRoutes},
+        parameter: {
+          ...row.parameter,
+          controlKeys: [...(row.controlKeys ?? [])],
+          network,
+          operationRoutes,
+        },
         expected: {
           assertionKey: `${row.caseId}:business`,
           fixtureRef: row.fixtureRef,
@@ -591,6 +725,19 @@ function runSelfTest() {
     if (!(error instanceof Error) || !error.message.startsWith('SALES_MENU_P1_CASE_OPERATION_COVERAGE_MISSING:'))
       throw error;
   }
+  const scopeDenominatorMutation = readJson(blueprintPath);
+  const scopeCase = scopeDenominatorMutation.scenarios
+    .flatMap(scenario => scenario.cases ?? [])
+    .find(row => row.caseId === 'sales-menu-entry-and-channels');
+  if (!scopeCase) fail('SALES_MENU_P1_SELF_TEST_SCOPE_CASE_MISSING');
+  scopeCase.controlKeys.splice(1, 0, 'STORE_SCOPE_REGION_SELECTOR');
+  try {
+    validateBlueprint(scopeDenominatorMutation, readJson(fixturePath));
+    fail('SALES_MENU_P1_SELF_TEST_SCOPE_DENOMINATOR_DID_NOT_FAIL');
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.startsWith('SALES_MENU_P1_SCOPE_CONTROL_DENOMINATOR_MISMATCH:'))
+      throw error;
+  }
   const modeBindingMutation = readJson(blueprintPath);
   delete modeBindingMutation.bindings.controls.SALES_MENU_MODE.interaction;
   try {
@@ -639,6 +786,43 @@ function runSelfTest() {
     fail('SALES_MENU_P1_SELF_TEST_BASELINE_ITEM_TABLE_CONTROL_DID_NOT_FAIL');
   } catch (error) {
     if (!(error instanceof Error) || !error.message.startsWith('SALES_MENU_P1_BASELINE_ITEM_TABLE_CONTROL_MISSING:'))
+      throw error;
+  }
+  const singlePageRuleCase = {caseId: 'self-test-page-gate', controlKeys: ['SALES_MENU_PAGE']};
+  const pageRuleMutation = withSalesMenuPageOperatingRule({required: [], requests: []}, singlePageRuleCase);
+  pageRuleMutation.required = pageRuleMutation.required.filter(
+    operationId => operationId !== SALES_MENU_PAGE_OPERATING_RULE.operationId,
+  );
+  try {
+    assertSalesMenuPageOperatingRuleRequired(pageRuleMutation, singlePageRuleCase);
+    fail('SALES_MENU_P1_SELF_TEST_PAGE_OPERATING_RULE_DID_NOT_FAIL');
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      !error.message.startsWith('SALES_MENU_P1_PAGE_OPERATING_RULE_REQUIRED_MISSING:self-test-page-gate')
+    )
+      throw error;
+  }
+  const multiPageRuleCase = {
+    caseId: 'self-test-multi-page-gate',
+    controlKeys: ['BUSINESS_CHANNEL_STORE_PAGE', 'SALES_MENU_PAGE'],
+  };
+  const multiPageRuleNetwork = withSalesMenuPageOperatingRule({required: [], requests: []}, multiPageRuleCase);
+  assertSalesMenuPageOperatingRuleRequired(multiPageRuleNetwork, multiPageRuleCase);
+  const multiPageRuleBudgetMutation = {
+    ...multiPageRuleNetwork,
+    requests: multiPageRuleNetwork.requests.map(request =>
+      request.operationId === SALES_MENU_PAGE_OPERATING_RULE.operationId ? {...request, maxRequestCount: 1} : request,
+    ),
+  };
+  try {
+    assertSalesMenuPageOperatingRuleRequired(multiPageRuleBudgetMutation, multiPageRuleCase);
+    fail('SALES_MENU_P1_SELF_TEST_PAGE_OPERATING_RULE_BUDGET_DID_NOT_FAIL');
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      !error.message.startsWith('SALES_MENU_P1_PAGE_OPERATING_RULE_BUDGET_MISMATCH:self-test-multi-page-gate')
+    )
       throw error;
   }
   compareGenerated(expected);

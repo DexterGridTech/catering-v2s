@@ -37,13 +37,13 @@ public class ContractTaskReadPersistence {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final String VIEW_SELECT =
             ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_SELECT_GROUP_WORKSPACE_KEY_CONTRACT_NO_CODE_NAME
-                    + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_TENANT_ID_CODE_NAME_PHASE_NAME_SNAPSHOT
-                    + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_STATUS
-                    + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_EXTENSION_VALUES_TEXT_EXTENSION_RULE_REVISION_ITEMS_JSON;
+                    + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_TENANT_ID_CODE_NAME_PHASE_NAME_SNAPSHOT
+                    + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_STATUS
+                    + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_EXTENSION_VALUES_TEXT_EXTENSION_RULE_REVISION_ITEMS_JSON;
     private static final String VIEW_FROM =
             ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_FROM_CLAUSE_STORE_STORE_ID
                     + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_ALTERNATIVE_TENANT_ORGANIZATION_NODE_PROJECT_ID
-                    + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_TENANT_ID;
+                    + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_TENANT_ID;
     private final JdbcTemplate jdbc;
     private final ExtensionDefinitionLookup definitions;
 
@@ -76,8 +76,8 @@ public class ContractTaskReadPersistence {
         String pattern = likeSearch(term);
         List<StoreCandidate> stores = jdbc.query(
                 ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_SELECT_STORE_CODE_NAME_STATUS_WORKSPACE_UUID
-                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_PROJECT_ID_CODE_ILIKE
-                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_ESCAPE_CODE,
+                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_PROJECT_ID_CODE_ILIKE
+                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_ESCAPE_CODE,
                 (row, index) -> new StoreCandidate(
                         row.getObject(1, UUID.class), row.getString(2), row.getString(3), row.getString(4)),
                 workspaceUuid,
@@ -91,7 +91,7 @@ public class ContractTaskReadPersistence {
         if (selectedStoreId != null && stores.stream().noneMatch(store -> selectedStoreId.equals(store.id()))) {
             List<StoreCandidate> selected = jdbc.query(
                     ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_SELECT_STORE_CODE_NAME_STATUS_WORKSPACE_UUID_ALTERNATE_A
-                            + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_PROJECT_ID,
+                            + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_PROJECT_ID,
                     (row, index) -> new StoreCandidate(
                             row.getObject(1, UUID.class), row.getString(2), row.getString(3), row.getString(4)),
                     selectedStoreId,
@@ -105,7 +105,7 @@ public class ContractTaskReadPersistence {
         }
         long total = jdbc.queryForObject(
                 ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_SELECT_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_PROJECT_ID_CODE_ILIKE_ESCAPE,
+                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_PROJECT_ID_CODE_ILIKE_ESCAPE,
                 Long.class,
                 workspaceUuid,
                 key,
@@ -180,7 +180,7 @@ public class ContractTaskReadPersistence {
         return jdbc.query(
                 VIEW_SELECT + VIEW_FROM
                         + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STORE_ID
-                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_CONTRACT_NO,
+                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTRACT_NO,
                 (row, index) -> readView(row),
                 workspaceUuid,
                 key,
@@ -241,9 +241,9 @@ public class ContractTaskReadPersistence {
                 + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_ALTERNATIVE_CONTRACT_NO_ILIKE_ESCAPE
                 + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONDITION_TEXT_PHASE_NAME_SNAPSHOT_ILIKE_ESCAPE
                 + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONDITION_JSONB_ARRAY_ELEMENTS_TEXT_ITEMS_JSON
-                + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_CODE_ILIKE_ESCAPE
+                + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CODE_ILIKE_ESCAPE
                 + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONDITION_DATE_EFFECTIVE_FROM_EFFECTIVE_TO
-                + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_EFFECTIVE_TO_TEXT_STATUS
+                + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_EFFECTIVE_TO_TEXT_STATUS
                 + (filters.isEmpty() ? "" : " AND " + filters.predicate("c.extension_values"));
         String contractPattern = like(safe.contractNo());
         String phasePattern = like(safe.phaseName());
@@ -272,7 +272,7 @@ public class ContractTaskReadPersistence {
         values.addAll(filters.parameters());
         String from = ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_FROM_CLAUSE_STORE_STORE_ID_ALTERNATE_A
                 + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_ALTERNATIVE_TENANT_ORGANIZATION_NODE_PROJECT_ID_ALTERNATE_A
-                + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_TENANT_ID_ALTERNATE_A;
+                + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_TENANT_ID_ALTERNATE_A;
         long total = jdbc.queryForObject(
                 ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_SELECT_SELECT_COUNT_ALTERNATE_A + from + where,
                 Long.class,
@@ -336,7 +336,7 @@ public class ContractTaskReadPersistence {
     private Project project(UUID workspaceUuid, String key, UUID projectId) {
         return jdbc.query(
                 ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_SELECT_ORGANIZATION_NODE_CODE_NAME_WORKSPACE_UUID
-                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_NODE_TYPE_PROJECT,
+                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY_NODE_TYPE_PROJECT,
                 statement -> {
                     statement.setObject(1, projectId);
                     statement.setObject(2, workspaceUuid);
@@ -351,7 +351,7 @@ public class ContractTaskReadPersistence {
     private Project projectForStore(UUID workspaceUuid, String key, UUID storeId) {
         return jdbc.query(
                 ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_SELECT_ORGANIZATION_NODE_CODE_NAME
-                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_PROJECT_ID_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
+                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_PROJECT_ID_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, storeId);
                     statement.setObject(2, workspaceUuid);

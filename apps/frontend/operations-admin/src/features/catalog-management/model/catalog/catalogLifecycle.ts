@@ -12,14 +12,14 @@ import type {
 } from '../../../../app/api/generated/catalog-inventory-edge';
 
 const CATALOG_BATCH_PROBLEM_COPY: Readonly<Record<string, string>> = Object.freeze({
-  DEPENDENT_FACTS_BLOCK_VOID: '商品仍有依赖资料，暂不能标记删除。',
+  DEPENDENT_FACTS_BLOCK_VOID: '商品仍有依赖资料，暂不能作废。',
   NOT_FOUND: '商品已不存在，请刷新后重试。',
-  REFERENCE_BLOCKS_VOID: '商品仍被业务资料引用，暂不能标记删除。',
+  REFERENCE_BLOCKS_VOID: '商品仍被业务资料引用，暂不能作废。',
   REFERENCE_MAPPING_UNRESOLVED: '商品关联资料无法确认，请刷新后重试。',
   SCOPE_FORBIDDEN: '商品不在当前数据范围内。',
   VALIDATION_ERROR: '提交的商品状态不符合要求，请检查后重试。',
   VERSION_CONFLICT: '商品资料已有更新，请重新读取后再操作。',
-  VOIDED_RECORD_IMMUTABLE: '已标记删除的商品不可修改。',
+  VOIDED_RECORD_IMMUTABLE: '已作废的商品不可修改。',
 });
 const CATALOG_BATCH_UNKNOWN_PROBLEM_COPY = '批量操作项执行失败，请重新读取后再试。';
 

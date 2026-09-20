@@ -38,6 +38,22 @@ class AdvisoryLockTest {
                 jdbc.arguments);
     }
 
+    @Test
+    void preservesTextPairAndSingleKeyLockShapes() {
+        RecordingJdbcTemplate jdbc = new RecordingJdbcTemplate();
+
+        AdvisoryLock.acquireHashTextPair(jdbc, "workspace:scope", "request-1");
+
+        assertEquals(
+                "SELECT pg_advisory_xact_lock(hashtext(CAST(? AS text)), hashtext(CAST(? AS text)))", jdbc.sql);
+        assertArrayEquals(new Object[] {"workspace:scope", "request-1"}, jdbc.arguments);
+
+        AdvisoryLock.acquireHashText(jdbc, "platform-asset-object:object-1");
+
+        assertEquals("SELECT pg_advisory_xact_lock(hashtext(?))", jdbc.sql);
+        assertArrayEquals(new Object[] {"platform-asset-object:object-1"}, jdbc.arguments);
+    }
+
     private static void assertLegacyKey(int namespaceTag, int expectedFirstKey) {
         RecordingJdbcTemplate jdbc = new RecordingJdbcTemplate();
 

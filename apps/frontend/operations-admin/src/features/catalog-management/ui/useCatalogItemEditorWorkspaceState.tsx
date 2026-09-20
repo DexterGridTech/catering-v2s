@@ -1,5 +1,5 @@
-import {Form, Modal} from 'antd';
-import {NameCodeText, testId, useDrawerFormLifecycle, useRefreshVersion} from '@catering-v2s/admin-ui-foundation';
+import {Form} from 'antd';
+import {testId, useDrawerFormLifecycle, useRefreshVersion} from '@catering-v2s/admin-ui-foundation';
 import type {DrawerLifecycleDiagnosticEvent} from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useEffect, useReducer, useRef, useState, type SetStateAction} from 'react';
 import {operationsContentTabRefreshSignal, operationsLogger} from '../../../app/api/OperationsTransport';
@@ -107,6 +107,7 @@ export function useCatalogItemEditorWorkspaceState({
   const [releaseCloseFailed, setReleaseCloseFailed] = useState(false);
   const [releasingBeforeClose, setReleasingBeforeClose] = useState(false);
   const [voidingSkuRef, setVoidingSkuRef] = useState<string>();
+  const [pendingVoidSku, setPendingVoidSku] = useState<CatalogSkuRow>();
   /** A configuration task is a child of this editor, never a replacement for it. */
   const [configurationTask, dispatchConfigurationTask] = useReducer(
     catalogEditorChildTaskReducer,
@@ -282,7 +283,7 @@ export function useCatalogItemEditorWorkspaceState({
   }, []);
   const requestClose = useCallback(() => {
     if (!catalogEditorCanClose(configurationTask)) {
-      setProblem('请先完成或关闭商品基础数据维护，再关闭商品编辑。');
+      setProblem('请先完成或关闭商品元数据维护，再关闭商品编辑。');
       return;
     }
     requestEditorClose();
@@ -333,6 +334,7 @@ export function useCatalogItemEditorWorkspaceState({
       setReleasingBeforeClose(false);
       dispatchConfigurationTask({type: 'CLOSE'});
       replaceDraft(emptyCatalogItemDraftSnapshot());
+      setPendingVoidSku(undefined);
       setVoidingSkuRef(undefined);
       form.resetFields();
       resetSectionState();
@@ -495,46 +497,37 @@ export function useCatalogItemEditorWorkspaceState({
       !sku.voidAvailability?.canVoid
     )
       return;
-    Modal.confirm({
-      title: (
-        <span>
-          作废规格“
-          <NameCodeText name={sku.skuName} code={sku.skuCode} />
-          ”？
-        </span>
-      ),
-      content: '作废后该规格不再占用商品编码；此操作不可逆，商品其他事实不会被清空。',
-      okText: '确认作废规格',
-      cancelText: '取消',
-      okButtonProps: {danger: true},
-      onOk: async () => {
-        setVoidingSkuRef(sku.productSkuRef);
-        setProblem(undefined);
-        try {
-          const dataNodeRef = requireOperationsScopeRef(queryContext);
-          const body = buildCatalogSkuVoidRequest(detail.item, dataNodeRef, itemCode, sku);
-          const readback = await saveSkuVoid({itemCode, body});
-          const transitionReadback = requireCatalogSkuVoidTransitionReadback(
-            readback.result.skuTransitions,
-            sku.productSkuRef,
-          );
-          setSkusDraft(current =>
-            normalizeSkuDraftRows(
-              mergeCatalogSkuVoidReadback(current, sku.productSkuRef, transitionReadback),
-              createDraftRowId,
-            ),
-          );
-        } catch (error) {
-          setProblem(
-            error instanceof Error && error.message === 'INVALID_CATALOG_SKU_VOID_TRANSITION_READBACK'
-              ? '规格作废结果暂时无法确认，请刷新后重试。'
-              : catalogUiProblemFeedback(error, '规格作废未完成，请刷新后重试。').message,
-          );
-        } finally {
-          setVoidingSkuRef(undefined);
-        }
-      },
-    });
+    setPendingVoidSku(sku);
+  };
+  const confirmVoidSku = async () => {
+    if (!pendingVoidSku || !detail || !itemCode || voidingSkuRef) return;
+    const sku = pendingVoidSku;
+    setVoidingSkuRef(sku.productSkuRef);
+    setProblem(undefined);
+    try {
+      const dataNodeRef = requireOperationsScopeRef(queryContext);
+      const body = buildCatalogSkuVoidRequest(detail.item, dataNodeRef, itemCode, sku);
+      const readback = await saveSkuVoid({itemCode, body});
+      const transitionReadback = requireCatalogSkuVoidTransitionReadback(
+        readback.result.skuTransitions,
+        sku.productSkuRef,
+      );
+      setSkusDraft(current =>
+        normalizeSkuDraftRows(
+          mergeCatalogSkuVoidReadback(current, sku.productSkuRef, transitionReadback),
+          createDraftRowId,
+        ),
+      );
+      setPendingVoidSku(undefined);
+    } catch (error) {
+      setProblem(
+        error instanceof Error && error.message === 'INVALID_CATALOG_SKU_VOID_TRANSITION_READBACK'
+          ? '规格作废结果暂时无法确认，请刷新后重试。'
+          : catalogUiProblemFeedback(error, '规格作废未完成，请刷新后重试。').message,
+      );
+    } finally {
+      setVoidingSkuRef(undefined);
+    }
   };
   const {stageMedia, removeMedia, moveMedia, setPrimaryMedia, stageSkuMedia, removeSkuMedia, removeSkuStagedMedia} =
     useCatalogItemEditorMediaActions({
@@ -649,12 +642,16 @@ export function useCatalogItemEditorWorkspaceState({
     mediaProblem,
     problem,
     problemRef,
+    pendingVoidSku,
+    setPendingVoidSku,
     releaseCloseFailed,
     releasingBeforeClose,
     requestClose,
     setActiveTab,
     setContentScrollTop,
     submit,
+    confirmVoidSku,
+    voidingSkuRef,
     sectionProps,
     sectionState,
   };

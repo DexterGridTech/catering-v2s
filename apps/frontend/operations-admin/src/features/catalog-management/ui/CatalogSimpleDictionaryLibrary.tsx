@@ -1,5 +1,11 @@
 import {Button, Empty, Flex, Input, Select, Space, Table, Tag, Tooltip, Typography} from 'antd';
-import {CursorPagination, type CursorStackState, testId} from '@catering-v2s/admin-ui-foundation';
+import {
+  CursorPagination,
+  displayFieldValue,
+  LIFECYCLE_LABELS,
+  type CursorStackState,
+  testId,
+} from '@catering-v2s/admin-ui-foundation';
 import type {HTMLAttributes, ReactNode} from 'react';
 import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 
@@ -90,9 +96,12 @@ export function CatalogSimpleDictionaryLibrary({
           options={[
             {value: 'ALL', label: '全部状态'},
             {value: 'ENABLED', label: '启用'},
-            {value: 'DISABLED', label: '已停用'},
-            {value: 'VOIDED', label: '已作废'},
+            {value: 'DISABLED', label: LIFECYCLE_LABELS.DISABLED},
+            {value: 'VOIDED', label: LIFECYCLE_LABELS.VOIDED},
           ]}
+          optionRender={option => (
+            <span {...testId(catalogTestIdControls.config.statusOption(String(option.value)))}>{option.label}</span>
+          )}
           style={{width: 160}}
           aria-label={`筛选${entityLabel}状态`}
           {...testId(catalogTestIds.control.configStatus)}
@@ -125,7 +134,7 @@ export function CatalogSimpleDictionaryLibrary({
             ...(isUnit
               ? [
                   {title: '维度', dataIndex: 'unitDimension', render: renderUnitDimension},
-                  {title: '精度', dataIndex: 'precision', render: (value?: number) => value ?? '—'},
+                  {title: '精度', dataIndex: 'precision', render: (value?: number) => displayFieldValue(value)},
                   {
                     title: '正在使用',
                     dataIndex: 'isReferenced',

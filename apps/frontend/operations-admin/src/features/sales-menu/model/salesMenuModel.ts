@@ -1,4 +1,5 @@
 import type {InventoryAvailabilityFact, ManualSaleStatusFact, SalesMenuDraftItemView} from './salesMenuModelTypes';
+import {LIFECYCLE_LABELS} from '@catering-v2s/admin-ui-foundation';
 
 export const SALES_MENU_PAGE_SIZE = 20 as const;
 export const SALES_MENU_OPERATION_COLUMN_TITLE = '操作';
@@ -79,7 +80,7 @@ export function salesMenuProductShapeLabel(shape: SalesMenuProductShape): string
 }
 
 export function salesMenuChannelStatusLabel(status: 'ENABLED' | 'DISABLED' | 'VOIDED'): string {
-  return status === 'ENABLED' ? '已启用' : status === 'DISABLED' ? '已停用' : '已作废';
+  return LIFECYCLE_LABELS[status];
 }
 
 export function salesMenuDraftStateLabel(draftDirty: boolean): string {

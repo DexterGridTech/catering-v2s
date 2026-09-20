@@ -1,5 +1,6 @@
 package com.catering.v2s.businesschannel.application.persistence;
 
+import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,10 +18,7 @@ public class BusinessChannelCommandReceiptPersistence {
     public record Receipt(String requestHash, String responseJson) {}
 
     public void lock(UUID workspaceUuid, String groupWorkspaceKey, String idempotencyKey) {
-        jdbc.queryForList(
-                BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_SELECT_PG_ADVISORY_XACT_LOCK_HASHTEXT_TEXT,
-                workspaceUuid.toString(),
-                groupWorkspaceKey + ":" + idempotencyKey);
+        AdvisoryLock.acquireHashTextPair(jdbc, workspaceUuid.toString(), groupWorkspaceKey + ":" + idempotencyKey);
     }
 
     public Optional<Receipt> find(UUID workspaceUuid, String groupWorkspaceKey, String idempotencyKey) {
@@ -49,7 +47,7 @@ public class BusinessChannelCommandReceiptPersistence {
         jdbc.update(
                 BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_INSERT_INTO_COMMAND_RECEIPT_INSERT_INTO_BUSINESS_CHANNEL
                         + BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_OPEN_PAREN_RECEIPT_REF
-                        + BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_CONTINUATION_REQUEST_HASH
+                        + BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_REQUEST_HASH
                         + BusinessChannelCommandReceiptServiceSql.BUSINESS_CHANNEL_COMMAND_RECEIPT_SERVICE_VALUES_VALUES_JSONB,
                 receiptRef,
                 workspaceUuid,

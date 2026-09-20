@@ -14,7 +14,12 @@ import {
 } from './PlatformApi';
 import {platformStore} from '../state/PlatformStore';
 import {platformProblemFeedback, isPlatformProblemCode, type ProblemFeedback} from './platformProblemFeedback';
-import {readExtensionFilterInvalidFields, type ExtensionFilterInvalidField} from '@catering-v2s/admin-ui-foundation';
+import {
+  readCurrentDefinitionRevision,
+  readExtensionFilterInvalidFields,
+  transportResponseStatus,
+  type ExtensionFilterInvalidField,
+} from '@catering-v2s/admin-ui-foundation';
 
 export type PlatformApiProblem = ProblemFeedback & {
   type: string;
@@ -145,17 +150,4 @@ function problem(error: unknown): PlatformApiProblem {
     errorCode: 'NETWORK_ERROR',
     correlationId: '',
   };
-}
-
-function readCurrentDefinitionRevision(details: unknown): number | undefined {
-  if (typeof details !== 'object' || details === null) return undefined;
-  const revision = (details as {currentDefinitionRevision?: unknown}).currentDefinitionRevision;
-  return typeof revision === 'number' && Number.isSafeInteger(revision) && revision >= 0 ? revision : undefined;
-}
-
-function transportResponseStatus(error: unknown): number | undefined {
-  if (typeof error !== 'object' || error === null) return undefined;
-  const value = error as {status?: unknown; originalStatus?: unknown};
-  if (typeof value.originalStatus === 'number') return value.originalStatus;
-  return typeof value.status === 'number' ? value.status : undefined;
 }

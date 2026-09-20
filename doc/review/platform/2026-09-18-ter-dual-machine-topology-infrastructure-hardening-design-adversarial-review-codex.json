@@ -1,0 +1,14 @@
+{
+  "reviewTarget": "DESIGN",
+  "reviewKind": "INDEPENDENT_SUBAGENT_ADVERSARIAL_REVIEW",
+  "status": "OPEN",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "reviewCycleId": "2026-09-18-ter-dual-machine-topology-infrastructure-hardening-design",
+  "reviewRound": null,
+  "reviewRoundLimit": null,
+  "verdict": null,
+  "requirements": "doc/plans/platform/2026-09-18-ter-dual-machine-topology-infrastructure-hardening-requirements-claude.md",
+  "design": "doc/plans/platform/2026-09-18-ter-dual-machine-topology-infrastructure-hardening-implementation-design-codex.md",
+  "plan": "doc/plans/platform/2026-09-18-ter-dual-machine-topology-infrastructure-hardening-implementation-plan-codex.md",
+  "statement": "No fresh independent subagent verdict has been run in this artifact. This OPEN record is an honest pending input and is not evidence of GO, NO-GO, or implementation readiness."
+}

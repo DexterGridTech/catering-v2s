@@ -28,8 +28,7 @@ public class InventoryCopyPersistence {
     public InventoryOwnerApi.UnitSnapshot readConsumptionUnitSnapshot(UUID targetRef) {
         return jdbc
                 .query(
-                        InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT_CONSUMPTION_UNIT_REF
-                                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_IMENSION_CONSUMPTION_UNIT_PRECISION
+                        InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION
                                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_STOCK_TARGET_TARGET_REF,
                         (result, rowNumber) -> requiredUnitSnapshot(result, 1),
                         targetRef)
@@ -44,13 +43,12 @@ public class InventoryCopyPersistence {
     public int[] copyCatalogItems(List<TargetWrite> rows) {
         return jdbc.batchUpdate(
                 InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INSERT_INTO
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_CODE
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INVENTORY_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_ITEM_CODE_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_ITEM_CODE
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_VALUE_SEPARATOR_SKU_CODE_MEASURE_MODE_INVENTORY_MODE_CONSUMPTION_UNIT_REF
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_CONSUMPTION_UNIT_NAME
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_COUNTING_UNIT_REF
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_COUNTING_UNIT_PRECISION
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONSUMPTION_UNIT_NAME
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_COUNTING_UNIT_REF
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_COUNTING_UNIT_PRECISION
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_PARAMETER_PLACEHOLDER_CAST_AS_JSONB_0_1_ON_CONFLIC,
                 new BatchPreparedStatementSetter() {
                     @Override
@@ -83,17 +81,13 @@ public class InventoryCopyPersistence {
     public int[] copyCatalogSkus(List<BomWrite> rows) {
         return jdbc.batchUpdate(
                 InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INSERT_INTO_ALTERNATE_A
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_E_RE
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_ITEM_CODE_SKU_CODE_OPTION_VALUE_CODE_VERSION
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INVENTORY_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ITEM_CODE_SKU_CODE_OPTION_VALUE_CODE_VERSION_ROWS_UPDATED_AT_EPOCH_MILLIS
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_VALUES_VALUES_CAST_AS_JSONB_ON_CONF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_OPEN_PAREN_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_OPTION_VALUE_REF
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_DEFINITION_STATUS_ENABLED
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_SET_DO_UPDATE_SET
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_VERSION_ROWS_UPDATED_AT_EPOCH_MILLIS_UPDATED_AT
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_EPOC
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_H_MILLIS,
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_OPTION_VALUE_REF
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_DEFINITION_STATUS_ENABLED
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SET_DO_UPDATE_SET
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_VERSION_EXCLUDED_VERSION_ROWS_EXCLUDED_ROWS_UPDATED_AT_EPOCH_MILLIS_EXCLUDED_UPDATED_AT_EPOCH_MILLIS_ROWS_UPDATED_AT_EPOCH_MILLIS_EXCLUDED_UPDATED_AT_EPOCH_MILLIS,
                 new BatchPreparedStatementSetter() {
                     @Override
                     public void setValues(java.sql.PreparedStatement statement, int index) throws SQLException {
@@ -159,7 +153,7 @@ public class InventoryCopyPersistence {
         String sql = InventoryCopyServiceSql.SELECT_PREFIX
                 + InventoryCopyServiceSql.TARGET_SELECT_COLUMNS
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_BRAND_REF_DEFINITION_STATUS_ENABLED
+                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_BRAND_REF_DEFINITION_STATUS_ENABLED
                 + predicates
                 + InventoryCopyServiceSql.SQL_CLOSE_PAREN;
         return jdbc.query(
@@ -189,9 +183,9 @@ public class InventoryCopyPersistence {
                 InventoryCopyServiceSql.SELECT_PREFIX
                         + InventoryCopyServiceSql.TARGET_SELECT_COLUMNS
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF_ALTERNATE_A
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_BRAND_REF_DEFINITION_STATUS_ENABLED_ITEM_REF
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_BRAND_REF_DEFINITION_STATUS_ENABLED_ITEM_REF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_ORDER_BY_ITEM_REF_PRODUCT_SKU_REF
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_TARGET_REF,
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_TARGET_REF,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -213,7 +207,7 @@ public class InventoryCopyPersistence {
                 InventoryCopyServiceSql.SELECT_PREFIX
                         + InventoryCopyServiceSql.TARGET_SELECT_COLUMNS
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF_ALTERNATE_B
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_BRAND_REF
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_BRAND_REF
                         + statusPredicate
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONDITION_TARGET_REF,
                 statement -> {
@@ -240,8 +234,8 @@ public class InventoryCopyPersistence {
         UUID[] values = orderedRefs.toArray(UUID[]::new);
         return jdbc.query(
                 InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ITEM_CODE
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_STOCK_BOM_VERSION_ROWS_TEXT_DATA_NODE_REF
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ITEM_CODE
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_STOCK_BOM_VERSION_ROWS_TEXT_DATA_NODE_REF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONDITION_ITEM_REF
                         + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_ORDER_BY_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF,
                 statement -> {
@@ -266,7 +260,7 @@ public class InventoryCopyPersistence {
         if (orderedRefs.isEmpty()) return List.of();
         UUID[] values = orderedRefs.toArray(UUID[]::new);
         return jdbc.query(
-                InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT_STOCK_TARGET_ITEM_REF_TARGET_REF_CONFIGURATION_TEXT + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_BRAND_REF_ITEM_REF_TARGET_REF,
+                InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT_STOCK_TARGET_ITEM_REF_TARGET_REF_CONFIGURATION_TEXT + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_BRAND_REF_ITEM_REF_TARGET_REF,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -314,24 +308,23 @@ public class InventoryCopyPersistence {
         String sql = InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CTE_SELECTED_TARGET_REF
                 + values
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CLOSE_PAREN_BOUNDS_BIGINT_NOW_EPOCH
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_AGGREGATE_TARGET_REF
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_DELTA_FILTER_OCCURRED_AT_EPOCH_MILLIS_NOW_EPOCH
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_TODAY_CHANGE
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_DELTA_FILTER_OCCURRED_AT_EPOCH_MILLIS_NOW_EPOCH_ALTERNATE_A
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_SEVEN_DAY_CHANGE
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_DELTA_FILTER_OCCURRED_AT_EPOCH_MILLIS_NOW_EPOCH_ALTERNATE_B
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_THIRTY_DAY_CHANGE
+                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_AGGREGATE_TARGET_REF
+                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_DELTA_FILTER_OCCURRED_AT_EPOCH_MILLIS_NOW_EPOCH
+                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_TODAY_CHANGE
+                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_DELTA_FILTER_OCCURRED_AT_EPOCH_MILLIS_NOW_EPOCH_ALTERNATE_A
+                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SEVEN_DAY_CHANGE
+                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_DELTA_FILTER_OCCURRED_AT_EPOCH_MILLIS_NOW_EPOCH_ALTERNATE_B
+                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_THIRTY_DAY_CHANGE
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_BOUNDS_TARGET_REF
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_GROUP_BY_TARGET_REF
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_LATEST_TARGET_REF_OPERATION_ID_OCCURRED_AT_EPOCH_MILLIS
+                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_LATEST_TARGET_REF_OPERATION_ID_OCCURRED_AT_EPOCH_MILLIS
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_OPEN_PAREN_TARGET_REF_OCCURRED_AT_EPOCH_MILLIS_ENTRY_REF
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION
+                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_ROW_NUMBER_WINDOW_FUNCTION
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_SELECTED_TARGET_REF
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_SELECT_ALTERNATE_A
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_TARGET_REF_TODAY_CHANGE_SEVEN_DAY_CHANGE_THIRTY_DAY_CHANGE
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_CURRED_AT_EPOCH_MILLIS
+                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_S_TARGET_REF_A_TODAY_CHANGE_A_SEVEN_DAY_CHANGE_A_THIRTY_DAY_CHANGE_LATEST_OPERATION_ID_LATEST_OPERATION_ID_LATEST_OCCURRED_AT_EPOCH_MILLIS
                 + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_FROM_CLAUSE_LATEST_TARGET_REF
-                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_LATEST_TARGET_REF;
+                + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_LATEST_TARGET_REF;
         List<Object> args = new ArrayList<>(targetRefs);
         args.add(nowEpochMillis);
         return jdbc.query(
@@ -379,9 +372,7 @@ public class InventoryCopyPersistence {
             long createdAt) {
         return jdbc.update(
                 InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INSERT_INTO_ALTERNATE_B
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_H_RE
-                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_CONTINUATION_SPONSE_CREATED_AT_EPOCH_MILLIS,
+                        + InventoryCopyServiceSql.INVENTORY_COPY_SERVICE_INVENTORY_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY_OPERATION_ID_REQUEST_HASH_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB,
                 receiptRef,
                 scope,
                 key,

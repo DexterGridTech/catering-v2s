@@ -5,6 +5,7 @@ import {
   activeInvitationPageUrl,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  formatCanonicalDateTime,
   NameCodePathText,
   testId,
   useOverlayLock,
@@ -30,7 +31,7 @@ const statusLabel: Record<WorkspaceInvitation['status'], string> = {
 };
 
 function time(value: number | null | undefined) {
-  return value ? new Date(value).toLocaleString('zh-CN') : '—';
+  return formatCanonicalDateTime(value);
 }
 
 async function copy(value?: string) {

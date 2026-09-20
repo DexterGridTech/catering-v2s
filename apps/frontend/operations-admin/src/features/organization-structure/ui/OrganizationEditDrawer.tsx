@@ -1,6 +1,7 @@
 import {Alert, Button, Drawer, Form, Input, Space, Typography} from 'antd';
 import {
   adminDrawerSurfaceProps,
+  displayFieldValue,
   testId,
   useDrawerFormLifecycle,
   useOverlayLock,
@@ -175,7 +176,7 @@ export function OrganizationEditDrawer({
         }}
       >
         <Form.Item label={node?.nodeType === 'PROJECT' ? '所属大区' : '所属集团'}>
-          <Typography.Text>{parentName ?? '—'}</Typography.Text>
+          <Typography.Text>{displayFieldValue(parentName)}</Typography.Text>
         </Form.Item>
         <Form.Item name="name" label="名称" rules={[{required: true, whitespace: true, message: '请输入名称'}]}>
           <Input maxLength={120} />

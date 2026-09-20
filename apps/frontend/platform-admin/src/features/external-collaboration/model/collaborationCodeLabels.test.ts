@@ -63,5 +63,6 @@ describe('platform collaboration code labels', () => {
     expect(collaborationAttributePresentation.groupBuyMappingDirection.label).toBe('团购商品映射方向');
     expect(collaborationAttributePresentation.menuCollaborationDirection.optionSourceRef).toBe('enum');
     expect(collaborationCodeLabels.catalogStatus.AVAILABLE).toBe('可用');
+    expect(collaborationCodeLabels.capabilityClass).toBe(capabilityClassLabels);
   });
 });

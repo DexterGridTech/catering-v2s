@@ -1,8 +1,12 @@
 import {ReloadOutlined} from '@ant-design/icons';
-import {Alert, Button, Card, Descriptions, Divider, Modal, Space, Table, Tag, Typography} from 'antd';
+import {Alert, Button, Card, Descriptions, Divider, Space, Table, Typography} from 'antd';
 import {
   closedCodeLabel,
+  displayFieldValue,
   isKnownClosedCode,
+  LifecycleStatusTag,
+  LIFECYCLE_LABELS,
+  StatusChangeConfirm,
   testId,
   useRefreshVersion,
   useSubmissionLifecycle,
@@ -24,7 +28,7 @@ import {
   catalogStatusLabels,
 } from '../model/collaborationCodeLabels';
 
-const enablementStatusLabels = {ENABLED: '已启用', DISABLED: '已停用'} as const;
+const enablementStatusLabels = {ENABLED: LIFECYCLE_LABELS.ENABLED, DISABLED: LIFECYCLE_LABELS.DISABLED} as const;
 
 /**
  * The OpenAPI additionalProperties=true generator shape is not stable across
@@ -92,7 +96,7 @@ function CapabilityAttributes({system}: {system: ExternalSystemView}) {
                 dataSource={capabilityDescriptors.map<CapabilityAttributeRow>(descriptor => ({
                   key: `${capability.capabilityClass}:${descriptor.fieldKey}`,
                   label: descriptor.label,
-                  value: attributeLabelOf(capability, descriptor.fieldKey) ?? '—',
+                  value: displayFieldValue(attributeLabelOf(capability, descriptor.fieldKey)),
                   helpText: descriptor.helpText,
                 }))}
                 columns={[
@@ -117,6 +121,7 @@ export function ExternalSystemDetail({
   externalSystemCode: string;
 }) {
   const [pendingStatus, setPendingStatus] = useState<ExternalSystemView['enablementStatus']>();
+  const [requestedStatus, setRequestedStatus] = useState<ExternalSystemView['enablementStatus']>();
   const [retryStatus, setRetryStatus] = useState<ExternalSystemView['enablementStatus']>();
   const [readbackProblem, setReadbackProblem] = useState<PlatformApiProblem>();
   const submission = useSubmissionLifecycle();
@@ -195,93 +200,98 @@ export function ExternalSystemDetail({
     );
   }
   return (
-    <Card
-      className="platform-master-detail-detail-content"
-      title="外部系统详情"
-      extra={
-        <Space>
-          <Button
-            type={system.enablementStatus === 'ENABLED' ? 'primary' : 'default'}
-            loading={pendingStatus === 'ENABLED'}
-            disabled={!enablementStatusKnown || system.enablementStatus === 'ENABLED' || Boolean(pendingStatus)}
-            onClick={() =>
-              Modal.confirm({
-                title: '启用外部系统',
-                content: '确认启用当前外部系统吗？',
-                okText: '确认启用',
-                cancelText: '取消',
-                onOk: () => saveStatus('ENABLED'),
-              })
+    <>
+      <Card
+        className="platform-master-detail-detail-content"
+        title="外部系统详情"
+        extra={
+          <Space>
+            <Button
+              type={system.enablementStatus === 'ENABLED' ? 'primary' : 'default'}
+              loading={pendingStatus === 'ENABLED'}
+              disabled={!enablementStatusKnown || system.enablementStatus === 'ENABLED' || Boolean(pendingStatus)}
+              onClick={() => setRequestedStatus('ENABLED')}
+              {...testId('platform-external-system-enable')}
+            >
+              启用
+            </Button>
+            <Button
+              danger
+              type={system.enablementStatus === 'DISABLED' ? 'primary' : 'default'}
+              loading={pendingStatus === 'DISABLED'}
+              disabled={!enablementStatusKnown || system.enablementStatus === 'DISABLED' || Boolean(pendingStatus)}
+              onClick={() => setRequestedStatus('DISABLED')}
+              {...testId('platform-external-system-disable')}
+            >
+              停用
+            </Button>
+            <Button onClick={() => void refreshReadback()} disabled={Boolean(pendingStatus)}>
+              刷新
+            </Button>
+          </Space>
+        }
+        {...testId('platform-external-system-detail')}
+      >
+        {(readProblem || problem) && (
+          <Alert
+            type="error"
+            showIcon
+            title={(problem || readProblem)?.title}
+            description={(problem || readProblem)?.detail}
+            action={
+              problem && retryStatus ? (
+                <Button icon={<ReloadOutlined />} onClick={() => void saveStatus(retryStatus)}>
+                  重试
+                </Button>
+              ) : (
+                <Button icon={<ReloadOutlined />} onClick={() => void refreshReadback()}>
+                  重试
+                </Button>
+              )
             }
-            {...testId('platform-external-system-enable')}
-          >
-            启用
-          </Button>
-          <Button
-            danger
-            type={system.enablementStatus === 'DISABLED' ? 'primary' : 'default'}
-            loading={pendingStatus === 'DISABLED'}
-            disabled={!enablementStatusKnown || system.enablementStatus === 'DISABLED' || Boolean(pendingStatus)}
-            onClick={() =>
-              Modal.confirm({
-                title: '停用外部系统',
-                content: '确认停用当前外部系统吗？',
-                okText: '确认停用',
-                cancelText: '取消',
-                okButtonProps: {danger: true},
-                onOk: () => saveStatus('DISABLED'),
-              })
-            }
-            {...testId('platform-external-system-disable')}
-          >
-            停用
-          </Button>
-          <Button onClick={() => void refreshReadback()} disabled={Boolean(pendingStatus)}>
-            刷新
-          </Button>
-        </Space>
-      }
-      {...testId('platform-external-system-detail')}
-    >
-      {(readProblem || problem) && (
-        <Alert
-          type="error"
-          showIcon
-          title={(problem || readProblem)?.title}
-          description={(problem || readProblem)?.detail}
-          action={
-            problem && retryStatus ? (
-              <Button icon={<ReloadOutlined />} onClick={() => void saveStatus(retryStatus)}>
-                重试
-              </Button>
-            ) : (
-              <Button icon={<ReloadOutlined />} onClick={() => void refreshReadback()}>
-                重试
-              </Button>
-            )
-          }
-          style={{marginBottom: 16}}
-          {...testId('platform-external-system-detail-error')}
+            style={{marginBottom: 16}}
+            {...testId('platform-external-system-detail-error')}
+          />
+        )}
+        <Descriptions
+          bordered
+          size="small"
+          column={1}
+          items={[
+            {key: 'name', label: '系统名称', children: system.displayName},
+            {key: 'code', label: '系统编码', children: system.externalSystemCode},
+            {key: 'catalog', label: '目录标记', children: closedCodeLabel(catalogStatusLabels, system.catalogStatus)},
+            {
+              key: 'status',
+              label: '当前空间状态',
+              children: <LifecycleStatusTag status={system.enablementStatus} />,
+            },
+          ]}
         />
+        <Divider />
+        <Typography.Title level={5}>能力属性</Typography.Title>
+        <CapabilityAttributes system={system} />
+      </Card>
+      {requestedStatus && (
+        <StatusChangeConfirm
+          open
+          title={`${requestedStatus === 'ENABLED' ? '启用' : '停用'}外部系统`}
+          actionLabel={requestedStatus === 'ENABLED' ? '启用' : '停用'}
+          submitting={Boolean(pendingStatus)}
+          problem={problem?.detail}
+          onCancel={() => setRequestedStatus(undefined)}
+          onConfirm={() => {
+            const targetStatus = requestedStatus;
+            setRequestedStatus(undefined);
+            void saveStatus(targetStatus);
+          }}
+          confirmTestId="platform-external-system-status-confirm"
+          cancelTestId="platform-external-system-status-cancel"
+          modalTestId="platform-external-system-status-modal"
+        >
+          确认{requestedStatus === 'ENABLED' ? '启用' : '停用'}当前外部系统吗？
+        </StatusChangeConfirm>
       )}
-      <Descriptions
-        bordered
-        size="small"
-        column={1}
-        items={[
-          {key: 'name', label: '系统名称', children: system.displayName},
-          {key: 'code', label: '系统编码', children: system.externalSystemCode},
-          {key: 'catalog', label: '目录标记', children: closedCodeLabel(catalogStatusLabels, system.catalogStatus)},
-          {
-            key: 'status',
-            label: '当前空间状态',
-            children: <Tag>{closedCodeLabel(enablementStatusLabels, system.enablementStatus)}</Tag>,
-          },
-        ]}
-      />
-      <Divider />
-      <Typography.Title level={5}>能力属性</Typography.Title>
-      <CapabilityAttributes system={system} />
-    </Card>
+    </>
   );
 }

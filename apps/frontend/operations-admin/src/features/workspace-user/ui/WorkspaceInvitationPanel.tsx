@@ -6,6 +6,7 @@ import {
   contextScopedQueryArgs,
   createPageQueryIdentity,
   EllipsisTooltip,
+  formatCanonicalDateTime,
   NameCodePathText,
   testId,
   useCursorCandidates,
@@ -56,7 +57,7 @@ const statusLabel: Record<WorkspaceInvitationStatus, string> = {
 };
 
 function time(value: number | null | undefined) {
-  return value ? new Date(value).toLocaleString('zh-CN') : '—';
+  return formatCanonicalDateTime(value);
 }
 
 function trimOrUndefined(value?: string) {

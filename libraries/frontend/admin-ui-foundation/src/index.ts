@@ -18,6 +18,8 @@ export {
   clearInvalidExtensionFilterFields,
   extensionFilterFormName,
   extensionFilterFormPath,
+  extensionSearchFieldProps,
+  extensionSearchValueType,
   FLAT_EXTENSION_HOST_TYPES,
   formatTypedExtensionValue,
   isFlatExtensionHost,
@@ -28,6 +30,7 @@ export {
   type ExtensionFilterDefinitionField,
   type ExtensionFilterQueryValues,
   type ExtensionFilterWire,
+  type ExtensionSearchField,
   type TypedExtensionField,
   type TypedExtensionFieldType,
 } from './extension/typedExtension';
@@ -109,7 +112,30 @@ export {closedCodeLabel, isKnownClosedCode} from './presentation/closedCode';
 export {EllipsisTooltip} from './presentation/EllipsisTooltip';
 export {adminHierarchyCollator} from './presentation/hierarchyCollator';
 export {activeInvitationPageUrl} from './presentation/activeInvitationPageUrl';
+export {
+  collaborationAttributePresentation,
+  collaborationAttributeValueLabel,
+  collaborationCodeLabels,
+} from './presentation/collaborationCodeLabels';
 export {ValidityStatus} from './presentation/validityStatus';
+export {LIFECYCLE_COLORS, LIFECYCLE_LABELS, lifecycleColor, lifecycleLabel} from './presentation/lifecycleLabels';
+export type {LifecycleStatus} from './presentation/lifecycleLabels';
+export {LifecycleStatusTag} from './presentation/LifecycleStatusTag';
+export {displayFieldValue} from './presentation/displayFieldValue';
+export {
+  AUDIT_ACTION_LABELS,
+  auditActionLabel,
+  auditFieldLabel,
+  auditValue,
+  type AuditChangeLike,
+} from './presentation/auditChangePresentation';
+export {formatCanonicalDateTime} from './time/formatCanonicalDateTime';
+export type {CanonicalDateTimeInput} from './time/formatCanonicalDateTime';
+export {AdminRowActionMenu} from './overlay/rowActionMenu';
+export type {AdminRowActionMenuProps} from './overlay/rowActionMenu';
+export {StatusChangeConfirm} from './overlay/statusChangeConfirm';
+export type {StatusChangeConfirmProps} from './overlay/statusChangeConfirm';
+export {readCurrentDefinitionRevision, transportResponseStatus} from './http/transportResponse';
 export {
   AdminImageCollectionEditor,
   type AdminImageCollectionAction,

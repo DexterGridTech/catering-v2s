@@ -6,11 +6,11 @@ REVIEWER_KIND=MAIN_CODEX_HANDOFF
 EVIDENCE_TIER=MANAGED_RUNTIME_AND_STATIC_RECONCILIATION
 PRE_REPAIR_INDEPENDENT_REVIEW=NO-GO_M/S/N=1/2/1
 LATEST_INDEPENDENT_IMPLEMENTATION_REVIEW=GO_M/S/N=0/0/0
-POST_REPAIR_INDEPENDENT_REVIEW=GO_M/S/N=0/0/0
-CLAUDE_CURRENT_BYTE_INTAKE=NO-GO_M/S/N=2/3/2
-CURRENT_FRESH_STATIC_REVIEW=GO_M/S/N=0/0/0_POST_D14
-CURRENT_STATUS=STATIC_GO_RUNTIME_AVAILABLE
-BROWSER_L2=NOT_AUTHORIZED_NOT_RUN
+POST_REPAIR_INDEPENDENT_REVIEW=PENDING_CLAUDE_CURRENT_BYTE_REVIEW
+CLAUDE_CURRENT_BYTE_INTAKE=PENDING_POST_REPAIR_REVIEW
+CURRENT_FRESH_STATIC_REVIEW=PENDING_CLAUDE_REVIEW
+CURRENT_STATUS=RUNTIME_CLOSED_FOR_REVIEW_HANDOFF
+BROWSER_L2=PASS_SUPPORTED_SUITES_STORE_SERVICE_POINT_PAGE_NOT_COVERED
 
 ## 背景
 
@@ -18,9 +18,9 @@ BROWSER_L2=NOT_AUTHORIZED_NOT_RUN
 
 实施完成后，fresh 独立只读 reviewer 在修复前的当前字节给出 `REVIEW_TARGET=IMPLEMENTATION`、`VERDICT=NO-GO`、`M/S/N=1/2/1`。四条 finding 已逐条重开 owning source 并完成修复：QR disabled 保留渠道与数据库约束修正；QR 列表/详情配置状态文案区分；服务点扩展审计改为共享四态/标签快照；页面标题恢复 IA 术语。随后新的 fresh reviewer Faraday 对 D-13 之前的修复字节提出 `NO-GO/M/S/N=1/0/0`：不可用对象仍展示 QR URL，且有效值未按 IA 转成入口；该 finding 已修复为 `effectiveAvailable` 边界。Hubble 随后对 D-13 之前字节给出 `GO/M/S/N=0/0/0`，但不覆盖本次 D-13 的 optional table attributes 与 QRCode image changes。D-13 当前字节已完成主 agent focused proof，新的 fresh 独立静态复审正在进行；历史 verdict 不作为当前最终 verdict。
 
-本交接不把主 agent 自身的逐代码对账当作独立 review verdict，也不把 Browser L2 未授权项当作实现缺陷或验收 PASS。当前字节保留 Claude 转达的历史 `NO-GO/M/S/N=2/3/2` finding intake 及 D-13 之前的 fresh review 记录；原先的 M-01/S-03 已由 Dexter 的 D-13 决策收口，不再是当前产品待决项。D-13 当前 fresh reviewer Beauvoir 已确认 `GO/M/S/N=0/0/0`；该 GO 仅覆盖静态代码逻辑，动态边界仍按下文单列。
+本交接不把主 agent 自身的逐代码对账当作独立 review verdict，也不把未覆盖的页面专属 Browser L2 当作实现缺陷或验收 PASS。当前字节保留 Claude 转达的历史 `NO-GO/M/S/N=2/3/2` finding intake 及 D-13 之前的 fresh review 记录；原先的 M-01/S-03 已由 Dexter 的 D-13 决策收口，不再是当前产品待决项。D-13 当前 fresh reviewer Beauvoir 已确认 `GO/M/S/N=0/0/0`；该 GO 仅覆盖静态代码逻辑，当前受管动态结果与页面 L2 覆盖边界以文档末尾“当前 post-repair 交接”为准。
 
-本轮已确认并修复的代码逻辑项：服务点列表改为 `OpaqueCollectionCursor` keyset 且去除 per-item DB 查询；QR 配置/候选读取移到列表循环外并在内存派生 URL；前端区分 QR 配置 loading/failed；删除未引用的 `createPointDefaults`。D-13 追加桌台属性可省略/显式清空、`V20260918_010000_000__allow_optional_store_service_point_table_attributes.sql`，以及列表/详情复用现有 Ant Design `QRCode` 以合法 owner URL 生成 SVG 图像（列表 72、详情 176、`qrResultImage` testId），不新增持久化/下载/资产链路；fresh reviewer 还确认 `reservable` null/undefined 不再被 UI 折叠为 false。Carson 针对初始 QR CHECK 的 finding 已由 `V20260918_000000_000__preserve_store_qr_channel_when_disabled.sql` 的后续约束替换反证，不做错误修复。D-13 后未追加 reset/seed/backend acceptance 动态证据。
+本轮已确认并修复的代码逻辑项：服务点列表改为 `OpaqueCollectionCursor` keyset 且去除 per-item DB 查询；QR 配置/候选读取移到列表循环外并在内存派生 URL；前端区分 QR 配置 loading/failed；删除未引用的 `createPointDefaults`。D-13 追加桌台属性可省略/显式清空、`V20260918_010000_000__allow_optional_store_service_point_table_attributes.sql`，以及列表/详情复用现有 Ant Design `QRCode` 以合法 owner URL 生成 SVG 图像（列表 72、详情 176、`qrResultImage` testId），不新增持久化/下载/资产链路；fresh reviewer 还确认 `reservable` null/undefined 不再被 UI 折叠为 false。Carson 针对初始 QR CHECK 的 finding 已由 `V20260918_000000_000__preserve_store_qr_channel_when_disabled.sql` 的后续约束替换反证，不做错误修复。D-13 后的受管 acceptance、reset、DEV、seed 与支持的 Browser L2 现已在文档末尾补齐；页面专属 Browser L2 仍为 NOT_COVERED。
 
 ### D-13 当前 fresh 静态复审
 
@@ -143,4 +143,82 @@ Turing 为 fresh、只读、非作者 reviewer，基于 D-14 当前字节完成�
 烦请给出明确 `GO` 或 `NO-GO`，并按 `M/S/N` 报告。每条 finding 请写明详设章节、当前源码文件与行号、影响、最小根因修复及是否需要 Dexter 裁决。动态未运行或未授权项请单列，不要升级为实现缺陷。
 
 授权边界：本轮只请求对当前实施源码、契约、migration、测试/seed 代码与已产生的受管运行材料做独立静态 IMPLEMENTATION review；不新增实施、reset、seed、DEV、Browser L2、UAT、部署或 Git 授权。谢谢。
+```
+
+## 当前 post-repair 交接（以本节为准）
+
+当前字节已完成获授权的根因修复、静态回归、受管 backend acceptance、支持的 Browser L2 suites、reset、DEV 与完整 seed；请 Claude 基于当前仓库字节重新做独立静态 `REVIEW_TARGET=IMPLEMENTATION` 复审。本交接不预设 GO/NO-GO，也不把历史 reviewer verdict 直接延伸到当前字节。
+
+### 当前动态结果
+
+- backend acceptance：`.runtime/r5/evidence/remote-testcontainers/r5-tc-1789835011220-61858/`；`DISCOVERED=161`、`SELECTED=161`、`HTTP_SUCCESS=161`、`REAL_BUSINESS_ASSERTIONS=161`、`STUB_ONLY=0`、`DIRECT_FAILURES=0`；operation set `EXPECTED=286`/`OBSERVED=286`/`MISSING=0`/`EXTRA=0`/`DRIFT=0`；`BUSINESS=PASS`、`RESOURCE_CLEANUP=PASS`。
+- catalog-inventory L2：`.runtime/browser-l2/l2-1789835475599-71400-ae68ae31-8562-43e7-9da3-1288563ee661/l2-execution-manifest.json`；24/24 PASS，cleanup PASS。
+- sales-menu L2：最终 `.runtime/browser-l2/l2-1789837707474-22820-edefd845-b6a8-47ee-bf75-a6db366192d1/l2-execution-manifest.json`；20/20 PASS，cleanup PASS。此前三次失败 run 及其首败保留，最终 run 才计为 PASS。
+- reset：`.runtime/r5/reset/r5-reset-331e95c8-5f4f-49b2-868f-5584275709aa/run-manifest.json`，`R5_DEV_RESET=PASS`。
+- DEV：`.runtime/r5/run-manifest.json`，start 与最终 `scripts/dev/check` 均 PASS。
+- 完整 seed：`.runtime/r5/seed/complete/complete-seed-1ca6e610-f551-4e9d-9062-d4f91101f58a/seed-report.json`；四组件 `business=PASS`，cleanup 均 PASS，`firstFailure=null`。fixture 正本为 `doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json`，owner readback 保留 9 host、`FLAT=5`、`SERVICE_POINT` flat flags 为 `null`，并显式开启门店商品库存菜单能力。
+- 页面专属 Browser L2：当前 runner 没有 `store-service-point` suite，故本页面为 `NOT_COVERED`；不得把 catalog/sales-menu 的 PASS 扩大为本页面浏览器验收。IA 逐控件静态前置已 PASS。
+
+### 可直接复制给 Claude 的当前话术
+
+```text
+您好 Claude，烦请对「门店桌台与二维码管理」当前实施结果做一轮独立静态 IMPLEMENTATION review。
+
+背景：Dexter 已授权按详设与实施计划完成本批实施。主 agent 已完成生产代码、契约/生成物、migration、测试、支持的 Browser L2 回归、受管 reset、DEV 与完整 r5-full seed。此前 Claude 的 implementation finding、D-13/D-14/D-15/D-16 处置及逐代码对账均已写入：
+- doc/review/platform/2026-09-18-v2s-store-service-point-qr-implementation-reconciliation-codex.md
+- doc/review/platform/2026-09-18-v2s-store-service-point-qr-implementation-review-handoff-codex.md
+
+请只以当前仓库字节和下列真实 manifest 为依据重新判断，不要把历史 GO/NO-GO 或主 agent 的对账结论当作当前 verdict：
+- backend acceptance：.runtime/r5/evidence/remote-testcontainers/r5-tc-1789835011220-61858/
+- catalog-inventory L2：.runtime/browser-l2/l2-1789835475599-71400-ae68ae31-8562-43e7-9da3-1288563ee661/l2-execution-manifest.json
+- sales-menu 最终 L2：.runtime/browser-l2/l2-1789837707474-22820-edefd845-b6a8-47ee-bf75-a6db366192d1/l2-execution-manifest.json
+- reset：.runtime/r5/reset/r5-reset-331e95c8-5f4f-49b2-868f-5584275709aa/run-manifest.json
+- DEV：.runtime/r5/run-manifest.json
+- 完整 seed：.runtime/r5/seed/complete/complete-seed-1ca6e610-f551-4e9d-9062-d4f91101f58a/seed-report.json
+
+请从仓库根阅读：
+- doc/plans/platform/2026-09-17-v2s-store-service-point-qr-requirements-claude.md
+- doc/decisions/2026-09-17-v2s-store-service-point-qr-journey-codex.md
+- doc/plans/platform/2026-09-17-v2s-store-service-point-qr-ia-design-codex.md
+- doc/plans/platform/2026-09-17-v2s-store-service-point-qr-interaction-design-codex.md
+- doc/plans/platform/2026-09-17-v2s-store-service-point-qr-implementation-design-codex.md
+- doc/plans/platform/2026-09-17-v2s-store-service-point-qr-implementation-plan-codex.md
+- apps/backend/catering-business-server/modules/organization/src/main/java/com/catering/v2s/organization/application/StoreServicePointService.java
+- apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/operations/organization/OperationsStoreServicePointController.java
+- apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/StoreServicePointAcceptanceScenarios.java
+- apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/BusinessChannelAcceptanceScenarios.java
+- apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/ExtensionAcceptanceScenarios.java
+- apps/backend/catering-business-server/src/test/java/com/catering/v2s/app/acceptance/AuditAcceptanceScenarios.java
+- apps/frontend/operations-admin/src/features/store-service-point/ui/StoreServicePointPage.tsx
+- apps/frontend/operations-admin/src/features/store-service-point/ui/AreaDrawer.tsx
+- apps/frontend/operations-admin/src/features/store-service-point/ui/ServicePointDrawer.tsx
+- apps/frontend/operations-admin/src/features/store-service-point/ui/QrConfigurationDrawer.tsx
+- apps/frontend/operations-admin/src/features/store-service-point/ui/ServicePointDetailDrawer.tsx
+- apps/frontend/operations-admin/src/features/store-service-point/model/useStoreServicePointReadModel.ts
+- apps/frontend/operations-admin/src/features/store-service-point/model/commands.ts
+- apps/frontend/operations-admin/src/features/store-service-point/storeServicePointTestIds.ts
+- doc/review/platform/2026-09-18-v2s-store-service-point-qr-ia-static-preflight-codex.md
+- scripts/dev/r5-seed-plan.mjs
+- scripts/dev/owner-command-seed-executor.mjs
+
+独立核验重点：
+1. organization owner 的门店 target scope 是否同时支持项目层祖先路径与门店层自身匹配；11 个 HTTP gate entry 是否完整，asset stage/release 是否在 gate-off 时各自先拒绝，claim 是否只在 point owner REQUIRED 事务内；
+2. 36 条既有 token 中 33 条 gate=true、3 条 preflight=false 与 sales-menu 19 条直调 gate 是否保持两条链分离，52 只作 gate 分母；
+3. QR candidate bounded read、门店归属、四维谓词、保存重校验、D-10 候选不预过滤、D-12 只按最终 URL 合规生成，以及 disabled 状态保留已选渠道；
+4. SERVICE_POINT extension host、非 flat flags、四态审计、TABLE-only asset、图片失败无孤儿资产、TABLE 属性可省略/显式清空；
+5. operations-admin 的 SalesMenu 式双列表、动态新建桌台/新建扫码点、排序边界与失败恢复、统一 dirty guard、二维码主页面图像/独立编辑 Drawer、扫码点无图片、业务侧字段文案；
+6. 本次拆出的实际 feature 文件全集、registry/generated operation consumer 闭包、P9 是否真正逐文件而非章节抽查；
+7. seed 的 9 host、FLAT=5、SERVICE_POINT flat flags=null、PROJECT/STORE scope 切换、显式门店商品库存菜单开关与 owner readback；manifest 中 business/cleanup 必须分开判断。
+
+证据边界：catalog-inventory 与 sales-menu 的 Browser L2 已 PASS；当前 runner 没有 store-service-point 专属 Browser L2 suite，本页面浏览器动态覆盖请标为 NOT_COVERED，不计入 M/S/N。UAT 与生产部署未授权、未运行。不要把 DEV readiness、静态 test 或其他页面 L2 扩大为本页面业务验收。
+
+请输出：
+REVIEW_TARGET=IMPLEMENTATION
+VERDICT=GO 或 NO-GO
+M/S/N=...
+
+每条 finding 请写明详设/计划位置、当前源码精确路径与行号、属于仓内事实/推论/产品判断/尚缺证据的假设、业务/权限/数据/审计/契约/体验影响、最小根因修复及为什么不能更小、是否需要 Dexter 裁决。未运行、未授权或本页面未覆盖的证据单列，不要升级为实现缺陷。
+
+本次请求只授权独立静态复审当前源码、契约、migration、测试/seed 代码与已产生的受管运行材料；不新增实施、reset、seed、DEV、UAT、部署或 Git 授权。
+谢谢。
 ```

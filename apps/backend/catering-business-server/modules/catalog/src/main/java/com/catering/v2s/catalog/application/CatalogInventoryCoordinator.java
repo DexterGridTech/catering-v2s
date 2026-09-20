@@ -10,6 +10,7 @@ import com.catering.v2s.platform.asset.application.PlatformAssetService;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.ReadBudgetComponent;
+import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
 import com.catering.v2s.platform.foundation.runtime.RuntimeEnvironmentKeys;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -2453,25 +2454,19 @@ public class CatalogInventoryCoordinator {
     }
 
     private static int parsePageCursor(String value) {
-        if (value == null || value.isBlank()) return 0;
         try {
-            int parsed = Integer.parseInt(value);
-            if (parsed < 0) throw new NumberFormatException();
-            return parsed;
-        } catch (NumberFormatException ex) {
+            return Math.toIntExact(CollectionRequestSupport.cursor(value, "cursor"));
+        } catch (CollectionRequestSupport.InvalidRequestValue | ArithmeticException ex) {
             throw new CatalogOwnerApi.Problem(
                     "VALIDATION_ERROR", 422, "cursor must be a non-negative opaque cursor", ex);
         }
     }
 
     private static int parsePageSize(String value, int fallback) {
-        if (value == null || value.isBlank()) return fallback;
         try {
-            int parsed = Integer.parseInt(value);
-            if (parsed < 1 || parsed > 100) throw new NumberFormatException();
-            return parsed;
-        } catch (NumberFormatException ex) {
-            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, "pageSize must be between 1 and 100", ex);
+            return CollectionRequestSupport.pageSize(value, "pageSize", fallback);
+        } catch (CollectionRequestSupport.InvalidRequestValue failure) {
+            throw new CatalogOwnerApi.Problem("VALIDATION_ERROR", 422, failure.getMessage(), failure);
         }
     }
 }

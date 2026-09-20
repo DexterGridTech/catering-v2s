@@ -24,6 +24,12 @@ export type EditResult = Readonly<{
   readonly effect: EditEffect
 }>
 
+/**
+ * CAPS and SHIFT are independent toggles. When both are active, SHIFT
+ * reverses the CAPS state, matching the behavior of a physical keyboard.
+ */
+export const isUppercaseMode = (capsLock: boolean, shift: boolean): boolean => capsLock !== shift
+
 const clamp = (value: number, lower: number, upper: number): number =>
   Math.min(upper, Math.max(lower, Number.isFinite(value) ? Math.trunc(value) : lower))
 
@@ -46,7 +52,10 @@ const insertText = (state: EditState, text: string, maxLength?: number): EditSta
   const selection = normalizeSelection(state.value, state.selection)
   const before = state.value.slice(0, selection.start)
   const after = state.value.slice(selection.end)
-  const transformed = state.capsLock || state.shift ? text.toUpperCase() : text
+  // Layout definitions provide lowercase alphabetic payloads. Preserve the
+  // payload when uppercase mode is off so callers can still supply semantic
+  // text without the edit model rewriting it unexpectedly.
+  const transformed = isUppercaseMode(state.capsLock, state.shift) ? text.toUpperCase() : text
   const available = maxLength === undefined
     ? transformed.length
     : Math.max(0, Math.trunc(maxLength) - before.length - after.length)

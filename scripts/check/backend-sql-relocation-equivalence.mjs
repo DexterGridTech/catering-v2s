@@ -939,7 +939,12 @@ function sourceDataFlowProof({
   const sourceBoundaryIssues = changes
     .filter(change => {
       if (change.kind === 'ADDED') return !isSqlHolderPath(change.path);
-      return change.kind !== 'MODIFIED' || isSqlHolderPath(change.path);
+      // CP-A rewrites existing SQL holders in place; the holder proof below
+      // validates that they remain pure compile-time String holders.  Existing
+      // Java source may also change only at the call site to rename the
+      // referenced holder fields.  Reject removals and unrelated change kinds,
+      // but do not reject the very holder modifications this proof covers.
+      return change.kind !== 'MODIFIED';
     })
     .map(change => ({path: change.path, kind: change.kind}));
   const classIdentity = normalizedClassIdentity(beforeJavap, afterJavap);

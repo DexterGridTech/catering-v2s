@@ -49,7 +49,7 @@ public class CatalogDictionaryPersistence {
 
     public Long readVersion(String scope, String brand, String kind, String code) {
         return jdbc.queryForObject(
-                CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_VERSION_DATA_NODE_REF_BRAND_REF + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_DICTIONARY_KIND_CODE,
+                CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_VERSION_DATA_NODE_REF_BRAND_REF + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_DICTIONARY_KIND_CODE,
                 Long.class,
                 scope,
                 brand,
@@ -69,8 +69,7 @@ public class CatalogDictionaryPersistence {
             long createdAt) {
         return jdbc.update(
                 CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_INSERT_INTO_DICTIONARY_ENTRY_INSERT_INTO_CATALOG_DICTIONA
-                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_OPEN_PAREN_ENTRY_REF_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND
-                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_DER_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS,
+                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_ENTRY_REF_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE_NAME_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_VALUES,
                 entryRef,
                 dataNodeRef,
                 brandRef,
@@ -93,8 +92,8 @@ public class CatalogDictionaryPersistence {
             long updatedAt) {
         return jdbc.update(
                 CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_UPDATE_DICTIONARY_ENTRY_NAME_VERSION_UPDATED_AT_EPOCH_MILLIS
-                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE
-                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_STATUS_VOIDED,
+                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE
+                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_STATUS_VOIDED,
                 name,
                 updatedAt,
                 dataNodeRef,
@@ -133,7 +132,7 @@ public class CatalogDictionaryPersistence {
         return jdbc.update(
                 CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_UPDATE_DICTIONARY_ENTRY_STATUS_VERSION_UPDATED_AT_EPOCH_MILLIS
                         + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_WHERE_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE_ALTERNATE_A
-                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_VERSION_STATUS_VOIDED,
+                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_VERSION_STATUS_VOIDED,
                 status,
                 updatedAt,
                 dataNodeRef,
@@ -160,16 +159,16 @@ public class CatalogDictionaryPersistence {
                 + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_OPEN_PAREN_PARENT_ENTRY_REF
                 + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONDITION_CODE_CHR_NAME_ILIKE
                 + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONDITION_TEXT_STATUS
-                + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_AGGREGATE_TOTAL_VERSION
-                + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_MATCHING_GENERATION
-                + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_PAGED_ENTRY_REF_CODE_NAME
+                + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_AGGREGATE_TOTAL_VERSION
+                + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_MATCHING_GENERATION
+                + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_PAGED_ENTRY_REF_CODE_NAME
                 + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_UPDATE_MATCHING_UPDATED_AT_EPOCH_MILLIS
                 + cursorPredicate
                 + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_ORDER_BY_DISPLAY_ORDER_ENTRY_REF
                 + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_ENTRY_REF_CODE_NAME_STATUS
-                + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_UPDATED_AT_EPOCH_MILLIS
-                + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_PAGED_TOTAL_GENERATION_DISPLAY_ORDER
-                + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_ENTRY_REF;
+                + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_UPDATED_AT_EPOCH_MILLIS
+                + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_PAGED_TOTAL_GENERATION_DISPLAY_ORDER
+                + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_ENTRY_REF;
         List<Object> arguments = new ArrayList<>();
         arguments.add(scope);
         arguments.add(brand);
@@ -205,8 +204,8 @@ public class CatalogDictionaryPersistence {
     public List<DictionaryRow> lockEntriesForReorder(String scope, String brand, String kind) {
         return jdbc.query(
                 CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_ENTRY_REF_DICTIONARY_KIND_CODE_NAME
-                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_DICTIONARY_ENTRY_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND
-                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_ENTRY_REF_ALTERNATE_A,
+                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_DICTIONARY_ENTRY_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND
+                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_ENTRY_REF_ALTERNATE_A,
                 (result, index) -> new DictionaryRow(
                         result.getObject(1, UUID.class),
                         result.getString(2),
@@ -223,7 +222,7 @@ public class CatalogDictionaryPersistence {
 
     public int nextDisplayOrder(String scope, String brand, String kind) {
         Integer value = jdbc.queryForObject(
-                CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_DISPLAY_ORDER_DATA_NODE_REF + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_BRAND_REF_DICTIONARY_KIND,
+                CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_DISPLAY_ORDER_DATA_NODE_REF + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_BRAND_REF_DICTIONARY_KIND,
                 Integer.class,
                 scope,
                 brand,
@@ -247,11 +246,11 @@ public class CatalogDictionaryPersistence {
                 CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_SELECT_DISTINCT
                         + column
                         + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_FROM_CLAUSE_CATALOG_SKU_RELATION_SKU
-                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_CATALOG_ITEM_SKU_PRODUCT_SKU_REF_RELATION_ITEM
-                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_ITEM_ITEM_REF_SKU_DATA_NODE_REF
-                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_ITEM_STATUS_VOIDED
+                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CATALOG_ITEM_SKU_PRODUCT_SKU_REF_RELATION_ITEM
+                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_ITEM_ITEM_REF_SKU_DATA_NODE_REF
+                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_ITEM_STATUS_VOIDED
                         + column
-                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION
+                        + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_IN_LIST_PREFIX
                         + placeholders
                         + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CLOSE_PAREN,
                 (result, row) -> result.getObject(1, UUID.class),
@@ -260,7 +259,7 @@ public class CatalogDictionaryPersistence {
 
     public boolean validParent(String parentEntryRef, String scope, String brand) {
         Boolean valid = jdbc.queryForObject(
-                CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_ENTRY_REF_DATA_NODE_REF + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_BRAND_REF_DICTIONARY_KIND_SKU_ATTRIBUTE,
+                CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_ENTRY_REF_DATA_NODE_REF + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_BRAND_REF_DICTIONARY_KIND_SKU_ATTRIBUTE,
                 Boolean.class,
                 UUID.fromString(parentEntryRef),
                 scope,
@@ -285,7 +284,7 @@ public class CatalogDictionaryPersistence {
 
     public String readStatus(String scope, String brand, String kind, String code) {
         return jdbc.query(
-                CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_STATUS_DATA_NODE_REF_BRAND_REF + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_DICTIONARY_KIND_CODE_ALTERNATE_A,
+                CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_STATUS_DATA_NODE_REF_BRAND_REF + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_DICTIONARY_KIND_CODE_ALTERNATE_A,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -300,7 +299,7 @@ public class CatalogDictionaryPersistence {
 
     public UUID readParentRef(String scope, String brand, String kind, String code) {
         return jdbc.query(
-                CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_PARENT_ENTRY_REF_DATA_NODE_REF_BRAND_REF + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_DICTIONARY_KIND_CODE_ALTERNATE_B,
+                CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_PARENT_ENTRY_REF_DATA_NODE_REF_BRAND_REF + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_DICTIONARY_KIND_CODE_ALTERNATE_B,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -312,7 +311,7 @@ public class CatalogDictionaryPersistence {
 
     public UUID readEntryRef(String scope, String brand, String kind, String code) {
         return jdbc.query(
-                CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_ENTRY_REF_DATA_NODE_REF_BRAND_REF + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_DICTIONARY_KIND_CODE_ALTERNATE_C,
+                CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_SELECT_DICTIONARY_ENTRY_ENTRY_REF_DATA_NODE_REF_BRAND_REF + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_DICTIONARY_KIND_CODE_ALTERNATE_C,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -366,7 +365,7 @@ public class CatalogDictionaryPersistence {
             String responseJson,
             long createdAt) {
         return jdbc.update(
-                CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_INSERT_INTO_COMMAND_RECEIPT + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_CONTINUATION_RESPONSE_CREATED_AT_EPOCH_MILLIS,
+                CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_INSERT_INTO_COMMAND_RECEIPT + CatalogDictionaryServiceSql.CATALOG_DICTIONARY_SERVICE_RESPONSE_CREATED_AT_EPOCH_MILLIS,
                 UUID.randomUUID(),
                 scope,
                 key,

@@ -1,5 +1,6 @@
 package com.catering.v2s.salesmenu.domain;
 
+import com.catering.v2s.platform.foundation.collection.CanonicalCursorIdentity;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -27,19 +28,22 @@ public record SalesMenuCursorIdentity(
     }
 
     public String value() {
-        return String.join(
-                "|",
+        return CanonicalCursorIdentity.encode(
                 operationId,
                 scope.workspaceUuid().toString(),
                 scope.groupWorkspaceKey(),
                 scope.storeRef().toString(),
-                String.valueOf(channelRef),
-                String.valueOf(salesMenuRef),
-                String.valueOf(versionRef),
-                String.valueOf(sectionRef),
+                nullable(channelRef),
+                nullable(salesMenuRef),
+                nullable(versionRef),
+                nullable(sectionRef),
                 mode,
-                String.valueOf(filter),
+                filter,
                 Integer.toString(pageSize));
+    }
+
+    private static String nullable(UUID value) {
+        return value == null ? null : value.toString();
     }
 
     private static String required(String value, String name, int maxLength) {

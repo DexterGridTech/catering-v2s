@@ -1,5 +1,5 @@
 import {Button, Descriptions, Space, Typography} from 'antd';
-import {adminWideDetailDescriptionsProps} from '@catering-v2s/admin-ui-foundation';
+import {adminWideDetailDescriptionsProps, displayFieldValue} from '@catering-v2s/admin-ui-foundation';
 import {catalogDetailImageRefs, type CatalogDetail} from '../model/catalogModel';
 import {catalogEnumLabel} from '../model/catalogManifestLabels';
 import type {CatalogManifest} from '../model/catalogItemSurfaceTypes';
@@ -12,7 +12,7 @@ function money(value: number | null | undefined) {
 }
 
 function unitLabel(unit?: {name: string; code: string} | null) {
-  return unit?.name || '—';
+  return displayFieldValue(unit?.name);
 }
 
 export function CatalogItemBasicView({
@@ -32,7 +32,7 @@ export function CatalogItemBasicView({
           {...adminWideDetailDescriptionsProps}
           items={[
             {key: 'name', label: '商品名称', children: detail.item.name},
-            {key: 'shortName', label: '短名', children: detail.item.shortName || '—'},
+            {key: 'shortName', label: '短名', children: displayFieldValue(detail.item.shortName)},
             {key: 'code', label: '商品编码', children: detail.item.code},
             {key: 'shape', label: '商品形态', children: catalogEnumLabel(manifest, 'shapeKey', detail.item.shapeKey)},
             {

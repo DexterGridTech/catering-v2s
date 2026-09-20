@@ -32,7 +32,7 @@ public class OrganizationVisibilityPersistence {
         if (ServiceNodeTypes.GROUP.equals(assignmentType)) {
             Boolean visible = jdbc.query(
                     OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_SELECT_ORGANIZATION_NODE_WORKSPACE_UUID
-                            + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_CONTINUATION_STORE_GROUP_WORKSPACE_KEY_STATUS_ENABLED
+                            + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_STORE_GROUP_WORKSPACE_KEY_STATUS_ENABLED
                             + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED,
                     statement -> {
                         statement.setObject(1, visibleNode);
@@ -63,7 +63,7 @@ public class OrganizationVisibilityPersistence {
         }
         UUID candidateHierarchyNode = jdbc.query(
                 OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_SELECT_STORE_PROJECT_ID_WORKSPACE_UUID_ALTERNATE_A
-                        + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_NODE_ID,
+                        + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_GROUP_WORKSPACE_KEY_NODE_ID,
                 statement -> {
                     statement.setObject(1, visibleNode);
                     statement.setObject(2, workspaceUuid);
@@ -76,11 +76,11 @@ public class OrganizationVisibilityPersistence {
                 });
         Boolean allowed = jdbc.query(
                 OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_CTE_ORGANIZATION_NODE_ANCESTRY_PARENT_ID
-                        + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_PARENT_ID
+                        + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_PARENT_ID
                         + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_FROM_CLAUSE
                         + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_ALTERNATIVE_ANCESTRY_ORGANIZATION_NODE_PARENT_CHILD_PARENT_ID
                         + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_SELECT
-                        + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_CONTINUATION_ANCESTRY_EXISTS_SELECT_1_FROM_ANCESTR,
+                        + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_ANCESTRY_EXISTS_SELECT_1_FROM_ANCESTR,
                 statement -> {
                     statement.setObject(1, candidateHierarchyNode);
                     statement.setObject(2, workspaceUuid);
@@ -136,7 +136,7 @@ public class OrganizationVisibilityPersistence {
             UUID headCompanyId) {
         List<HierarchyNode> hierarchy = jdbc.query(
                 OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_SELECT_ORGANIZATION_NODE_NODE_TYPE_CODE_NAME_PARENT_ID
-                        + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NODE_TYPE_CODE,
+                        + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NODE_TYPE_CODE,
                 (row, index) -> new HierarchyNode(
                         row.getObject(1, UUID.class),
                         row.getString(2),
@@ -150,7 +150,7 @@ public class OrganizationVisibilityPersistence {
         hierarchy.forEach(node -> nodes.put(node.id(), node));
         List<Store> stores = jdbc.query(
                 OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_SELECT_STORE_CODE_NAME_PROJECT_ID_HEAD_COMPANY_ID
-                        + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE,
+                        + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE,
                 (row, index) -> new Store(
                         row.getObject(1, UUID.class),
                         row.getString(2),
@@ -202,7 +202,7 @@ public class OrganizationVisibilityPersistence {
                 || effectiveHeadCompanyId != null) {
             jdbc.query(
                             OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_SELECT_HEAD_COMPANY_CODE_NAME_WORKSPACE_UUID
-                                    + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_STATUS_ENABLED_CODE,
+                                    + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_GROUP_WORKSPACE_KEY_STATUS_ENABLED_CODE,
                             (row, index) ->
                                     new HeadCompany(row.getObject(1, UUID.class), row.getString(2), row.getString(3)),
                             workspaceUuid,
@@ -298,7 +298,7 @@ public class OrganizationVisibilityPersistence {
         Map<UUID, HierarchyNode> nodes = new LinkedHashMap<>();
         jdbc.query(
                         OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_SELECT_ORGANIZATION_NODE_NODE_TYPE_CODE_NAME_PARENT_ID_ALTERNATE_A
-                                + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
+                                + OrganizationVisibilityServiceSql.ORGANIZATION_VISIBILITY_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                         (row, index) -> new HierarchyNode(
                                 row.getObject(1, UUID.class),
                                 row.getString(2),

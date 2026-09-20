@@ -73,7 +73,39 @@ class OrganizationOverviewWireSerializationConfigurationTest {
         assertFalse(flatWire.contains("extensionFields"));
     }
 
+    @Test
+    void lifecycleWirePreservesVoidedStatus() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        OrganizationOverviewWireSerializationConfiguration.configure(mapper);
+
+        String wire = mapper.writeValueAsString(item(
+                OrganizationOverviewStatus.VOIDED,
+                OrganizationOverviewCategory.HIERARCHY,
+                OrganizationOverviewType.REGION,
+                List.of(),
+                null,
+                null));
+
+        assertTrue(wire.contains("\"status\":\"VOIDED\""));
+    }
+
     private static OrganizationOverviewItem item(
+            OrganizationOverviewCategory category,
+            OrganizationOverviewType type,
+            List<OrganizationOverviewItemExtensionFieldsItem> extensionFields,
+            tools.jackson.databind.JsonNode extensionValues,
+            Long extensionRuleRevision) {
+        return item(
+                OrganizationOverviewStatus.ENABLED,
+                category,
+                type,
+                extensionFields,
+                extensionValues,
+                extensionRuleRevision);
+    }
+
+    private static OrganizationOverviewItem item(
+            OrganizationOverviewStatus status,
             OrganizationOverviewCategory category,
             OrganizationOverviewType type,
             List<OrganizationOverviewItemExtensionFieldsItem> extensionFields,
@@ -87,7 +119,7 @@ class OrganizationOverviewWireSerializationConfigurationTest {
                 "CODE",
                 "Name",
                 List.of(),
-                OrganizationOverviewStatus.ENABLED,
+                status,
                 OrganizationOverviewSource.MANUAL,
                 1L,
                 2L,

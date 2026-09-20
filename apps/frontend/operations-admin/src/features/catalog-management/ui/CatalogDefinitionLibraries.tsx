@@ -1,9 +1,12 @@
 import {DeleteOutlined, PlusOutlined} from '@ant-design/icons';
-import {Alert, Button, Card, Flex, Form, Input, Modal, Select, Space, Table, Tag, Typography} from 'antd';
+import {Alert, Button, Card, Flex, Form, Input, Select, Space, Table, Tag, Typography} from 'antd';
 import {
   adminListState,
   createContentIdempotencyKey,
+  lifecycleColor,
+  lifecycleLabel,
   NameCodeText,
+  StatusChangeConfirm,
   testId,
   useCursorCandidates,
   useDrawerFormLifecycle,
@@ -333,6 +336,9 @@ function CatalogAttributeDefinitionPane({
 }: AttributePaneProps) {
   const [form] = Form.useForm<AttributeForm>();
   const [problem, setProblem] = useState<string>();
+  const [pendingStatus, setPendingStatus] = useState<'ENABLED' | 'DISABLED' | 'VOIDED'>();
+  const [statusProblem, setStatusProblem] = useState<string>();
+  const [statusSubmitting, setStatusSubmitting] = useState(false);
   const create = operationsRtk.useCreateOperationsCatalogAttributeDefinitionMutation()[0];
   const update = operationsRtk.useUpdateOperationsCatalogAttributeDefinitionMutation()[0];
   const transition = operationsRtk.useTransitionOperationsCatalogAttributeDefinitionStatusMutation()[0];
@@ -364,6 +370,8 @@ function CatalogAttributeDefinitionPane({
     );
     lifecycle.reset();
     setProblem(undefined);
+    setPendingStatus(undefined);
+    setStatusProblem(undefined);
   }, [definition, form, lifecycle]);
   const submit = async () => {
     if (!scopeRef || !canWrite || readOnly) return;
@@ -414,48 +422,44 @@ function CatalogAttributeDefinitionPane({
   };
   const changeStatus = (targetStatus: 'ENABLED' | 'DISABLED' | 'VOIDED') => {
     if (!definition || definition === 'CREATE' || !scopeRef || !canWrite || readOnly) return;
-    const actionLabel = targetStatus === 'VOIDED' ? '删除' : targetStatus === 'DISABLED' ? '停用' : '启用';
-    Modal.confirm({
-      title: `${actionLabel}“${definition.name}”`,
-      content:
-        targetStatus === 'VOIDED'
-          ? '删除后会保留历史事实并释放编码供新定义使用；已有商品引用不会被静默改写。'
-          : targetStatus === 'DISABLED'
-            ? '停用后，新建商品不会再提供该属性；已有商品引用仍保留。'
-            : '启用后，该属性会重新出现在新建商品的候选列表中。',
-      okText: `确认${actionLabel}`,
-      okButtonProps: {danger: targetStatus !== 'ENABLED'},
-      onOk: async () => {
-        try {
-          const body = {
-            dataNodeRef: wireUuid(scopeRef),
-            definitionRef: wireUuid(definition.definitionRef),
-            expectedVersion: definition.version,
-            targetStatus,
-          };
-          const idempotencyKey = await createContentIdempotencyKey(
-            CATALOG_INVENTORY_OPERATION_IDS.transitionOperationsCatalogAttributeDefinitionStatus,
-            body,
-          );
-          await transition(
-            catalogInventoryRtkRequest.transitionOperationsCatalogAttributeDefinitionStatus(
-              {definitionRef: wireUuid(definition.definitionRef)},
-              {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
-            ),
-          ).unwrap();
-          onClose();
-        } catch (error) {
-          setProblem(catalogUiProblemFeedback(error, '状态更新未完成，请检查后重试。').message);
-          throw error;
-        }
-      },
-    });
+    setStatusProblem(undefined);
+    setPendingStatus(targetStatus);
   };
+  const saveStatus = async () => {
+    if (!definition || definition === 'CREATE' || !scopeRef || !pendingStatus || statusSubmitting) return;
+    setStatusSubmitting(true);
+    setStatusProblem(undefined);
+    try {
+      const body = {
+        dataNodeRef: wireUuid(scopeRef),
+        definitionRef: wireUuid(definition.definitionRef),
+        expectedVersion: definition.version,
+        targetStatus: pendingStatus,
+      };
+      const idempotencyKey = await createContentIdempotencyKey(
+        CATALOG_INVENTORY_OPERATION_IDS.transitionOperationsCatalogAttributeDefinitionStatus,
+        body,
+      );
+      await transition(
+        catalogInventoryRtkRequest.transitionOperationsCatalogAttributeDefinitionStatus(
+          {definitionRef: wireUuid(definition.definitionRef)},
+          {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
+        ),
+      ).unwrap();
+      setPendingStatus(undefined);
+      onClose();
+    } catch (error) {
+      setStatusProblem(catalogUiProblemFeedback(error, '状态更新未完成，请检查后重试。').message);
+    } finally {
+      setStatusSubmitting(false);
+    }
+  };
+  const pendingStatusLabel = pendingStatus === 'VOIDED' ? '作废' : pendingStatus === 'DISABLED' ? '停用' : '启用';
   const valueType = Form.useWatch('valueType', form) ?? 'TEXT';
   return (
     <Card
       size="small"
-      title={definition === 'CREATE' ? '新建商品属性' : readOnly ? '查看商品属性（已作废）' : '编辑商品属性'}
+      title={definition === 'CREATE' ? '新建商品属性' : readOnly ? '查看商品属性（作废）' : '编辑商品属性'}
       extra={
         <Space>
           <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>
@@ -471,7 +475,7 @@ function CatalogAttributeDefinitionPane({
                 {definition.status === 'ENABLED' ? '停用' : '启用'}
               </Button>
               <Button danger icon={<DeleteOutlined />} onClick={() => changeStatus('VOIDED')}>
-                删除
+                作废
               </Button>
             </>
           )}
@@ -576,6 +580,27 @@ function CatalogAttributeDefinitionPane({
           </Form.List>
         )}
       </Form>
+      {pendingStatus && definition !== 'CREATE' && (
+        <StatusChangeConfirm
+          open
+          title={`${pendingStatusLabel}“${definition.name}”`}
+          actionLabel={pendingStatusLabel}
+          dangerous={pendingStatus === 'VOIDED'}
+          submitting={statusSubmitting}
+          problem={statusProblem}
+          onCancel={() => setPendingStatus(undefined)}
+          onConfirm={() => void saveStatus()}
+          confirmTestId="catalog-attribute-definition-status-confirm"
+          cancelTestId="catalog-attribute-definition-status-cancel"
+          modalTestId="catalog-attribute-definition-status-modal"
+        >
+          {pendingStatus === 'VOIDED'
+            ? '作废后会保留历史事实并释放编码供新定义使用；已有商品引用不会被静默改写。'
+            : pendingStatus === 'DISABLED'
+              ? '停用后，新建商品不会再提供该属性；已有商品引用仍保留。'
+              : '启用后，该属性会重新出现在新建商品的候选列表中。'}
+        </StatusChangeConfirm>
+      )}
     </Card>
   );
 }
@@ -602,6 +627,9 @@ function CatalogOrderOptionDefinitionPane({
 }: OrderOptionPaneProps) {
   const [form] = Form.useForm<OrderOptionForm>();
   const [problem, setProblem] = useState<string>();
+  const [pendingStatus, setPendingStatus] = useState<'ENABLED' | 'DISABLED' | 'VOIDED'>();
+  const [statusProblem, setStatusProblem] = useState<string>();
+  const [statusSubmitting, setStatusSubmitting] = useState(false);
   const [materialKeyword, setMaterialKeyword] = useState('');
   const materialCandidates = useCursorCandidates<MaterialCandidate>({
     queryText: materialKeyword,
@@ -687,6 +715,8 @@ function CatalogOrderOptionDefinitionPane({
     );
     lifecycle.reset();
     setProblem(undefined);
+    setPendingStatus(undefined);
+    setStatusProblem(undefined);
   }, [definition, form, lifecycle]);
   const submit = async () => {
     if (!scopeRef || !canWrite || readOnly) return;
@@ -739,47 +769,43 @@ function CatalogOrderOptionDefinitionPane({
   };
   const changeStatus = (targetStatus: 'ENABLED' | 'DISABLED' | 'VOIDED') => {
     if (!definition || definition === 'CREATE' || !scopeRef || !canWrite || readOnly) return;
-    const actionLabel = targetStatus === 'VOIDED' ? '删除' : targetStatus === 'DISABLED' ? '停用' : '启用';
-    Modal.confirm({
-      title: `${actionLabel}“${definition.name}”`,
-      content:
-        targetStatus === 'VOIDED'
-          ? '删除后会保留历史事实并释放编码供新定义使用；已有商品引用不会被静默改写。'
-          : targetStatus === 'DISABLED'
-            ? '停用后，新建商品不会再提供该点单选项；已有商品引用仍保留。'
-            : '启用后，该点单选项会重新出现在新建商品的候选列表中。',
-      okText: `确认${actionLabel}`,
-      okButtonProps: {danger: targetStatus !== 'ENABLED'},
-      onOk: async () => {
-        try {
-          const body = {
-            dataNodeRef: wireUuid(scopeRef),
-            definitionRef: wireUuid(definition.definitionRef),
-            expectedVersion: definition.version,
-            targetStatus,
-          };
-          const idempotencyKey = await createContentIdempotencyKey(
-            CATALOG_INVENTORY_OPERATION_IDS.transitionOperationsCatalogOrderOptionDefinitionStatus,
-            body,
-          );
-          await transition(
-            catalogInventoryRtkRequest.transitionOperationsCatalogOrderOptionDefinitionStatus(
-              {definitionRef: wireUuid(definition.definitionRef)},
-              {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
-            ),
-          ).unwrap();
-          onClose();
-        } catch (error) {
-          setProblem(catalogUiProblemFeedback(error, '状态更新未完成，请检查后重试。').message);
-          throw error;
-        }
-      },
-    });
+    setStatusProblem(undefined);
+    setPendingStatus(targetStatus);
   };
+  const saveStatus = async () => {
+    if (!definition || definition === 'CREATE' || !scopeRef || !pendingStatus || statusSubmitting) return;
+    setStatusSubmitting(true);
+    setStatusProblem(undefined);
+    try {
+      const body = {
+        dataNodeRef: wireUuid(scopeRef),
+        definitionRef: wireUuid(definition.definitionRef),
+        expectedVersion: definition.version,
+        targetStatus: pendingStatus,
+      };
+      const idempotencyKey = await createContentIdempotencyKey(
+        CATALOG_INVENTORY_OPERATION_IDS.transitionOperationsCatalogOrderOptionDefinitionStatus,
+        body,
+      );
+      await transition(
+        catalogInventoryRtkRequest.transitionOperationsCatalogOrderOptionDefinitionStatus(
+          {definitionRef: wireUuid(definition.definitionRef)},
+          {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
+        ),
+      ).unwrap();
+      setPendingStatus(undefined);
+      onClose();
+    } catch (error) {
+      setStatusProblem(catalogUiProblemFeedback(error, '状态更新未完成，请检查后重试。').message);
+    } finally {
+      setStatusSubmitting(false);
+    }
+  };
+  const pendingStatusLabel = pendingStatus === 'VOIDED' ? '作废' : pendingStatus === 'DISABLED' ? '停用' : '启用';
   return (
     <Card
       size="small"
-      title={definition === 'CREATE' ? '新建点单选项' : readOnly ? '查看点单选项（已作废）' : '编辑点单选项'}
+      title={definition === 'CREATE' ? '新建点单选项' : readOnly ? '查看点单选项（作废）' : '编辑点单选项'}
       extra={
         <Space>
           <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>
@@ -795,7 +821,7 @@ function CatalogOrderOptionDefinitionPane({
                 {definition.status === 'ENABLED' ? '停用' : '启用'}
               </Button>
               <Button danger icon={<DeleteOutlined />} onClick={() => changeStatus('VOIDED')}>
-                删除
+                作废
               </Button>
             </>
           )}
@@ -951,6 +977,27 @@ function CatalogOrderOptionDefinitionPane({
           )}
         </Form.List>
       </Form>
+      {pendingStatus && definition !== 'CREATE' && (
+        <StatusChangeConfirm
+          open
+          title={`${pendingStatusLabel}“${definition.name}”`}
+          actionLabel={pendingStatusLabel}
+          dangerous={pendingStatus === 'VOIDED'}
+          submitting={statusSubmitting}
+          problem={statusProblem}
+          onCancel={() => setPendingStatus(undefined)}
+          onConfirm={() => void saveStatus()}
+          confirmTestId="catalog-order-option-definition-status-confirm"
+          cancelTestId="catalog-order-option-definition-status-cancel"
+          modalTestId="catalog-order-option-definition-status-modal"
+        >
+          {pendingStatus === 'VOIDED'
+            ? '作废后会保留历史事实并释放编码供新定义使用；已有商品引用不会被静默改写。'
+            : pendingStatus === 'DISABLED'
+              ? '停用后，新建商品不会再提供该点单选项；已有商品引用仍保留。'
+              : '启用后，该点单选项会重新出现在新建商品的候选列表中。'}
+        </StatusChangeConfirm>
+      )}
     </Card>
   );
 }
@@ -964,8 +1011,8 @@ function selectionModeLabel(value: OrderOptionDefinition['selectionMode']) {
 }
 
 function definitionStatusTag(value: string) {
-  if (value === 'ENABLED') return <Tag color="green">启用</Tag>;
-  if (value === 'DISABLED') return <Tag color="orange">已停用</Tag>;
-  if (value === 'VOIDED') return <Tag color="default">已作废</Tag>;
+  if (value === 'ENABLED' || value === 'DISABLED' || value === 'VOIDED') {
+    return <Tag color={lifecycleColor(value)}>{lifecycleLabel(value)}</Tag>;
+  }
   return <Tag>状态不可识别</Tag>;
 }

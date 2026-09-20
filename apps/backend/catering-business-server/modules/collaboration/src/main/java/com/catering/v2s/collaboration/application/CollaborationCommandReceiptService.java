@@ -3,7 +3,7 @@ package com.catering.v2s.collaboration.application;
 import com.catering.v2s.collaboration.api.CollaborationCommandApi;
 import com.catering.v2s.collaboration.application.persistence.CollaborationCommandReceiptPersistence;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
+import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
@@ -49,7 +49,7 @@ public final class CollaborationCommandReceiptService {
             throw problem("VALIDATION_ERROR", 422, "operationId is required");
         if (canonicalRequest == null) throw new IllegalArgumentException("canonicalRequest is required");
 
-        String requestHash = Sha256Hex.digest(canonicalRequest);
+        String requestHash = CommandReceiptSupport.requestHash(canonicalRequest);
         persistence.lock(workspaceUuid, groupWorkspaceKey, idempotencyKey);
         CollaborationCommandReceiptPersistence.Receipt prior = persistence
                 .find(workspaceUuid, groupWorkspaceKey, idempotencyKey)
@@ -80,7 +80,8 @@ public final class CollaborationCommandReceiptService {
 
     private static <T> T read(String responseJson, Class<T> responseType) {
         try {
-            return JSON.readValue(responseJson, responseType);
+            return CommandReceiptSupport.deserializeNullable(
+                    JSON, responseJson, responseType, "collaboration command receipt is not readable");
         } catch (Exception failure) {
             throw problem("RECEIPT_CORRUPT", 500, "collaboration command receipt is not readable", failure);
         }
@@ -88,7 +89,8 @@ public final class CollaborationCommandReceiptService {
 
     private static String write(Object value) {
         try {
-            return JSON.writeValueAsString(value);
+            return CommandReceiptSupport.serialize(
+                    JSON, value, "collaboration command readback is not writable");
         } catch (Exception failure) {
             throw problem("RECEIPT_CORRUPT", 500, "collaboration command readback is not writable", failure);
         }

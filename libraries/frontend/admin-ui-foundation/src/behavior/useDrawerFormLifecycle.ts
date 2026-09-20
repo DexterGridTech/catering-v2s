@@ -48,6 +48,12 @@ export type DrawerFormLifecycleResult = {
    * lifecycle reset.
    */
   resetPreservingOpen: () => void;
+  /**
+   * Runs an in-surface discard action through the same dirty guard used by
+   * Drawer close. Feature controllers must not create a second confirmation
+   * primitive for switching the edited record or configuration context.
+   */
+  requestDiscard: (onDiscard: () => void) => void;
   requestClose: () => void;
   handleOpenChange: (open: boolean) => void;
   closeAfterSuccess: () => void;
@@ -179,41 +185,48 @@ export function useDrawerFormLifecycle({
   const reset = useCallback(() => resetState(false), [resetState]);
   const resetPreservingOpen = useCallback(() => resetState(true), [resetState]);
 
+  const requestDiscard = useCallback(
+    (onDiscard: () => void) => {
+      if (submittingRef.current) return;
+      if (!dirtyRef.current) {
+        onDiscard();
+        return;
+      }
+      // AntD Drawer can report one user close through both `onClose` and
+      // `onOpenChange(false)`. They are the same close intent, not two reasons
+      // to ask the user twice whether to discard their draft.
+      if (dirtyGuardOpen.current) return;
+      dirtyGuardOpen.current = true;
+      const confirmation = modal.confirm({
+        title: '放弃当前填写内容？',
+        content: latestOptions.current.dirtyMessage ?? '已填写的内容不会保存。',
+        okText: '放弃并关闭',
+        cancelText: '继续编辑',
+        okButtonProps: latestOptions.current.dirtyGuardTestIds?.confirm,
+        cancelButtonProps: latestOptions.current.dirtyGuardTestIds?.cancel,
+        onOk: () => {
+          dirtyGuardRef.current = undefined;
+          dirtyGuardOpen.current = false;
+          resetPreservingOpen();
+          onDiscard();
+        },
+        onCancel: () => {
+          dirtyGuardRef.current = undefined;
+          dirtyGuardOpen.current = false;
+        },
+      });
+      dirtyGuardRef.current = confirmation;
+    },
+    [modal, resetPreservingOpen],
+  );
+
   const requestClose = useCallback(() => {
-    if (submittingRef.current) return;
-    if (!dirtyRef.current || bypassClose.current) {
-      bypassClose.current = false;
+    requestDiscard(() => {
+      bypassClose.current = true;
       diagnostic('CLOSE_REQUESTED', 'CLOSE_REQUESTED');
       latestOptions.current.onOpenChange(false);
-      return;
-    }
-    // AntD Drawer can report one user close through both `onClose` and
-    // `onOpenChange(false)`. They are the same close intent, not two reasons
-    // to ask the user twice whether to discard their draft.
-    if (dirtyGuardOpen.current) return;
-    dirtyGuardOpen.current = true;
-    const confirmation = modal.confirm({
-      title: '放弃当前填写内容？',
-      content: latestOptions.current.dirtyMessage ?? '已填写的内容不会保存。',
-      okText: '放弃并关闭',
-      cancelText: '继续编辑',
-      okButtonProps: latestOptions.current.dirtyGuardTestIds?.confirm,
-      cancelButtonProps: latestOptions.current.dirtyGuardTestIds?.cancel,
-      onOk: () => {
-        dirtyGuardRef.current = undefined;
-        dirtyGuardOpen.current = false;
-        bypassClose.current = true;
-        resetPreservingOpen();
-        diagnostic('CLOSE_REQUESTED', 'CLOSE_REQUESTED');
-        latestOptions.current.onOpenChange(false);
-      },
-      onCancel: () => {
-        dirtyGuardRef.current = undefined;
-        dirtyGuardOpen.current = false;
-      },
     });
-    dirtyGuardRef.current = confirmation;
-  }, [diagnostic, modal, resetPreservingOpen]);
+  }, [diagnostic, requestDiscard]);
 
   const closeAfterSuccess = useCallback(() => {
     pendingSuccess.current = true;
@@ -278,6 +291,7 @@ export function useDrawerFormLifecycle({
       setSubmitting,
       reset,
       resetPreservingOpen,
+      requestDiscard,
       requestClose,
       handleOpenChange,
       closeAfterSuccess,
@@ -294,6 +308,7 @@ export function useDrawerFormLifecycle({
       getIdempotencyKey,
       handleOpenChange,
       markBusinessIntentChanged,
+      requestDiscard,
       requestClose,
       reset,
       resetPreservingOpen,

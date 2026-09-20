@@ -5,7 +5,7 @@ import com.catering.v2s.organization.api.CommercialGroupReadback;
 import com.catering.v2s.platform.foundation.json.LegacyReceiptJson;
 import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
+import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Set;
@@ -41,7 +41,7 @@ public final class CommercialGroupCommandReceiptService {
             String canonicalRequest,
             Supplier<CommercialGroupReadback> command) {
         String key = requiredKey(idempotencyKey);
-        String requestHash = sha256(canonicalRequest);
+        String requestHash = CommandReceiptSupport.requestHash(canonicalRequest);
         AdvisoryLock.acquire(jdbc, "commercial-group-receipt", workspaceUuid.toString(), key);
         CommercialGroupCommandReceiptPersistence.Receipt stored = persistence.read(workspaceUuid, key);
         Receipt existing = stored == null ? null : new Receipt(stored.requestHash(), stored.responseJson());
@@ -71,8 +71,10 @@ public final class CommercialGroupCommandReceiptService {
     }
 
     private static CommercialGroupReadback deserialize(String value) {
+        if (value == null) return null;
         try {
-            return JSON.readValue(value, CommercialGroupReadback.class);
+            return CommandReceiptSupport.deserialize(
+                    JSON, value, CommercialGroupReadback.class, "commercial group receipt deserialization failed");
         } catch (Exception directFailure) {
             try {
                 return JSON.treeToValue(
@@ -87,7 +89,7 @@ public final class CommercialGroupCommandReceiptService {
 
     private static String serialize(CommercialGroupReadback value) {
         try {
-            return JSON.writeValueAsString(value);
+            return CommandReceiptSupport.serialize(JSON, value, "commercial group receipt serialization failed");
         } catch (Exception failure) {
             throw new IllegalStateException("commercial group receipt serialization failed", failure);
         }
@@ -101,7 +103,7 @@ public final class CommercialGroupCommandReceiptService {
 
     private static String sha256(String value) {
         try {
-            return Sha256Hex.digest(value);
+            return CommandReceiptSupport.requestHash(value);
         } catch (Exception exception) {
             throw new IllegalStateException(exception);
         }

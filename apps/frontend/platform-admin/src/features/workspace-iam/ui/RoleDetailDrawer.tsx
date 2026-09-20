@@ -3,6 +3,8 @@ import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
   adminDrawerSurfaceProps,
+  displayFieldValue,
+  LifecycleStatusTag,
   testId,
   useOverlayLock,
 } from '@catering-v2s/admin-ui-foundation';
@@ -83,7 +85,7 @@ export function RoleDetailDrawer({
                       danger: true,
                       label: (
                         <AdminDetailActionLabel testIdValue={platformDetailDrawerTestIds.role.void}>
-                          标记删除业务角色
+                          作废业务角色
                         </AdminDetailActionLabel>
                       ),
                       onClick: () => onChangeStatus('VOIDED'),
@@ -120,8 +122,8 @@ export function RoleDetailDrawer({
             items={[
               {key: 'name', label: '名称', children: role.name},
               {key: 'service-node-type', label: '任职机构类型', children: serviceNodeTypeLabel(role.serviceNodeType)},
-              {key: 'status', label: '状态', children: workspaceIamLifecycleLabels[role.status]},
-              {key: 'description', label: '说明', children: role.description || '—'},
+              {key: 'status', label: '状态', children: <LifecycleStatusTag status={role.status} />},
+              {key: 'description', label: '说明', children: displayFieldValue(role.description)},
             ]}
           />
           <RolePermissionSummaryTrees

@@ -257,6 +257,32 @@ function requiredCaseFacts(row, facts, {allowSynthetic = false} = {}) {
     assert(facts.ownerReadback && typeof facts.ownerReadback === 'object', 'L2_OWNER_FIXTURE_OWNER_READBACK_REQUIRED', row.caseId);
     const baseline = facts.ownerReadback;
     const descriptors = [facts.expectedReadback, facts.unchangedReadback];
+    const versionRelationByJourneyState = facts.unchangedReadbackVersionRelationByJourneyState;
+    if (versionRelationByJourneyState !== undefined) {
+      assert(
+        versionRelationByJourneyState &&
+          typeof versionRelationByJourneyState === 'object' &&
+          !Array.isArray(versionRelationByJourneyState),
+        'L2_OWNER_FIXTURE_VERSION_RELATION_MAP_INVALID',
+        row.caseId,
+      );
+      for (const [journeyState, relation] of Object.entries(versionRelationByJourneyState)) {
+        assert(
+          ['SUCCESS', 'FAILURE', 'RECOVERY'].includes(journeyState) &&
+            ['EXACT_PRE_STATE', 'SAME_AS_FIXTURE_MUTATION'].includes(relation),
+          'L2_OWNER_FIXTURE_VERSION_RELATION_INVALID',
+          `${row.caseId}:${journeyState}`,
+        );
+      }
+      if (facts.actionInput?.journey === 'EDIT') {
+        assert(
+          versionRelationByJourneyState.FAILURE === 'SAME_AS_FIXTURE_MUTATION' &&
+            versionRelationByJourneyState.RECOVERY === 'EXACT_PRE_STATE',
+          'L2_OWNER_FIXTURE_EDIT_VERSION_RELATION_MATRIX_INVALID',
+          row.caseId,
+        );
+      }
+    }
     for (const descriptor of [baseline, ...descriptors]) {
       assert(typeof descriptor.readTarget === 'string' && descriptor.readTarget.length > 0, 'L2_OWNER_FIXTURE_READ_TARGET_REQUIRED', row.caseId);
       const protocol = catalogLibraryReadbackProtocols[descriptor.readTarget];
@@ -298,6 +324,9 @@ function requiredCaseFacts(row, facts, {allowSynthetic = false} = {}) {
   if (keys.has('INVENTORY_TARGET_ROW')) assert(typeof facts.targetRef === 'string' && facts.targetRef.length > 0, 'L2_OWNER_FIXTURE_TARGET_REF_REQUIRED', row.caseId);
   if (keys.has('CATALOG_LOCAL_SEARCH') || keys.has('CATALOG_COPY_SOURCE')) assert(typeof facts.keyword === 'string' && facts.keyword.length > 0, 'L2_OWNER_FIXTURE_KEYWORD_REQUIRED', row.caseId);
   if (keys.has('CATALOG_TREE') || keys.has('CATALOG_TREE_SEARCH')) assert(typeof facts.treeNodeText === 'string' && facts.treeNodeText.length > 0, 'L2_OWNER_FIXTURE_TREE_NODE_REQUIRED', row.caseId);
+  if (keys.has('CATALOG_TREE_CATEGORY_NODE')) assert(typeof facts.treeNodeCode === 'string' && facts.treeNodeCode.length > 0, 'L2_OWNER_FIXTURE_TREE_NODE_CODE_REQUIRED', row.caseId);
+  if (keys.has('CATALOG_TREE_CATEGORY_EXPANDER')) assert(typeof facts.treeParentNodeCode === 'string' && facts.treeParentNodeCode.length > 0, 'L2_OWNER_FIXTURE_TREE_PARENT_CODE_REQUIRED', row.caseId);
+  if (keys.has('CATALOG_TREE_PRODUCTION_TAG_NODE')) assert(typeof facts.productionTagTreeNodeCode === 'string' && facts.productionTagTreeNodeCode.length > 0, 'L2_OWNER_FIXTURE_PRODUCTION_TAG_NODE_CODE_REQUIRED', row.caseId);
   if (keys.has('CATALOG_BRAND_SWITCH')) assert(typeof facts.brandName === 'string' && facts.brandName.length > 0, 'L2_OWNER_FIXTURE_BRAND_REQUIRED', row.caseId);
   if (keys.has('STORE_SCOPE') || keys.has('HEAD_COMPANY_SCOPE')) {
     assert(facts.scope && typeof facts.scope === 'object', 'L2_OWNER_FIXTURE_SCOPE_REQUIRED', row.caseId);
@@ -348,6 +377,9 @@ function syntheticFixture(rows) {
       targetRef: controls.has('INVENTORY_TARGET_ROW') ? 'synthetic-target-ref' : undefined,
       keyword: controls.has('CATALOG_LOCAL_SEARCH') || controls.has('CATALOG_COPY_SOURCE') ? 'Synthetic' : undefined,
       treeNodeText: controls.has('CATALOG_TREE') || controls.has('CATALOG_TREE_SEARCH') ? 'Synthetic tree' : undefined,
+      treeNodeCode: controls.has('CATALOG_TREE_CATEGORY_NODE') ? 'SYNTHETIC-CATEGORY' : undefined,
+      treeParentNodeCode: controls.has('CATALOG_TREE_CATEGORY_EXPANDER') ? 'SYNTHETIC-ROOT' : undefined,
+      productionTagTreeNodeCode: controls.has('CATALOG_TREE_PRODUCTION_TAG_NODE') ? 'SYNTHETIC-PRODUCTION-TAG' : undefined,
       brandName: controls.has('CATALOG_BRAND_SWITCH') ? 'Synthetic brand' : undefined,
       ...(String(row.fixtureRef).startsWith('FIXTURE-CATALOG-LIBRARY-') ? {
         preState: {itemCode: `SYNTHETIC-${row.caseId}`, version: 1, productionTagRef: null},
@@ -372,7 +404,7 @@ function selfTest() {
       const ownerIndex = ownerSources.findIndex(source => source.includes(expression));
       assert(ownerIndex >= 0, 'L2_SELF_TEST_OWNER_TEST_ID_SOURCE_MISSING', `${controlKey}:${expression}`);
       const redMutation = [...ownerSources];
-      redMutation[ownerIndex] = redMutation[ownerIndex].replace(expression, '');
+      redMutation[ownerIndex] = redMutation[ownerIndex].split(expression).join('');
       try {
         assertOwnerTestIdUsage(redMutation, binding, controlKey);
         throw new L2FixtureFailure('L2_SELF_TEST_OWNER_TEST_ID_MUTATION_DID_NOT_FAIL', `${controlKey}:${expression}`);

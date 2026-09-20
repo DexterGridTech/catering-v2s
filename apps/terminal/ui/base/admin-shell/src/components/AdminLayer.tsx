@@ -21,13 +21,15 @@ type AdminLayerFrameProps = Readonly<{
 }>
 
 const renderAdminLayer = ({renderAuthenticated}: AdminLayerFrameProps) => {
-  const {runtimeFacts} = useRenderContext()
+  const {logger, runtimeFacts} = useRenderContext()
   const surface = useSurfaceContext()
   const dispatchCommand = useDispatchCommand()
   const inputController = useInputController()
   const [authenticated, setAuthenticated] = useState(false)
   const dispatchRef = useRef(dispatchCommand)
+  const loggerRef = useRef(logger)
   dispatchRef.current = dispatchCommand
+  loggerRef.current = logger
   const identity = surface.surfaceIdentity
   const surfaceKey = identity?.surfaceKey ?? null
   const displayIndex = identity?.displayIndex ?? null
@@ -35,11 +37,38 @@ const renderAdminLayer = ({renderAuthenticated}: AdminLayerFrameProps) => {
 
   useEffect(() => {
     return () => {
-      void dispatchWithRequestId({
+      const request = dispatchWithRequestId({
         dispatchCommand: dispatchRef.current,
         definition: closeLayerCommand,
+        routeIntent: 'peer-intent',
         payload: {displayMode: identityDisplayMode, layerId: ADMIN_CONSOLE_LAYER_ID},
-      }).catch(() => undefined)
+      })
+      void request.then(result => {
+        loggerRef.current.info({
+          category: 'admin.layer',
+          event: 'admin.layer-close-on-unmount-result',
+          message: 'Admin layer unmount close dispatch completed',
+          data: {
+            displayMode: identityDisplayMode,
+            displayIndex,
+            surfaceKey,
+            routeIntent: 'peer-intent',
+            status: result.status,
+          },
+        })
+      }).catch(() => {
+        loggerRef.current.error({
+          category: 'admin.layer',
+          event: 'admin.layer-close-on-unmount-failed',
+          message: 'Admin layer unmount close dispatch failed',
+          data: {
+            displayMode: identityDisplayMode,
+            displayIndex,
+            surfaceKey,
+            routeIntent: 'peer-intent',
+          },
+        })
+      })
     }
   }, [displayIndex, identityDisplayMode, surfaceKey])
 
@@ -51,12 +80,54 @@ const renderAdminLayer = ({renderAuthenticated}: AdminLayerFrameProps) => {
   }, [inputController])
 
   const close = useCallback(() => {
-    void dispatchWithRequestId({
+    const request = dispatchWithRequestId({
       dispatchCommand,
       definition: closeLayerCommand,
+      routeIntent: 'peer-intent',
       payload: {displayMode: surface.displayMode, layerId: ADMIN_CONSOLE_LAYER_ID},
-    }).catch(() => undefined)
-  }, [dispatchCommand, surface.displayMode])
+    })
+    void request.then(result => {
+      logger.info({
+        category: 'admin.layer',
+        event: 'admin.layer-close-result',
+        message: 'Admin layer close dispatch completed',
+        data: {
+          displayMode: surface.displayMode,
+          displayIndex,
+          surfaceKey,
+          routeIntent: 'peer-intent',
+          status: result.status,
+        },
+      })
+      if (result.status !== 'completed') {
+        logger.warn({
+          category: 'admin.layer',
+          event: 'admin.layer-close-failed',
+          message: 'Admin layer close dispatch returned a non-completed result',
+          data: {
+            displayMode: surface.displayMode,
+            displayIndex,
+            surfaceKey,
+            routeIntent: 'peer-intent',
+            status: result.status,
+            reason: 'command-not-completed',
+          },
+        })
+      }
+    }).catch(() => {
+      logger.error({
+        category: 'admin.layer',
+        event: 'admin.layer-close-failed',
+        message: 'Admin layer close dispatch failed',
+        data: {
+          displayMode: surface.displayMode,
+          displayIndex,
+          surfaceKey,
+          routeIntent: 'peer-intent',
+        },
+      })
+    })
+  }, [displayIndex, dispatchCommand, logger, surface.displayMode, surfaceKey])
 
   if (!authenticated) {
     return (

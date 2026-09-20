@@ -1,5 +1,4 @@
-import {Modal} from 'antd';
-import {testId, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {StatusChangeConfirm, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
 import type {WorkspaceRole, WorkspaceRoleStatus} from '../../../app/api/generated/platform-edge';
 import {toggleWorkspaceIamStatus} from '../model/workspaceIamLifecycle';
 
@@ -18,25 +17,22 @@ export function RoleStatusModal({role, targetStatus: requestedStatus, busy, onCl
   if (!role) return null;
   const targetStatus = requestedStatus ?? toggleWorkspaceIamStatus(role.status);
   if (!targetStatus) return null;
-  const actionLabel = targetStatus === 'VOIDED' ? '标记删除' : targetStatus === 'ENABLED' ? '启用' : '停用';
+  const actionLabel = targetStatus === 'VOIDED' ? '作废' : targetStatus === 'ENABLED' ? '启用' : '停用';
   return (
-    <Modal
+    <StatusChangeConfirm
       title={`确认${actionLabel}“${role.name}”？`}
       open
+      actionLabel={actionLabel}
+      dangerous={targetStatus === 'VOIDED'}
+      submitting={busy}
       onCancel={onClose}
-      onOk={() => void onConfirm(lifecycle.getIdempotencyKey())}
-      maskClosable={!busy}
-      keyboard={!busy}
-      confirmLoading={busy}
-      okText="确认"
-      cancelText="取消"
-      destroyOnHidden
-      okButtonProps={{danger: targetStatus === 'VOIDED', ...testId('workspace-role-status-confirm')}}
-      cancelButtonProps={testId('workspace-role-status-cancel')}
+      onConfirm={() => void onConfirm(lifecycle.getIdempotencyKey())}
+      confirmTestId="workspace-role-status-confirm"
+      cancelTestId="workspace-role-status-cancel"
     >
       {targetStatus === 'VOIDED'
-        ? '标记删除后将保留角色历史事实；该角色不可恢复，也不能继续参与授权。'
+        ? '作废后将保留角色历史事实；该角色不可恢复，也不能继续参与授权。'
         : `将业务角色状态变更为“${actionLabel}”。`}
-    </Modal>
+    </StatusChangeConfirm>
   );
 }

@@ -18,7 +18,7 @@ public class OrganizationAssignmentCandidatePersistence {
     public List<UUID> enabledOrganizationNodeIds(UUID workspaceUuid, String groupWorkspaceKey, String serviceNodeType) {
         return jdbc.query(
                 OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_ORGANIZATION_NODE_WORKSPACE_UUID
-                        + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_NODE_TYPE_STATUS_ENABLED,
+                        + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_GROUP_WORKSPACE_KEY_NODE_TYPE_STATUS_ENABLED,
                 (row, index) -> row.getObject(1, UUID.class),
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -57,11 +57,11 @@ public class OrganizationAssignmentCandidatePersistence {
         return switch (targetType) {
             case GROUP -> jdbc.query(
                     OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_COMMERCIAL_GROUP_UUID
-                            + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_COMMERCIAL_GROUP_OVER_FROM_ORGANIZATION_COMME
+                            + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_COMMERCIAL_GROUP_OVER_FROM_ORGANIZATION_COMME
                             + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_GROUP_WORKSPACE_KEY_COMMERCIAL_GROUP_UUID
                             + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONDITION_COMMERCIAL_GROUP_UUID
                             + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONDITION_TEXT_COMMERCIAL_GROUP_CODE_ILIKE_ESCAPE
-                            + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_COMMERCIAL_GROUP_NAME_ILIKE_ESCAPE
+                            + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_COMMERCIAL_GROUP_NAME_ILIKE_ESCAPE
                             + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ORDER_BY_COMMERCIAL_GROUP_CODE,
                     (row, index) -> new CandidateRow(
                             InvitationTargetType.GROUP, row.getObject(1, UUID.class), row.getString(2), row.getLong(3)),
@@ -96,7 +96,7 @@ public class OrganizationAssignmentCandidatePersistence {
             case HEAD_COMPANY -> jdbc.query(
                     OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_HEAD_COMPANY_CODE_NAME
                             + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS_ENABLED_ALTERNATE_A
-                            + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_NULL_OR_ID
+                            + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_NULL_OR_ID
                             + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONDITION_AND_UUID_IS_NULL_OR_ID
                             + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONDITION_TEXT_CODE_ILIKE_ESCAPE
                             + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ORDER_BY_CODE_ALTERNATE_A,
@@ -143,19 +143,19 @@ public class OrganizationAssignmentCandidatePersistence {
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_ORGANIZATION_NODE_PARENT_ID_CODE_NAME
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_NODE_TYPE_STATUS
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONDITION_TEXT_CODE_ILIKE
-                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_ESCAPE_NAME_ILIKE
+                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ESCAPE_NAME_ILIKE
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CLOSE_PAREN_ANCESTRY
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_CANDIDATES_TARGET_ID_PARENT_ID_CODE
-                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_CANDIDATES_NAME_DEPTH
+                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CANDIDATES_NAME_DEPTH
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_UNION_ANCESTRY_TARGET_ID_PARENT_PARENT_ID
-                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_ANCESTRY_DEPTH
+                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ANCESTRY_DEPTH
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_FROM_CLAUSE_ANCESTRY_PARENT_PARENT_ID
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CLOSE_PAREN_PATHS
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_TARGET_ID_STRING_AGG_NAME_CODE
-                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_ANCESTRY_TARGET_ID
+                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ANCESTRY_TARGET_ID
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CLOSE_PAREN_PATHS_DISPLAY_PATH
-                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_PATHS_TARGET_ID_CANDIDATES
+                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_PATHS_TARGET_ID_CANDIDATES
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ORDER_BY_CANDIDATES_CODE;
     }
 
@@ -164,22 +164,22 @@ public class OrganizationAssignmentCandidatePersistence {
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_STORE_PROJECT_ID_CODE_NAME
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_STATUS
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONDITION_STORE_TEXT_CODE_ILIKE
-                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_STORE_NAME_ILIKE_ESCAPE
+                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_STORE_NAME_ILIKE_ESCAPE
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CLOSE_PAREN_ANCESTRY_ALTERNATE_A
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_CANDIDATES_TARGET_ID_PROJECT_PARENT_ID
-                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_CANDIDATES_DEPTH
+                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CANDIDATES_DEPTH
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_JOIN_ORGANIZATION_NODE_PROJECT_CANDIDATES_PROJECT_ID
-                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_PROJECT
-                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_PROJECT_STATUS_ENABLED
+                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_PROJECT
+                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_PROJECT_STATUS_ENABLED
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_UNION_ANCESTRY_TARGET_ID_PARENT_PARENT_ID_ALTERNATE_A
-                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_ANCESTRY_DEPTH_ALTERNATE_A
+                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ANCESTRY_DEPTH_ALTERNATE_A
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_FROM_CLAUSE_ANCESTRY_PARENT_PARENT_ID_ALTERNATE_A
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_WHERE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CLOSE_PAREN_PATHS_ALTERNATE_A
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_SELECT_TARGET_ID_STRING_AGG_NAME_CODE_ALTERNATE_A
-                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_ANCESTRY_TARGET_ID_ALTERNATE_A
+                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_ANCESTRY_TARGET_ID_ALTERNATE_A
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CLOSE_PAREN_CANDIDATES_PATHS_PROJECT_PATH_NAME
-                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_CONTINUATION_COUNT_OVER
+                + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_COUNT_OVER
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_FROM_CLAUSE_PATHS_TARGET_ID_CODE
                 + OrganizationAssignmentCandidateServiceSql.ORGANIZATION_ASSIGNMENT_CANDIDATE_SERVICE_PARAMETER_PLACEHOLDER;
     }

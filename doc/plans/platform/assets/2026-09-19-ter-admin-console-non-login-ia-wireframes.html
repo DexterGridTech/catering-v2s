@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TER Admin console 非登录区 IA 低保真线框</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #c8ced8;
+      --surface: #f7f8fa;
+      --panel: #ffffff;
+      --fill: #e8ebf0;
+      --accent: #53657d;
+      --danger: #b54747;
+      --pending: #b27a16;
+      --success: #3b7a57;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: #eef1f5; }
+    header { padding: 28px 32px 20px; background: var(--panel); border-bottom: 1px solid var(--line); }
+    h1 { margin: 0 0 6px; font-size: 24px; }
+    header p { margin: 0; color: var(--muted); line-height: 1.5; }
+    header .notice { margin-top: 12px; padding: 9px 11px; border-left: 3px solid var(--accent); background: var(--surface); color: var(--muted); font-size: 12px; }
+    .legend { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .legend span, .tag, .ia-chip { border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; font-size: 11px; color: var(--muted); background: #fff; }
+    main { padding: 24px 32px 48px; }
+    section { margin: 0 0 30px; }
+    h2 { margin: 0 0 12px; font-size: 18px; }
+    .section-note { margin: -4px 0 12px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(390px, 1fr)); gap: 16px; align-items: start; }
+    .frame { min-height: 320px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); box-shadow: 0 2px 7px #17203312; }
+    .frame.mobile-frame { max-width: 370px; justify-self: start; }
+    .frame-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin-bottom: 9px; }
+    .frame-id { font: 600 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+    .frame-form { color: var(--muted); font-size: 11px; }
+    .device { min-height: 286px; padding: 9px; border: 1px dashed var(--accent); border-radius: 8px; background: var(--surface); }
+    .mobile-frame .device { width: 310px; min-height: 530px; margin: 0 auto; border-radius: 20px; border-style: solid; padding: 12px 9px; background: #f1f3f7; }
+    .wire-header { display: flex; align-items: center; gap: 8px; padding: 7px 5px; border-bottom: 1px solid var(--line); font-size: 12px; font-weight: 700; }
+    .wire-header .header-state { color: var(--muted); font-size: 10px; font-weight: 500; }
+    .close { margin-left: auto; width: 22px; height: 18px; border: 1px solid var(--line); border-radius: 4px; text-align: center; color: var(--muted); }
+    .wire-body { display: grid; grid-template-columns: 116px 1fr; gap: 8px; min-height: 236px; padding-top: 8px; }
+    .mobile .wire-body { display: block; min-height: 450px; }
+    .nav, .content, .summary, .card, .action, .row, .empty, .loading, .error, .bar, .field, .surface, .result, .reason { border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+    .nav { padding: 6px; }
+    .mobile .nav { position: sticky; top: 0; z-index: 2; display: block; margin-bottom: 7px; padding: 4px; }
+    .mobile .nav .selector { display: flex; align-items: center; justify-content: space-between; min-height: 34px; padding: 7px 9px; border: 1px solid var(--accent); border-radius: 5px; background: #fff; color: var(--ink); font-size: 11px; font-weight: 700; }
+    .nav .row { min-height: 23px; margin-bottom: 5px; padding: 4px 3px; background: var(--fill); font-size: 10px; text-align: center; }
+    .mobile .nav .row { margin-bottom: 0; min-height: 27px; font-size: 9px; }
+    .nav .row.active { background: #cfd5df; border-color: var(--accent); color: var(--ink); font-weight: 700; }
+    .content { min-width: 0; padding: 8px; }
+    .mobile .content { padding: 8px 5px; }
+    .content-title { display: flex; justify-content: space-between; align-items: center; min-height: 20px; margin-bottom: 7px; font-size: 13px; font-weight: 700; }
+    .content-title small { color: var(--muted); font-size: 9px; font-weight: 500; }
+    .line { height: 8px; width: 76%; margin: 6px 0; border-radius: 3px; background: var(--fill); }
+    .line.short { width: 48%; }
+    .line.full { width: 100%; }
+    .status { display: flex; gap: 5px; align-items: center; margin: 4px 0 7px; color: var(--muted); font-size: 10px; line-height: 1.35; }
+    .dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+    .dot.pending { background: var(--pending); }
+    .dot.error { background: var(--danger); }
+    .dot.success { background: var(--success); }
+    .empty, .loading, .error { display: grid; gap: 6px; place-items: center; min-height: 120px; padding: 12px; color: var(--muted); font-size: 11px; text-align: center; }
+    .error { color: var(--danger); }
+    .summary { padding: 8px; margin-bottom: 7px; }
+    .summary .summary-title { display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; }
+    .summary .bar { display: flex; overflow: hidden; height: 13px; margin: 7px 0; background: #eef0f3; }
+    .summary .bar span { display: block; height: 100%; }
+    .summary .bar .available { width: 56%; background: #6e9a7d; }
+    .summary .bar .unavailable { width: 26%; background: #c88484; }
+    .summary .bar .undeclared { width: 18%; background: #c6cbd4; }
+    .summary .numbers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; color: var(--muted); font-size: 9px; text-align: center; }
+    .summary .numbers strong { display: block; color: var(--ink); font-size: 13px; }
+    .rows { display: grid; gap: 5px; }
+    .row { min-height: 26px; padding: 5px 6px; font-size: 10px; }
+    .row .right { float: right; color: var(--muted); }
+    .row .state { color: var(--success); font-size: 9px; }
+    .expanded { padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: #fafbfc; }
+    .expanded .row { margin-top: 4px; background: #fff; }
+    .expanded .row .state.bad { color: var(--danger); }
+    .field { padding: 6px; margin: 7px 0; }
+    .field label { display: block; margin-bottom: 4px; color: var(--muted); font-size: 9px; }
+    .input { min-height: 25px; padding: 5px 7px; border: 1px solid #9aa7b8; border-radius: 4px; color: var(--ink); font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; background: #fff; }
+    .hint { margin-top: 4px; color: var(--muted); font-size: 9px; line-height: 1.35; }
+    .actions { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px; }
+    .action { display: inline-flex; align-items: center; justify-content: center; min-height: 27px; padding: 5px 8px; color: var(--ink); font-size: 10px; background: var(--fill); }
+    .action.primary { border-color: var(--accent); background: #dce3ec; font-weight: 700; }
+    .action.disabled { color: var(--muted); border-style: dashed; background: #fff; }
+    .result, .reason { margin-top: 7px; padding: 7px; font-size: 10px; line-height: 1.4; }
+    .result { border-color: #87a893; background: #f3f8f4; }
+    .reason { border-color: #d1a0a0; background: #fff7f7; color: #8f3b3b; }
+    .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 6px 0; }
+    .kv .item { padding: 5px; border: 1px solid var(--line); border-radius: 5px; background: #fafbfc; }
+    .kv small { display: block; margin-bottom: 2px; color: var(--muted); font-size: 8px; }
+    .kv b { font-size: 10px; }
+    .surfaces { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+    .mobile .surfaces { grid-template-columns: 1fr; justify-items: center; }
+    .mobile .surface { width: 100%; max-width: 280px; }
+    .surface { min-height: 178px; padding: 7px; }
+    .surface.current { border: 2px solid var(--accent); }
+    .surface-title { display: flex; justify-content: space-between; gap: 4px; font-size: 10px; font-weight: 700; }
+    .surface-title small { color: var(--muted); font-size: 8px; font-weight: 500; }
+    .screen-wrap { position: relative; margin: 24px 31px 22px 31px; }
+    .screen-shape { position: relative; display: grid; place-items: center; min-height: 0; border: 2px solid #7d8798; border-radius: 4px; background: #eef1f5; color: var(--muted); font-size: 9px; }
+    .screen-shape.ratio-16-10 { aspect-ratio: 16 / 10; }
+    .screen-shape.ratio-4-3 { aspect-ratio: 4 / 3; }
+    .screen-shape.ratio-mobile { aspect-ratio: 390 / 844; }
+    .dimension { position: absolute; color: var(--muted); font-size: 8px; line-height: 1; white-space: nowrap; }
+    .dimension.logical-width { top: 5px; left: 50%; transform: translateX(-50%); }
+    .dimension.logical-height { top: 50%; left: 4px; transform: translate(-50%, -50%) rotate(-90deg); transform-origin: center; }
+    .dimension.physical-width { top: -17px; left: 50%; transform: translateX(-50%); font-weight: 700; }
+    .dimension.physical-height { top: 50%; left: -26px; transform: translate(-50%, -50%) rotate(-90deg); transform-origin: center; font-weight: 700; }
+    .surface-state { color: var(--muted); font-size: 8px; line-height: 1.3; text-align: center; white-space: pre-line; }
+    .gate { display: grid; place-items: center; min-height: 220px; padding: 16px; border: 1px solid #d1a0a0; border-radius: 7px; text-align: center; }
+    .gate > * { width: 100%; margin-inline: auto; text-align: center; }
+    .gate strong { display: block; margin-bottom: 8px; color: var(--danger); font-size: 14px; }
+    .gate span { color: #8f3b3b; font-size: 11px; line-height: 1.4; }
+    .topology { display: grid; gap: 7px; }
+    .topology .card { padding: 8px; }
+    .goal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .mobile .goal-grid { grid-template-columns: 1fr; }
+    .goal { min-width: 0; padding: 7px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+    .goal h4 { margin: 0 0 4px; font-size: 11px; }
+    .goal p { min-height: 31px; margin: 0 0 5px; color: var(--muted); font-size: 9px; line-height: 1.35; }
+    .goal .action { width: 100%; }
+    .cross { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .mobile .cross { grid-template-columns: 1fr; }
+    .cross-pane { padding: 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); }
+    .cross-pane h3 { margin: 0 0 8px; font-size: 12px; }
+    .cross-pane .card { min-height: 130px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; font-size: 10px; line-height: 1.5; }
+    .cross-pane .card strong { display: block; margin-bottom: 9px; }
+    .ia-chip { display: inline-block; margin: 3px 2px 0 0; padding: 2px 5px; font-size: 8px; }
+    @media (max-width: 720px) {
+      header, main { padding-left: 16px; padding-right: 16px; }
+      .grid { grid-template-columns: 1fr; }
+      .frame.mobile-frame { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>TER Admin console 非登录区 · IA 低保真线框</h1>
+    <p>本版先确认信息和交互逻辑，不是最终视觉稿，也不代表详设或实施授权。</p>
+    <div class="notice">修订重点：mobile 全部为竖屏；顶部固定单个下拉 selector（不是横排 tab）；每个 frame 画出完整字段和动作；拓扑可用旅途仅属于 laptop，mobile 只显示“当前功能不可用 / mobile 形态不支持双机拓扑”。</div>
+    <div class="legend">
+      <span>实线框：可见容器</span><span>虚线外框：线框设备边界</span><span>深边框：当前 surface / 当前选择</span><span>绿/黄/红点：状态灯语义</span><span>虚线按钮：不可用并显示原因</span>
+    </div>
+  </header>
+  <main id="app"></main>
+  <script>
+    const make = (id, form, kind, state, extra = {}) => ({ id, form, kind, state, ...extra });
+    const frames = [];
+    const both = (prefix, kind, states) => states.forEach(state => ['L', 'M'].forEach(form => frames.push(make(`${prefix}-${form}-${state}`, form === 'L' ? 'laptop' : 'mobile', kind, state))));
+    both('PANEL', 'panel', ['NORMAL', 'EMPTY', 'LOADING', 'ERROR']);
+    both('PORTS', 'ports', ['OVERVIEW', 'CATEGORY-EXPANDED']);
+    both('RUNTIME', 'runtime', ['SINGLE-SURFACE']);
+    frames.push(make('RUNTIME-L-DUAL-SURFACE', 'laptop', 'runtime', 'DUAL-SURFACE'));
+    ['L', 'M'].forEach(form => frames.push(make(`TOPOLOGY-${form}-UNAVAILABLE`, form === 'L' ? 'laptop' : 'mobile', 'unavailable', 'UNAVAILABLE')));
+    ['ROLE-CHOICE', 'HOST-STARTING', 'HOST-READY', 'HOST-ERROR', 'PAIRING', 'PAIR-ERROR', 'MASTER-PAIRED-REACHABLE', 'MASTER-PAIRED-RECONNECTING', 'UNPAIRING-MASTER', 'SLAVE-PAIRED-REACHABLE', 'SLAVE-PAIRED-RECONNECTING', 'UNPAIRING-SLAVE'].forEach(state => frames.push(make(`TOPOLOGY-L-${state}`, 'laptop', 'topology', state)));
+    frames.push(make('CROSS-TAB-L-DUAL-PHYSICAL', 'laptop', 'cross', 'DUAL-PHYSICAL'));
+    const stableNumbers = new Map([
+      ['PANEL-L-NORMAL', 'IA-01'], ['PANEL-M-NORMAL', 'IA-02'], ['PANEL-L-EMPTY', 'IA-03'], ['PANEL-M-EMPTY', 'IA-04'],
+      ['PANEL-L-LOADING', 'IA-05'], ['PANEL-M-LOADING', 'IA-06'], ['PANEL-L-ERROR', 'IA-07'], ['PANEL-M-ERROR', 'IA-08'],
+      ['PORTS-L-OVERVIEW', 'IA-09'], ['PORTS-M-OVERVIEW', 'IA-10'], ['PORTS-L-CATEGORY-EXPANDED', 'IA-11'], ['PORTS-M-CATEGORY-EXPANDED', 'IA-12'],
+      ['RUNTIME-L-SINGLE-SURFACE', 'IA-13'], ['RUNTIME-M-SINGLE-SURFACE', 'IA-14'], ['RUNTIME-L-DUAL-SURFACE', 'IA-15'],
+      ['TOPOLOGY-L-UNAVAILABLE', 'IA-16'], ['TOPOLOGY-M-UNAVAILABLE', 'IA-17'], ['TOPOLOGY-L-ROLE-CHOICE', 'IA-18'],
+      ['TOPOLOGY-L-HOST-STARTING', 'IA-19'], ['TOPOLOGY-L-HOST-READY', 'IA-20'], ['TOPOLOGY-L-HOST-ERROR', 'IA-21'],
+      ['TOPOLOGY-L-PAIRING', 'IA-22'], ['TOPOLOGY-L-PAIR-ERROR', 'IA-23'], ['TOPOLOGY-L-MASTER-PAIRED-REACHABLE', 'IA-24'],
+      ['TOPOLOGY-L-MASTER-PAIRED-RECONNECTING', 'IA-25'], ['TOPOLOGY-L-UNPAIRING-MASTER', 'IA-26'], ['TOPOLOGY-L-SLAVE-PAIRED-REACHABLE', 'IA-27'],
+      ['TOPOLOGY-L-SLAVE-PAIRED-RECONNECTING', 'IA-28'], ['TOPOLOGY-L-UNPAIRING-SLAVE', 'IA-29'],
+      ['CROSS-TAB-L-DUAL-PHYSICAL', 'IA-32']
+    ]);
+    frames.forEach(frame => { frame.number = stableNumbers.get(frame.id); });
+
+    const el = (tag, className, text = '') => { const node = document.createElement(tag); node.className = className; node.textContent = text; return node; };
+    const chip = text => el('span', 'ia-chip', text);
+    const status = (label, tone = '', ia = '') => { const wrap = el('div', 'status'); wrap.append(el('span', `dot ${tone}`), document.createTextNode(label)); if (ia) wrap.append(chip(ia)); return wrap; };
+    const action = (label, tone = '') => el('div', `action ${tone}`, label);
+    const kv = (label, value, ia = '') => { const item = el('div', 'item'); item.append(el('small', '', label), el('b', '', value)); if (ia) item.append(chip(ia)); return item; };
+    const shell = (frame, content) => {
+      const device = el('div', `device ${frame.form}`);
+      const head = el('div', 'wire-header'); head.append(document.createTextNode('终端管理'), el('span', 'header-state', '状态：可操作'), el('div', 'close', '×')); device.append(head);
+      const body = el('div', `wire-body ${frame.form}`);
+      const nav = el('div', 'nav');
+      const page = frame.kind === 'runtime' ? '运行状态' : frame.kind === 'topology' || frame.kind === 'unavailable' ? '双机拓扑' : '平台端口';
+      const pageIndex = page === '运行状态' ? 1 : page === '双机拓扑' ? 2 : 0;
+      if (frame.form === 'mobile') { nav.append(el('div', 'selector', `当前页面：${page}　⌄`), chip('panel.nav.dropdown-selector')); }
+      else { ['平台端口', '运行状态', '双机拓扑'].forEach((name, index) => nav.append(el('div', `row ${index === pageIndex ? 'active' : ''}`, name))); nav.append(chip('panel.nav.side-navigation')); }
+      const contentBox = el('div', 'content'); contentBox.append(content); body.append(nav, contentBox); device.append(body); return device;
+    };
+    const panelContent = frame => {
+      const wrap = el('div', 'content'); wrap.append(el('div', 'content-title', '面板状态'));
+      if (frame.state === 'EMPTY') { const n = el('div', 'empty'); n.append(status('暂无内容', 'pending', 'panel.empty'), document.createTextNode('当前没有可显示的终端信息')); return n; }
+      if (frame.state === 'LOADING') { const n = el('div', 'loading'); n.append(status('正在读取终端状态…', 'pending', 'panel.loading'), document.createTextNode('数据准备完成后显示摘要')); return n; }
+      if (frame.state === 'ERROR') { const n = el('div', 'error'); n.append(status('终端状态读取失败', 'error', 'panel.error'), document.createTextNode('无法读取当前状态'), action('重试', 'primary')); return n; }
+      wrap.append(status('终端状态：可操作', 'success', 'panel.header.overall-status'), el('div', 'kv')); wrap.lastChild.append(kv('当前 tab', '平台端口'), kv('内容区', '可滚动')); wrap.append(el('div', 'hint', '关闭入口固定在右上角；selector 固定在内容顶部。')); return wrap;
+    };
+    const portsContent = frame => {
+      const wrap = el('div', 'content'); wrap.append(el('div', 'content-title', '平台端口'));
+      const summary = el('div', 'summary'); summary.append(el('div', 'summary-title', '能力状态总览'), chip('ports.summary.ratio-bar'));
+      const bar = el('div', 'bar'); bar.append(el('span', 'available'), el('span', 'unavailable'), el('span', 'undeclared')); summary.append(bar);
+      const numbers = el('div', 'numbers'); [['可用', '7'], ['不可用', '3'], ['未声明', '2']].forEach(([label, value]) => { const n = el('div', ''); n.append(el('strong', '', value), document.createTextNode(label)); numbers.append(n); }); summary.append(numbers); wrap.append(summary);
+      const rows = el('div', 'rows'); [['日志与诊断', '2 可用 · 1 不可用', 'success'], ['设备与系统', '3 可用 · 1 未声明', 'pending'], ['连接与拓扑', '2 可用', 'success'], ['存储与状态', '1 可用 · 1 不可用', 'error'], ['脚本与更新', '1 可用', 'success']].forEach(([name, value, tone], index) => {
+        const row = el('div', 'row'); row.append(document.createTextNode(name), el('span', 'right', frame.state === 'CATEGORY-EXPANDED' && index === 0 ? '收起⌃' : '展开⌄'), el('div', `state ${tone}`, value)); rows.append(row);
+        if (frame.state === 'CATEGORY-EXPANDED' && index === 0) { const expanded = el('div', 'expanded'); [['terminal.log', '可用', '来源：platform'], ['terminal.trace', '不可用', '原因：宿主未提供']].forEach(([name, state, reason]) => { const item = el('div', 'row'); item.append(document.createTextNode(name), el('span', `right state ${state === '不可用' ? 'bad' : ''}`, state), el('div', 'hint', reason)); expanded.append(item); }); rows.append(expanded); }
+      }); wrap.append(rows); return wrap;
+    };
+    const dimensionText = value => value === undefined || value === null || value === '' ? '未知' : value;
+    const runtimeSurface = (title, logicalWidth, logicalHeight, physicalWidth, physicalHeight, current, ratioClass, ratioLabel) => {
+      const card = el('div', `surface ${current ? 'current' : ''}`); card.append(el('div', 'surface-title', `${title} · ${current ? '当前 surface' : '非当前 surface'}`), chip(`runtime.surface.${current ? 'current' : 'role'}`));
+      if (!current) {
+        const limited = el('div', 'surface-state', '该屏信息未提供\n仅保留存在性与角色');
+        card.append(limited, chip('runtime.surface.role'), chip('runtime.surface.info-unavailable'));
+        return card;
+      }
+      const wrap = el('div', 'screen-wrap');
+      const shape = el('div', `screen-shape ${ratioClass}`);
+      shape.append(el('div', 'dimension logical-width', `逻辑长：${dimensionText(logicalWidth)}`), el('div', 'dimension logical-height', `逻辑高：${dimensionText(logicalHeight)}`), el('div', 'surface-state', '已就绪\n可用状态：正常\n比例：' + ratioLabel));
+      wrap.append(el('div', 'dimension physical-width', `物理长：${dimensionText(physicalWidth)}`), el('div', 'dimension physical-height', `物理高：${dimensionText(physicalHeight)}`), shape);
+      card.append(wrap);
+      card.append(chip('runtime.surface.aspect-ratio'), chip('runtime.surface.logical-size'), chip('runtime.surface.physical-size'), chip('runtime.surface.ready-state')); return card;
+    };
+    const runtimeContent = frame => {
+      const dual = frame.state === 'DUAL-SURFACE'; const mobile = frame.form === 'mobile'; const wrap = el('div', 'content'); wrap.append(el('div', 'content-title', '运行状态'), status(dual ? '运行正常 · 检测到两块物理屏' : '运行正常 · 检测到一块物理屏', 'success', 'runtime.overall-status'));
+      wrap.append(el('div', 'kv')); wrap.lastChild.append(kv('运行阶段', '已就绪'), kv('物理屏数量', dual ? '2' : '1', 'runtime.physical-display-count')); const surfaces = el('div', 'surfaces');
+      surfaces.append(runtimeSurface('主屏', mobile ? 390 : 1280, mobile ? 844 : 800, mobile ? undefined : 1920, mobile ? undefined : 1200, true, mobile ? 'ratio-mobile' : 'ratio-16-10', mobile ? '390:844' : '16:10'));
+      if (dual) surfaces.append(runtimeSurface('副屏', 1024, 768, 1536, 1152, false, 'ratio-4-3', '4:3'));
+      wrap.append(surfaces); wrap.append(el('div', 'hint', '逻辑尺寸标在框内，物理尺寸标在框外；矩形比例跟随各自 surface 的逻辑宽高。物理值为线框示意，缺失时数字位置显示“未知”，详设须绑定 display-facts owner。')); return wrap;
+    };
+    const roleChoice = () => {
+      const wrap = el('div', 'topology'); const card = el('div', 'card'); card.append(status('尚未配对 · 请选择当前机器的用途', 'pending', 'topology.goal-choice'));
+      const goals = el('div', 'goal-grid'); const host = el('div', 'goal'); host.append(el('h4', '', '作为主机'), el('p', '', '开启主机服务，等待副机输入地址后配对。'), action('开启主机服务', 'primary'), chip('topology.goal.host'), chip('topology.host-service'));
+      const slave = el('div', 'goal'); slave.append(el('h4', '', '作为副机'), el('p', '', '输入主机 IP，提交后直接发起配对。无需先查询身份。')); const field = el('div', 'field'); field.append(el('label', '', '主机 IP 地址'), el('div', 'input', '192.168.1.20'), chip('topology.host-ip')); slave.append(field, action('直接配对', 'primary'), chip('topology.goal.slave')); goals.append(host, slave); card.append(goals); wrap.append(card); return wrap;
+    };
+    const pairedTopology = frame => {
+      const wrap = el('div', 'topology'); const isMaster = frame.state.includes('MASTER'); const role = isMaster ? '主机' : '副机'; const reconnecting = frame.state.includes('RECONNECTING'); const unpairing = frame.state.includes('UNPAIRING');
+      const card = el('div', 'card'); card.append(status(`${role} · ${unpairing ? '正在解除配对' : reconnecting ? '已配对 · 正在重连' : '已配对 · 对端可达'}`, unpairing || reconnecting ? 'pending' : 'success', 'topology.role'));
+      const info = el('div', 'kv'); info.append(kv('配对状态', unpairing ? '处理中' : '已配对', 'topology.pair-state'), kv('对端连接', reconnecting ? '重连中' : '可达', 'topology.reachability')); info.append(kv('当前角色', role, 'topology.role'), kv('对端', '已配对设备', 'topology.counterparty')); card.append(info);
+      if (unpairing) card.append(el('div', 'result', '正在解除配对，完成后将回到可选择目标的状态。'));
+      else { card.append(el('div', 'result', isMaster ? '当前机器负责主机服务；副机内容由配对链路同步。' : '当前机器作为副机；可主动解除配对，解除后恢复为主机候选。')); card.append(el('div', 'actions')); card.lastChild.append(action('解除配对', 'primary'), chip('topology.unpair')); }
+      wrap.append(card); return wrap;
+    };
+    const topologyContent = frame => {
+      if (frame.kind === 'unavailable') { const gate = el('div', 'gate'); const reason = frame.form === 'mobile' ? 'mobile 形态不支持双机拓扑' : '双机拓扑要求本机只有一个物理屏'; gate.append(el('strong', '', '当前功能不可用'), el('span', '', reason)); return gate; }
+      if (frame.state === 'ROLE-CHOICE') return roleChoice();
+      if (frame.state === 'HOST-STARTING') { const wrap = el('div', 'topology'); const card = el('div', 'card'); card.append(status('正在开启主机服务…', 'pending', 'topology.host-service.state'), el('div', 'hint', '当前机器将作为主机，服务准备完成后等待副机配对。'), el('div', 'actions')); card.lastChild.append(action('开启中…', 'disabled')); wrap.append(card); return wrap; }
+      if (frame.state === 'HOST-READY') { const wrap = el('div', 'topology'); const card = el('div', 'card'); card.append(status('主机服务已开启 · 等待副机配对', 'success', 'topology.host-service.state'), el('div', 'kv')); card.lastChild.append(kv('当前角色', '主机'), kv('服务状态', '运行中'), kv('本机 IP 地址', '192.168.1.10')); card.append(el('div', 'result', '请在副机上输入这台主机的 IP 地址并直接配对。')); card.append(el('div', 'actions')); card.lastChild.append(action('关闭主机服务', 'primary'), chip('topology.host-service')); card.append(el('div', 'hint', '关闭服务后回到未配对目标选择。')); wrap.append(card); return wrap; }
+      if (frame.state === 'HOST-ERROR') { const wrap = el('div', 'topology'); const card = el('div', 'card'); card.append(status('主机服务未能开启', 'error', 'topology.host-service.state'), el('div', 'reason', '原因：主机服务暂时不可用\n下一步：检查平台端口后重试。'), el('div', 'actions')); card.lastChild.append(action('重试开启主机服务', 'primary'), action('返回目标选择')); wrap.append(card); return wrap; }
+      if (frame.state === 'PAIRING') { const wrap = el('div', 'topology'); const card = el('div', 'card'); card.append(status('正在与主机配对…', 'pending', 'topology.pairing')); card.append(el('div', 'kv')); card.lastChild.append(kv('主机 IP', '192.168.1.20', 'topology.host-ip'), kv('当前目标', '作为副机')); card.append(el('div', 'hint', '正在建立连接并确认配对结果，请勿重复提交。')); wrap.append(card); return wrap; }
+      if (frame.state === 'PAIR-ERROR') { const wrap = el('div', 'topology'); const card = el('div', 'card'); card.append(status('配对未完成', 'error', 'topology.pair-result'), el('div', 'field')); card.lastChild.append(el('label', '', '主机 IP 地址'), el('div', 'input', '192.168.1.20'), chip('topology.host-ip')); card.append(el('div', 'reason', '原因：无法连接到该主机或地址不可用\n请修改地址后直接重试。'), el('div', 'actions')); card.lastChild.append(action('直接重试配对', 'primary'), action('返回目标选择')); wrap.append(card); return wrap; }
+      return pairedTopology(frame);
+    };
+    const crossContent = () => {
+      const wrap = el('div', 'cross'); const runtime = el('div', 'cross-pane'); runtime.append(el('h3', '', '运行状态 tab')); const r = el('div', 'card'); r.append(el('strong', '', '检测到两块物理屏'), document.createTextNode('主屏：逻辑 1280 × 800 · 物理 1920 × 1200\n副屏：逻辑 1024 × 768 · 物理 1536 × 1152')); runtime.append(r);
+      const topo = el('div', 'cross-pane'); topo.append(el('h3', '', '双机拓扑 tab')); const t = el('div', 'card'); t.append(el('strong', '', '当前功能不可用'), document.createTextNode('双机拓扑要求本机只有一个物理屏')); topo.append(t); wrap.append(runtime, topo); return wrap;
+    };
+    const renderContent = frame => frame.kind === 'panel' ? panelContent(frame) : frame.kind === 'ports' ? portsContent(frame) : frame.kind === 'runtime' ? runtimeContent(frame) : frame.kind === 'unavailable' || frame.kind === 'topology' ? topologyContent(frame) : crossContent();
+    const groups = new Map([['Panel frame', []], ['平台端口', []], ['运行状态', []], ['双机拓扑', []], ['跨 tab 对照板', []]]);
+    frames.forEach(frame => { const key = frame.kind === 'panel' ? 'Panel frame' : frame.kind === 'ports' ? '平台端口' : frame.kind === 'runtime' ? '运行状态' : frame.kind === 'cross' ? '跨 tab 对照板' : '双机拓扑'; groups.get(key).push(frame); });
+    const app = document.getElementById('app');
+    groups.forEach((items, title) => { const section = el('section'); section.append(el('h2', '', title), el('p', 'section-note', `${items.length} 个线框；每个 frame 都画出标题、状态、字段、动作和结果，不用“其它状态同上”代替。`)); const grid = el('div', 'grid'); items.forEach(frame => { const card = el('article', `frame ${frame.form}-frame`); card.dataset.frameId = frame.number; const head = el('div', 'frame-head'); head.append(el('div', 'frame-id', `${frame.number} · ${frame.id}`), el('div', 'frame-form', frame.form === 'mobile' ? 'mobile · 竖屏' : 'laptop · 横向')); card.append(head, frame.kind === 'cross' ? renderContent(frame) : shell(frame, renderContent(frame))); grid.append(card); }); section.append(grid); app.append(section); });
+  </script>
+</body>
+</html>

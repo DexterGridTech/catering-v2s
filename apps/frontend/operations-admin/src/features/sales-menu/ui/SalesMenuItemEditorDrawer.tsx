@@ -735,6 +735,7 @@ export function SalesMenuItemEditorDrawer({
                   <InputNumber
                     min={1}
                     value={constraints.minItemQuantity ?? undefined}
+                    {...testId(salesMenuTestIds.itemMinQuantity)}
                     onChange={value => {
                       setConstraints(current => ({...current, minItemQuantity: value ?? null}));
                       markDirty();
@@ -746,6 +747,7 @@ export function SalesMenuItemEditorDrawer({
                   <InputNumber
                     min={1}
                     value={constraints.quantityStep ?? undefined}
+                    {...testId(salesMenuTestIds.itemQuantityStep)}
                     onChange={value => {
                       setConstraints(current => ({...current, quantityStep: value ?? null}));
                       markDirty();

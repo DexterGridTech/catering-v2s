@@ -22,7 +22,7 @@ public class ExtensionDefinitionPersistence {
 
     public DefinitionRow findDefinition(UUID workspaceUuid, String groupWorkspaceKey, String hostType) {
         return jdbc.query(
-                ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_SELECT_EXTENSION_DEFINITION + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE,
+                ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_SELECT_EXTENSION_DEFINITION + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE,
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, groupWorkspaceKey);
@@ -40,8 +40,8 @@ public class ExtensionDefinitionPersistence {
     public List<DefinitionRow> findDefinitions(UUID workspaceUuid, String groupWorkspaceKey) {
         return jdbc.query(
                 ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_SELECT_ENTITY_TYPE_DEFINITIONS_TEXT_REVISION
-                        + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_CONTINUATION_EXTENSION_DEFINITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_CONTINUATION_ENTITY_TYPE,
+                        + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_EXTENSION_DEFINITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_ENTITY_TYPE,
                 (row, index) -> new DefinitionRow(
                         row.getString(1),
                         row.getString(2),
@@ -58,7 +58,7 @@ public class ExtensionDefinitionPersistence {
             String definitionsJson) {
         jdbc.update(
                 ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_INSERT_INTO_EXTENSION_DEFINITION
-                        + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_CONTINUATION_DEFINITIONS_REVISION_UPDATED_AT_EPOCH_MILLIS
+                        + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_DEFINITIONS_REVISION_UPDATED_AT_EPOCH_MILLIS
                         + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_PARAMETER_PLACEHOLDER,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -77,7 +77,7 @@ public class ExtensionDefinitionPersistence {
         return jdbc.update(
                 ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_UPDATE_EXTENSION_DEFINITION_DEFINITIONS_REVISION
                         + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_CONTINUATION_ENTITY_TYPE_REVISION,
+                        + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_ENTITY_TYPE_REVISION,
                 definitionsJson,
                 revision,
                 time.currentEpochMillis(),
@@ -89,7 +89,7 @@ public class ExtensionDefinitionPersistence {
 
     public PreStateRow findPreState(UUID workspaceUuid, String groupWorkspaceKey, String hostType) {
         return jdbc.query(
-                ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_SELECT_EXTENSION_DEFINITION_DEFINITIONS_TEXT_REVISION_WORKSPACE_UUID + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_ENTITY_TYPE,
+                ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_SELECT_EXTENSION_DEFINITION_DEFINITIONS_TEXT_REVISION_WORKSPACE_UUID + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_GROUP_WORKSPACE_KEY_ENTITY_TYPE,
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, groupWorkspaceKey);
@@ -123,10 +123,10 @@ public class ExtensionDefinitionPersistence {
             String changesJson) {
         jdbc.update(
                 ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE
-                        + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_CONTINUATION_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
-                        + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_CONTINUATION_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_EXTENSION_DEFINITION
+                        + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
+                        + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_EXTENSION_DEFINITION
                         + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_PARAMETER_PLACEHOLDER_ALTERNATE_A
-                        + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_CONTINUATION_EXTENSION_DEFINITION_REPLACED,
+                        + ExtensionDefinitionServiceSql.EXTENSION_DEFINITION_SERVICE_EXTENSION_DEFINITION_REPLACED,
                 UUID.randomUUID(),
                 workspaceUuid,
                 groupWorkspaceKey,

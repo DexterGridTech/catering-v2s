@@ -1,4 +1,4 @@
-import type {SurfaceForm, TopologyIdentity, TopologyLocator} from '@catering-v2s/kernel-base-contracts'
+import type {SurfaceForm, TopologyIdentity, TopologyLocator, TopologyPayloadFailure} from '@catering-v2s/kernel-base-contracts'
 import type {TopologyHostState} from '@catering-v2s/kernel-base-platform-ports'
 
 export type TopologyState = Readonly<{
@@ -13,6 +13,7 @@ export type TopologyState = Readonly<{
   readonly hostDesired: boolean
   readonly hostActual: TopologyHostState
   readonly hostErrorCode: string | null
+  readonly payloadFailure: TopologyPayloadFailure | null
   readonly revision: number
   readonly repairPending: boolean
 }>

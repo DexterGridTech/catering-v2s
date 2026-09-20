@@ -9,17 +9,24 @@ import {
   switchInstanceModeCommand,
 } from '@catering-v2s/kernel-base-display-context'
 import {
+  createAppError,
   createEnvelopeId,
   createRequestId,
   topologyTransportConfig,
   serializeTopologyWireMessage,
 } from '@catering-v2s/kernel-base-contracts'
 import type {
-  TopologyHostAddress,
+  TopologyFailureReasonCode,
+  TopologyIdentity,
+  TopologyIdentityResponse,
+} from '@catering-v2s/kernel-base-contracts'
+import type {
   TopologyHostStatus,
   TopologyHostState,
 } from '@catering-v2s/kernel-base-platform-ports'
+import {parseTopologyHostStatus} from '@catering-v2s/kernel-base-platform-ports'
 import {
+  pairByHostTopologyCommand,
   pairTopologyCommand,
   queryTopologyHostCommand,
   reconcileTopologyHostCommand,
@@ -32,49 +39,85 @@ import {
 import {moduleName} from '../../moduleName'
 import {topologyActions} from '../slices/topology'
 import {selectTopologyState} from '../../selectors/selectTopologyState'
+import {selectTopologyFacts} from '../../selectors/selectTopologyFacts'
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
+import {topologyPeerWsUrl} from '../../foundations/topologyPeerWsUrl'
 
 type TopologyActorInput = Readonly<{
   readonly identityClient?: TopologyIdentityClient
   readonly peerChannel?: TopologyPeerChannel
+  readonly moduleName?: string
 }>
 
 const topologyCallTimeoutMs = topologyTransportConfig.callTimeoutMs
 
-const hostStatusValue = (
-  value: unknown,
-): TopologyHostStatus | undefined => {
-  if (typeof value !== 'object' || value === null) return undefined
-  const state = Reflect.get(value, 'state')
-  if (state !== 'stopped' && state !== 'starting' && state !== 'running' && state !== 'stopping' && state !== 'error') {
-    return undefined
+type TopologyFailureCode = Exclude<TopologyFailureReasonCode, 'allowed'>
+
+const topologyFailure = (
+  context: ActorExecutionContext,
+  code: TopologyFailureCode,
+  message: string,
+  cause?: unknown,
+) => createAppError(
+  {
+    key: `${moduleName}.topology_${code.toLowerCase()}`,
+    name: 'Topology command failed',
+    defaultTemplate: message,
+    category: 'BUSINESS',
+    severity: 'MEDIUM',
+    code,
+    moduleName,
+  },
+  {
+    args: {},
+    context: {
+      commandName: context.command.commandName,
+      commandId: context.command.commandId,
+      ...(context.command.requestId === null ? {} : {requestId: context.command.requestId}),
+      nodeId: context.localNodeId,
+    },
+    cause,
+  },
+)
+
+const normalizePairHost = (host: string): string => {
+  const normalized = host.trim()
+  if (normalized.length === 0 || normalized.includes('/') || normalized.includes(':')) {
+    throw new Error('Topology host must be a bare IPv4 or hostname')
   }
-  const config = Reflect.get(value, 'config')
-  if (typeof config !== 'object' || config === null) return undefined
-  const port = Reflect.get(config, 'port')
-  const basePath = Reflect.get(config, 'basePath')
-  const heartbeatIntervalMs = Reflect.get(config, 'heartbeatIntervalMs')
-  const heartbeatTimeoutMs = Reflect.get(config, 'heartbeatTimeoutMs')
-  if (typeof port !== 'number' || typeof basePath !== 'string'
-    || typeof heartbeatIntervalMs !== 'number' || typeof heartbeatTimeoutMs !== 'number') return undefined
-  const address = Reflect.get(value, 'address')
-  const readAddress = (candidate: unknown): TopologyHostAddress | undefined => {
-    if (typeof candidate !== 'object' || candidate === null) return undefined
-    const fields = ['host', 'httpBaseUrl', 'wsUrl', 'localHttpBaseUrl', 'localWsUrl']
-    if (!fields.every(field => typeof Reflect.get(candidate, field) === 'string')) return undefined
-    const addressPort = Reflect.get(candidate, 'port')
-    const addressBasePath = Reflect.get(candidate, 'basePath')
-    if (typeof addressPort !== 'number' || typeof addressBasePath !== 'string') return undefined
-    return candidate as TopologyHostAddress
+  return normalized
+}
+
+const toTopologyIdentity = (response: TopologyIdentityResponse): TopologyIdentity => Object.freeze({
+  protocolVersion: 1,
+  moduleName: response.moduleName,
+  nodeId: response.nodeId,
+  displayName: response.displayName,
+  instanceMode: response.instanceMode,
+  displayRole: response.displayRole,
+})
+
+const ensurePairPreconditions = (context: ActorExecutionContext) => {
+  const facts = selectTopologyFacts(context.getState())
+  if (facts === undefined || facts.displayCount === null) {
+    throw topologyFailure(context, 'TOPOLOGY_UNAVAILABLE', 'Topology display facts are unavailable')
   }
-  const normalizedAddress = readAddress(address)
-  return Object.freeze({
-    state: state as TopologyHostState,
-    config: Object.freeze({port, basePath, heartbeatIntervalMs, heartbeatTimeoutMs}),
-    ...(normalizedAddress === undefined ? {} : {address: normalizedAddress}),
-    ...(typeof Reflect.get(value, 'errorCode') === 'string' ? {errorCode: Reflect.get(value, 'errorCode') as string} : {}),
-    ...(typeof Reflect.get(value, 'errorMessage') === 'string' ? {errorMessage: Reflect.get(value, 'errorMessage') as string} : {}),
-  })
+  if (facts.surfaceForm !== 'laptop') {
+    throw topologyFailure(context, 'TOPOLOGY_UNSUPPORTED_FORM', 'Topology pairing requires a laptop surface')
+  }
+  if (facts.displayCount !== 1) {
+    throw topologyFailure(context, 'TOPOLOGY_REQUIRES_SINGLE_SCREEN', 'Topology pairing requires one physical screen')
+  }
+  if (facts.paired) {
+    throw topologyFailure(context, 'TOPOLOGY_ALREADY_PAIRED', 'Topology is already paired')
+  }
+  if (facts.instanceMode !== 'MASTER' || facts.displayRole !== 'CHIEF') {
+    throw topologyFailure(context, 'TOPOLOGY_REQUIRES_MASTER', 'Topology pairing requires MASTER and CHIEF')
+  }
+  if (selectTopologyState(context.getState()).repairPending) {
+    throw topologyFailure(context, 'TOPOLOGY_UNAVAILABLE', 'Topology repair is pending')
+  }
+  return facts
 }
 
 const hostFailureCode = (result: Readonly<{readonly status: string; readonly error?: {readonly code?: string}}>): string =>
@@ -99,7 +142,7 @@ const readHostStatus = async (context: ActorExecutionContext): Promise<
 > => {
   const result = await context.platformPorts.topologyHost.getStatus({timeoutMs: topologyCallTimeoutMs})
   if (result.status !== 'succeeded') return {status: 'failed', errorCode: hostFailureCode(result)}
-  const value = hostStatusValue(result.value)
+  const value = parseTopologyHostStatus(result.value)
   return value === undefined
     ? {status: 'failed', errorCode: 'TOPOLOGY_HOST_FAILED'}
     : {status: 'succeeded', value}
@@ -114,19 +157,17 @@ const hostShouldRun = (context: ActorExecutionContext): boolean => {
     && topology.displayCount === 1
 }
 
-const createTopologyHostIdentity = (context: ActorExecutionContext) => {
+const createTopologyHostIdentity = (context: ActorExecutionContext, integrationModuleName?: string) => {
   const topology = selectTopologyState(context.getState())
   return Object.freeze({
     protocolVersion: 1 as const,
+    moduleName: integrationModuleName ?? moduleName,
     nodeId: topology.nodeId,
     displayName: topology.displayName,
     instanceMode: selectRuntimeInstanceMode(context.getState()),
     displayRole: selectDisplayRole(context.getState()),
   })
 }
-
-const topologyPeerWsUrl = (locator: Readonly<{readonly host: string; readonly port: number; readonly basePath: string}>): string =>
-  `ws://${locator.host}:${locator.port}${locator.basePath}/ws`
 
 const childDispatchOptions = (context: ActorExecutionContext, routeContext = context.command.routeContext): Readonly<{
   readonly requestId?: import('@catering-v2s/kernel-base-contracts').RequestId
@@ -274,12 +315,64 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
     if (!input.identityClient) throw new Error('Topology identity client unavailable')
     return input.identityClient.query(host)
   }),
+  onCommand(pairByHostTopologyCommand, async context => {
+    ensurePairPreconditions(context)
+    let host: string
+    try {
+      host = normalizePairHost(context.command.payload.host)
+    } catch (error) {
+      throw topologyFailure(context, 'TOPOLOGY_INVALID_LOCATOR', 'Topology host is invalid', error)
+    }
+    if (!input.identityClient) {
+      throw topologyFailure(context, 'TOPOLOGY_IDENTITY_FAILED', 'Topology identity client is unavailable')
+    }
+
+    let identityResponse: TopologyIdentityResponse
+    try {
+      identityResponse = await input.identityClient.query(host)
+    } catch (error) {
+      pairingLog(context, 'identity-failed', {phase: 'identity-query'})
+      throw topologyFailure(context, 'TOPOLOGY_IDENTITY_FAILED', 'Topology identity query failed', error)
+    }
+
+    const peerIdentity = toTopologyIdentity(identityResponse)
+    if (input.moduleName !== undefined && peerIdentity.moduleName !== input.moduleName) {
+      throw topologyFailure(context, 'TOPOLOGY_PROTOCOL_REJECTED', 'Topology identity module does not match')
+    }
+    if (peerIdentity.instanceMode !== 'MASTER' || peerIdentity.displayRole !== 'CHIEF') {
+      throw topologyFailure(context, 'TOPOLOGY_PROTOCOL_REJECTED', 'Topology peer is not a MASTER and CHIEF')
+    }
+
+    const locator = Object.freeze({
+      host,
+      port: topologyTransportConfig.port,
+      basePath: topologyTransportConfig.basePath,
+      identity: peerIdentity,
+    })
+    try {
+      await dispatchCompleted({
+        context,
+        definition: pairTopologyCommand,
+        payload: Object.freeze({locator}),
+        label: 'Topology direct pairing',
+      })
+    } catch (error) {
+      pairingLog(context, 'failed', {
+        phase: 'pair-command',
+        errorType: error instanceof Error ? error.name : typeof error,
+        errorCode: safeErrorCode(error),
+      })
+      throw topologyFailure(context, 'TOPOLOGY_UNAVAILABLE', 'Topology direct pairing failed', error)
+    }
+
+    pairingLog(context, 'completed', {phase: 'pair-by-host'})
+    return Object.freeze({type: 'identity' as const, ...peerIdentity})
+  }),
   onCommand(pairTopologyCommand, async context => {
+    ensurePairPreconditions(context)
     const payload = context.command.payload
-    const current = selectTopologyState(context.getState())
-    if (current.masterLocator !== null) throw new Error('Topology is already paired')
-    if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER' || selectDisplayRole(context.getState()) !== 'CHIEF') {
-      throw new Error('Topology pairing requires MASTER and CHIEF')
+    if (input.moduleName !== undefined && payload.locator.identity.moduleName !== input.moduleName) {
+      throw topologyFailure(context, 'TOPOLOGY_PROTOCOL_REJECTED', 'Topology pairing requires matching integration module')
     }
     context.dispatchAction(topologyActions.setRepairPending(true))
     context.dispatchAction(topologyActions.setMasterLocator(payload.locator))
@@ -319,13 +412,18 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
   }),
   onCommand(unpairTopologyCommand, async context => {
     const current = selectTopologyState(context.getState())
-    if (current.masterLocator === null) throw new Error('Topology is not paired')
+    const currentFacts = selectTopologyFacts(context.getState())
+    if (currentFacts === undefined || !currentFacts.paired) {
+      throw topologyFailure(context, 'TOPOLOGY_NOT_PAIRED', 'Topology is not paired')
+    }
     context.dispatchAction(topologyActions.setRepairPending(true))
     const shouldNotifyPeer = selectRuntimeInstanceMode(context.getState()) === 'SLAVE'
     unpairingLog(context, 'started', {
       instanceMode: selectRuntimeInstanceMode(context.getState()),
       displayRole: selectDisplayRole(context.getState()),
       hasLocator: current.masterLocator !== null,
+      hasPeerIdentity: current.peerIdentity !== null,
+      peerReachable: current.peerReachable,
     })
     try {
       if (selectDisplayRole(context.getState()) !== 'CHIEF') {
@@ -348,10 +446,16 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
         instanceMode: selectRuntimeInstanceMode(context.getState()),
         displayRole: selectDisplayRole(context.getState()),
         hasLocator: selectTopologyState(context.getState()).masterLocator !== null,
+        hasPeerIdentity: selectTopologyState(context.getState()).peerIdentity !== null,
+        peerReachable: selectTopologyState(context.getState()).peerReachable,
       })
       await sendExplicitUnpairNotice(context, input.peerChannel, shouldNotifyPeer)
       await input.peerChannel?.close('TOPOLOGY_UNPAIRED')
-      unpairingLog(context, 'completed', {hasLocator: selectTopologyState(context.getState()).masterLocator !== null})
+      unpairingLog(context, 'completed', {
+        hasLocator: selectTopologyState(context.getState()).masterLocator !== null,
+        hasPeerIdentity: selectTopologyState(context.getState()).peerIdentity !== null,
+        peerReachable: selectTopologyState(context.getState()).peerReachable,
+      })
       return null
     } catch (error) {
       context.dispatchAction(topologyActions.setRepairPending(true))
@@ -370,6 +474,14 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
   }),
   onCommand(topologyHostEventCommand, async context => {
     const event = context.command.payload
+    if (event.event === 'state-transfer-failed' && event.payloadFailure !== undefined) {
+      context.dispatchAction(topologyActions.setPayloadFailure(event.payloadFailure))
+      return null
+    }
+    if (event.event === 'state-transfer-recovered') {
+      context.dispatchAction(topologyActions.clearPayloadFailure())
+      return null
+    }
     if (event.event === 'peer-accepted') {
       if (event.peerIdentity !== undefined) context.dispatchAction(topologyActions.setPeerIdentity(event.peerIdentity))
       context.dispatchAction(topologyActions.setPeerReachable(true))
@@ -429,7 +541,7 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
       heartbeatIntervalMs: topologyTransportConfig.heartbeatIntervalMs,
       heartbeatTimeoutMs: topologyTransportConfig.heartbeatTimeoutMs,
       timeoutMs: topologyCallTimeoutMs,
-      identity: createTopologyHostIdentity(context),
+      identity: createTopologyHostIdentity(context, input.moduleName),
     })
     if (started.status !== 'succeeded') {
       const errorCode = hostFailureCode(started)

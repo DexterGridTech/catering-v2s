@@ -5,6 +5,8 @@ import {
   contextScopedQueryArgs,
   createContentIdempotencyKey,
   createPageQueryIdentity,
+  formatCanonicalDateTime,
+  LifecycleStatusTag,
   testId,
   useCursorCandidates,
   useDetailDrawer,
@@ -65,11 +67,7 @@ function pageTitleFor(pageDesignKey: UserManagementPageDesignKey) {
 }
 
 function time(value?: number | null) {
-  return value ? new Date(value).toLocaleString('zh-CN') : '—';
-}
-
-function statusLabel(value: WorkspaceAccountStatus) {
-  return value === 'ENABLED' ? '启用' : '停用';
+  return formatCanonicalDateTime(value);
 }
 
 function latestUpdatedAt(user: WorkspaceUser) {
@@ -387,9 +385,7 @@ export function WorkspaceUserPage({
         valueType: 'select',
         valueEnum: {ENABLED: {text: '启用'}, DISABLED: {text: '停用'}},
         fieldProps: {...testId('operations-workspace-user-filter-status'), allowClear: true, placeholder: '全部'},
-        render: (_, user) => (
-          <Tag color={user.status === 'ENABLED' ? 'success' : 'default'}>{statusLabel(user.status)}</Tag>
-        ),
+        render: (_, user) => <LifecycleStatusTag status={user.status} />,
       },
       {
         title: '更新时间',

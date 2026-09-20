@@ -46,9 +46,10 @@ class OperationsContractControllerScopeAndCandidateTest {
     @Test
     void parsesExplicitExtensionSubmissionWithTheGeneratedJackson3RequestType() throws Exception {
         StoreContractCreateRequest request = JSON.readValue(
-                "{\"storeId\":\"00000000-0000-0000-0000-000000000002\",\"phaseName\":\"常规\",\"contractNo\":\"HT-001\",\"effectiveFrom\":\"20"
-                        + "26-08-01\",\"effectiveTo\":\"2026-12-31\",\"extensionValues\":[{\"fieldKey\":\"remark\",\"valueJson\":\"\\\"test\\\"\",\"mo"
-                        + "de\":\"SET\"}],"
+                "{\"storeId\":\"00000000-0000-0000-0000-000000000002\",\"phaseName\":\"常规\","
+                        + "\"contractNo\":\"HT-001\",\"effectiveFrom\":\"2026-08-01\","
+                        + "\"effectiveTo\":\"2026-12-31\",\"extensionValues\":[{\"fieldKey\":\"remark\","
+                        + "\"valueJson\":\"\\\"test\\\"\",\"mode\":\"SET\"}],"
                         + "\"items\":[{\"code\":\"SKU-1\",\"name\":\"商品一\"}]}",
                 StoreContractCreateRequest.class);
 

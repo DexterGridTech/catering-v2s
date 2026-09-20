@@ -63,6 +63,12 @@ design 状态必须为 `BLOCKED_FOR_DEXTER_DECISION`，不得以 UI、seed 或 t
 - `UI_BEARING=false`：说明为何没有 user-facing route/page/Drawer/public/login interaction，
   并列出该判断的来源：<...>。
 
+### 6.1 管理后台交互一致性
+
+当 `UI_BEARING=true` 且归属 `platform-admin` 或 `operations-admin` 时，必须在后续交互工件与详设中逐字引用
+`doc/platform/frontend-coding-standard.md` §3-K-1..§3-K-10，并逐 screen 写明 surface、容器、控件位置/样式/行为、
+失败恢复、可访问性与 testId 的验证观察。承载形态例外只能引用 Dexter 已接受的精确裁决，不得扩展为文案、颜色或行为例外。
+
 ## 7. Dexter 裁决
 
 - 裁决：<接受 / 拒绝 / 需补充>

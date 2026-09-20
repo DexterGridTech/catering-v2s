@@ -20,6 +20,7 @@ object TerminalTopologyHostRegistry {
     val heartbeatIntervalMs: Long,
     val heartbeatTimeoutMs: Long,
     val nodeId: String,
+    val moduleName: String,
     val displayName: String,
     val instanceMode: String,
     val displayRole: String,
@@ -39,6 +40,7 @@ object TerminalTopologyHostRegistry {
     heartbeatIntervalMs: Long,
     heartbeatTimeoutMs: Long,
     nodeId: String,
+    moduleName: String,
     displayName: String,
     instanceMode: String,
     displayRole: String,
@@ -49,6 +51,7 @@ object TerminalTopologyHostRegistry {
       heartbeatIntervalMs = heartbeatIntervalMs,
       heartbeatTimeoutMs = heartbeatTimeoutMs,
       nodeId = nodeId,
+      moduleName = moduleName,
       displayName = displayName,
       instanceMode = instanceMode,
       displayRole = displayRole,
@@ -68,7 +71,10 @@ object TerminalTopologyHostRegistry {
       errorCode = null
       errorMessage = null
       try {
-        val created = TerminalTopologyServer(nextConfig) { eventName, payload -> publish(eventName, payload) }
+        val created = TerminalTopologyServer(
+          config = nextConfig,
+          publish = { eventName, payload -> publish(eventName, payload) },
+        )
         created.start()
         created.startHeartbeat()
         server = created

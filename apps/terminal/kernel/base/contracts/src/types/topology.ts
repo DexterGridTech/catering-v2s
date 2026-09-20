@@ -2,6 +2,7 @@ import type {SurfaceForm} from './display'
 
 export type TopologyInstanceMode = 'MASTER' | 'SLAVE'
 export type TopologyDisplayRole = 'CHIEF' | 'VICE'
+export type TopologySyncDirection = 'master-to-slave' | 'slave-to-master'
 
 export type TopologyOperation = 'query-host' | 'pair' | 'unpair' | 'enable-host' | 'switch-role'
 
@@ -22,6 +23,27 @@ export type TopologyFailureReasonCode =
   | 'TOPOLOGY_PROTOCOL_REJECTED'
   | 'TOPOLOGY_TIMEOUT'
   | 'TOPOLOGY_UNAVAILABLE'
+  | 'TOPOLOGY_CODEC_FAILED'
+  | 'TOPOLOGY_CHECKSUM_FAILED'
+  | 'TOPOLOGY_DECODED_PAYLOAD_INVALID'
+  | 'TOPOLOGY_REASSEMBLY_OVERFLOW'
+  | 'TOPOLOGY_REASSEMBLY_TIMEOUT'
+
+export type TopologyPayloadFailureCode =
+  | 'TOPOLOGY_CODEC_FAILED'
+  | 'TOPOLOGY_CHECKSUM_FAILED'
+  | 'TOPOLOGY_DECODED_PAYLOAD_INVALID'
+  | 'TOPOLOGY_REASSEMBLY_OVERFLOW'
+  | 'TOPOLOGY_REASSEMBLY_TIMEOUT'
+  | 'TOPOLOGY_PROTOCOL_REJECTED'
+
+export type TopologyPayloadFailure = Readonly<{
+  readonly code: TopologyPayloadFailureCode
+  readonly sliceName: string
+  readonly revision: number | null
+  readonly transferId: string | null
+  readonly deterministic: boolean
+}>
 
 export type TopologyLocator = Readonly<{
   readonly host: string
@@ -32,6 +54,7 @@ export type TopologyLocator = Readonly<{
 
 export type TopologyIdentity = Readonly<{
   readonly protocolVersion: 1
+  readonly moduleName: string
   readonly nodeId: string
   readonly displayName: string
   readonly instanceMode: TopologyInstanceMode
@@ -41,6 +64,7 @@ export type TopologyIdentity = Readonly<{
 export type TopologyIdentityResponse = Readonly<{
   readonly type: 'identity'
   readonly protocolVersion: 1
+  readonly moduleName: string
   readonly nodeId: string
   readonly displayName: string
   readonly instanceMode: TopologyInstanceMode
@@ -60,11 +84,17 @@ export type TopologyFacts = Readonly<{
   readonly hostDesired: boolean
   readonly hostActual: 'stopped' | 'starting' | 'running' | 'stopping' | 'error'
   readonly hostErrorCode: string | null
+  readonly payloadFailure: TopologyPayloadFailure | null
 }>
 
 export type TopologyOperationEligibility = Readonly<{
   readonly operation: TopologyOperation
   readonly allowed: boolean
+  readonly reasonCode: TopologyFailureReasonCode
+}>
+
+export type TopologyPageAvailability = Readonly<{
+  readonly available: boolean
   readonly reasonCode: TopologyFailureReasonCode
 }>
 
@@ -82,10 +112,10 @@ export type TopologyAdminCommandResult = Readonly<{
  * lifecycle handle.
  */
 export type TopologyAdminCapability = Readonly<{
-  readonly getSnapshot: () => TopologyFacts
+  readonly getSnapshot: () => TopologyFacts | undefined
+  readonly getPageAvailability: () => TopologyPageAvailability
   readonly getOperationEligibility: (operation: TopologyOperation) => TopologyOperationEligibility
-  readonly queryMasterIdentity: (input: Readonly<{readonly host: string}>) => Promise<TopologyAdminCommandResult>
-  readonly pair: (input: Readonly<{readonly locator: TopologyLocator}>) => Promise<TopologyAdminCommandResult>
+  readonly pairByHost: (input: Readonly<{readonly host: string}>) => Promise<TopologyAdminCommandResult>
   readonly unpair: () => Promise<TopologyAdminCommandResult>
   readonly setHostEnabled: (enabled: boolean) => Promise<TopologyAdminCommandResult>
 }>
@@ -108,11 +138,22 @@ export type TopologyWireError = Readonly<{
   readonly retryable: boolean
 }>
 
+export type TopologyStateFullMessage = Readonly<{
+  readonly type: 'state-full'
+  readonly protocolVersion: 1
+  readonly wireId: string
+  readonly sliceName: string
+  readonly direction: TopologySyncDirection
+  readonly revision: number
+  readonly value: TopologyJsonValue
+}>
+
 export type TopologyWireMessage =
   | Readonly<{
       readonly type: 'hello'
       readonly protocolVersion: 1
       readonly wireId: string
+      readonly moduleName: string
       readonly nodeId: string
       readonly displayName: string
       readonly instanceMode: TopologyInstanceMode
@@ -122,6 +163,7 @@ export type TopologyWireMessage =
       readonly type: 'hello-accepted'
       readonly protocolVersion: 1
       readonly wireId: string
+      readonly moduleName: string
       readonly nodeId: string
     }>
   | Readonly<{
@@ -158,13 +200,20 @@ export type TopologyWireMessage =
       readonly commandId: string
     }>
   | Readonly<{
-      readonly type: 'state-full'
+      readonly type: 'state-full-chunk'
       readonly protocolVersion: 1
       readonly wireId: string
-      readonly sliceName: 'kernel.feature.sample-member-registry.members'
-      readonly direction: 'master-to-slave'
+      readonly sliceName: string
+      readonly direction: TopologySyncDirection
       readonly revision: number
-      readonly value: TopologyJsonValue
+      readonly transferId: string
+      readonly index: number
+      readonly total: number
+      readonly codec: 'zlib-base64' | 'raw-base64'
+      readonly rawBytes: number
+      readonly encodedBytes: number
+      readonly checksum: string
+      readonly payload: string
     }>
   | Readonly<{
       readonly type: 'ping' | 'pong'

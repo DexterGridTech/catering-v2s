@@ -1,0 +1,57 @@
+{
+  "documentKind": "IMPLEMENTATION_FACING_DESIGN",
+  "reviewTarget": "DESIGN",
+  "status": "PROPOSED_FOR_DESIGN_REVIEW",
+  "implementationAuthorized": false,
+  "historicalRequirementsSource": "doc/plans/platform/2026-09-06-v2s-terminal-input-keyboard-visual-redesign-requirements-v2-codex.md",
+  "design": "doc/plans/platform/2026-09-19-ter-terminal-input-keyboard-visual-implementation-design-codex.md",
+  "plan": "doc/plans/platform/2026-09-19-ter-terminal-input-keyboard-visual-implementation-plan-codex.md",
+  "iaAsset": "doc/plans/platform/assets/2026-09-19-ter-terminal-input-keyboards-ia-approved.png",
+  "reviewReport": "doc/review/platform/2026-09-19-ter-terminal-input-keyboard-visual-design-adversarial-review-codex.json",
+  "scope": {
+    "layouts": ["full", "alpha", "numeric", "financial"],
+    "designDecisions": ["latest-ia-precedence", "numeric-three-column-ia", "mobile-alpha-caps-inventory", "keyboard-semantic-tokens", "primitive-keyboard-surface", "selected-modifier-token-consumer", "web-native-event-boundary", "alpha-caps", "alpha-region-compound-row", "render-boundary", "android-shared-colors-denominator", "pixel-reconciliation-machine-and-human-split"],
+    "acceptanceCriteria": ["V-1", "V-2", "V-3", "V-4", "V-5", "V-6", "V-7", "V-8", "V-9", "V-10", "V-11", "V-12"],
+    "implementationSteps": ["CP-0", "CP-1", "CP-2", "CP-3", "CP-4", "CP-5"],
+    "packages": [
+      "apps/terminal/ui/base/primitives",
+      "apps/terminal/ui/base/input",
+      "apps/terminal/ui/integration/sample-console",
+      "apps/terminal/ui/integration/sample-wallpaper-console",
+      "apps/terminal/assembly/base/android/config",
+      "apps/terminal/assembly/android/sample-terminal",
+      "apps/terminal/assembly/android/sample-wallpaper-terminal"
+    ]
+  },
+  "gates": {
+    "stepThreeDimensionalReconciliation": true,
+    "wholeScopeThreeDimensionalReconciliationBeforeDynamicRun": true,
+    "lineByLineCodeDesignReconciliationBeforeHandoff": true,
+    "visualReconciliation98PercentBeforeImplementationDelivery": true,
+    "performanceClaimForbidden": true
+  },
+  "evidenceStatus": "DESIGN_ONLY",
+  "pixelBaselineContract": {
+    "manifest": "doc/evidence/platform/terminal-input-keyboard-visual/cp0/baseline-manifest.json",
+    "comparator": "tools/terminal-image-compare/compare.mjs",
+    "entryRequiredFields": ["platform", "integration", "logicalViewport", "layout", "state", "canvasRect", "roiRect", "maskRects", "minUnmaskedFraction", "png", "sha256", "tokenSnapshot", "sourceInputs", "measurementMethod", "comparisonMode"],
+    "selfBaselineForbidden": true,
+    "machineGate": "geometry-token-manifest",
+    "pixelDiffMode": "legacy-threshold-auxiliary",
+    "visualAcceptance": "changedFraction <= 0.02 is a quantitative reference; human review closes or opens the visual result",
+    "measurementMethodPolicy": "REFERENCE_RENDER for geometry/plane regions; APPROVED_CAPTURE after first human IA approval for same-platform drift checks",
+    "maskPolicy": "text bounds, icon bounds, and shadow bands only; preserve key surfaces, gaps, borders, dock geometry, selected edges; reuse comparator area limits",
+    "humanVisualRecord": "doc/evidence/platform/terminal-input-keyboard-visual/<run>/visual-reconciliation.md"
+  },
+  "notes": [
+    "This artifact authorizes no source, test, dependency, build, Web, Android, device, DEV, seed, UAT, deployment or Git action.",
+    "The approved PNG is a composite visual reference; CP-0 records fixed ROI metadata and an approved reference method before dynamic visual comparison.",
+    "Fresh independent adversarial design review is required and is not replaced by Claude review.",
+    "The latest Dexter-confirmed IA makes numeric BACKSPACE|0|COMPLETE the target; the older cross-span numeric sentence is historical and must not be restored.",
+    "The composite mobile inset is an illustrative host-size crop, not a separate alpha key inventory; mobile runtime retains CAPS.",
+    "The current workspace numeric bottom-row shape is included in the IA/layout/pixel reconciliation denominator.",
+    "The first fresh independent design review returned NO-GO 2M/3S/1N; its findings were repaired in the current documents.",
+    "Android Tailwind inherits keyboard mappings through assembly-base-android sharedColors; this source is part of the theme denominator.",
+    "Claude DESIGN review round 2 returned NO-GO 1M/2S/2N; Dexter closed the palette as A_NEUTRAL_PLUS_THEME_FOCUS_BORDER, and S/N findings are intake-repaired."
+  ]
+}

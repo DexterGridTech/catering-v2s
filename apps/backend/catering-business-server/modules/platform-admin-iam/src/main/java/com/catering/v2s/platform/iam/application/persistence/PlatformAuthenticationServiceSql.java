@@ -139,7 +139,6 @@ public final class PlatformAuthenticationServiceSql {
             + "failed_attempts=EXCLUDED.failed_attempts, "
             + "locked_until_epoch_millis=EXCLUDED.locked_until_epoch_millis, "
             + "updated_at_epoch_millis=EXCLUDED.updated_at_epoch_millis";
-    public static final String LOGIN_RATE_LOCK = "SELECT pg_advisory_xact_lock(hashtext(?))";
     public static final String LOGIN_RATE_FIND_LOCK = "SELECT locked_until_epoch_millis FROM platform_iam.platform_login_rate_limit_bucket WHERE dimension=? "
             + "AND fingerprint=?";
     public static final String LOGIN_RATE_READ_FAILURE = "SELECT window_started_at_epoch_millis, failed_attempts FROM "
@@ -152,7 +151,6 @@ public final class PlatformAuthenticationServiceSql {
             + "locked_until_epoch_millis=EXCLUDED.locked_until_epoch_millis, "
             + "updated_at_epoch_millis=EXCLUDED.updated_at_epoch_millis";
     public static final String LOGIN_RATE_CLEAR_ACCOUNT = "DELETE FROM platform_iam.platform_login_rate_limit_bucket WHERE dimension='ACCOUNT' AND fingerprint=?";
-    public static final String DEACTIVATION_LOCK = "SELECT pg_advisory_xact_lock(hashtext(?))";
     public static final String DEACTIVATION_FIND_GUARD = "SELECT is_builtin, status FROM platform_iam.platform_admin WHERE id=? FOR UPDATE";
     public static final String DEACTIVATION_COUNT_ENABLED = "SELECT count(*) FROM platform_iam.platform_admin WHERE status='ENABLED'";
     public static final String AUDIT_INSERT = "INSERT INTO platform_iam.audit_event (id, entity_type, entity_ref_text, actor_type, actor_id, "

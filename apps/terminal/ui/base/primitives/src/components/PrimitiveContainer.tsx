@@ -5,9 +5,11 @@ import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
 import type {PrimitiveContainerProps} from '../types/types';
 
-export const PrimitiveContainer = ({testID, children, layout = 'fill', bounded = false, style}: PrimitiveContainerProps) => {
-  const layoutClassName =
-    layout === 'content'
+export const PrimitiveContainer = ({testID, children, layout = 'fill', bounded = false, elevated = false, appearance = 'default', style}: PrimitiveContainerProps) => {
+  const isLoginCard = appearance === 'login' && layout === 'card';
+  const layoutClassName = isLoginCard
+    ? undefined
+    : layout === 'content'
       ? baseTokens.containerContent
       : layout === 'card'
         ? baseTokens.containerCard
@@ -30,11 +32,13 @@ export const PrimitiveContainer = ({testID, children, layout = 'fill', bounded =
         ? {maxHeight: '100%', minHeight: 0, overflow: 'hidden' as const}
         : undefined
     : undefined;
+  const elevatedClassName = elevated && layout === 'card' && !isLoginCard ? baseTokens.containerElevated : undefined;
+  const appearanceClassName = isLoginCard ? baseTokens.containerLogin : undefined;
 
   const resolvedStyle = style === undefined ? boundedStyle : [style, boundedStyle];
 
   return (
-    <RnrView testID={assertTestID(testID)} className={cn(layoutClassName, boundedClassName)} style={resolvedStyle}>
+    <RnrView testID={assertTestID(testID)} className={cn(layoutClassName, boundedClassName, elevatedClassName, appearanceClassName)} style={resolvedStyle}>
       {children}
     </RnrView>
   );

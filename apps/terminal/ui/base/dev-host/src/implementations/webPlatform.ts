@@ -12,6 +12,7 @@ import {
   unavailableTopologyHostPort,
   type DevicePort,
   type DisplayInfo,
+  type DisplaySurfaceInfo,
   type PlatformPorts,
   type PortResult,
   type StateStoragePort,
@@ -32,16 +33,37 @@ export type WebPlatformOptions = Readonly<{
    * state runtime's legacy-backend probe executable during a preview.
    */
   readonly protectedStorage?: StateStoragePort
+  /** Optional deterministic display-facts source used by the Web preview. */
+  readonly readDisplaySurfaces?: () => readonly DisplaySurfaceInfo[]
 }>
 
 export const createWebDevicePort = (
   readSurfaceMode: () => SurfaceMode,
+  readDisplaySurfaces?: () => readonly DisplaySurfaceInfo[],
 ): DevicePort => {
   const port: DevicePort = {
     ...unavailableDevicePort,
     getDisplayInfo: async (): Promise<PortResult<DisplayInfo>> => ({
       status: 'succeeded',
-      value: {displayCount: readSurfaceMode() === 'dual' ? 2 : 1},
+      value: {
+        displayCount: readSurfaceMode() === 'dual' ? 2 : 1,
+        surfaces: readDisplaySurfaces?.() ?? Object.freeze([
+          Object.freeze({
+            displayId: 0,
+            role: 'primary' as const,
+            logicalSize: null,
+            physicalSize: null,
+            readiness: 'unknown' as const,
+          }),
+          ...(readSurfaceMode() === 'dual' ? [Object.freeze({
+            displayId: 1,
+            role: 'secondary' as const,
+            logicalSize: null,
+            physicalSize: null,
+            readiness: 'unknown' as const,
+          })] : []),
+        ]),
+      },
       completedAt: nowTimestampMs(),
     }),
   }
@@ -78,7 +100,7 @@ export const createWebPlatformPorts = (
       logger: consoleLoggerBinding,
       persistKv,
       persistSecure: options.protectedStorage ?? unavailablePersistSecurePort,
-      device: createWebDevicePort(readSurfaceMode),
+      device: createWebDevicePort(readSurfaceMode, options.readDisplaySurfaces),
       appControl: unavailableAppControlPort,
       script: unavailableScriptPort,
       connector: unavailableConnectorPort,

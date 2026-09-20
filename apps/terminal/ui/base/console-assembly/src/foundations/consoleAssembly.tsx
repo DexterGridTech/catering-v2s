@@ -2,6 +2,7 @@ import {createNodeId, createRequestId, createRuntimeInstanceId} from '@catering-
 import type {CommandRouteContext, TopologyAdminCapability} from '@catering-v2s/kernel-base-contracts'
 import {
   createDisplayContextModule,
+  readDisplayFacts,
   resolveSurfaceDisplayMode,
   selectDisplayRole,
   type DisplayMode,
@@ -140,6 +141,21 @@ const assertNoSurfaceFormOverlap = (
     }
     siblings.push(forms)
     grouped.set(partKey, siblings)
+  }
+}
+
+export const assertSecondaryPartsCanBeProjected = (
+  parts: readonly Readonly<{
+    readonly catalogEntry: Pick<UiCatalogEntry, 'partKey' | 'displayModes' | 'instanceModes'>
+  }>[],
+): void => {
+  for (const part of parts) {
+    if (part.catalogEntry.displayModes.includes('SECONDARY')
+      && !part.catalogEntry.instanceModes.includes('SLAVE')) {
+      throw new Error(
+        `[ui.base.console-assembly] SECONDARY part must allow SLAVE projection: ${part.catalogEntry.partKey}`,
+      )
+    }
   }
 }
 
@@ -313,15 +329,18 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
   const environmentMode: EnvironmentMode = input.environmentMode ?? (__DEV__ ? 'DEV' : 'PROD')
   const deviceInfoResult = await input.platformPorts.device.getDeviceInfo({timeoutMs: 2_000})
   const deviceIdentity = normalizeDeviceIdentity(deviceInfoResult)
+  const displayFacts = await readDisplayFacts(input.platformPorts.device)
   const runtimeFacts = createRenderRuntimeFacts({
     environmentMode,
     debugMode: resolveDebugMode({packaging: input.packagingDebugMode, startup: input.startupDebugMode}),
     showAdminPassword: input.showAdminPassword,
     deviceIdentity,
     platformPortCapabilities: describePlatformPortCapabilities(input.platformPorts),
+    displayFacts,
   })
   const allParts = Object.freeze([...adminShellAssembly.parts, ...input.parts])
   const selectedParts = selectPartsForSurfaceForm(allParts, input.surfaceForm)
+  assertSecondaryPartsCanBeProjected(selectedParts)
   const uiCatalog = createUiCatalog(selectedParts.map(({catalogEntry}) => catalogEntry))
   const rendererCatalog = createRendererCatalog(selectedParts.map(({rendererBinding}) => rendererBinding))
   const uiStateModule = createUiStateModule({
@@ -436,12 +455,34 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
     // that navigation cannot dispatch startup-ready (and write complete) a
     // second time, while a genuinely failed first attempt remains retryable.
     if (primaryReadyPromise !== null) return primaryReadyPromise
+    input.platformPorts.logger.info({
+      category: 'startup.ready-dispatch',
+      event: 'startup.ready-dispatch-start',
+      message: 'Dispatching PRIMARY startup-ready command',
+      data: {
+        appName: input.appName,
+        surfaceKey: readyInput.surfaceKey,
+        displayIndex: readyInput.displayIndex,
+        readyPartKey: readyInput.readyPartKey,
+        contentFailure: readyInput.contentFailure,
+      },
+    })
     primaryReadyPromise = dispatchWithRequestId({
       dispatchCommand,
       definition: input.startupReadyCommand,
       payload: input.createStartupReadyPayload(readyInput),
       requestId: createRequestId(),
     }).then(async result => {
+      input.platformPorts.logger.info({
+        category: 'startup.ready-dispatch',
+        event: 'startup.ready-dispatch-result',
+        message: 'PRIMARY startup-ready command completed',
+        data: {
+          appName: input.appName,
+          status: result.status,
+          actorResultCount: result.actorResults.length,
+        },
+      })
       if (result.status !== 'completed') {
         throw new Error(`[${input.errorPrefix}] startup-ready command ended with ${result.status}`)
       }
@@ -467,6 +508,15 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
       }
       primarySurfaceReady = true
     }).catch(error => {
+      input.platformPorts.logger.error({
+        category: 'startup.ready-dispatch',
+        event: 'startup.ready-dispatch-failed',
+        message: 'PRIMARY startup-ready command failed',
+        data: {
+          appName: input.appName,
+          errorName: error instanceof Error ? error.name : 'UnknownError',
+        },
+      })
       primaryReadyPromise = null
       throw error
     })

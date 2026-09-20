@@ -2,7 +2,9 @@ import {Alert, Descriptions, Drawer, Skeleton, Space} from 'antd';
 import {
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  displayFieldValue,
   formatTypedExtensionValue,
+  formatCanonicalDateTime,
   NameCodeText,
   testId,
   ValidityStatus,
@@ -119,8 +121,8 @@ export function FixedStoreContractDetailDrawer({contract, queryContext, onClose}
                 children: `${selected.effectiveFrom} 至 ${selected.effectiveTo ?? '长期'}`,
               },
               {key: 'status', label: '状态', children: <ValidityStatus status={selected.status} />},
-              {key: 'note', label: '备注', children: selected.note ?? '—'},
-              {key: 'updatedAt', label: '更新时间', children: new Date(selected.updatedAt).toLocaleString('zh-CN')},
+              {key: 'note', label: '备注', children: displayFieldValue(selected.note)},
+              {key: 'updatedAt', label: '更新时间', children: formatCanonicalDateTime(selected.updatedAt)},
               ...extensionItems,
             ]}
             {...testId('operations-store-profile-contract-detail-fields')}

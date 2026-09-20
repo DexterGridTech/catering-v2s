@@ -30,7 +30,7 @@ class InventoryBomPersistenceTest {
                 ref,
                 new InventoryBomPersistence.ResolvedTargetFact("ENABLED", true, UUID.randomUUID())));
         String sql = ResolvedBomTargetsSql.RESOLVED_BOM_TARGETS_SELECT_TARGET_REF_DEFINITION_STATUS_COMPONENT_ELIGIBLE
-                + ResolvedBomTargetsSql.RESOLVED_BOM_TARGETS_CONTINUATION_STOCK_TARGET_CONSUMPTION_UNIT_REF
+                + ResolvedBomTargetsSql.RESOLVED_BOM_TARGETS_STOCK_TARGET_CONSUMPTION_UNIT_REF
                 + ResolvedBomTargetsSql.RESOLVED_BOM_TARGETS_WHERE_DATA_NODE_REF_BRAND_REF_TARGET_REF;
         when(jdbc.query(
                         eq(sql),

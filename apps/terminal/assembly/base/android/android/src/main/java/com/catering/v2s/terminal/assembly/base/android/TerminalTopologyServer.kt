@@ -12,19 +12,42 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
+internal class TerminalTopologyHeartbeatState(
+  private val now: () -> Long,
+) {
+  @Volatile
+  private var lastPongAt = now()
+
+  fun markPong() {
+    lastPongAt = now()
+  }
+
+  fun reset() {
+    lastPongAt = now()
+  }
+
+  fun isTimedOut(timeoutMs: Long): Boolean = now() - lastPongAt > timeoutMs
+}
+
+private fun createDefaultHeartbeatExecutor(): ScheduledExecutorService =
+  Executors.newSingleThreadScheduledExecutor { runnable ->
+    Thread(runnable, "ter-topology-heartbeat").apply { isDaemon = true }
+  }
+
 class TerminalTopologyServer(
   private val config: TerminalTopologyHostRegistry.HostConfig,
   private val publish: (String, Map<String, Any?>) -> Unit,
+  private val hostAddressResolver: () -> String = ::resolveHostAddress,
+  private val clock: () -> Long = { System.currentTimeMillis() },
+  private val heartbeatExecutor: ScheduledExecutorService = createDefaultHeartbeatExecutor(),
 ) : NanoWSD(config.port) {
   private val connectionSequence = AtomicLong(0L)
-  private val heartbeat: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor { runnable ->
-    Thread(runnable, "ter-topology-heartbeat").apply { isDaemon = true }
-  }
+  private val heartbeatState = TerminalTopologyHeartbeatState(clock)
   private val peerLock = Any()
   private var peer: TopologySocket? = null
-  private var lastPongAt = System.currentTimeMillis()
   private var heartbeatStarted = false
-  private val hostAddress: String = findHostAddress()
+  private val hostAddress: String
+    get() = hostAddressResolver()
 
   fun address(): Map<String, Any?> = mapOf(
     "host" to hostAddress,
@@ -40,11 +63,10 @@ class TerminalTopologyServer(
     synchronized(peerLock) {
       if (heartbeatStarted) return
       heartbeatStarted = true
-      heartbeat.scheduleAtFixedRate({
+      heartbeatExecutor.scheduleAtFixedRate({
         val current = synchronized(peerLock) { peer }
         if (current == null || !current.isOpen) return@scheduleAtFixedRate
-        val now = System.currentTimeMillis()
-        if (now - lastPongAt > config.heartbeatTimeoutMs) {
+        if (heartbeatState.isTimedOut(config.heartbeatTimeoutMs)) {
           try {
             current.close(NanoWSD.WebSocketFrame.CloseCode.GoingAway, "TOPOLOGY_TIMEOUT", false)
           } catch (_error: IOException) {
@@ -86,7 +108,7 @@ class TerminalTopologyServer(
   }
 
   fun shutdown() {
-    heartbeat.shutdownNow()
+    heartbeatExecutor.shutdownNow()
     closePeer()
     stop()
   }
@@ -115,6 +137,7 @@ class TerminalTopologyServer(
   private fun identityJson(): String = JSONObject()
     .put("type", "identity")
     .put("protocolVersion", 1)
+    .put("moduleName", config.moduleName)
     .put("nodeId", config.nodeId)
     .put("displayName", config.displayName)
     .put("instanceMode", config.instanceMode)
@@ -147,7 +170,7 @@ class TerminalTopologyServer(
           return
         }
         peer = this
-        lastPongAt = System.currentTimeMillis()
+        heartbeatState.reset()
       }
       publishConnection("open", connectionId)
     }
@@ -190,7 +213,7 @@ class TerminalTopologyServer(
     }
 
     override fun onPong(frame: NanoWSD.WebSocketFrame) {
-      synchronized(peerLock) { lastPongAt = System.currentTimeMillis() }
+      synchronized(peerLock) { heartbeatState.markPong() }
     }
 
     override fun onException(exception: IOException) {
@@ -213,18 +236,19 @@ class TerminalTopologyServer(
     }
   }
 
-  private fun findHostAddress(): String {
-    return try {
-      val interfaces = Collections.list(NetworkInterface.getNetworkInterfaces())
-      interfaces.asSequence()
-        .filter { it.isUp && !it.isLoopback }
-        .flatMap { Collections.list(it.inetAddresses).asSequence() }
-        .filterIsInstance<Inet4Address>()
-        .firstOrNull { !it.isLoopbackAddress && !it.isLinkLocalAddress }
-        ?.hostAddress
-        ?: "127.0.0.1"
-    } catch (_error: Throwable) {
-      "127.0.0.1"
-    }
+}
+
+private fun resolveHostAddress(): String {
+  return try {
+    val interfaces = Collections.list(NetworkInterface.getNetworkInterfaces())
+    interfaces.asSequence()
+      .filter { it.isUp && !it.isLoopback }
+      .flatMap { Collections.list(it.inetAddresses).asSequence() }
+      .filterIsInstance<Inet4Address>()
+      .firstOrNull { !it.isLoopbackAddress && !it.isLinkLocalAddress }
+      ?.hostAddress
+      ?: "127.0.0.1"
+  } catch (_error: Throwable) {
+    "127.0.0.1"
   }
 }

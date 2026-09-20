@@ -1,8 +1,20 @@
 export type TopologyPeerChannelEvent =
   | Readonly<{readonly type: 'open'; readonly connectionId?: string}>
   | Readonly<{readonly type: 'message'; readonly raw: string; readonly connectionId?: string}>
-  | Readonly<{readonly type: 'close'; readonly reason?: string; readonly connectionId?: string}>
-  | Readonly<{readonly type: 'error'; readonly reason?: string; readonly connectionId?: string}>
+  | Readonly<{
+    readonly type: 'close'
+    readonly reason?: string
+    readonly code?: number
+    readonly readyState?: number
+    readonly connectionId?: string
+  }>
+  | Readonly<{
+    readonly type: 'error'
+    readonly reason?: string
+    readonly code?: number
+    readonly readyState?: number
+    readonly connectionId?: string
+  }>
 
 export type TopologyPeerChannel = Readonly<{
   readonly subscribe: (listener: (event: TopologyPeerChannelEvent) => void) => () => void

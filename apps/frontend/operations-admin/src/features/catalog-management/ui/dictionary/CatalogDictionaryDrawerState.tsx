@@ -1,4 +1,4 @@
-import {App, Form} from 'antd';
+import {Form} from 'antd';
 import {
   createContentIdempotencyKey,
   type DrawerLifecycleDiagnosticEvent,
@@ -76,7 +76,11 @@ export type NameEditRequest = {row: DictionaryRow; dictionaryKind: DictionaryKin
 
 export type UnitEditValues = Pick<FormValues, 'code' | 'name' | 'unitDimension' | 'precision'>;
 
-export type StatusChangeRequest = {row: DictionaryRow; dictionaryKind: DictionaryKind};
+export type StatusChangeRequest = {
+  row: DictionaryRow;
+  dictionaryKind: DictionaryKind;
+  targetStatus?: 'ENABLED' | 'DISABLED' | 'VOIDED';
+};
 
 export function useCatalogDictionaryDrawerController({
   open,
@@ -89,7 +93,6 @@ export function useCatalogDictionaryDrawerController({
   onClose,
   onAfterClose: onAfterCloseProp,
 }: CatalogDictionaryDrawerProps) {
-  const {modal} = App.useApp();
   const initialConfigLibrary: ConfigLibraryTab = initialKind === 'SKU_ATTRIBUTE_VALUE' ? 'SKU_ATTRIBUTE' : initialKind;
   const configLibrary = useCatalogConfigLibrary({
     initialLibrary: initialConfigLibrary,
@@ -236,6 +239,7 @@ export function useCatalogDictionaryDrawerController({
     [lifecycle],
   );
   const requestConfigClose = lifecycle.requestClose;
+  const requestConfigDiscard = lifecycle.requestDiscard;
   const manifestRequest = useMemo(
     () =>
       catalogInventoryRtkRequest.getOperationsCatalogShapeManifest(
@@ -985,12 +989,17 @@ export function useCatalogDictionaryDrawerController({
   const openStatusChange = (row: DictionaryRow, dictionaryKind: DictionaryKind = kind) => {
     if (row.status === 'VOIDED') return;
     setProblem(undefined);
-    setStatusChange({row, dictionaryKind});
+    setStatusChange({
+      row,
+      dictionaryKind,
+      targetStatus: row.status === 'ENABLED' ? 'DISABLED' : 'ENABLED',
+    });
   };
   const changeStatus = async () => {
     if (!statusChange) return;
     const {row, dictionaryKind} = statusChange;
-    const targetStatus: 'ENABLED' | 'DISABLED' = row.status === 'ENABLED' ? 'DISABLED' : 'ENABLED';
+    const targetStatus: 'ENABLED' | 'DISABLED' | 'VOIDED' =
+      statusChange.targetStatus ?? (row.status === 'ENABLED' ? 'DISABLED' : 'ENABLED');
     try {
       setProblem(undefined);
       const dataNodeRef = requireOperationsScopeRef(queryContext);
@@ -1044,74 +1053,8 @@ export function useCatalogDictionaryDrawerController({
   const deleteDictionaryEntry = (row: DictionaryRow, dictionaryKind: DictionaryKind = kind) => {
     const canVoid = dictionaryKind === 'UNIT' ? !row.isReferenced : row.voidAvailability?.canVoid;
     if (!canVoid) return;
-    modal.confirm({
-      title: `删除“${row.name}”`,
-      content: '删除后会保留历史记录，不会自动创建新记录；如需新增，请在列表中手动新建。',
-      okText: '确认删除',
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          setProblem(undefined);
-          const dataNodeRef = requireOperationsScopeRef(queryContext);
-          if (dictionaryKind === 'UNIT') {
-            const body = {
-              dataNodeRef,
-              unitRef: wireUuid(row.entryRef),
-              expectedVersion: row.version,
-              targetStatus: 'VOIDED' as const,
-            };
-            const idempotencyKey = await createContentIdempotencyKey(
-              CATALOG_INVENTORY_OPERATION_IDS.transitionOperationsCatalogUnitStatus,
-              body,
-            );
-            await transitionUnit(
-              catalogInventoryRtkRequest.transitionOperationsCatalogUnitStatus(
-                {unitRef: wireUuid(row.entryRef)},
-                {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
-              ),
-            ).unwrap();
-          } else if (dictionaryKind === 'PRODUCTION_TAG') {
-            const body = {
-              dataNodeRef,
-              tagCode: row.code,
-              expectedVersion: row.version,
-              targetStatus: 'VOIDED' as const,
-            };
-            const idempotencyKey = await createContentIdempotencyKey(
-              CATALOG_INVENTORY_OPERATION_IDS.transitionOperationsProductionTagStatus,
-              body,
-            );
-            await transitionTag(
-              catalogInventoryRtkRequest.transitionOperationsProductionTagStatus(
-                {tagCode: row.code},
-                {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
-              ),
-            ).unwrap();
-          } else {
-            const body = {
-              dataNodeRef,
-              dictionaryKind,
-              entryCode: row.code,
-              expectedVersion: row.version,
-              targetStatus: 'VOIDED' as const,
-            };
-            const idempotencyKey = await createContentIdempotencyKey(
-              CATALOG_INVENTORY_OPERATION_IDS.transitionOperationsCatalogDictionaryEntryStatus,
-              body,
-            );
-            await transitionEntry(
-              catalogInventoryRtkRequest.transitionOperationsCatalogDictionaryEntryStatus(
-                {dictionaryKind, entryCode: row.code},
-                {headers: {...headers, 'Idempotency-Key': idempotencyKey}, body},
-              ),
-            ).unwrap();
-          }
-        } catch (error) {
-          setProblem(catalogUiProblemFeedback(error, '删除未完成，请重试。').message);
-          throw error;
-        }
-      },
-    });
+    setProblem(undefined);
+    setStatusChange({row, dictionaryKind, targetStatus: 'VOIDED'});
   };
   const rows: DictionaryRow[] = isUnit
     ? (unitData?.units ?? []).map(unit => ({
@@ -1241,15 +1184,7 @@ export function useCatalogDictionaryDrawerController({
       applyChange();
       return;
     }
-    // This confirmation protects an in-drawer library switch. The outer
-    // Drawer close intent always goes through the foundation lifecycle below.
-    modal.confirm({
-      title: '放弃当前填写内容？',
-      content: '切换配置分类后，当前未保存的内容不会保留。',
-      okText: '放弃并切换',
-      cancelText: '继续编辑',
-      onOk: applyChange,
-    });
+    requestConfigDiscard(applyChange);
   };
   return {
     open,

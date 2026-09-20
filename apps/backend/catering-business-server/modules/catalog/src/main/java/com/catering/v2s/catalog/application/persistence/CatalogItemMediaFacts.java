@@ -87,7 +87,7 @@ public class CatalogItemMediaFacts {
         }
         Boolean found = jdbc.queryForObject(
                 CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_SELECT_CATALOG_ITEM_IMAGE_ITEM
-                        + CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_CONTINUATION_ITEM_ITEM_REF_IMAGE_ASSET_REF
+                        + CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_ITEM_ITEM_REF_IMAGE_ASSET_REF
                         + scope + CatalogItemMediaFactsSql.CATALOG_ITEM_MEDIA_FACTS_CLOSE_PAREN,
                 Boolean.class,
                 arguments.toArray());

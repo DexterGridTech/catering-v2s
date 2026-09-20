@@ -57,7 +57,7 @@ public class BusinessChannelTaskReadPersistence {
                         .append(comparison)
                         .append(BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_PARAMETER_PLACEHOLDER)
                         .append(expression)
-                        .append(BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CONTINUATION_CHANNEL_REF);
+                        .append(BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CHANNEL_REF);
                 arguments.add(cursorSortValue);
                 arguments.add(cursorSortValue);
                 arguments.add(cursorTieBreaker);
@@ -138,7 +138,7 @@ public class BusinessChannelTaskReadPersistence {
                         + placeholders
                         + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CLOSE_PAREN_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                         + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_UNION_CHILD_SOURCE_REF_PARENT_PARENT_ID
-                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_CONTINUATION_PARENT_NODE_TYPE_STATUS_CHILD
+                        + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_PARENT_NODE_TYPE_STATUS_CHILD
                         + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_FROM_CLAUSE_ANCESTRY_PARENT_CHILD_PARENT_ID
                         + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_WHERE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                         + BusinessChannelTaskReadServiceSql.BUSINESS_CHANNEL_TASK_READ_SERVICE_SELECT_ANCESTRY_SOURCE_REF_NODE_TYPE_STATUS_DEPTH,

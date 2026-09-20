@@ -1,5 +1,6 @@
 package com.catering.v2s.platform.workspace.application.persistence;
 
+import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
@@ -19,10 +20,7 @@ public class WorkspaceCommandReceiptPersistence {
     public record Receipt(String requestHash, String responseJson) {}
 
     public void lock(String groupWorkspaceKey, String idempotencyKey) {
-        jdbc.queryForList(
-                WorkspaceCommandReceiptServiceSql.LOCK,
-                groupWorkspaceKey,
-                idempotencyKey);
+        AdvisoryLock.acquireHashText(jdbc, groupWorkspaceKey + ":" + idempotencyKey);
     }
 
     public Optional<Receipt> find(String groupWorkspaceKey, String idempotencyKey) {

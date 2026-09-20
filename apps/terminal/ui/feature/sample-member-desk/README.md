@@ -41,6 +41,9 @@ display-context 物理屏 helper 仍保持原语义。runtime 组装与平台启
 单屏 `handheld-confirm` 位于 PRIMARY，但这些差异由 actor 的 placement/mode 提供，部件
 不读取屏数，也不把编辑值写入 runtime/store。
 
+双机副机不因配对事件在本地重放 customer placement；其 SECONDARY 画面只由主机写入的 MAIN
+content 经 workspace descriptor 投影驱动。副机切为 PRIMARY 后才由 BRANCH workspace 处理本地 command。
+
 本 CP 的 parts 是九个，layer partKey 是五个（waiting-confirm、registry-notice、
 discard-confirm、withdraw-confirm、system-notice）；全专题的 layer semantic type 分母
 仍为六，layer partKey 分母仍为七，不能把本包的五个 partKey 当成全专题 type 分母。

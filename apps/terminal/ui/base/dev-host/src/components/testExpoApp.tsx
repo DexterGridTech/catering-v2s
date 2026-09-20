@@ -760,13 +760,36 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
     const [assembly, setAssembly] = useState<TAssembly | undefined>();
     const [startupError, setStartupError] = useState(false);
     const [showSecondary, setShowSecondary] = useState<boolean | undefined>();
+    const webPlatformOptions = useMemo(() => {
+      const readDisplaySurfaces = options.webPlatformOptions?.readDisplaySurfaces ?? (() => {
+        const {primary, secondary} = resolveSurfaceGroup(options.terminalSurfaces, surfaceForm)
+        return Object.freeze([
+          Object.freeze({
+            displayId: 0,
+            role: 'primary' as const,
+            logicalSize: Object.freeze({...primary}),
+            physicalSize: null,
+            readiness: 'ready' as const,
+          }),
+          ...(surfaceModeRef.current === 'dual' && surfaceForm === 'laptop' ? [Object.freeze({
+            displayId: 1,
+            role: 'secondary' as const,
+            logicalSize: Object.freeze({...secondary}),
+            physicalSize: null,
+            readiness: 'ready' as const,
+          })] : []),
+        ])
+      })
+      return Object.freeze({
+        ...options.webPlatformOptions,
+        readDisplaySurfaces,
+        storageNamespace: options.appName,
+      })
+    }, [options.appName, options.terminalSurfaces, options.webPlatformOptions, surfaceForm])
     const platformPorts = useMemo(
       () =>
-        createWebPlatformPorts(() => surfaceModeRef.current, {
-          ...options.webPlatformOptions,
-          storageNamespace: options.appName,
-        }),
-      [options.appName, options.webPlatformOptions],
+        createWebPlatformPorts(() => surfaceModeRef.current, webPlatformOptions),
+      [webPlatformOptions],
     );
     const webSurfaceHostSources = useMemo(() => {
       const {primary, secondary} = resolveSurfaceGroup(options.terminalSurfaces, surfaceForm);

@@ -5992,6 +5992,10 @@
             }
           }
         },
+        "unchangedReadbackVersionRelationByJourneyState": {
+          "FAILURE": "SAME_AS_FIXTURE_MUTATION",
+          "RECOVERY": "EXACT_PRE_STATE"
+        },
         "recoveryReadbackKind": "UNCHANGED",
         "requiredVisibleTabKeys": [
           "production-prompts"
@@ -7655,5 +7659,5 @@
     ],
     "seedExecutionNotAuthorized": true
   },
-  "fixtureDigest": "dee31f2a1e4e25cb99ddaa50b49eaffd429226ee6d3e3650935c22cde01f6f25"
+  "fixtureDigest": "1255a17242958a24b6a0c1736abb3685499d47d2e4ddb16c59865b9d36663d31"
 }

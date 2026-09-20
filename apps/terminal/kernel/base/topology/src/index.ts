@@ -11,8 +11,7 @@ export {areTopologyFactsEqual, selectTopologyFacts} from './selectors/selectTopo
 export {selectTopologyState, topologySliceName} from './selectors/selectTopologyState'
 export {topologyActions} from './features/slices/topology'
 export {
-  pairTopologyCommand,
-  queryTopologyHostCommand,
+  pairByHostTopologyCommand,
   reconcileTopologyHostCommand,
   reconcileTopologyPeerCommand,
   refreshTopologyDisplayCommand,

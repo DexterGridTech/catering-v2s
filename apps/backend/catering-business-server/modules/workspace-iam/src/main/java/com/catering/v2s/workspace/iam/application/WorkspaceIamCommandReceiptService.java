@@ -2,7 +2,7 @@ package com.catering.v2s.workspace.iam.application;
 
 import com.catering.v2s.workspace.iam.application.persistence.WorkspaceIamCommandReceiptPersistence;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
+import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
@@ -32,7 +32,7 @@ public final class WorkspaceIamCommandReceiptService {
         if (key == null || key.length() < 16 || key.length() > 128) {
             throw new WorkspaceInvitationService.InvitationValidationException();
         }
-        String requestHash = sha256(canonicalRequest);
+        String requestHash = CommandReceiptSupport.requestHash(canonicalRequest);
         persistence.acquireLock(workspaceUuid, key);
         WorkspaceIamCommandReceiptPersistence.ReceiptRow stored = persistence.find(workspaceUuid, key);
         Receipt prior = stored == null ? null : new Receipt(stored.requestHash(), stored.responseJson());
@@ -51,7 +51,8 @@ public final class WorkspaceIamCommandReceiptService {
 
     private static <T> T read(String value, Class<T> resultType) {
         try {
-            return JSON.readValue(value, resultType);
+            return CommandReceiptSupport.deserializeNullable(
+                    JSON, value, resultType, "workspace-IAM receipt is not readable");
         } catch (Exception exception) {
             throw new WorkspaceIamReceiptCorruptException(exception);
         }
@@ -59,7 +60,7 @@ public final class WorkspaceIamCommandReceiptService {
 
     private static String write(Object value) {
         try {
-            return JSON.writeValueAsString(value);
+            return CommandReceiptSupport.serialize(JSON, value, "workspace-IAM receipt serialization failed");
         } catch (Exception exception) {
             throw new IllegalStateException("workspace-IAM receipt serialization failed", exception);
         }
@@ -67,7 +68,7 @@ public final class WorkspaceIamCommandReceiptService {
 
     private static String sha256(String value) {
         try {
-            return Sha256Hex.digest(value);
+            return CommandReceiptSupport.requestHash(value);
         } catch (NullPointerException exception) {
             throw new IllegalStateException("SHA-256 unavailable", exception);
         }

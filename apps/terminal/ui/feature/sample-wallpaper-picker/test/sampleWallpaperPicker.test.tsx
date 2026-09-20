@@ -99,6 +99,8 @@ const nativeLoadingCapability: NativeLoadingCapability = Object.freeze({
 })
 
 const rootFor = (wallpaperId: 'none' | 'w1' | 'w2' | 'w3', pendingWallpaperId?: 'none' | 'w1' | 'w2' | 'w3') => Object.freeze({
+  'kernel.base.runtime.instance-mode': Object.freeze({instanceMode: 'MASTER'}),
+  'kernel.base.display-context.display-role': Object.freeze({displayRole: 'CHIEF', powerConfirmation: null}),
   'kernel.feature.sample-wallpaper.selection': Object.freeze({wallpaperId, ...(pendingWallpaperId === undefined ? {} : {pendingWallpaperId})}),
 }) as RuntimeStateRoot
 

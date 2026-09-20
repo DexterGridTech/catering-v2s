@@ -1310,6 +1310,7 @@ __metadata:
     "@catering-v2s/adapter-android-dual-screen": "workspace:*"
     "@catering-v2s/adapter-android-persist-kv": "workspace:*"
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
+    "@catering-v2s/kernel-base-transport": "workspace:*"
     "@types/react": "npm:~19.2.2"
     expo: "npm:~57.0.18"
     expo-splash-screen: "npm:~57.0.9"
@@ -1397,7 +1398,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/kernel-base-topology@workspace:apps/terminal/kernel/base/topology":
+"@catering-v2s/kernel-base-topology@workspace:*, @catering-v2s/kernel-base-topology@workspace:apps/terminal/kernel/base/topology":
   version: 0.0.0-use.local
   resolution: "@catering-v2s/kernel-base-topology@workspace:apps/terminal/kernel/base/topology"
   dependencies:
@@ -1421,6 +1422,7 @@ __metadata:
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
     "@catering-v2s/kernel-base-runtime": "workspace:*"
     "@catering-v2s/kernel-base-state": "workspace:*"
+    fflate: "npm:0.8.3"
     typescript: "npm:~6.0.3"
     vitest: "npm:4.1.10"
   languageName: unknown
@@ -1562,10 +1564,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@catering-v2s/ui-base-admin-shell@workspace:apps/terminal/ui/base/admin-shell"
   dependencies:
+    "@catering-v2s/kernel-base-contracts": "workspace:*"
     "@catering-v2s/kernel-base-display-context": "workspace:*"
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
     "@catering-v2s/kernel-base-runtime": "workspace:*"
     "@catering-v2s/kernel-base-state": "workspace:*"
+    "@catering-v2s/kernel-base-topology": "workspace:*"
     "@catering-v2s/kernel-base-ui-state": "workspace:*"
     "@catering-v2s/ui-base-input": "workspace:*"
     "@catering-v2s/ui-base-primitives": "workspace:*"
@@ -1732,6 +1736,7 @@ __metadata:
     "@catering-v2s/kernel-base-display-context": "workspace:*"
     "@catering-v2s/kernel-base-runtime": "workspace:*"
     "@catering-v2s/kernel-base-state": "workspace:*"
+    "@catering-v2s/kernel-base-topology": "workspace:*"
     "@catering-v2s/kernel-base-ui-state": "workspace:*"
     "@catering-v2s/kernel-feature-sample-member-registry": "workspace:*"
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*"
@@ -1811,6 +1816,8 @@ __metadata:
     "@catering-v2s/kernel-base-display-context": "workspace:*"
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
     "@catering-v2s/kernel-base-runtime": "workspace:*"
+    "@catering-v2s/kernel-base-topology": "workspace:*"
+    "@catering-v2s/kernel-base-transport": "workspace:*"
     "@catering-v2s/kernel-base-ui-state": "workspace:*"
     "@catering-v2s/kernel-feature-sample-member-registry": "workspace:*"
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*"
@@ -1850,6 +1857,8 @@ __metadata:
     "@catering-v2s/kernel-base-display-context": "workspace:*"
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
     "@catering-v2s/kernel-base-runtime": "workspace:*"
+    "@catering-v2s/kernel-base-topology": "workspace:*"
+    "@catering-v2s/kernel-base-transport": "workspace:*"
     "@catering-v2s/kernel-base-ui-state": "workspace:*"
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*"
     "@catering-v2s/kernel-feature-sample-wallpaper": "workspace:*"
@@ -7902,6 +7911,13 @@ __metadata:
   version: 0.4.10
   resolution: "fetch-nodeshim@npm:0.4.10"
   checksum: 10c0/73b840b5d1252e82c416b350526ff24f5aebf554bfe911c713a19fbe4ad1218fb4c488f95055362a132f5dd733679c929fbe6a65ee23339592290c4d107ade92
+  languageName: node
+  linkType: hard
+
+"fflate@npm:0.8.3":
+  version: 0.8.3
+  resolution: "fflate@npm:0.8.3"
+  checksum: 10c0/eab181ca37f5348ae76d4b6f840e0026e30220e33153289ac942222d8b9638237d486507dbcc09878d724095bd354993a2ee48bbee99c8f2c6440d4448719aa7
   languageName: node
   linkType: hard
 

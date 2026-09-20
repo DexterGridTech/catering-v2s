@@ -135,9 +135,9 @@
 
 > **任何带 `status` 列的表,不在主数据清单里就必须在豁免清单里并带理由,否则门红。**
 
-分母可查:`db/migration` 下 105 个 `CREATE TABLE`,建表体内带 `status` 的 20 张,另有 ALTER 追加的(brand、head_company、organization_node、store、tenant 等)。
+分母由 `scripts/check/lifecycle-vocabulary` 从当前 `db/migration` 逐语句发现，不在标准正文里冻结；该门当前输出 `STATUS_TABLES=39`，并将每张表落入机器清单的主数据或豁免桶。
 
-**门**:`scripts/check/lifecycle-vocabulary`(**待建**);红夹具 = 新建一张带 `status` 且两处清单都不登记的表,门必须红
+**门**:`scripts/check/lifecycle-vocabulary`;机器清单正本为 `contracts/policy/lifecycle-vocabulary.json`。红夹具 = 新建一张带 `status` 且两处清单都不登记的表,门必须红。该门只证明“每张 status 表已被分类登记”，不替代主数据三态值、唯一键或业务状态语义的逐项复核。
 
 ### 1-M · 作废后业务唯一键必须可复用
 

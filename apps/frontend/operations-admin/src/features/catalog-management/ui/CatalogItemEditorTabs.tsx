@@ -36,10 +36,19 @@ export function CatalogItemEditorTabs({
           label:
             tab.disabled && tab.reason ? (
               <Tooltip title={tab.reason}>
-                <span data-testid={catalogItemTabTestId(tab.tabKey)}>{catalogEditorTabLabel(tab.tabKey)}</span>
+                <span
+                  data-testid={catalogItemTabTestId(tab.tabKey)}
+                  data-active={activeTab === tab.tabKey ? 'true' : 'false'}
+                >
+                  {catalogEditorTabLabel(tab.tabKey)}
+                </span>
               </Tooltip>
             ) : (
-              <Space size={4} data-testid={catalogItemTabTestId(tab.tabKey)}>
+              <Space
+                size={4}
+                data-testid={catalogItemTabTestId(tab.tabKey)}
+                data-active={activeTab === tab.tabKey ? 'true' : 'false'}
+              >
                 <span>{catalogEditorTabLabel(tab.tabKey)}</span>
                 {sectionState.dirtySections[draftSection(tab.tabKey)] && (
                   <Typography.Text type="warning" aria-label="本页有未保存内容">

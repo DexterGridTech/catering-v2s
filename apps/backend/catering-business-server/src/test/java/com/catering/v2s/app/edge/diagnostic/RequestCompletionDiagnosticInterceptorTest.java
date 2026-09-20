@@ -57,6 +57,24 @@ class RequestCompletionDiagnosticInterceptorTest {
     }
 
     @Test
+    void recordsUnhandledExceptionAsHttp500EvenBeforeContainerErrorDispatch() throws Exception {
+        List<RequestCompletionEvent> events = new ArrayList<>();
+        RequestCompletionDiagnosticInterceptor interceptor =
+                new RequestCompletionDiagnosticInterceptor(new ObjectMapper(), new RecordingRecorder(events));
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/platform/admin-users");
+        request.setAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, "/api/platform/admin-users");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        interceptor.preHandle(request, response, new Object());
+        interceptor.afterCompletion(request, response, new Object(), new IllegalStateException("boom"));
+
+        RequestCompletionEvent event = events.getFirst();
+        assertEquals("FAILED", event.fields().outcome());
+        assertEquals(500, event.fields().status());
+        assertEquals("PLATFORM_COMMON_RESULT_UNKNOWN", event.fields().errorCode());
+    }
+
+    @Test
     void managedDiagnosticEventDoesNotProduceDuplicateCompletion() throws Exception {
         List<RequestCompletionEvent> events = new ArrayList<>();
         RequestCompletionDiagnosticInterceptor interceptor =

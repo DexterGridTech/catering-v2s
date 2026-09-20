@@ -3,6 +3,7 @@ package com.catering.v2s.inventory.api;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.platform.foundation.contract.OwnerProblem;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
@@ -703,7 +704,7 @@ public interface InventoryOwnerApi {
             CatalogOptionValueBomCopyCommand command,
             String idempotencyKey);
 
-    final class Problem extends RuntimeException {
+    final class Problem extends RuntimeException implements OwnerProblem {
         private final String code;
         private final int status;
         private final JsonNode details;
@@ -729,14 +730,17 @@ public interface InventoryOwnerApi {
             this.details = details;
         }
 
+        @Override
         public String code() {
             return code;
         }
 
+        @Override
         public int status() {
             return status;
         }
 
+        @Override
         public JsonNode details() {
             return details;
         }

@@ -3,7 +3,6 @@ import {
   createTransportAddressSelector,
   createTransportCancellationToken,
   createTransportHeartbeat,
-  createTransportLimiter,
   createTransportWebSocketController,
   runWithBoundedTransportRetry,
   type TransportSocket,
@@ -104,18 +103,6 @@ describe('transport primitives', () => {
       token,
       attempt: async () => 'never',
     })).rejects.toThrow('cancelled')
-  })
-
-  it('limits concurrent operations', async () => {
-    const limiter = createTransportLimiter({maxConcurrent: 1})
-    let releaseFirst: (() => void) | undefined
-    const first = limiter.run(() => new Promise(resolve => { releaseFirst = resolve }))
-    const second = limiter.run(async () => 'second')
-    await Promise.resolve()
-    expect(releaseFirst).toBeTypeOf('function')
-    releaseFirst?.()
-    await expect(first).resolves.toBeUndefined()
-    await expect(second).resolves.toBe('second')
   })
 
   it('fails over websocket addresses and rejects stale connection completion', async () => {

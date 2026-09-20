@@ -11,6 +11,7 @@ import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
+import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -1933,8 +1934,7 @@ public class InventoryCopyService {
     }
 
     private static String optional(ObjectNode req, String key) {
-        JsonNode v = req == null ? null : req.get(key);
-        return v == null || v.isNull() ? null : v.asText();
+        return CollectionRequestSupport.optional(req, key);
     }
 
     static void requireCatalogDefinitionDataNodeType(String dataNodeType) {

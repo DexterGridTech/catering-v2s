@@ -41,6 +41,10 @@ import type {SurfaceForm, UiCatalog} from '../../types/catalog'
 import type {StateRoot} from '@catering-v2s/kernel-base-state'
 import {completeUiStateWrite} from './completeWrite'
 import type {DisplayMode} from '@catering-v2s/kernel-base-display-context'
+import {
+  isWorkspaceOwnedByInstanceMode,
+  workspaceOwnedByInstanceMode,
+} from '../../foundations/workspaceOwnership'
 
 type PayloadRecord = Readonly<Record<string, unknown>>
 
@@ -167,16 +171,31 @@ const currentWorkspace = (context: ActorExecutionContext): WorkspaceKey => {
   })
 }
 
-const currentCatalogContext = (
-  state: StateRoot,
-  displayMode: DisplayMode,
-  selectSurfaceForm: (root: StateRoot) => SurfaceForm,
-) => {
+const assertContentWriteOwnership = (
+  context: ActorExecutionContext,
+  workspace: WorkspaceKey,
+): void => {
+  const instanceMode = selectRuntimeInstanceMode(context.getState())
+  const ownedWorkspace = workspaceOwnedByInstanceMode(instanceMode)
+  if (!isWorkspaceOwnedByInstanceMode({instanceMode, workspace})) {
+    throw new Error(
+      `[ui-state] content write ownership violation: ${workspace} requires ${ownedWorkspace} for ${instanceMode}`,
+    )
+  }
+}
+
+const currentCatalogContext = (input: Readonly<{
+  readonly state: StateRoot
+  readonly displayMode: DisplayMode
+  readonly selectSurfaceForm: (root: StateRoot) => SurfaceForm
+  readonly workspaceOverride?: WorkspaceKey
+}>) => {
+  const {state, displayMode, selectSurfaceForm, workspaceOverride} = input
   const instanceMode = selectRuntimeInstanceMode(state)
   const displayRole = selectDisplayRole(state)
   return Object.freeze({
     displayMode,
-    workspace: resolveWorkspace({instanceMode, displayRole}),
+    workspace: workspaceOverride ?? resolveWorkspace({instanceMode, displayRole}),
     instanceMode,
     surfaceForm: selectSurfaceForm(state),
   })
@@ -218,6 +237,8 @@ const dispatchContentAction = (
   action: ContentAction,
 ): Readonly<{workspace: WorkspaceKey; changed: boolean}> => {
   const workspace = currentWorkspace(context)
+  const instanceMode = selectRuntimeInstanceMode(context.getState())
+  assertContentWriteOwnership(context, workspace)
   const before = readContentState(context.getState(), workspace)
   const dispatch = createWorkspaceActionDispatcher({
     routeContext: {workspace},
@@ -225,7 +246,29 @@ const dispatchContentAction = (
   })
   dispatch(action)
   const after = readContentState(context.getState(), workspace)
-  return Object.freeze({workspace, changed: after !== before})
+  const actionPayload = readRecord(action.payload)
+  const displayMode = actionPayload?.displayMode
+  const containerKey = actionPayload?.containerKey
+  const partKey = actionPayload?.partKey
+  const layerId = actionPayload?.layerId
+  const changed = after !== before
+  context.platformPorts.logger.info({
+    category: 'ui-state.content',
+    event: 'ui-state.content-write',
+    message: 'Content slice write observed',
+    data: {
+      commandName: context.command.commandName,
+      actionType: action.type,
+      workspace,
+      instanceMode,
+      displayMode: displayMode === 'PRIMARY' || displayMode === 'SECONDARY' ? displayMode : null,
+      containerKey: typeof containerKey === 'string' ? containerKey : null,
+      partKey: typeof partKey === 'string' ? partKey : null,
+      layerId: typeof layerId === 'string' ? layerId : null,
+      changed,
+    },
+  })
+  return Object.freeze({workspace, changed})
 }
 
 export const createShowScreenActor = (): ActorDefinition => defineActor(moduleName, 'show-screen', [
@@ -245,7 +288,11 @@ export const createOpenLayerActor = (input: Readonly<{
   onCommand(openLayerCommand, async context => {
     const payload = normalizeOpenLayerPayload(context.command.payload)
     const state = context.getState()
-    const catalogContext = currentCatalogContext(state, payload.displayMode, input.selectSurfaceForm)
+    const catalogContext = currentCatalogContext({
+      state,
+      displayMode: payload.displayMode,
+      selectSurfaceForm: input.selectSurfaceForm,
+    })
     const entry = input.catalog.byPartKey[payload.partKey]
     if (entry === undefined || !isUiCatalogEntryAvailable(entry, null, catalogContext)) {
       throw createLayerPartUnavailableError(context, {
@@ -308,9 +355,15 @@ const pruneHydratedContainersForDisplayMode = (
     routeContext: {workspace},
     dispatch: context.dispatchAction,
   })
+  assertContentWriteOwnership(context, workspace)
   const before = readContentState(context.getState(), workspace)
   const containers = before.contentSets[displayMode].containers
-  const catalogContext = currentCatalogContext(context.getState(), displayMode, selectSurfaceForm)
+  const catalogContext = currentCatalogContext({
+    state: context.getState(),
+    displayMode,
+    selectSurfaceForm,
+    workspaceOverride: workspace,
+  })
   for (const [containerKey, placement] of Object.entries(containers)) {
     const entry = catalog.byPartKey[placement.partKey]
     const renderable = entry !== undefined
@@ -342,7 +395,7 @@ export const createPruneHydratedContainersActor = (input: Readonly<{
 }>): ActorDefinition => defineActor(moduleName, 'prune-hydrated-containers', [
   onCommand(pruneHydratedContainersCommand, async context => {
     let changed = false
-    const workspaces: readonly WorkspaceKey[] = ['MAIN', 'BRANCH']
+    const workspaces: readonly WorkspaceKey[] = [workspaceOwnedByInstanceMode(selectRuntimeInstanceMode(context.getState()))]
     const displayModes: readonly DisplayMode[] = ['PRIMARY', 'SECONDARY']
     if (!hasUiContainerDeclarations(input.catalog)) {
       return completeUiStateWrite(context, {
@@ -373,13 +426,14 @@ export const createPruneHydratedLayersActor = (input: Readonly<{
 }>): ActorDefinition => defineActor(moduleName, 'prune-hydrated-layers', [
   onCommand(pruneHydratedLayersCommand, async context => {
     let changed = false
-    const workspaces: readonly WorkspaceKey[] = ['MAIN', 'BRANCH']
+    const workspaces: readonly WorkspaceKey[] = [workspaceOwnedByInstanceMode(selectRuntimeInstanceMode(context.getState()))]
     const displayModes: readonly DisplayMode[] = ['PRIMARY', 'SECONDARY']
     for (const workspace of workspaces) {
       const dispatch = createWorkspaceActionDispatcher({
         routeContext: {workspace},
         dispatch: context.dispatchAction,
       })
+      assertContentWriteOwnership(context, workspace)
       for (const displayMode of displayModes) {
         const before = readContentState(context.getState(), workspace)
         const layers = before.contentSets[displayMode].layers

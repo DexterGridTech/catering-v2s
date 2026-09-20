@@ -2,13 +2,16 @@ import {readFileSync} from 'node:fs'
 import {describe, expect, it} from 'vitest'
 
 const expectedTokens = Object.freeze({
-  canvas: [241, 245, 249],
+  canvas: [255, 255, 255],
   surface: [255, 255, 255],
+  'surface-elevated': [255, 255, 255],
+  'surface-inset': [255, 241, 242],
   foreground: [15, 23, 42],
   'muted-foreground': [71, 85, 105],
   border: [203, 213, 225],
   action: [159, 18, 57],
   'action-foreground': [255, 255, 255],
+  focus: [225, 29, 72],
   'ok-foreground': [21, 128, 61],
   'ok-background': [240, 253, 244],
   'ok-border': [134, 239, 172],
@@ -21,6 +24,13 @@ const expectedTokens = Object.freeze({
   'info-foreground': [3, 105, 161],
   'info-background': [240, 249, 255],
   'info-border': [125, 211, 252],
+  'keyboard-surface': [19, 23, 25],
+  'keyboard-key': [40, 45, 49],
+  'keyboard-action': [40, 45, 49],
+  'keyboard-key-foreground': [248, 250, 252],
+  'keyboard-action-foreground': [248, 250, 252],
+  'keyboard-border': [55, 62, 66],
+  'keyboard-focus': [225, 29, 72],
 } as const)
 
 const rgb = (name: string): readonly [number, number, number] => {
@@ -73,7 +83,7 @@ const hslOf = (value: readonly [number, number, number]): Readonly<{
 }
 
 describe('sample2 red application theme', () => {
-  it('declares the exact 19 semantic tokens and tailwind mappings', () => {
+  it('declares the semantic tokens and tailwind mappings', () => {
     const css = readFileSync(new URL('../theme/global.css', import.meta.url), 'utf8')
     const tailwind = readFileSync(new URL('../tailwind.config.cjs', import.meta.url), 'utf8')
     for (const [name, value] of Object.entries(expectedTokens)) {

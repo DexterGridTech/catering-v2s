@@ -2,6 +2,7 @@ import {Alert, Button, Descriptions, Drawer, Form, Input, Space, Tag} from 'antd
 import {
   adminDrawerSurfaceProps,
   closedCodeLabel,
+  displayFieldValue,
   isKnownClosedCode,
   useDrawerFormLifecycle,
   useSubmissionLifecycle,
@@ -27,7 +28,7 @@ export function businessChannelBindingReadOnlyMessage(
   if (!channelStatusKnown || !ownerNodeTypeKnown || !authenticationKindKnown) {
     return '当前渠道状态或绑定类型无法识别，已停止该操作。';
   }
-  return status === 'VOIDED' ? '该业务渠道已标记删除，不能继续修改。' : undefined;
+  return status === 'VOIDED' ? '该业务渠道已作废，不能继续修改。' : undefined;
 }
 
 export function BusinessChannelBindingDrawer({
@@ -100,7 +101,7 @@ export function BusinessChannelBindingDrawer({
       setProblem(
         !channelStatusKnown || !ownerNodeTypeKnown || !authenticationKindKnown
           ? '当前渠道状态或绑定类型无法识别，已停止该操作。'
-          : '该业务渠道已标记删除，不能继续修改。',
+          : '该业务渠道已作废，不能继续修改。',
       );
       return;
     }
@@ -139,7 +140,7 @@ export function BusinessChannelBindingDrawer({
       setProblem(
         !channelStatusKnown || !ownerNodeTypeKnown || !authenticationKindKnown
           ? '当前渠道状态或绑定类型无法识别，已停止该操作。'
-          : '该业务渠道已标记删除，不能继续修改。',
+          : '该业务渠道已作废，不能继续修改。',
       );
       return;
     }
@@ -211,7 +212,7 @@ export function BusinessChannelBindingDrawer({
             column={1}
             size="small"
             items={[
-              {key: 'name', label: '绑定名称', children: binding.bindingDisplayName || '—'},
+              {key: 'name', label: '绑定名称', children: displayFieldValue(binding.bindingDisplayName)},
               {key: 'owner', label: '外部主体编号', children: binding.externalOwnerId || '待外部授权回填'},
             ]}
           />

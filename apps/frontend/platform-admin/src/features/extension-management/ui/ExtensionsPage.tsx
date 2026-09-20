@@ -2,6 +2,7 @@ import {ProTable} from '@ant-design/pro-components';
 import {Alert, Button, Card, Empty, Layout, Menu, Space, Spin, Typography} from 'antd';
 import {
   contextScopedQueryArgs,
+  formatCanonicalDateTime,
   testId,
   useAsyncGenerationGuard,
   useOverlayLock,
@@ -23,8 +24,7 @@ type DefinitionField = ExtensionDefinition['definitions'][number];
 const fieldTypeLabel = (value: DefinitionField['type']) =>
   ({TEXT: '文本', NUMBER: '数值', DATE: '日期', BOOLEAN: '是/否', SELECT: '单选'})[value];
 const fieldStatusLabel = (value: DefinitionField['status']) => (value === 'ENABLED' ? '启用' : '停用');
-const configurationTime = (updatedAt: number) =>
-  updatedAt > 0 ? new Date(updatedAt).toLocaleString('zh-CN', {timeZone: 'Asia/Shanghai'}) : '暂未配置';
+const configurationTime = (updatedAt: number) => formatCanonicalDateTime(updatedAt);
 const extensionPage = adminCatalog.platformPages.find(
   page => page.pageDesignKey === platformPageDesignKeys.PlatformExtensionFields,
 );

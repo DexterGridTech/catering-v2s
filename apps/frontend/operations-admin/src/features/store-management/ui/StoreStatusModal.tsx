@@ -1,5 +1,4 @@
-import {Alert, Button, Modal} from 'antd';
-import {testId, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {StatusChangeConfirm, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useState} from 'react';
 import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import type {OrganizationStore} from '../../../app/api/generated/operations-edge';
@@ -48,32 +47,20 @@ export function StoreStatusModal({store, queryContext, onClose, onUpdated, onPro
   };
   const action = targetStatus === 'DISABLED' ? '停用' : targetStatus === 'ENABLED' ? '启用' : undefined;
   return (
-    <Modal
+    <StatusChangeConfirm
       title={store && action ? `确认${action}“${store.name}”？` : '状态操作不可用'}
       open={Boolean(store)}
-      destroyOnHidden
-      onCancel={submitting ? undefined : onClose}
-      maskClosable={!submitting}
-      keyboard={!submitting}
-      footer={[
-        <Button key="cancel" onClick={onClose} disabled={submitting} {...testId('operations-store-status-cancel')}>
-          取消
-        </Button>,
-        <Button
-          key="confirm"
-          type="primary"
-          loading={submitting}
-          disabled={!targetStatus}
-          onClick={() => void submit()}
-          {...testId('operations-store-status-confirm')}
-        >
-          确认
-        </Button>,
-      ]}
-      {...testId('operations-store-status-modal')}
+      actionLabel={action ?? '状态操作'}
+      submitting={submitting}
+      confirmDisabled={!targetStatus}
+      problem={problem}
+      onCancel={onClose}
+      onConfirm={() => void submit()}
+      confirmTestId="operations-store-status-confirm"
+      cancelTestId="operations-store-status-cancel"
+      modalTestId="operations-store-status-modal"
     >
-      {problem && <Alert type="error" showIcon title="状态操作未完成" description={problem} />}
       <p>{action ? '此操作仅改变门店资料可用状态。' : '已作废门店不可变更状态。'}</p>
-    </Modal>
+    </StatusChangeConfirm>
   );
 }

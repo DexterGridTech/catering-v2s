@@ -1,5 +1,13 @@
 import {Alert, Button, Card, Descriptions, Empty, Input, Space, Tag, Tree} from 'antd';
-import {adminHierarchyCollator, NameCodeText, testId, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {
+  adminHierarchyCollator,
+  displayFieldValue,
+  lifecycleColor,
+  lifecycleLabel,
+  NameCodeText,
+  testId,
+  useSubmissionLifecycle,
+} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import {operationsClient, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
 import {ACTION_CAPABILITIES} from '../../../app/catalog/generatedAdminCatalog';
@@ -29,7 +37,7 @@ function treeNodeTitle(row: HierarchyRow) {
     <span>
       <Tag color="cyan">{nodeTypeLabel(row.nodeType)}</Tag>
       <span>{<NameCodeText name={row.name} code={row.code} />}</span>
-      {row.status === 'DISABLED' && <Tag color="default">已停用</Tag>}
+      {row.status === 'DISABLED' && <Tag color={lifecycleColor(row.status)}>{lifecycleLabel(row.status)}</Tag>}
     </span>
   );
 }
@@ -251,7 +259,7 @@ export function OrganizationStructurePage({queryContext, actionCapabilityKeys}: 
                   {key: 'name', label: '名称', children: selected.name},
                   {key: 'code', label: '编码', children: selected.code},
                   {key: 'status', label: '状态', children: organizationStatusLabel(selected.status)},
-                  {key: 'notes', label: '备注', children: selected.notes ?? '—'},
+                  {key: 'notes', label: '备注', children: displayFieldValue(selected.notes)},
                   ...(selected.nodeType === 'PROJECT'
                     ? [{key: 'phases', label: '项目分期名称', children: selected.phases.join('、') || '—'}]
                     : []),

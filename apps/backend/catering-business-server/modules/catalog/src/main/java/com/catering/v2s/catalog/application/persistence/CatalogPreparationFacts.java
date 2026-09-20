@@ -159,8 +159,8 @@ public class CatalogPreparationFacts {
         jdbc.query(
                 CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_SELECT_CONFIG_ITEM_REF_OVERRIDE_ORDER_OPTION_DEFINITION_VALUE_REF
                         + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_FROM_CLAUSE_CATALOG_ITEM_ORDER_OPTION_CONFIG_CONFIG
-                        + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE
-                        + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CONTINUATION_OVERRIDE_ITEM_ORDER_OPTION_CONFIG_REF_CONFIG
+                        + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE
+                        + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_OVERRIDE_ITEM_ORDER_OPTION_CONFIG_REF_CONFIG
                         + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_WHERE_CONFIG_ITEM_REF
                         + placeholders
                         + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CLOSE_PAREN_OVERRIDE_PREPARATION_EFFECT
@@ -195,10 +195,10 @@ public class CatalogPreparationFacts {
                         + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_FROM_CLAUSE_CATALOG_ITEM_ITEM_REF
                         + itemPlaceholders
                         + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CLOSE_PAREN_EFFECT_CONFIG_ITEM_REF_OVERRIDE
-                        + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_CONFIG
-                        + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE_ALTERNATE_A
-                        + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CONTINUATION_OVERRIDE_ITEM_ORDER_OPTION_CONFIG_REF_CONFIG_ALTERNATE_A
-                        + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CONTINUATION_CONFIG_ITEM_REF
+                        + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CATALOG_ITEM_ORDER_OPTION_CONFIG
+                        + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE_ALTERNATE_A
+                        + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_OVERRIDE_ITEM_ORDER_OPTION_CONFIG_REF_CONFIG_ALTERNATE_A
+                        + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CONFIG_ITEM_REF
                         + itemPlaceholders
                         + CatalogPreparationFactsSql.CATALOG_PREPARATION_FACTS_CLOSE_PAREN_OVERRIDE_PREPARATION_EFFECT_ALTERNATE_A);
         if (!skus.isEmpty())

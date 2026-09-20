@@ -8,9 +8,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class BusinessTenantPersistence {
     private final JdbcTemplate jdbc;
+    private final OrganizationAuditEventWriter auditEvents;
 
     public BusinessTenantPersistence(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
+        this.auditEvents = new OrganizationAuditEventWriter(jdbc);
     }
 
     public int insert(
@@ -25,7 +27,7 @@ public class BusinessTenantPersistence {
             long now) {
         return jdbc.update(
                 BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_INSERT_INTO_TENANT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
-                        + BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_CONTINUATION_CREDIT_CODE_REMARK_STATUS_VERSION
+                        + BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_CREDIT_CODE_REMARK_STATUS_VERSION
                         + BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_VALUES_ENABLED,
                 id,
                 workspaceUuid,
@@ -141,10 +143,7 @@ public class BusinessTenantPersistence {
             String action,
             long occurredAtEpochMillis,
             String changesJson) {
-        return jdbc.update(
-                BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE
-                        + BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_CONTINUATION_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
-                        + BusinessTenantServiceSql.BUSINESS_TENANT_SERVICE_CONTINUATION_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON,
+        return auditEvents.write(
                 id,
                 workspaceUuid,
                 groupWorkspaceKey,

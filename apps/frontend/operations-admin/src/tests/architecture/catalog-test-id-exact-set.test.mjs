@@ -105,6 +105,10 @@ test('catalog component static testIds have one exact vocabulary and resolve loc
     CATALOG_MEDIA: 'media: (businessIdentity',
     CATALOG_ITEM_ROW: 'catalogItemRowTestId',
     CATALOG_ITEM_SELECTION: 'catalogItemSelectionTestId',
+    CATALOG_CATEGORY_NODE: 'categoryNode: (categoryCode',
+    CATALOG_CATEGORY_EXPANDER: 'categoryExpander: (categoryCode',
+    CATALOG_PRODUCTION_TAG_NODE: 'productionTagNode: (tagCode',
+    CATALOG_ITEM_TAB: 'catalogItemTabTestId',
   };
   for (const [controlKey, binding] of Object.entries(bindings.controls)) {
     if (!binding.testIdFactory) continue;

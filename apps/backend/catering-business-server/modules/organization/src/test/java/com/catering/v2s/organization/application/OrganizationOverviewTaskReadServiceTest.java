@@ -294,22 +294,12 @@ class OrganizationOverviewTaskReadServiceTest {
     }
 
     @Test
-    void storeOverviewQueryAcceptsVoidedStoreStatus() {
+    void overviewQueriesAcceptVoidedStatusForEverySupportedCategory() {
         var query = new OrganizationOverviewTaskReadService.Query(
                 null, null, null, null, null, "VOIDED", null, null, null, null, "UPDATED_AT", "DESC");
 
-        var validated = query.validated(com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.STORE);
-
-        assertEquals("VOIDED", validated.status());
-    }
-
-    @Test
-    void hierarchyOverviewQueryStillRejectsVoidedStatus() {
-        var query = new OrganizationOverviewTaskReadService.Query(
-                null, null, null, null, null, "VOIDED", null, null, null, null, "UPDATED_AT", "DESC");
-
-        assertThrows(
-                OrganizationOverviewTaskReadService.QueryValidationException.class,
-                () -> query.validated("HIERARCHY"));
+        for (String category : List.of("HIERARCHY", "BUSINESS_ENTITY", "STORE")) {
+            assertEquals("VOIDED", query.validated(category).status(), category);
+        }
     }
 }

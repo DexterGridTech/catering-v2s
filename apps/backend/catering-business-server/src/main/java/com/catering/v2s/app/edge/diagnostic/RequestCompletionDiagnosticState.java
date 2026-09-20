@@ -63,13 +63,14 @@ public final class RequestCompletionDiagnosticState {
         // collector here would hide the same database operations from that existing observer.
         DatabaseOperationTracker.Snapshot snapshot = DatabaseOperationTracker.snapshot();
         String errorCode = frozenErrorCode.get();
-        boolean failed = errorCode != null || exception != null || responseStatus >= 400;
+        int effectiveResponseStatus = exception != null && responseStatus < 400 ? 500 : responseStatus;
+        boolean failed = errorCode != null || exception != null || effectiveResponseStatus >= 400;
         return new RequestCompletionEvent(
                 context,
                 consumerFace,
                 failed ? "FAILED" : "SUCCEEDED",
                 Math.max(0, (System.nanoTime() - startedAtNanos) / 1_000_000),
-                responseStatus,
+                effectiveResponseStatus,
                 errorCode == null && failed ? UNKNOWN_ERROR : errorCode,
                 snapshot.count(),
                 snapshot.durationMillis());

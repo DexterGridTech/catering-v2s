@@ -1,5 +1,11 @@
 import {Alert, Modal} from 'antd';
-import {NameCodePathText, testId, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {
+  NameCodePathText,
+  StatusChangeConfirm,
+  testId,
+  useOverlayLock,
+  useSubmissionLifecycle,
+} from '@catering-v2s/admin-ui-foundation';
 import type {ReactNode} from 'react';
 import type {WorkspaceAccount} from '../../../app/api/generated/platform-edge';
 import type {PlatformApiProblem} from '../../../app/api/PlatformTransport';
@@ -43,6 +49,26 @@ export function WorkspaceAccountActionModal({open, action, account, busy, proble
   useOverlayLock(open);
   const lifecycle = useSubmissionLifecycle();
   if (!action || !account) return null;
+  if (action.kind === 'STATUS') {
+    const actionLabel = action.targetStatus === 'ENABLED' ? '启用' : '停用';
+    return (
+      <StatusChangeConfirm
+        title={`确认${actionLabel}“${account.displayName}”？`}
+        open
+        actionLabel={actionLabel}
+        submitting={busy}
+        problem={problem ? `${problem.title}: ${problem.detail}` : undefined}
+        problemTestId="workspace-account-action-error"
+        onCancel={onClose}
+        onConfirm={() => void onConfirm(lifecycle.getIdempotencyKey())}
+        confirmTestId="workspace-account-action-confirm"
+        cancelTestId="workspace-account-action-cancel"
+        modalTestId="workspace-account-status-confirm"
+      >
+        将账号状态变更为“{actionLabel}”。
+      </StatusChangeConfirm>
+    );
+  }
   const content = copy(action, account);
   return (
     <Modal

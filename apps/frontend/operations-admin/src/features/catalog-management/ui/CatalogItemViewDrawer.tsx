@@ -1,11 +1,13 @@
-import {Alert, Button, Card, Descriptions, Drawer, Modal, Space, Tabs, Tooltip, Typography} from 'antd';
+import {Alert, Button, Card, Descriptions, Drawer, Space, Tabs, Tooltip, Typography} from 'antd';
 import {useEffect, useMemo, useState} from 'react';
 import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
   adminWideDrawerSurfaceProps,
   createContentIdempotencyKey,
+  displayFieldValue,
   NameCodeText,
+  StatusChangeConfirm,
   testId,
 } from '@catering-v2s/admin-ui-foundation';
 import {operationsLogger, operationsRtk} from '../../../app/api/OperationsTransport';
@@ -41,6 +43,7 @@ export function CatalogItemViewDrawer({
   const [activeTab, setActiveTab] = useState(initialViewTab || 'basic');
   const [problem, setProblem] = useState<string>();
   const [pendingStatus, setPendingStatus] = useState<'ENABLED' | 'DISABLED' | 'VOIDED'>();
+  const [statusSubmitting, setStatusSubmitting] = useState(false);
   const [promotionOpen, setPromotionOpen] = useState(false);
   const headers = useMemo(() => (brandRef ? {'X-Workspace-Brand-Ref': brandRef} : undefined), [brandRef]);
   const detailRequest = useMemo(
@@ -91,6 +94,8 @@ export function CatalogItemViewDrawer({
 
   const changeStatus = async (targetStatus: 'ENABLED' | 'DISABLED' | 'VOIDED') => {
     if (!detail || !viewedItemCode) return;
+    setProblem(undefined);
+    setStatusSubmitting(true);
     try {
       const body = {
         dataNodeRef: requireOperationsScopeRef(queryContext),
@@ -117,6 +122,9 @@ export function CatalogItemViewDrawer({
       });
     } catch (error) {
       setProblem(catalogUiProblemFeedback(error, '商品状态更新未完成，请重试。').message);
+    } finally {
+      setStatusSubmitting(false);
+      setPendingStatus(undefined);
     }
   };
 
@@ -130,7 +138,7 @@ export function CatalogItemViewDrawer({
     setPendingStatus('VOIDED');
   };
 
-  const pendingStatusLabel = pendingStatus === 'ENABLED' ? '启用' : pendingStatus === 'DISABLED' ? '停用' : '标记删除';
+  const pendingStatusLabel = pendingStatus === 'ENABLED' ? '启用' : pendingStatus === 'DISABLED' ? '停用' : '作废';
 
   const tabs = detail?.tabs
     .filter(tab => tab.visible)
@@ -139,10 +147,20 @@ export function CatalogItemViewDrawer({
       label:
         tab.disabled && tab.reason ? (
           <Tooltip title={tab.reason}>
-            <span data-testid={catalogItemTabTestId(tab.tabKey)}>{catalogViewTabLabel(tab.tabKey)}</span>
+            <span
+              data-testid={catalogItemTabTestId(tab.tabKey)}
+              data-active={activeTab === tab.tabKey ? 'true' : 'false'}
+            >
+              {catalogViewTabLabel(tab.tabKey)}
+            </span>
           </Tooltip>
         ) : (
-          <span data-testid={catalogItemTabTestId(tab.tabKey)}>{catalogViewTabLabel(tab.tabKey)}</span>
+          <span
+            data-testid={catalogItemTabTestId(tab.tabKey)}
+            data-active={activeTab === tab.tabKey ? 'true' : 'false'}
+          >
+            {catalogViewTabLabel(tab.tabKey)}
+          </span>
         ),
       disabled: tab.disabled,
       children: (
@@ -189,7 +207,7 @@ export function CatalogItemViewDrawer({
                 danger: true,
                 label: (
                   <AdminDetailActionLabel testIdValue={catalogTestIds.static.itemVoid}>
-                    <span {...testId(catalogTestIds.control.statusVoid)}>标记删除</span>
+                    <span {...testId(catalogTestIds.control.statusVoid)}>作废</span>
                   </AdminDetailActionLabel>
                 ),
                 onClick: markItemDeleted,
@@ -303,7 +321,11 @@ export function CatalogItemViewDrawer({
             size="small"
             column={2}
             items={[
-              {key: 'name', label: '原始名称', children: detail.item.externalIdentity.snapshot?.name || '—'},
+              {
+                key: 'name',
+                label: '原始名称',
+                children: displayFieldValue(detail.item.externalIdentity.snapshot?.name),
+              },
               {key: 'price', label: '原始价格', children: money(detail.item.externalIdentity.snapshot?.price ?? null)},
             ]}
           />
@@ -312,25 +334,24 @@ export function CatalogItemViewDrawer({
       {detail && tabs && (
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabs} {...testId(catalogTestIds.static.itemTabs)} />
       )}
-      <Modal
-        open={Boolean(pendingStatus && detail)}
-        title={`${pendingStatusLabel}商品？`}
-        onCancel={() => setPendingStatus(undefined)}
-        onOk={() => {
-          const targetStatus = pendingStatus;
-          setPendingStatus(undefined);
-          if (targetStatus) void changeStatus(targetStatus);
-        }}
-        okText={`确认${pendingStatusLabel}`}
-        cancelText="取消"
-        okButtonProps={testId(catalogTestIds.control.lifecycleConfirmYes)}
-        cancelButtonProps={testId(catalogTestIds.control.lifecycleConfirmNo)}
-        {...testId(catalogTestIds.surface.lifecycleConfirm)}
-      >
-        {pendingStatus === 'VOIDED'
-          ? '商品会保留历史记录并标记为删除；如需新建商品，请返回商品列表重新创建。'
-          : `将把商品“${detail?.item.name ?? ''}”的状态改为“${pendingStatusLabel}”，不会清空商品信息。`}
-      </Modal>
+      {pendingStatus && detail && (
+        <StatusChangeConfirm
+          open
+          title={`${pendingStatusLabel}商品？`}
+          actionLabel={pendingStatusLabel}
+          dangerous={pendingStatus === 'VOIDED'}
+          submitting={statusSubmitting}
+          onCancel={() => setPendingStatus(undefined)}
+          onConfirm={() => void changeStatus(pendingStatus)}
+          confirmTestId={catalogTestIds.control.lifecycleConfirmYes}
+          cancelTestId={catalogTestIds.control.lifecycleConfirmNo}
+          modalTestId={catalogTestIds.surface.lifecycleConfirm}
+        >
+          {pendingStatus === 'VOIDED'
+            ? '商品会保留历史记录并作废；如需新建商品，请返回商品列表重新创建。'
+            : `将把商品“${detail.item.name}”的状态改为“${pendingStatusLabel}”，不会清空商品信息。`}
+        </StatusChangeConfirm>
+      )}
       {detail && (
         <CatalogTemporaryPromotionTask
           open={promotionOpen}

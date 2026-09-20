@@ -32,9 +32,9 @@ public class WorkspaceInvitationPersistence {
             long createdAtEpochMillis) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INSERT_INTO_INVITATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TOKEN_HASH
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_INVITATION_TOKEN
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_EXPIRES_AT_EPOCH_MILLIS_VERSION_CREATED_AT_EPOCH_MILLIS
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_PENDING,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INVITATION_TOKEN
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_EXPIRES_AT_EPOCH_MILLIS_VERSION_CREATED_AT_EPOCH_MILLIS
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_PENDING,
                 invitationId,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -49,7 +49,7 @@ public class WorkspaceInvitationPersistence {
     public int insertAssignmentIntent(UUID invitationId, UUID roleId, String serviceNodeType, UUID serviceNodeId) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INSERT_INTO_INVITATION_ASSIGNMENT_INTENT_INVITATION_ID_ROLE_ID
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_SERVICE_NODE_TYPE_SERVICE_NODE_ID,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_SERVICE_NODE_TYPE_SERVICE_NODE_ID,
                 invitationId,
                 roleId,
                 serviceNodeType,
@@ -128,8 +128,8 @@ public class WorkspaceInvitationPersistence {
             throw new IllegalArgumentException("unsupported invitation direction");
         }
         String sql = WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_SELECT_MOBILE_NORMALIZED_STATUS_EXPIRES_AT_EPOCH_MILLIS_VERSION
-                + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_CREATED_AT_EPOCH_MILLIS
-                + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_INVITATION_CANCELLED_AT_EPOCH_MILLIS_INVITATION_TOKEN
+                + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CREATED_AT_EPOCH_MILLIS
+                + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INVITATION_CANCELLED_AT_EPOCH_MILLIS_INVITATION_TOKEN
                 + where
                 + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_ORDER_BY_ORDER_BY_I
                 + orderColumn
@@ -149,9 +149,9 @@ public class WorkspaceInvitationPersistence {
     public int cancel(UUID invitationId, UUID workspaceUuid, String groupWorkspaceKey, long cancelledAt, long expectedVersion) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_UPDATE_INVITATION_STATUS_CANCELLED_CANCELLED_AT_EPOCH_MILLIS
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_VERSION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_STATUS
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_PENDING_MOBILE_VERIFIED_VERSION,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_VERSION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_STATUS
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_PENDING_MOBILE_VERIFIED_VERSION,
                 cancelledAt,
                 invitationId,
                 workspaceUuid,
@@ -162,8 +162,8 @@ public class WorkspaceInvitationPersistence {
     public InvitationRow scopedInvitation(UUID workspaceUuid, String groupWorkspaceKey, UUID invitationId) {
         return jdbc.query(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED_STATUS
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_INVITATION_VERSION_WORKSPACE_UUID
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INVITATION_VERSION_WORKSPACE_UUID
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, invitationId);
                     statement.setObject(2, workspaceUuid);
@@ -175,7 +175,7 @@ public class WorkspaceInvitationPersistence {
     public int reissue(UUID invitationId, long expectedVersion) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_UPDATE_INVITATION_STATUS_REISSUED_VERSION
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_VERSION,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_VERSION,
                 invitationId,
                 expectedVersion);
     }
@@ -191,9 +191,9 @@ public class WorkspaceInvitationPersistence {
     public int acceptIntent(UUID invitationId, long consentedAt, long expectedVersion) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_UPDATE_INVITATION_STATUS_ACCEPT_INTENT_RECORDED
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_CONSENTED_AT_EPOCH_MILLIS_VERSION_STATUS_PENDING
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONSENTED_AT_EPOCH_MILLIS_VERSION_STATUS_PENDING
                         + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONDITION
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_VERSION_ALTERNATE_A,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_VERSION_ALTERNATE_A,
                 consentedAt,
                 invitationId,
                 expectedVersion);
@@ -210,8 +210,8 @@ public class WorkspaceInvitationPersistence {
     public int consumeOtp(long usedAt, UUID invitationId, String tokenHash, long now) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_UPDATE_OTP_GRANT_STATUS_USED_USED_AT_EPOCH_MILLIS_SUBJECT_REF
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_PURPOSE_INVITATION_MOBILE_VERIFY_TOKEN_HASH_STATUS
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_EXPIRES_AT_EPOCH_MILLIS,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_PURPOSE_INVITATION_MOBILE_VERIFY_TOKEN_HASH_STATUS
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_EXPIRES_AT_EPOCH_MILLIS,
                 usedAt,
                 invitationId,
                 tokenHash,
@@ -221,14 +221,14 @@ public class WorkspaceInvitationPersistence {
     public int incrementOtpAttempt(UUID invitationId) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_UPDATE_OTP_GRANT_ATTEMPT_COUNT_SUBJECT_REF
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_PURPOSE_INVITATION_MOBILE_VERIFY_STATUS_ACTIVE,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_PURPOSE_INVITATION_MOBILE_VERIFY_STATUS_ACTIVE,
                 invitationId);
     }
 
     public int markMobileVerified(UUID invitationId, long expectedVersion) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_UPDATE_INVITATION_STATUS_MOBILE_VERIFIED_VERSION
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_STATUS_ACCEPT_INTENT_RECORDED_VERSION,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_STATUS_ACCEPT_INTENT_RECORDED_VERSION,
                 invitationId,
                 expectedVersion);
     }
@@ -236,11 +236,10 @@ public class WorkspaceInvitationPersistence {
     public int upsertPublicProgress(UUID invitationId, String verificationGrantHash, long expiresAt) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INSERT_INTO_INVITATION_PUBLIC_PROGRESS
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_VERIFICATION_GRANT_EXPIRES_AT_EPOC_VERSION
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_VERIFICATION_GRANT_EXPIRES_AT_EPOC_VERSION
                         + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_OPEN_PAREN_SET_INVITATION_ID_VERIFICATION_GRANT_HASH
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_VERIFICATION_GRANT_EXPIRES_AT_EPOC
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_VERSION_INVITATION_PUBLIC_PROGRESS,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_VERIFICATION_GRANT_EXPIRES_AT_EPOCH_MILLIS_EXCLUDED_VERIFICATION_GRANT_EXPIRES_AT_EPOCH_MILLIS_EXCLUDED_VERIFICATION_GRANT_EXPIRES_AT_EPOCH_MILLIS
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_VERSION_INVITATION_PUBLIC_PROGRESS,
                 invitationId,
                 verificationGrantHash,
                 expiresAt);
@@ -250,8 +249,8 @@ public class WorkspaceInvitationPersistence {
             String loginNameNormalized, String displayName, String passwordHash, long readyAt, UUID invitationId) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_UPDATE_INVITATION_PUBLIC_PROGRESS_LOGIN_NAME_NORMALIZED_DISPLAY_NAME
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_PASSWORD_HASH_CREDENTIAL_READY_AT_EPOCH_MILLIS_VERSION
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_INVITATION_ID,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_PASSWORD_HASH_CREDENTIAL_READY_AT_EPOCH_MILLIS_VERSION
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INVITATION_ID,
                 loginNameNormalized,
                 displayName,
                 passwordHash,
@@ -270,7 +269,7 @@ public class WorkspaceInvitationPersistence {
     public int completeProgress(UUID accountId, long completedAt, UUID invitationId) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_UPDATE_INVITATION_PUBLIC_PROGRESS_COMPLETION_ACCOUNT_ID
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_COMPLETED_AT_EPOCH_MILLIS_VERSION_INVITATION_ID,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_COMPLETED_AT_EPOCH_MILLIS_VERSION_INVITATION_ID,
                 accountId,
                 completedAt,
                 invitationId);
@@ -279,7 +278,7 @@ public class WorkspaceInvitationPersistence {
     public InvitationRow byId(UUID invitationId) {
         return jdbc.query(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED_STATUS_ALTERNATE_A
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_INVITATION_VERSION,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INVITATION_VERSION,
                 statement -> statement.setObject(1, invitationId),
                 result -> result.next() ? invitationRow(result) : null);
     }
@@ -287,7 +286,7 @@ public class WorkspaceInvitationPersistence {
     public int supersedeActiveOtp(UUID invitationId) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_UPDATE_OTP_GRANT_STATUS_SUPERSEDED_SUBJECT_REF
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_PURPOSE_INVITATION_MOBILE_VERIFY_STATUS_ACTIVE_ALTERNATE_A,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_PURPOSE_INVITATION_MOBILE_VERIFY_STATUS_ACTIVE_ALTERNATE_A,
                 invitationId);
     }
 
@@ -300,7 +299,7 @@ public class WorkspaceInvitationPersistence {
             long expiresAt) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INSERT_INTO_OTP_GRANT
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_SUBJECT_REF
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_SUBJECT_REF
                         + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_PARAMETER_PLACEHOLDER
                         + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_PARAMETER_PLACEHOLDER_ACTIVE,
                 otpId,
@@ -314,7 +313,7 @@ public class WorkspaceInvitationPersistence {
     public int markCompleting(UUID invitationId, long expectedVersion) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_UPDATE_INVITATION_STATUS_COMPLETING_VERSION
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_STATUS_CREDENTIAL_READY_VERSION,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_STATUS_CREDENTIAL_READY_VERSION,
                 invitationId,
                 expectedVersion);
     }
@@ -330,9 +329,9 @@ public class WorkspaceInvitationPersistence {
             long updatedAt) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INSERT_INTO_WORKSPACE_ACCOUNT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_MOBILE_NORMALIZED
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_ENABLED
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_1
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_MOBILE_NORMALIZED
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_ENABLED
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_1
                         + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_PARAMETER_PLACEHOLDER_ALTERNATE_A,
                 accountId,
                 workspaceUuid,
@@ -347,7 +346,7 @@ public class WorkspaceInvitationPersistence {
     public int createCredential(UUID accountId, String passwordHash, long changedAt) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INSERT_INTO_WORKSPACE_CREDENTIAL_ACCOUNT_ID_PASSWORD_HASH_ALGORITHM
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_CHANGED_AT_EPOCH_MILLIS_VERSION_BCRYPT,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CHANGED_AT_EPOCH_MILLIS_VERSION_BCRYPT,
                 accountId,
                 passwordHash,
                 changedAt);
@@ -366,10 +365,10 @@ public class WorkspaceInvitationPersistence {
             long updatedAt) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INSERT_INTO_ROLE_ASSIGNMENT
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_ROLE_ID
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_ACTIVE
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_1_ALTERNATE_A,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_ROLE_ID
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_ACTIVE
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_1_ALTERNATE_A,
                 assignmentId,
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -385,7 +384,7 @@ public class WorkspaceInvitationPersistence {
     public int markCompleted(UUID invitationId, long completedAt) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_UPDATE_INVITATION_STATUS_COMPLETED_COMPLETED_AT_EPOCH_MILLIS
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_VERSION_STATUS_COMPLETING,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_VERSION_STATUS_COMPLETING,
                 completedAt,
                 invitationId);
     }
@@ -396,8 +395,8 @@ public class WorkspaceInvitationPersistence {
         String placeholders = placeholders(ids.size());
         return jdbc.query(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_SELECT_INTENT_INVITATION_ID_ROLE_ID_SERVICE_NODE_TYPE
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_INVITATION_ASSIGNMENT_INTENT_ROLE_NAME_INTENT
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_WORKSPACE_ROLE_ROLE_INTENT_ROLE_ID
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INVITATION_ASSIGNMENT_INTENT_ROLE_NAME_INTENT
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_WORKSPACE_ROLE_ROLE_INTENT_ROLE_ID
                         + placeholders
                         + WorkspaceInvitationServiceSql.ASSIGNMENT_INTENT_ORDER_SUFFIX,
                 statement -> {
@@ -441,8 +440,8 @@ public class WorkspaceInvitationPersistence {
             String changesJson) {
         return jdbc.update(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_WORKSPACE_INVITATION
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_WORKSPACE_INVITATION
                         + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_PARAMETER_PLACEHOLDER_ALTERNATE_B
                         + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_PARAMETER_PLACEHOLDER_CAST_AS_JSONB,
                 auditId,
@@ -460,8 +459,8 @@ public class WorkspaceInvitationPersistence {
     public InvitationReadRow readback(UUID workspaceUuid, String groupWorkspaceKey, UUID invitationId) {
         return jdbc.query(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_SELECT_MOBILE_NORMALIZED_STATUS_EXPIRES_AT_EPOCH_MILLIS_VERSION_ALTERNATE_A
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_CREATED_AT_EPOCH_MILLIS_ALTERNATE_A
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_INVITATION_CANCELLED_AT_EPOCH_MILLIS_INVITATION_TOKEN_ALTERNATE_A
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CREATED_AT_EPOCH_MILLIS_ALTERNATE_A
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INVITATION_CANCELLED_AT_EPOCH_MILLIS_INVITATION_TOKEN_ALTERNATE_A
                         + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, invitationId);
@@ -474,7 +473,7 @@ public class WorkspaceInvitationPersistence {
     public AccountPresenceRow accountPresence(UUID workspaceUuid, String groupWorkspaceKey, String mobileNormalized) {
         return jdbc.query(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_SELECT_WORKSPACE_ACCOUNT_STATUS_WORKSPACE_UUID
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED,
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, groupWorkspaceKey);
@@ -511,7 +510,7 @@ public class WorkspaceInvitationPersistence {
         Integer count = jdbc.queryForObject(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_SELECT_INVITATION_PUBLIC_PROGRESS_INVITATION_ID
                         + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONDITION_VERIFICATION_GRANT_HASH
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_VERIFICATION_GRANT_EXPIRES_AT_EPOC_ALTERNATE_A,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_VERIFICATION_GRANT_EXPIRES_AT_EPOC_ALTERNATE_A,
                 Integer.class,
                 invitationId,
                 grantHash,
@@ -522,7 +521,7 @@ public class WorkspaceInvitationPersistence {
     public ProgressRow progress(UUID invitationId) {
         return jdbc.query(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_SELECT_LOGIN_NAME_NORMALIZED
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_INVITATION_PUBLIC_PROGRESS_INVITATION_ID,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INVITATION_PUBLIC_PROGRESS_INVITATION_ID,
                 statement -> statement.setObject(1, invitationId),
                 result -> result.next()
                         ? new ProgressRow(
@@ -536,7 +535,7 @@ public class WorkspaceInvitationPersistence {
     public InvitationRow byToken(String tokenHash) {
         return jdbc.query(
                 WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_MOBILE_NORMALIZED_STATUS_ALTERNATE_C
-                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_CONTINUATION_INVITATION_VERSION_TOKEN_HASH,
+                        + WorkspaceInvitationServiceSql.WORKSPACE_INVITATION_SERVICE_INVITATION_VERSION_TOKEN_HASH,
                 statement -> statement.setString(1, tokenHash),
                 result -> result.next() ? invitationRow(result) : null);
     }

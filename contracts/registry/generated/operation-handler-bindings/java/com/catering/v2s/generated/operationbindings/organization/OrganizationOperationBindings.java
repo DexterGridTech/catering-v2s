@@ -49,6 +49,19 @@ public final class OrganizationOperationBindings {
     OperationBindingTypes.Wire.OrganizationStore updateOperationsOrganizationStore(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.OrganizationStoreUpdateRequest request);
     OperationBindingTypes.Wire.Tenant updateOperationsOrganizationTenant(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.TenantUpdateRequest request);
     OperationBindingTypes.Wire.OrganizationStore getOperationsOrganizationStoreOperatingRule(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.NoBody request);
+    OperationBindingTypes.Wire.StoreQrConfigurationView getOperationsStoreQrConfiguration(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.NoBody request);
+    OperationBindingTypes.Wire.StoreServicePointDetail getOperationsStoreServicePoint(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.NoBody request);
+    OperationBindingTypes.Wire.StoreServicePointAreaPage getOperationsStoreServicePointAreas(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.NoBody request);
+    OperationBindingTypes.Wire.StoreServicePointPage getOperationsStoreServicePoints(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.NoBody request);
+    OperationBindingTypes.Wire.StoreQrConfigurationView patchOperationsStoreQrConfiguration(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreQrConfigurationUpdateRequest request);
+    OperationBindingTypes.Wire.StoreServicePoint patchOperationsStoreServicePoint(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointUpdateRequest request);
+    OperationBindingTypes.Wire.StoreServicePointArea patchOperationsStoreServicePointArea(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointAreaUpdateRequest request);
+    OperationBindingTypes.Wire.StoreServicePoint postOperationsStoreServicePoint(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointCreateRequest request);
+    OperationBindingTypes.Wire.StoreServicePointArea postOperationsStoreServicePointArea(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointAreaCreateRequest request);
+    OperationBindingTypes.Wire.StoreServicePointArea postOperationsStoreServicePointAreaOrder(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointAreaOrderRequest request);
+    OperationBindingTypes.Wire.StoreServicePointArea postOperationsStoreServicePointAreaStatus(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointAreaStatusRequest request);
+    OperationBindingTypes.Wire.StoreServicePoint postOperationsStoreServicePointOrder(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointOrderRequest request);
+    OperationBindingTypes.Wire.StoreServicePoint postOperationsStoreServicePointStatus(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointStatusRequest request);
   }
 
   private final OwnerLocalAdapters adapters;
@@ -96,6 +109,19 @@ public final class OrganizationOperationBindings {
   public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_ORGANIZATION_STORE_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsOrganizationStore", "organization", "edge-face");
   public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_ORGANIZATION_TENANT_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsOrganizationTenant", "organization", "edge-face");
   public static final OperationBindingTypes.OperationDescriptor GET_OPERATIONS_ORGANIZATION_STORE_OPERATING_RULE_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getOperationsOrganizationStoreOperatingRule", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor GET_OPERATIONS_STORE_QR_CONFIGURATION_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getOperationsStoreQrConfiguration", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor GET_OPERATIONS_STORE_SERVICE_POINT_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getOperationsStoreServicePoint", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor GET_OPERATIONS_STORE_SERVICE_POINT_AREAS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getOperationsStoreServicePointAreas", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor GET_OPERATIONS_STORE_SERVICE_POINTS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getOperationsStoreServicePoints", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor PATCH_OPERATIONS_STORE_QR_CONFIGURATION_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("patchOperationsStoreQrConfiguration", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor PATCH_OPERATIONS_STORE_SERVICE_POINT_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("patchOperationsStoreServicePoint", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor PATCH_OPERATIONS_STORE_SERVICE_POINT_AREA_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("patchOperationsStoreServicePointArea", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor POST_OPERATIONS_STORE_SERVICE_POINT_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("postOperationsStoreServicePoint", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor POST_OPERATIONS_STORE_SERVICE_POINT_AREA_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("postOperationsStoreServicePointArea", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor POST_OPERATIONS_STORE_SERVICE_POINT_AREA_ORDER_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("postOperationsStoreServicePointAreaOrder", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor POST_OPERATIONS_STORE_SERVICE_POINT_AREA_STATUS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("postOperationsStoreServicePointAreaStatus", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor POST_OPERATIONS_STORE_SERVICE_POINT_ORDER_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("postOperationsStoreServicePointOrder", "organization", "edge-face");
+  public static final OperationBindingTypes.OperationDescriptor POST_OPERATIONS_STORE_SERVICE_POINT_STATUS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("postOperationsStoreServicePointStatus", "organization", "edge-face");
 
   private static void requireReadDescriptor(OperationBindingTypes.OperationDescriptor descriptor) {
     if (descriptor == null) throw new IllegalArgumentException("descriptor is required");
@@ -119,6 +145,10 @@ public final class OrganizationOperationBindings {
       case "getPlatformOrganizationOverviewDetail" -> { if (descriptor != GET_PLATFORM_ORGANIZATION_OVERVIEW_DETAIL_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getPlatformOrganizationOverviewPage" -> { if (descriptor != GET_PLATFORM_ORGANIZATION_OVERVIEW_PAGE_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getOperationsOrganizationStoreOperatingRule" -> { if (descriptor != GET_OPERATIONS_ORGANIZATION_STORE_OPERATING_RULE_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "getOperationsStoreQrConfiguration" -> { if (descriptor != GET_OPERATIONS_STORE_QR_CONFIGURATION_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "getOperationsStoreServicePoint" -> { if (descriptor != GET_OPERATIONS_STORE_SERVICE_POINT_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "getOperationsStoreServicePointAreas" -> { if (descriptor != GET_OPERATIONS_STORE_SERVICE_POINT_AREAS_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "getOperationsStoreServicePoints" -> { if (descriptor != GET_OPERATIONS_STORE_SERVICE_POINTS_DESCRIPTOR || !"organization".equals(descriptor.owner()) || !"edge-face".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       default -> throw new IllegalArgumentException("unsupported descriptor");
     }
   }
@@ -146,6 +176,10 @@ public final class OrganizationOperationBindings {
       case "getPlatformOrganizationOverviewDetail" -> adapters.getPlatformOrganizationOverviewDetail(GET_PLATFORM_ORGANIZATION_OVERVIEW_DETAIL_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
       case "getPlatformOrganizationOverviewPage" -> adapters.getPlatformOrganizationOverviewPage(GET_PLATFORM_ORGANIZATION_OVERVIEW_PAGE_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
       case "getOperationsOrganizationStoreOperatingRule" -> adapters.getOperationsOrganizationStoreOperatingRule(GET_OPERATIONS_ORGANIZATION_STORE_OPERATING_RULE_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
+      case "getOperationsStoreQrConfiguration" -> adapters.getOperationsStoreQrConfiguration(GET_OPERATIONS_STORE_QR_CONFIGURATION_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
+      case "getOperationsStoreServicePoint" -> adapters.getOperationsStoreServicePoint(GET_OPERATIONS_STORE_SERVICE_POINT_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
+      case "getOperationsStoreServicePointAreas" -> adapters.getOperationsStoreServicePointAreas(GET_OPERATIONS_STORE_SERVICE_POINT_AREAS_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
+      case "getOperationsStoreServicePoints" -> adapters.getOperationsStoreServicePoints(GET_OPERATIONS_STORE_SERVICE_POINTS_DESCRIPTOR, context, (OperationBindingTypes.Wire.NoBody) request);
       default -> throw new IllegalArgumentException("Unsupported read operation: " + descriptor.operationId());
     };
   }
@@ -229,5 +263,41 @@ public final class OrganizationOperationBindings {
 
   public OperationBindingTypes.Wire.Tenant updateOperationsOrganizationTenant(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.TenantUpdateRequest request) {
     return adapters.updateOperationsOrganizationTenant(UPDATE_OPERATIONS_ORGANIZATION_TENANT_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.StoreQrConfigurationView patchOperationsStoreQrConfiguration(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreQrConfigurationUpdateRequest request) {
+    return adapters.patchOperationsStoreQrConfiguration(PATCH_OPERATIONS_STORE_QR_CONFIGURATION_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.StoreServicePoint patchOperationsStoreServicePoint(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointUpdateRequest request) {
+    return adapters.patchOperationsStoreServicePoint(PATCH_OPERATIONS_STORE_SERVICE_POINT_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.StoreServicePointArea patchOperationsStoreServicePointArea(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointAreaUpdateRequest request) {
+    return adapters.patchOperationsStoreServicePointArea(PATCH_OPERATIONS_STORE_SERVICE_POINT_AREA_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.StoreServicePoint postOperationsStoreServicePoint(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointCreateRequest request) {
+    return adapters.postOperationsStoreServicePoint(POST_OPERATIONS_STORE_SERVICE_POINT_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.StoreServicePointArea postOperationsStoreServicePointArea(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointAreaCreateRequest request) {
+    return adapters.postOperationsStoreServicePointArea(POST_OPERATIONS_STORE_SERVICE_POINT_AREA_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.StoreServicePointArea postOperationsStoreServicePointAreaOrder(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointAreaOrderRequest request) {
+    return adapters.postOperationsStoreServicePointAreaOrder(POST_OPERATIONS_STORE_SERVICE_POINT_AREA_ORDER_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.StoreServicePointArea postOperationsStoreServicePointAreaStatus(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointAreaStatusRequest request) {
+    return adapters.postOperationsStoreServicePointAreaStatus(POST_OPERATIONS_STORE_SERVICE_POINT_AREA_STATUS_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.StoreServicePoint postOperationsStoreServicePointOrder(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointOrderRequest request) {
+    return adapters.postOperationsStoreServicePointOrder(POST_OPERATIONS_STORE_SERVICE_POINT_ORDER_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.StoreServicePoint postOperationsStoreServicePointStatus(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.StoreServicePointStatusRequest request) {
+    return adapters.postOperationsStoreServicePointStatus(POST_OPERATIONS_STORE_SERVICE_POINT_STATUS_DESCRIPTOR, context, request);
   }
 }

@@ -2,6 +2,7 @@ import {LockOutlined} from '@ant-design/icons';
 import {Alert, Button, Card, Descriptions, Result, Space, Steps, Tag} from 'antd';
 import {
   createContentIdempotencyKey,
+  formatCanonicalDateTime,
   NameCodePathText,
   testId,
   useAsyncGenerationGuard,
@@ -235,7 +236,7 @@ export function PublicInvitationEntry({
                 },
                 {key: 'roles', label: '业务角色', children: view.roleNames.map(role => <Tag key={role}>{role}</Tag>)},
                 {key: 'mobile', label: '受邀手机号', children: view.maskedMobile},
-                {key: 'expires', label: '有效期', children: new Date(view.expiresAt).toLocaleString()},
+                {key: 'expires', label: '有效期', children: formatCanonicalDateTime(view.expiresAt)},
               ]}
             />
             <Button type="link" disabled={locked || pending} onClick={toLogin} {...testId('public-invitation-decline')}>

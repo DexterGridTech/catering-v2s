@@ -1,12 +1,15 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {createElement, cloneElement, type ReactElement} from 'react'
-import {TextInput} from 'react-native'
+import {TextInput, View} from 'react-native'
 import {describe, expect, it} from 'vitest'
 import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort, NativeLoadingCapability} from '@catering-v2s/ui-base-test-support'
 import {createRequestId} from '@catering-v2s/kernel-base-contracts'
 import type {CommandDispatchResult, Runtime} from '@catering-v2s/kernel-base-runtime'
 import {createDisplayContextModule} from '@catering-v2s/kernel-base-display-context'
-import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session'
+import {
+  createSampleStaffSessionModule,
+  sessionRestoredAnonymousCommand,
+} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {
   createRendererCatalog,
   createRenderRuntimeFacts,
@@ -20,6 +23,7 @@ import {
   sampleStaffAuthAssembly,
 } from '../src/index'
 import {createSampleStaffAuthModule} from '../src/application/module'
+import {createAuthNavigationActor} from '../src/features/actors/actors'
 import {AuthSystemNotice} from '../src/components/AuthSystemNotice'
 import {StaffLogin} from '../src/components/StaffLogin'
 import {
@@ -126,6 +130,11 @@ const press = (renderer: ReactTestRenderer, testID: string): unknown => {
   return instance.props.onPress()
 }
 
+const virtualKeyboardHosts = (renderer: ReactTestRenderer): readonly TestInstanceQuery[] =>
+  (renderer.root as unknown as Readonly<{
+    readonly findAllByType: (type: unknown) => readonly TestInstanceQuery[]
+  }>).findAllByType(View).filter(node => node.props.testID === 'ui.base.input:virtual-keyboard')
+
 const completedResult = (): CommandDispatchResult => ({
   requestId: null,
   commandId: 'command_test' as never,
@@ -231,7 +240,7 @@ describe('sample staff auth UI feature', () => {
     expect(passcode.props.secureTextEntry).toBe(true)
 
     act(() => { operatorName.props.onFocus({nativeEvent: {}}) })
-    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+    expect(virtualKeyboardHosts(renderer)).toHaveLength(1)
     act(() => { press(renderer, 'ui.base.input:virtual-keyboard:shift') })
     act(() => { press(renderer, 'ui.base.input:virtual-keyboard:text-a') })
     for (const key of ['0', '0', '1']) {
@@ -239,7 +248,7 @@ describe('sample staff auth UI feature', () => {
     }
 
     act(() => { passcode.props.onFocus({nativeEvent: {}}) })
-    expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(1)
+    expect(virtualKeyboardHosts(renderer)).toHaveLength(1)
     for (const _ of [1, 2, 3, 4]) {
       act(() => { press(renderer, 'ui.base.input:virtual-keyboard:text-1') })
     }
@@ -354,5 +363,25 @@ describe('sample staff auth UI feature', () => {
     } finally {
       releaseRuntimeForTest(runtime)
     }
+  })
+
+  it('does not issue local content writes when a SLAVE is rendering its projected MAIN workspace', async () => {
+    const actor = createAuthNavigationActor()
+    const handler = actor.handlers.find(handler => handler.commandName === sessionRestoredAnonymousCommand.commandName)
+    expect(handler).toBeDefined()
+    const dispatches: string[] = []
+    const state = {
+      'kernel.base.runtime.instance-mode': {instanceMode: 'SLAVE'},
+      'kernel.base.display-context.display-role': {displayRole: 'VICE', powerConfirmation: null},
+    } as RuntimeStateRoot
+    await handler!.handle({
+      command: {commandName: sessionRestoredAnonymousCommand.commandName, payload: {}},
+      getState: () => state,
+      dispatchCommand: async (definition: {readonly commandName: string}) => {
+        dispatches.push(definition.commandName)
+        return completedResult()
+      },
+    } as never)
+    expect(dispatches).toEqual([])
   })
 })

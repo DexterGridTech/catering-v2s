@@ -20,14 +20,14 @@ export function voidReason(value?: VoidAvailability) {
   }
   if (value.blockingReferences.length > 0) return '仍被其他业务记录使用';
   if (value.dependentFacts.length > 0) return '仍存在关联业务数据';
-  return '当前条目暂不能删除';
+  return '当前条目暂不能作废';
 }
 
 export function deleteActionLabel(_value?: VoidAvailability) {
   // Availability changes the control state and its business reason, never the
   // action's meaning. A different disabled label made the same lifecycle
   // action look like a second operation in the configuration libraries.
-  return '删除';
+  return '作废';
 }
 
 export const dictionaryKindLabels: Record<DictionaryKind, string> = {
@@ -56,7 +56,7 @@ export const unitDimensionOptions: Array<{value: NonNullable<FormValues['unitDim
 ];
 
 export function unitDimensionLabel(value?: FormValues['unitDimension']) {
-  return unitDimensionOptions.find(option => option.value === value)?.label ?? value ?? '—';
+  return displayFieldValue(unitDimensionOptions.find(option => option.value === value)?.label ?? value);
 }
 
 export function catalogUnitVoidControlState({
@@ -69,7 +69,7 @@ export function catalogUnitVoidControlState({
   isTransitioning: boolean;
 }): {disabled: boolean; reason?: string} {
   if (!canWrite) return {disabled: true, reason: '当前账号只有查看商品库的权限，不能修改字典。'};
-  if (isReferenced) return {disabled: true, reason: '该计量单位正在使用，不能删除；可以停用。'};
+  if (isReferenced) return {disabled: true, reason: '该计量单位正在使用，不能作废；可以停用。'};
   if (isTransitioning) return {disabled: true, reason: '正在更新状态，请稍候。'};
   return {disabled: false};
 }
@@ -88,3 +88,4 @@ export function catalogConfigurationChangeNeedsConfirmation({
 }) {
   return configurationLifecycleDirty || Boolean(definitionDirtyMessage);
 }
+import {displayFieldValue} from '@catering-v2s/admin-ui-foundation';

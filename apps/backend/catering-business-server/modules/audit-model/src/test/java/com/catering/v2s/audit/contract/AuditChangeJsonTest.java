@@ -10,10 +10,12 @@ class AuditChangeJsonTest {
     @Test
     void writesEscapedScalarChangesAndRoundTrips() {
         String encoded = AuditChangeJson.write(java.util.List.of(
-                AuditChange.forNullableScalar("name", "before\\\"\n", "after"), AuditChange.forNullableScalar("removed", "old", null)));
+                AuditChange.forNullableScalar("name", "before\\\"\n", "after"),
+                AuditChange.forNullableScalar("removed", "old", null)));
         assertEquals(
                 java.util.List.of(
-                        AuditChange.forNullableScalar("name", "before\\\"\n", "after"), AuditChange.forNullableScalar("removed", "old", null)),
+                        AuditChange.forNullableScalar("name", "before\\\"\n", "after"),
+                        AuditChange.forNullableScalar("removed", "old", null)),
                 AuditChangeJson.read(encoded));
     }
 
@@ -68,6 +70,7 @@ class AuditChangeJsonTest {
     void rejectsValueOnNonValueState() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new AuditChange("invalid", null, AuditValueState.MISSING, "value", AuditValueState.VALUE, "after"));
+                () -> new AuditChange(
+                        "invalid", null, AuditValueState.MISSING, "value", AuditValueState.VALUE, "after"));
     }
 }

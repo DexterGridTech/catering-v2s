@@ -133,7 +133,7 @@ const definitions: Readonly<Record<KeyboardLayout, KeyboardLayoutDefinition>> = 
     layout: 'alpha',
     rows: Object.freeze([
       textRow({value: 'qwertyuiop', zone: 'letters'}),
-      textRow({value: 'asdfghjkl', zone: 'letters', align: 'center'}),
+      compoundRow([actionKey('caps'), ...Array.from('asdfghjkl', character => textKey(character, 'letters'))]),
       compoundRow([
         actionKey('shift'),
         ...Array.from('zxcvbnm', character => textKey(character, 'letters')),
@@ -153,10 +153,11 @@ const definitions: Readonly<Record<KeyboardLayout, KeyboardLayoutDefinition>> = 
       textRow({value: '789', zone: 'digits'}),
       gridRow(
         [
-          {span: 2, direction: 'row', keys: [zeroKey]},
-          {span: 1, direction: 'row', keys: [backspaceKey, completeKey]},
+          {span: 1, direction: 'row', keys: [backspaceKey]},
+          {span: 1, direction: 'row', keys: [zeroKey]},
+          {span: 1, direction: 'row', keys: [completeKey]},
         ],
-        [zeroKey, backspaceKey, completeKey],
+        [backspaceKey, zeroKey, completeKey],
       ),
     ]),
     visualRowCount: 4,

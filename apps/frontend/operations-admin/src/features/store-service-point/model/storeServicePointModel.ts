@@ -1,7 +1,11 @@
 import dayjs, {type Dayjs} from 'dayjs';
+import {LIFECYCLE_LABELS} from '@catering-v2s/admin-ui-foundation';
 import type {
   ExtensionDefinition,
   JsonValue,
+  StoreQrConfigurationView,
+  StoreServicePoint,
+  StoreServicePointArea,
   StoreServicePointAreaType,
   StoreServicePointShape,
   StoreServicePointStatus,
@@ -10,11 +14,64 @@ import type {
 
 export type StoreServicePointExtensionFormValues = Record<string, JsonValue | Dayjs | undefined>;
 
-export const storeServicePointStatusLabels: Record<StoreServicePointStatus, string> = {
-  ENABLED: '启用',
-  DISABLED: '停用',
-  VOIDED: '作废',
+export type AreaEditor = {mode: 'create' | 'edit'; area?: StoreServicePointArea};
+
+export type PointEditor = {
+  mode: 'create' | 'edit';
+  areaName: string;
+  areaType: StoreServicePointAreaType;
+  point?: StoreServicePoint;
 };
+
+export type AreaFormValues = {
+  name: string;
+  code: string;
+  areaType: StoreServicePointAreaType;
+};
+
+export type PointFormValues = {
+  name: string;
+  code: string;
+  seatCapacity?: number;
+  tableShape?: StoreServicePointShape;
+  reservable?: boolean | null;
+  extensionValues?: Record<string, JsonValue | Dayjs | undefined>;
+};
+
+export type QrFormValues = {enabled: boolean; channelRef?: string};
+
+export type QrDisplayConfiguration = Pick<StoreQrConfigurationView, 'enabled' | 'channelRef'>;
+
+export type QrReadState = {loading: boolean; failed: boolean};
+
+export type StoreServicePointImage = {
+  id: string;
+  identity: string;
+  fileName: string;
+  status: 'READY' | 'UPLOADING' | 'FAILED';
+  file?: File;
+  hasPreview: boolean;
+  assetRef?: string;
+  bindGrant?: string;
+  version?: number;
+  staged: boolean;
+  error?: string;
+};
+
+export type StoreServicePointDrawerLifecycle = {
+  requestClose: () => void;
+  afterOpenChange: (visible: boolean) => void;
+  submitting: boolean;
+  setSubmitting: (value: boolean) => void;
+  setDirty: (value: boolean) => void;
+  markBusinessIntentChanged: () => void;
+};
+
+export const STORE_SERVICE_POINT_PAGE_SIZE = 20;
+export const STORE_SERVICE_POINT_ORDER_RECEIPT_VERSION = 'swap-v2';
+export const STORE_SERVICE_POINT_IMAGE_LIMITS = {maxImageCount: 1, maxImageBytes: 2 * 1024 * 1024} as const;
+
+export const storeServicePointStatusLabels: Record<StoreServicePointStatus, string> = LIFECYCLE_LABELS;
 
 export const storeServicePointAreaTypeLabels: Record<StoreServicePointAreaType, string> = {
   TABLE_AREA: '桌台区',

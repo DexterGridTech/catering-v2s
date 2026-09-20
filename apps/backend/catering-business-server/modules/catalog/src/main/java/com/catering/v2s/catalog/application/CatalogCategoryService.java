@@ -8,6 +8,7 @@ import com.catering.v2s.catalog.api.CatalogOwnerTypes;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
+import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -329,7 +330,8 @@ public class CatalogCategoryService {
             JsonNode replay = replay(dataNodeRef, receiptKey, operationId, receiptRequest);
             if (replay != null) return replay;
         }
-        try (var ownerCommand = com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics.beginCommand()) {
+        try (var ownerCommand =
+                com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics.beginCommand()) {
             JsonNode result = switch (operationId) {
                 case "createOperationsCatalogCategory" -> createCategory(dataNodeRef, brandRef, requestId, request);
                 case "updateOperationsCatalogCategory" ->
@@ -693,8 +695,7 @@ public class CatalogCategoryService {
     }
 
     private static String optional(ObjectNode request, String key) {
-        JsonNode value = request == null ? null : request.get(key);
-        return value == null || value.isNull() ? null : value.asText();
+        return CollectionRequestSupport.optional(request, key);
     }
 
     private static long requiredLong(ObjectNode request, String key, long fallback) {

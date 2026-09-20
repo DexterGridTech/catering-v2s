@@ -1,3 +1,4 @@
+import {LIFECYCLE_LABELS} from '@catering-v2s/admin-ui-foundation';
 import type {
   BusinessChannelTemplateView,
   BusinessChannelView,
@@ -37,11 +38,7 @@ export const dineInFormLabels = {
   KIOSK: '自助机',
 } satisfies Record<DineInForm, string>;
 
-export const lifecycleStatusLabels = {
-  ENABLED: '启用',
-  DISABLED: '停用',
-  VOIDED: '标记删除',
-} satisfies Record<LifecycleStatus, string>;
+export const lifecycleStatusLabels = LIFECYCLE_LABELS satisfies Record<LifecycleStatus, string>;
 
 export const storeVisibilityScopeLabels = {
   ALL_PROJECT_STORES: '当前项目全部门店可见',

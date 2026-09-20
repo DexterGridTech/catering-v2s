@@ -36,7 +36,11 @@ src/
 ```ts
 import {createTopologyModule, evaluateTopologyOperation} from '@catering-v2s/kernel-base-topology'
 
-const module = createTopologyModule({displayName: 'TER', surfaceForm: 'laptop'})
+const module = createTopologyModule({
+  displayName: 'TER',
+  moduleName: 'ui.integration.sample-console',
+  surfaceForm: 'laptop',
+})
 const eligibility = evaluateTopologyOperation({
   operation: 'pair',
   surfaceForm: 'laptop',
@@ -50,6 +54,10 @@ const eligibility = evaluateTopologyOperation({
 
 调用方只能消费 `allowed` 与 `reasonCode`；不可用文案由 `topologyReasonMessages` 映射，不能自己用
 `paired`/`peerReachable` 重组允许性。
+
+拓扑握手的 `moduleName` 必须由同一个 integration 注入并在两端相等；它取 integration owner 的名字，
+不取 assembly 名字。只有同一 integration 的节点可以配对；该配对约束与 MAIN/BRANCH 的 workspace
+投影方向属于同一条运行时协议边界，不能由调用方另行重组。
 
 ## 在这个包上迭代时
 

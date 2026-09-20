@@ -1,5 +1,4 @@
-import {Alert, Button, Modal} from 'antd';
-import {testId, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
+import {StatusChangeConfirm, useOverlayLock, useSubmissionLifecycle} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useState} from 'react';
 import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import type {BusinessEntityStatus} from '../../../app/api/generated/operations-edge';
@@ -36,7 +35,7 @@ export function BusinessEntityStatusModal({
   }, [entity, requestedStatus, reset]);
 
   const targetStatus = requestedStatus ?? (entity ? toggleBusinessEntityStatus(entity.status) : undefined);
-  const actionLabel = targetStatus === 'VOIDED' ? '标记删除' : targetStatus === 'DISABLED' ? '停用' : '启用';
+  const actionLabel = targetStatus === 'VOIDED' ? '作废' : targetStatus === 'DISABLED' ? '停用' : '启用';
   const submit = async () => {
     if (!entity || !targetStatus || submitting) return;
     setSubmitting(true);
@@ -71,38 +70,22 @@ export function BusinessEntityStatusModal({
   };
 
   return (
-    <Modal
+    <StatusChangeConfirm
       title={entity ? `确认${actionLabel}“${entity.name}”？` : '确认状态操作'}
       open={Boolean(entity)}
-      destroyOnHidden
-      onCancel={submitting ? undefined : onClose}
-      maskClosable={!submitting}
-      keyboard={!submitting}
-      footer={[
-        <Button
-          key="cancel"
-          onClick={onClose}
-          disabled={submitting}
-          {...testId('operations-business-entity-status-cancel')}
-        >
-          取消
-        </Button>,
-        <Button
-          key="confirm"
-          type="primary"
-          loading={submitting}
-          onClick={() => void submit()}
-          {...testId('operations-business-entity-status-confirm')}
-        >
-          确认
-        </Button>,
-      ]}
-      {...testId('operations-business-entity-status-modal')}
+      actionLabel={actionLabel}
+      dangerous={targetStatus === 'VOIDED'}
+      submitting={submitting}
+      problem={problem}
+      onCancel={onClose}
+      onConfirm={() => void submit()}
+      confirmTestId="operations-business-entity-status-confirm"
+      cancelTestId="operations-business-entity-status-cancel"
+      modalTestId="operations-business-entity-status-modal"
     >
-      {problem && <Alert type="error" showIcon title="状态操作未完成" description={problem} />}
       {targetStatus === 'VOIDED'
-        ? '标记删除后将保留经营实体历史事实；该实体不可恢复，也不能继续维护。'
+        ? '作废后将保留经营实体历史事实；该实体不可恢复，也不能继续维护。'
         : `将经营实体状态变更为“${actionLabel}”。`}
-    </Modal>
+    </StatusChangeConfirm>
   );
 }

@@ -4,6 +4,7 @@ import {
   AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  formatCanonicalDateTime,
   NameCodePathText,
   testId,
   useOverlayLock,
@@ -59,7 +60,7 @@ function assignmentSummary(user?: WorkspaceUser) {
 }
 
 function time(value?: number) {
-  return value ? new Date(value).toLocaleString('zh-CN') : '—';
+  return formatCanonicalDateTime(value);
 }
 
 export function WorkspaceUserDetailDrawer({

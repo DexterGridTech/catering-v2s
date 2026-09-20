@@ -240,9 +240,16 @@ function runPackageBoundary({root}) {
   if (queueSymbols.length) throw new Error(`ui-state must not define queue symbols: ${queueSymbols.join(', ')}`)
   if (ownPersistenceTypes.length) throw new Error(`ui-state must not define persistence types: ${ownPersistenceTypes.join(', ')}`)
   if (layerPersistenceFields.length) throw new Error(`ui-state persistence must not include layers: ${layerPersistenceFields.join(', ')}`)
-  const expectedIsolatedDeclarations = workspaceDescriptorCalls + 1
-  if (workspaceDescriptorCalls < 2 || isolatedDeclarations !== expectedIsolatedDeclarations || syncDeclarations.length) {
-    throw new Error(`ui-state registrations must be two isolated workspace families plus one assembly-scoped isolated fact without sync; descriptors=${workspaceDescriptorCalls} isolated=${isolatedDeclarations} expected=${expectedIsolatedDeclarations} sync=${JSON.stringify(syncDeclarations)}`)
+  const expectedIsolatedDeclarations = workspaceDescriptorCalls
+  const allowedSyncDeclarations = syncDeclarations.filter(entry => entry.startsWith('src/foundations/workspaceSlices.ts:'))
+  const unexpectedSyncDeclarations = syncDeclarations.filter(entry => !entry.startsWith('src/foundations/workspaceSlices.ts:'))
+  if (
+    workspaceDescriptorCalls < 2
+    || isolatedDeclarations !== expectedIsolatedDeclarations
+    || allowedSyncDeclarations.length !== 2
+    || unexpectedSyncDeclarations.length > 0
+  ) {
+    throw new Error(`ui-state registrations must keep the isolated variable and assembly families, plus exactly one sync declaration per workspace content family; descriptors=${workspaceDescriptorCalls} isolated=${isolatedDeclarations} expected=${expectedIsolatedDeclarations} sync=${JSON.stringify(syncDeclarations)}`)
   }
 }
 

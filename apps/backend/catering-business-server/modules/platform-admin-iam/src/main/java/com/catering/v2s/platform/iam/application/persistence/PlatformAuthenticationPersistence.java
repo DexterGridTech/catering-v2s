@@ -1,5 +1,6 @@
 package com.catering.v2s.platform.iam.application.persistence;
 
+import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -472,7 +473,7 @@ public class PlatformAuthenticationPersistence {
     }
 
     public void lockLoginRateBucket(String dimension, String fingerprint) {
-        jdbc.queryForList(PlatformAuthenticationServiceSql.LOGIN_RATE_LOCK, dimension + ':' + fingerprint);
+        AdvisoryLock.acquireHashText(jdbc, dimension + ':' + fingerprint);
     }
 
     public Long findLoginRateLock(String dimension, String fingerprint) {
@@ -517,7 +518,7 @@ public class PlatformAuthenticationPersistence {
     }
 
     public void lockAdministratorDeactivation() {
-        jdbc.queryForList(PlatformAuthenticationServiceSql.DEACTIVATION_LOCK, "platform-iam:last-enabled-administrator");
+        AdvisoryLock.acquireHashText(jdbc, "platform-iam:last-enabled-administrator");
     }
 
     public AdminGuard readAdministratorDeactivationGuard(UUID id) {

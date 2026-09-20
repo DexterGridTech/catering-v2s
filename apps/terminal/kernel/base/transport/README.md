@@ -2,7 +2,7 @@
 
 ## 定位
 
-这是 `owner` 包，负责一个拓扑连接的帧边界、协议 session、连接身份、传输地址解析、受界限的重试/取消/限流与 connection-token 调度。它依赖
+这是 `owner` 包，负责一个拓扑连接的帧边界、协议 session、连接身份、传输地址解析、受界限的重试/取消与 connection-token 调度。它依赖
 `kernel.base.contracts`、`kernel.base.platform-ports`、`kernel.base.runtime` 和
 `kernel.base.state`，由 `kernel.base.topology` 使用；它不是业务状态 owner，也不是命令路由 owner。
 
@@ -12,9 +12,9 @@
 本地还是对端执行、哪些 state 可以同步、配对是否成立”的事实与策略留在 topology、runtime 和
 各自业务 owner。`routeContext` 不进入 wire，members 的同步白名单也不由本包推导。
 
-本包不提供认证、多副机、离线队列或永不放弃的业务策略；它提供 ordered address failover、
-sticky preferred address、bounded retry、cancellation、heartbeat、concurrency/rate limiting 和
-WebSocket profile 原语，拓扑 owner 决定何时使用它们。heartbeat controller 只负责按配置发出
+本包不提供认证、多副机、离线队列或永不放弃的业务策略；它提供当前已消费的 ordered address failover、
+sticky preferred address、bounded retry、cancellation、heartbeat 和 connection-token/WebSocket profile 原语，
+拓扑 owner 决定何时使用它们。本批不新增通用 limiter 消费者，也不把未接线的 profile 形态写成已接线能力。heartbeat controller 只负责按配置发出
 序号化 ping、接收 pong 进度与报告超时，不解释业务消息；当前 native/topology 仍拥有实际 wire
 ping/pong 的连接接线。业务语义仍由 topology/runtime owner
 决定。
@@ -48,7 +48,7 @@ const transportModule = createTransportModule()
 ```
 
 地址和连接能力通过公开的 `createTransportAddressSelector`、`runWithBoundedTransportRetry`、
-`createTransportHeartbeat`、`createTransportLimiter` 与 `createTransportWebSocketController` 暴露；identity client 使用
+`createTransportHeartbeat` 与 `createTransportWebSocketController` 暴露；identity client 使用
 contracts 的 `TransportServerConfig` 解析候选地址并把成功地址置为 sticky 首选。当前拓扑只有
 一个真实网络消费者，通用多地址行为由本包 focused tests 证明，不冒充为本批设备行为已验证。
 

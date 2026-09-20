@@ -1383,13 +1383,6 @@
           ],
           "description": "nullable standard sale price"
         },
-        "standardSalePriceCents": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "description": "nullable standard sale price in cents"
-        },
         "skuCodes": {
           "type": "array",
           "description": "SKU codes",
@@ -1982,6 +1975,34 @@
                   ]
                 }
               }
+            },
+            "unchangedReadbackVersionRelationByJourneyState": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "SUCCESS": {
+                  "type": "string",
+                  "enum": [
+                    "EXACT_PRE_STATE",
+                    "SAME_AS_FIXTURE_MUTATION"
+                  ]
+                },
+                "FAILURE": {
+                  "type": "string",
+                  "enum": [
+                    "EXACT_PRE_STATE",
+                    "SAME_AS_FIXTURE_MUTATION"
+                  ]
+                },
+                "RECOVERY": {
+                  "type": "string",
+                  "enum": [
+                    "EXACT_PRE_STATE",
+                    "SAME_AS_FIXTURE_MUTATION"
+                  ]
+                }
+              },
+              "description": "state-specific owner version relation for unchanged readback"
             },
             "preState": {
               "type": "object",

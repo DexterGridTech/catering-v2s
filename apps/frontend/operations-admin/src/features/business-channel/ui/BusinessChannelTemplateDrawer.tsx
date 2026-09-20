@@ -4,6 +4,7 @@ import {
   adminDrawerSurfaceProps,
   closedCodeLabel,
   isKnownClosedCode,
+  LifecycleStatusTag,
   testId,
   useAsyncGenerationGuard,
   useDrawerFormLifecycle,
@@ -219,7 +220,7 @@ export function BusinessChannelTemplateDrawer({
 
   const save = async (values: Values) => {
     if (templateVoidedOrUnknown) {
-      setProblem('当前模板状态无法识别或已标记删除，已停止保存。');
+      setProblem('当前模板状态无法识别或已作废，已停止保存。');
       return;
     }
     if (
@@ -474,11 +475,11 @@ export function BusinessChannelTemplateDrawer({
                     <Space size={8} wrap>
                       <NameCodeText name={store.storeName} code={store.storeCode} />
                       {store.storeStatus === 'VOIDED' && (
-                        <Tag {...testId(businessChannelTemplateTestIds.visibleStoreVoidedTag(store.storeRef))}>
-                          作废
-                        </Tag>
+                        <span {...testId(businessChannelTemplateTestIds.visibleStoreVoidedTag(store.storeRef))}>
+                          <LifecycleStatusTag status={store.storeStatus} />
+                        </span>
                       )}
-                      {store.storeStatus === 'DISABLED' && <Tag>停用</Tag>}
+                      {store.storeStatus === 'DISABLED' && <LifecycleStatusTag status={store.storeStatus} />}
                     </Space>
                     <Button
                       type="link"

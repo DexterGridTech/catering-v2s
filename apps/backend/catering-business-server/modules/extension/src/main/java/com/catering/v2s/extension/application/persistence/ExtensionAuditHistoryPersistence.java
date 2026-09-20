@@ -21,7 +21,7 @@ public class ExtensionAuditHistoryPersistence {
 
     public boolean targetExists(String groupWorkspaceKey, String entityType) {
         return Boolean.TRUE.equals(jdbc.query(
-                ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_SELECT_EXTENSION_DEFINITION_GROUP_WORKSPACE_KEY + ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_CONTINUATION_ENTITY_TYPE,
+                ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_SELECT_EXTENSION_DEFINITION_GROUP_WORKSPACE_KEY + ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_ENTITY_TYPE,
                 statement -> {
                     statement.setString(1, groupWorkspaceKey);
                     statement.setString(2, entityType);
@@ -31,7 +31,7 @@ public class ExtensionAuditHistoryPersistence {
 
     public long countEvents(AuditReadScope scope, AuditTarget target) {
         return jdbc.queryForObject(
-                ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_SELECT_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY + ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_CONTINUATION_ENTITY_TYPE_EXTENSION_DEFINITION_ENTITY_REF_TEXT,
+                ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_SELECT_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY + ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_ENTITY_TYPE_EXTENSION_DEFINITION_ENTITY_REF_TEXT,
                 Long.class,
                 scope.workspaceUuid(),
                 scope.groupWorkspaceKey(),
@@ -41,10 +41,10 @@ public class ExtensionAuditHistoryPersistence {
     public List<AuditHistoryItem> readPage(AuditReadScope scope, AuditTarget target, long pageSize, long offset) {
         return jdbc.query(
                 ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_SELECT_OCCURRED_AT_EPOCH_MILLIS
-                        + ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_CONTINUATION_AUDIT_EVENT_CHANGES_JSON_TEXT_WORKSPACE_UUID
-                        + ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY
+                        + ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_AUDIT_EVENT_CHANGES_JSON_TEXT_WORKSPACE_UUID
+                        + ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_GROUP_WORKSPACE_KEY
                         + ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_CONDITION_ENTITY_TYPE_EXTENSION_DEFINITION_ENTITY_REF_TEXT
-                        + ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_CONTINUATION_OCCURRED_AT_EPOCH_MILLIS
+                        + ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_OCCURRED_AT_EPOCH_MILLIS
                         + ExtensionAuditHistoryServiceSql.EXTENSION_AUDIT_HISTORY_SERVICE_DESC_DIRECTION_DESC_ID_DESC_LIMIT_OFFSET,
                 (result, ignored) -> new AuditHistoryItem(
                         result.getObject("id", UUID.class),

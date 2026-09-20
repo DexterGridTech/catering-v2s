@@ -51,6 +51,7 @@ R5 的 `entryAndSurface` 就写错过(运维后台页面路由携带了集团空
 | `accessibilityAndTestId` | 键盘可达性 · aria · **状态不能只靠颜色** · testId 命名 |
 | `emptyLoadingErrorStates` | 空集合显示什么 · 加载中显示什么 · **读取失败时旧数据保留还是清空**。⚠️ 不写就会被临场发明:R5 详设全文「空态」「加载态」**零命中** |
 | `containerBehaviorUnderLoad` | **数据把容器撑满/撑爆时会怎样**:哪一段滚动 · 什么被截断或换行 · 什么绝不允许溢出视口 · 多栏之间如何对齐。⚠️ 2026-08-20 Dexter 要求新增 |
+| `interactionConsistency` | 逐 screen 引用 `doc/platform/frontend-coding-standard.md` §3-K-1..§3-K-10；写明适用 surface、已接受的承载形态例外，以及位置/样式/行为/失败恢复的逐控件验证观察 |
 
 ### 2.2 不可见维度 —— **必须写成一个能做的观察**
 

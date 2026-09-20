@@ -1,4 +1,5 @@
 import packageJson from '../../package.json'
+import {moduleName as integrationModuleName} from '../moduleName'
 import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports'
 import {definePart, type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render'
 import {
@@ -73,12 +74,7 @@ export async function createSampleAssembly(
   const environmentMode: EnvironmentMode = input.environmentMode ?? (__DEV__ ? 'DEV' : 'PROD')
   const staffAuthModule = sampleStaffAuthAssembly.createModule()
   const memberDeskModule = sampleMemberDeskAssembly.createModule()
-  const topologyModule = createTopologyModule({
-    displayName: 'sample-console',
-    surfaceForm,
-    identityClient: createTopologyIdentityClient(),
-    peerChannel: input.topologyPeerChannel,
-  })
+  const memberRegistryModule = createSampleMemberRegistryModule()
   return createConsoleAssembly<SampleConsoleReadyPayload>({
     appName: 'sample-console',
     errorPrefix: 'sample-console',
@@ -110,12 +106,25 @@ export async function createSampleAssembly(
     }),
     resolveCommandTarget: resolveTopologyCommandTarget,
     createTopologyAdminCapability,
-    createApplicationModules: () => [
+    createApplicationModules: ({uiStateModule}) => [
       createTransportModule(),
-      topologyModule,
+      createTopologyModule({
+        displayName: 'sample-console',
+        moduleName: integrationModuleName,
+        surfaceForm,
+        identityClient: createTopologyIdentityClient(),
+        peerChannel: input.topologyPeerChannel,
+        stateSyncSlices: [...(uiStateModule.stateSlices ?? []), ...(memberRegistryModule.stateSlices ?? [])].reduce<Array<{
+          readonly name: string
+          readonly syncIntent: 'master-to-slave' | 'slave-to-master'
+        }>>((result, slice) => {
+          if (slice.syncIntent !== 'isolated') result.push({name: slice.name, syncIntent: slice.syncIntent})
+          return result
+        }, []),
+      }),
       createSampleConsoleModule(),
       createSampleStaffSessionModule(),
-      createSampleMemberRegistryModule(),
+      memberRegistryModule,
       staffAuthModule,
       memberDeskModule,
     ],

@@ -3,7 +3,7 @@ package com.catering.v2s.organization.application;
 import com.catering.v2s.organization.application.persistence.BusinessEntityCommandReceiptPersistence;
 import com.catering.v2s.organization.api.OrganizationEntityReadback;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
+import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
@@ -88,13 +88,13 @@ public final class BusinessEntityCommandReceiptService {
     private Receipt claim(UUID workspaceUuid, String idempotencyKey, String canonicalRequest) {
         if (workspaceUuid == null) throw new BusinessEntityService.OrganizationValidationException();
         String key = requiredKey(idempotencyKey);
-        String requestHash = sha256(canonicalRequest);
+        String requestHash = CommandReceiptSupport.requestHash(canonicalRequest);
         int claimed = persistence.claim(
                 workspaceUuid,
                 key,
                 requestHash,
                 time.currentEpochMillis());
-        if (claimed == 1) return null;
+        if (CommandReceiptSupport.claimOutcome(claimed) == CommandReceiptSupport.ClaimOutcome.CLAIMED) return null;
         BusinessEntityCommandReceiptPersistence.Receipt stored = persistence.read(workspaceUuid, key);
         Receipt existing = stored == null ? null : new Receipt(stored.requestHash(), stored.responseJson(), stored.state());
         if (existing == null || !"SUCCEEDED".equals(existing.state()))
@@ -105,8 +105,10 @@ public final class BusinessEntityCommandReceiptService {
     }
 
     private static OrganizationEntityReadback deserialize(String source) {
+        if (source == null) return null;
         try {
-            return JSON.readValue(source, OrganizationEntityReadback.class);
+            return CommandReceiptSupport.deserialize(
+                    JSON, source, OrganizationEntityReadback.class, "business entity receipt deserialization failed");
         } catch (Exception exception) {
             throw new BusinessEntityReceiptCorruptException(exception);
         }
@@ -114,7 +116,7 @@ public final class BusinessEntityCommandReceiptService {
 
     private static String serialize(OrganizationEntityReadback value) {
         try {
-            return JSON.writeValueAsString(value);
+            return CommandReceiptSupport.serialize(JSON, value, "business entity receipt serialization failed");
         } catch (Exception exception) {
             throw new IllegalStateException("business entity receipt serialization failed", exception);
         }
@@ -128,7 +130,7 @@ public final class BusinessEntityCommandReceiptService {
 
     private static String sha256(String value) {
         try {
-            return Sha256Hex.digest(value);
+            return CommandReceiptSupport.requestHash(value);
         } catch (Exception exception) {
             throw new IllegalStateException(exception);
         }

@@ -4,7 +4,9 @@ import {
   AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  displayFieldValue,
   formatTypedExtensionValue,
+  formatCanonicalDateTime,
   testId,
   useDetailDrawer,
   useOverlayLock,
@@ -69,7 +71,7 @@ function catalogActionLabel(actionKey: AdminActionCapabilityKey) {
 }
 
 function displayTime(value: number) {
-  return new Date(value).toLocaleString('zh-CN');
+  return formatCanonicalDateTime(value);
 }
 
 function isHeadCompany(entity: BusinessEntity, kind: BusinessEntityKind): entity is HeadCompany {
@@ -77,7 +79,7 @@ function isHeadCompany(entity: BusinessEntity, kind: BusinessEntityKind): entity
 }
 
 function typeSpecificItems(entity: BusinessEntity, kind: BusinessEntityKind) {
-  if (kind === 'BRAND') return [{key: 'alias', label: '别名', children: (entity as Brand).alias ?? '—'}];
+  if (kind === 'BRAND') return [{key: 'alias', label: '别名', children: displayFieldValue((entity as Brand).alias)}];
   const legalEntity = entity as Tenant | HeadCompany;
   return [
     {key: 'legalName', label: '法定名称', children: legalEntity.legalName},
@@ -227,7 +229,7 @@ export function BusinessEntityDetailDrawer({
                   danger: true,
                   label: (
                     <AdminDetailActionLabel testIdValue={operationsDetailDrawerTestIds.businessEntity.void}>
-                      标记删除
+                      作废
                     </AdminDetailActionLabel>
                   ),
                   onClick: () => closeThen(current => onStatus(current, 'VOIDED')),
@@ -270,7 +272,7 @@ export function BusinessEntityDetailDrawer({
               {key: 'code', label: '编码', children: selected.code},
               ...typeSpecificItems(selected, kind),
               {key: 'status', label: '状态', children: businessEntityLifecycleLabels[selected.status]},
-              {key: 'remark', label: '备注', children: selected.remark ?? '—'},
+              {key: 'remark', label: '备注', children: displayFieldValue(selected.remark)},
               {key: 'updatedAt', label: '更新时间', children: displayTime(selected.updatedAt)},
               ...enabledDefinitions.map(definition => ({
                 key: `extension-${definition.key}`,

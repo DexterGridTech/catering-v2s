@@ -1,6 +1,8 @@
 import {describe, expect, it} from 'vitest';
 import {
   clearInvalidExtensionFilterFields,
+  extensionSearchFieldProps,
+  extensionSearchValueType,
   extensionFilterFormPath,
   isFlatExtensionHost,
   formatTypedExtensionValue,
@@ -38,6 +40,26 @@ describe('typed extension foundation capability', () => {
     expect(formatTypedExtensionValue(true, {type: 'BOOLEAN'})).toBe('是');
     expect(formatTypedExtensionValue('false', {type: 'BOOLEAN'})).toBe('否');
     expect(formatTypedExtensionValue('直营', {type: 'SELECT'})).toBe('直营');
+  });
+
+  it('builds type-matched search controls without owning app test ids', () => {
+    expect(extensionSearchValueType('NUMBER')).toBe('digit');
+    expect(extensionSearchValueType('DATE')).toBe('date');
+    expect(extensionSearchValueType('TEXT')).toBe('text');
+    expect(extensionSearchValueType('BOOLEAN')).toBe('select');
+    expect(
+      extensionSearchFieldProps({type: 'SELECT', label: '来源', options: ['直营']}, {'data-testid': 'source'}),
+    ).toEqual({
+      'data-testid': 'source',
+      allowClear: true,
+      placeholder: '全部',
+      options: [{value: '直营', label: '直营'}],
+    });
+    expect(extensionSearchFieldProps({type: 'NUMBER', label: '等级'})).toEqual({
+      allowClear: true,
+      placeholder: '请输入等级',
+      controls: false,
+    });
   });
 
   it('serializes only searchable typed drafts and omits empty filter parameters', () => {

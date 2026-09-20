@@ -17,16 +17,18 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class OrganizationCommandPersistence {
     private final JdbcTemplate jdbc;
+    private final OrganizationAuditEventWriter auditEvents;
 
     public OrganizationCommandPersistence(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
+        this.auditEvents = new OrganizationAuditEventWriter(jdbc);
     }
 
     public IdempotencyRow findInitializationIdempotency(UUID workspaceUuid, String idempotencyKey) {
         return jdbc.query(
                         OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_SELECT_GROUP_WORKSPACE_KEY
-                                + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_COMMERCIAL_GROUP_IDEMPOTENCY_COMMERCIAL_GROUP_NAME
-                                + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_WORKSPACE_UUID_IDEMPOTENCY_KEY,
+                                + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_COMMERCIAL_GROUP_IDEMPOTENCY_COMMERCIAL_GROUP_NAME
+                                + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_WORKSPACE_UUID_IDEMPOTENCY_KEY,
                         (resultSet, rowNum) -> new IdempotencyRow(
                                 resultSet.getString("group_workspace_key"),
                                 resultSet.getString("request_fingerprint"),
@@ -44,7 +46,7 @@ public class OrganizationCommandPersistence {
             UUID workspaceUuid, String idempotencyKey, String groupWorkspaceKey, String requestFingerprint) {
         jdbc.update(
                 OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_INSERT_INTO_COMMERCIAL_GROUP_IDEMPOTENCY_WORKSPACE_UUID_IDEMPOTENCY_KEY
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_REQUEST_FINGERPRINT,
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_GROUP_WORKSPACE_KEY_REQUEST_FINGERPRINT,
                 workspaceUuid,
                 idempotencyKey,
                 groupWorkspaceKey,
@@ -84,8 +86,8 @@ public class OrganizationCommandPersistence {
             String idempotencyKey) {
         jdbc.update(
                 OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_UPDATE_COMMERCIAL_GROUP_IDEMPOTENCY_COMMERCIAL_GROUP_ID
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_COMMERCIAL_GROUP_CODE_COMMERCIAL_GROUP_NAME_WORKSPACE_UUID
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_IDEMPOTENCY_KEY,
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_COMMERCIAL_GROUP_CODE_COMMERCIAL_GROUP_NAME_WORKSPACE_UUID
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_IDEMPOTENCY_KEY,
                 commercialGroupId,
                 code,
                 name,
@@ -100,18 +102,14 @@ public class OrganizationCommandPersistence {
             AuditActor actor,
             long occurredAtEpochMillis,
             String changesJson) {
-        jdbc.update(
-                OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_GROUP_WORKSPACE
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_COMMERCIAL_GROUP_INITIALIZED,
+        auditEvents.write(
                 UUID.randomUUID(),
                 workspaceUuid,
                 groupWorkspaceKey,
+                "GROUP_WORKSPACE",
                 String.valueOf(groupWorkspaceId),
-                actor.actorType(),
-                actor.actorId(),
-                actor.displaySnapshot(),
+                actor,
+                "COMMERCIAL_GROUP_INITIALIZED",
                 occurredAtEpochMillis,
                 changesJson);
     }
@@ -127,11 +125,11 @@ public class OrganizationCommandPersistence {
             long expectedVersion) {
         return jdbc.query(
                 OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_UPDATE_COMMERCIAL_GROUP_COMMERCIAL_GROUP_CODE
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_COMMERCIAL_GROUP_NAME_EXTENSION_VALUES
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_EXTENSION_RULE_REVISION_VERSION_UPDATED_AT_EPOCH_MILLIS
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_COMMERCIAL_GROUP_UUID_GROUP_WORKSPACE_KEY_VERSION
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_COMMERCIAL_GROUP_UUID
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_VERSION
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_COMMERCIAL_GROUP_NAME_EXTENSION_VALUES
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_EXTENSION_RULE_REVISION_VERSION_UPDATED_AT_EPOCH_MILLIS
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_COMMERCIAL_GROUP_UUID_GROUP_WORKSPACE_KEY_VERSION
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_COMMERCIAL_GROUP_UUID
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_VERSION
                         + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS,
                 statement -> {
                     statement.setString(1, code);
@@ -153,18 +151,14 @@ public class OrganizationCommandPersistence {
             AuditActor actor,
             long occurredAtEpochMillis,
             String changesJson) {
-        jdbc.update(
-                OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE_ALTERNATE_A
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT_ALTERNATE_A
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_COMMERCIAL_GROUP
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_COMMERCIAL_GROUP_UPDATED,
+        auditEvents.write(
                 UUID.randomUUID(),
                 workspaceUuid,
                 groupWorkspaceKey,
+                "COMMERCIAL_GROUP",
                 updated.id().toString(),
-                actor.actorType(),
-                actor.actorId(),
-                actor.displaySnapshot(),
+                actor,
+                "COMMERCIAL_GROUP_UPDATED",
                 occurredAtEpochMillis,
                 changesJson);
     }
@@ -172,9 +166,9 @@ public class OrganizationCommandPersistence {
     public CommercialGroupReadback findCommercialGroup(String groupWorkspaceKey) {
         return jdbc.query(
                 OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_SELECT_COMMERCIAL_GROUP_UUID
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_CREATED_BY_PLATFORM_SUBJECT
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_COMMERCIAL_GROUP
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY,
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CREATED_BY_PLATFORM_SUBJECT
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_COMMERCIAL_GROUP
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_GROUP_WORKSPACE_KEY,
                 statement -> statement.setString(1, groupWorkspaceKey),
                 result -> result.next() ? commercialGroupReadback(result, groupWorkspaceKey) : null);
     }
@@ -189,7 +183,7 @@ public class OrganizationCommandPersistence {
     public boolean isEnterableCommercialGroup(String groupWorkspaceKey, UUID commercialGroupRef) {
         Boolean found = jdbc.query(
                 OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_SELECT_COMMERCIAL_GROUP_COMMERCIAL_GROUP_UUID
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_ALTERNATE_A,
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_GROUP_WORKSPACE_KEY_ALTERNATE_A,
                 statement -> {
                     statement.setObject(1, commercialGroupRef);
                     statement.setString(2, groupWorkspaceKey);
@@ -201,7 +195,7 @@ public class OrganizationCommandPersistence {
     public NameCode findCommercialGroupNameCode(String groupWorkspaceKey, UUID commercialGroupRef) {
         return jdbc.query(
                 OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_SELECT_COMMERCIAL_GROUP_COMMERCIAL_GROUP_CODE_COMMERCIAL_GROUP_NAME
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_COMMERCIAL_GROUP_UUID_GROUP_WORKSPACE_KEY,
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_COMMERCIAL_GROUP_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, commercialGroupRef);
                     statement.setString(2, groupWorkspaceKey);
@@ -212,8 +206,8 @@ public class OrganizationCommandPersistence {
     public CommercialGroupReadback findCommercialGroupById(long id, String groupWorkspaceKey, String code, String name, String subject) {
         return jdbc.query(
                 OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_SELECT_COMMERCIAL_GROUP_UUID_ALTERNATE_A
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_COMMERCIAL_GROUP_ALTERNATE_A
-                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_CONTINUATION_ID,
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_COMMERCIAL_GROUP_ALTERNATE_A
+                        + OrganizationCommandServiceSql.ORGANIZATION_COMMAND_SERVICE_ID,
                 statement -> statement.setLong(1, id),
                 result -> result.next() ? commercialGroupReadback(result, groupWorkspaceKey, code, name, subject) : null);
     }

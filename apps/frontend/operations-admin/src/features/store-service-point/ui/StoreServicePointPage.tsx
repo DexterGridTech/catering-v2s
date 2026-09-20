@@ -1,153 +1,89 @@
 import {MoreOutlined, PlusOutlined} from '@ant-design/icons';
 import {
   Alert,
-  App,
   Button,
   Card,
-  DatePicker,
   Descriptions,
-  Drawer,
-  Dropdown,
   Empty,
   Form,
-  Input,
-  InputNumber,
-  Select,
   Skeleton,
   Space,
   Spin,
-  Switch,
   Table,
   Tag,
   Typography,
-  QRCode,
   theme,
 } from 'antd';
 import type {MenuProps, TableColumnsType} from 'antd';
 import {
-  AdminImageCollectionEditor,
+  AdminRowActionMenu,
   adminDetailDescriptionsProps,
-  adminDrawerSurfaceProps,
-  adminWideDrawerSurfaceProps,
   adminListState,
-  createContentIdempotencyKey,
+  displayFieldValue,
   CursorPagination,
-  digestFileContent,
-  NameCodeText,
+  lifecycleColor,
+  StatusChangeConfirm,
   testId,
-  useCursorStack,
   useDetailDrawer,
   useDrawerFormLifecycle,
+  useOverlayLock,
 } from '@catering-v2s/admin-ui-foundation';
-import {type Dayjs} from 'dayjs';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {operationsClient, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
+import {operationsProblemOf} from '../../../app/api/OperationsTransport';
 import {
-  type ExtensionDefinition,
-  type JsonValue,
   type StoreQrChannelCandidate,
-  type StoreQrConfigurationView,
   type StoreServicePoint,
   type StoreServicePointArea,
-  type StoreServicePointAreaType,
   type StoreServicePointShape,
   type StoreServicePointStatus,
 } from '../../../app/api/generated/operations-edge';
 import {OPERATIONS_ADMIN_OPERATION_IDS} from '../../../app/api/generated/operations-edge';
-import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
-import {wireUuid} from '../../../app/api/wireUuid';
 import {OperationsStoreCatalogManagementDisabledSurface} from '../../../app/components/OperationsStoreCatalogManagementDisabledSurface';
 import {ACTION_CAPABILITIES} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {useStoreOperatingRuleGate} from '../../store-operating-rules/model/useStoreOperatingRuleGate';
 import {
+  type AreaEditor,
+  type AreaFormValues,
   areaTypeForPointType,
-  displayExtensionValue,
-  enabledStoreServicePointExtensionFields,
   hydrateStoreServicePointExtensionValues,
-  serializeStoreServicePointExtensionValues,
   storeServicePointAreaTypeLabels,
   storeServicePointShapeLabels,
   storeServicePointStatusLabels,
   STORE_SERVICE_POINT_OPERATION_COLUMN_TITLE,
+  type PointEditor,
+  type PointFormValues,
+  type QrFormValues,
+  type StoreServicePointImage,
+  STORE_SERVICE_POINT_IMAGE_LIMITS,
   titleForArea,
-  pointTypeForArea,
 } from '../model/storeServicePointModel';
+import {
+  changeStoreServicePointAreaStatus,
+  changeStoreServicePointStatus,
+  moveStoreServicePoint,
+  moveStoreServicePointArea,
+  releaseStoreServicePointImages,
+  saveStoreQrConfiguration,
+  saveStoreServicePoint,
+  saveStoreServicePointArea,
+  stageStoreServicePointImage,
+} from '../model/commands';
+import {useStoreServicePointReadModel} from '../model/useStoreServicePointReadModel';
 import {storeServicePointTestIds} from '../storeServicePointTestIds';
-import {AssetPreview} from '../../../app/components/AssetPreview';
+import {AreaDrawer} from './AreaDrawer';
+import {QrConfigurationDrawer} from './QrConfigurationDrawer';
+import {ServicePointDetailDrawer} from './ServicePointDetailDrawer';
+import {ServicePointDrawer} from './ServicePointDrawer';
+import {qrDisplayValue} from './ServicePointQrDisplay';
 
-type AreaEditor = {mode: 'create' | 'edit'; area?: StoreServicePointArea};
-type PointEditor = {mode: 'create' | 'edit'; areaType: StoreServicePointAreaType; point?: StoreServicePoint};
-type AreaFormValues = {
-  name: string;
-  code: string;
-  areaType: StoreServicePointAreaType;
-  status?: StoreServicePointStatus;
+type SortPending = {target: 'area' | 'point'; ref: string};
+type StatusChangeRequest = {
+  target: 'area' | 'point';
+  row: StoreServicePointArea | StoreServicePoint;
+  status: StoreServicePointStatus;
+  label: string;
 };
-type PointFormValues = {
-  name: string;
-  code: string;
-  seatCapacity?: number;
-  tableShape?: StoreServicePointShape;
-  reservable?: boolean | null;
-  extensionValues?: Record<string, JsonValue | Dayjs | undefined>;
-};
-type QrFormValues = {enabled: boolean; channelRef?: string};
-type QrDisplayConfiguration = Pick<StoreQrConfigurationView, 'enabled' | 'channelRef'>;
-type QrReadState = {loading: boolean; failed: boolean};
-
-function qrDisplayValue(
-  value: string | null | undefined,
-  configuration: QrDisplayConfiguration | undefined,
-  effectiveAvailable: boolean,
-  readState: QrReadState,
-  size: number,
-  imageTestId?: string,
-) {
-  if (!effectiveAvailable) return <Typography.Text type="secondary">不可用</Typography.Text>;
-  if (readState.loading && !configuration) return <Typography.Text type="secondary">二维码配置加载中…</Typography.Text>;
-  if (readState.failed && !configuration) return <Typography.Text type="secondary">二维码配置读取失败</Typography.Text>;
-  if (!configuration) return '暂未生成二维码';
-  if (!configuration.enabled) return '不显示生成结果';
-  if (!configuration.channelRef) return '未选择门店渠道';
-  if (!value) return '暂未生成二维码';
-  return (
-    <QRCode
-      value={value}
-      type="svg"
-      size={size}
-      bordered={false}
-      aria-label="二维码"
-      {...(imageTestId ? testId(imageTestId) : {})}
-    />
-  );
-}
-
-type StoreServicePointImage = {
-  id: string;
-  identity: string;
-  fileName: string;
-  status: 'READY' | 'UPLOADING' | 'FAILED';
-  file?: File;
-  hasPreview: boolean;
-  assetRef?: string;
-  bindGrant?: string;
-  version?: number;
-  staged: boolean;
-  error?: string;
-};
-
-const PAGE_SIZE = 20;
-const IMAGE_LIMITS = {maxImageCount: 1, maxImageBytes: 2 * 1024 * 1024} as const;
-const statusColors: Record<StoreServicePointStatus, string> = {
-  ENABLED: 'success',
-  DISABLED: 'warning',
-  VOIDED: 'default',
-};
-
-function emptyUuid() {
-  return '' as StoreServicePoint['storeRef'];
-}
 
 function problemText(error: unknown, fallback: string) {
   const problem = operationsProblemOf(error);
@@ -159,231 +95,66 @@ function queryRefetchFailed(value: unknown): boolean {
 }
 
 function statusTag(status: StoreServicePointStatus) {
-  return <Tag color={statusColors[status]}>{storeServicePointStatusLabels[status]}</Tag>;
-}
-
-function ExtensionFormItems({definition}: {definition?: ExtensionDefinition}) {
-  return (
-    <>
-      {enabledStoreServicePointExtensionFields(definition).map(field => {
-        const locator = `store-service-point-extension-${field.key}`;
-        const control =
-          field.type === 'NUMBER' ? (
-            <InputNumber style={{width: '100%'}} {...testId(locator)} />
-          ) : field.type === 'BOOLEAN' ? (
-            <Switch {...testId(locator)} />
-          ) : field.type === 'DATE' ? (
-            <DatePicker style={{width: '100%'}} {...testId(locator)} />
-          ) : field.type === 'SELECT' ? (
-            <Select
-              options={field.options.map(option => ({value: option, label: option}))}
-              style={{width: '100%'}}
-              {...testId(locator)}
-            />
-          ) : (
-            <Input maxLength={2000} {...testId(locator)} />
-          );
-        return (
-          <Form.Item
-            key={field.key}
-            name={['extensionValues', field.key]}
-            label={field.label}
-            rules={field.required ? [{required: true, message: `请输入${field.label}`}] : []}
-            valuePropName={field.type === 'BOOLEAN' ? 'checked' : undefined}
-          >
-            {control}
-          </Form.Item>
-        );
-      })}
-    </>
-  );
-}
-
-function PointImageEditor({
-  items,
-  onStageMedia,
-  onRemoveMedia,
-  onMoveMedia,
-}: {
-  items: readonly StoreServicePointImage[];
-  onStageMedia: (file: File, existingId?: string) => void | Promise<void>;
-  onRemoveMedia: (id: string, index: number) => void | Promise<void>;
-  onMoveMedia: (id: string, offset: -1 | 1) => void;
-}) {
-  return (
-    <AdminImageCollectionEditor
-      items={items}
-      limits={IMAGE_LIMITS}
-      labels={{
-        title: '桌台图片',
-        formatLimits: count => `${count}/1 · 单张上限 2MB`,
-        loading: '图片规则加载中',
-        atLimit: '已配置图片',
-        upload: '上传图片',
-        empty: '未配置图片',
-        pendingPreview: item => (
-          <span style={{width: 96, height: 72, display: 'grid', placeItems: 'center'}}>
-            <Typography.Text type="secondary">{item.status === 'FAILED' ? '图片上传失败' : '待上传'}</Typography.Text>
-          </span>
-        ),
-        renderPreview: (item, index, previewId) => (
-          <AssetPreview
-            assetRef={item.assetRef}
-            localFile={item.file}
-            alt={`${index === 0 ? '桌台主图' : '桌台图片'}预览`}
-            width={96}
-            height={72}
-            testId={previewId}
-          />
-        ),
-        renderStatus: item =>
-          item.status === 'UPLOADING'
-            ? '上传中/处理中'
-            : item.status === 'FAILED'
-              ? (item.error ?? '上传失败')
-              : item.staged
-                ? '待保存'
-                : '已配置',
-        positionLabel: () => '图片',
-        replace: '替换',
-        retry: '重试',
-        moveUp: '上移',
-        moveDown: '下移',
-        setPrimary: '设为主图',
-        remove: '移除',
-      }}
-      testIds={{
-        root: storeServicePointTestIds.pointImageUpload,
-        upload: `${storeServicePointTestIds.pointImageUpload}-upload`,
-        list: `${storeServicePointTestIds.pointImageUpload}-list`,
-        item: (identity, action) => `${storeServicePointTestIds.pointImageUpload}-${identity}-${action}`,
-      }}
-      onStageMedia={onStageMedia}
-      onRemoveMedia={onRemoveMedia}
-      onMoveMedia={onMoveMedia}
-      onSetPrimaryMedia={() => undefined}
-    />
-  );
+  return <Tag color={lifecycleColor(status)}>{storeServicePointStatusLabels[status]}</Tag>;
 }
 
 export function StoreServicePointPage({queryContext, actionCapabilityKeys}: OperationsPageProps) {
   const {token} = theme.useToken();
-  const {modal} = App.useApp();
   const storeRef = queryContext.scopeRef;
-  const storeWireRef = storeRef ? wireUuid(storeRef) : emptyUuid();
-  const scopeReady = Boolean(storeRef);
   const canEdit = actionCapabilityKeys.includes(ACTION_CAPABILITIES.EDIT_STORE_SERVICE_POINT_QR);
-  const gate = useStoreOperatingRuleGate({queryContext, enabled: scopeReady, ruleKey: 'tableManagementEnabled'});
+  const gate = useStoreOperatingRuleGate({queryContext, enabled: Boolean(storeRef), ruleKey: 'tableManagementEnabled'});
   const [feedback, setFeedback] = useState<{type: 'success' | 'error'; message: string}>();
   const [selectedAreaRef, setSelectedAreaRef] = useState<string>();
   const [areaEditor, setAreaEditor] = useState<AreaEditor>();
   const [pointEditor, setPointEditor] = useState<PointEditor>();
   const [qrEditOpen, setQrEditOpen] = useState(false);
   const [pointProblem, setPointProblem] = useState<string>();
+  const [statusChange, setStatusChange] = useState<StatusChangeRequest>();
+  const [statusSubmitting, setStatusSubmitting] = useState(false);
+  const [statusProblem, setStatusProblem] = useState<string>();
+  const [sortPending, setSortPending] = useState<SortPending | undefined>(undefined);
   const [imageItems, setImageItems] = useState<StoreServicePointImage[]>([]);
   const imageItemsRef = useRef<StoreServicePointImage[]>([]);
+  const sortPendingRef = useRef<SortPending | undefined>(undefined);
   const detail = useDetailDrawer<StoreServicePoint>();
   const [areaForm] = Form.useForm<AreaFormValues>();
   const [pointForm] = Form.useForm<PointFormValues>();
   const [qrForm] = Form.useForm<QrFormValues>();
+  useOverlayLock(Boolean(statusChange));
 
-  const areaCursor = useCursorStack({resetKey: `${queryContext.groupWorkspaceKey}:${storeRef ?? ''}`});
-  const areasRequest = useMemo(
-    () =>
-      operationsAdminRtkRequest.getOperationsStoreServicePointAreas(
-        {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeRef: storeWireRef},
-        {query: {cursor: areaCursor.cursor, pageSize: PAGE_SIZE}},
-      ),
-    [areaCursor.cursor, queryContext.groupWorkspaceKey, storeWireRef],
-  );
-  const areasQuery = operationsRtk.useGetOperationsStoreServicePointAreasQuery(areasRequest, {
-    skip: !gate.isEnabled || !scopeReady,
-  });
-  const areas = useMemo(() => areasQuery.currentData?.items ?? [], [areasQuery.currentData]);
-  const selectedArea = areas.find(area => area.areaRef === selectedAreaRef);
-  const pointCursor = useCursorStack({
-    resetKey: `${queryContext.groupWorkspaceKey}:${storeRef ?? ''}:${selectedAreaRef ?? ''}`,
-  });
-  const pointsRequest = useMemo(
-    () =>
-      operationsAdminRtkRequest.getOperationsStoreServicePoints(
-        {
-          groupWorkspaceKey: queryContext.groupWorkspaceKey,
-          storeRef: storeWireRef,
-          areaRef: selectedAreaRef ? wireUuid(selectedAreaRef) : emptyUuid(),
-        },
-        {query: {cursor: pointCursor.cursor, pageSize: PAGE_SIZE}},
-      ),
-    [pointCursor.cursor, queryContext.groupWorkspaceKey, selectedAreaRef, storeWireRef],
-  );
-  const pointsQuery = operationsRtk.useGetOperationsStoreServicePointsQuery(pointsRequest, {
-    skip: !gate.isEnabled || !scopeReady || !selectedAreaRef,
-  });
-  const points = pointsQuery.currentData?.items ?? [];
+  const updateSortPending = useCallback((value: SortPending | undefined) => {
+    sortPendingRef.current = value;
+    setSortPending(value);
+  }, []);
 
-  const qrRequest = useMemo(
-    () =>
-      operationsAdminRtkRequest.getOperationsStoreQrConfiguration(
-        {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeRef: storeWireRef},
-        {},
-      ),
-    [queryContext.groupWorkspaceKey, storeWireRef],
-  );
-  const qrQuery = operationsRtk.useGetOperationsStoreQrConfigurationQuery(qrRequest, {
-    skip: !gate.isEnabled || !scopeReady,
+  const read = useStoreServicePointReadModel({
+    queryContext,
+    gateReady: gate.isEnabled,
+    selectedAreaRef,
+    detailTarget: detail.target,
+    qrEditOpen,
   });
-  const qrConfiguration = qrQuery.currentData;
-  const refetchAreas = areasQuery.refetch;
-  const refetchPoints = pointsQuery.refetch;
-  const refetchQr = qrQuery.refetch;
-
-  const extensionDefinitionRequest = useMemo(
-    () =>
-      operationsAdminRtkRequest.getOperationsOrganizationBusinessEntityExtensionDefinition(
-        {groupWorkspaceKey: queryContext.groupWorkspaceKey},
-        {query: {expectedContextVersion: queryContext.expectedContextVersion, entityType: 'SERVICE_POINT'}},
-      ),
-    [queryContext.expectedContextVersion, queryContext.groupWorkspaceKey],
-  );
-  const extensionDefinitionQuery = operationsRtk.useGetOperationsOrganizationBusinessEntityExtensionDefinitionQuery(
-    extensionDefinitionRequest,
-    {
-      skip: !gate.isEnabled || !scopeReady,
-    },
-  );
-  const extensionDefinition = extensionDefinitionQuery.currentData;
-
-  const candidateRequest = useMemo(
-    () =>
-      operationsAdminRtkRequest.getOperationsStoreQrChannelCandidates(
-        {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeRef: storeWireRef},
-        {},
-      ),
-    [queryContext.groupWorkspaceKey, storeWireRef],
-  );
-  const candidateQuery = operationsRtk.useGetOperationsStoreQrChannelCandidatesQuery(candidateRequest, {
-    skip: !qrEditOpen || !gate.isEnabled || !scopeReady,
-  });
-
-  const detailRequest = useMemo(
-    () =>
-      operationsAdminRtkRequest.getOperationsStoreServicePoint(
-        {
-          groupWorkspaceKey: queryContext.groupWorkspaceKey,
-          storeRef: storeWireRef,
-          servicePointRef: detail.target ? wireUuid(detail.target.pointRef) : emptyUuid(),
-        },
-        {},
-      ),
-    [detail.target, queryContext.groupWorkspaceKey, storeWireRef],
-  );
-  const detailQuery = operationsRtk.useGetOperationsStoreServicePointQuery(detailRequest, {
-    skip: !detail.isOpen || !detail.target || !gate.isEnabled || !scopeReady,
-  });
-  const detailValue =
-    detailQuery.currentData && detail.target && detailQuery.currentData.pointRef === detail.target.pointRef
-      ? detailQuery.currentData
-      : detail.target;
+  const {
+    storeWireRef,
+    scopeReady,
+    areaCursor,
+    areas,
+    selectedArea,
+    areasQuery,
+    pointCursor,
+    points,
+    pointsQuery,
+    qrConfiguration,
+    qrQuery,
+    extensionDefinition,
+    extensionDefinitionQuery,
+    candidateQuery,
+    detailValue,
+    detailQuery,
+    refetchAreas,
+    refetchPoints,
+    refetchQr,
+  } = read;
 
   const areaLifecycle = useDrawerFormLifecycle({
     open: Boolean(areaEditor),
@@ -438,7 +209,6 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
       name: areaEditor.area?.name ?? '',
       code: areaEditor.area?.code ?? '',
       areaType: areaEditor.area?.areaType ?? 'TABLE_AREA',
-      status: areaEditor.area?.status,
     });
     resetAreaLifecycle();
   }, [areaEditor, areaForm, resetAreaLifecycle]);
@@ -503,37 +273,13 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
   const runAreaMutation = useCallback(
     async (operation: 'create' | 'update', values: AreaFormValues) => {
       if (!storeRef || !areaEditor) return;
-      const path = {
+      await saveStoreServicePointArea({
         groupWorkspaceKey: queryContext.groupWorkspaceKey,
-        storeRef: storeWireRef,
-        ...(areaEditor.area ? {areaRef: wireUuid(areaEditor.area.areaRef)} : {}),
-      };
-      const body =
-        operation === 'create'
-          ? {name: values.name.trim(), code: values.code.trim(), areaType: values.areaType}
-          : {
-              name: values.name.trim(),
-              code: values.code.trim(),
-              areaType: values.areaType,
-              status: values.status ?? 'ENABLED',
-              expectedVersion: areaEditor.area?.version ?? 0,
-            };
-      const operationId =
-        operation === 'create'
-          ? OPERATIONS_ADMIN_OPERATION_IDS.postOperationsStoreServicePointArea
-          : OPERATIONS_ADMIN_OPERATION_IDS.patchOperationsStoreServicePointArea;
-      const key = await createContentIdempotencyKey(operationId, {path, body});
-      if (operation === 'create') {
-        await operationsClient.postOperationsStoreServicePointArea(path as never, {
-          body: body as never,
-          headers: {'Idempotency-Key': key},
-        });
-      } else {
-        await operationsClient.patchOperationsStoreServicePointArea(path as never, {
-          body: body as never,
-          headers: {'Idempotency-Key': key},
-        });
-      }
+        storeWireRef,
+        editor: areaEditor,
+        operation,
+        values,
+      });
       await readBack('area-and-points');
       areaLifecycle.setDirty(false);
       areaLifecycle.closeAfterSuccess();
@@ -544,22 +290,11 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
 
   const changeAreaStatus = useCallback(
     async (area: StoreServicePointArea, status: StoreServicePointStatus) => {
-      const path = {
+      await changeStoreServicePointAreaStatus({
         groupWorkspaceKey: queryContext.groupWorkspaceKey,
-        storeRef: storeWireRef,
-        areaRef: wireUuid(area.areaRef),
-      };
-      const body = {status, expectedVersion: area.version};
-      const key = await createContentIdempotencyKey(
-        OPERATIONS_ADMIN_OPERATION_IDS.postOperationsStoreServicePointAreaStatus,
-        {
-          path,
-          body,
-        },
-      );
-      await operationsClient.postOperationsStoreServicePointAreaStatus(path, {
-        body,
-        headers: {'Idempotency-Key': key},
+        storeWireRef,
+        area,
+        status,
       });
       await readBack('area-and-points');
       setFeedback({
@@ -572,60 +307,42 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
 
   const moveArea = useCallback(
     async (area: StoreServicePointArea, direction: 'UP' | 'DOWN') => {
-      const path = {
-        groupWorkspaceKey: queryContext.groupWorkspaceKey,
-        storeRef: storeWireRef,
-        areaRef: wireUuid(area.areaRef),
-      };
-      const body = {direction, expectedVersion: area.version};
-      const key = await createContentIdempotencyKey(
-        OPERATIONS_ADMIN_OPERATION_IDS.postOperationsStoreServicePointAreaOrder,
-        {
-          path,
-          body,
-        },
-      );
-      await operationsClient.postOperationsStoreServicePointAreaOrder(path, {
-        body,
-        headers: {'Idempotency-Key': key},
-      });
-      await readBack('areas');
-      setFeedback({type: 'success', message: '区域顺序已更新。'});
+      const pending = {target: 'area' as const, ref: String(area.areaRef)};
+      if (sortPendingRef.current?.target === pending.target && sortPendingRef.current.ref === pending.ref) {
+        return;
+      }
+      updateSortPending(pending);
+      setFeedback(undefined);
+      try {
+        await moveStoreServicePointArea({
+          groupWorkspaceKey: queryContext.groupWorkspaceKey,
+          storeWireRef,
+          area,
+          direction,
+        });
+        await readBack('areas');
+      } finally {
+        if (sortPendingRef.current?.target === pending.target && sortPendingRef.current.ref === pending.ref) {
+          updateSortPending(undefined);
+        }
+      }
     },
-    [queryContext.groupWorkspaceKey, readBack, storeWireRef],
+    [queryContext.groupWorkspaceKey, readBack, storeWireRef, updateSortPending],
   );
 
   const releaseStagedImages = useCallback(async () => {
-    const staged = imageItemsRef.current.filter(item => item.staged && item.assetRef && item.version !== undefined);
-    for (const item of staged) {
-      const path = {
-        groupWorkspaceKey: queryContext.groupWorkspaceKey,
-        storeRef: storeWireRef,
-        assetRef: wireUuid(item.assetRef as string),
-      };
-      const body = {expectedAssetVersion: item.version as number};
-      try {
-        const key = await createContentIdempotencyKey(
-          OPERATIONS_ADMIN_OPERATION_IDS.releaseStagedStoreServicePointImage,
-          {
-            path,
-            body,
-          },
-        );
-        await operationsClient.releaseStagedStoreServicePointImage(path, {
-          body,
-          headers: {'Idempotency-Key': key},
-        });
-      } catch (error) {
-        setPointProblem(problemText(error, '图片资产释放未完成，请重试关闭。'));
-      }
-    }
+    const failures = await releaseStoreServicePointImages({
+      groupWorkspaceKey: queryContext.groupWorkspaceKey,
+      storeWireRef,
+      items: imageItemsRef.current,
+    });
+    if (failures.length > 0) setPointProblem('图片资产释放未完成，请重试关闭。');
   }, [queryContext.groupWorkspaceKey, storeWireRef]);
 
   const stagePointImage = useCallback(
     async (file: File, existingId?: string) => {
       if (!pointEditor || pointEditor.areaType !== 'TABLE_AREA') return;
-      if (file.size > IMAGE_LIMITS.maxImageBytes) {
+      if (file.size > STORE_SERVICE_POINT_IMAGE_LIMITS.maxImageBytes) {
         setPointProblem('单张图片不能超过 2MB。');
         return;
       }
@@ -642,22 +359,10 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
       setImageItems([placeholder]);
       setPointProblem(undefined);
       try {
-        const contentDigest = await digestFileContent(file);
-        const path = {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeRef: storeWireRef};
-        const body = {
-          fileName: file.name,
-          mediaType: file.type || 'application/octet-stream',
-          contentDigest,
-          content: file,
-        };
-        const key = await createContentIdempotencyKey(OPERATIONS_ADMIN_OPERATION_IDS.stageStoreServicePointImage, {
-          path,
-          fileName: file.name,
-          contentDigest,
-        });
-        const response = await operationsClient.stageStoreServicePointImage(path, {
-          body,
-          headers: {'Idempotency-Key': key},
+        const response = await stageStoreServicePointImage({
+          groupWorkspaceKey: queryContext.groupWorkspaceKey,
+          storeWireRef,
+          file,
         });
         setImageItems(current =>
           current.map(item =>
@@ -692,42 +397,16 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
     async (values: PointFormValues) => {
       if (!pointEditor || !storeRef || !selectedAreaRef || !extensionDefinition) return;
       const image = imageItems[0];
-      const pointType = pointTypeForArea(pointEditor.areaType);
-      const body = {
-        name: values.name.trim(),
-        code: values.code.trim(),
-        pointType,
-        seatCapacity: pointType === 'TABLE' ? (values.seatCapacity ?? null) : null,
-        tableShape: pointType === 'TABLE' ? (values.tableShape ?? null) : null,
-        reservable: pointType === 'TABLE' ? (values.reservable ?? null) : null,
-        imageAssetRef: pointType === 'TABLE' && image?.assetRef ? wireUuid(image.assetRef) : null,
-        imageBindGrant: pointType === 'TABLE' ? (image?.bindGrant ?? null) : null,
-        extensionValues: serializeStoreServicePointExtensionValues(extensionDefinition, values.extensionValues),
-        extensionRuleRevision: extensionDefinition.revision,
-        ...(pointEditor.point ? {status: pointEditor.point.status, expectedVersion: pointEditor.point.version} : {}),
-      };
-      const path = {
+      await saveStoreServicePoint({
         groupWorkspaceKey: queryContext.groupWorkspaceKey,
-        storeRef: storeWireRef,
-        ...(pointEditor.point
-          ? {servicePointRef: wireUuid(pointEditor.point.pointRef)}
-          : {areaRef: wireUuid(selectedAreaRef)}),
-      };
-      const operationId = pointEditor.point
-        ? OPERATIONS_ADMIN_OPERATION_IDS.patchOperationsStoreServicePoint
-        : OPERATIONS_ADMIN_OPERATION_IDS.postOperationsStoreServicePoint;
-      const key = await createContentIdempotencyKey(operationId, {path, body});
-      if (pointEditor.point) {
-        await operationsClient.patchOperationsStoreServicePoint(path as never, {
-          body: body as never,
-          headers: {'Idempotency-Key': key},
-        });
-      } else {
-        await operationsClient.postOperationsStoreServicePoint(path as never, {
-          body,
-          headers: {'Idempotency-Key': key},
-        });
-      }
+        storeWireRef,
+        editor: pointEditor,
+        selectedAreaRef,
+        extensionDefinitionRevision: extensionDefinition.revision,
+        extensionDefinition,
+        image,
+        values,
+      });
       await readBack('points');
       setImageItems([]);
       setPointProblem(undefined);
@@ -755,22 +434,11 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
 
   const changePointStatus = useCallback(
     async (point: StoreServicePoint, status: StoreServicePointStatus) => {
-      const path = {
+      await changeStoreServicePointStatus({
         groupWorkspaceKey: queryContext.groupWorkspaceKey,
-        storeRef: storeWireRef,
-        servicePointRef: wireUuid(point.pointRef),
-      };
-      const body = {status, expectedVersion: point.version};
-      const key = await createContentIdempotencyKey(
-        OPERATIONS_ADMIN_OPERATION_IDS.postOperationsStoreServicePointStatus,
-        {
-          path,
-          body,
-        },
-      );
-      await operationsClient.postOperationsStoreServicePointStatus(path, {
-        body,
-        headers: {'Idempotency-Key': key},
+        storeWireRef,
+        point,
+        status,
       });
       await readBack('points');
       setFeedback({
@@ -786,48 +454,37 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
 
   const movePoint = useCallback(
     async (point: StoreServicePoint, direction: 'UP' | 'DOWN') => {
-      const path = {
-        groupWorkspaceKey: queryContext.groupWorkspaceKey,
-        storeRef: storeWireRef,
-        servicePointRef: wireUuid(point.pointRef),
-      };
-      const body = {direction, expectedVersion: point.version};
-      const key = await createContentIdempotencyKey(
-        OPERATIONS_ADMIN_OPERATION_IDS.postOperationsStoreServicePointOrder,
-        {
-          path,
-          body,
-        },
-      );
-      await operationsClient.postOperationsStoreServicePointOrder(path, {
-        body,
-        headers: {'Idempotency-Key': key},
-      });
-      await readBack('points');
-      setFeedback({type: 'success', message: `${titleForArea(selectedArea?.areaType)}顺序已更新。`});
+      const pending = {target: 'point' as const, ref: String(point.pointRef)};
+      if (sortPendingRef.current?.target === pending.target && sortPendingRef.current.ref === pending.ref) {
+        return;
+      }
+      updateSortPending(pending);
+      setFeedback(undefined);
+      try {
+        await moveStoreServicePoint({
+          groupWorkspaceKey: queryContext.groupWorkspaceKey,
+          storeWireRef,
+          point,
+          direction,
+        });
+        await readBack('points');
+      } finally {
+        if (sortPendingRef.current?.target === pending.target && sortPendingRef.current.ref === pending.ref) {
+          updateSortPending(undefined);
+        }
+      }
     },
-    [queryContext.groupWorkspaceKey, readBack, selectedArea?.areaType, storeWireRef],
+    [queryContext.groupWorkspaceKey, readBack, storeWireRef, updateSortPending],
   );
 
   const changeQrConfiguration = useCallback(
     async (values: QrFormValues) => {
       if (!qrConfiguration) return;
-      const path = {groupWorkspaceKey: queryContext.groupWorkspaceKey, storeRef: storeWireRef};
-      const body = {
-        enabled: Boolean(values.enabled),
-        channelRef: values.channelRef ? wireUuid(values.channelRef) : null,
-        expectedVersion: qrConfiguration.version,
-      };
-      const key = await createContentIdempotencyKey(
-        OPERATIONS_ADMIN_OPERATION_IDS.patchOperationsStoreQrConfiguration,
-        {
-          path,
-          body,
-        },
-      );
-      await operationsClient.patchOperationsStoreQrConfiguration(path, {
-        body,
-        headers: {'Idempotency-Key': key},
+      await saveStoreQrConfiguration({
+        groupWorkspaceKey: queryContext.groupWorkspaceKey,
+        storeWireRef,
+        configurationVersion: qrConfiguration.version,
+        values,
       });
       await readBack('qr');
       qrLifecycle.setDirty(false);
@@ -837,26 +494,33 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
     [qrConfiguration, qrLifecycle, queryContext.groupWorkspaceKey, readBack, storeWireRef],
   );
 
+
   const askStatusChange = useCallback(
     (target: 'area' | 'point', row: StoreServicePointArea | StoreServicePoint, status: StoreServicePointStatus) => {
       const label = target === 'area' ? '区域' : titleForArea(selectedArea?.areaType);
-      modal.confirm({
-        title: status === 'VOIDED' ? `确认作废${label}？` : `确认${status === 'ENABLED' ? '启用' : '停用'}${label}？`,
-        content: status === 'VOIDED' ? `作废后将保留${label}历史资料，且不再参与当前列表。` : undefined,
-        okText: '确认',
-        cancelText: '取消',
-        onOk: async () => {
-          try {
-            if (target === 'area') await changeAreaStatus(row as StoreServicePointArea, status);
-            else await changePointStatus(row as StoreServicePoint, status);
-          } catch (error) {
-            setFeedback({type: 'error', message: problemText(error, `${label}状态更新失败，请重试。`)});
-          }
-        },
-      });
+      setStatusProblem(undefined);
+      setStatusChange({target, row, status, label});
     },
-    [changeAreaStatus, changePointStatus, modal, selectedArea?.areaType],
+    [selectedArea?.areaType],
   );
+
+  const confirmStatusChange = useCallback(async () => {
+    if (!statusChange || statusSubmitting) return;
+    setStatusSubmitting(true);
+    setStatusProblem(undefined);
+    try {
+      if (statusChange.target === 'area') {
+        await changeAreaStatus(statusChange.row as StoreServicePointArea, statusChange.status);
+      } else {
+        await changePointStatus(statusChange.row as StoreServicePoint, statusChange.status);
+      }
+      setStatusChange(undefined);
+    } catch (error) {
+      setStatusProblem(problemText(error, `${statusChange.label}状态更新失败，请重试。`));
+    } finally {
+      setStatusSubmitting(false);
+    }
+  }, [changeAreaStatus, changePointStatus, statusChange, statusSubmitting]);
 
   const areaMenu = useCallback(
     (area: StoreServicePointArea): MenuProps => ({
@@ -870,13 +534,17 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         {
           key: 'up',
           label: '上移',
-          disabled: !canEdit || !area.canMoveUp,
+          disabled:
+            !canEdit || !area.canMoveUp || (sortPending?.target === 'area' && sortPending.ref === String(area.areaRef)),
           ...testId(storeServicePointTestIds.areaMenuAction(area.areaRef, 'up')),
         },
         {
           key: 'down',
           label: '下移',
-          disabled: !canEdit || !area.canMoveDown,
+          disabled:
+            !canEdit ||
+            !area.canMoveDown ||
+            (sortPending?.target === 'area' && sortPending.ref === String(area.areaRef)),
           ...testId(storeServicePointTestIds.areaMenuAction(area.areaRef, 'down')),
         },
         {type: 'divider'},
@@ -908,7 +576,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         if (event.key === 'void') askStatusChange('area', area, 'VOIDED');
       },
     }),
-    [askStatusChange, canEdit, moveArea],
+    [askStatusChange, canEdit, moveArea, sortPending],
   );
 
   const pointMenu = useCallback(
@@ -923,13 +591,19 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         {
           key: 'up',
           label: '上移',
-          disabled: !canEdit || !point.canMoveUp,
+          disabled:
+            !canEdit ||
+            !point.canMoveUp ||
+            (sortPending?.target === 'point' && sortPending.ref === String(point.pointRef)),
           ...testId(storeServicePointTestIds.pointMenuAction(point.pointRef, 'up')),
         },
         {
           key: 'down',
           label: '下移',
-          disabled: !canEdit || !point.canMoveDown,
+          disabled:
+            !canEdit ||
+            !point.canMoveDown ||
+            (sortPending?.target === 'point' && sortPending.ref === String(point.pointRef)),
           ...testId(storeServicePointTestIds.pointMenuAction(point.pointRef, 'down')),
         },
         {type: 'divider'},
@@ -953,7 +627,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
       ].filter(Boolean) as NonNullable<MenuProps['items']>,
       onClick: event => {
         if (event.key === 'edit' && selectedArea)
-          setPointEditor({mode: 'edit', areaType: selectedArea.areaType, point});
+          setPointEditor({mode: 'edit', areaName: selectedArea.name, areaType: selectedArea.areaType, point});
         if (event.key === 'up' || event.key === 'down')
           void movePoint(point, event.key === 'up' ? 'UP' : 'DOWN').catch(error => {
             setFeedback({
@@ -966,7 +640,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         if (event.key === 'void') askStatusChange('point', point, 'VOIDED');
       },
     }),
-    [askStatusChange, canEdit, movePoint, selectedArea],
+    [askStatusChange, canEdit, movePoint, selectedArea, sortPending],
   );
 
   const pointColumns: TableColumnsType<StoreServicePoint> = useMemo(
@@ -994,7 +668,7 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
                 title: '容纳人数',
                 dataIndex: 'seatCapacity',
                 key: 'seatCapacity',
-                render: (value: number | null) => value ?? '—',
+                render: (value: number | null) => displayFieldValue(value),
               },
               {
                 title: '形态',
@@ -1033,16 +707,18 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
           title: STORE_SERVICE_POINT_OPERATION_COLUMN_TITLE,
           key: 'actions',
           width: 72,
-          render: (_value, row) => (
-            <Dropdown menu={pointMenu(row)} trigger={['click']}>
-              <Button
-                type="text"
+          render: (_value, row) => {
+            const menu = pointMenu(row);
+            return (
+              <AdminRowActionMenu
+                items={menu.items ?? []}
+                onClick={menu.onClick}
+                ariaLabel={`更多${titleForArea(selectedArea?.areaType)}操作`}
                 icon={<MoreOutlined />}
-                aria-label={`更多${titleForArea(selectedArea?.areaType)}操作`}
-                {...testId(storeServicePointTestIds.pointMenu(row.pointRef))}
+                triggerTestId={storeServicePointTestIds.pointMenu(row.pointRef)}
               />
-            </Dropdown>
-          ),
+            );
+          },
         },
       ] as TableColumnsType<StoreServicePoint>,
     [detail, pointMenu, qrConfiguration, qrQuery.error, qrQuery.isFetching, selectedArea?.areaType],
@@ -1064,16 +740,6 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
     }
     return options;
   }, [candidateQuery.currentData?.items, qrConfiguration]);
-
-  const renderExtensionDetails = (point: StoreServicePoint) => (
-    <Descriptions {...adminDetailDescriptionsProps} column={1}>
-      {enabledStoreServicePointExtensionFields(extensionDefinition).map(field => (
-        <Descriptions.Item key={field.key} label={field.label}>
-          {displayExtensionValue(point.extensionValues[field.key])}
-        </Descriptions.Item>
-      ))}
-    </Descriptions>
-  );
 
   const pageFeedback = feedback && (
     <Alert
@@ -1199,14 +865,18 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
                         {storeServicePointAreaTypeLabels[area.areaType]}
                       </Typography.Text>
                     </Button>
-                    <Dropdown menu={areaMenu(area)} trigger={['click']}>
-                      <Button
-                        type="text"
-                        icon={<MoreOutlined />}
-                        aria-label="更多区域操作"
-                        {...testId(storeServicePointTestIds.areaMenu(area.areaRef))}
-                      />
-                    </Dropdown>
+                    {(() => {
+                      const menu = areaMenu(area);
+                      return (
+                        <AdminRowActionMenu
+                          items={menu.items ?? []}
+                          onClick={menu.onClick}
+                          ariaLabel="更多区域操作"
+                          icon={<MoreOutlined />}
+                          triggerTestId={storeServicePointTestIds.areaMenu(area.areaRef)}
+                        />
+                      );
+                    })()}
                   </div>
                 );
               })}
@@ -1230,7 +900,9 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={() => setPointEditor({mode: 'create', areaType: selectedArea.areaType})}
+                onClick={() =>
+                  setPointEditor({mode: 'create', areaName: selectedArea.name, areaType: selectedArea.areaType})
+                }
                 {...testId(storeServicePointTestIds.pointCreate)}
               >
                 新建{titleForArea(selectedArea.areaType)}
@@ -1284,387 +956,133 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
         {content}
       </Space>
 
-      <Drawer
-        open={Boolean(areaEditor)}
-        title={areaEditor?.mode === 'create' ? '新建区域' : '编辑区域'}
-        onClose={areaLifecycle.requestClose}
-        afterOpenChange={areaLifecycle.afterOpenChange}
-        destroyOnHidden
-        maskClosable={!areaLifecycle.submitting}
-        keyboard={!areaLifecycle.submitting}
-        closable={!areaLifecycle.submitting}
-        {...adminDrawerSurfaceProps}
-        {...testId(storeServicePointTestIds.areaDrawer)}
-        footer={
-          <Space>
-            <Button
-              onClick={areaLifecycle.requestClose}
-              disabled={areaLifecycle.submitting}
-              {...testId(storeServicePointTestIds.areaCancel)}
-            >
-              取消
-            </Button>
-            <Button
-              type="primary"
-              loading={areaLifecycle.submitting}
-              onClick={() => areaForm.submit()}
-              {...testId(storeServicePointTestIds.areaSave)}
-            >
-              保存
-            </Button>
-          </Space>
-        }
-      >
-        <Form
-          form={areaForm}
-          layout="vertical"
-          disabled={areaLifecycle.submitting}
-          onFinish={values => {
-            areaLifecycle.setSubmitting(true);
-            void runAreaMutation(areaEditor?.mode === 'edit' ? 'update' : 'create', values)
-              .catch(error => {
-                setFeedback({type: 'error', message: problemText(error, '区域保存失败，请重试。')});
-              })
-              .finally(() => areaLifecycle.setSubmitting(false));
-          }}
-          onValuesChange={() => {
-            areaLifecycle.setDirty(true);
-            areaLifecycle.markBusinessIntentChanged();
-          }}
-        >
-          <Form.Item
-            name="name"
-            label="区域名称"
-            rules={[{required: true, whitespace: true, message: '请输入区域名称'}]}
-          >
-            <Input maxLength={120} {...testId(storeServicePointTestIds.areaName)} />
-          </Form.Item>
-          <Form.Item
-            name="code"
-            label="区域编码"
-            rules={[{required: true, whitespace: true, message: '请输入区域编码'}]}
-          >
-            <Input maxLength={64} {...testId(storeServicePointTestIds.areaCode)} />
-          </Form.Item>
-          <Form.Item name="areaType" label="区域类型" rules={[{required: true, message: '请选择区域类型'}]}>
-            <Select
-              options={Object.entries(storeServicePointAreaTypeLabels).map(([value, label]) => ({value, label}))}
-              {...testId(storeServicePointTestIds.areaType)}
-            />
-          </Form.Item>
-          {areaEditor?.mode === 'edit' && (
-            <Form.Item name="status" label="状态">
-              <Select
-                options={Object.entries(storeServicePointStatusLabels).map(([value, label]) => ({value, label}))}
-                {...testId(storeServicePointTestIds.areaStatus)}
-              />
-            </Form.Item>
-          )}
-        </Form>
-      </Drawer>
+      <AreaDrawer
+        editor={areaEditor}
+        form={areaForm}
+        lifecycle={areaLifecycle}
+        onFinish={values => {
+          areaLifecycle.setSubmitting(true);
+          void runAreaMutation(areaEditor?.mode === 'edit' ? 'update' : 'create', values)
+            .catch(error => {
+              setFeedback({type: 'error', message: problemText(error, '区域保存失败，请重试。')});
+            })
+            .finally(() => areaLifecycle.setSubmitting(false));
+        }}
+        onValuesChange={() => {
+          areaLifecycle.setDirty(true);
+          areaLifecycle.markBusinessIntentChanged();
+        }}
+      />
 
-      <Drawer
-        open={Boolean(pointEditor)}
-        title={
-          pointEditor
-            ? pointEditor.mode === 'create'
-              ? `新建${titleForArea(pointEditor.areaType)}`
-              : `编辑${titleForArea(pointEditor.areaType)}资料`
-            : '编辑'
-        }
-        onClose={pointLifecycle.requestClose}
-        afterOpenChange={visible => {
+      <ServicePointDrawer
+        editor={pointEditor}
+        form={pointForm}
+        lifecycle={pointLifecycle}
+        extensionDefinition={extensionDefinition}
+        extensionDefinitionError={extensionDefinitionQuery.error}
+        extensionDefinitionLoading={extensionDefinitionQuery.isFetching}
+        onRetryExtensionDefinition={() => void extensionDefinitionQuery.refetch()}
+        pointProblem={pointProblem}
+        imageItems={imageItems}
+        onStageMedia={stagePointImage}
+        onRemoveMedia={async id => {
+          const item = imageItems.find(current => current.id === id);
+          if (item?.staged && item.assetRef && item.version !== undefined) {
+            imageItemsRef.current = [item];
+            await releaseStagedImages();
+          }
+          setImageItems([]);
+          pointLifecycle.setDirty(true);
+          pointLifecycle.markBusinessIntentChanged();
+        }}
+        onMoveMedia={() => undefined}
+        onAfterOpenChange={visible => {
           pointLifecycle.afterOpenChange(visible);
           if (!visible) void releaseStagedImages();
         }}
-        destroyOnHidden
-        maskClosable={!pointLifecycle.submitting}
-        keyboard={!pointLifecycle.submitting}
-        closable={!pointLifecycle.submitting}
-        {...adminWideDrawerSurfaceProps}
-        {...testId(storeServicePointTestIds.pointDrawer(pointEditor?.areaType === 'TABLE_AREA' ? 'table' : 'scan'))}
-        footer={
-          <Space>
-            <Button
-              onClick={pointLifecycle.requestClose}
-              disabled={pointLifecycle.submitting}
-              {...testId(storeServicePointTestIds.pointCancel)}
-            >
-              取消
-            </Button>
-            <Button
-              type="primary"
-              loading={pointLifecycle.submitting}
-              disabled={!extensionDefinition || Boolean(extensionDefinitionQuery.error)}
-              onClick={() => pointForm.submit()}
-              {...testId(storeServicePointTestIds.pointSave)}
-            >
-              保存
-            </Button>
-          </Space>
-        }
-      >
-        {pointProblem && (
-          <Alert type="error" showIcon title="保存未完成" description={pointProblem} style={{marginBottom: 16}} />
-        )}
-        {extensionDefinitionQuery.error ? (
-          <Alert
-            type="error"
-            showIcon
-            title="字段配置读取失败"
-            description="暂时无法获取桌台与扫码点字段配置，请重试。"
-            action={<Button onClick={() => void extensionDefinitionQuery.refetch()}>重试</Button>}
-          />
-        ) : extensionDefinitionQuery.isFetching && !extensionDefinition ? (
-          <Spin tip="字段配置加载中…" />
-        ) : (
-          <Form
-            form={pointForm}
-            layout="vertical"
-            disabled={pointLifecycle.submitting}
-            onFinish={values => {
-              pointLifecycle.setSubmitting(true);
-              void submitPoint(values)
-                .catch(error => setPointProblem(problemText(error, '保存失败，请重试。')))
-                .finally(() => pointLifecycle.setSubmitting(false));
-            }}
-            onValuesChange={() => {
-              pointLifecycle.setDirty(true);
-              pointLifecycle.markBusinessIntentChanged();
-            }}
-          >
-            <Form.Item
-              name="name"
-              label={`${pointEditor?.areaType === 'TABLE_AREA' ? '桌台' : '扫码点'}名称`}
-              rules={[{required: true, whitespace: true, message: '请输入名称'}]}
-            >
-              <Input maxLength={120} {...testId(storeServicePointTestIds.pointName)} />
-            </Form.Item>
-            <Form.Item name="code" label="编码" rules={[{required: true, whitespace: true, message: '请输入编码'}]}>
-              <Input maxLength={64} {...testId(storeServicePointTestIds.pointCode)} />
-            </Form.Item>
-            {pointEditor?.areaType === 'TABLE_AREA' && (
-              <>
-                <Form.Item
-                  name="seatCapacity"
-                  label="容纳人数"
-                  rules={[{type: 'number', min: 1, message: '请输入正整数'}]}
-                >
-                  <InputNumber
-                    min={1}
-                    precision={0}
-                    style={{width: '100%'}}
-                    {...testId(storeServicePointTestIds.pointCapacity)}
-                  />
-                </Form.Item>
-                <Form.Item name="tableShape" label="形态">
-                  <Select
-                    options={Object.entries(storeServicePointShapeLabels).map(([value, label]) => ({value, label}))}
-                    {...testId(storeServicePointTestIds.pointShape)}
-                  />
-                </Form.Item>
-                <Form.Item name="reservable" label="是否可预约">
-                  <Select
-                    allowClear
-                    placeholder="未设置"
-                    options={[
-                      {value: true, label: '是'},
-                      {value: false, label: '否'},
-                    ]}
-                    {...testId(storeServicePointTestIds.pointReservable)}
-                  />
-                </Form.Item>
-                <PointImageEditor
-                  items={imageItems}
-                  onStageMedia={stagePointImage}
-                  onRemoveMedia={async id => {
-                    const item = imageItems.find(current => current.id === id);
-                    if (item?.staged && item.assetRef && item.version !== undefined) {
-                      imageItemsRef.current = [item];
-                      await releaseStagedImages();
-                    }
-                    setImageItems([]);
-                    pointLifecycle.setDirty(true);
-                    pointLifecycle.markBusinessIntentChanged();
-                  }}
-                  onMoveMedia={() => undefined}
-                />
-              </>
-            )}
-            <div style={{marginTop: 16}} {...testId(storeServicePointTestIds.pointExtension)}>
-              <ExtensionFormItems definition={extensionDefinition} />
-            </div>
-          </Form>
-        )}
-      </Drawer>
+        onFinish={values => {
+          pointLifecycle.setSubmitting(true);
+          void submitPoint(values)
+            .catch(error => setPointProblem(problemText(error, '保存失败，请重试。')))
+            .finally(() => pointLifecycle.setSubmitting(false));
+        }}
+        onValuesChange={() => {
+          pointLifecycle.setDirty(true);
+          pointLifecycle.markBusinessIntentChanged();
+        }}
+      />
 
-      <Drawer
+      <ServicePointDetailDrawer
         open={detail.isOpen}
-        title={
-          detailValue ? `${titleForArea(areaTypeForPointType(detailValue.pointType))}详情：${detailValue.name}` : '详情'
-        }
+        value={detailValue}
+        canEdit={canEdit}
+        extensionDefinition={extensionDefinition}
+        qrConfiguration={qrConfiguration}
+        qrReadState={{loading: qrQuery.isFetching, failed: Boolean(qrQuery.error)}}
+        detailQuery={{isFetching: detailQuery.isFetching, error: detailQuery.error}}
         onClose={detail.close}
-        {...adminDrawerSurfaceProps}
-        {...testId(storeServicePointTestIds.detailDrawer)}
-        extra={
-          detailValue && canEdit ? (
-            <Button
-              onClick={() => {
-                detail.close();
-                setPointEditor({
-                  mode: 'edit',
-                  areaType: areaTypeForPointType(detailValue.pointType),
-                  point: detailValue,
-                });
-              }}
-              {...testId(storeServicePointTestIds.detailAction)}
-            >
-              编辑
-            </Button>
-          ) : undefined
-        }
-      >
-        {detailQuery.isFetching && !detailValue ? <Spin tip="详情加载中…" /> : null}
-        {detailQuery.error ? (
-          <Alert
-            type="error"
-            showIcon
-            title="详情读取失败"
-            description={problemText(detailQuery.error, '请重试。')}
-            action={<Button onClick={() => void detailQuery.refetch()}>重试</Button>}
-          />
-        ) : null}
-        {detailValue && (
-          <Space direction="vertical" size={16} style={{display: 'flex'}}>
-            <Descriptions {...adminDetailDescriptionsProps} column={1}>
-              <Descriptions.Item label="名称">
-                <NameCodeText name={detailValue.name} />
-              </Descriptions.Item>
-              <Descriptions.Item label="编码">
-                <NameCodeText code={detailValue.code} />
-              </Descriptions.Item>
-              <Descriptions.Item label="状态">{statusTag(detailValue.status)}</Descriptions.Item>
-              {detailValue.pointType === 'TABLE' && (
-                <Descriptions.Item label="容纳人数">{detailValue.seatCapacity ?? '—'}</Descriptions.Item>
-              )}
-              {detailValue.pointType === 'TABLE' && (
-                <Descriptions.Item label="形态">
-                  {detailValue.tableShape ? storeServicePointShapeLabels[detailValue.tableShape] : '—'}
-                </Descriptions.Item>
-              )}
-              {detailValue.pointType === 'TABLE' && (
-                <Descriptions.Item label="是否可预约">
-                  {detailValue.reservable === null || detailValue.reservable === undefined
-                    ? '—'
-                    : detailValue.reservable
-                      ? '是'
-                      : '否'}
-                </Descriptions.Item>
-              )}
-              <Descriptions.Item label="是否可用">{detailValue.effectiveAvailable ? '是' : '否'}</Descriptions.Item>
-            </Descriptions>
-            {detailValue.imageAssetRef && (
-              <AssetPreview
-                assetRef={String(detailValue.imageAssetRef)}
-                alt={`${detailValue.name}图片`}
-                width={160}
-                height={120}
-              />
-            )}
-            {extensionDefinition && renderExtensionDetails(detailValue)}
-            <Card size="small" title="二维码结果" {...testId(storeServicePointTestIds.qrResult)}>
-              {qrDisplayValue(
-                detailValue.qrUrl,
-                qrConfiguration,
-                detailValue.effectiveAvailable,
-                {loading: qrQuery.isFetching, failed: Boolean(qrQuery.error)},
-                176,
-                storeServicePointTestIds.qrResultImage(detailValue.pointRef),
-              )}
-            </Card>
-          </Space>
-        )}
-      </Drawer>
+        onRetry={() => void detailQuery.refetch()}
+        onEdit={value => {
+          detail.close();
+          if (!selectedArea) return;
+          setPointEditor({
+            mode: 'edit',
+            areaName: selectedArea.name,
+            areaType: areaTypeForPointType(value.pointType),
+            point: value as StoreServicePoint,
+          });
+        }}
+      />
 
-      <Drawer
+      <QrConfigurationDrawer
         open={qrEditOpen}
-        title="编辑二维码配置"
-        onClose={qrLifecycle.requestClose}
-        afterOpenChange={qrLifecycle.afterOpenChange}
-        destroyOnHidden
-        maskClosable={!qrLifecycle.submitting}
-        keyboard={!qrLifecycle.submitting}
-        closable={!qrLifecycle.submitting}
-        {...adminDrawerSurfaceProps}
-        {...testId(storeServicePointTestIds.qrDrawer)}
-        footer={
-          <Space>
-            <Button
-              onClick={qrLifecycle.requestClose}
-              disabled={qrLifecycle.submitting}
-              {...testId(storeServicePointTestIds.qrCancel)}
-            >
-              取消
-            </Button>
-            <Button
-              type="primary"
-              loading={qrLifecycle.submitting}
-              disabled={!qrConfiguration || candidateQuery.isFetching}
-              onClick={() => qrForm.submit()}
-              {...testId(storeServicePointTestIds.qrSave)}
-            >
-              保存
-            </Button>
-          </Space>
+        form={qrForm}
+        lifecycle={qrLifecycle}
+        options={qrOptions}
+        configurationReady={Boolean(qrConfiguration)}
+        candidatesLoading={candidateQuery.isFetching}
+        candidatesError={candidateQuery.error}
+        onRetryCandidates={() => void candidateQuery.refetch()}
+        onFinish={values => {
+          qrLifecycle.setSubmitting(true);
+          void changeQrConfiguration(values)
+            .catch(error => setFeedback({type: 'error', message: problemText(error, '二维码配置保存失败，请重试。')}))
+            .finally(() => qrLifecycle.setSubmitting(false));
+        }}
+        onValuesChange={() => {
+          qrLifecycle.setDirty(true);
+          qrLifecycle.markBusinessIntentChanged();
+        }}
+      />
+
+      <StatusChangeConfirm
+        open={Boolean(statusChange)}
+        title={
+          statusChange
+            ? statusChange.status === 'VOIDED'
+              ? `确认作废${statusChange.label}？`
+              : `确认${statusChange.status === 'ENABLED' ? '启用' : '停用'}${statusChange.label}？`
+            : '确认状态操作'
         }
+        actionLabel={statusChange?.status === 'VOIDED' ? '作废' : statusChange?.status === 'ENABLED' ? '启用' : '停用'}
+        dangerous={statusChange?.status === 'VOIDED'}
+        submitting={statusSubmitting}
+        problem={statusProblem}
+        onCancel={() => {
+          if (!statusSubmitting) setStatusChange(undefined);
+        }}
+        onConfirm={() => void confirmStatusChange()}
+        confirmTestId={storeServicePointTestIds.statusConfirm}
+        cancelTestId={storeServicePointTestIds.statusCancel}
+        modalTestId={storeServicePointTestIds.statusModal}
+        problemTestId={storeServicePointTestIds.statusProblem}
       >
-        {candidateQuery.error ? (
-          <Alert
-            type="error"
-            showIcon
-            title="门店渠道读取失败"
-            description={problemText(candidateQuery.error, '请重试。')}
-            action={<Button onClick={() => void candidateQuery.refetch()}>重试</Button>}
-          />
-        ) : null}
-        <Form
-          form={qrForm}
-          layout="vertical"
-          disabled={qrLifecycle.submitting}
-          onFinish={values => {
-            qrLifecycle.setSubmitting(true);
-            void changeQrConfiguration(values)
-              .catch(error => setFeedback({type: 'error', message: problemText(error, '二维码配置保存失败，请重试。')}))
-              .finally(() => qrLifecycle.setSubmitting(false));
-          }}
-          onValuesChange={() => {
-            qrLifecycle.setDirty(true);
-            qrLifecycle.markBusinessIntentChanged();
-          }}
-        >
-          <Form.Item name="enabled" label="是否开启二维码下单" valuePropName="checked">
-            <Switch {...testId(storeServicePointTestIds.qrEnabled)} />
-          </Form.Item>
-          <Form.Item noStyle shouldUpdate={(previous, current) => previous.enabled !== current.enabled}>
-            {({getFieldValue}) => (
-              <Form.Item
-                name="channelRef"
-                label="门店渠道"
-                rules={getFieldValue('enabled') ? [{required: true, message: '开启二维码下单后请选择门店渠道'}] : []}
-                help={!getFieldValue('enabled') ? '未开启时可以不选择渠道。' : undefined}
-              >
-                <Select
-                  allowClear={!getFieldValue('enabled')}
-                  loading={candidateQuery.isFetching}
-                  options={qrOptions}
-                  placeholder="请选择门店渠道"
-                  {...testId(storeServicePointTestIds.qrChannel)}
-                />
-              </Form.Item>
-            )}
-          </Form.Item>
-        </Form>
-      </Drawer>
+        {statusChange?.status === 'VOIDED' ? (
+          <p>作废后将保留{statusChange.label}历史资料，且不再参与当前列表。</p>
+        ) : (
+          <p>此操作仅改变{statusChange?.label ?? '对象'}的可用状态。</p>
+        )}
+      </StatusChangeConfirm>
     </div>
   );
 }

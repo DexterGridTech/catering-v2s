@@ -5,7 +5,7 @@ import com.catering.v2s.organization.api.OrganizationNodeReadback;
 import com.catering.v2s.platform.foundation.json.LegacyReceiptJson;
 import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
+import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Set;
@@ -42,7 +42,7 @@ public final class OrganizationHierarchyCommandReceiptService {
             Supplier<OrganizationNodeReadback> command) {
         if (workspaceUuid == null) throw new OrganizationHierarchyService.OrganizationValidationException();
         String key = requiredKey(idempotencyKey);
-        String requestHash = sha256(canonicalRequest);
+        String requestHash = CommandReceiptSupport.requestHash(canonicalRequest);
         AdvisoryLock.acquire(jdbc, "org-hierarchy-receipt", workspaceUuid.toString(), key);
         OrganizationHierarchyCommandReceiptPersistence.Receipt stored = persistence.read(workspaceUuid, key);
         Receipt existing = stored == null ? null : new Receipt(stored.requestHash(), stored.responseJson());
@@ -71,8 +71,10 @@ public final class OrganizationHierarchyCommandReceiptService {
     }
 
     private static OrganizationNodeReadback deserialize(String value) {
+        if (value == null) return null;
         try {
-            return JSON.readValue(value, OrganizationNodeReadback.class);
+            return CommandReceiptSupport.deserialize(
+                    JSON, value, OrganizationNodeReadback.class, "organization hierarchy receipt deserialization failed");
         } catch (Exception directFailure) {
             try {
                 return JSON.treeToValue(
@@ -87,7 +89,8 @@ public final class OrganizationHierarchyCommandReceiptService {
 
     private static String serialize(OrganizationNodeReadback value) {
         try {
-            return JSON.writeValueAsString(value);
+            return CommandReceiptSupport.serialize(
+                    JSON, value, "organization hierarchy receipt serialization failed");
         } catch (Exception failure) {
             throw new IllegalStateException("organization hierarchy receipt serialization failed", failure);
         }
@@ -101,7 +104,7 @@ public final class OrganizationHierarchyCommandReceiptService {
 
     private static String sha256(String value) {
         try {
-            return Sha256Hex.digest(value);
+            return CommandReceiptSupport.requestHash(value);
         } catch (Exception exception) {
             throw new IllegalStateException(exception);
         }

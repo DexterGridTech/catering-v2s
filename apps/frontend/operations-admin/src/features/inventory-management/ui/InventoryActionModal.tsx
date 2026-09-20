@@ -35,6 +35,7 @@ import {
 } from '../../../app/api/generated/catalog-inventory-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
 import {requireOperationsScopeRef, type OperationsPageContext} from '../../../app/routing/model';
+import {inventoryActionDirectionTestId, inventoryActionResultCloseTestId} from '../inventoryTestIds';
 import {
   envelopeResult,
   inventoryConversionLabel,
@@ -417,7 +418,7 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
       keyboard={!lifecycle.submitting}
       footer={
         result ? (
-          <Button type="primary" onClick={lifecycle.closeAfterSuccess} {...testId('inventory-action-result-close')}>
+          <Button type="primary" onClick={lifecycle.closeAfterSuccess} {...testId(inventoryActionResultCloseTestId)}>
             完成
           </Button>
         ) : (
@@ -534,13 +535,14 @@ export function InventoryActionModal({action, current, expectedVersion, queryCon
                 )}
                 {action === 'ADJUST' && (
                   <Form.Item label="调整方向" name="direction" rules={[{required: true}]}>
-                    <Radio.Group
-                      options={[
-                        {label: '增加', value: 'INCREASE'},
-                        {label: '减少', value: 'DECREASE'},
-                      ]}
-                      {...testId('inventory-action-direction')}
-                    />
+                    <Radio.Group {...testId('inventory-action-direction')}>
+                      <Radio value="INCREASE" {...testId(inventoryActionDirectionTestId('INCREASE'))}>
+                        增加
+                      </Radio>
+                      <Radio value="DECREASE" {...testId(inventoryActionDirectionTestId('DECREASE'))}>
+                        减少
+                      </Radio>
+                    </Radio.Group>
                   </Form.Item>
                 )}
                 {action === 'ADJUST' && (

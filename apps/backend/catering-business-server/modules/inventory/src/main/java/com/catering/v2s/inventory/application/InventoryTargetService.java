@@ -10,6 +10,7 @@ import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
+import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -796,27 +797,18 @@ public class InventoryTargetService {
     }
 
     private static int parsePageSize(ObjectNode request, String key, int fallback) {
-        JsonNode value = request == null ? null : request.get(key);
-        if (value == null || value.isNull() || value.asText().isBlank()) return fallback;
         try {
-            int parsed = Integer.parseInt(value.asText());
-            if (parsed < 1 || parsed > 100) throw new NumberFormatException();
-            return parsed;
-        } catch (NumberFormatException ex) {
-            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, key + " must be between 1 and 100", ex);
+            return CollectionRequestSupport.pageSize(request, key, fallback);
+        } catch (CollectionRequestSupport.InvalidRequestValue failure) {
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, failure.getMessage(), failure);
         }
     }
 
     private static long parseCursor(ObjectNode request, String key) {
-        JsonNode value = request == null ? null : request.get(key);
-        if (value == null || value.isNull() || value.asText().isBlank()) return 0L;
         try {
-            long parsed = Long.parseLong(value.asText());
-            if (parsed < 0) throw new NumberFormatException();
-            return parsed;
-        } catch (NumberFormatException ex) {
-            throw new InventoryOwnerApi.Problem(
-                    "VALIDATION_ERROR", 422, key + " must be a non-negative opaque cursor", ex);
+            return CollectionRequestSupport.cursor(request, key);
+        } catch (CollectionRequestSupport.InvalidRequestValue failure) {
+            throw new InventoryOwnerApi.Problem("VALIDATION_ERROR", 422, failure.getMessage(), failure);
         }
     }
 
@@ -1487,8 +1479,7 @@ public class InventoryTargetService {
     }
 
     static String optional(ObjectNode req, String key) {
-        JsonNode v = req == null ? null : req.get(key);
-        return v == null || v.isNull() ? null : v.asText();
+        return CollectionRequestSupport.optional(req, key);
     }
 
     static String normalizeLineSign(String value) {

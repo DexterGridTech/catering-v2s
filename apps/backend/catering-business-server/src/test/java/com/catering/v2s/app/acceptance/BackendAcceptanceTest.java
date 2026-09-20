@@ -536,6 +536,9 @@ class BackendAcceptanceTest {
     static final RouteIdentity PLATFORM_ORGANIZATION_OVERVIEW = new RouteIdentity(
             "getPlatformOrganizationOverviewPage",
             "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview");
+    static final RouteIdentity PLATFORM_ORGANIZATION_HIERARCHY = new RouteIdentity(
+            "getPlatformOrganizationHierarchyTree",
+            "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/hierarchy");
     static final RouteIdentity PLATFORM_ORGANIZATION_CANDIDATES = new RouteIdentity(
             "getPlatformOrganizationCandidates",
             "/api/platform/group-workspaces/{groupWorkspaceKey}/organization-overview/candidates");

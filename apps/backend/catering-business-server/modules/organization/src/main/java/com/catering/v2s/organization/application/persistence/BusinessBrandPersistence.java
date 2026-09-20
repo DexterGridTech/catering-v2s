@@ -8,9 +8,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class BusinessBrandPersistence {
     private final JdbcTemplate jdbc;
+    private final OrganizationAuditEventWriter auditEvents;
 
     public BusinessBrandPersistence(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
+        this.auditEvents = new OrganizationAuditEventWriter(jdbc);
     }
 
     public int insert(
@@ -24,7 +26,7 @@ public class BusinessBrandPersistence {
             long now) {
         return jdbc.update(
                 BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_INSERT_INTO_BRAND_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
-                        + BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_CONTINUATION_REMARK_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS
+                        + BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_REMARK_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS
                         + BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_OPEN_PAREN_ENABLED,
                 id,
                 workspaceUuid,
@@ -152,10 +154,7 @@ public class BusinessBrandPersistence {
             String action,
             long occurredAtEpochMillis,
             String changesJson) {
-        return jdbc.update(
-                BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE
-                        + BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_CONTINUATION_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
-                        + BusinessBrandServiceSql.BUSINESS_BRAND_SERVICE_CONTINUATION_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON,
+        return auditEvents.write(
                 id,
                 workspaceUuid,
                 groupWorkspaceKey,

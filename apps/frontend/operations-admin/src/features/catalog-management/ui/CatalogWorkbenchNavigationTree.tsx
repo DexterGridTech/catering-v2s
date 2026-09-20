@@ -11,9 +11,17 @@ import {
   TagOutlined,
   TagsOutlined,
   ToolOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
-import {Button, Card, Dropdown, Input, Space, Tag, Tooltip, Tree} from 'antd';
-import {EllipsisTooltip, NameCodeText, testId} from '@catering-v2s/admin-ui-foundation';
+import {Button, Card, Input, Space, Tag, Tooltip, Tree} from 'antd';
+import {
+  AdminRowActionMenu,
+  EllipsisTooltip,
+  lifecycleColor,
+  lifecycleLabel,
+  NameCodeText,
+  testId,
+} from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useMemo, type Key, type ReactNode} from 'react';
 import {
   buildCatalogNavigationCategoryTree,
@@ -69,7 +77,7 @@ function CatalogTreeLine({
     <div
       {...rest}
       aria-label={rest['aria-label'] ?? label}
-      style={{display: 'flex', alignItems: 'center', gap: 6, minWidth: 0}}
+      style={{display: 'flex', alignItems: 'center', gap: 6, width: '100%', minWidth: 0, maxWidth: '100%'}}
     >
       {icon}
       <EllipsisTooltip title={label}>
@@ -180,6 +188,7 @@ export function CatalogWorkbenchNavigationTree({
       treeNode.category.code.toLocaleLowerCase().includes(match) ||
       treeNode.children.some(categoryMatches);
     const renderCategory = ({category: node, children}: CategoryTreeDataNode): CatalogWorkbenchTreeNode => {
+      const visibleChildren = children.filter(categoryMatches);
       const parentNode = node.parentCategoryRef ? categoryTreeByRef.get(String(node.parentCategoryRef)) : undefined;
       const siblings = parentNode?.children ?? categoryTree;
       const siblingIndex = siblings.findIndex(sibling => sibling.category.categoryRef === node.categoryRef);
@@ -188,6 +197,13 @@ export function CatalogWorkbenchNavigationTree({
       const canCreateChild = catalogCategoryCanCreateChild(node, navigation.tree);
       return {
         key: `CATEGORY:${node.categoryRef}`,
+        switcherIcon:
+          visibleChildren.length > 0 ? (
+            <span
+              aria-label={`展开分类 ${node.name}`}
+              {...testId(catalogTestIdControls.workbench.categoryExpander(node.code))}
+            />
+          ) : undefined,
         title: (
           <CatalogTreeLine
             label={node.name}
@@ -204,63 +220,54 @@ export function CatalogWorkbenchNavigationTree({
                     event.stopPropagation();
                   }}
                 >
-                  <Dropdown
-                    trigger={['click']}
-                    menu={{
-                      items: [
-                        {
-                          key: 'create-child',
-                          label: '新建子分类',
-                          disabled: !canCreateChild,
-                          title: canCreateChild ? undefined : catalogCategoryDepthLimitCopy,
-                        },
-                        {key: 'rename', label: '重命名'},
-                        {key: 'reparent', label: '更换父分类'},
-                        {
-                          key: 'move-up',
-                          label: '向上移动',
-                          disabled: !canMoveUp,
-                          title: canMoveUp ? undefined : '分类已位于当前层级首位',
-                        },
-                        {
-                          key: 'move-down',
-                          label: '向下移动',
-                          disabled: !canMoveDown,
-                          title: canMoveDown ? undefined : '分类已位于当前层级末位',
-                        },
-                        {
-                          key: 'delete',
-                          label: '标记删除分类',
-                          danger: true,
-                          disabled: !node.deletionAvailability.canDelete,
-                          title: node.deletionAvailability.canDelete
-                            ? undefined
-                            : `仍有 ${node.deletionAvailability.blockingReferenceCount} 个商品引用`,
-                        },
-                      ],
-                      onClick: ({key}) => {
-                        const actionByKey: Record<string, CatalogCategoryAction> = {
-                          'create-child': 'CREATE',
-                          rename: 'RENAME',
-                          reparent: 'REPARENT',
-                          'move-up': 'MOVE_UP',
-                          'move-down': 'MOVE_DOWN',
-                          delete: 'DELETE',
-                        };
-                        const action = actionByKey[key];
-                        if (action) onOpenCategory(action, node);
+                  <AdminRowActionMenu
+                    icon={<MoreOutlined />}
+                    ariaLabel={`分类 ${node.name} 操作`}
+                    triggerTestId={catalogTestIdControls.workbench.categoryActions(node.code)}
+                    items={[
+                      {
+                        key: 'create-child',
+                        label: '新建子分类',
+                        disabled: !canCreateChild,
+                        title: canCreateChild ? undefined : catalogCategoryDepthLimitCopy,
                       },
+                      {key: 'rename', label: '重命名'},
+                      {key: 'reparent', label: '更换父分类'},
+                      {
+                        key: 'move-up',
+                        label: '向上移动',
+                        disabled: !canMoveUp,
+                        title: canMoveUp ? undefined : '分类已位于当前层级首位',
+                      },
+                      {
+                        key: 'move-down',
+                        label: '向下移动',
+                        disabled: !canMoveDown,
+                        title: canMoveDown ? undefined : '分类已位于当前层级末位',
+                      },
+                      {
+                        key: 'delete',
+                        label: '作废分类',
+                        danger: true,
+                        disabled: !node.deletionAvailability.canDelete,
+                        title: node.deletionAvailability.canDelete
+                          ? undefined
+                          : `仍有 ${node.deletionAvailability.blockingReferenceCount} 个商品引用`,
+                      },
+                    ]}
+                    onClick={({key}) => {
+                      const actionByKey: Record<string, CatalogCategoryAction> = {
+                        'create-child': 'CREATE',
+                        rename: 'RENAME',
+                        reparent: 'REPARENT',
+                        'move-up': 'MOVE_UP',
+                        'move-down': 'MOVE_DOWN',
+                        delete: 'DELETE',
+                      };
+                      const action = actionByKey[key];
+                      if (action) onOpenCategory(action, node);
                     }}
-                  >
-                    <Button
-                      type="text"
-                      size="small"
-                      aria-label={`分类 ${node.name} 操作`}
-                      {...testId(catalogTestIdControls.workbench.categoryActions(node.code))}
-                    >
-                      ···
-                    </Button>
-                  </Dropdown>
+                  />
                 </span>
               )
             }
@@ -269,7 +276,7 @@ export function CatalogWorkbenchNavigationTree({
             <NameCodeText name={node.name} code={node.code} />
           </CatalogTreeLine>
         ),
-        children: children.filter(categoryMatches).map(renderCategory),
+        children: visibleChildren.map(renderCategory),
       };
     };
     return [
@@ -334,10 +341,17 @@ export function CatalogWorkbenchNavigationTree({
           .map(node => ({
             key: `PRODUCTION_TAG:${node.tagRef}`,
             title: (
-              <CatalogTreeLine label={node.name} count={node.count} icon={<ToolOutlined />}>
+              <CatalogTreeLine
+                label={node.name}
+                count={node.count}
+                icon={<ToolOutlined />}
+                {...testId(catalogTestIdControls.workbench.productionTagNode(node.code))}
+              >
                 <Space size={4}>
                   <NameCodeText name={node.name} code={node.code} />
-                  {node.status === 'DISABLED' && <Tag color="default">已停用</Tag>}
+                  {node.status === 'DISABLED' && (
+                    <Tag color={lifecycleColor(node.status)}>{lifecycleLabel(node.status)}</Tag>
+                  )}
                 </Space>
               </CatalogTreeLine>
             ),
@@ -440,13 +454,14 @@ export function CatalogWorkbenchNavigationTree({
         </div>
       ) : (
         <Tree
+          className="catalog-navigation-tree"
           blockNode
           expandedKeys={visibleExpandedKeys}
           onExpand={keys => onExpandedKeysChange(keys)}
           selectedKeys={[`${selection.kind}:${selection.ref}`]}
           treeData={treeData}
           onSelect={keys => selectTreeKey(String(keys[0] ?? ''))}
-          style={{marginTop: 12}}
+          style={{marginTop: 12, minWidth: 0, maxWidth: '100%', overflowX: 'hidden'}}
         />
       )}
     </Card>

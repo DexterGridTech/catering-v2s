@@ -45,6 +45,9 @@ export type {
 export type {
   DeviceInfo,
   DeviceIdentity,
+  DisplaySize,
+  DisplayReadiness,
+  DisplaySurfaceInfo,
   DisplayInfo,
   ProcessorStatus,
   MemoryStatus,
@@ -148,6 +151,7 @@ export type {
 } from './types/platformPorts';
 export {createPlatformPorts} from './foundations/createPlatformPorts';
 export {describePlatformPortCapabilities} from './foundations/createPlatformPorts';
+export {parseTopologyHostStatus} from './foundations/parseTopologyHostStatus';
 export {consoleLoggerBinding} from './defaults/logger';
 export {createProcessMemoryStateStoragePort} from './defaults/processMemoryStorage';
 export {unavailablePersistSecurePort} from './defaults/unavailablePersistSecure';

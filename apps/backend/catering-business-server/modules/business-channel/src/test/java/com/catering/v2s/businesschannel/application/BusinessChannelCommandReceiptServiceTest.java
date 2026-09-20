@@ -170,4 +170,39 @@ class BusinessChannelCommandReceiptServiceTest {
                 eq("\"fresh-response\""),
                 anyLong());
     }
+
+    @Test
+    void nullHistoricalResponseIsAClaimOnlyReplayAndDoesNotRunTheCommand() throws Exception {
+        BusinessChannelCommandReceiptPersistence persistence = mock(BusinessChannelCommandReceiptPersistence.class);
+        when(persistence.find(any(UUID.class), anyString(), anyString()))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(new BusinessChannelCommandReceiptPersistence.Receipt(
+                        Sha256Hex.digest("request"), null)));
+
+        BusinessChannelCommandReceiptService receipts = new BusinessChannelCommandReceiptService(persistence, () -> 1L);
+        UUID workspace = UUID.randomUUID();
+        AtomicInteger executions = new AtomicInteger();
+        receipts.execute(
+                workspace,
+                "workspace-key",
+                "receipt-null-0001",
+                "createOperationsBusinessChannel",
+                "request",
+                String.class,
+                () -> {
+                    executions.incrementAndGet();
+                    return "response";
+                });
+        String replay = receipts.execute(
+                workspace,
+                "workspace-key",
+                "receipt-null-0001",
+                "createOperationsBusinessChannel",
+                "request",
+                String.class,
+                () -> fail("claim-only replay must not execute the command again"));
+
+        org.junit.jupiter.api.Assertions.assertNull(replay);
+        assertEquals(1, executions.get());
+    }
 }

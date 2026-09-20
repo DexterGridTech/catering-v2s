@@ -9,7 +9,9 @@ import {
   reconcileExtensionFilterValues,
   ExtensionFilterInvalidSummary,
   isExtensionDefinitionRevisionAtLeast,
+  lifecycleColor,
   NameCodeText,
+  displayFieldValue,
   testId,
   useExtensionFilterInvalidFocus,
   useExtensionFilterStaleRecovery,
@@ -241,7 +243,13 @@ export function StoreManagementPage({queryContext, actionCapabilityKeys}: Operat
         render: (_, row) =>
           row.headCompany ? <NameCodeText name={row.headCompany.name} code={row.headCompany.code} /> : '未设置',
       },
-      {key: 'notes', title: '备注', dataIndex: 'notes', search: false, render: (_, row) => row.notes ?? '—'},
+      {
+        key: 'notes',
+        title: '备注',
+        dataIndex: 'notes',
+        search: false,
+        render: (_, row) => displayFieldValue(row.notes),
+      },
       ...extensionListAndSearchColumns<OrganizationStore>(
         definitionQuery.currentData as ExtensionDefinition | undefined,
         'operations-store-filter-extension',
@@ -256,11 +264,7 @@ export function StoreManagementPage({queryContext, actionCapabilityKeys}: Operat
           VOIDED: {text: organizationStoreStatusLabels.VOIDED, status: 'Error'},
         },
         fieldProps: {...testId('operations-store-filter-status'), allowClear: true, placeholder: '状态'},
-        render: (_, row) => (
-          <Tag color={row.status === 'ENABLED' ? 'success' : row.status === 'VOIDED' ? 'error' : 'warning'}>
-            {organizationStoreStatusLabels[row.status]}
-          </Tag>
-        ),
+        render: (_, row) => <Tag color={lifecycleColor(row.status)}>{organizationStoreStatusLabels[row.status]}</Tag>,
       },
     ],
     [definitionQuery.currentData, openDetail],

@@ -3,6 +3,5 @@
   "components": ["owner-command", "external-collaboration-business-channel", "catalog-inventory", "sales-menu"],
   "fixtureContract": "doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json",
   "scenarioDenominator": 32,
-  "expectedCounts": {"platformAdmins":3,"groupWorkspaces":3,"activeAssets":2,"extensionDefinitions":9,"commercialGroups":2,"regions":9,"projects":4,"brands":4,"tenants":4,"headCompanies":4,"stores":6,"storeServicePointAreas":4,"storeServicePoints":5,"roles":8,"accounts":7,"assignments":10,"invitationStateFixtures":20,"contracts":5},
   "forbidden": ["auto-seed", "implicit reset", "partial public seed profile", "direct ordinary-fact SQL", "direct assignment SQL", "plaintext secret evidence"]
 }

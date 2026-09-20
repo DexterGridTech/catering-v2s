@@ -295,7 +295,7 @@
           {"key": "point-table-window", "area": "area-table-main", "code": "T-001", "name": "靠窗一号桌", "pointType": "TABLE", "status": "ENABLED", "seatCapacity": 4, "tableShape": "HALL", "reservable": true, "image": {"fileName": "table-window.png", "mediaType": "image/png"}, "extensionValues": {"servicePointLabel": "靠窗"}},
           {"key": "point-scan-entry", "area": "area-scan-main", "code": "QR-001", "name": "入口扫码点", "pointType": "SCAN", "status": "ENABLED", "extensionValues": {"servicePointLabel": "入口"}},
           {"key": "point-scan-side", "area": "area-scan-main", "code": "QR-002", "name": "侧门扫码点", "pointType": "SCAN", "status": "DISABLED", "extensionValues": {"servicePointLabel": "侧门"}},
-          {"key": "point-table-legacy", "area": "area-table-legacy", "code": "T-OLD", "name": "历史桌台", "pointType": "TABLE", "status": "DISABLED", "seatCapacity": 2, "tableShape": "BOOTH", "reservable": false, "image": {"fileName": "table-legacy.png", "mediaType": "image/png"}, "extensionValues": {"servicePointLabel": "历史"}},
+          {"key": "point-table-legacy", "area": "area-table-legacy", "code": "T-OLD", "name": "历史桌台", "pointType": "TABLE", "status": "DISABLED", "extensionValues": {"servicePointLabel": "历史"}},
           {"key": "point-scan-history", "area": "area-scan-history", "code": "QR-OLD", "name": "历史扫码点", "pointType": "SCAN", "status": "VOIDED", "extensionValues": {"servicePointLabel": "历史"}}
         ],
         "qr": {"enabled": true, "channelCode": "CHANNEL-STORE-INTERNAL-DINE-IN-QR"}

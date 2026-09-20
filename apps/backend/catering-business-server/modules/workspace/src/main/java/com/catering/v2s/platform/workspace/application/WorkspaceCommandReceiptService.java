@@ -2,7 +2,7 @@ package com.catering.v2s.platform.workspace.application;
 
 import com.catering.v2s.platform.foundation.json.LegacyReceiptJson;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
+import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.platform.workspace.application.persistence.WorkspaceCommandReceiptPersistence;
@@ -31,7 +31,7 @@ public final class WorkspaceCommandReceiptService {
         if (groupWorkspaceKey == null || groupWorkspaceKey.isBlank())
             throw new WorkspaceAdministrationService.WorkspaceInputInvalidException();
         String key = requiredKey(idempotencyKey);
-        String requestHash = sha256(canonicalRequest);
+        String requestHash = CommandReceiptSupport.requestHash(canonicalRequest);
         persistence.lock(groupWorkspaceKey, key);
         WorkspaceCommandReceiptPersistence.Receipt existing = persistence.find(groupWorkspaceKey, key).orElse(null);
         if (existing != null) {
@@ -59,8 +59,10 @@ public final class WorkspaceCommandReceiptService {
     }
 
     private WorkspaceAdministrationReadback deserialize(String value) {
+        if (value == null) return null;
         try {
-            return JSON.readValue(value, WorkspaceAdministrationReadback.class);
+            return CommandReceiptSupport.deserialize(
+                    JSON, value, WorkspaceAdministrationReadback.class, "workspace receipt deserialization failed");
         } catch (Exception directFailure) {
             try {
                 return JSON.treeToValue(
@@ -75,7 +77,7 @@ public final class WorkspaceCommandReceiptService {
 
     private String serialize(WorkspaceAdministrationReadback value) {
         try {
-            return JSON.writeValueAsString(value);
+            return CommandReceiptSupport.serialize(JSON, value, "workspace receipt serialization failed");
         } catch (Exception failure) {
             throw new IllegalStateException("workspace receipt serialization failed", failure);
         }
@@ -89,7 +91,7 @@ public final class WorkspaceCommandReceiptService {
 
     private static String sha256(String value) {
         try {
-            return Sha256Hex.digest(value);
+            return CommandReceiptSupport.requestHash(value);
         } catch (NullPointerException exception) {
             throw new IllegalStateException(exception);
         }

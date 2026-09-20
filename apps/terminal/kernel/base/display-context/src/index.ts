@@ -7,7 +7,7 @@ export type {
   DisplayRoleChangeReasonCode,
   PendingPowerConfirmation,
 } from './types/display';
-export type {DisplayInfoRead} from './foundations/displayDevice';
+export type {DisplayFactsReadModel, DisplayFactsSurface, DisplayInfoRead} from './foundations/displayDevice';
 export {
   getDisplayRoleChangeEligibility,
   getSwitchInstanceModeEligibility,
@@ -16,7 +16,7 @@ export {
   resolveSurfaceDisplayMode,
   resolveWorkspace,
 } from './foundations/displayDerivation';
-export {readDisplayInfo} from './foundations/displayDevice';
+export {readDisplayFacts, readDisplayInfo} from './foundations/displayDevice';
 export {selectDisplayRole} from './selectors/selectDisplayRole';
 export {selectPowerConfirmation} from './selectors/selectPowerConfirmation';
 export {

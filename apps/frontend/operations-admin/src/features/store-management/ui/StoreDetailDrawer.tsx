@@ -4,6 +4,7 @@ import {
   AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  displayFieldValue,
   formatTypedExtensionValue,
   NameCodeText,
   testId,
@@ -211,7 +212,7 @@ export function StoreDetailDrawer({
                 ),
               },
               {key: 'status', label: '状态', children: organizationStoreStatusLabels[selected.status]},
-              {key: 'notes', label: '备注', children: selected.notes ?? '—'},
+              {key: 'notes', label: '备注', children: displayFieldValue(selected.notes)},
               ...extensionItems(definition.currentData, selected.extensionValues),
             ]}
           />

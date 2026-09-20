@@ -1,4 +1,4 @@
-import {Alert, Button, Card, Descriptions, Drawer, Space, Tag, Typography} from 'antd';
+import {Alert, Button, Card, Descriptions, Drawer, Space, Typography} from 'antd';
 import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
@@ -7,7 +7,10 @@ import {
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
   closedCodeLabel,
+  displayFieldValue,
   isKnownClosedCode,
+  LifecycleStatusTag,
+  StatusChangeConfirm,
   testId,
   useDetailDrawer,
   useAsyncGenerationGuard,
@@ -29,7 +32,6 @@ import {
   dineInFormLabels,
   lifecycleStatusLabels,
   businessChannelTemplateStoreVisibilitySummary,
-  organizationStoreStatusLabels,
   operatorKindLabels,
   orderKindLabels,
 } from '../model/businessChannelCodeLabels';
@@ -55,6 +57,7 @@ export function BusinessChannelTemplateDetailDrawer({
   const [providerProblem, setProviderProblem] = useState<string>();
   const [statusProblem, setStatusProblem] = useState<string>();
   const [statusSubmitting, setStatusSubmitting] = useState(false);
+  const [requestedStatus, setRequestedStatus] = useState<'ENABLED' | 'DISABLED'>();
   const [visibleStores, setVisibleStores] = useState<BusinessChannelTemplateVisibleStore[]>([]);
   const [visibleStoreNextCursor, setVisibleStoreNextCursor] = useState<string>();
   const [visibleStoreTotal, setVisibleStoreTotal] = useState(0);
@@ -134,14 +137,15 @@ export function BusinessChannelTemplateDetailDrawer({
   }, [open, queryContext, target, visibleStoreGeneration, visibleStorePage.cursor, visibleStoreRefreshVersion]);
 
   const transitionStatus = async () => {
-    if (!target || !targetStatusKnown) {
+    if (!target || !targetStatusKnown || !requestedStatus) {
       if (target) setStatusProblem('当前模板状态无法识别，已停止该操作。');
       return;
     }
     setStatusProblem(undefined);
     setStatusSubmitting(true);
     try {
-      await onStatusChange(target, target.status === 'ENABLED' ? 'DISABLED' : 'ENABLED');
+      await onStatusChange(target, requestedStatus);
+      setRequestedStatus(undefined);
       closeDetail();
       onClose();
     } catch (error) {
@@ -175,7 +179,7 @@ export function BusinessChannelTemplateDetailDrawer({
                 {target.status === 'ENABLED' ? '停用' : '启用'}
               </AdminDetailActionLabel>
             ),
-            onClick: () => void transitionStatus(),
+            onClick: () => setRequestedStatus(target.status === 'ENABLED' ? 'DISABLED' : 'ENABLED'),
           },
         ]
       : [];
@@ -219,7 +223,7 @@ export function BusinessChannelTemplateDetailDrawer({
           {...adminDetailDescriptionsProps}
           items={[
             {key: 'name', label: '模板名称', children: target.templateName},
-            {key: 'code', label: '模板编码', children: target.templateCode || '—'},
+            {key: 'code', label: '模板编码', children: displayFieldValue(target.templateCode)},
             {key: 'access', label: '接入类型', children: closedCodeLabel(accessKindLabels, target.accessKind)},
             {key: 'operator', label: '经营主体', children: closedCodeLabel(operatorKindLabels, target.operatorKind)},
             {key: 'order', label: '订单类型', children: closedCodeLabel(orderKindLabels, target.orderKind)},
@@ -238,11 +242,11 @@ export function BusinessChannelTemplateDetailDrawer({
                     ? closedCodeLabel(dineInFormLabels, target.dineInForm)
                     : '未配置',
             },
-            {key: 'provider', label: '外部接入档案', children: providerName ?? '—'},
+            {key: 'provider', label: '外部接入档案', children: displayFieldValue(providerName)},
             {
               key: 'status',
               label: '状态',
-              children: <Tag>{closedCodeLabel(lifecycleStatusLabels, target.status)}</Tag>,
+              children: <LifecycleStatusTag status={target.status} />,
             },
           ]}
         />
@@ -281,7 +285,7 @@ export function BusinessChannelTemplateDetailDrawer({
               {visibleStores.map(store => (
                 <Space key={store.storeRef} size={8} wrap>
                   <NameCodeText name={store.storeName} code={store.storeCode} />
-                  {store.storeStatus !== 'ENABLED' && <Tag>{organizationStoreStatusLabels[store.storeStatus]}</Tag>}
+                  {store.storeStatus !== 'ENABLED' && <LifecycleStatusTag status={store.storeStatus} />}
                 </Space>
               ))}
             </Space>
@@ -295,6 +299,22 @@ export function BusinessChannelTemplateDetailDrawer({
             />
           )}
         </Card>
+      )}
+      {requestedStatus && target && (
+        <StatusChangeConfirm
+          open
+          title={`${requestedStatus === 'ENABLED' ? '启用' : '停用'}模板“${target.templateName}”`}
+          actionLabel={requestedStatus === 'ENABLED' ? '启用' : '停用'}
+          submitting={statusSubmitting}
+          problem={statusProblem}
+          onCancel={() => setRequestedStatus(undefined)}
+          onConfirm={() => void transitionStatus()}
+          confirmTestId="operations-business-channel-template-status-confirm"
+          cancelTestId="operations-business-channel-template-status-cancel"
+          modalTestId="operations-business-channel-template-status-modal"
+        >
+          确认{requestedStatus === 'ENABLED' ? '启用' : '停用'}当前经营渠道模板吗？
+        </StatusChangeConfirm>
       )}
     </Drawer>
   );

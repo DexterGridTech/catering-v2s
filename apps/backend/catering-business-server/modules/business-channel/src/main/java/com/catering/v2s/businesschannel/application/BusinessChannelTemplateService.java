@@ -2,9 +2,6 @@ package com.catering.v2s.businesschannel.application;
 
 import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTemplatePersistence;
 import com.catering.v2s.businesschannel.application.persistence.BusinessChannelPersistence.ChannelProjection;
-import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTemplatePersistence.TemplateCommandProjection;
-import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTemplatePersistence.TemplateProjection;
-import com.catering.v2s.businesschannel.application.persistence.BusinessChannelTemplatePersistence.TemplateUpdateProjection;
 
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditChange;
@@ -21,6 +18,7 @@ import com.catering.v2s.collaboration.api.CollaborationReadback;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationOwnerApi;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
+import com.catering.v2s.platform.foundation.collection.CanonicalCursorIdentity;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.foundation.workspace.WorkspaceStatusLookup;
@@ -148,7 +146,7 @@ public class BusinessChannelTemplateService {
         if (normalizedSortKey == null && normalizedSortDirection != null) {
             throw problem("VALIDATION_ERROR", 422, "sortDirection requires sortKey");
         }
-        List<TemplateProjection> projections = persistence.pageTemplates(
+        List<BusinessChannelTemplatePersistence.TemplateProjection> projections = persistence.pageTemplates(
                         workspaceUuid,
                         groupWorkspaceKey,
                         projectRef,
@@ -195,7 +193,7 @@ public class BusinessChannelTemplateService {
             throw problem("VALIDATION_ERROR", 422, "sortDirection requires sortKey");
         }
         requireEnabledStore(workspaceUuid, groupWorkspaceKey, storeId);
-        String identity = canonical(
+        String identity = cursorIdentity(
                 "store-template-candidate-page",
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -215,10 +213,10 @@ public class BusinessChannelTemplateService {
                 normalizedSortKey,
                 normalizedSortDirection,
                 size);
-        List<TemplateProjection> rows = queried.rows();
+        List<BusinessChannelTemplatePersistence.TemplateProjection> rows = queried.rows();
         long total = queried.total();
         boolean hasNext = rows.size() > size;
-        List<TemplateProjection> page = hasNext ? rows.subList(0, size) : rows;
+        List<BusinessChannelTemplatePersistence.TemplateProjection> page = hasNext ? rows.subList(0, size) : rows;
         String nextCursor = hasNext
                 ? OpaqueCollectionCursor.encode(
                         identity,
@@ -248,7 +246,7 @@ public class BusinessChannelTemplateService {
         String filter = BusinessChannelPolicy.requireEnum(storeStatusFilter, "storeStatusFilter", "NON_VOIDED", "ALL");
         int size = pageSize(pageSize);
         verifyVisibleStoreTemplate(workspaceUuid, groupWorkspaceKey, templateRef, projectRef);
-        String identity = canonical(
+        String identity = cursorIdentity(
                 "business-channel-template-visible-store-page",
                 workspaceUuid,
                 groupWorkspaceKey,
@@ -316,7 +314,11 @@ public class BusinessChannelTemplateService {
         BusinessChannelPolicy.required(command.templateName(), "templateName", 240);
         String templateCode = BusinessChannelPolicy.preserveTemplateCode(command.templateCode());
         String urlRule = normalizeUrlRule(
-                command.urlRule(), command.accessKind(), command.operatorKind(), command.orderKind(), command.dineInForm());
+                command.urlRule(),
+                command.accessKind(),
+                command.operatorKind(),
+                command.orderKind(),
+                command.dineInForm());
         String storeVisibilityScope =
                 normalizedStoreVisibilityScope(command.operatorKind(), command.storeVisibilityScope());
         List<UUID> visibleStoreRefs = BusinessChannelPolicy.validateAndNormalizeStoreVisibility(
@@ -438,9 +440,10 @@ public class BusinessChannelTemplateService {
                 request,
                 BusinessChannelReadback.Template.class,
                 () -> {
-                    TemplateUpdateProjection current = readTemplateProjectionForUpdate(
+                    BusinessChannelTemplatePersistence.TemplateUpdateProjection current =
+                            readTemplateProjectionForUpdate(
                             command.workspaceUuid(), command.groupWorkspaceKey(), command.templateRef());
-                    TemplateProjection currentProjection = current.projection();
+                    BusinessChannelTemplatePersistence.TemplateProjection currentProjection = current.projection();
                     // The locked template row is the authoritative relation between templateRef and projectRef. The
                     // server-minted grant is checked again after the lock before any version check or write.
                     requireOperationsGrant(
@@ -456,7 +459,7 @@ public class BusinessChannelTemplateService {
                             ? collaborationCatalog.readTree(command.workspaceUuid(), command.groupWorkspaceKey())
                             : null;
                     validateTemplateProvider(
-                            new TemplateCommandProjection(
+                            new BusinessChannelTemplatePersistence.TemplateCommandProjection(
                                     currentProjection.projectRef(),
                                     currentProjection.accessKind(),
                                     currentProjection.operatorKind(),
@@ -486,7 +489,8 @@ public class BusinessChannelTemplateService {
                             command.groupWorkspaceKey(),
                             currentProjection.projectRef(),
                             visibleStoreRefs);
-                    TemplateProjection updated = updateTemplateAndVisibleStoreRelations(
+                    BusinessChannelTemplatePersistence.TemplateProjection updated =
+                            updateTemplateAndVisibleStoreRelations(
                             command.workspaceUuid(),
                             command.groupWorkspaceKey(),
                             command.templateRef(),
@@ -599,14 +603,16 @@ public class BusinessChannelTemplateService {
 
 
     private void validateTemplateProvider(
-            TemplateCommandProjection template, UUID workspaceUuid, String groupWorkspaceKey) {
+            BusinessChannelTemplatePersistence.TemplateCommandProjection template,
+            UUID workspaceUuid,
+            String groupWorkspaceKey) {
         validateTemplateProvider(template, workspaceUuid, groupWorkspaceKey, null);
     }
 
 
 
     private void validateTemplateProvider(
-            TemplateCommandProjection template,
+            BusinessChannelTemplatePersistence.TemplateCommandProjection template,
             UUID workspaceUuid,
             String groupWorkspaceKey,
             CollaborationReadback.Tree preloadedTree) {
@@ -715,7 +721,8 @@ public class BusinessChannelTemplateService {
 
     private TemplateRow readTemplateRow(UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef) {
         if (templateRef == null) throw problem("VALIDATION_ERROR", 422, "templateRef is required");
-        TemplateProjection projection = persistence.readTemplate(workspaceUuid, groupWorkspaceKey, templateRef, false)
+        BusinessChannelTemplatePersistence.TemplateProjection projection =
+                persistence.readTemplate(workspaceUuid, groupWorkspaceKey, templateRef, false)
                 .orElseThrow(() -> problem("NOT_FOUND", 404, "template was not found in the workspace"));
         return templateRow(projection, statusFacts(workspaceUuid, groupWorkspaceKey, List.of(projection), List.of()));
     }
@@ -723,14 +730,15 @@ public class BusinessChannelTemplateService {
 
 
     private TemplateRow readTemplateForUpdate(UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef) {
-        TemplateProjection projection = persistence.readTemplate(workspaceUuid, groupWorkspaceKey, templateRef, true)
+        BusinessChannelTemplatePersistence.TemplateProjection projection =
+                persistence.readTemplate(workspaceUuid, groupWorkspaceKey, templateRef, true)
                 .orElseThrow(() -> problem("NOT_FOUND", 404, "template was not found in the workspace"));
         return templateRow(projection, statusFacts(workspaceUuid, groupWorkspaceKey, List.of(projection), List.of()));
     }
 
 
 
-    private TemplateUpdateProjection readTemplateProjectionForUpdate(
+    private BusinessChannelTemplatePersistence.TemplateUpdateProjection readTemplateProjectionForUpdate(
             UUID workspaceUuid, String groupWorkspaceKey, UUID templateRef) {
         return persistence.readTemplateForUpdate(workspaceUuid, groupWorkspaceKey, templateRef)
                 .orElseThrow(() -> problem("NOT_FOUND", 404, "template was not found in the workspace"));
@@ -741,7 +749,7 @@ public class BusinessChannelTemplateService {
     private StatusFacts statusFacts(
             UUID workspaceUuid,
             String groupWorkspaceKey,
-            List<TemplateProjection> templates,
+            List<BusinessChannelTemplatePersistence.TemplateProjection> templates,
             List<ChannelProjection> channels) {
         return statusFacts(workspaceUuid, groupWorkspaceKey, templates, channels, null);
     }
@@ -751,12 +759,12 @@ public class BusinessChannelTemplateService {
     private StatusFacts statusFacts(
             UUID workspaceUuid,
             String groupWorkspaceKey,
-            List<TemplateProjection> templates,
+            List<BusinessChannelTemplatePersistence.TemplateProjection> templates,
             List<ChannelProjection> channels,
             CollaborationReadback.Tree preloadedTree) {
         String workspaceStatus = workspaceStatuses.requireStatus(workspaceUuid, groupWorkspaceKey);
         LinkedHashSet<UUID> organizationRefs = new LinkedHashSet<>();
-        for (TemplateProjection template : templates) {
+        for (BusinessChannelTemplatePersistence.TemplateProjection template : templates) {
             addRef(organizationRefs, template.projectRef());
         }
         boolean needsCollaborationTree = false;
@@ -796,7 +804,8 @@ public class BusinessChannelTemplateService {
         if (ref != null) refs.add(ref);
     }
 
-    private TemplateRow templateRow(TemplateProjection projection, StatusFacts facts) {
+    private TemplateRow templateRow(
+            BusinessChannelTemplatePersistence.TemplateProjection projection, StatusFacts facts) {
         List<BusinessChannelReadback.StatusDimension> dimensions = new ArrayList<>();
         addDimension(dimensions, "ORGANIZATION_PROJECT", projection.projectRef(), projection.projectStatus());
         addWorkspaceDimension(dimensions, projection.groupWorkspaceKey(), facts);
@@ -950,7 +959,7 @@ public class BusinessChannelTemplateService {
 
 
 
-    private TemplateProjection updateTemplateAndVisibleStoreRelations(
+    private BusinessChannelTemplatePersistence.TemplateProjection updateTemplateAndVisibleStoreRelations(
             UUID workspaceUuid,
             String groupWorkspaceKey,
             UUID templateRef,
@@ -1033,7 +1042,8 @@ public class BusinessChannelTemplateService {
 
 
 
-    private static String templateSortValue(TemplateProjection row, String sortKey) {
+    private static String templateSortValue(
+            BusinessChannelTemplatePersistence.TemplateProjection row, String sortKey) {
         if (sortKey == null) return row.templateRef().toString();
         return switch (sortKey) {
             case "TEMPLATE_NAME" -> Objects.toString(row.templateName(), "");
@@ -1063,7 +1073,7 @@ public class BusinessChannelTemplateService {
 
     private static void requireMutable(String status) {
         if (BusinessChannelPolicy.VOIDED.equals(status)) {
-            throw problem("VOIDED_RECORD_IMMUTABLE", 409, "该业务渠道已标记删除，不能继续修改");
+            throw problem("VOIDED_RECORD_IMMUTABLE", 409, "该业务渠道已作废，不能继续修改");
         }
     }
 
@@ -1124,6 +1134,15 @@ public class BusinessChannelTemplateService {
                 + Arrays.stream(values)
                         .map(value -> Objects.toString(value, "<null>"))
                         .collect(Collectors.joining("\u001f"));
+    }
+
+    private static String cursorIdentity(String operation, Object... values) {
+        String[] components = new String[values.length + 1];
+        components[0] = operation;
+        for (int index = 0; index < values.length; index++) {
+            components[index + 1] = values[index] == null ? null : values[index].toString();
+        }
+        return CanonicalCursorIdentity.encode(components);
     }
 
 

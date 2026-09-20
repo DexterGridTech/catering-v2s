@@ -29,7 +29,12 @@ import {
   registerOperationsUnauthorizedRecovery,
 } from './OperationsApi';
 import {operationsStore} from '../state/OperationsStore';
-import {readExtensionFilterInvalidFields, type ExtensionFilterInvalidField} from '@catering-v2s/admin-ui-foundation';
+import {
+  readCurrentDefinitionRevision,
+  readExtensionFilterInvalidFields,
+  transportResponseStatus,
+  type ExtensionFilterInvalidField,
+} from '@catering-v2s/admin-ui-foundation';
 
 export type ApiProblem = ProblemFeedback & {
   type: string;
@@ -46,6 +51,16 @@ export type ApiProblem = ProblemFeedback & {
 export class ApiFailure extends Error {
   constructor(public readonly problem: ApiProblem) {
     super(problem.detail);
+    this.name = 'ApiFailure';
+  }
+  get title() {
+    return this.problem.title;
+  }
+  get detail() {
+    return this.problem.detail;
+  }
+  get errorCode() {
+    return this.problem.errorCode;
   }
 }
 
@@ -200,19 +215,6 @@ function problem(error: unknown): ApiProblem {
     errorCode: 'NETWORK_ERROR',
     correlationId: '',
   };
-}
-
-function readCurrentDefinitionRevision(details: unknown): number | undefined {
-  if (typeof details !== 'object' || details === null) return undefined;
-  const revision = (details as {currentDefinitionRevision?: unknown}).currentDefinitionRevision;
-  return typeof revision === 'number' && Number.isSafeInteger(revision) && revision >= 0 ? revision : undefined;
-}
-
-function transportResponseStatus(error: unknown): number | undefined {
-  if (typeof error !== 'object' || error === null) return undefined;
-  const value = error as {status?: unknown; originalStatus?: unknown};
-  if (typeof value.originalStatus === 'number') return value.originalStatus;
-  return typeof value.status === 'number' ? value.status : undefined;
 }
 
 function isCatalogInventoryProblemCode(value: unknown): value is CatalogInventoryProblemCode {

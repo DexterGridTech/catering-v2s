@@ -1,7 +1,7 @@
-import {useCallback, useMemo, useRef, type ReactNode} from 'react'
+import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react'
 import {StyleSheet, View} from 'react-native'
 import {openLayerCommand, selectLayers} from '@catering-v2s/kernel-base-ui-state'
-import {dispatchWithRequestId, useDispatchCommand, useSurfaceContext, useUiStateSelector} from '@catering-v2s/ui-base-render'
+import {dispatchWithRequestId, useDispatchCommand, useRenderContext, useSurfaceContext, useUiStateSelector} from '@catering-v2s/ui-base-render'
 import type {SurfaceHostSize} from '@catering-v2s/ui-base-render'
 import {ADMIN_CONSOLE_LAYER_ID, ADMIN_CONSOLE_PART_KEY} from '../foundations/adminIdentity'
 import {
@@ -57,6 +57,12 @@ type AdminLauncherProps = Readonly<{
   readonly children?: ReactNode
 }>
 
+const boundedErrorMessage = (error: unknown): string => {
+  const message = error instanceof Error ? error.message : 'Unknown admin launcher dispatch failure'
+  if (/(password|passcode|otp|token|cookie|authorization|phone|address|ip)/i.test(message)) return '[redacted]'
+  return message.slice(0, 160)
+}
+
 /**
  * Observes the launcher completion event on the business-content ancestor.
  * This node is deliberately a plain View: it has no responder negotiation or
@@ -64,6 +70,7 @@ type AdminLauncherProps = Readonly<{
  */
 export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
   const surface = useSurfaceContext()
+  const {logger} = useRenderContext()
   const hostLogicalSize = surface.hostLogicalSize
   const hasAdminLayerSelector = useMemo(
     () => (root: Parameters<typeof selectLayers>[0]) => selectLayers(root, surface.displayMode)
@@ -80,6 +87,23 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
     readonly height: number
   }> | null>(null)
   const nodeRef = useRef<View>(null)
+
+  useEffect(() => {
+    logger.info({
+      category: 'admin.launcher',
+      event: 'admin.launcher-binding',
+      message: 'Admin launcher binding observed',
+      data: {
+        displayMode: surface.displayMode,
+        displayIndex: surface.surfaceIdentity?.displayIndex ?? null,
+        surfaceKey: surface.surfaceIdentity?.surfaceKey ?? null,
+        isHostPrimaryDisplay: surface.isHostPrimaryDisplay,
+        surfaceHostAvailability: surface.surfaceHostAvailability,
+        hasAdminLayer,
+        handlerAttached: surface.isHostPrimaryDisplay && !hasAdminLayer,
+      },
+    })
+  }, [hasAdminLayer, logger, surface.displayMode, surface.isHostPrimaryDisplay, surface.surfaceHostAvailability, surface.surfaceIdentity?.displayIndex, surface.surfaceIdentity?.surfaceKey])
   const measureOrigin = useCallback(() => {
     nodeRef.current?.measureInWindow((...measurements: [number, number, number, number]) => {
       const [x, y, width, height] = measurements
@@ -95,16 +119,69 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
   }, [])
 
   const open = useCallback(() => {
+    logger.info({
+      category: 'admin.launcher',
+      event: 'admin.launcher-open-requested',
+      message: 'Admin launcher gesture completed',
+      data: {
+        displayMode: surface.displayMode,
+        displayIndex: surface.surfaceIdentity?.displayIndex ?? null,
+        isHostPrimaryDisplay: surface.isHostPrimaryDisplay,
+        hasAdminLayer,
+      },
+    })
     void dispatchWithRequestId({
       dispatchCommand,
       definition: openLayerCommand,
+      routeIntent: 'peer-intent',
       payload: {
         displayMode: surface.displayMode,
         layerId: ADMIN_CONSOLE_LAYER_ID,
         partKey: ADMIN_CONSOLE_PART_KEY,
       },
-    }).catch(() => undefined)
-  }, [dispatchCommand, surface.displayMode])
+    }).then(result => {
+      logger.info({
+        category: 'admin.launcher',
+        event: 'admin.launcher-open-result',
+        message: 'Admin launcher open dispatch completed',
+        data: {
+          displayMode: surface.displayMode,
+          displayIndex: surface.surfaceIdentity?.displayIndex ?? null,
+          routeIntent: 'peer-intent',
+          status: result.status,
+        },
+      })
+      if (result.status !== 'completed') {
+        logger.error({
+          category: 'admin.launcher',
+          event: 'admin.launcher-open-failed',
+          message: 'Admin launcher open dispatch returned a non-completed result',
+          data: {
+            displayMode: surface.displayMode,
+            displayIndex: surface.surfaceIdentity?.displayIndex ?? null,
+            routeIntent: 'peer-intent',
+            status: result.status,
+            reason: 'command-not-completed',
+          },
+        })
+      }
+    }).catch((error: unknown) => {
+      logger.error({
+        category: 'admin.launcher',
+        event: 'admin.launcher-open-failed',
+        message: 'Admin launcher open dispatch failed',
+        data: {
+          displayMode: surface.displayMode,
+          displayIndex: surface.surfaceIdentity?.displayIndex ?? null,
+          routeIntent: 'peer-intent',
+        },
+        error: {
+          name: error instanceof Error ? error.name : 'UnknownError',
+          message: boundedErrorMessage(error),
+        },
+      })
+    })
+  }, [dispatchCommand, hasAdminLayer, logger, surface.displayMode, surface.isHostPrimaryDisplay, surface.surfaceIdentity?.displayIndex])
 
   const handleLauncherEvent = useCallback((event: unknown) => {
     const eventPoint = adminLauncherPointFromEvent(event)
@@ -123,6 +200,18 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
           })
     if (point === null) {
       gestureState.current = createInitialAdminGestureState()
+      logger.warn({
+        category: 'admin.launcher',
+        event: 'admin.launcher-gesture-rejected',
+        message: 'Admin launcher gesture event had no usable coordinate',
+        data: {
+          displayMode: surface.displayMode,
+          displayIndex: surface.surfaceIdentity?.displayIndex ?? null,
+          isHostPrimaryDisplay: surface.isHostPrimaryDisplay,
+          hasAdminLayer,
+          reason: 'invalid-coordinate',
+        },
+      })
       return
     }
     const result = trackAdminGesture(gestureState.current, {
@@ -138,7 +227,7 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
       }
       open()
     }
-  }, [canvas, hostLogicalSize, open])
+  }, [canvas, hasAdminLayer, hostLogicalSize, logger, open, surface.displayMode, surface.isHostPrimaryDisplay, surface.surfaceIdentity?.displayIndex])
 
   if (!surface.isHostPrimaryDisplay) return <>{children}</>
   const launcherEventProps = typeof document === 'undefined'

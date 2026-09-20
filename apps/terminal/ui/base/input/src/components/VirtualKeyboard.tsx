@@ -1,7 +1,8 @@
 import {memo, useMemo} from 'react';
-import {StyleSheet, View} from 'react-native';
-import {PrimitiveButton} from '@catering-v2s/ui-base-primitives';
-import type {KeyboardKey} from '../foundations/editText';
+import {View} from 'react-native';
+import {PrimitiveButton, PrimitiveKeyboardSurface} from '@catering-v2s/ui-base-primitives';
+import type {PrimitiveIconName} from '@catering-v2s/ui-base-primitives';
+import {isUppercaseMode, type KeyboardKey} from '../foundations/editText';
 import {
   getKeyboardLayout,
   type KeyboardRow,
@@ -14,8 +15,11 @@ import {INPUT_LAYOUT_CONSTANTS} from '../foundations/keyboardHeight';
 export type VirtualKeyboardProps = Readonly<{
   readonly layout: KeyboardLayout;
   readonly height: number;
+  /** Width of the rendered dock. InputKeyboard passes the host-derived dock width. */
   readonly frameWidth: number;
   readonly cellWidth: number;
+  /** Compact mobile presentation; direct callers derive it from the rendered dock width when omitted. */
+  readonly compact?: boolean;
   readonly shift: boolean;
   readonly capsLock: boolean;
   readonly hasNextField: boolean;
@@ -28,10 +32,6 @@ const stopSurfaceDismiss = (event: SurfaceInteractionEvent): void => {
   event.stopPropagation();
 };
 
-const keyboardInteractionProps = typeof document === 'undefined'
-  ? {onTouchEnd: stopSurfaceDismiss}
-  : ({onClick: stopSurfaceDismiss} as Readonly<Record<string, unknown>>);
-
 const keyIdOf = (definition: KeyboardKeyDefinition): string => definition.keyId;
 
 const keyboardKeyOf = (definition: KeyboardKeyDefinition, hasNextField: boolean): KeyboardKey =>
@@ -41,16 +41,35 @@ const keyboardKeyOf = (definition: KeyboardKeyDefinition, hasNextField: boolean)
       ? {kind: 'complete', hasNextField}
       : {kind: definition.kind};
 
-const labelOf = (definition: KeyboardKeyDefinition, shift: boolean, capsLock: boolean): string => {
-  if (definition.kind === 'text') return shift || capsLock ? definition.text.toUpperCase() : definition.text;
-  if (definition.kind === 'backspace') return '⌫';
-  if (definition.kind === 'shift') return shift ? '⇧' : '↑';
-  if (definition.kind === 'caps') return capsLock ? '⇪' : '⇧⇧';
-  return '↵';
+const labelOf = (definition: KeyboardKeyDefinition, compact: boolean, uppercase: boolean): string => {
+  if (definition.kind === 'text') {
+    if (definition.text === '-') return '−';
+    if (definition.text === '.') return '·';
+    return uppercase ? definition.text.toUpperCase() : definition.text.toLowerCase();
+  }
+  if (definition.kind === 'backspace') return 'BACKSPACE';
+  if (definition.kind === 'shift') return compact ? '⇧' : 'SHIFT';
+  if (definition.kind === 'caps') return compact ? '⇪' : 'CAPS';
+  return 'COMPLETE';
 };
 
-const accessibilityLabelOf = (definition: KeyboardKeyDefinition, label: string): string =>
-  definition.kind === 'complete' ? '回车' : label;
+const accessibilityLabelOf = (definition: KeyboardKeyDefinition, label: string): string => {
+  if (definition.kind === 'backspace') return '删除';
+  if (definition.kind === 'complete') return '回车';
+  if (definition.kind === 'caps') return '大写锁定';
+  if (definition.kind === 'shift') return '大写';
+  return label;
+};
+
+const iconOf = (definition: KeyboardKeyDefinition): PrimitiveIconName | undefined =>
+  definition.kind === 'backspace'
+    ? 'keyboard-backspace'
+    : definition.kind === 'complete'
+      ? 'keyboard-enter'
+      : undefined;
+
+const selectedOf = (definition: KeyboardKeyDefinition, shift: boolean, capsLock: boolean): boolean | undefined =>
+  definition.kind === 'caps' ? capsLock : definition.kind === 'shift' ? shift : undefined;
 
 const keyGroups = (definitions: readonly KeyboardKeyDefinition[]): readonly (readonly KeyboardKeyDefinition[])[] => {
   const groups: KeyboardKeyDefinition[][] = [];
@@ -68,12 +87,15 @@ const keyGroups = (definitions: readonly KeyboardKeyDefinition[]): readonly (rea
 const groupWidth = (keyCount: number, cellWidth: number, columnGap: number): number =>
   keyCount * cellWidth + Math.max(0, keyCount - 1) * columnGap;
 
-const rowHeightOf = (row: KeyboardRow): number => {
+const rowHeightOf = (row: KeyboardRow, compact: boolean): number => {
   const grid = row.grid;
-  if (grid === undefined) return INPUT_LAYOUT_CONSTANTS.KEY_CELL_HEIGHT;
+  if (grid === undefined) {
+    return compact ? INPUT_LAYOUT_CONSTANTS.COMPACT_KEY_CELL_HEIGHT : INPUT_LAYOUT_CONSTANTS.KEY_CELL_HEIGHT;
+  }
   return (
-    grid.rowCount * INPUT_LAYOUT_CONSTANTS.KEY_CELL_HEIGHT +
-    Math.max(0, grid.rowCount - 1) * INPUT_LAYOUT_CONSTANTS.ROW_GAP
+    grid.rowCount * (compact ? INPUT_LAYOUT_CONSTANTS.COMPACT_KEY_CELL_HEIGHT : INPUT_LAYOUT_CONSTANTS.KEY_CELL_HEIGHT) +
+    Math.max(0, grid.rowCount - 1) *
+      (compact ? INPUT_LAYOUT_CONSTANTS.COMPACT_ROW_GAP : INPUT_LAYOUT_CONSTANTS.ROW_GAP)
   );
 };
 
@@ -85,9 +107,13 @@ const rowCellWidthOf = (input: Readonly<{
   frameWidth: number;
   sharedCellWidth: number;
   columnGap: number;
+  compact: boolean;
 }>): number => {
   if (input.row.sizing === 'shared') return input.sharedCellWidth;
-  const availableWidth = input.frameWidth - INPUT_LAYOUT_CONSTANTS.DOCK_PADDING_HORIZONTAL * 2;
+  const horizontalPadding = input.compact
+    ? INPUT_LAYOUT_CONSTANTS.COMPACT_DOCK_PADDING_HORIZONTAL
+    : INPUT_LAYOUT_CONSTANTS.DOCK_PADDING_HORIZONTAL;
+  const availableWidth = input.frameWidth - horizontalPadding * 2;
   return Math.floor((availableWidth - Math.max(0, input.row.keys.length - 1) * input.columnGap) / input.row.keys.length);
 };
 
@@ -110,9 +136,18 @@ const groupRowsByRegion = (rows: readonly KeyboardRow[]): KeyboardRegionRows[] =
 };
 
 export const VirtualKeyboard = memo(
-  ({layout, height, frameWidth, cellWidth, shift, capsLock, hasNextField, onKey}: VirtualKeyboardProps) => {
+  ({layout, height, frameWidth, cellWidth, compact: compactOverride, shift, capsLock, hasNextField, onKey}: VirtualKeyboardProps) => {
     const definition = getKeyboardLayout(layout);
-    const columnGap = definition.horizontalMode === 'dense' ? 2 : 8;
+    const compact = compactOverride ?? frameWidth <= INPUT_LAYOUT_CONSTANTS.MOBILE_SYMBOL_MAX_FRAME_WIDTH;
+    const uppercase = isUppercaseMode(capsLock, shift);
+    const columnGap = compact ? INPUT_LAYOUT_CONSTANTS.COMPACT_COLUMN_GAP : INPUT_LAYOUT_CONSTANTS.STANDARD_COLUMN_GAP;
+    const rowGap = compact ? INPUT_LAYOUT_CONSTANTS.COMPACT_ROW_GAP : INPUT_LAYOUT_CONSTANTS.ROW_GAP;
+    const horizontalPadding = compact
+      ? INPUT_LAYOUT_CONSTANTS.COMPACT_DOCK_PADDING_HORIZONTAL
+      : INPUT_LAYOUT_CONSTANTS.DOCK_PADDING_HORIZONTAL;
+    const verticalPadding = compact
+      ? INPUT_LAYOUT_CONSTANTS.COMPACT_DOCK_PADDING_VERTICAL
+      : INPUT_LAYOUT_CONSTANTS.DOCK_PADDING_VERTICAL;
     const regions = useMemo(() => groupRowsByRegion(definition.rows), [definition]);
     const handlers = useMemo(
       () =>
@@ -125,20 +160,24 @@ export const VirtualKeyboard = memo(
     );
 
     return (
-      <View
+      <PrimitiveKeyboardSurface
         testID="ui.base.input:virtual-keyboard"
-        style={[styles.dock, {height, width: frameWidth}]}
-        {...keyboardInteractionProps}
+        style={[{height, width: frameWidth, borderRadius: compact ? 17 : 20}]}
+        onTouchEnd={stopSurfaceDismiss}
+        onClick={stopSurfaceDismiss}
       >
         <View
           testID="ui.base.input:virtual-keyboard:content"
-          style={styles.content}
+          style={[
+            styles.content,
+            {paddingTop: verticalPadding, paddingHorizontal: horizontalPadding, paddingBottom: verticalPadding, gap: rowGap},
+          ]}
         >
           {regions.map(region => (
             <View
               key={`region-${region.region}`}
               testID={`ui.base.input:virtual-keyboard:region:${region.region}`}
-              style={styles.region}
+              style={[styles.region, {gap: rowGap}]}
             >
               {region.rows.map((row, rowIndex) => (
                 <View
@@ -147,7 +186,7 @@ export const VirtualKeyboard = memo(
                     row.grid === undefined ? styles.row : styles.gridRow,
                     {
                       gap: columnGap,
-                      height: rowHeightOf(row),
+                      height: rowHeightOf(row, compact),
                       justifyContent: row.align === 'center' ? 'center' : 'flex-start',
                     },
                   ]}
@@ -160,6 +199,7 @@ export const VirtualKeyboard = memo(
                           frameWidth,
                           sharedCellWidth: cellWidth,
                           columnGap,
+                          compact,
                         });
                         return (
                           <View
@@ -172,13 +212,16 @@ export const VirtualKeyboard = memo(
                           >
                             {group.map(key => {
                               const keyId = keyIdOf(key);
-                              const label = labelOf(key, shift, capsLock);
+                              const label = labelOf(key, compact, uppercase);
                               return (
                                 <PrimitiveButton
                                   key={keyId}
                                   testID={`ui.base.input:virtual-keyboard:${keyId}`}
                                   accessibilityLabel={accessibilityLabelOf(key, label)}
+                                  icon={iconOf(key)}
                                   variant={key.zone === 'actions' ? 'key-action' : 'key'}
+                                  compact={compact}
+                                  selected={selectedOf(key, shift, capsLock)}
                                   onPress={handlers.get(keyId)}
                                 >
                                   {label}
@@ -197,19 +240,22 @@ export const VirtualKeyboard = memo(
                             {
                               width: gridColumnWidthOf(column.span, cellWidth, columnGap),
                               flexDirection: column.direction,
-                              gap: column.direction === 'row' ? columnGap : INPUT_LAYOUT_CONSTANTS.ROW_GAP,
+                              gap: column.direction === 'row' ? columnGap : rowGap,
                             },
                           ]}
                         >
                           {column.keys.map(key => {
                             const keyId = keyIdOf(key);
-                            const label = labelOf(key, shift, capsLock);
+                            const label = labelOf(key, compact, uppercase);
                             return (
                               <PrimitiveButton
                                 key={keyId}
                                 testID={`ui.base.input:virtual-keyboard:${keyId}`}
                                 accessibilityLabel={accessibilityLabelOf(key, label)}
+                                icon={iconOf(key)}
                                 variant={key.zone === 'actions' ? 'key-action' : 'key'}
+                                compact={compact}
+                                selected={selectedOf(key, shift, capsLock)}
                                 onPress={handlers.get(keyId)}
                               >
                                 {label}
@@ -223,31 +269,19 @@ export const VirtualKeyboard = memo(
             </View>
           ))}
         </View>
-      </View>
+      </PrimitiveKeyboardSurface>
     );
   },
 );
 
 VirtualKeyboard.displayName = 'VirtualKeyboard';
 
-const styles = StyleSheet.create({
-  dock: {
-    overflow: 'hidden',
-    // The keyboard owns its panel background. Without this, the gaps between
-    // keys reveal the host window/surface background and differ across Web
-    // preview and Android.
-    backgroundColor: '#FFFFFF',
-  },
+const styles = {
   content: {
     width: '100%',
-    paddingTop: 9,
-    paddingHorizontal: 8,
-    paddingBottom: 9,
-    gap: 3,
   },
   row: {
     width: '100%',
-    height: 48,
     flexDirection: 'row',
     alignItems: 'stretch',
   },
@@ -258,7 +292,6 @@ const styles = StyleSheet.create({
   },
   region: {
     width: '100%',
-    gap: 3,
   },
   keyGroup: {
     height: '100%',
@@ -268,4 +301,4 @@ const styles = StyleSheet.create({
     height: '100%',
     flexDirection: 'column',
   },
-});
+} as const;

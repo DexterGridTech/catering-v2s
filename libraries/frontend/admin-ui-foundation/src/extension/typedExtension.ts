@@ -1,5 +1,10 @@
 export type TypedExtensionFieldType = 'TEXT' | 'NUMBER' | 'DATE' | 'BOOLEAN' | 'SELECT';
 
+export type ExtensionSearchField = Pick<TypedExtensionField, 'type'> & {
+  label: string;
+  options?: readonly string[] | null;
+};
+
 /** The closed host set whose extension fields may participate in list/search surfaces. */
 export const FLAT_EXTENSION_HOST_TYPES = ['BRAND', 'TENANT', 'HEAD_COMPANY', 'STORE', 'CONTRACT'] as const;
 
@@ -164,6 +169,42 @@ export function formatTypedExtensionValue(
   }
 
   return field.displaySuffix ? `${display}${field.displaySuffix}` : display;
+}
+
+export function extensionSearchValueType(type: TypedExtensionFieldType): 'digit' | 'date' | 'text' | 'select' {
+  return type === 'NUMBER' ? 'digit' : type === 'DATE' ? 'date' : type === 'TEXT' ? 'text' : 'select';
+}
+
+/**
+ * Builds only the pure search-control shape. An app supplies its own testId
+ * props so automation identity never crosses the app boundary.
+ */
+export function extensionSearchFieldProps(
+  field: ExtensionSearchField,
+  extraProps: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const placeholder =
+    field.type === 'SELECT' || field.type === 'BOOLEAN'
+      ? '全部'
+      : field.type === 'DATE'
+        ? '请选择'
+        : `请输入${field.label}`;
+  const common = {...extraProps, allowClear: true, placeholder};
+  if (field.type === 'SELECT') {
+    return {...common, options: (field.options ?? []).map(option => ({value: option, label: option}))};
+  }
+  if (field.type === 'BOOLEAN') {
+    return {
+      ...common,
+      options: [
+        {value: true, label: '是'},
+        {value: false, label: '否'},
+      ],
+    };
+  }
+  if (field.type === 'NUMBER') return {...common, controls: false};
+  if (field.type === 'DATE') return {...common, format: 'YYYY-MM-DD'};
+  return common;
 }
 
 /**

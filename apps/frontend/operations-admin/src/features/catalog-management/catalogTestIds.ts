@@ -97,6 +97,7 @@ export const catalogTestIds = {
     attributeDefinitionLibrary: 'catalog-attribute-definition-library',
     batchOutcomeClose: 'catalog-batch-outcome-close',
     batchOutcomeFailures: 'catalog-batch-outcome-failures',
+    batchStatusAction: 'catalog-batch-status-action',
     brandCopyCandidatesNext: 'catalog-brand-copy-candidates-next',
     brandCopyDrawer: 'catalog-brand-copy-drawer',
     brandCopyPreflightNext: 'catalog-brand-copy-preflight-next',
@@ -295,9 +296,14 @@ export const catalogTestIdControls = {
     filterSource: catalogTestIds.control.resultSource,
     filterReset: catalogTestIds.control.resultReset,
     retry: catalogTestIds.control.workbenchRetry,
+    brandOption: (brandRef: string) => `catalog-workbench-brand-option-${utf8Hex(brandRef)}`,
     refresh: catalogTestIds.control.tableRefresh,
     categoryNode: (categoryCode: string) => `catalog-category-node-${utf8Hex(categoryCode)}`,
+    categoryExpander: (categoryCode: string) => `catalog-category-expander-${utf8Hex(categoryCode)}`,
+    productionTagNode: (tagCode: string) => `catalog-production-tag-node-${utf8Hex(tagCode)}`,
     categoryActions: (categoryCode: string) => `catalog-category-actions-${utf8Hex(categoryCode)}`,
+    paginationNext: 'catalog-inventory-item-pagination-next',
+    paginationPrevious: 'catalog-inventory-item-pagination-previous',
   },
   itemTable: {
     root: catalogTestIds.surface.itemTable,
@@ -314,6 +320,7 @@ export const catalogTestIdControls = {
     name: catalogTestIds.control.createName,
     code: catalogTestIds.control.createCode,
     shape: catalogTestIds.control.createShape,
+    shapeOption: (shapeKey: string) => `catalog-item-create-shape-option-${utf8Hex(shapeKey)}`,
     category: catalogTestIds.control.createCategory,
     submit: catalogTestIds.control.createSubmit,
     cancel: catalogTestIds.control.createCancel,
@@ -350,6 +357,7 @@ export const catalogTestIdControls = {
       `catalog-item-edit-row-action-${utf8Hex(sectionKey)}-${utf8Hex(businessCodeOrEditorId)}-${utf8Hex(action)}`,
     media: (businessIdentity: string, action: string) =>
       `catalog-item-media-${utf8Hex(action)}-${utf8Hex(businessIdentity)}`,
+    productionTagOption: (tagRef: string) => `catalog-item-production-tag-option-${utf8Hex(tagRef)}`,
     skuMedia: (skuEditorId: string, businessIdentity: string, action: string) =>
       `catalog-item-sku-media-${utf8Hex(action)}-${utf8Hex(skuEditorId)}-${utf8Hex(businessIdentity)}`,
     dynamic: (surface: string, action: string, primaryIdentity: string, secondaryIdentity?: string) =>
@@ -377,6 +385,7 @@ export const catalogTestIdControls = {
     detail: catalogTestIds.surface.configDefinitionEditor,
     back: 'catalog-config-back',
     save: catalogTestIds.control.configSave,
+    statusOption: (status: string) => `catalog-config-status-option-${utf8Hex(status)}`,
     delete: 'catalog-config-delete',
     valueRow: (libraryKey: string, parentCode: string, valueCode: string) =>
       `catalog-config-value-row-${utf8Hex(libraryKey)}-${utf8Hex(parentCode)}-${utf8Hex(valueCode)}`,
@@ -401,8 +410,12 @@ export const catalogTestIdControls = {
     problem: 'catalog-batch-problem',
     submit: 'catalog-batch-submit',
     cancel: 'catalog-batch-cancel',
+    statusConfirm: 'catalog-batch-status-confirm',
+    statusCancel: 'catalog-batch-status-cancel',
+    statusConfirmModal: 'catalog-batch-status-modal',
     resultRow: (itemCode: string) => `catalog-batch-result-${utf8Hex(itemCode)}`,
     refreshError: 'catalog-batch-refresh-error',
+    statusOption: (status: string) => `catalog-inventory-batch-status-option-${utf8Hex(status)}`,
   },
   copy: {
     root: (copyKind: 'BRAND' | 'LOCAL') =>

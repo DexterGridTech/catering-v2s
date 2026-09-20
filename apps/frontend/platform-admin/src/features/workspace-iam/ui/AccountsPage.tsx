@@ -3,6 +3,7 @@ import {Alert, Button, Space, Tabs, Tag, Typography} from 'antd';
 import {
   adminListState,
   createPageQueryIdentity,
+  formatCanonicalDateTime,
   NameCodePathText,
   testId,
   useAsyncGenerationGuard,
@@ -395,8 +396,20 @@ function AccountsForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
           </Space>
         ),
       },
-      {title: '最后登录时间', dataIndex: 'lastLoginAt', valueType: 'dateTime', sorter: true, search: false},
-      {title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', sorter: true, search: false},
+      {
+        title: '最后登录时间',
+        dataIndex: 'lastLoginAt',
+        sorter: true,
+        search: false,
+        render: (_, row) => formatCanonicalDateTime(row.lastLoginAt),
+      },
+      {
+        title: '更新时间',
+        dataIndex: 'updatedAt',
+        sorter: true,
+        search: false,
+        render: (_, row) => formatCanonicalDateTime(row.updatedAt),
+      },
     ],
     [
       candidateOptions,

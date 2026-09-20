@@ -154,7 +154,7 @@ const uiTrace: Array<[string, keyof typeof traceSources, string[]]> = [
   [
     'UI-21',
     'draft',
-    ['SALES_MENU_OPERATION_COLUMN_TITLE', "testId(salesMenuTestIds.itemAction(row.salesItemRef, 'menu'))"],
+    ['SALES_MENU_OPERATION_COLUMN_TITLE', "triggerTestId={salesMenuTestIds.itemAction(row.salesItemRef, 'menu')}"],
   ],
   ['UI-22', 'editor', ['onDelete(detail, stagedReleaseRef.current)', '删除销售项']],
   ['UI-23', 'editor', ['onClick={lifecycle.requestClose}', '关闭']],
@@ -507,13 +507,13 @@ describe('sales menu IA static trace', () => {
   it('exposes stable ids for every interactive control used by the current L2 journeys', () => {
     for (const anchor of [
       'testId(salesMenuTestIds.section(section.salesSectionRef))',
-      'testId(salesMenuTestIds.sectionAction(section.salesSectionRef))',
+      'triggerTestId={salesMenuTestIds.sectionAction(section.salesSectionRef)}',
       "testId(salesMenuTestIds.sectionMenuAction(section.salesSectionRef, 'rename'))",
       'testId(salesMenuTestIds.menuPublish)',
       'testId(salesMenuTestIds.managerCreate)',
       'testId(salesMenuTestIds.menuCreateModal)',
       "testId(salesMenuTestIds.itemMenuAction(row.salesItemRef, 'up'))",
-      "testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'menu'))",
+      "triggerTestId={salesMenuTestIds.managerAction(row.salesMenuRef, 'menu')}",
       "testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'rename'))",
       'testId(salesMenuTestIds.candidateRow(row.candidateRef))',
       'testId(salesMenuTestIds.menuSchedule)',
@@ -522,6 +522,8 @@ describe('sales menu IA static trace', () => {
       'testId(salesMenuTestIds.itemDiscardConfirm)',
       'testId(salesMenuTestIds.itemDiscardCancel)',
       "testId(salesMenuTestIds.itemMediaChoice('CUSTOM'))",
+      'testId(salesMenuTestIds.itemMinQuantity)',
+      'testId(salesMenuTestIds.itemQuantityStep)',
       'testId(salesMenuTestIds.statusAction(row.salesItemRef))',
       'testId(salesMenuTestIds.itemDetailMediaChoice(itemRef, assetRef))',
     ]) {

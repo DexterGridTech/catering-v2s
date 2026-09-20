@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +55,8 @@ final class StoreServicePointAcceptanceScenarios {
         AreaView moved = moveArea(context, store, scanArea, "UP");
         assertEquals("SCAN_AREA", moved.json().path("areaType").asText(), "BUSINESS: area order returns the moved area");
 
-        AreaView disabled = transitionArea(context, store, updated, "DISABLED");
+        AreaView currentUpdated = area(findItem(listAreas(context, store).path("items"), updated.ref()));
+        AreaView disabled = transitionArea(context, store, currentUpdated, "DISABLED");
         assertEquals("DISABLED", disabled.json().path("status").asText(), "BUSINESS: area status is persisted");
         JsonNode after = listAreas(context, store);
         assertEquals(2, after.path("total").asInt(), "BUSINESS: disabled area remains in the active list");
@@ -112,21 +114,76 @@ final class StoreServicePointAcceptanceScenarios {
         AreaView last = createArea(context, store, "TABLE_AREA", "Order last", "ORDER-3");
 
         moveArea(context, store, middle, "UP");
-        moveArea(context, store, first, "DOWN");
-        JsonNode areas = listAreas(context, store);
-        assertEquals(middle.ref().toString(), areas.path("items").get(0).path("areaRef").asText(),
-                "BUSINESS: area move swaps adjacent rows");
+        JsonNode areasAfterUp = listAreas(context, store);
+        assertEquals(
+                List.of(middle.ref().toString(), first.ref().toString(), last.ref().toString()),
+                refs(areasAfterUp, "areaRef"),
+                "BUSINESS: area UP swaps the moved row with its previous sibling");
+        AreaView firstAfterUp = area(findItem(areasAfterUp.path("items"), first.ref()));
+        moveArea(context, store, firstAfterUp, "DOWN");
+        JsonNode areasAfterDown = listAreas(context, store);
+        assertEquals(
+                List.of(middle.ref().toString(), last.ref().toString(), first.ref().toString()),
+                refs(areasAfterDown, "areaRef"),
+                "BUSINESS: area DOWN swaps the moved row with its next sibling");
+        AreaView tail = createArea(context, store, "TABLE_AREA", "Order tail", "ORDER-4");
+        AreaView middleAfterFirstDown = area(findItem(areasAfterDown.path("items"), middle.ref()));
+        AreaView movedMiddleDown = moveArea(context, store, middleAfterFirstDown, "DOWN");
+        JsonNode areasAfterFirstRepeatedDown = listAreas(context, store);
+        assertEquals(
+                List.of(last.ref().toString(), middle.ref().toString(), first.ref().toString(), tail.ref().toString()),
+                refs(areasAfterFirstRepeatedDown, "areaRef"),
+                "BUSINESS: area DOWN remains usable after the same target previously moved UP");
+        AreaView movedMiddleDownAgain = moveArea(context, store, movedMiddleDown, "DOWN");
+        JsonNode areasAfterSecondRepeatedDown = listAreas(context, store);
+        assertEquals(
+                List.of(last.ref().toString(), first.ref().toString(), middle.ref().toString(), tail.ref().toString()),
+                refs(areasAfterSecondRepeatedDown, "areaRef"),
+                "BUSINESS: repeated area DOWN creates a new mutation instead of replaying the first request");
+        assertTrue(movedMiddleDownAgain.version() > movedMiddleDown.version(),
+                "BUSINESS: area order mutation advances the target version");
 
         PointView point1 = createTablePoint(context, store, first, "Order point 1", "POINT-1", 2, "HALL", true);
         PointView point2 = createTablePoint(context, store, first, "Order point 2", "POINT-2", 2, "HALL", true);
         PointView point3 = createTablePoint(context, store, first, "Order point 3", "POINT-3", 2, "HALL", true);
-        movePoint(context, store, point3, "UP");
-        movePoint(context, store, point1, "DOWN");
-        JsonNode points = listPoints(context, store, first);
-        assertEquals(point3.ref().toString(), points.path("items").get(0).path("pointRef").asText(),
-                "BUSINESS: point move swaps adjacent rows");
-        assertEquals(3, points.path("total").asInt(), "BUSINESS: all ordered points remain listed");
+        PointView movedPoint3Up = movePoint(context, store, point3, "UP");
+        JsonNode pointsAfterUp = listPoints(context, store, first);
+        assertEquals(
+                List.of(point1.ref().toString(), point3.ref().toString(), point2.ref().toString()),
+                refs(pointsAfterUp, "pointRef"),
+                "BUSINESS: point UP swaps the moved row with its previous sibling");
+        PointView point1AfterUp = point(findItem(pointsAfterUp.path("items"), point1.ref()));
+        movePoint(context, store, point1AfterUp, "DOWN");
+        JsonNode pointsAfterDown = listPoints(context, store, first);
+        assertEquals(
+                List.of(point3.ref().toString(), point1.ref().toString(), point2.ref().toString()),
+                refs(pointsAfterDown, "pointRef"),
+                "BUSINESS: point DOWN swaps the moved row with its next sibling");
+        PointView point4 = createTablePoint(context, store, first, "Order point 4", "POINT-4", 2, "HALL", true);
+        PointView point1AfterFirstDown = point(findItem(pointsAfterDown.path("items"), point1.ref()));
+        PointView movedPoint1Down = movePoint(context, store, point1AfterFirstDown, "DOWN");
+        JsonNode pointsAfterFirstRepeatedDown = listPoints(context, store, first);
+        assertEquals(
+                List.of(point3.ref().toString(), point2.ref().toString(), point1.ref().toString(), point4.ref().toString()),
+                refs(pointsAfterFirstRepeatedDown, "pointRef"),
+                "BUSINESS: point DOWN remains usable after the same target previously moved DOWN through another state");
+        PointView movedPoint1DownAgain = movePoint(context, store, movedPoint1Down, "DOWN");
+        JsonNode pointsAfterSecondRepeatedDown = listPoints(context, store, first);
+        assertEquals(
+                List.of(point3.ref().toString(), point2.ref().toString(), point4.ref().toString(), point1.ref().toString()),
+                refs(pointsAfterSecondRepeatedDown, "pointRef"),
+                "BUSINESS: repeated point DOWN creates a new mutation instead of replaying the first request");
+        assertTrue(movedPoint1DownAgain.version() > movedPoint1Down.version(),
+                "BUSINESS: point order mutation advances the target version");
+        assertEquals(4, pointsAfterSecondRepeatedDown.path("total").asInt(), "BUSINESS: all ordered points remain listed");
         assertNotNull(last, "BUSINESS: third area fixture is retained for the ordering boundary");
+        assertTrue(movedPoint3Up.version() > point3.version(), "BUSINESS: point UP advances the moved target version");
+    }
+
+    private static List<String> refs(JsonNode page, String field) {
+        List<String> values = new ArrayList<>();
+        page.path("items").forEach(item -> values.add(item.path(field).asText()));
+        return values;
     }
 
     @AcceptanceScenario(
@@ -164,12 +221,12 @@ final class StoreServicePointAcceptanceScenarios {
         AreaView tableArea = createArea(context, store, "TABLE_AREA", "Attribute table area", "ATTR-TABLE");
         AreaView scanArea = createArea(context, store, "SCAN_AREA", "Attribute scan area", "ATTR-SCAN");
         PointView table = createTablePoint(context, store, tableArea, "Attribute table", "ATTR-T-1", 4, "PRIVATE_ROOM", true);
-        PointView optionalTable = createPoint(
-                context,
-                store,
-                tableArea,
-                pointBody("Optional table", "ATTR-T-2", "TABLE", null, null));
+        PointView optionalTable = createTablePoint(
+                context, store, tableArea, "Optional table", "ATTR-T-2", null, null, null);
         PointView scan = createScanPoint(context, store, scanArea, "Attribute scan", "ATTR-S-1");
+        BackendAcceptanceTest.Response stagedScanImage = stageAsset(context, store, "scan.png", BackendAcceptanceTest.sha256(BackendAcceptanceTest.PNG));
+        UUID scanImageRef = UUID.fromString(stagedScanImage.json().path("assetRef").asText());
+        String scanImageBindGrant = stagedScanImage.json().path("bindGrant").asText();
         table = updateTablePoint(context, store, table, 8, "OUTDOOR", true);
 
         JsonNode optionalReadback = readPoint(context, store, optionalTable.ref());
@@ -195,6 +252,8 @@ final class StoreServicePointAcceptanceScenarios {
 
         Map<String, Object> invalid = pointBody("Attribute scan", "ATTR-S-1", "SCAN", "ENABLED", scan.version() + 1);
         invalid.put("seatCapacity", 3);
+        invalid.put("imageAssetRef", scanImageRef);
+        invalid.put("imageBindGrant", scanImageBindGrant);
         BackendAcceptanceTest.Response rejected = context.patch(
                 OPERATIONS_STORE_SERVICE_POINT_UPDATE,
                 pointPath(store.fixture(), scan.ref()),
@@ -207,6 +266,7 @@ final class StoreServicePointAcceptanceScenarios {
         assertTrue(readback.path("seatCapacity").isNull(), "BUSINESS: rejected scan update does not store table capacity");
         assertTrue(readback.path("tableShape").isNull(), "BUSINESS: rejected scan update does not store table shape");
         assertTrue(readback.path("reservable").isNull(), "BUSINESS: rejected scan update does not store reservable");
+        assertTrue(readback.path("imageAssetRef").isNull(), "BUSINESS: rejected scan update does not store a table image");
     }
 
     @AcceptanceScenario(
@@ -253,7 +313,8 @@ final class StoreServicePointAcceptanceScenarios {
         BackendAcceptanceTest.Response staged = stageAsset(context, store, "table.png", digest);
         UUID assetRef = UUID.fromString(staged.json().path("assetRef").asText());
         String bindGrant = staged.json().path("bindGrant").asText();
-        PointView point = createTablePointWithAsset(context, store, area, "Asset table", "ASSET-1", assetRef, bindGrant);
+        PointView point = createTablePointWithAsset(
+                context, store, area, "Asset table", "ASSET-1", 4, "HALL", true, assetRef, bindGrant);
         assertEquals(assetRef.toString(), point.json().path("imageAssetRef").asText(),
                 "BUSINESS: point owner claims the staged image in the save transaction");
         assertEquals(assetRef.toString(), readPoint(context, store, point.ref()).path("imageAssetRef").asText(),
@@ -580,9 +641,9 @@ final class StoreServicePointAcceptanceScenarios {
             AreaView area,
             String name,
             String code,
-            int capacity,
+            Integer capacity,
             String shape,
-            boolean reservable)
+            Boolean reservable)
             throws Exception {
         return createPoint(context, store, area, pointBody(name, code, "TABLE", null, null, capacity, shape, reservable));
     }
@@ -593,10 +654,13 @@ final class StoreServicePointAcceptanceScenarios {
             AreaView area,
             String name,
             String code,
+            Integer capacity,
+            String shape,
+            Boolean reservable,
             UUID assetRef,
             String bindGrant)
             throws Exception {
-        Map<String, Object> body = pointBody(name, code, "TABLE", null, null, 4, "HALL", true);
+        Map<String, Object> body = pointBody(name, code, "TABLE", null, null, capacity, shape, reservable);
         body.put("imageAssetRef", assetRef);
         body.put("imageBindGrant", bindGrant);
         return createPoint(context, store, area, body);
@@ -628,9 +692,9 @@ final class StoreServicePointAcceptanceScenarios {
             BackendAcceptanceTest.ScenarioContext context,
             StoreContext store,
             PointView point,
-            int capacity,
+            Integer capacity,
             String shape,
-            boolean reservable)
+            Boolean reservable)
             throws Exception {
         Map<String, Object> body = pointBody(
                 point.json().path("name").asText(),
@@ -857,7 +921,7 @@ final class StoreServicePointAcceptanceScenarios {
                     || ref.toString().equals(item.path("pointRef").asText())
                     || ref.toString().equals(item.path("channelRef").asText())) return item;
         }
-        throw new AssertionError("BUSINESS: missing item " + ref);
+        throw new AssertionError("BUSINESS: missing item " + ref + " available=" + items);
     }
 
     private record StoreContext(BackendAcceptanceTest.Fixture fixture, BackendAcceptanceTest.Session session) {}

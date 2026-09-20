@@ -48,6 +48,7 @@ import {gzipSync} from 'node:zlib';
 
 const task = ':apps:backend:catering-business-server:test';
 const expectedOperationCount = BACKEND_PERFORMANCE_OPERATION_COUNTS.operations;
+const runnerSource = readFileSync(new URL('./r5-remote-testcontainers.mjs', import.meta.url), 'utf8');
 const distribution = {sha256: 'a'.repeat(64), path: remoteGradleDistributionPath('a'.repeat(64)), status: 'REUSED'};
 const validEvidenceArchive = () => ({
   status: 'PASS',
@@ -95,6 +96,22 @@ const validManifest = () => ({
   firstFailure: null,
   lastKnownGood: 'CLEANUP',
   brokenBoundary: null,
+});
+
+test('source upload excludes macOS metadata that can break remote tar extraction', () => {
+  const uploadStart = runnerSource.indexOf('const uploadSource = async');
+  const uploadEnd = runnerSource.indexOf('const syncGradle = async', uploadStart);
+  assert.ok(uploadStart >= 0 && uploadEnd > uploadStart);
+  const uploadSource = runnerSource.slice(uploadStart, uploadEnd);
+  assert.match(uploadSource, /'--exclude=\*\/node_modules'/);
+  assert.match(uploadSource, /'--exclude=\*\/\.gradle'/);
+  assert.match(uploadSource, /'--exclude=doc\/evidence'/);
+  assert.match(uploadSource, /'--exclude=apps\/terminal'/);
+  assert.doesNotMatch(uploadSource, /'--exclude=apps\/frontend'/);
+  assert.match(uploadSource, /'--no-xattrs'/);
+  assert.match(uploadSource, /'--no-fflags'/);
+  assert.match(uploadSource, /'--no-acls'/);
+  assert.match(uploadSource, /'--no-mac-metadata'/);
 });
 
 test('focused runner accepts one task with explicit selectors only', () => {

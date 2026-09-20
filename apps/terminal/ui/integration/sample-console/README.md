@@ -47,6 +47,8 @@ surface 的闭包入口。
 `persistenceKey` 仅用于测试隔离；生产端口由 assembly 的消费者注入。
 调用方可通过可选的 `terminalSurfaces` 整份覆盖本包默认配置；未传入时使用本包 `package.json`，而具体形态仍由本包按 `surfaceForm` 选择。
 本包 `package.json` 的 `showAdminPassword` 控制 admin 登录提示旁是否显示当前动态口令；调用方显式传入的值优先。
+本 integration 注入的 `moduleName` 是 topology 配对身份的一部分；只允许相同 integration 的另一节点配对，
+不使用 assembly 包名替代它。跨机内容由主机写入 MAIN 后按声明的 sync 方向投影，副机不在 feature actor 中本地重放主机的副屏命令。
 
 本包通过同一个 shared admin console assembly 接入 topology capability；其 SECONDARY/SLAVE allowlist
 只有 `customer-welcome` 与 `customer-member`，其余 sample member parts 保持 PRIMARY/MASTER 约束，
@@ -81,3 +83,5 @@ Expo Web 开发宿主，与后台 DEV 环境无关。
 先在真实 feature 旅途中看见重复，再判断是否下沉到已有 base toolkit；不要预先为假设的
 业务形态扩展本包。任何需要 adapter、Android 双屏承载、浏览器自动化或 automation backend
 的变化，必须进入对应的后续 CP 与授权边界，不在此处用开发外壳绕过。
+
+虚拟键盘的中性色与 focus token 也由本 integration 提供；shared primitives 只消费同名 `keyboard-*` 语义 token，因此本应用可以保持自己的 focus 色而不把应用色下沉到 base。

@@ -24,6 +24,7 @@ const createInitialState = (input: CreateTopologyStateInput): TopologyState => O
   hostDesired: false,
   hostActual: 'stopped',
   hostErrorCode: null,
+  payloadFailure: null,
   revision: 0,
   repairPending: false,
 })
@@ -51,6 +52,8 @@ const topologySlice = createSlice({
       hostActual: action.payload.state,
       hostErrorCode: action.payload.errorCode ?? null,
     }),
+    setPayloadFailure: (state, action: PayloadAction<TopologyState['payloadFailure']>): TopologyState => ({...state!, payloadFailure: action.payload}),
+    clearPayloadFailure: (state): TopologyState => ({...state!, payloadFailure: null}),
     setRepairPending: (state, action: PayloadAction<boolean>): TopologyState => ({...state!, repairPending: action.payload}),
     bumpRevision: (state): TopologyState => ({...state!, revision: state!.revision + 1}),
   },

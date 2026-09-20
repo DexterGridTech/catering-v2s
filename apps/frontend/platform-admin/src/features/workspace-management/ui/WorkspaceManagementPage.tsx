@@ -3,6 +3,11 @@ import {Alert, Avatar, Button, Card, Tag, Typography} from 'antd';
 import {
   adminListState,
   createPageQueryIdentity,
+  displayFieldValue,
+  formatCanonicalDateTime,
+  lifecycleColor,
+  lifecycleLabel,
+  LIFECYCLE_LABELS,
   testId,
   useAsyncGenerationGuard,
   useDetailDrawer,
@@ -285,7 +290,7 @@ export function WorkspaceManagementPage() {
               title: '运营管理后台标题名称',
               dataIndex: 'operationsTitle',
               fieldProps: {...testId('platform-workspace-filter-operations-title'), allowClear: true},
-              render: value => value ?? '—',
+              render: value => displayFieldValue(value),
             },
             {
               title: '运营后台地址',
@@ -315,15 +320,17 @@ export function WorkspaceManagementPage() {
               title: '状态',
               dataIndex: 'status',
               valueType: 'select',
-              valueEnum: {ENABLED: {text: '已启用'}, DISABLED: {text: '已停用'}},
+              valueEnum: {ENABLED: {text: LIFECYCLE_LABELS.ENABLED}, DISABLED: {text: LIFECYCLE_LABELS.DISABLED}},
               fieldProps: {...testId('platform-workspace-filter-status'), style: {minWidth: 120}},
-              render: (_, row) => (
-                <Tag color={row.status === 'ENABLED' ? 'success' : 'default'}>
-                  {row.status === 'ENABLED' ? '已启用' : '已停用'}
-                </Tag>
-              ),
+              render: (_, row) => <Tag color={lifecycleColor(row.status)}>{lifecycleLabel(row.status)}</Tag>,
             },
-            {title: '更新时间', dataIndex: 'updatedAt', valueType: 'dateTime', sorter: true, search: false},
+            {
+              title: '更新时间',
+              dataIndex: 'updatedAt',
+              sorter: true,
+              search: false,
+              render: (_, row) => formatCanonicalDateTime(row.updatedAt),
+            },
           ]}
           onChange={(tablePagination, _, sorter, extra) => {
             if (extra.action === 'paginate') {

@@ -15,8 +15,10 @@ describe('ui-state package boundary', () => {
       'createUiVariableWrite',
       'dependencyModuleNames',
       'devDependencyModuleNames',
+      'isCurrentWorkspaceOwnedByInstance',
       'isSurfaceForm',
       'isUiCatalogEntryAvailable',
+      'isWorkspaceOwnedByInstanceMode',
       'moduleKind',
       'moduleName',
       'openLayerCommand',
@@ -26,6 +28,7 @@ describe('ui-state package boundary', () => {
       'selectSurfaceForm',
       'setUiVariablesCommand',
       'showScreenCommand',
+      'workspaceOwnedByInstanceMode',
     ])
   })
 })

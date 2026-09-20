@@ -165,7 +165,7 @@ node scripts/generate/store-operating-rule-catalog.mjs --self-test
 ### 实施内容
 
 1. 新增或扩展 `StoreServicePointOwnerApi`，提供 area/point page、detail、create/update/status/order、QR config read/save；所有 command 重新解析 store scope、重读目标和 version、返回 readback。
-2. area type 变更锁 area 与 child read；只统计 `status <> 'VOIDED'` point；非空拒绝，全部 voided 才允许；不要增加未被需求要求的一键清空 operation，逐 point VOIDED 即为“清空”。
+2. area type 的直接 owner 命令锁 area 与 child read；只统计 `status <> 'VOIDED'` point；非空拒绝，全部 voided 才允许；运营管理后台编辑态只读展示 area type，不提供修改控件；不要增加未被需求要求的一键清空 operation，逐 point VOIDED 即为“清空”。
 3. area/point status 使用 organization 现有三态 transition 形态；VOIDED 保留原 type、extension、image；current collection 排除 VOIDED 历史 point；area 非 ENABLED 只在 projection 计算 descendants unavailable，不回写 point。
 4. point create/update 读取 area type，owner 强制 `TABLE_AREA↔TABLE`、`SCAN_AREA↔SCAN`；TABLE 才接受 capacity/shape/reservable/image，前三项均可省略，填写时按类型规则校验；SCAN 请求带这些字段或 image 时拒绝，不依赖前端。
 5. 扩展 `BusinessEntityValueSupport` 的共享 extension audit projection，使新 point 使用同一 `ExtensionDefinitionLookup`、`ExtensionSubmission`、四态、label snapshot、超长截断，不复制第二套 typed validator。若抽取成新 helper，必须保留四个既有 organization entity 的调用路径并做回归。
@@ -306,7 +306,7 @@ scripts/verify
 | V-2 | 本域 11 个 HTTP gate entry 的完整 mapping + each mutation acceptance | 9 个 organization command 与 2 个 asset stage/release 全拒绝；claim 作为 point owner 事务步骤单独验证；不能抽样 |
 | V-3 | organization acceptance | off/on 前后 rows、QR config、内容一致 |
 | V-4 | point owner acceptance | TABLE/TABLE、SCAN/SCAN 成功；两反向拒绝 |
-| V-5 | area update/status acceptance | active child 拒；逐 point void 后改型成功 |
+| V-5 | area update/status acceptance + frontend focused | owner direct command active child 拒；逐 point void 后 direct command 改型成功；编辑 Drawer 的 area type 只读 |
 | V-6 | SQL/schema + URL behavior | 无 URL 列；改 template rule 后 read projection 改变 |
 | V-7 | composer focused | 五种合法形态、编码、empty/invalid 两反例 |
 | V-8 | template owner acceptance | 四个单维度负例+完全合法正例 |

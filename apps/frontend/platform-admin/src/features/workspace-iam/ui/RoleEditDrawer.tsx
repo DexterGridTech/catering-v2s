@@ -151,7 +151,7 @@ export function RoleEditDrawer({role, groupWorkspaceKey, catalog, onClose, onUpd
           <Alert
             type="info"
             showIcon
-            title="该业务角色已标记删除，不能继续修改。"
+            title="该业务角色已作废，不能继续修改。"
             {...testId('workspace-role-voided-readonly')}
           />
         )}

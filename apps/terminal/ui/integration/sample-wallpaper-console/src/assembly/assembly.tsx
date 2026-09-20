@@ -1,4 +1,5 @@
 import packageJson from '../../package.json'
+import {moduleName as integrationModuleName} from '../moduleName'
 import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports'
 import {type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render'
 import {
@@ -52,12 +53,6 @@ export async function createSampleWallpaperConsoleAssembly(
   const environmentMode: EnvironmentMode = input.environmentMode ?? (__DEV__ ? 'DEV' : 'PROD')
   const staffAuthModule = sampleStaffAuthAssembly.createModule()
   const wallpaperPickerModule = sampleWallpaperPickerAssembly.createModule()
-  const topologyModule = createTopologyModule({
-    displayName: 'sample-wallpaper-console',
-    surfaceForm,
-    identityClient: createTopologyIdentityClient(),
-    peerChannel: input.topologyPeerChannel,
-  })
   return createConsoleAssembly<SampleWallpaperConsoleReadyPayload>({
     appName: 'sample-wallpaper-console',
     errorPrefix: 'sample-wallpaper-console',
@@ -93,9 +88,22 @@ export async function createSampleWallpaperConsoleAssembly(
     }),
     resolveCommandTarget: resolveTopologyCommandTarget,
     createTopologyAdminCapability,
-    createApplicationModules: () => [
+    createApplicationModules: ({uiStateModule}) => [
       createTransportModule(),
-      topologyModule,
+      createTopologyModule({
+        displayName: 'sample-wallpaper-console',
+        moduleName: integrationModuleName,
+        surfaceForm,
+        identityClient: createTopologyIdentityClient(),
+        peerChannel: input.topologyPeerChannel,
+        stateSyncSlices: (uiStateModule.stateSlices ?? []).reduce<Array<{
+          readonly name: string
+          readonly syncIntent: 'master-to-slave' | 'slave-to-master'
+        }>>((result, slice) => {
+          if (slice.syncIntent !== 'isolated') result.push({name: slice.name, syncIntent: slice.syncIntent})
+          return result
+        }, []),
+      }),
       createSampleWallpaperConsoleModule(),
       createSampleStaffSessionModule(),
       createSampleWallpaperModule(),

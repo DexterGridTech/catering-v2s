@@ -217,7 +217,7 @@ test('sales-menu L2 action helpers wait for the uniquely bound current-DOM contr
   );
 });
 
-test('sales-menu role-locked store scope records only its actual trigger touch', () => {
+test('sales-menu scope records every reachable selector, option, and confirm touch', () => {
   const scopeOptionSource = operationsL2Source.slice(
     operationsL2Source.indexOf('async function selectOrAssertOperationsScopeOption'),
     operationsL2Source.indexOf('/** Select an owner-returned option through a ProTable form field'),
@@ -230,7 +230,10 @@ test('sales-menu role-locked store scope records only its actual trigger touch',
     salesMenuL2Source.indexOf('async function selectStoreScope'),
     salesMenuL2Source.indexOf('async function openSalesMenu'),
   );
-  assert.match(salesMenuScopeSource, /touch => recordControlTouch\(storeScopeControlKey\(touch\), touch\.testId\)/);
+  assert.match(
+    salesMenuScopeSource,
+    /touch => recordControlTouch\(storeScopeControlKey\(touch\), touch\.testId, 'ACTION'\)/,
+  );
   const scopeControlKeys = new Set(
     salesMenuBlueprint.scenarios
       .flatMap(scenario => scenario.cases ?? [])
@@ -829,10 +832,10 @@ test('browser L2 merges a join-only terminal failure without treating it as not-
 });
 
 test('catalog-library L2 resolves semantic tab anchors to the actual accessible control and reads writes back through the workbench', () => {
-  assert.match(catalogL2Source, /anchor\.locator\('xpath=ancestor-or-self::\*\[@role="tab"\]'\)/);
-  assert.match(catalogL2Source, /await expect\(tab\)\.toHaveCount\(1\)/);
-  assert.match(catalogL2Source, /drawer\.getByRole\('tab', \{name: await anchor\.innerText\(\), exact: true\}\)/);
-  assert.match(catalogL2Source, /toHaveAttribute\(\s*'aria-selected',\s*'true',?\s*\)/);
+  assert.match(catalogL2Source, /await anchor\.click\(\)/);
+  assert.doesNotMatch(catalogL2Source, /xpath=ancestor-or-self/);
+  assert.match(catalogL2Source, /const anchor = drawer\.getByTestId\(testId\)/);
+  assert.doesNotMatch(catalogL2Source, /drawer\.getByRole\('tab'/);
   assert.match(catalogL2Source, /recordControlTouch\('CATALOG_ITEM_TABS', testId, 'ACTION'\)/);
   assert.match(catalogL2Source, /async function reopenCatalogItemForOwnerReadback/);
   assert.match(catalogL2Source, /await searchCatalog\(page, readbackFacts\)/);
@@ -878,6 +881,25 @@ test('catalog-library L2 follows generated lifecycle routing and the saved view 
   assert.match(editSuccess, /itemPreparationReadonly/);
   assert.match(editSuccess, /reopenCurrentCatalogItemForOwnerReadback\(page, facts\)/);
   assert.doesNotMatch(editSuccess, /editor\.getByTestId\(catalogTestIds\.static\.itemProductionTags\)\.toBeVisible/);
+  assert.match(
+    catalogL2Source,
+    /const dialog = page\.getByTestId\(catalogTestIds\.surface\.lifecycleConfirm\)\.getByRole\(['"]dialog['"]\);[\s\S]*?await confirm\.click\(\);\s*\/\/ The command response can settle[\s\S]*?await expect\(dialog\)\.toBeHidden\(\);/,
+  );
+  assert.match(
+    catalogL2Source,
+    /async function reopenCurrentCatalogItemForOwnerReadback[\s\S]*?reopenCatalogItemForOwnerReadback\(page, facts, facts\.itemCode, facts\.itemName, 'CATALOG_ITEM_VIEW_DRAWER'\)/,
+  );
+  const lifecycleHelper = catalogL2Source.match(
+    /async function disableCatalogItem\([\s\S]*?\n}\n\nfunction requiredUnitSnapshot/,
+  )?.[0];
+  assert.ok(lifecycleHelper, 'catalog lifecycle helper must remain structurally discoverable');
+  assert.match(lifecycleHelper, /await openCatalogStatusActions\(page, facts\)/);
+  assert.match(lifecycleHelper, /visibleOperationsMenuTestId\(page, catalogTestIds\.control\.statusDisable\)/);
+  assert.doesNotMatch(lifecycleHelper, /clickOperationsDetailAction\(/);
+  assert.doesNotMatch(
+    catalogL2Source,
+    /confirmCatalogLifecycle[\s\S]*?getByRole\(['"]dialog['"]\)\.filter\(\{hasText:/,
+  );
   assert.match(runtimeSource, /const L2_BASE_PRODUCTION_TAG = Object\.freeze/);
   assert.match(runtimeSource, /stage\('production-tag-base-readback'\)/);
   assert.match(runtimeSource, /L2_PRODUCTION_TAG_READBACK_INVALID/);
@@ -899,7 +921,10 @@ test('catalog-library L2 binds composite inputs, write completion, and owner rer
   assert.match(configSuccess, /typeSequentially\(librarySearch/);
   assert.doesNotMatch(configSuccess, /librarySearch\.fill/);
   assert.match(configSuccess, /waitForGeneratedOperation\(page, 'getOperationsProductionTags'\)/);
-  assert.match(configSuccess, /selectOperationsOption\(page, catalogTestIds\.control\.configStatus, '启用'\)/);
+  assert.match(
+    configSuccess,
+    /selectBoundCatalogOption\([\s\S]*?catalogTestIds\.control\.configStatus[\s\S]*?statusOption\('ENABLED'\)/,
+  );
   assert.match(configSuccess, /submitProductionTagCreate\(page, facts\)/);
   assert.match(batchSubmit, /waitForGeneratedOperation\(page, 'getOperationsCatalogItems'\)/);
   assert.match(batchSubmit, /refreshedItems: await refreshedItems/);
@@ -921,6 +946,7 @@ test('catalog-library L2 binds composite inputs, write completion, and owner rer
   assert.doesNotMatch(mutationHelper, /transitionOperationsCatalogItemStatus/);
   assert.match(mutationHelper, /facts\.fixtureMutationVersion = Number\(mutationVersion\)/);
   assert.match(catalogL2Source, /relation === 'CONTAINS_ITEM_CODE'/);
+  assert.match(catalogL2Source, /relation === 'EXACT_PRE_STATE'/);
   assert.match(catalogL2Source, /relation === 'SAME_AS_FIXTURE_MUTATION'/);
   assert.doesNotMatch(catalogL2Source, /relation === 'SAME_AS_FIXTURE_MUTATION_STATUS'/);
   assert.match(catalogL2Source, /function observeFixtureWholeSave/);
@@ -1183,10 +1209,19 @@ test('browser L2 join distinguishes backend completions from explicit frontend i
   assert.match(runtimeSource, /touchedActionIds/);
   assert.match(runtimeSource, /missingDeclaredActionIds/);
   assert.match(runtimeSource, /unexpectedTouchedActionIds/);
+  assert.match(runtimeSource, /const controlTouchEvents = \[\.\.\.controlTouches, \.\.\.actionTouches\]/);
+  assert.match(runtimeSource, /controlTouchEvents\.map\(entry => entry\.controlKey\)/);
+  assert.match(runtimeSource, /entry\.kind === 'CONTROL_TOUCH' \|\| entry\.kind === 'ACTION_TOUCH'/);
+  assert.match(runtimeSource, /index === 0[\s\S]*kind: 'CONTROL_TOUCH'/);
   assert.match(catalogL2Source, /async function runDeclaredAction/);
   assert.match(catalogL2Source, /kind: 'ACTION_START'/);
   assert.match(catalogL2Source, /kind: 'ACTION_COMPLETE'/);
   assert.match(catalogL2Source, /CATALOG_INVENTORY_L2_HTTP_OUTSIDE_ACTION/);
+  assert.match(catalogL2Source, /fixtureOwnerOperationObservations\.push\(/);
+  assert.match(
+    catalogL2Source,
+    /\.\.\.operationObservations,[\s\S]*\.\.\.\(activeCaseContext\?\.fixtureOwnerOperationObservations \?\? \[\]\)/,
+  );
   assert.match(
     catalogL2Source,
     /await page\.waitForLoadState\('networkidle'\);\s*await Promise\.all\(responseWrites\);/,
@@ -1436,6 +1471,24 @@ test('browser L2 group bootstrap selects the created project before creating a s
     /dataNodeRef: org\.projectRef, dataNodeType: 'PROJECT', requiredContextVersion: groupContextVersion/,
   );
   assert.ok(runtimeSource.indexOf("stage('group-select-project')") < runtimeSource.indexOf("stage('store')"));
+});
+
+test('browser L2 store bootstrap enables catalog management through the owner create command', () => {
+  assert.match(runtimeSource, /const L2_STORE_OPERATING_RULE_SWITCHES = Object\.freeze\(/);
+  assert.match(runtimeSource, /catalogManagementEnabled: true/);
+  assert.match(runtimeSource, /stage\('store'\)[\s\S]*?operatingRuleSwitches: L2_STORE_OPERATING_RULE_SWITCHES/);
+  assert.match(runtimeSource, /if \(store\.json\?\.operatingRuleSwitches\?\.catalogManagementEnabled !== true\)/);
+});
+
+test('browser L2 Playwright environment closes both spec module input sets', () => {
+  assert.match(runtimeSource, /R5_L2_CATALOG_INVENTORY_CASES: scenarioPath/);
+  assert.match(runtimeSource, /R5_L2_CATALOG_INVENTORY_BINDINGS: bindingPath/);
+  assert.match(runtimeSource, /R5_L2_CATALOG_INVENTORY_EXECUTION: executionPath/);
+  assert.match(runtimeSource, /R5_L2_CATALOG_INVENTORY_ACTIVATION_CANDIDATE: activationCandidatePath/);
+  assert.match(runtimeSource, /R5_L2_SALES_MENU_CASES: salesMenuScenarioPath/);
+  assert.match(runtimeSource, /R5_L2_SALES_MENU_BINDINGS: salesMenuBindingPath/);
+  assert.match(runtimeSource, /R5_L2_SALES_MENU_EXECUTION: salesMenuExecutionPath/);
+  assert.match(runtimeSource, /R5_L2_SALES_MENU_ACTIVATION_CANDIDATE: salesMenuActivationCandidatePath/);
 });
 
 test('browser L2 catalog bootstrap follows the owner HTTP 200 create responses', () => {

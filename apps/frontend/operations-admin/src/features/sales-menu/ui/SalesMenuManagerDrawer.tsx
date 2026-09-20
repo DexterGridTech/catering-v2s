@@ -1,6 +1,12 @@
 import {MoreOutlined, PlusOutlined} from '@ant-design/icons';
-import {Alert, Button, Drawer, Dropdown, Input, Space, Table} from 'antd';
-import {CursorPagination, adminListState, adminWideDrawerSurfaceProps, testId} from '@catering-v2s/admin-ui-foundation';
+import {Alert, Button, Drawer, Input, Space, Table} from 'antd';
+import {
+  AdminRowActionMenu,
+  CursorPagination,
+  adminListState,
+  adminWideDrawerSurfaceProps,
+  testId,
+} from '@catering-v2s/admin-ui-foundation';
 import {type SalesMenuDetail, type SalesMenuSummary} from '../../../app/api/generated/operations-edge';
 import {salesMenuChannelStatusLabel, salesMenuScheduleLabel} from '../model/salesMenuModel';
 import {salesMenuTestIds} from '../salesMenuTestIds';
@@ -128,44 +134,38 @@ export function SalesMenuManagerDrawer({
             {
               key: 'actions',
               render: (_, row) => (
-                <Dropdown
-                  menu={{
-                    items: [
-                      {
-                        key: 'rename',
-                        label: '重命名',
-                        disabled: !canEdit || row.archived || !managerReadModelReady,
-                        ...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'rename')),
-                      },
-                      {
-                        key: 'copy',
-                        label: '复制',
-                        disabled: !canEdit || !managerReadModelReady,
-                        ...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'copy')),
-                      },
-                      {
-                        key: 'archive',
-                        label: '归档',
-                        danger: true,
-                        disabled: !canEdit || row.archived || !managerReadModelReady,
-                        ...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'archive')),
-                      },
-                    ],
-                    onClick: event => {
-                      if (event.key === 'rename') onRename(row);
-                      if (event.key === 'copy') onCopy(row);
-                      if (event.key === 'archive') onArchive(row);
+                <AdminRowActionMenu
+                  items={[
+                    {
+                      key: 'rename',
+                      label: '重命名',
+                      disabled: !canEdit || row.archived || !managerReadModelReady,
+                      ...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'rename')),
                     },
+                    {
+                      key: 'copy',
+                      label: '复制',
+                      disabled: !canEdit || !managerReadModelReady,
+                      ...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'copy')),
+                    },
+                    {
+                      key: 'archive',
+                      label: '归档',
+                      danger: true,
+                      disabled: !canEdit || row.archived || !managerReadModelReady,
+                      ...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'archive')),
+                    },
+                  ]}
+                  onClick={event => {
+                    if (event.key === 'rename') onRename(row);
+                    if (event.key === 'copy') onCopy(row);
+                    if (event.key === 'archive') onArchive(row);
                   }}
-                >
-                  <Button
-                    type="text"
-                    icon={<MoreOutlined />}
-                    aria-label="更多菜单操作"
-                    disabled={!managerReadModelReady}
-                    {...testId(salesMenuTestIds.managerAction(row.salesMenuRef, 'menu'))}
-                  />
-                </Dropdown>
+                  ariaLabel="更多菜单操作"
+                  icon={<MoreOutlined />}
+                  disabled={!managerReadModelReady}
+                  triggerTestId={salesMenuTestIds.managerAction(row.salesMenuRef, 'menu')}
+                />
               ),
             },
           ]}

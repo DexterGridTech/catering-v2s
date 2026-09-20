@@ -1,7 +1,6 @@
 import {Alert, Button, Tag, Tooltip, Typography} from 'antd';
-import {testId} from '@catering-v2s/admin-ui-foundation';
+import {lifecycleColor, lifecycleLabel, testId} from '@catering-v2s/admin-ui-foundation';
 import {type ReactNode} from 'react';
-import {catalogEnumLabel} from '../../model/catalogManifestLabels';
 import {catalogTestIdControls, catalogTestIds} from '../../catalogTestIds';
 import {CatalogDefinitionLibraries} from '../CatalogDefinitionLibraries';
 import {CatalogConfigurationDrawerSurface} from '../CatalogConfigurationDrawerSurface';
@@ -22,12 +21,8 @@ function TypographyHint({text}: {text: string}) {
   return <Typography.Text type="secondary">{text}</Typography.Text>;
 }
 
-function StatusTag({manifest, value}: {manifest: Parameters<typeof catalogEnumLabel>[0]; value: string}) {
-  return (
-    <Tag color={value === 'ENABLED' ? 'green' : value === 'VOIDED' ? 'red' : 'orange'}>
-      {catalogEnumLabel(manifest, 'dictionaryEntryStatus', value)}
-    </Tag>
-  );
+function StatusTag({value}: {value: string}) {
+  return <Tag color={lifecycleColor(value)}>{lifecycleLabel(value)}</Tag>;
 }
 
 function withMutationReason(content: ReactNode, disabled: boolean, reason?: string) {
@@ -177,10 +172,10 @@ export function CatalogDictionaryDrawerView({viewModel}: {viewModel: CatalogDict
           onSelectAttribute={setSelectedEntryRef}
           onCreateAttribute={() => openCreate('SKU_ATTRIBUTE')}
           onCreateValue={() => openCreate('SKU_ATTRIBUTE_VALUE')}
-          renderStatus={value => <StatusTag manifest={manifest} value={value} />}
+          renderStatus={value => <StatusTag value={value} />}
           renderVoidReason={attribute => {
             const reason = voidReason((attribute as DictionaryRow).voidAvailability);
-            return reason ? <Typography.Text type="secondary">暂不能删除：{reason}</Typography.Text> : undefined;
+            return reason ? <Typography.Text type="secondary">暂不能作废：{reason}</Typography.Text> : undefined;
           }}
           renderAttributeActions={attribute => {
             const row = attribute as DictionaryRow;
@@ -309,7 +304,7 @@ export function CatalogDictionaryDrawerView({viewModel}: {viewModel: CatalogDict
           }
           createLabel={createLabel}
           onCreate={() => openCreate(kind)}
-          renderStatus={value => <StatusTag manifest={manifest} value={value} />}
+          renderStatus={value => <StatusTag value={value} />}
           renderUnitDimension={value => unitDimensionLabel(value as FormValues['unitDimension'])}
           renderActions={simpleRow => {
             const row = simpleRow as DictionaryRow;
@@ -445,7 +440,7 @@ export function CatalogDictionaryDrawerView({viewModel}: {viewModel: CatalogDict
         editingEntry={editingEntry}
         editNameForm={editNameForm}
         nameSaveLoading={updateEntryState.isLoading || updateTagState.isLoading || updateUnitState.isLoading}
-        renderStatus={value => <StatusTag manifest={manifest} value={value} />}
+        renderStatus={value => <StatusTag value={value} />}
         onSaveName={() => void saveName()}
         onCancelName={() => {
           editNameForm.resetFields();

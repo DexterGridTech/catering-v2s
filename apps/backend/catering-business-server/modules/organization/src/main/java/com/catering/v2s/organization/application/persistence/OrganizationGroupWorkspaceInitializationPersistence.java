@@ -28,7 +28,7 @@ public class OrganizationGroupWorkspaceInitializationPersistence {
         if (keys.length == 0) return Map.of();
         return jdbc.query(
                 OrganizationGroupWorkspaceInitializationTaskReadServiceSql.ORGANIZATION_GROUP_WORKSPACE_INITIALIZATION_TASK_READ_SERVICE_SELECT_COMMERCIAL_GROUP
-                        + OrganizationGroupWorkspaceInitializationTaskReadServiceSql.ORGANIZATION_GROUP_WORKSPACE_INITIALIZATION_TASK_READ_SERVICE_CONTINUATION_TEXT,
+                        + OrganizationGroupWorkspaceInitializationTaskReadServiceSql.ORGANIZATION_GROUP_WORKSPACE_INITIALIZATION_TASK_READ_SERVICE_TEXT,
                 statement -> statement.setObject(1, keys),
                 result -> {
                     Map<String, InitializationState> values = new LinkedHashMap<>();
@@ -44,9 +44,9 @@ public class OrganizationGroupWorkspaceInitializationPersistence {
         if (groupWorkspaceKey == null || groupWorkspaceKey.isBlank()) return Optional.empty();
         return jdbc.query(
                 OrganizationGroupWorkspaceInitializationTaskReadServiceSql.ORGANIZATION_GROUP_WORKSPACE_INITIALIZATION_TASK_READ_SERVICE_SELECT_COMMERCIAL_GROUP_UUID
-                        + OrganizationGroupWorkspaceInitializationTaskReadServiceSql.ORGANIZATION_GROUP_WORKSPACE_INITIALIZATION_TASK_READ_SERVICE_CONTINUATION
-                        + OrganizationGroupWorkspaceInitializationTaskReadServiceSql.ORGANIZATION_GROUP_WORKSPACE_INITIALIZATION_TASK_READ_SERVICE_CONTINUATION_COMMERCIAL_GROUP
-                        + OrganizationGroupWorkspaceInitializationTaskReadServiceSql.ORGANIZATION_GROUP_WORKSPACE_INITIALIZATION_TASK_READ_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY,
+                        + OrganizationGroupWorkspaceInitializationTaskReadServiceSql.ORGANIZATION_GROUP_WORKSPACE_INITIALIZATION_TASK_READ_SERVICE_AUDIT_COLUMNS_PREFIX
+                        + OrganizationGroupWorkspaceInitializationTaskReadServiceSql.ORGANIZATION_GROUP_WORKSPACE_INITIALIZATION_TASK_READ_SERVICE_COMMERCIAL_GROUP
+                        + OrganizationGroupWorkspaceInitializationTaskReadServiceSql.ORGANIZATION_GROUP_WORKSPACE_INITIALIZATION_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY,
                 statement -> statement.setString(1, groupWorkspaceKey),
                 result -> {
                     if (!result.next()) return Optional.empty();

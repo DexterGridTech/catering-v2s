@@ -179,8 +179,7 @@ public class CatalogCopyPersistence {
         return jdbc.batchUpdate(
                 CatalogCopyServiceSql.CATALOG_COPY_SERVICE_INSERT_INTO_CATALOG_CATEGORY_INSERT_INTO_CATALOG_CATALOG_
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_OPEN_PAREN_CATEGORY_REF_DATA_NODE_REF_BRAND_REF_CODE
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_STAT
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_DISPLAY_ORDER
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_STATUS_DISPLAY_ORDER_VERSION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_DISPLAY_ORDER_VERSION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_VALUES
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_OPEN_PAREN_DATA_NODE_REF_BRAND_REF_CODE
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_WHERE_STATUS_VOIDED,
@@ -206,12 +205,11 @@ public class CatalogCopyPersistence {
         if (rows.isEmpty()) return new int[0];
         return jdbc.batchUpdate(
                 CatalogCopyServiceSql.CATALOG_COPY_SERVICE_INSERT_INTO_DICTIONARY_ENTRY_INSERT_INTO_CATALOG_DICTIONA
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_OPEN_PAREN_ENTRY_REF_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_REF
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_ENTRY_REF_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE_NAME_STATUS_PARENT_ENTRY_REF_CODE_NAME_STATUS_PARENT_ENTRY_REF
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_VALUE_SEPARATOR_DISPLAY_ORDER
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_OPEN_PAREN_ON_CONFLICT
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_OPEN_PAREN_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION,
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_ON_CONFLICT_NOTHING,
                 rows.stream()
                         .map(row -> new Object[] {
                             row.targetRef(),
@@ -234,11 +232,11 @@ public class CatalogCopyPersistence {
         if (rows.isEmpty()) return new int[0];
         return jdbc.batchUpdate(
                 CatalogCopyServiceSql.CATALOG_COPY_SERVICE_INSERT_INTO_CATALOG_ITEM_ITEM_REF_DATA_NODE_REF_BRAND_REF_CODE
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_SHORT_NAME_SHAPE_KEY_STATUS_SECTIONS
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_SOURCE_SCOPE_REF
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SHORT_NAME_SHAPE_KEY_STATUS_SECTIONS
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SOURCE_SCOPE_REF
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_VALUES_ALTERNATE_A
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_OPEN_PAREN_CAST_AS_JSONB_1_ON
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CONFLICT_DO_NOTHING,
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONFLICT_DO_NOTHING,
                 rows.stream()
                         .map(row -> new Object[] {
                             row.targetRef(),
@@ -269,8 +267,8 @@ public class CatalogCopyPersistence {
             long updatedAt) {
         return jdbc.update(
                 CatalogCopyServiceSql.CATALOG_COPY_SERVICE_UPDATE_CATALOG_ITEM_NAME_SHORT_NAME_SECTIONS
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_VERSION_UPDATED_AT_EPOCH_MILLIS_DATA_NODE_REF
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_BRAND_REF
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS_DATA_NODE_REF
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_BRAND_REF
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONDITION_CODE_VERSION,
                 name,
                 shortName,
@@ -291,18 +289,18 @@ public class CatalogCopyPersistence {
             int pageSize) {
         String cursorPredicate = cursorSortKey == null ? "" : CatalogCopyServiceSql.CATALOG_COPY_SERVICE_WHERE_CODE_ITEM_REF;
         String sql = CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CTE_MATCHING_ITEM_REF_CODE_NAME
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_VERSION_UPDATED_AT_EPOCH_MILLIS_SOURCE_SCOPE_REF
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_STATUS
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS_SOURCE_SCOPE_REF
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_STATUS
                 + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_OPEN_PAREN_TEXT_NAME_CHR_SHORT_NAME
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_MATCHING_ILIKE_AGGREGATE_TOTAL_PAGED
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_MATCHING_ILIKE_AGGREGATE_TOTAL_PAGED
                 + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_OPEN_PAREN_ITEM_REF_CODE_NAME_SHORT_NAME
                 + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_UPDATE_MATCHING_UPDATED_AT_EPOCH_MILLIS_SOURCE_SCOPE_REF
                 + cursorPredicate
                 + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_ORDER_BY_CODE_ITEM_REF
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_ITEM_REF_CODE_NAME_SHORT_NAME
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_AGGREGATE_VERSION_UPDATED_AT_EPOCH_MILLIS_SOURCE_SCOPE_REF_TOTAL
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_PAGED
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CODE_ITEM_REF;
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_ITEM_REF_CODE_NAME_SHORT_NAME
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_AGGREGATE_VERSION_UPDATED_AT_EPOCH_MILLIS_SOURCE_SCOPE_REF_TOTAL
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_PAGED
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CODE_ITEM_REF;
         List<Object> arguments = new ArrayList<>();
         arguments.add(sourceDataNodeRef);
         arguments.add(brandRef);
@@ -339,10 +337,8 @@ public class CatalogCopyPersistence {
     public void insertItemUnitSnapshots(List<ItemUnitSnapshotRow> rows) {
         if (rows.isEmpty()) return;
         jdbc.batchUpdate(
-                CatalogCopyServiceSql.CATALOG_COPY_SERVICE_UPDATE_CATALOG_ITEM
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_MENSION_SALES_UNIT_PRECISION
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_BASE_MEASURE_UNIT_REF
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_NIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_ITEM_REF,
+                CatalogCopyServiceSql.CATALOG_COPY_SERVICE_UPDATE_CATALOG_CATALOG_ITEM_SET_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_BASE_MEASURE_UNIT_REF_BASE_MEASURE_UNIT_CODE_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_WHERE_BASE_MEASURE_UNIT_PRECISION_WHERE_ITEM_REF,
                 rows.stream()
                         .map(row -> new Object[] {
                             row.salesUnitRef(),
@@ -364,10 +360,9 @@ public class CatalogCopyPersistence {
         if (rows.isEmpty()) return;
         jdbc.batchUpdate(
                 CatalogCopyServiceSql.CATALOG_COPY_SERVICE_UPDATE_CATALOG_SKU_UPDATE_CATALOG_CATALOG_SKU_S
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_SALES_UNIT_REF
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_RECISION
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_BASE_MEASURE_UNIT_REF_ALTERNATE_A
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_BASE_MEASURE_UNIT_REF_ALTERNATE_A
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_VALUE_SEPARATOR_UPDATED_AT_EPOCH_MILLIS
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_WHERE_PRODUCT_SKU_REF,
                 rows.stream()
@@ -418,17 +413,17 @@ public class CatalogCopyPersistence {
         UUID[] values = orderedRefs.toArray(UUID[]::new);
         return jdbc.query(
                 CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SELECT_COMPONENT_PRODUCT_SKU_REF_COMPOSITE_COMPONENT_REF
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_OWNER_ITEM_ITEM_REF_CODE_NAME
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATALOG_COMPOSITE_GROUP_CATALOG_COMPOSITE_COMPONENT_COMPONENT
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_GROUP_ROW
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATALOG_ITEM_GROUP_ROW_COMPOSITE_GROUP_REF_COMPONENT
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATALOG_SKU_OWNER_ITEM_ITEM_REF_GROUP_ROW_TARGET_SKU
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_TARGET_SKU_PRODUCT_SKU_REF_COMPONENT_OWNER_ITEM
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_OWNER_ITEM_BRAND_REF
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_OWNER_ITEM_ITEM_REF_CODE_NAME
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATALOG_COMPOSITE_GROUP_CATALOG_COMPOSITE_COMPONENT_COMPONENT
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_GROUP_ROW
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATALOG_ITEM_GROUP_ROW_COMPOSITE_GROUP_REF_COMPONENT
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATALOG_SKU_OWNER_ITEM_ITEM_REF_GROUP_ROW_TARGET_SKU
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_TARGET_SKU_PRODUCT_SKU_REF_COMPONENT_OWNER_ITEM
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_OWNER_ITEM_BRAND_REF
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONDITION
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_OWNER_ITEM_STATUS_VOIDED_COMPONENT
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_OWNER_ITEM_STATUS_VOIDED_COMPONENT
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONDITION_OWNER_ITEM_ITEM_REF_TARGET_SKU
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_COMPONENT_PRODUCT_SKU_REF_OWNER_ITEM_CODE,
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_COMPONENT_PRODUCT_SKU_REF_OWNER_ITEM_CODE,
                 statement -> {
                     statement.setString(1, dataNodeRef);
                     statement.setString(2, brandRef);
@@ -494,7 +489,7 @@ public class CatalogCopyPersistence {
         args.addAll(codes);
         return jdbc.query(
                 CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SELECT
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_ITEM_REF_CODE_NAME_SHORT_NAME_ALTERNATE_A
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_ITEM_REF_CODE_NAME_SHORT_NAME_ALTERNATE_A
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_SOURCE_SCOPE_REF
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_FROM_CLAUSE_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_CODE
                         + placeholders
@@ -506,8 +501,8 @@ public class CatalogCopyPersistence {
     public List<ItemRow> readAllItemIdentityRows(String dataNodeRef, String brandRef) {
         return jdbc.query(
                 CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SELECT_ITEM_REF_CODE_NAME_SHORT_NAME
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATALOG_ITEM_SOURCE_SCOPE_REF_DATA_NODE_REF_BRAND_REF
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_STATUS_VOIDED_CODE,
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATALOG_ITEM_SOURCE_SCOPE_REF_DATA_NODE_REF_BRAND_REF
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_STATUS_VOIDED_CODE,
                 (result, row) -> itemRow(result),
                 dataNodeRef,
                 brandRef);
@@ -520,17 +515,17 @@ public class CatalogCopyPersistence {
                 CatalogCopyServiceSql.PLACEHOLDER_SEPARATOR,
                 Collections.nCopies(refs.size(), CatalogCopyServiceSql.PARAMETER_PLACEHOLDER));
         String sql = CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SELECT_ALTERNATE_A
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATALOG_SKU_ITEM_REF + placeholders
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATALOG_SKU_ITEM_REF + placeholders
                 + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_STATUS_VOIDED_ALTERNATE_A
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATALOG_ITEM_CATEGORY_ITEM_REF + placeholders + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATALOG_COMPOSITE_GROUP_ITEM_REF + placeholders + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_ALTERNATE_A
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_ITEM_REF + placeholders
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATALOG_ITEM_CATEGORY_ITEM_REF + placeholders + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATALOG_COMPOSITE_GROUP_ITEM_REF + placeholders + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_ALTERNATE_A
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_ITEM_REF + placeholders
                 + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_ALTERNATE_B
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_CONFIG_ITEM_REF + placeholders
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATALOG_ITEM_ORDER_OPTION_CONFIG_ITEM_REF + placeholders
                 + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_ALTERNATE_C
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATALOG_SKU_VARIANT_AXIS_ITEM_REF + placeholders + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_ALTERNATE_D
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATALOG_ITEM_IMAGE_ITEM_REF + placeholders + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_ALTERNATE_E
-                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATALOG_ITEM_REFERENCE_ITEM_REF + placeholders + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_ALTERNATE_F;
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATALOG_SKU_VARIANT_AXIS_ITEM_REF + placeholders + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_ALTERNATE_D
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATALOG_ITEM_IMAGE_ITEM_REF + placeholders + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_ALTERNATE_E
+                + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATALOG_ITEM_REFERENCE_ITEM_REF + placeholders + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_ALTERNATE_F;
         List<Object> args = new ArrayList<>();
         for (int index = 0; index < 8; index++) args.addAll(refs);
         return jdbc.query(
@@ -560,10 +555,8 @@ public class CatalogCopyPersistence {
                 CatalogCopyServiceSql.PLACEHOLDER_SEPARATOR,
                 Collections.nCopies(refs.size(), CatalogCopyServiceSql.PARAMETER_PLACEHOLDER));
         return jdbc.query(
-                CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SELECT_ITEM_REF_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CISION
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_BASE_MEASURE_UNIT_REF_ALTERNATE_B
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_MENSION_BASE_MEASURE_UNIT_PRECISION
+                CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SELECT_ITEM_REF_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_BASE_MEASURE_UNIT_REF_BASE_MEASURE_UNIT_CODE_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_FROM_CLAUSE_CATALOG_ITEM_ITEM_REF
                         + placeholders + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_ALTERNATE_G,
                 statement -> {
@@ -593,18 +586,15 @@ public class CatalogCopyPersistence {
         args.addAll(refs);
         return jdbc.query(
                 CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CTE_SELECTED
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_ENTRY_REF_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_ALTERNATIVE_ORDE
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_DICTIONARY_ENTRY_VERSION_DATA_NODE_REF_BRAND_REF_STATUS
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_VOIDED_ENTRY_REF
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_ENTRY_REF_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE_NAME_STATUS_PARENT_ENTRY_REF_DISPLAY_ORDER_VERSION_AND_BRAND_REF_AND_STATUS
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_VOIDED_ENTRY_REF
                         + placeholders
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_UNION_SELECT
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_PARENT_ENTRY_REF_DATA_NODE_REF_BRAND_REF
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_PARENT_NAME_STATUS_PARENT_ENTRY_REF
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_PARENT_ENTRY_REF_PARENT_DATA_NODE_REF_PARENT_BRAND_REF_PARENT_DICTIONARY_KIND_PARENT_CODE_PARENT_DISPLAY_ORDER_PARENT_VERSION
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_FROM_CLAUSE_SELECTED_PARENT_CHILD
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_PARENT_ENTRY_REF_CHILD_PARENT_ENTRY_REF
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_PARENT_ENTRY_REF_CHILD_PARENT_ENTRY_REF
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONDITION_PARENT_BRAND_REF_CHILD_STATUS
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_ENTRY_REF_DICTIONARY_KIND_CODE_NAME
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_ENTRY_REF_DICTIONARY_KIND_CODE_NAME
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SELECT_SELECTED_DICTIONARY_KIND_CODE,
                 (result, row) -> new DictionaryRow(
                         result.getObject(1, UUID.class),
@@ -629,7 +619,7 @@ public class CatalogCopyPersistence {
         args.addAll(codes);
         Long value = jdbc.queryForObject(
                 CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SELECT_CATALOG_ITEM_VERSION_DATA_NODE_REF_BRAND_REF_ALTERNATE_B
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CODE
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CODE
                         + placeholders
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_STATUS_VOIDED_ALTERNATE_B,
                 Long.class,
@@ -694,7 +684,7 @@ public class CatalogCopyPersistence {
         }
         return jdbc.query(
                 CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SELECT_DICTIONARY_ENTRY_DICTIONARY_KIND_CODE_VERSION_DATA_NODE_REF
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_BRAND_REF_ALTERNATE_A + predicates + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_DICTIONARY_KIND_CODE,
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_BRAND_REF_ALTERNATE_A + predicates + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_DICTIONARY_KIND_CODE,
                 result -> {
                     Map<DictionaryVersionKey, Long> versions = new LinkedHashMap<>();
                     while (result.next())
@@ -742,7 +732,7 @@ public class CatalogCopyPersistence {
         }
         return jdbc.query(
                 CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SELECT_DICTIONARY_ENTRY_DICTIONARY_KIND_CODE_ENTRY_REF_STATUS
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_DATA_NODE_REF_BRAND_REF + predicates + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_DICTIONARY_KIND_CODE_ENTRY_REF,
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_DATA_NODE_REF_BRAND_REF + predicates + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_DICTIONARY_KIND_CODE_ENTRY_REF,
                 (result, row) -> new TargetDictionaryRow(
                         result.getString(1),
                         result.getString(2),
@@ -804,18 +794,17 @@ public class CatalogCopyPersistence {
         args.add(brand);
         return jdbc.query(
                 CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CTE_CATALOG_CATEGORY_SELECTED_CATEGORY_REF
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_DATA_NODE_REF_BRAND_REF_CATEGORY_REF
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_DATA_NODE_REF_BRAND_REF_CATEGORY_REF
                         + placeholders
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CLOSE_PAREN_STATUS_VOIDED_CATEGORY_PARENT_CATEGORY_REF
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_SELECTED_CATALOG_CATEGORY_CATEGORY_CHILD
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATEGORY_CATEGORY_REF_CHILD_PARENT_CATEGORY_REF
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SELECTED_CATALOG_CATEGORY_CATEGORY_CHILD
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATEGORY_CATEGORY_REF_CHILD_PARENT_CATEGORY_REF
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONDITION_CATEGORY_DATA_NODE_REF_BRAND_REF_STATUS
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SELECT_ALTERNATE_B
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATEGORY_CATEGORY_REF_CODE_NAME
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_ATEGORY_REF_CATEGORY_STATUS_VERSION
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_SELECTED_CATALOG_CATEGORY_CATEGORY
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATEGORY_CATEGORY_REF_CATEGORY_CODE_CATEGORY_NAME_CATEGORY_PARENT_CODE_CATEGORY_PARENT_CATEGORY_REF_VERSION_CATEGORY_DISPLAY_ORDER_FROM
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SELECTED_CATALOG_CATEGORY_CATEGORY
                         + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_SELECT_SELECTED_CATEGORY_REF_CATEGORY_PARENT_CATEGORY_REF
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_CATEGORY_DISPLAY_ORDER_CODE,
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CATEGORY_DISPLAY_ORDER_CODE,
                 (result, row) -> new CategoryRow(
                         result.getObject(1, UUID.class),
                         result.getString(2),
@@ -869,9 +858,8 @@ public class CatalogCopyPersistence {
             String scope, String key, String operationId, String requestHash, String responseJson, long createdAt) {
         return jdbc.update(
                 CatalogCopyServiceSql.CATALOG_COPY_SERVICE_INSERT_INTO
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_CONTINUATION_RESP
-                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_JOIN_CONDITION_ONSE_CREATED_AT_EPOCH_MILLIS,
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY
+                        + CatalogCopyServiceSql.CATALOG_COPY_SERVICE_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB_VALUES_CAST_AS_JSONB,
                 UUID.randomUUID(),
                 scope,
                 key,

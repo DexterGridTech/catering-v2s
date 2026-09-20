@@ -1,0 +1,30 @@
+{
+  "reviewKind": "INDEPENDENT_SUBAGENT_ADVERSARIAL_REVIEW",
+  "reviewTarget": "DESIGN",
+  "reviewCycleId": "TER_TERMINAL_INPUT_KEYBOARD_VISUAL_DESIGN_2026-09-19",
+  "reviewRound": 2,
+  "reviewRoundLimit": 2,
+  "roundFinalDecision": "SELF_DECIDED",
+  "reviewerKind": "INDEPENDENT_SUBAGENT",
+  "blindReview": true,
+  "status": "ROUND_2_COMPLETE_AUTHOR_REPAIRED_PENDING_CLAUDE",
+  "inputChecklist": "doc/review/platform/independent-subagent-adversarial-review-input-checklist-template.md",
+  "design": "doc/plans/platform/2026-09-19-ter-terminal-input-keyboard-visual-implementation-design-codex.md",
+  "plan": "doc/plans/platform/2026-09-19-ter-terminal-input-keyboard-visual-implementation-plan-codex.md",
+  "report": "doc/review/platform/2026-09-19-ter-terminal-input-keyboard-visual-design-adversarial-review-round2-codex.md",
+  "findings": [
+    {"id": "M-01", "status": "REPAIRED_IN_DESIGN", "summary": "Composite mobile inset omitted CAPS while alpha contract requires the full key inventory; inset is now explicitly illustrative and excluded from key inventory/baseline."},
+    {"id": "M-02", "status": "REPAIRED_IN_DESIGN", "summary": "Legacy numeric cross-span wording conflicted with the latest confirmed three-column IA; latest IA precedence and current three-column target are now explicit."},
+    {"id": "S-01", "status": "REPAIRED_IN_DESIGN", "summary": "Pixel baseline now has manifest schema, paths, generator/comparator entry points, and self-baseline prohibition."},
+    {"id": "S-02", "status": "REPAIRED_IN_DESIGN", "summary": "Native touch and Web click surface-dismiss paths now have separate composed proof requirements."},
+    {"id": "S-03", "status": "REPAIRED_IN_DESIGN", "summary": "Theme RGB table and selected modifier token consumer are now explicit with red mutations."},
+    {"id": "N-01", "status": "REPAIRED_IN_DESIGN", "summary": "Plan metadata now calls the old requirements path historical and keeps the approved IA asset as IA_ASSET."},
+    {"id": "S-01-R2", "status": "REPAIRED_IN_DESIGN", "summary": "Keyboard pixel comparison now requires an exact-rgba branch in the existing comparator, with legacy-threshold callers preserved and explicit exact metrics."}
+  ],
+  "verdict": "ROUND_2_NO_GO_REPAIRED_PENDING_CLAUDE",
+  "notes": [
+    "Round-1 and round-2 reports are retained as immutable review records; author disposition is in the current design/plan, not a rewritten verdict.",
+    "The DESIGN independent-subagent cycle has used its two-round limit; Claude review is the next external review and is not represented as complete here.",
+    "Claude review cannot substitute for the independent subagent review."
+  ]
+}

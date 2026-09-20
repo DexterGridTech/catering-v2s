@@ -1,7 +1,10 @@
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it, vi} from 'vitest'
+import {readFileSync} from 'node:fs'
+import {resolve} from 'node:path'
 import {
   createNodeId,
   createRequestId,
+  type SurfaceForm,
   type TopologyIdentity,
   type TopologyLocator,
 } from '@catering-v2s/kernel-base-contracts'
@@ -14,7 +17,8 @@ import {
   type Runtime,
   type RuntimeModule,
 } from '@catering-v2s/kernel-base-runtime'
-import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
+import {releaseRuntimeForTest, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing'
+import {defineStateRuntimeSlice, type StateJsonValue, type SyncValueEnvelope} from '@catering-v2s/kernel-base-state'
 import {
   createDisplayContextModule,
   selectDisplayRole,
@@ -49,7 +53,6 @@ import {moduleName as stateModuleName} from '@catering-v2s/kernel-base-state'
 import {
   createTopologyModule,
   createTopologyAdminCapability,
-  pairTopologyCommand,
   refreshTopologyDisplayCommand,
   resolveTopologyCommandTarget,
   areTopologyFactsEqual,
@@ -57,13 +60,16 @@ import {
   setTopologyHostEnabledCommand,
   topologySliceName,
   topologyActions,
+  topologyHostEventCommand,
   unpairTopologyCommand,
 } from '../src/index'
+import {pairTopologyCommand} from '../src/features/commands/commands'
 import {moduleName as topologyModuleName} from '../src/moduleName'
-import {moduleName as transportModuleName} from '@catering-v2s/kernel-base-transport'
+import {createTopologySession, createTopologyStateTransferPlan, moduleName as transportModuleName} from '@catering-v2s/kernel-base-transport'
 import {moduleName as displayContextModuleName} from '@catering-v2s/kernel-base-display-context'
 import type {TopologyIdentityClient, TopologyPeerChannel, TopologyPeerChannelEvent} from '@catering-v2s/kernel-base-transport'
 import {evaluateTopologyOperation, hasTopologySecondarySurface} from '../src/foundations/evaluateTopologyOperation'
+import {serializeTopologyWireMessage} from '@catering-v2s/kernel-base-contracts'
 
 const base = {
   surfaceForm: 'laptop' as const,
@@ -76,6 +82,59 @@ const base = {
 
 const completedAt = 1 as never
 
+const membersSyncSliceName = 'kernel.feature.sample-member-registry.members' as const
+type TestMembersState = Readonly<{readonly members: readonly Readonly<{readonly memberId: string; readonly name: string}>[]; readonly pending: null}>
+
+const createTestMembersModule = (): RuntimeModule => {
+  const initialState: TestMembersState = Object.freeze({members: Object.freeze([]), pending: null})
+  let syncBuildCount = 0
+  const registration = defineStateRuntimeSlice<TestMembersState>({
+    name: membersSyncSliceName,
+    reducer: (state = initialState, action) => action.type === 'test/set-members'
+      ? Object.freeze({members: Object.freeze((action as unknown as {readonly payload: TestMembersState}).payload.members), pending: null})
+      : state,
+    persistIntent: 'owner-only',
+    persistence: [{kind: 'field', stateKey: 'members'}],
+    syncIntent: 'master-to-slave',
+    sync: {
+      kind: 'record',
+      getEntries: (state: TestMembersState) => {
+        syncBuildCount += 1
+        return {state: {value: state as unknown as StateJsonValue, updatedAt: 0 as never}}
+      },
+      applyEntries: (_state: TestMembersState, entries: Readonly<Partial<Record<string, SyncValueEnvelope>>>) => {
+        const value = entries.state?.tombstone === true ? undefined : entries.state?.value
+        return value === undefined ? initialState : value as unknown as TestMembersState
+      },
+    },
+  })
+  return Object.freeze({
+    moduleName: 'kernel.feature.sample-member-registry',
+    kind: 'owner' as const,
+    dependencies: [{moduleName: 'kernel.base.runtime'}],
+    slices: [{name: membersSyncSliceName, persistIntent: registration.persistIntent}],
+    stateSlices: [registration],
+    getSyncBuildCount: (): number => syncBuildCount,
+  }) as RuntimeModule & Readonly<{readonly getSyncBuildCount: () => number}>
+}
+
+const readMultiChunkMembers = (): TestMembersState => JSON.parse(readFileSync(
+  resolve(process.cwd(), '../../../../../doc/plans/platform/fixtures/ter-dual-machine-members-multi-chunk-stress-fixture.json'),
+  'utf8',
+)) as TestMembersState
+
+const randomText = (length: number, seed = 90_210): string => {
+  let value = seed >>> 0
+  let output = ''
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+  for (let index = 0; index < length; index += 1) {
+    value = Math.imul(value ^ (value >>> 13), 0x5bd1e995) >>> 0
+    value = (value + 0x6d2b79f5) >>> 0
+    output += alphabet[value & 63]
+  }
+  return output
+}
+
 const succeeded = <TValue>(value: TValue): PortResult<TValue> => Object.freeze({
   status: 'succeeded' as const,
   value,
@@ -86,6 +145,7 @@ const noOutput = (): PortResult<NoOutput> => succeeded(Object.freeze({completed:
 
 const identity: TopologyIdentity = Object.freeze({
   protocolVersion: 1,
+  moduleName: 'ui.integration.sample-console',
   nodeId: 'node-master',
   displayName: '主机',
   instanceMode: 'MASTER',
@@ -167,6 +227,7 @@ class FakePeerChannel implements TopologyPeerChannel {
   readonly closeCalls: Array<string | undefined> = []
   disposeCalls = 0
   listenCalls = 0
+  sendFailure: Error | undefined
   private connectionSequence = 0
   private activeConnectionId: string | undefined
   private readonly listeners = new Set<(event: TopologyPeerChannelEvent) => void>()
@@ -185,7 +246,10 @@ class FakePeerChannel implements TopologyPeerChannel {
     for (const listener of this.listeners) listener({type: 'open', connectionId})
   }
 
-  async send(raw: string): Promise<void> { this.sentFrames.push(raw) }
+  async send(raw: string): Promise<void> {
+    if (this.sendFailure !== undefined) throw this.sendFailure
+    this.sentFrames.push(raw)
+  }
 
   async close(reason?: string): Promise<void> {
     this.closeCalls.push(reason)
@@ -226,6 +290,13 @@ const waitForReconciliation = async (): Promise<void> => {
   await Promise.resolve()
 }
 
+const deferred = <T>() => {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej })
+  return {promise, resolve, reject}
+}
+
 const createTopologyRuntime = (input: Readonly<{
   readonly host: FakeTopologyHost
   readonly peer?: FakePeerChannel
@@ -235,18 +306,21 @@ const createTopologyRuntime = (input: Readonly<{
   readonly runtimeName?: string
   readonly appControl?: AppControlPort
   readonly identityClient?: TopologyIdentityClient
+  readonly surfaceForm?: SurfaceForm
   readonly extraModules?: readonly RuntimeModule[]
-}>): Readonly<{runtime: Runtime; device: DevicePort}> => {
+}>): Readonly<{runtime: Runtime; device: DevicePort; events: readonly LogEvent[]}> => {
   const events: LogEvent[] = []
   const device = input.device ?? createTestDevice()
   const plainStorage = input.plainStorage ?? createProcessMemoryStateStoragePort()
   const protectedStorage = input.protectedStorage ?? createProcessMemoryStateStoragePort()
   const topologyModule = createTopologyModule({
     displayName: 'TER test',
-    surfaceForm: 'laptop',
+    surfaceForm: input.surfaceForm ?? 'laptop',
+    moduleName: 'ui.integration.sample-console',
     nodeId: 'node-master',
     identityClient: input.identityClient,
     peerChannel: input.peer,
+    stateSyncSlices: [{name: membersSyncSliceName, syncIntent: 'master-to-slave'}],
   })
   const runtime = createRuntime({
     localNodeId: createNodeId(),
@@ -281,7 +355,7 @@ const createTopologyRuntime = (input: Readonly<{
       persistenceDebounceMs: 0,
     },
   })
-  return Object.freeze({runtime, device})
+  return Object.freeze({runtime, device, events})
 }
 
 describe('topology operation eligibility', () => {
@@ -316,6 +390,251 @@ describe('topology operation eligibility', () => {
 })
 
 describe('topology pairing facts', () => {
+  it('projects typed payload failure diagnostics without changing peer lifecycle facts', async () => {
+    const host = new FakeTopologyHost()
+    const {runtime} = createTopologyRuntime({host})
+    await runtime.start()
+    try {
+      await runtime.dispatchCommand(topologyHostEventCommand, {
+        event: 'state-transfer-failed',
+        payloadFailure: {
+          code: 'TOPOLOGY_REASSEMBLY_OVERFLOW',
+          sliceName: 'kernel.feature.sample-member-registry.members',
+          revision: 4,
+          transferId: 'diagnostic-transfer',
+          deterministic: true,
+        },
+      }, {requestId: createRequestId()})
+      await waitForReconciliation()
+      expect(selectTopologyFacts(runtime.getState())).toMatchObject({
+        paired: false,
+        peerReachable: false,
+        payloadFailure: {
+          code: 'TOPOLOGY_REASSEMBLY_OVERFLOW',
+          revision: 4,
+          deterministic: true,
+        },
+      })
+
+      await runtime.dispatchCommand(topologyHostEventCommand, {event: 'state-transfer-recovered'}, {requestId: createRequestId()})
+      await waitForReconciliation()
+      expect(selectTopologyFacts(runtime.getState())?.payloadFailure).toBeNull()
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('does not apply a partial state transfer and applies the complete transfer into the real sync slice', async () => {
+    const host = new FakeTopologyHost()
+    const {runtime} = createTopologyRuntime({host, extraModules: [createTestMembersModule()]})
+    await runtime.start()
+    const stateSync = runtimeStateSyncForTest(runtime)
+    const session = createTopologySession({
+      write: vi.fn(),
+      onMessage: message => {
+        if (message.type !== 'state-full') return
+        stateSync.applyAuthoritativeSync(membersSyncSliceName, message.value as never)
+      },
+      onProtocolError: vi.fn(),
+      closeTransport: vi.fn(),
+      reassembly: {schedule: () => () => {}},
+    })
+    session.markOpen()
+    try {
+      const members = readMultiChunkMembers()
+      const plan = createTopologyStateTransferPlan({
+        sliceName: membersSyncSliceName,
+        direction: 'master-to-slave',
+        revision: 21,
+        value: {
+          mode: 'authoritative',
+          replaceMissing: true,
+          entries: [{key: 'state', value: {updatedAt: 0, value: members}}],
+        },
+        createTransferId: () => 'topology-apply-transfer',
+      })
+      expect(plan.status).toBe('ready')
+      if (plan.status !== 'ready') return
+      expect(plan.frames.length).toBeGreaterThan(1)
+      expect((runtime.getState()[membersSyncSliceName] as TestMembersState).members).toHaveLength(0)
+      for (const frame of plan.frames.slice(0, -1)) session.receive(serializeTopologyWireMessage(frame))
+      expect((runtime.getState()[membersSyncSliceName] as TestMembersState).members).toHaveLength(0)
+      session.receive(serializeTopologyWireMessage(plan.frames.at(-1)!))
+      expect((runtime.getState()[membersSyncSliceName] as TestMembersState).members).toHaveLength(members.members.length)
+    } finally {
+      session.close('test-done')
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('sends a complete members slice when the owned members reference changes', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const membersModule = createTestMembersModule()
+    const {runtime} = createTopologyRuntime({host, peer, extraModules: [membersModule]})
+    await runtime.start()
+    try {
+      peer.emit({type: 'open', connectionId: 'members-change-1'})
+      peer.emit({
+        type: 'message',
+        connectionId: 'members-change-1',
+        raw: JSON.stringify({
+          type: 'hello',
+          protocolVersion: 1,
+          moduleName: 'ui.integration.sample-console',
+          wireId: 'members-change-peer-hello',
+          nodeId: 'node-slave',
+          displayName: '副机',
+          instanceMode: 'SLAVE',
+          displayRole: 'VICE',
+        }),
+      })
+      await waitForReconciliation()
+      const initialRevisions = peer.sentFrames
+        .map(raw => JSON.parse(raw) as {type?: string; revision?: number})
+        .filter(frame => frame.type === 'state-full-chunk')
+        .map(frame => frame.revision)
+      expect(initialRevisions).toEqual([1])
+      peer.sentFrames.splice(0)
+      runtime.getStore().dispatch({type: 'test/set-members', payload: {
+        members: [{memberId: 'M1', name: '成员一'}],
+        pending: null,
+      }})
+      await waitForReconciliation()
+      const frames = peer.sentFrames.map(raw => JSON.parse(raw) as {type?: string; sliceName?: string; revision?: number; total?: number})
+        .filter(frame => frame.type === 'state-full-chunk')
+      expect(frames).toHaveLength(1)
+      expect(frames[0]).toMatchObject({
+        sliceName: membersSyncSliceName,
+        revision: 2,
+        total: 1,
+      })
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('does not build or send a members payload for an unrelated topology slice change', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const membersModule = createTestMembersModule()
+    const {runtime} = createTopologyRuntime({host, peer, extraModules: [membersModule]})
+    await runtime.start()
+    try {
+      peer.emit({type: 'open', connectionId: 'members-unrelated-1'})
+      peer.emit({
+        type: 'message',
+        connectionId: 'members-unrelated-1',
+        raw: JSON.stringify({
+          type: 'hello',
+          protocolVersion: 1,
+          moduleName: 'ui.integration.sample-console',
+          wireId: 'members-unrelated-peer-hello',
+          nodeId: 'node-slave',
+          displayName: '副机',
+          instanceMode: 'SLAVE',
+          displayRole: 'VICE',
+        }),
+      })
+      await waitForReconciliation()
+      peer.sentFrames.splice(0)
+      runtime.getStore().dispatch(topologyActions.setDisplayCount(1))
+      await waitForReconciliation()
+      expect(peer.sentFrames.some(raw => JSON.parse(raw).type === 'state-full-chunk')).toBe(false)
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('locks a deterministic sender payload failure until the members reference changes', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const membersModule = createTestMembersModule() as RuntimeModule & Readonly<{readonly getSyncBuildCount: () => number}>
+    const {runtime} = createTopologyRuntime({host, peer, extraModules: [membersModule]})
+    await runtime.start()
+    try {
+      const members = Array.from({length: 43_000}, (_, index) => ({
+        memberId: `MOV${String(index).padStart(8, '0')}`,
+        name: randomText(256, 90_210 + index),
+      }))
+      runtime.getStore().dispatch({type: 'test/set-members', payload: {members, pending: null}})
+      peer.emit({type: 'open', connectionId: 'deterministic-lock-1'})
+      peer.emit({
+        type: 'message',
+        connectionId: 'deterministic-lock-1',
+        raw: JSON.stringify({
+          type: 'hello',
+          protocolVersion: 1,
+          moduleName: 'ui.integration.sample-console',
+          wireId: 'deterministic-lock-peer-hello',
+          nodeId: 'node-slave',
+          displayName: '副机',
+          instanceMode: 'SLAVE',
+          displayRole: 'VICE',
+        }),
+      })
+      await waitForReconciliation()
+      expect(selectTopologyFacts(runtime.getState())).toMatchObject({
+        payloadFailure: {code: 'TOPOLOGY_REASSEMBLY_OVERFLOW', deterministic: true},
+        peerReachable: true,
+      })
+      const buildsAfterFailure = membersModule.getSyncBuildCount()
+      runtime.getStore().dispatch(topologyActions.setDisplayCount(1))
+      await waitForReconciliation()
+      expect(membersModule.getSyncBuildCount()).toBe(buildsAfterFailure)
+      expect(peer.sentFrames.some(raw => JSON.parse(raw).type === 'state-full-chunk')).toBe(false)
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('keeps membersSyncRevision unchanged when a transfer write fails and retries the same revision after reconnect', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const {runtime} = createTopologyRuntime({host, peer, extraModules: [createTestMembersModule()]})
+    await runtime.start()
+    try {
+      const accept = (connectionId: string, wireId: string) => {
+        peer.emit({type: 'open', connectionId})
+        peer.emit({
+          type: 'message',
+          connectionId,
+          raw: JSON.stringify({
+            type: 'hello',
+            protocolVersion: 1,
+            moduleName: 'ui.integration.sample-console',
+            wireId,
+            nodeId: 'node-slave',
+            displayName: '副机',
+            instanceMode: 'SLAVE',
+            displayRole: 'VICE',
+          }),
+        })
+      }
+      accept('send-failure-1', 'send-failure-peer-hello-1')
+      await waitForReconciliation()
+      peer.sentFrames.splice(0)
+      peer.sendFailure = new Error('test write failure')
+      runtime.getStore().dispatch({type: 'test/set-members', payload: {
+        members: [{memberId: 'M2', name: '写入失败后仍可重试'}],
+        pending: null,
+      }})
+      await waitForReconciliation()
+      expect(selectTopologyFacts(runtime.getState())).toMatchObject({peerReachable: false})
+
+      peer.sendFailure = undefined
+      accept('send-failure-2', 'send-failure-peer-hello-2')
+      await waitForReconciliation()
+      const revisions = peer.sentFrames
+        .map(raw => JSON.parse(raw) as {type?: string; revision?: number})
+        .filter(frame => frame.type === 'state-full-chunk')
+        .map(frame => frame.revision)
+      expect(revisions).toEqual([2])
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
   it('treats freshly projected equivalent facts as one subscription value', async () => {
     const host = new FakeTopologyHost()
     const {runtime} = createTopologyRuntime({host})
@@ -325,8 +644,36 @@ describe('topology pairing facts', () => {
       const next = selectTopologyFacts(runtime.getState())
       expect(next).not.toBe(previous)
       expect(areTopologyFactsEqual(previous, next)).toBe(true)
-      expect(areTopologyFactsEqual(previous, Object.freeze({...next, peerReachable: true}))).toBe(false)
+      expect(areTopologyFactsEqual(previous, Object.freeze({...next!, peerReachable: true}))).toBe(false)
       expect(areTopologyFactsEqual(undefined, next)).toBe(false)
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('fails closed when the topology slice is not hydrated yet', async () => {
+    const host = new FakeTopologyHost()
+    const {runtime} = createTopologyRuntime({host})
+    await runtime.start()
+    try {
+      const stateWithoutTopology = {
+        ...runtime.getState(),
+        [topologySliceName]: undefined,
+      } as Parameters<typeof selectTopologyFacts>[0]
+
+      expect(selectTopologyFacts(stateWithoutTopology)).toBeUndefined()
+      expect(resolveTopologyCommandTarget({
+        state: stateWithoutTopology,
+        payload: {displayMode: 'SECONDARY'},
+        routeContext: null,
+      })).toBeUndefined()
+      expect(createTopologyAdminCapability({
+        getState: () => stateWithoutTopology,
+        dispatchCommand: runtime.dispatchCommand,
+      }).getOperationEligibility('pair')).toMatchObject({
+        allowed: false,
+        reasonCode: 'TOPOLOGY_UNAVAILABLE',
+      })
     } finally {
       releaseRuntimeForTest(runtime)
     }
@@ -345,6 +692,7 @@ describe('topology pairing facts', () => {
         raw: JSON.stringify({
           type: 'hello',
           protocolVersion: 1,
+          moduleName: 'ui.integration.sample-console',
           wireId: 'peer-hello-1',
           nodeId: 'node-slave',
           displayName: '副机',
@@ -359,6 +707,11 @@ describe('topology pairing facts', () => {
         peerReachable: true,
         hasTopologySecondarySurface: true,
       })
+      expect(runtime.journal.list().some(event =>
+        event.kind === 'command.started'
+        && event.commandName === 'kernel.base.topology.host-event'
+        && event.requestId !== null,
+      )).toBe(true)
 
       // Both endpoints send hello.  The MASTER must accept the SLAVE's
       // hello-accepted acknowledgement on the same connection rather than
@@ -369,6 +722,7 @@ describe('topology pairing facts', () => {
         raw: JSON.stringify({
           type: 'hello-accepted',
           protocolVersion: 1,
+          moduleName: 'ui.integration.sample-console',
           wireId: 'peer-hello-accepted-1',
           nodeId: 'node-slave',
         }),
@@ -405,7 +759,7 @@ describe('topology pairing facts', () => {
         instanceMode: 'SLAVE',
         displayRole: 'VICE',
       })))
-      expect(selectTopologyFacts(runtime.getState()).paired).toBe(true)
+      expect(selectTopologyFacts(runtime.getState())?.paired).toBe(true)
 
       peer.emit({type: 'open', connectionId: 'master-peer-2'})
       peer.emit({type: 'close', connectionId: 'master-peer-2', reason: 'TOPOLOGY_UNPAIRED'})
@@ -434,6 +788,7 @@ describe('topology pairing facts', () => {
         raw: JSON.stringify({
           type: 'hello',
           protocolVersion: 1,
+          moduleName: 'ui.integration.sample-console',
           wireId: 'peer-wire-unpair-hello',
           nodeId: 'node-slave-wire-unpair',
           displayName: '副机',
@@ -442,7 +797,7 @@ describe('topology pairing facts', () => {
         }),
       })
       await waitForReconciliation()
-      expect(selectTopologyFacts(runtime.getState()).paired).toBe(true)
+      expect(selectTopologyFacts(runtime.getState())?.paired).toBe(true)
 
       peer.emit({
         type: 'message',
@@ -494,7 +849,7 @@ describe('topology runtime target resolution', () => {
         state: paired,
         payload: {displayMode: 'SECONDARY'},
         routeContext: null,
-      })).toBe('peer')
+      })).toBeUndefined()
       expect(resolveTopologyCommandTarget({
         state: stateWith({masterLocator: locator, displayCount: 2, peerReachable: false}),
         payload: {displayMode: 'SECONDARY'},
@@ -507,10 +862,26 @@ describe('topology runtime target resolution', () => {
       })).toBeUndefined()
       expect(resolveTopologyCommandTarget({
         state: stateWith({masterLocator: locator, peerReachable: false}, 'SLAVE'),
-        payload: {operation: 'member-intent'},
+        payload: {operation: 'member-intent', displayMode: 'SECONDARY'},
         routeContext: null,
         routeIntent: 'peer-intent',
       })).toBe('peer')
+      expect(resolveTopologyCommandTarget({
+        state: stateWith({masterLocator: locator, peerReachable: false}, 'SLAVE'),
+        payload: {
+          displayMode: 'SECONDARY',
+          layerId: 'admin.console.layer',
+          partKey: 'admin.console',
+        },
+        routeContext: null,
+        routeIntent: 'peer-intent',
+      })).toBe('peer')
+      expect(resolveTopologyCommandTarget({
+        state: stateWith({masterLocator: locator, peerReachable: true}, 'SLAVE'),
+        payload: {operation: 'member-intent', displayMode: 'PRIMARY'},
+        routeContext: null,
+        routeIntent: 'peer-intent',
+      })).toBeUndefined()
       expect(resolveTopologyCommandTarget({
         state: paired,
         payload: {operation: 'member-intent'},
@@ -523,31 +894,88 @@ describe('topology runtime target resolution', () => {
   })
 })
 
-describe('topology admin capability', () => {
-  it('dispatches admin operations through a request-scoped public command', async () => {
+describe('topology module identity admission', () => {
+  it('rejects a peer from a different integration moduleName before pairing', async () => {
     const host = new FakeTopologyHost()
-    const identityClient: TopologyIdentityClient = Object.freeze({
-      query: async () => Object.freeze({type: 'identity' as const, ...identity}),
-    })
-    const {runtime} = createTopologyRuntime({host, identityClient})
+    const peer = new FakePeerChannel()
+    const {runtime, events} = createTopologyRuntime({host, peer})
     await runtime.start()
     try {
-      const result = await createTopologyAdminCapability(runtime).queryMasterIdentity({host: '192.0.2.10'})
-      expect(result.status).toBe('completed')
-      expect(result.identity).toEqual(identity)
-      expect(runtime.journal.list().some(event =>
-        event.kind === 'command.started'
-        && event.commandName === 'kernel.base.topology.query-host'
-        && event.requestId !== null,
-      )).toBe(true)
+      peer.emit({type: 'open', connectionId: 'module-mismatch-1'})
+      peer.emit({
+        type: 'message',
+        connectionId: 'module-mismatch-1',
+        raw: JSON.stringify({
+          type: 'hello',
+          protocolVersion: 1,
+          moduleName: 'ui.integration.sample-wallpaper-console',
+          wireId: 'module-mismatch-peer-hello',
+          nodeId: 'node-slave',
+          displayName: '副机',
+          instanceMode: 'SLAVE',
+          displayRole: 'VICE',
+        }),
+      })
+      await waitForReconciliation()
+
+      expect(events).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          level: 'info',
+          category: 'topology.peer',
+          event: 'topology.peer.hello-rejected',
+          data: expect.objectContaining({reason: 'module-mismatch'}),
+        }),
+      ]))
+      expect(selectTopologyFacts(runtime.getState())).toMatchObject({
+        paired: false,
+        peerReachable: false,
+      })
     } finally {
       releaseRuntimeForTest(runtime)
     }
   })
+})
 
-  it('stamps the current local route so pairing can run through the admin capability', async () => {
+describe('topology admin capability', () => {
+  it('computes page availability from the owner facts instead of an operation gate', async () => {
+    const host = new FakeTopologyHost()
+    const {runtime} = createTopologyRuntime({host})
+    await runtime.start()
+    try {
+      const capability = createTopologyAdminCapability(runtime)
+      expect(capability.getPageAvailability()).toEqual({available: true, reasonCode: 'allowed'})
+
+      runtime.getStore().dispatch(topologyActions.setDisplayCount(2))
+      expect(capability.getPageAvailability()).toEqual({
+        available: false,
+        reasonCode: 'TOPOLOGY_REQUIRES_SINGLE_SCREEN',
+      })
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+
+    const mobile = createTopologyRuntime({host: new FakeTopologyHost(), surfaceForm: 'mobile'})
+    await mobile.runtime.start()
+    try {
+      expect(createTopologyAdminCapability(mobile.runtime).getPageAvailability()).toEqual({
+        available: false,
+        reasonCode: 'TOPOLOGY_UNSUPPORTED_FORM',
+      })
+    } finally {
+      releaseRuntimeForTest(mobile.runtime)
+    }
+  })
+
+  it('pairs by host through one owner command boundary and stamps the current local route', async () => {
     const host = new FakeTopologyHost()
     const peer = new FakePeerChannel()
+    const queriedHosts: string[] = []
+    const identityClient: TopologyIdentityClient = Object.freeze({
+      query: async queriedHost => {
+        queriedHosts.push(queriedHost)
+        return Object.freeze({type: 'identity' as const, ...identity})
+      },
+    })
     const appControl: AppControlPort = {
       ...unavailableAppControlPort,
       resetRuntime: async input => Object.freeze({
@@ -557,27 +985,130 @@ describe('topology admin capability', () => {
         terminalObservation: 'SUCCESSOR_RUNTIME_STARTED' as const,
       }),
     }
-    const {runtime} = createTopologyRuntime({host, peer, appControl})
+    const {runtime} = createTopologyRuntime({host, peer, appControl, identityClient})
     await runtime.start()
     try {
       const capability = createTopologyAdminCapability(runtime)
-      const locator: TopologyLocator = Object.freeze({
-        host: '192.0.2.40',
-        port: 43172,
-        basePath: '/terminal-topology',
-        identity: Object.freeze({...identity, nodeId: 'node-master-admin-capability'}),
-      })
 
-      const paired = await capability.pair({locator})
+      const paired = await capability.pairByHost({host: ' 192.0.2.40 '})
       expect(paired.status).toBe('completed')
+      expect(paired.identity).toEqual(identity)
+      expect(queriedHosts).toEqual(['192.0.2.40'])
       expect(selectRuntimeInstanceMode(runtime.getState())).toBe('SLAVE')
       expect(selectDisplayRole(runtime.getState())).toBe('VICE')
+      expect(runtime.journal.list().some(event =>
+        event.kind === 'command.started'
+        && event.commandName === 'kernel.base.topology.pair-by-host'
+        && event.requestId !== null,
+      )).toBe(true)
+      expect(runtime.journal.list().some(event => event.commandName === 'kernel.base.topology.query-host')).toBe(false)
+
+      const occupied = await capability.pairByHost({host: '192.0.2.41'})
+      expect(occupied).toMatchObject({status: 'error', reasonCode: 'TOPOLOGY_ALREADY_PAIRED'})
 
       const unpaired = await capability.unpair()
       expect(unpaired.status).toBe('completed')
       expect(selectRuntimeInstanceMode(runtime.getState())).toBe('MASTER')
       expect(selectDisplayRole(runtime.getState())).toBe('CHIEF')
-      expect(runtime.getState()[topologySliceName]).toMatchObject({masterLocator: null, repairPending: false})
+      expect(runtime.getState()[topologySliceName]).toMatchObject({
+        masterLocator: null,
+        peerIdentity: null,
+        peerReachable: false,
+        repairPending: false,
+      })
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('returns typed direct-pair failures and rolls back every prepared fact', async () => {
+    const invalid = createTopologyRuntime({host: new FakeTopologyHost()})
+    await invalid.runtime.start()
+    try {
+      await expect(createTopologyAdminCapability(invalid.runtime).pairByHost({host: 'http://192.0.2.42'}))
+        .resolves.toMatchObject({status: 'error', reasonCode: 'TOPOLOGY_INVALID_LOCATOR'})
+    } finally {
+      releaseRuntimeForTest(invalid.runtime)
+    }
+
+    const identityFailure = createTopologyRuntime({
+      host: new FakeTopologyHost(),
+      identityClient: {query: async () => { throw new Error('identity unavailable') }},
+    })
+    await identityFailure.runtime.start()
+    try {
+      await expect(createTopologyAdminCapability(identityFailure.runtime).pairByHost({host: '192.0.2.43'}))
+        .resolves.toMatchObject({status: 'error', reasonCode: 'TOPOLOGY_IDENTITY_FAILED'})
+    } finally {
+      releaseRuntimeForTest(identityFailure.runtime)
+    }
+
+    const moduleMismatch = createTopologyRuntime({
+      host: new FakeTopologyHost(),
+      identityClient: {query: async () => Object.freeze({
+        type: 'identity' as const,
+        ...identity,
+        moduleName: 'ui.integration.sample-wallpaper-console',
+      })},
+    })
+    await moduleMismatch.runtime.start()
+    try {
+      const result = await createTopologyAdminCapability(moduleMismatch.runtime).pairByHost({host: '192.0.2.44'})
+      expect(result).toMatchObject({status: 'error', reasonCode: 'TOPOLOGY_PROTOCOL_REJECTED'})
+      expect(moduleMismatch.runtime.getState()[topologySliceName]).toMatchObject({
+        masterLocator: null,
+        peerIdentity: null,
+        peerReachable: false,
+        repairPending: false,
+      })
+    } finally {
+      releaseRuntimeForTest(moduleMismatch.runtime)
+    }
+
+    const rollback = createTopologyRuntime({
+      host: new FakeTopologyHost(),
+      identityClient: {query: async () => Object.freeze({type: 'identity' as const, ...identity})},
+    })
+    await rollback.runtime.start()
+    try {
+      const result = await createTopologyAdminCapability(rollback.runtime).pairByHost({host: '192.0.2.45'})
+      expect(result).toMatchObject({status: 'error', reasonCode: 'TOPOLOGY_UNAVAILABLE'})
+      expect(rollback.runtime.getState()[topologySliceName]).toMatchObject({
+        masterLocator: null,
+        peerIdentity: null,
+        peerReachable: false,
+        repairPending: false,
+      })
+      expect(selectRuntimeInstanceMode(rollback.runtime.getState())).toBe('MASTER')
+      expect(selectDisplayRole(rollback.runtime.getState())).toBe('CHIEF')
+    } finally {
+      releaseRuntimeForTest(rollback.runtime)
+    }
+  })
+
+  it('unpairs a MASTER using peerIdentity when masterLocator is absent and clears all pairing facts', async () => {
+    const {runtime} = createTopologyRuntime({host: new FakeTopologyHost()})
+    await runtime.start()
+    try {
+      runtime.getStore().dispatch(topologyActions.setPeerIdentity(identity))
+      runtime.getStore().dispatch(topologyActions.setPeerReachable(true))
+      expect(selectTopologyFacts(runtime.getState())).toMatchObject({
+        paired: true,
+        masterLocator: null,
+        peerIdentity: identity,
+        peerReachable: true,
+      })
+
+      const result = await createTopologyAdminCapability(runtime).unpair()
+
+      expect(result.status).toBe('completed')
+      expect(runtime.getState()[topologySliceName]).toMatchObject({
+        masterLocator: null,
+        peerIdentity: null,
+        peerReachable: false,
+        repairPending: false,
+      })
+      expect(selectTopologyFacts(runtime.getState())).toMatchObject({paired: false})
     } finally {
       releaseRuntimeForTest(runtime)
     }
@@ -585,6 +1116,40 @@ describe('topology admin capability', () => {
 })
 
 describe('topology lifecycle integration', () => {
+  it('writes structured diagnostics for a peer channel close with transport metadata', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const {runtime, events} = createTopologyRuntime({host, peer})
+    await runtime.start()
+    try {
+      peer.emit({type: 'open', connectionId: 'diagnostic-close-1'})
+      peer.emit({
+        type: 'close',
+        connectionId: 'diagnostic-close-1',
+        reason: 'TOPOLOGY_PEER_UNREACHABLE',
+        code: 1006,
+        readyState: 3,
+      })
+      await waitForReconciliation()
+      expect(events).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          level: 'warn',
+          category: 'topology.peer',
+          event: 'topology.peer.channel-anomaly',
+          data: expect.objectContaining({
+            channelEvent: 'close',
+            reason: 'TOPOLOGY_PEER_UNREACHABLE',
+            code: 1006,
+            readyState: 3,
+            connectionId: 'diagnostic-close-1',
+          }),
+        }),
+      ]))
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
   it('normalizes an inbound peer command to local execution without routing it back', async () => {
     const host = new FakeTopologyHost()
     const peer = new FakePeerChannel()
@@ -640,6 +1205,7 @@ describe('topology lifecycle integration', () => {
         raw: JSON.stringify({
           type: 'hello-accepted',
           protocolVersion: 1,
+          moduleName: 'ui.integration.sample-console',
           wireId: 'receiver-accepted',
           nodeId: 'node-master-4',
         }),
@@ -670,6 +1236,286 @@ describe('topology lifecycle integration', () => {
     } finally {
       releaseRuntimeForTest(runtime)
     }
+  })
+
+  it('tracks concurrent remote cancellations by command id and leaves unknown cancels as no-ops', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const command = defineCommand<Readonly<{readonly id: string}>>('test.topology.concurrent', {
+      name: 'run',
+      visibility: 'internal',
+      timeoutMs: 1_000,
+    })
+    const gates = new Map<string, ReturnType<typeof deferred<StateJsonValue>>>()
+    const actor = defineActor('test.topology.concurrent', 'worker', [onCommand(command, context => {
+      const id = String((context.command.payload as Readonly<{readonly id: string}>).id)
+      const gate = deferred<StateJsonValue>()
+      gates.set(id, gate)
+      return gate.promise
+    })])
+    const module: RuntimeModule = Object.freeze({
+      moduleName: 'test.topology.concurrent',
+      kind: 'owner',
+      dependencies: [{moduleName: 'kernel.base.runtime'}],
+      commands: [{name: command.commandName, visibility: command.visibility}],
+      commandDefinitions: [command],
+      actors: [{name: actor.actorName}],
+      actorDefinitions: [actor],
+    })
+    const {runtime} = createTopologyRuntime({host, peer, extraModules: [module]})
+    await runtime.start()
+    try {
+      peer.emit({type: 'open', connectionId: 'concurrent-cancel-1'})
+      peer.emit({
+        type: 'message',
+        connectionId: 'concurrent-cancel-1',
+        raw: JSON.stringify({
+            type: 'hello',
+            protocolVersion: 1,
+            moduleName: 'ui.integration.sample-console',
+          wireId: 'concurrent-cancel-peer-hello',
+          nodeId: 'node-slave',
+          displayName: '副机',
+          instanceMode: 'SLAVE',
+          displayRole: 'VICE',
+        }),
+      })
+      await waitForReconciliation()
+      const request = (id: string) => ({
+        type: 'command-request' as const,
+        protocolVersion: 1 as const,
+        wireId: `concurrent-request-${id}`,
+        requestId: null,
+        commandId: id,
+        parentCommandId: null,
+        commandName: command.commandName,
+        payload: {id},
+      })
+      peer.emit({type: 'message', connectionId: 'concurrent-cancel-1', raw: JSON.stringify(request('command-a'))})
+      peer.emit({type: 'message', connectionId: 'concurrent-cancel-1', raw: JSON.stringify(request('command-b'))})
+      await waitForReconciliation()
+      peer.emit({
+        type: 'message',
+        connectionId: 'concurrent-cancel-1',
+        raw: JSON.stringify({
+          type: 'command-cancel',
+          protocolVersion: 1,
+          wireId: 'concurrent-cancel-a',
+          requestId: null,
+          commandId: 'command-a',
+        }),
+      })
+      peer.emit({
+        type: 'message',
+        connectionId: 'concurrent-cancel-1',
+        raw: JSON.stringify({
+          type: 'command-cancel',
+          protocolVersion: 1,
+          wireId: 'concurrent-cancel-unknown',
+          requestId: null,
+          commandId: 'command-unknown',
+        }),
+      })
+      gates.get('command-a')?.resolve({completed: true})
+      gates.get('command-b')?.resolve({completed: true})
+      await new Promise<void>(resolve => setTimeout(resolve, 0))
+      const results = peer.sentFrames
+        .map(raw => JSON.parse(raw) as {type?: string; commandId?: string; status?: string})
+        .filter(frame => frame.type === 'command-result')
+      expect(results).toEqual([expect.objectContaining({commandId: 'command-b', status: 'completed'})])
+      expect(results.some(frame => frame.commandId === 'command-a')).toBe(false)
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('returns all four real remote command statuses without duplicating a settled command', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const completed = defineCommand<Readonly<{}>>('test.topology.statuses', {name: 'completed', visibility: 'internal'})
+    const partial = defineCommand<Readonly<{}>>('test.topology.statuses', {name: 'partial', visibility: 'internal'})
+    const timedOut = defineCommand<Readonly<{}>>('test.topology.statuses', {name: 'timed-out', visibility: 'internal', timeoutMs: 5})
+    const errored = defineCommand<Readonly<{}>>('test.topology.statuses', {name: 'error', visibility: 'internal'})
+    const completedActor = defineActor('test.topology.statuses', 'completed-actor', [onCommand(completed, () => ({ok: true}))])
+    const partialSuccessActor = defineActor('test.topology.statuses', 'partial-success', [onCommand(partial, () => ({ok: true}))])
+    const partialErrorActor = defineActor('test.topology.statuses', 'partial-error', [onCommand(partial, () => { throw new Error('partial failure') })])
+    const timedOutActor = defineActor('test.topology.statuses', 'timed-out-actor', [onCommand(timedOut, () => new Promise<StateJsonValue>(() => undefined))])
+    const errorActor = defineActor('test.topology.statuses', 'error-actor', [onCommand(errored, () => { throw new Error('command failure') })])
+    const module: RuntimeModule = Object.freeze({
+      moduleName: 'test.topology.statuses',
+      kind: 'owner',
+      dependencies: [{moduleName: 'kernel.base.runtime'}],
+      commands: [completed, partial, timedOut, errored].map(item => ({name: item.commandName, visibility: item.visibility})),
+      commandDefinitions: [completed, partial, timedOut, errored],
+      actors: [completedActor, partialSuccessActor, partialErrorActor, timedOutActor, errorActor].map(item => ({name: item.actorName})),
+      actorDefinitions: [completedActor, partialSuccessActor, partialErrorActor, timedOutActor, errorActor],
+    })
+    const {runtime} = createTopologyRuntime({host, peer, extraModules: [module]})
+    await runtime.start()
+    try {
+      peer.emit({type: 'open', connectionId: 'status-1'})
+      peer.emit({
+        type: 'message',
+        connectionId: 'status-1',
+        raw: JSON.stringify({
+            type: 'hello',
+            protocolVersion: 1,
+            moduleName: 'ui.integration.sample-console',
+          wireId: 'status-peer-hello',
+          nodeId: 'node-slave',
+          displayName: '副机',
+          instanceMode: 'SLAVE',
+          displayRole: 'VICE',
+        }),
+      })
+      await waitForReconciliation()
+      const request = (commandDefinition: {readonly commandName: string}, id: string) => ({
+        type: 'command-request' as const,
+        protocolVersion: 1 as const,
+        wireId: `status-request-${id}`,
+        requestId: null,
+        commandId: id,
+        parentCommandId: null,
+        commandName: commandDefinition.commandName,
+        payload: {},
+      })
+      peer.emit({type: 'message', connectionId: 'status-1', raw: JSON.stringify(request(completed, 'status-completed'))})
+      peer.emit({type: 'message', connectionId: 'status-1', raw: JSON.stringify(request(partial, 'status-partial'))})
+      peer.emit({type: 'message', connectionId: 'status-1', raw: JSON.stringify(request(timedOut, 'status-timed-out'))})
+      peer.emit({type: 'message', connectionId: 'status-1', raw: JSON.stringify(request(errored, 'status-error'))})
+      await new Promise<void>(resolve => setTimeout(resolve, 25))
+      const statuses = peer.sentFrames
+        .map(raw => JSON.parse(raw) as {type?: string; commandId?: string; status?: string})
+        .filter(frame => frame.type === 'command-result')
+        .filter(frame => frame.commandId?.startsWith('status-'))
+      expect(statuses).toEqual(expect.arrayContaining([
+        expect.objectContaining({commandId: 'status-completed', status: 'completed'}),
+        expect.objectContaining({commandId: 'status-partial', status: 'partial-failed'}),
+        expect.objectContaining({commandId: 'status-timed-out', status: 'timed-out'}),
+        expect.objectContaining({commandId: 'status-error', status: 'error'}),
+      ]))
+      expect(statuses).toHaveLength(4)
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('bounds outbound peer commands before the gateway can grow without limit', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const command = defineCommand<Readonly<{}>>('test.topology.peer-pressure', {name: 'run', visibility: 'internal', allowNoActor: true})
+    const module: RuntimeModule = Object.freeze({
+      moduleName: 'test.topology.peer-pressure',
+      kind: 'owner',
+      dependencies: [{moduleName: 'kernel.base.runtime'}],
+      commands: [{name: command.commandName, visibility: command.visibility}],
+      commandDefinitions: [command],
+    })
+    const {runtime} = createTopologyRuntime({host, peer, extraModules: [module]})
+    await runtime.start()
+    try {
+      peer.emit({type: 'open', connectionId: 'peer-pressure-1'})
+      peer.emit({
+        type: 'message',
+        connectionId: 'peer-pressure-1',
+        raw: JSON.stringify({
+            type: 'hello',
+            protocolVersion: 1,
+            moduleName: 'ui.integration.sample-console',
+          wireId: 'peer-pressure-peer-hello',
+          nodeId: 'node-slave',
+          displayName: '副机',
+          instanceMode: 'SLAVE',
+          displayRole: 'VICE',
+        }),
+      })
+      await waitForReconciliation()
+      const pending = Array.from({length: 256}, () => runtime.dispatchCommand(command, {}, {target: 'peer'}))
+      await new Promise<void>(resolve => setTimeout(resolve, 0))
+      const overflow = await runtime.dispatchCommand(command, {}, {target: 'peer'})
+      expect(overflow.status).toBe('error')
+      expect(peer.sentFrames.map(raw => JSON.parse(raw) as {type?: string}).filter(frame => frame.type === 'command-request')).toHaveLength(256)
+      releaseRuntimeForTest(runtime)
+      await expect(Promise.all(pending)).resolves.toHaveLength(256)
+    } finally {
+      if (runtime.status === 'started') releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('rejects every pending peer command when the connection is lost instead of leaving promises resident', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const command = defineCommand<Readonly<{}>>('test.topology.disconnect', {name: 'run', visibility: 'internal', allowNoActor: true})
+    const module: RuntimeModule = Object.freeze({
+      moduleName: 'test.topology.disconnect',
+      kind: 'owner',
+      dependencies: [{moduleName: 'kernel.base.runtime'}],
+      commands: [{name: command.commandName, visibility: command.visibility}],
+      commandDefinitions: [command],
+    })
+    const {runtime} = createTopologyRuntime({host, peer, extraModules: [module]})
+    await runtime.start()
+    try {
+      peer.emit({type: 'open', connectionId: 'disconnect-pending-1'})
+      peer.emit({
+        type: 'message',
+        connectionId: 'disconnect-pending-1',
+        raw: JSON.stringify({
+            type: 'hello',
+            protocolVersion: 1,
+            moduleName: 'ui.integration.sample-console',
+          wireId: 'disconnect-pending-peer-hello',
+          nodeId: 'node-slave',
+          displayName: '副机',
+          instanceMode: 'SLAVE',
+          displayRole: 'VICE',
+        }),
+      })
+      await waitForReconciliation()
+      const pending = runtime.dispatchCommand(command, {}, {target: 'peer'})
+      await new Promise<void>(resolve => setTimeout(resolve, 0))
+      peer.emit({type: 'close', connectionId: 'disconnect-pending-1', reason: 'test-disconnect'})
+      const settled = await Promise.race([
+        pending,
+        new Promise<'timeout'>(resolve => setTimeout(() => resolve('timeout'), 50)),
+      ])
+      expect(settled).not.toBe('timeout')
+      expect(settled).toMatchObject({status: 'error'})
+    } finally {
+      if (runtime.status === 'started') releaseRuntimeForTest(runtime)
+    }
+  })
+
+  it('unsubscribes the topology module before later store changes can send peer frames', async () => {
+    const host = new FakeTopologyHost()
+    const peer = new FakePeerChannel()
+    const {runtime} = createTopologyRuntime({host, peer, extraModules: [createTestMembersModule()]})
+    await runtime.start()
+    const store = runtime.getStore()
+    peer.emit({type: 'open', connectionId: 'cleanup-1'})
+    peer.emit({
+      type: 'message',
+      connectionId: 'cleanup-1',
+      raw: JSON.stringify({
+        type: 'hello',
+        protocolVersion: 1,
+        moduleName: 'ui.integration.sample-console',
+        wireId: 'cleanup-peer-hello',
+        nodeId: 'node-slave',
+        displayName: '副机',
+        instanceMode: 'SLAVE',
+        displayRole: 'VICE',
+      }),
+    })
+    await waitForReconciliation()
+    const frameCount = peer.sentFrames.length
+    releaseRuntimeForTest(runtime)
+    store.dispatch({type: 'test/set-members', payload: {
+      members: [{memberId: 'AFTER', name: '释放后不应发送'}],
+      pending: null,
+    }})
+    await waitForReconciliation()
+    expect(peer.sentFrames).toHaveLength(frameCount)
   })
 
   it('drives the host through desired/actual reconciliation and stops on unsupported display topology', async () => {
@@ -794,6 +1640,7 @@ describe('topology lifecycle integration', () => {
       raw: JSON.stringify({
         type: 'hello-accepted',
         protocolVersion: 1,
+        moduleName: 'ui.integration.sample-console',
         wireId: 'accepted-1',
         nodeId: 'node-master-2',
       }),

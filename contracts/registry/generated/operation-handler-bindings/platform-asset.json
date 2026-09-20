@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "kind": "generated-owner-operation-bindings",
   "owner": "platform-asset",
-  "operationCount": 3,
+  "operationCount": 5,
   "readCount": 1,
-  "commandCount": 2,
+  "commandCount": 4,
   "dispatchStrategy": "CLOSED_SWITCH",
   "commandBindingBoundary": "KIND_SPECIFIC_TYPED_METHODS",
   "dynamicDispatch": false,
@@ -56,12 +56,48 @@
       "copyRole": "NONE",
       "commandBoundary": "OWNER_COMMAND",
       "dispatchMethod": "stagePlatformAsset"
+    },
+    {
+      "operationId": "releaseStagedStoreServicePointImage",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release",
+      "face": "operations-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.platform.asset.application.ReleaseStagedStoreServicePointImageOperation",
+      "wireRequest": "StoreServicePointAssetReleaseRequest",
+      "wireResponse": "StoreServicePointAssetReleaseReadback",
+      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND",
+      "dispatchMethod": "releaseStagedStoreServicePointImage"
+    },
+    {
+      "operationId": "stageStoreServicePointImage",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage",
+      "face": "operations-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.platform.asset.application.StageStoreServicePointImageOperation",
+      "wireRequest": "StoreServicePointAssetStageRequest",
+      "wireResponse": "StoreServicePointAssetStageReadback",
+      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND",
+      "dispatchMethod": "stageStoreServicePointImage"
     }
   ],
   "commandContextGroups": {
     "PLATFORM_COMMAND_CONTEXT": [
       "releasePlatformStagedAsset",
       "stagePlatformAsset"
+    ],
+    "WORKSPACE_EXECUTION_CONTEXT": [
+      "releaseStagedStoreServicePointImage",
+      "stageStoreServicePointImage"
     ]
   }
 }

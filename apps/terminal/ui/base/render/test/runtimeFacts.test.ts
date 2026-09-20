@@ -1,4 +1,5 @@
 import {describe, expect, it} from 'vitest'
+import type {DisplayFactsReadModel} from '@catering-v2s/kernel-base-display-context'
 import {
   createRenderRuntimeFacts,
   resolveDebugMode,
@@ -46,5 +47,50 @@ describe('render runtime facts', () => {
     expect(Object.isFrozen(facts.platformPortCapabilities)).toBe(true)
     expect(Object.isFrozen(facts.platformPortCapabilities[0])).toBe(true)
     expect(Object.isFrozen(facts.platformPortCapabilities[0]!.capabilities)).toBe(true)
+  })
+
+  it('transfers display facts as an immutable owner read model', () => {
+    const displayFacts: DisplayFactsReadModel = {
+      status: 'ready',
+      physicalDisplayCount: 2,
+      currentSurfaceKey: 'PRIMARY',
+      surfaces: [
+        {
+          surfaceKey: 'PRIMARY',
+          displayIndex: 0,
+          present: true,
+          role: 'primary',
+          logicalSize: {width: 1280, height: 800},
+          physicalSize: null,
+          readiness: 'ready',
+        },
+        {
+          surfaceKey: 'SECONDARY',
+          displayIndex: 1,
+          present: true,
+          role: 'secondary',
+          logicalSize: {width: 1024, height: 768},
+          physicalSize: null,
+          readiness: 'unavailable',
+        },
+      ],
+      reasonCode: null,
+    }
+
+    const facts = createRenderRuntimeFacts({
+      environmentMode: 'TEST',
+      debugMode: resolveDebugMode({}),
+      deviceIdentity: {available: false, deviceId: null},
+      platformPortCapabilities: [],
+      displayFacts,
+    })
+
+    expect(facts.displayFacts).toEqual(displayFacts)
+    expect(facts.displayFacts).not.toBe(displayFacts)
+    expect(Object.isFrozen(facts.displayFacts)).toBe(true)
+    expect(Object.isFrozen(facts.displayFacts?.surfaces)).toBe(true)
+    expect(Object.isFrozen(facts.displayFacts?.surfaces[0])).toBe(true)
+    expect(facts.displayFacts?.surfaces[1]?.physicalSize).toBeNull()
+    expect(facts.displayFacts?.surfaces[1]?.readiness).toBe('unavailable')
   })
 })

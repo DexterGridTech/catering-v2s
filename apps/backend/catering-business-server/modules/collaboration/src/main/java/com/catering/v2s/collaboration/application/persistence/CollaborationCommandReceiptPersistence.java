@@ -1,5 +1,6 @@
 package com.catering.v2s.collaboration.application.persistence;
 
+import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -15,10 +16,7 @@ public class CollaborationCommandReceiptPersistence {
     }
 
     public void lock(UUID workspaceUuid, String groupWorkspaceKey, String idempotencyKey) {
-        jdbc.queryForList(
-                CollaborationCommandReceiptServiceSql.COLLABORATION_COMMAND_RECEIPT_SERVICE_SELECT_PG_ADVISORY_XACT_LOCK_HASHTEXT_TEXT,
-                workspaceUuid.toString(),
-                groupWorkspaceKey + ":" + idempotencyKey);
+        AdvisoryLock.acquireHashTextPair(jdbc, workspaceUuid.toString(), groupWorkspaceKey + ":" + idempotencyKey);
     }
 
     public Optional<Receipt> find(UUID workspaceUuid, String groupWorkspaceKey, String idempotencyKey) {
@@ -47,7 +45,7 @@ public class CollaborationCommandReceiptPersistence {
         jdbc.update(
                 CollaborationCommandReceiptServiceSql.COLLABORATION_COMMAND_RECEIPT_SERVICE_INSERT_INTO_COMMAND_RECEIPT_INSERT_INTO_COLLABORATION_CO
                         + CollaborationCommandReceiptServiceSql.COLLABORATION_COMMAND_RECEIPT_SERVICE_OPEN_PAREN_RECEIPT_REF
-                        + CollaborationCommandReceiptServiceSql.COLLABORATION_COMMAND_RECEIPT_SERVICE_CONTINUATION_REQUEST_HASH
+                        + CollaborationCommandReceiptServiceSql.COLLABORATION_COMMAND_RECEIPT_SERVICE_REQUEST_HASH
                         + CollaborationCommandReceiptServiceSql.COLLABORATION_COMMAND_RECEIPT_SERVICE_VALUES_VALUES_JSONB,
                 receiptRef,
                 workspaceUuid,

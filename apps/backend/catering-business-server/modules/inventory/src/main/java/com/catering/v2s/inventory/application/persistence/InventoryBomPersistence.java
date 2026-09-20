@@ -26,8 +26,7 @@ public class InventoryBomPersistence {
 
     public InventoryOwnerApi.UnitSnapshot readConsumptionUnitSnapshot(UUID targetRef) {
         return jdbc.query(
-                        InventoryBomServiceSql.INVENTORY_BOM_SERVICE_SELECT_CONSUMPTION_UNIT_REF
-                                + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_IMENSION_CONSUMPTION_UNIT_PRECISION
+                        InventoryBomServiceSql.INVENTORY_BOM_SERVICE_SELECT_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION
                                 + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_FROM_CLAUSE_STOCK_TARGET_TARGET_REF,
                         (result, row) -> requiredConsumptionUnitSnapshot(result),
                         targetRef)
@@ -42,8 +41,7 @@ public class InventoryBomPersistence {
     public InventoryOwnerApi.CountingUnitConfiguration readCountingUnitConfiguration(
             UUID targetRef, InventoryOwnerApi.UnitSnapshot consumption) {
         return jdbc.query(
-                        InventoryBomServiceSql.INVENTORY_BOM_SERVICE_SELECT_COUNTING_UNIT_REF
-                                + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_NTING_UNIT_PRECISION_COUNTING_UNIT_CONVERSION_FACTOR
+                        InventoryBomServiceSql.INVENTORY_BOM_SERVICE_SELECT_COUNTING_UNIT_REF_COUNTING_UNIT_CODE_COUNTING_UNIT_NAME_COUNTING_UNIT_DIMENSION_COUNTING_UNIT_PRECISION_COUNTING_UNIT_DIMENSION_COUNTING_UNIT_PRECISION_COUNTING_UNIT_CONVERSION_FACTOR
                                 + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_FROM_CLAUSE_STOCK_TARGET_TARGET_REF_ALTERNATE_A,
                         (result, row) -> new InventoryOwnerApi.CountingUnitConfiguration(
                                 unitSnapshot(result, 1), result.getBigDecimal(6)),
@@ -98,12 +96,11 @@ public class InventoryBomPersistence {
             long expectedVersion) {
         return jdbc.update(
                 InventoryBomServiceSql.INVENTORY_BOM_SERVICE_UPDATE_STOCK_TARGET_CONFIGURATION
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_COUNTING_UNIT_REF_COUNTING_UNIT_CODE_COUNTING_UNIT_NAME
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_COUNTING_UNIT_DIMENSION_COUNTING_UNIT_PRECISION
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_COUNTING_UNIT_CONVERSION_FACTOR_VERSION_UPDATED_AT_EPOCH_MIL
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_LIS_DATA_NODE_REF
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_COUNTING_UNIT_REF_COUNTING_UNIT_CODE_COUNTING_UNIT_NAME
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_COUNTING_UNIT_DIMENSION_COUNTING_UNIT_PRECISION
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_COUNTING_UNIT_CONVERSION_FACTOR_VERSION_UPDATED_AT_EPOCH_MILLIS_WHERE_DATA_NODE_REF_VERSION_UPDATED_AT_EPOCH_MILLIS_WHERE_DATA_NODE_REF
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONDITION
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_BRAND_REF_TARGET_REF_VERSION,
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_BRAND_REF_TARGET_REF_VERSION,
                 configuration,
                 countingUnit == null ? null : countingUnit.unitRef(),
                 countingUnit == null ? null : countingUnit.code(),
@@ -136,13 +133,11 @@ public class InventoryBomPersistence {
             long updatedAt) {
         return jdbc.update(
                 InventoryBomServiceSql.INVENTORY_BOM_SERVICE_INSERT_INTO
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_VALUE_SEPARATOR_SKU
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_CODE_MEASURE_MODE_INVENTORY_MODE_CONSUMPTION_UNIT_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_COUNTING_UNIT_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_COUNTING_UNIT_PRECISION
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_DEFINITION_STATUS_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_SKU_CODE_MEASURE_MODE_INVENTORY_MODE_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_COUNTING_UNIT_REF
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_COUNTING_UNIT_PRECISION
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_DEFINITION_STATUS_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_VALUES_ENABLED
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_JOIN_CONDITION_ON_CONFLICT_DO_NOTHING,
                 targetRef,
@@ -195,11 +190,11 @@ public class InventoryBomPersistence {
         Map<UUID, List<CatalogMaterialTargetRow>> rowsByItem = new LinkedHashMap<>();
         jdbc.query(
                         InventoryBomServiceSql.INVENTORY_BOM_SERVICE_SELECT
-                                + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_ITEM_REF_TARGET_REF_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE
-                                + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_CONSUMPTION_UNIT_NAME
-                                + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION
+                                + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_ITEM_REF_TARGET_REF_CONSUMPTION_UNIT_REF_CONSUMPTION_UNIT_CODE
+                                + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONSUMPTION_UNIT_NAME
+                                + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONSUMPTION_UNIT_DIMENSION_CONSUMPTION_UNIT_PRECISION
                                 + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF
-                                + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_BRAND_REF_ITEM_REF
+                                + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_BRAND_REF_ITEM_REF
                                 + placeholders
                                 + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CLOSE_PAREN
                                 + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_ORDER_BY_ITEM_REF_TARGET_REF,
@@ -241,7 +236,7 @@ public class InventoryBomPersistence {
         arguments.addAll(refs);
         return jdbc.query(
                 InventoryBomServiceSql.INVENTORY_BOM_SERVICE_SELECT_PRODUCT_SKU_REF_OPTION_VALUE_REF_SKU_CODE_OPTION_VALUE_CODE
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_STOCK_BOM_DATA_NODE_REF_BRAND_REF_ITEM_REF
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_STOCK_BOM_DATA_NODE_REF_BRAND_REF_ITEM_REF
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONDITION_PRODUCT_SKU_REF_OPTION_VALUE_REF
                         + placeholders
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CLOSE_PAREN_ALTERNATE_A
@@ -271,12 +266,11 @@ public class InventoryBomPersistence {
             long version,
             long updatedAt) {
         return jdbc.update(
-                InventoryBomServiceSql.INVENTORY_BOM_SERVICE_INSERT_INTO_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_N_VALUE_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_ITEM_CODE_SKU_CODE_OPTION_VALUE_CODE_VERSION
+                InventoryBomServiceSql.INVENTORY_BOM_SERVICE_INSERT_INTO_INVENTORY_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_ITEM_CODE_SKU_CODE_OPTION_VALUE_CODE_VERSION
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_PARAMETER_PLACEHOLDER_CAST_AS_JSONB
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_JOIN_CONDITION_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_00_0000_0000_000000000000_UU
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_00_0000_0000_000000000000_UU
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_OPEN_PAREN_OPTION_VALUE_REF
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_WHERE_DEFINITION_STATUS_ENABLED,
                 bomRef,
@@ -326,10 +320,10 @@ public class InventoryBomPersistence {
             String brand) {
         return jdbc.update(
                 InventoryBomServiceSql.INVENTORY_BOM_SERVICE_UPDATE_STOCK_TARGET_MEASURE_MODE_INVENTORY_MODE_DIRECT
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_CONFIGURATION
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_COUNTING_UNIT_REF_ALTERNATE_A
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_COUNTING_UNIT_PRECISION_ALTERNATE_A
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_VERSION_UPDATED_AT_EPOCH_MILLIS
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONFIGURATION
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_COUNTING_UNIT_REF_ALTERNATE_A
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_COUNTING_UNIT_PRECISION_ALTERNATE_A
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_WHERE_TARGET_REF_DATA_NODE_REF_BRAND_REF_DEFINITION_STATUS,
                 measureMode,
                 configuration,
@@ -366,12 +360,12 @@ public class InventoryBomPersistence {
             long updatedAt) {
         return jdbc.update(
                 InventoryBomServiceSql.INVENTORY_BOM_SERVICE_INSERT_INTO_STOCK_TARGET_TARGET_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_ITEM_CODE_SKU_CODE_MEASURE_MODE_INVENTORY_MODE
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_CONSUMPTION_UNIT_NAME_ALTERNATE_A
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_CONSUMPTION_UNIT_DIMENSION
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_COUNTING_UNIT_NAME
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_COUNTING_UNIT_CONVERSION_FACTOR
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_COMPONENT_ELIGIBLE_CONFIGURATION_BALANCE_VERSION
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_ITEM_CODE_SKU_CODE_MEASURE_MODE_INVENTORY_MODE
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONSUMPTION_UNIT_NAME_ALTERNATE_A
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONSUMPTION_UNIT_DIMENSION
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_COUNTING_UNIT_NAME
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_COUNTING_UNIT_CONVERSION_FACTOR
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_COMPONENT_ELIGIBLE_CONFIGURATION_BALANCE_VERSION
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_VALUES_ENABLED_ALTERNATE_A,
                 targetRef,
@@ -426,7 +420,7 @@ public class InventoryBomPersistence {
             long updatedAt) {
         return jdbc.update(
                 InventoryBomServiceSql.INVENTORY_BOM_SERVICE_INSERT_INTO_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_ALTERNATE_A
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_OPTION_VALUE_REF_ITEM_CODE_SKU_CODE_OPTION_VALUE_CODE
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_OPTION_VALUE_REF_ITEM_CODE_SKU_CODE_OPTION_VALUE_CODE
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_ALTERNATE_A
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_VALUES_ENABLED_ALTERNATE_B,
                 bomRef,
@@ -485,10 +479,10 @@ public class InventoryBomPersistence {
     public List<RuleTargetFact> readRuleTargetFacts(String scope, String brand, UUID itemRef) {
         return jdbc.query(
                 InventoryBomServiceSql.INVENTORY_BOM_SERVICE_SELECT_TARGET_REF_ITEM_REF_PRODUCT_SKU_REF_VERSION
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_CONSUMPTION_UNIT_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_CONSUMPTION_UNIT_PRECISION
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_COUNTING_UNIT_DIMENSION
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_MEASURE_MODE_COMPONENT_ELIGIBLE
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONSUMPTION_UNIT_REF
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONSUMPTION_UNIT_PRECISION
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_COUNTING_UNIT_DIMENSION
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_MEASURE_MODE_COMPONENT_ELIGIBLE
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF_BRAND_REF_ITEM_REF
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_ORDER_BY_PRODUCT_SKU_REF_TARGET_REF,
                 (result, rowNumber) -> new RuleTargetFact(
@@ -532,14 +526,14 @@ public class InventoryBomPersistence {
         String sql = optionValueRef != null
                 ? InventoryBomServiceSql.INVENTORY_BOM_SERVICE_SELECT_STOCK_BOM_VERSION_ROWS_TEXT_DATA_NODE_REF
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONDITION_ITEM_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_PRODUCT_SKU_REF_OPTION_VALUE_REF
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_PRODUCT_SKU_REF_OPTION_VALUE_REF
                 : productSkuRef == null
                         ? InventoryBomServiceSql.INVENTORY_BOM_SERVICE_SELECT_STOCK_BOM_VERSION_ROWS_TEXT_DATA_NODE_REF_ALTERNATE_A
                                 + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONDITION_ALTERNATE_A
-                                + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF
+                                + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF
                         : InventoryBomServiceSql.INVENTORY_BOM_SERVICE_SELECT_STOCK_BOM_VERSION_ROWS_TEXT_DATA_NODE_REF_ALTERNATE_B
                                 + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONDITION_ALTERNATE_B
-                                + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ALTERNATE_A;
+                                + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ALTERNATE_A;
         sql += InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONDITION_DEFINITION_STATUS_ENABLED;
         return jdbc.query(
                 sql,
@@ -572,17 +566,13 @@ public class InventoryBomPersistence {
             long updatedAt) {
         return jdbc.update(
                 InventoryBomServiceSql.INVENTORY_BOM_SERVICE_INSERT_INTO_ALTERNATE_A
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_F_IT
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_EM_CODE_SKU_CODE_OPTION_VALUE_CODE_VERSION
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_INVENTORY_STOCK_BOM_BOM_REF_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF_OPTION_VALUE_REF_ITEM_CODE_SKU_CODE_OPTION_VALUE_CODE_VERSION_ROWS_UPDATED_AT_EPOCH_MILLIS
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_VALUES_VALUES_CAST_AS_JSONB_ON_CONF
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_OPEN_PAREN_DATA_NODE_REF_BRAND_REF_ITEM_REF_PRODUCT_SKU_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_OPTION_VALUE_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_DEFINITION_STATUS_ENABLED
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_SET_DO_UPDATE_SET
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_VERSION_ROWS_UPDATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOC
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_H_MI
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_LLIS,
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_OPTION_VALUE_REF
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_DEFINITION_STATUS_ENABLED
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_SET_DO_UPDATE_SET
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_VERSION_EXCLUDED_VERSION_ROWS_EXCLUDED_ROWS_UPDATED_AT_EPOCH_MILLIS_EXCLUDED_UPDATED_AT_EPOCH_MILLIS_ROWS_UPDATED_AT_EPOCH_MILLIS_EXCLUDED_UPDATED_AT_EPOCH_MILLIS,
                 bomRef,
                 scope,
                 brand,
@@ -624,7 +614,7 @@ public class InventoryBomPersistence {
                 InventoryBomServiceSql.SELECT_PREFIX
                         + InventoryBomServiceSql.TARGET_SELECT_COLUMNS
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF_ALTERNATE_A
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_BRAND_REF
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_BRAND_REF
                         + statusPredicate
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONDITION_TARGET_REF,
                 statement -> {
@@ -712,13 +702,13 @@ public class InventoryBomPersistence {
             String scope, String brand, String keyword, String pattern, int limit, long offset) {
         List<ConsumptionTargetRecord> rows = jdbc.query(
                 InventoryBomServiceSql.INVENTORY_BOM_SERVICE_SELECT_TARGET_TARGET_REF_ITEM_REF_PRODUCT_SKU_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_ITEM_NAME_SKU_SKU_NAME
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_TARGET_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_TARGET_CONSUMPTION_UNIT_PRECISION
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_STOCK_TARGET_TARGET
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_ITEM_NAME_SKU_SKU_NAME
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_TARGET_CONSUMPTION_UNIT_NAME_CONSUMPTION_UNIT_DIMENSION
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_TARGET_CONSUMPTION_UNIT_PRECISION
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_STOCK_TARGET_TARGET
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_JOIN_CATALOG_ITEM_ITEM_ITEM_REF_TARGET
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONDITION_ITEM_DATA_NODE_REF_TARGET_BRAND_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_CATALOG_SKU_SKU_PRODUCT_SKU_REF_TARGET
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CATALOG_SKU_SKU_PRODUCT_SKU_REF_TARGET
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONDITION_SKU_ITEM_REF_TARGET
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_WHERE_TARGET_DATA_NODE_REF_BRAND_REF
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONDITION_TARGET_DEFINITION_STATUS_ENABLED_COMPONENT_ELIGIBLE
@@ -758,13 +748,13 @@ public class InventoryBomPersistence {
         UUID[] requestedSkuRefs = productSkuRefs.toArray(UUID[]::new);
         return jdbc.query(
                 InventoryBomServiceSql.INVENTORY_BOM_SERVICE_SELECT_DIRECT_FACT_KIND_ITEM_REF_PRODUCT_SKU_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_CONSUMPTION_UNIT_REF_ALTERNATE_A
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_CONSUMPTION_UNIT_PRECISION_INTEGER_BOM_LINE_COUNT
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONSUMPTION_UNIT_REF_ALTERNATE_A
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONSUMPTION_UNIT_PRECISION_INTEGER_BOM_LINE_COUNT
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_FROM_CLAUSE_STOCK_TARGET_DATA_NODE_REF_BRAND_REF_ALTERNATE_A
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONDITION_DEFINITION_STATUS_ENABLED_PRODUCT_SKU_REF_ITEM_REF
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_ALTERNATIVE_PRODUCT_SKU_REF
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_UNION_BOM_FACT_KIND_ITEM_REF_PRODUCT_SKU_REF
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_TEXT_INTEGER_JSONB_TYPEOF_ROWS
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_TEXT_INTEGER_JSONB_TYPEOF_ROWS
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_THEN_JSONB_ARRAY_LENGTH_ROWS_BOM_LINE_COUNT
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_FROM_CLAUSE_STOCK_BOM_DATA_NODE_REF_BRAND_REF
                         + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONDITION_DEFINITION_STATUS_ENABLED_OPTION_VALUE_REF
@@ -827,9 +817,7 @@ public class InventoryBomPersistence {
             long createdAt) {
         return jdbc.update(
                 InventoryBomServiceSql.INVENTORY_BOM_SERVICE_INSERT_INTO_ALTERNATE_B
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_H_RE
-                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_CONTINUATION_SPONSE_CREATED_AT_EPOCH_MILLIS,
+                        + InventoryBomServiceSql.INVENTORY_BOM_SERVICE_INVENTORY_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY_OPERATION_ID_REQUEST_HASH_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB,
                 receiptRef,
                 scope,
                 key,
@@ -870,7 +858,7 @@ public class InventoryBomPersistence {
         if (distinctRefs.isEmpty()) return Map.of();
         UUID[] values = distinctRefs.toArray(UUID[]::new);
         String sql = ResolvedBomTargetsSql.RESOLVED_BOM_TARGETS_SELECT_TARGET_REF_DEFINITION_STATUS_COMPONENT_ELIGIBLE
-                + ResolvedBomTargetsSql.RESOLVED_BOM_TARGETS_CONTINUATION_STOCK_TARGET_CONSUMPTION_UNIT_REF
+                + ResolvedBomTargetsSql.RESOLVED_BOM_TARGETS_STOCK_TARGET_CONSUMPTION_UNIT_REF
                 + ResolvedBomTargetsSql.RESOLVED_BOM_TARGETS_WHERE_DATA_NODE_REF_BRAND_REF_TARGET_REF;
         return jdbc.query(
                 sql,

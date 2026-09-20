@@ -3,7 +3,7 @@ package com.catering.v2s.contract.application;
 import com.catering.v2s.contract.application.persistence.ContractCommandReceiptPersistence;
 import com.catering.v2s.contract.api.StoreContractReadback;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
+import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
@@ -31,7 +31,7 @@ public final class ContractCommandReceiptService {
             UUID workspaceUuid, String key, String canonicalRequest, Supplier<StoreContractReadback> command) {
         if (workspaceUuid == null || key == null || key.length() < 16 || key.length() > 128)
             throw new ContractCommandService.ContractValidationException();
-        String hash = hash(canonicalRequest);
+        String hash = CommandReceiptSupport.requestHash(canonicalRequest);
         ContractCommandReceiptPersistence.Receipt prior = persistence.find(workspaceUuid, key);
         if (prior != null) {
             if (!hash.equals(prior.requestHash())) throw new ContractIdempotencyConflictException();
@@ -46,7 +46,8 @@ public final class ContractCommandReceiptService {
 
     private static StoreContractReadback read(String value) {
         try {
-            return JSON.readValue(value, StoreContractReadback.class);
+            return CommandReceiptSupport.deserializeNullable(
+                    JSON, value, StoreContractReadback.class, "store contract receipt is not readable");
         } catch (Exception exception) {
             throw new ContractReceiptCorruptException(exception);
         }
@@ -54,7 +55,7 @@ public final class ContractCommandReceiptService {
 
     private static String write(StoreContractReadback value) {
         try {
-            return JSON.writeValueAsString(value);
+            return CommandReceiptSupport.serialize(JSON, value, "store contract receipt is not writable");
         } catch (Exception exception) {
             throw new IllegalStateException(exception);
         }
@@ -62,7 +63,7 @@ public final class ContractCommandReceiptService {
 
     private static String hash(String value) {
         try {
-            return Sha256Hex.digest(value);
+            return CommandReceiptSupport.requestHash(value);
         } catch (NullPointerException exception) {
             throw new IllegalStateException(exception);
         }

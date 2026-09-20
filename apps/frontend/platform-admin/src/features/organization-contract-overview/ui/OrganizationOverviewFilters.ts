@@ -1,4 +1,4 @@
-import {NameCodeText} from '@catering-v2s/admin-ui-foundation';
+import {LIFECYCLE_LABELS, NameCodeText} from '@catering-v2s/admin-ui-foundation';
 import {createElement} from 'react';
 import {extensionQueryValues} from './extensionList';
 import type {
@@ -41,6 +41,16 @@ export type OrganizationTabQueryState = {
   sort: OrganizationOverviewSortKey;
   direction: OrganizationOverviewSortDirection;
 };
+
+export const organizationOverviewStatusValueEnum: Record<OrganizationOverviewStatus, {text: string}> = {
+  ENABLED: {text: LIFECYCLE_LABELS.ENABLED},
+  DISABLED: {text: LIFECYCLE_LABELS.DISABLED},
+  VOIDED: {text: LIFECYCLE_LABELS.VOIDED},
+};
+
+export function organizationOverviewStatusLabel(value: OrganizationOverviewStatus): string {
+  return organizationOverviewStatusValueEnum[value]?.text ?? '—';
+}
 
 export const defaultOrganizationTabQueryState: OrganizationTabQueryState = {
   filters: {},

@@ -3,6 +3,8 @@ import {ProTable, type ProColumns} from '@ant-design/pro-components';
 import {
   adminListState,
   CursorPagination,
+  displayFieldValue,
+  formatCanonicalDateTime,
   NameCodeText,
   testId,
   useCursorStack,
@@ -23,6 +25,7 @@ import type {OperationsPageProps} from '../../../app/routing/model';
 import {InventoryDetailDrawer} from './InventoryDetailDrawer';
 import {OperationsStoreCatalogManagementDisabledSurface} from '../../../app/components/OperationsStoreCatalogManagementDisabledSurface';
 import {useStoreOperatingRuleGate} from '../../store-operating-rules/model/useStoreOperatingRuleGate';
+import {inventoryStockViewTestId} from '../inventoryTestIds';
 import {
   envelopeData,
   hasCapability,
@@ -228,7 +231,7 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
         width: 120,
         render: (_, row) => (
           <span>
-            {row.threshold ?? '—'} / {row.gap ?? '—'}
+            {displayFieldValue(row.threshold)} / {displayFieldValue(row.gap)}
           </span>
         ),
       },
@@ -254,7 +257,7 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
         render: (_, row) =>
           row.lastChangeAt ? (
             <Space direction="vertical" size={0}>
-              <span>{new Date(row.lastChangeAt).toLocaleString()}</span>
+              <span>{formatCanonicalDateTime(row.lastChangeAt)}</span>
               <Typography.Text type="secondary" style={{fontSize: 12}}>
                 {inventoryOperationLabel(row.lastChangeSource)}
               </Typography.Text>
@@ -321,7 +324,7 @@ export function InventoryManagementPage({queryContext, actionCapabilityKeys}: Op
             }}
             options={(Object.keys(stockLabels) as StockView[]).map(key => ({
               value: key,
-              label: `${stockLabels[key]} ${counts[key]}`,
+              label: <span {...testId(inventoryStockViewTestId(key))}>{`${stockLabels[key]} ${counts[key]}`}</span>,
             }))}
             {...testId('inventory-stock-view')}
           />

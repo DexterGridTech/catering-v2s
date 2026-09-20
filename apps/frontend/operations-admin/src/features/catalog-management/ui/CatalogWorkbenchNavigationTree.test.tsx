@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import {describe, expect, it} from 'vitest';
 import {
   catalogCategoryCanCreateChild,
@@ -28,6 +29,16 @@ const category = (categoryRef: string, parentCategoryRef: string | null): Catego
   }) as unknown as Category;
 
 describe('catalog category child entry availability', () => {
+  it('keeps long tree titles inside the navigation card so the adjacent list cannot intercept clicks', () => {
+    const source = readFileSync(new URL('./CatalogWorkbenchNavigationTree.tsx', import.meta.url), 'utf8');
+    expect(source).toContain("width: '100%'");
+    expect(source).toContain("maxWidth: '100%'");
+    expect(source).toContain('className="catalog-navigation-tree"');
+    const styles = readFileSync(new URL('../../../styles.css', import.meta.url), 'utf8');
+    expect(styles).toContain('.catalog-navigation-tree .ant-tree-node-content-wrapper');
+    expect(styles).toContain('.catalog-navigation-tree .ant-tree-title');
+  });
+
   it('uses the same business-facing three-level limit wording as the owner problem', () => {
     expect(catalogCategoryDepthLimitCopy).toBe('商品分类最多只能建立三级');
   });

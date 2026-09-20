@@ -193,7 +193,10 @@ public final class ExtensionFilterQuery {
     private static BigDecimal parseNumber(String value) {
         try {
             BigDecimal parsed = new BigDecimal(value.trim());
-            if (!parsed.toString().equalsIgnoreCase("nan") && !parsed.toString().equalsIgnoreCase("infinity")) return parsed;
+            if (!parsed.toString().equalsIgnoreCase("nan")
+                    && !parsed.toString().equalsIgnoreCase("infinity")) {
+                return parsed;
+            }
         } catch (NumberFormatException ignored) {
             // handled below with a typed reason
         }

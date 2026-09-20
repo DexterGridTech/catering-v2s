@@ -1,7 +1,7 @@
 import {ApartmentOutlined, ReloadOutlined} from '@ant-design/icons';
 import {Alert, Button, Card, Empty, Input, Spin, Tag, Tree} from 'antd';
 import type {DataNode} from 'antd/es/tree';
-import {closedCodeLabel, NameCodeText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
+import {LifecycleStatusTag, NameCodeText, testId, useOverlayLock} from '@catering-v2s/admin-ui-foundation';
 import {useMemo, useState} from 'react';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import type {ExternalCollaborationTree} from '../../../app/api/generated/platform-edge';
@@ -11,9 +11,6 @@ import {ExternalSystemDetail} from './ExternalSystemDetail';
 import {ProviderProfileDetail} from './ProviderProfileDetail';
 
 type SelectedNode = {kind: 'system'; code: string} | {kind: 'provider'; code: string} | undefined;
-
-const enablementStatusLabels = {ENABLED: '已启用', DISABLED: '已停用'} as const;
-const statusLabel = (status: unknown) => closedCodeLabel(enablementStatusLabels, status);
 
 function treeData(value: ExternalCollaborationTree | undefined, query: string): DataNode[] {
   const normalized = query.trim().toLocaleLowerCase('zh-CN');
@@ -30,7 +27,7 @@ function treeData(value: ExternalCollaborationTree | undefined, query: string): 
         title: (
           <span>
             <NameCodeText name={provider.displayName} code={provider.providerCode} />{' '}
-            <Tag>{statusLabel(provider.enablementStatus)}</Tag>
+            <LifecycleStatusTag status={provider.enablementStatus} />
           </span>
         ),
       }));
@@ -41,7 +38,7 @@ function treeData(value: ExternalCollaborationTree | undefined, query: string): 
         title: (
           <span>
             <NameCodeText name={system.displayName} code={system.externalSystemCode} />{' '}
-            <Tag>{statusLabel(system.enablementStatus)}</Tag>
+            <LifecycleStatusTag status={system.enablementStatus} />
           </span>
         ),
         children: providers,

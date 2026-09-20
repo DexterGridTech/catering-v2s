@@ -224,18 +224,38 @@ final class CommercialContractAcceptanceScenarios {
         JsonNode metadata = page.json().path("metadata");
         assertEquals(expectedPage, metadata.path("page").asInt(), "BUSINESS: " + label + " preserves page identity");
         assertEquals(1, metadata.path("pageSize").asInt(), "BUSINESS: " + label + " preserves page size");
-        assertEquals(2, metadata.path("total").asInt(), "BUSINESS: " + label + " totals the core and extension matches");
-        assertEquals(1, page.json().path("items").size(), "BUSINESS: " + label + " keeps one filtered contract per page");
+        assertEquals(
+                2,
+                metadata.path("total").asInt(),
+                "BUSINESS: " + label + " totals the core and extension matches");
+        assertEquals(
+                1,
+                page.json().path("items").size(),
+                "BUSINESS: " + label + " keeps one filtered contract per page");
         assertEquals(
                 1,
                 metadata.path("definitionRevision").asLong(),
                 "BUSINESS: " + label + " returns the definition revision used by the owner");
         JsonNode values = page.json().path("items").get(0).path("extensionValues");
-        assertEquals("match-value", values.path(fieldPrefix + "Text").asText(), "BUSINESS: " + label + " returns TEXT raw value");
-        assertEquals(12.5, values.path(fieldPrefix + "Number").asDouble(), "BUSINESS: " + label + " returns NUMBER raw value");
-        assertEquals("2026-09-15", values.path(fieldPrefix + "Date").asText(), "BUSINESS: " + label + " returns DATE raw value");
-        assertTrue(values.path(fieldPrefix + "Boolean").asBoolean(), "BUSINESS: " + label + " returns BOOLEAN raw value");
-        assertEquals("直营", values.path(fieldPrefix + "Select").asText(), "BUSINESS: " + label + " returns SELECT raw value");
+        assertEquals(
+                "match-value",
+                values.path(fieldPrefix + "Text").asText(),
+                "BUSINESS: " + label + " returns TEXT raw value");
+        assertEquals(
+                12.5,
+                values.path(fieldPrefix + "Number").asDouble(),
+                "BUSINESS: " + label + " returns NUMBER raw value");
+        assertEquals(
+                "2026-09-15",
+                values.path(fieldPrefix + "Date").asText(),
+                "BUSINESS: " + label + " returns DATE raw value");
+        assertTrue(
+                values.path(fieldPrefix + "Boolean").asBoolean(),
+                "BUSINESS: " + label + " returns BOOLEAN raw value");
+        assertEquals(
+                "直营",
+                values.path(fieldPrefix + "Select").asText(),
+                "BUSINESS: " + label + " returns SELECT raw value");
     }
 
     @AcceptanceScenario(

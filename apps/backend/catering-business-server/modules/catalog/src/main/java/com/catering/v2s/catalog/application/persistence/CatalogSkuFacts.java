@@ -72,53 +72,53 @@ public class CatalogSkuFacts {
                 CatalogSkuFactsSql.CATALOG_SKU_FACTS_CTE_REQUESTED_ITEM_REF
                         + requestedValues
                         + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CLOSE_PAREN_REQUESTED_ITEM_REF_SKU_PRODUCT_SKU_REF
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_STANDARD_SALE_PRICE_IS_DEFAULT_STATUS
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_VARIANT_COMBINATION_DIGEST_SALES_UNIT_OVERRIDE_REF
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_BASE_MEASURE_UNIT_OVERRIDE_REF_SALES_UNIT_REF_SALES_UNIT_CODE
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_ATTRIBUTE_VALUE_ATTRIBUTE_REF_ATTRIBUTE_CODE
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_VALUE_NAME_STATUS_AXIS_VALUE
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_PREPARATION_OVERRIDE_TEXT_UPDATED_AT_EPOCH_MILLIS
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_CATALOG_SKU_AXIS_FACTS_SKU
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_ITEM_REF_REQUESTED_STATUS
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_CATALOG_SKU_ATTRIBUTE_VALUE_ATTRIBUTE_VALUE
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_DICTIONARY_ENTRY_ATTRIBUTE_VALUE_PRODUCT_SKU_REF_SKU
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_ATTRIBUTE_ENTRY_REF_ATTRIBUTE_VALUE_ATTRIBUTE_REF
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_DICTIONARY_ENTRY_VALUE_ENTRY_REF_ATTRIBUTE_VALUE
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_STANDARD_SALE_PRICE_IS_DEFAULT_STATUS
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_VARIANT_COMBINATION_DIGEST_SALES_UNIT_OVERRIDE_REF
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_BASE_MEASURE_UNIT_OVERRIDE_REF_SALES_UNIT_REF_SALES_UNIT_CODE
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_ATTRIBUTE_VALUE_ATTRIBUTE_REF_ATTRIBUTE_CODE
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_VALUE_NAME_STATUS_AXIS_VALUE
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_PREPARATION_OVERRIDE_TEXT_UPDATED_AT_EPOCH_MILLIS
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CATALOG_SKU_AXIS_FACTS_SKU
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_ITEM_REF_REQUESTED_STATUS
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CATALOG_SKU_ATTRIBUTE_VALUE_ATTRIBUTE_VALUE
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_DICTIONARY_ENTRY_ATTRIBUTE_VALUE_PRODUCT_SKU_REF_SKU
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_ATTRIBUTE_ENTRY_REF_ATTRIBUTE_VALUE_ATTRIBUTE_REF
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_DICTIONARY_ENTRY_VALUE_ENTRY_REF_ATTRIBUTE_VALUE
                         + CatalogSkuFactsSql.CATALOG_SKU_FACTS_JOIN
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_CATALOG_SKU_VARIANT_AXIS_AXIS_ITEM_REF_SKU
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_AXIS_ATTRIBUTE_REF_ATTRIBUTE_VALUE
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_CATALOG_SKU_VARIANT_AXIS_VALUE_AXIS_VALUE
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_AXIS_VALUE_SKU_VARIANT_AXIS_REF_AXIS
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_LATERAL_AXIS_VALUE_VALUE_REF_ATTRIBUTE_VALUE_ATTRIBUTE_VALUE_REF
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CATALOG_SKU_VARIANT_AXIS_AXIS_ITEM_REF_SKU
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_AXIS_ATTRIBUTE_REF_ATTRIBUTE_VALUE
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CATALOG_SKU_VARIANT_AXIS_VALUE_AXIS_VALUE
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_AXIS_VALUE_SKU_VARIANT_AXIS_REF_AXIS
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_LATERAL_AXIS_VALUE_VALUE_REF_ATTRIBUTE_VALUE_ATTRIBUTE_VALUE_REF
                         + CatalogSkuFactsSql.CATALOG_SKU_FACTS_OPEN_PAREN_STRING_AGG_MEDIA_ASSET_REF_TEXT
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_CATALOG_SKU_MEDIA_MEDIA_ASSET_REF_MEDIA_REFS
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_LATERAL_MEDIA_PRODUCT_SKU_REF_SKU_MEDIA_REFS
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CATALOG_SKU_MEDIA_MEDIA_ASSET_REF_MEDIA_REFS
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_LATERAL_MEDIA_PRODUCT_SKU_REF_SKU_MEDIA_REFS
                         + CatalogSkuFactsSql.CATALOG_SKU_FACTS_OPEN_PAREN_JSONB_AGG_JSONB_BUILD_OBJECT
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_ATTRIBUTE_REF_AXIS_PROJECTION_TEXT
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_ATTRIBUTE_CODE_AXIS_PROJECTION
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_ATTRIBUTE_NAME_AXIS_PROJECTION
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_DISPLAY_ORDER_AXIS_PROJECTION
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_AXIS_PROJECTION_VALUES_JSON_DISPLAY_ORDER
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_AXIS_PROJECTION_ATTRIBUTE_REF_TEXT_AXIS_FACTS
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_AXIS_PROJECTION_ATTRIBUTE_REF_ATTRIBUTE_PROJECTION_CODE
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_ATTRIBUTE_PROJECTION_NAME_ATTRIBUTE_NAME_AXIS_PROJECTION
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_JSONB_AGG_JSONB_BUILD_OBJECT
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_VALUE_REF_AXIS_VALUE_PROJECTION_TEXT
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_VALUE_CODE_VALUE_PROJECTION_CODE_VALUE_LABEL
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_STATUS_VALUE_PROJECTION_DISPLAY_ORDER_AXIS_VALUE_PROJECTION
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_ATTRIBUTE_REF_AXIS_PROJECTION_TEXT
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_ATTRIBUTE_CODE_AXIS_PROJECTION
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_ATTRIBUTE_NAME_AXIS_PROJECTION
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_DISPLAY_ORDER_AXIS_PROJECTION
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_AXIS_PROJECTION_VALUES_JSON_DISPLAY_ORDER
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_AXIS_PROJECTION_ATTRIBUTE_REF_TEXT_AXIS_FACTS
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_AXIS_PROJECTION_ATTRIBUTE_REF_ATTRIBUTE_PROJECTION_CODE
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_ATTRIBUTE_PROJECTION_NAME_ATTRIBUTE_NAME_AXIS_PROJECTION
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_JSONB_AGG_JSONB_BUILD_OBJECT
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_VALUE_REF_AXIS_VALUE_PROJECTION_TEXT
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_VALUE_CODE_VALUE_PROJECTION_CODE_VALUE_LABEL
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_STATUS_VALUE_PROJECTION_DISPLAY_ORDER_AXIS_VALUE_PROJECTION
                         + CatalogSkuFactsSql.CATALOG_SKU_FACTS_ORDER_BY_AXIS_VALUE_PROJECTION_DISPLAY_ORDER_VALUE_REF
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_CATALOG_SKU_VARIANT_AXIS_VALUE_AXIS_VALUE_PROJECTION
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_DICTIONARY_ENTRY_VALUE_PROJECTION_ENTRY_REF
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_AXIS_VALUE_PROJECTION_VALUE_REF_SKU_VARIANT_AXIS_REF
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_AXIS_PROJECTION_SKU_VARIANT_AXIS_REF_VALUES_JSON
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_DICTIONARY_ENTRY_CATALOG_SKU_VARIANT_AXIS_AXIS_PROJECTION
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_ATTRIBUTE_PROJECTION_ENTRY_REF_AXIS_PROJECTION_ATTRIBUTE_REF
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_AXIS_PROJECTION_ITEM_REF_REQUESTED_AXIS_FACTS
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_REQUESTED_ITEM_REF_SKU_DISPLAY_ORDER
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_AXIS_VALUE_DISPLAY_ORDER_ATTRIBUTE_CODE,
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CATALOG_SKU_VARIANT_AXIS_VALUE_AXIS_VALUE_PROJECTION
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_DICTIONARY_ENTRY_VALUE_PROJECTION_ENTRY_REF
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_AXIS_VALUE_PROJECTION_VALUE_REF_SKU_VARIANT_AXIS_REF
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_AXIS_PROJECTION_SKU_VARIANT_AXIS_REF_VALUES_JSON
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_DICTIONARY_ENTRY_CATALOG_SKU_VARIANT_AXIS_AXIS_PROJECTION
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_ATTRIBUTE_PROJECTION_ENTRY_REF_AXIS_PROJECTION_ATTRIBUTE_REF
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_AXIS_PROJECTION_ITEM_REF_REQUESTED_AXIS_FACTS
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_REQUESTED_ITEM_REF_SKU_DISPLAY_ORDER
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_AXIS_VALUE_DISPLAY_ORDER_ATTRIBUTE_CODE,
                 statement -> {
                     for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
                 },
@@ -186,34 +186,34 @@ public class CatalogSkuFacts {
         Map<UUID, LinkedHashMap<UUID, ObjectNode>> rows = new LinkedHashMap<>();
         jdbc.query(
                 CatalogSkuFactsSql.CATALOG_SKU_FACTS_SELECT_SKU_ITEM_REF_PRODUCT_SKU_REF_SKU_CODE
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_STANDARD_SALE_PRICE_IS_DEFAULT_STATUS_ALTERNATE_A
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_VARIANT_COMBINATION_DIGEST_SALES_UNIT_OVERRIDE_REF_ALTERNATE_A
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_BASE_MEASURE_UNIT_OVERRIDE_REF_SALES_UNIT_REF_SALES_UNIT_CODE_ALTERNATE_A
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_ALTERNATE_A
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_ALTERNATE_A
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_ALTERNATE_A
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_ATTRIBUTE_VALUE_ATTRIBUTE_REF_ATTRIBUTE_CODE_ALTERNATE_A
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_VALUE_NAME_STATUS_AXIS_VALUE_ALTERNATE_A
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_STANDARD_SALE_PRICE_IS_DEFAULT_STATUS_ALTERNATE_A
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_VARIANT_COMBINATION_DIGEST_SALES_UNIT_OVERRIDE_REF_ALTERNATE_A
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_BASE_MEASURE_UNIT_OVERRIDE_REF_SALES_UNIT_REF_SALES_UNIT_CODE_ALTERNATE_A
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_ALTERNATE_A
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_ALTERNATE_A
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_ALTERNATE_A
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_ATTRIBUTE_VALUE_ATTRIBUTE_REF_ATTRIBUTE_CODE_ALTERNATE_A
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_VALUE_NAME_STATUS_AXIS_VALUE_ALTERNATE_A
                         + CatalogSkuFactsSql.CATALOG_SKU_FACTS_EMPTY_LITERAL
-                        + (includePreparationOverride ? CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_PREPARATION_OVERRIDE_TEXT : CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_TEXT)
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_PREPARATION_OVERRIDE_SKU_UPDATED_AT_EPOCH_MILLIS
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_CATALOG_SKU_ATTRIBUTE_VALUE_CATALOG_SKU_SKU_ATTRIBUTE_VALUE
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_DICTIONARY_ENTRY_ATTRIBUTE_VALUE_PRODUCT_SKU_REF_SKU_ALTERNATE_A
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_ATTRIBUTE_ENTRY_REF_ATTRIBUTE_VALUE_ATTRIBUTE_REF_ALTERNATE_A
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_DICTIONARY_ENTRY_VALUE_ENTRY_REF_ATTRIBUTE_VALUE_ALTERNATE_A
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION
+                        + (includePreparationOverride ? CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_PREPARATION_OVERRIDE_TEXT : CatalogSkuFactsSql.CATALOG_SKU_FACTS_TEXT)
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_PREPARATION_OVERRIDE_SKU_UPDATED_AT_EPOCH_MILLIS
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CATALOG_SKU_ATTRIBUTE_VALUE_CATALOG_SKU_SKU_ATTRIBUTE_VALUE
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_DICTIONARY_ENTRY_ATTRIBUTE_VALUE_PRODUCT_SKU_REF_SKU_ALTERNATE_A
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_ATTRIBUTE_ENTRY_REF_ATTRIBUTE_VALUE_ATTRIBUTE_REF_ALTERNATE_A
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_DICTIONARY_ENTRY_VALUE_ENTRY_REF_ATTRIBUTE_VALUE_ALTERNATE_A
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SERVICE_LEFT_JOIN_PREFIX
                         + CatalogSkuFactsSql.CATALOG_SKU_FACTS_JOIN_CATALOG_SKU_VARIANT_AXIS_AXIS_ITEM_REF_SKU
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_AXIS_ATTRIBUTE_REF_ATTRIBUTE_VALUE_ALTERNATE_A
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_CATALOG_SKU_VARIANT_AXIS_VALUE_AXIS_VALUE_SKU_VARIANT_AXIS_REF
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_AXIS_SKU_VARIANT_AXIS_REF_AXIS_VALUE_VALUE_REF
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_LATERAL_STRING_AGG_MEDIA_ASSET_REF
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_MEDIA_DISPLAY_ORDER
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_CATALOG_SKU_MEDIA_MEDIA_ASSET_REF_MEDIA_REFS_ALTERNATE_A
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_MEDIA_PRODUCT_SKU_REF_SKU_MEDIA_REFS
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_AXIS_ATTRIBUTE_REF_ATTRIBUTE_VALUE_ALTERNATE_A
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CATALOG_SKU_VARIANT_AXIS_VALUE_AXIS_VALUE_SKU_VARIANT_AXIS_REF
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_AXIS_SKU_VARIANT_AXIS_REF_AXIS_VALUE_VALUE_REF
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_LATERAL_STRING_AGG_MEDIA_ASSET_REF
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_MEDIA_DISPLAY_ORDER
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CATALOG_SKU_MEDIA_MEDIA_ASSET_REF_MEDIA_REFS_ALTERNATE_A
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_MEDIA_PRODUCT_SKU_REF_SKU_MEDIA_REFS
                         + placeholders
                         + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CLOSE_PAREN_SKU_STATUS_VOIDED
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_ITEM_REF_DISPLAY_ORDER_SKU_CODE
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_AXIS_VALUE_DISPLAY_ORDER_ATTRIBUTE_CODE_ALTERNATE_A,
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_ITEM_REF_DISPLAY_ORDER_SKU_CODE
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_AXIS_VALUE_DISPLAY_ORDER_ATTRIBUTE_CODE_ALTERNATE_A,
                 statement -> {
                     for (int index = 0; index < refs.size(); index++) statement.setObject(index + 1, refs.get(index));
                 },
@@ -312,7 +312,7 @@ public class CatalogSkuFacts {
     public LifecycleRow lockLifecycle(UUID itemRef, UUID skuRef) {
         List<LifecycleRow> rows = jdbc.query(
                 CatalogSkuFactsSql.CATALOG_SKU_FACTS_SELECT_CATALOG_SKU_PRODUCT_SKU_REF_SKU_CODE_STATUS_VERSION
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_PRODUCT_SKU_REF,
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_PRODUCT_SKU_REF,
                 (result, row) -> new LifecycleRow(
                         result.getObject(1, UUID.class), result.getString(2), result.getString(3), result.getLong(4)),
                 itemRef,
@@ -325,7 +325,7 @@ public class CatalogSkuFacts {
         int changed = jdbc.update(
                 CatalogSkuFactsSql.CATALOG_SKU_FACTS_UPDATE_CATALOG_SKU_STATUS_VOIDED_VERSION_UPDATED_AT_EPOCH_MILLIS
                         + CatalogSkuFactsSql.CATALOG_SKU_FACTS_WHERE_ITEM_REF
-                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_PRODUCT_SKU_REF_VERSION_STATUS_VOIDED,
+                        + CatalogSkuFactsSql.CATALOG_SKU_FACTS_PRODUCT_SKU_REF_VERSION_STATUS_VOIDED,
                 time.currentEpochMillis(),
                 itemRef,
                 skuRef,
@@ -344,7 +344,7 @@ public class CatalogSkuFacts {
             jdbc.batchUpdate(
                     CatalogSkuFactsSql.CATALOG_SKU_FACTS_UPDATE_CATALOG_SKU_STATUS_VOIDED_VERSION
                             + CatalogSkuFactsSql.CATALOG_SKU_FACTS_UPDATE_UPDATED_AT_EPOCH_MILLIS_ITEM_REF
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_PRODUCT_SKU_REF_STATUS_VOIDED,
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_PRODUCT_SKU_REF_STATUS_VOIDED,
                     archivedRows);
         }
         if (parsed.isEmpty()) return;
@@ -372,21 +372,20 @@ public class CatalogSkuFacts {
         try {
             int[] changed = jdbc.batchUpdate(
                     CatalogSkuFactsSql.CATALOG_SKU_FACTS_INSERT_INTO
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_CATALOG_SKU_PRODUCT_SKU_REF_ITEM_REF_SKU_CODE
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_PRICE_IS_DEFAULT_STATUS_DISPLAY_ORDER
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SALES_UNIT_OVERRIDE_REF
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_BASE_MEASURE_UNIT_OVERRIDE_REF_UPDATED_AT_EPOCH_MILLIS
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CATALOG_CATALOG_SKU_PRODUCT_SKU_REF_ITEM_REF_SKU_CODE_SKU_NAME_STANDARD_SALE_PRICE_IS_DEFAULT_STATUS_DISPLAY_ORDER_IS_DEFAULT_STATUS_DISPLAY_ORDER_VARIANT_COMBINATION_DIGEST
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SALES_UNIT_OVERRIDE_REF
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_BASE_MEASURE_UNIT_OVERRIDE_REF_UPDATED_AT_EPOCH_MILLIS
                             + CatalogSkuFactsSql.CATALOG_SKU_FACTS_VALUES_SET_PRODUCT_SKU_REF
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SKU_CODE_SKU_NAME
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_STANDARD_SALE_PRICE_IS_DEFAULT_STATUS
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_STATUS_DISPLAY_ORDER_VARIANT_COMBINATION_DIGEST
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_VARIANT_COMBINATION_DIGEST
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_SALES_UNIT_OVERRIDE_REF_ALTERNATE_A
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_BASE_MEASURE_UNIT_OVERRIDE_REF
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SKU_CODE_SKU_NAME
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_STANDARD_SALE_PRICE_IS_DEFAULT_STATUS
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_STATUS_DISPLAY_ORDER_VARIANT_COMBINATION_DIGEST
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_VARIANT_COMBINATION_DIGEST
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_SALES_UNIT_OVERRIDE_REF_ALTERNATE_A
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_BASE_MEASURE_UNIT_OVERRIDE_REF
                             + CatalogSkuFactsSql.CATALOG_SKU_FACTS_UPDATE_UPDATED_AT_EPOCH_MILLIS
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_VERSION_CATALOG_SKU
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_VERSION_CATALOG_SKU
                             + CatalogSkuFactsSql.CATALOG_SKU_FACTS_WHERE_CATALOG_SKU_ITEM_REF_STATUS
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_VOIDED,
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_VOIDED,
                     skuRows);
             for (int value : changed)
                 if (value != 1 && value != java.sql.Statement.SUCCESS_NO_INFO)
@@ -416,7 +415,7 @@ public class CatalogSkuFacts {
         if (!attributeRows.isEmpty())
             jdbc.batchUpdate(
                     CatalogSkuFactsSql.CATALOG_SKU_FACTS_INSERT_INTO_ALTERNATE_A
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_CATALOG_SKU_ATTRIBUTE_VALUE
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CATALOG_SKU_ATTRIBUTE_VALUE
                             + CatalogSkuFactsSql.CATALOG_SKU_FACTS_VALUES,
                     attributeRows);
     }
@@ -454,9 +453,7 @@ public class CatalogSkuFacts {
         try {
             jdbc.batchUpdate(
                     CatalogSkuFactsSql.CATALOG_SKU_FACTS_INSERT_INTO_ALTERNATE_B
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_CATALOG_SKU_PRODUCT_SKU_REF_ITEM_REF_SKU_CODE_ALTERNATE_A
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_PRI
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_IS_DEFAULT_STATUS_DISPLAY_ORDER_VARIANT_COMBINATION_DIGEST
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CATALOG_CATALOG_SKU_PRODUCT_SKU_REF_ITEM_REF_SKU_CODE_SKU_NAME_STANDARD_SALE_PRICE_IS_DEFAULT_STATUS_DISPLAY_ORDER_STATUS_DISPLAY_ORDER_VARIANT_COMBINATION_DIGEST_UPDATED_AT_EPOCH_MILLIS
                             + CatalogSkuFactsSql.CATALOG_SKU_FACTS_VALUES_ALTERNATE_A
                             + CatalogSkuFactsSql.CATALOG_SKU_FACTS_JOIN_CONDITION_PRODUCT_SKU_REF,
                     skuRows);
@@ -472,14 +469,13 @@ public class CatalogSkuFacts {
         if (!attributeRows.isEmpty())
             jdbc.batchUpdate(
                     CatalogSkuFactsSql.CATALOG_SKU_FACTS_INSERT_INTO_ALTERNATE_C
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_CATALOG_SKU_ATTRIBUTE_VALUE_ALTERNATE_A
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CATALOG_SKU_ATTRIBUTE_VALUE_ALTERNATE_A
                             + CatalogSkuFactsSql.CATALOG_SKU_FACTS_VALUES_ALTERNATE_B,
                     attributeRows);
         for (CopySku sku : parsed)
             jdbc.update(
                     CatalogSkuFactsSql.CATALOG_SKU_FACTS_UPDATE_CATALOG_SKU_SALES_UNIT_OVERRIDE_REF_BASE_MEASURE_UNIT_OVERRIDE_REF
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_UPDATE_UPDATED_AT_EPOCH_MILLIS_WHER
-                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_CONTINUATION_PRODUCT_SKU_REF_ALTERNATE_A,
+                            + CatalogSkuFactsSql.CATALOG_SKU_FACTS_UPDATED_AT_EPOCH_MILLIS_WHERE_PRODUCT_SKU_REF_UPDATED_AT_EPOCH_MILLIS_WHERE_PRODUCT_SKU_REF,
                     sku.salesUnitOverrideRef(),
                     sku.baseMeasureUnitOverrideRef(),
                     time.currentEpochMillis(),

@@ -99,7 +99,7 @@ public class CatalogItemReferenceFacts {
         Boolean found = jdbc.queryForObject(
                 CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_SELECT_CATALOG_ITEM_RELATION_ITEM
                         + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_JOIN_CONDITION_ITEM_ITEM_REF_RELATION_KIND
-                        + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_CONTINUATION_ITEM_DATA_NODE_REF_BRAND_REF_STATUS,
+                        + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_ITEM_DATA_NODE_REF_BRAND_REF_STATUS,
                 Boolean.class,
                 kind,
                 ref,
@@ -121,8 +121,8 @@ public class CatalogItemReferenceFacts {
         arguments.addAll(requested);
         return Set.copyOf(jdbc.query(
                 CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_SELECT_CATALOG_ITEM_RELATION_REF
-                        + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_CONTINUATION_ITEM_ITEM_REF_RELATION_KIND
-                        + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_CONTINUATION_ITEM_BRAND_REF_STATUS_VOIDED
+                        + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_ITEM_ITEM_REF_RELATION_KIND
+                        + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_ITEM_BRAND_REF_STATUS_VOIDED
                         + placeholders + CatalogItemReferenceFactsSql.CATALOG_ITEM_REFERENCE_FACTS_CLOSE_PAREN,
                 (rows, row) -> rows.getObject(1, UUID.class),
                 arguments.toArray()));

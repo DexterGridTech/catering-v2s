@@ -588,7 +588,8 @@
               "required": [
                 "getOperationsStoreBusinessChannels",
                 "getOperationsSalesMenus",
-                "getOperationsSalesMenu"
+                "getOperationsSalesMenu",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -635,6 +636,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -661,6 +666,34 @@
               "getOperationsSalesMenu": {
                 "method": "GET",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -709,7 +742,8 @@
               "required": [
                 "getOperationsSalesMenuDraftSections",
                 "createOperationsSalesMenuSection",
-                "renameOperationsSalesMenuSection"
+                "renameOperationsSalesMenuSection",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -766,6 +800,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -800,6 +838,42 @@
               "renameOperationsSalesMenuSection": {
                 "method": "PATCH",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/name"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -834,7 +908,8 @@
               "required": [
                 "getOperationsSalesMenuDraftSections",
                 "moveOperationsSalesMenuSection",
-                "deleteOperationsSalesMenuSection"
+                "deleteOperationsSalesMenuSection",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -891,6 +966,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -923,6 +1002,42 @@
               "deleteOperationsSalesMenuSection": {
                 "method": "DELETE",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -954,7 +1069,8 @@
             "network": {
               "required": [
                 "getOperationsSalesMenuDraftSections",
-                "deleteOperationsSalesMenuSection"
+                "deleteOperationsSalesMenuSection",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -1007,6 +1123,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -1036,6 +1156,42 @@
               "deleteOperationsSalesMenuSection": {
                 "method": "DELETE",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -1081,7 +1237,8 @@
               "required": [
                 "getOperationsCatalogNavigation",
                 "getOperationsSalesMenuItemCandidates",
-                "addOperationsSalesMenuItems"
+                "addOperationsSalesMenuItems",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -1143,6 +1300,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 1
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -1179,6 +1340,46 @@
               "addOperationsSalesMenuItems": {
                 "method": "POST",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -1229,7 +1430,8 @@
                 "updateOperationsSalesMenuItem",
                 "stageOperationsSalesMenuAsset",
                 "releaseOperationsSalesMenuStagedAsset",
-                "deleteOperationsSalesMenuItem"
+                "deleteOperationsSalesMenuItem",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -1299,6 +1501,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -1320,6 +1526,8 @@
               "SALES_MENU_ITEM_EDITOR",
               "SALES_MENU_ITEM_DISPLAY_NAME",
               "SALES_MENU_ITEM_LISTED_PRICE",
+              "SALES_MENU_ITEM_MIN_QUANTITY",
+              "SALES_MENU_ITEM_QUANTITY_STEP",
               "SALES_MENU_ITEM_ORDER_OPTION_GROUP",
               "SALES_MENU_ITEM_ORDER_OPTION_VALUE",
               "SALES_MENU_ITEM_MEDIA_EDITOR",
@@ -1351,6 +1559,46 @@
               "deleteOperationsSalesMenuItem": {
                 "method": "DELETE",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -1395,7 +1643,8 @@
             "network": {
               "required": [
                 "getOperationsSalesMenuDraftItem",
-                "updateOperationsSalesMenuItem"
+                "updateOperationsSalesMenuItem",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -1453,6 +1702,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -1487,6 +1740,46 @@
               "updateOperationsSalesMenuItem": {
                 "method": "PUT",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -1530,7 +1823,8 @@
             "network": {
               "required": [
                 "getOperationsSalesMenuDraftItem",
-                "updateOperationsSalesMenuItem"
+                "updateOperationsSalesMenuItem",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -1588,6 +1882,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -1617,6 +1915,46 @@
               "updateOperationsSalesMenuItem": {
                 "method": "PUT",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -1661,7 +1999,8 @@
             "network": {
               "required": [
                 "getOperationsSalesMenuDraftItems",
-                "moveOperationsSalesMenuItem"
+                "moveOperationsSalesMenuItem",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -1714,6 +2053,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -1743,6 +2086,42 @@
               "moveOperationsSalesMenuItem": {
                 "method": "POST",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}/move"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -1793,7 +2172,8 @@
                 "publishOperationsSalesMenu",
                 "getOperationsSalesMenuPublishedSections",
                 "getOperationsSalesMenuPublishedItems",
-                "getOperationsSalesMenuPublishedItem"
+                "getOperationsSalesMenuPublishedItem",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -1858,6 +2238,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -1902,6 +2286,42 @@
               "getOperationsSalesMenuPublishedItem": {
                 "method": "GET",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -1946,7 +2366,8 @@
             "network": {
               "required": [
                 "getOperationsSalesMenuPublishedItems",
-                "getOperationsSalesMenuPublishedItem"
+                "getOperationsSalesMenuPublishedItem",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -2009,6 +2430,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -2039,6 +2464,50 @@
               "getOperationsSalesMenuPublishedItem": {
                 "method": "GET",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/items/{salesItemRef}"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublishedSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -2086,7 +2555,8 @@
               "required": [
                 "setOperationsSalesMenuItemSoldOut",
                 "restoreOperationsSalesMenuItemSale",
-                "getOperationsSalesMenuOperationRecords"
+                "getOperationsSalesMenuOperationRecords",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -2158,6 +2628,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -2195,6 +2669,54 @@
               "getOperationsSalesMenuOperationRecords": {
                 "method": "GET",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublishedSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections"
+              },
+              "getOperationsSalesMenuPublishedItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/published/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -2249,7 +2771,8 @@
                 "renameOperationsSalesMenu",
                 "archiveOperationsSalesMenu",
                 "setOperationsSalesMenuActivation",
-                "updateOperationsSalesMenuSchedule"
+                "updateOperationsSalesMenuSchedule",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -2317,6 +2840,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 8
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -2377,6 +2904,38 @@
               "updateOperationsSalesMenuSchedule": {
                 "method": "PUT",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/schedule"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -2421,7 +2980,8 @@
             "network": {
               "required": [
                 "getOperationsSalesMenu",
-                "copyOperationsSalesMenu"
+                "copyOperationsSalesMenu",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -2474,6 +3034,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -2503,6 +3067,42 @@
               "copyOperationsSalesMenu": {
                 "method": "POST",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -2547,7 +3147,8 @@
             "network": {
               "required": [
                 "getOperationsSalesMenuPublicationPreview",
-                "setOperationsSalesMenuActivation"
+                "setOperationsSalesMenuActivation",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -2600,6 +3201,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -2632,6 +3237,42 @@
               "setOperationsSalesMenuActivation": {
                 "method": "PUT",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/channels/{channelRef}/activation"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -2674,7 +3315,8 @@
             ],
             "network": {
               "required": [
-                "getOperationsSalesMenuOperationRecords"
+                "getOperationsSalesMenuOperationRecords",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -2728,6 +3370,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -2749,6 +3395,46 @@
               "getOperationsSalesMenuOperationRecords": {
                 "method": "GET",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/sales-menu-operation-records"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -2799,7 +3485,8 @@
                 "moveOperationsSalesMenuItem",
                 "stageOperationsSalesMenuAsset",
                 "releaseOperationsSalesMenuStagedAsset",
-                "publishOperationsSalesMenu"
+                "publishOperationsSalesMenu",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -2874,6 +3561,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 8
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -2928,6 +3619,50 @@
               "publishOperationsSalesMenu": {
                 "method": "POST",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getOperationsSalesMenuDraftItem": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/items/{salesItemRef}"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -2972,7 +3707,8 @@
             "network": {
               "required": [
                 "getOperationsSalesMenu",
-                "getOperationsSalesMenuDraftSections"
+                "getOperationsSalesMenuDraftSections",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -3020,6 +3756,10 @@
                 {
                   "operationId": "getOperationsWorkspaceSessionEntry",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 1
                 }
               ]
             },
@@ -3049,6 +3789,38 @@
               "getOperationsSalesMenuDraftSections": {
                 "method": "GET",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
               }
             }
           },
@@ -3144,6 +3916,26 @@
               "getOperationsExternalProviderCandidates": {
                 "method": "GET",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/external-provider-candidates"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsProjectBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/business-channels"
+              },
+              "getOperationsStoreBusinessChannels": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
               }
             }
           },
@@ -3191,7 +3983,8 @@
               "required": [
                 "getOperationsStoreProfile",
                 "getOperationsStoreBusinessChannelTemplateCandidates",
-                "getOperationsStoreBusinessChannels"
+                "getOperationsStoreBusinessChannels",
+                "getOperationsOrganizationStoreOperatingRule"
               ],
               "forbidden": [],
               "backgroundAllowed": [
@@ -3248,6 +4041,10 @@
                 {
                   "operationId": "getPublicAssetContent",
                   "maxRequestCount": 4
+                },
+                {
+                  "operationId": "getOperationsOrganizationStoreOperatingRule",
+                  "maxRequestCount": 2
                 }
               ]
             },
@@ -3276,6 +4073,42 @@
               "getOperationsStoreBusinessChannels": {
                 "method": "GET",
                 "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/business-channels"
+              },
+              "getOperationsOrganizationStoreOperatingRule": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/stores/{storeId}/operating-rule-switches"
+              },
+              "getOperationsSalesMenus": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus"
+              },
+              "getOperationsSalesMenu": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}"
+              },
+              "getOperationsSalesMenuDraftSections": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections"
+              },
+              "getOperationsSalesMenuDraftItems": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/sections/{salesSectionRef}/items"
+              },
+              "getOperationsSalesMenuPublicationPreview": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/draft/publication-preview"
+              },
+              "getOperationsBusinessChannelTemplates": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channel-templates"
+              },
+              "getOperationsWorkspaceSessionEntry": {
+                "method": "GET",
+                "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/session/entry"
+              },
+              "getPublicAssetContent": {
+                "method": "GET",
+                "path": "/api/public/assets/{assetRef}/content"
               }
             }
           },

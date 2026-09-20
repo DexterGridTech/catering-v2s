@@ -98,6 +98,7 @@ const sanitizeDiagnostic = value => `${value ?? ''}`
   .replace(/((?:password|passwd|token|cookie|authorization|otp|phone|username|login)\s*[:=]\s*)[^\s,;]+/gi, '$1[REDACTED]')
   .replace(/((?:password|passwd|token|cookie|authorization|otp|phone|username|login)"\s*:\s*")[^"]*(")/gi, '$1[REDACTED]$2')
   .replace(/\b\d{10,11}\b/g, '[PHONE_REDACTED]')
+  .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, '[IP_REDACTED]')
   .replace(/10\.0\.2\.2/g, '[HOST_REDACTED]')
 
 const byteLength = value => Buffer.isBuffer(value)
@@ -731,6 +732,7 @@ const observeStage2 = async (record, target, displayId, label, expectedIds = [],
   if (missing.length > 0) throw new RunnerFailure(`${target.tag} ${label}`, `missing UI nodes: ${missing.join(', ')}`)
   const missingTexts = expectedTexts.filter(value => !xml.includes(value))
   if (missingTexts.length > 0) throw new RunnerFailure(`${target.tag} ${label}`, `missing business state text: ${missingTexts.join(', ')}`)
+  const diagnosticTexts = expectedTexts.map(sanitizeDiagnostic)
   saveStage2Ui(target, displayId, label, xml)
   record.steps.push({
     label,
@@ -738,9 +740,9 @@ const observeStage2 = async (record, target, displayId, label, expectedIds = [],
     displayId,
     timestamp: new Date().toISOString(),
     expectedIds,
-    expectedTexts,
+    expectedTexts: diagnosticTexts,
     observedIds: [...xml.matchAll(/resource-id="([^"]+)"/g)].map(match => match[1]),
-    observedText: expectedTexts,
+    observedText: diagnosticTexts,
   })
   return xml
 }
@@ -849,15 +851,16 @@ const observe = async (record, target, label, expectedIds = [], expectedTexts = 
   if (missing.length > 0) throw new RunnerFailure(`${target.tag} ${label}`, `missing UI nodes: ${missing.join(', ')}`)
   const missingTexts = expectedTexts.filter(value => !xml.includes(value))
   if (missingTexts.length > 0) throw new RunnerFailure(`${target.tag} ${label}`, `missing business state text: ${missingTexts.join(', ')}`)
+  const diagnosticTexts = expectedTexts.map(sanitizeDiagnostic)
   saveUi(target, label, xml)
   const step = {
     label,
     deviceRole: target.role,
     timestamp: new Date().toISOString(),
     expectedIds,
-    expectedTexts,
+    expectedTexts: diagnosticTexts,
     observedIds: [...xml.matchAll(/resource-id="([^"]+)"/g)].map(match => match[1]),
-    observedText: expectedTexts,
+    observedText: diagnosticTexts,
   }
   record.steps.push(step)
   return xml
@@ -883,6 +886,24 @@ const captureStage2Screenshot = (target, displayId, label) => {
   return {path: path.relative(repositoryRoot, screenshotPath), width: Number(dimensions[1]), height: Number(dimensions[2]), fileText}
 }
 
+const captureStage1Screenshot = (target, label) => {
+  const safeLabel = label.replace(/[^a-zA-Z0-9_-]/g, '-')
+  const screenshot = adb(target, ['exec-out', 'screencap', '-p'], `${label} screenshot`, {allowFailure: true, binary: true})
+  if (screenshot.status !== 0 || !Buffer.isBuffer(screenshot.stdout) || screenshot.stdout.length === 0) {
+    throw new RunnerFailure(`${target.tag} display 0 ${label} screenshot`, 'screenshot is empty')
+  }
+  const screenshotPath = path.join(currentOutputDirectory, `${target.tag}-display-0-${safeLabel}.png`)
+  writeBinary(`${target.tag}-display-0-${safeLabel}.png`, screenshot.stdout)
+  const fileResult = localRun('file', [screenshotPath], `${label} screenshot metadata`, {allowFailure: true})
+  const fileText = textOf(fileResult)
+  writeText(`${target.tag}-display-0-${safeLabel}.file.txt`, fileText)
+  const dimensions = fileText.match(/(\d+) x (\d+)/)
+  if (!/PNG image data/.test(fileText) || dimensions === null) {
+    throw new RunnerFailure(`${target.tag} display 0 ${label} screenshot`, `invalid PNG metadata: ${fileText}`)
+  }
+  return {path: path.relative(repositoryRoot, screenshotPath), width: Number(dimensions[1]), height: Number(dimensions[2]), fileText}
+}
+
 const progress = (record, label, details = {}) => {
   record.lastKnownGood = label
   record.timeline.push({label, timestamp: new Date().toISOString(), ...details})
@@ -904,7 +925,7 @@ const stage2OpenAdmin = async (record, target) => {
     if (Date.now() - started >= 1_800) throw new RunnerFailure(`${target.tag} stage2 admin launcher`, 'five-tap gesture exceeded its time window')
     current = (await waitForStage2Node(target, 0, 'terminal.admin:login')).xml
   }
-  const password = current.match(/请输入六位动态口令（(\d{6})）/)?.[1] ?? null
+  const password = current.match(/请输入(?:六位)?动态口令（(\d{6})）/)?.[1] ?? null
   if (password === null) throw new RunnerFailure(`${target.tag} stage2 admin login`, 'debug password display was not available')
   for (const digit of password) await tapStage2Node(target, 0, `ui.base.input:virtual-keyboard:text-${digit}`)
   await waitForStage2Node(target, 0, 'terminal.admin:verify', currentNode => currentNode.enabled)
@@ -1054,7 +1075,9 @@ const loadLatestStage1MemberReference = () => {
     if (!fs.existsSync(resultPath)) continue
     try {
       const result = JSON.parse(fs.readFileSync(resultPath, 'utf8'))
-      return {path: path.relative(repositoryRoot, resultPath), labels: result.steps.filter(step => stage1MemberLabels.includes(step.label)).map(step => step.label)}
+      const labels = result.steps.filter(step => stage1MemberLabels.includes(step.label)).map(step => step.label)
+      if (result.business !== 'PASS' || result.cleanup !== 'PASS' || labels.length !== stage1MemberLabels.length) continue
+      return {path: path.relative(repositoryRoot, resultPath), labels}
     } catch {
       continue
     }
@@ -1141,7 +1164,7 @@ const openAdmin = async (record, target) => {
   // Android accessibility may flatten the nested debug-password Text node
   // into the instruction node, so the release observation is keyed by the
   // visible six-digit instruction rather than by the nested resource-id.
-  const password = current.match(/请输入六位动态口令（(\d{6})）/)?.[1] ?? null
+  const password = current.match(/请输入(?:六位)?动态口令（(\d{6})）/)?.[1] ?? null
   if (password === null) throw new RunnerFailure(`${target.tag} admin login`, 'debug password display was not available in the release app')
   for (const digit of password) {
     await tapNode(target, `ui.base.input:virtual-keyboard:text-${digit}`)
@@ -1392,6 +1415,13 @@ const fillStaffLogin = async target => {
 
 const runMemberJourney = async (record, master, slave) => {
   await closeAdmin(master)
+  // A paired single-screen slave is anonymous until the master authenticates,
+  // but it still owns the customer-facing logical SECONDARY surface. This
+  // observation prevents a missing placement from being mistaken for a
+  // normal pre-authentication state.
+  await waitForNode(slave, 'sample.desk.customer-welcome')
+  await observe(record, slave, 'anonymous-paired-slave-customer-surface', ['sample.desk.customer-welcome'], ['欢迎，请等待店员操作'])
+  progress(record, 'paired-anonymous-slave-renders-customer-surface', {deviceRole: 'slave'})
   await fillStaffLogin(master)
   await observe(record, master, 'member-list-before-registration', ['sample.desk.member-list'], ['已登记会员'])
   const masterList = await readUi(master, 'find member add control')
@@ -1413,7 +1443,43 @@ const runMemberJourney = async (record, master, slave) => {
   await observe(record, master, 'member-waiting-on-master', ['sample.desk.member-list', 'sample.desk.waiting-confirm'], ['已提交，等待顾客确认', 'Alice', '01012345678'])
   await waitForNode(slave, 'sample.desk.customer-member')
   await observe(record, slave, 'member-confirmation-on-slave', ['sample.desk.customer-member'], ['请确认登记', 'Alice', '01012345678'])
+  captureStage1Screenshot(slave, 'member-confirmation-on-slave')
   progress(record, 'cross-device-member-pending-state', {masterPartKey: 'sample.desk.waiting-confirm', slavePartKey: 'sample.desk.customer-member'})
+
+  // Reboot the real slave while the peer-owned pending workflow is visible.
+  // The post-reconnect assertion is deliberately the business part, not the
+  // process start result, so a stale or missing synced pending state fails.
+  await adb(slave, ['shell', 'am', 'force-stop', slave.profile.packageName], 'pending slave cold restart force-stop')
+  await adb(slave, ['shell', 'am', 'start', '-W', '-n', slave.profile.activity], 'pending slave cold restart')
+  await waitForNode(slave, 'sample.desk.customer-member')
+  await observe(record, slave, 'pending-state-after-slave-restart', ['sample.desk.customer-member'], ['请确认登记', 'Alice', '01012345678'])
+  progress(record, 'pending-customer-workflow-restored-after-slave-restart', {deviceRole: 'slave', process: processIdentity(slave)})
+
+  await tapNode(master, 'sample.desk.waiting-confirm:withdraw')
+  await waitForNode(master, 'sample.desk.withdraw-confirm')
+  await tapNode(master, 'sample.desk.withdraw-confirm:withdraw')
+  await waitForNode(master, 'sample.desk.member-form')
+  await waitForNode(slave, 'sample.desk.customer-welcome')
+  await waitForAbsent(slave, 'sample.desk.customer-member')
+  await observe(record, master, 'withdrawn-state-after-slave-restart', ['sample.desk.member-form'], [])
+  await observe(record, slave, 'no-stale-customer-popup-after-reconnect', ['sample.desk.customer-welcome'], ['欢迎，请等待店员操作'])
+  progress(record, 'slave-reconnect-clears-cancelled-customer-popup', {masterPartKey: 'sample.desk.member-form', slavePartKey: 'sample.desk.customer-welcome'})
+
+  // Register a second member through the restored master form so the normal
+  // confirmation path remains covered after the cancellation scenario.
+  await tapNode(master, 'sample.desk.member-form:name')
+  await tapVirtualText(master, 'BOB')
+  await waitForNode(master, 'sample.desk.member-form:name', node => nodeText(node).includes('Bob'))
+  await tapNode(master, 'ui.base.input:virtual-keyboard:complete')
+  await tapNode(master, 'sample.desk.member-form:phone')
+  await tapVirtualText(master, '01087654321')
+  await waitForNode(master, 'sample.desk.member-form:phone', node => nodeText(node).includes('01087654321'))
+  await tapNode(master, 'ui.base.input:virtual-keyboard:complete')
+  await tapNode(master, 'sample.desk.member-form:submit')
+  await waitForNode(master, 'sample.desk.waiting-confirm')
+  await waitForNode(slave, 'sample.desk.customer-member')
+  await observe(record, master, 'second-member-waiting-after-cancel', ['sample.desk.waiting-confirm'], ['Bob', '01087654321'])
+  await observe(record, slave, 'second-member-confirmation-after-cancel', ['sample.desk.customer-member'], ['Bob', '01087654321'])
 
   await tapNode(slave, 'sample.desk.customer-member:age')
   await tapNode(slave, 'ui.base.input:virtual-keyboard:text-3')
@@ -1421,15 +1487,20 @@ const runMemberJourney = async (record, master, slave) => {
   await tapNode(slave, 'ui.base.input:virtual-keyboard:complete')
   await tapNode(slave, 'sample.desk.customer-member:confirm')
   await waitForNode(master, 'sample.desk.member-list:row')
-  await observe(record, master, 'member-confirmed-on-master', ['sample.desk.member-list', 'sample.desk.member-list:row'], ['已登记会员', 'Alice', '01012345678'])
+  await observe(record, master, 'member-confirmed-on-master', ['sample.desk.member-list', 'sample.desk.member-list:row'], ['已登记会员', 'Bob', '01087654321'])
+  captureStage1Screenshot(master, 'member-confirmed-on-master')
   await waitForNode(slave, 'sample.desk.customer-welcome')
   await observe(record, slave, 'member-welcome-on-slave', ['sample.desk.customer-welcome'], ['欢迎，请等待店员操作'])
+  captureStage1Screenshot(slave, 'member-welcome-on-slave')
   progress(record, 'cross-device-member-confirmed-state', {masterPartKey: 'sample.desk.member-list', slavePartKey: 'sample.desk.customer-welcome'})
 
   await adb(master, ['shell', 'am', 'force-stop', master.profile.packageName], 'authenticated master cold restart force-stop')
   await adb(master, ['shell', 'am', 'start', '-W', '-n', master.profile.activity], 'authenticated master cold restart')
   await waitForNode(master, 'sample.desk.member-list:row')
-  await observe(record, master, 'authenticated-state-after-cold-restart', ['sample.desk.member-list', 'sample.desk.member-list:row'], ['Alice', '01012345678'])
+  // Alice was deliberately withdrawn before the second registration.  The
+  // authenticated restart assertion must follow the member that was actually
+  // confirmed and persisted by this journey, rather than the cancelled draft.
+  await observe(record, master, 'authenticated-state-after-cold-restart', ['sample.desk.member-list', 'sample.desk.member-list:row'], ['Bob', '01087654321'])
   progress(record, 'authenticated-member-state-restored-after-cold-restart', {deviceRole: 'master', process: processIdentity(master)})
 }
 
@@ -1503,6 +1574,27 @@ const captureFailure = async (record, targets) => {
     writeText(`${target.tag}-first-failure-window.txt`, sanitizeDiagnostic(textOf(adb(target, ['shell', 'dumpsys', 'window', 'windows'], 'first-failure window', {allowFailure: true}))))
     writeText(`${target.tag}-first-failure-activity.txt`, sanitizeDiagnostic(textOf(adb(target, ['shell', 'dumpsys', 'activity', 'activities'], 'first-failure activity', {allowFailure: true}))))
   }
+}
+
+const captureTopologyLogcat = (target, record) => {
+  const result = adb(target, ['logcat', '-d', '-v', 'epoch'], 'topology anomaly logcat', {allowFailure: true})
+  const processIds = new Set()
+  const addProcessId = value => {
+    if (typeof value === 'string' && /^\d+$/.test(value)) processIds.add(value)
+  }
+  addProcessId(record.devices?.[target.role]?.coldLaunchProcess?.pid)
+  for (const entry of record.timeline ?? []) {
+    if (entry.deviceRole === target.role) {
+      addProcessId(entry.process?.pid)
+      addProcessId(entry.slaveProcess?.pid)
+    }
+  }
+  const lines = textOf(result).split('\n').filter(line => {
+    if (!/topology|websocket|ter-topology|ReactNativeJS/i.test(line)) return false
+    if (processIds.size === 0) return true
+    return [...processIds].some(pid => new RegExp(`\\s${pid}\\s`).test(line))
+  })
+  writeText(`${target.tag}-topology-anomaly-logcat.txt`, sanitizeDiagnostic(lines.join('\n')))
 }
 
 const cleanupProfile = async (record, targets) => {
@@ -1616,10 +1708,11 @@ const runProfile = async profile => {
     record.business = 'PASS'
   } catch (error) {
     record.business = 'FAIL'
-    record.firstFailure = error instanceof Error ? error.message : String(error)
+    record.firstFailure = sanitizeDiagnostic(error instanceof Error ? error.message : String(error))
     record.brokenBoundary = record.lastKnownGood ?? 'before-first-known-good'
     await captureFailure(record, targets)
   } finally {
+    for (const target of targets) captureTopologyLogcat(target, record)
     await cleanupProfile(record, targets)
     record.finishedAt = new Date().toISOString()
     writeJson('result.json', record)
@@ -1730,7 +1823,7 @@ const runStage2Profile = async profile => {
     record.business = 'PASS'
   } catch (error) {
     record.business = 'FAIL'
-    record.firstFailure = error instanceof Error ? error.message : String(error)
+    record.firstFailure = sanitizeDiagnostic(error instanceof Error ? error.message : String(error))
     record.brokenBoundary = record.lastKnownGood ?? 'before-first-known-good'
     await captureStage2Failure(record, target)
   } finally {

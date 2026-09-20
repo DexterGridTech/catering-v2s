@@ -17,7 +17,7 @@ sourceRefs: ["doc/platform/foundation-charter.md"]
 **触发时刻**:准备在需求/详设/代码里**描述**一个控件、列表、抽屉、表单或渲染行为。
 
 ⛔ **描述之前先查。查到就指向它,不要复述它的行为。**
-`libraries/frontend/admin-ui-foundation` 导出 **99 个符号**,AGENTS.md 强制对接。
+`libraries/frontend/admin-ui-foundation` 的共享符号以 `src/index.ts` 为准，AGENTS.md 强制对接；新增共享能力必须先登记到本表。
 
 ## 按意图查
 
@@ -30,6 +30,12 @@ sourceRefs: ["doc/platform/foundation-charter.md"]
 | 抽屉 surface | `adminDrawerSurfaceProps` / `adminWideDrawerSurfaceProps` / `useDetailDrawer` | 与 `overlayLock` 配套 |
 | 抽屉表单生命周期 | `useDrawerFormLifecycle` / `useSubmissionLifecycle` | 含脏表单锁 `useDirtyFormLock` |
 | overlay 锁 | `OverlayLockProvider` / `useOverlayLock` / `useShellInteractionLock` | —— |
+| 生命周期状态呈现 | `LIFECYCLE_LABELS` / `LIFECYCLE_COLORS` / `lifecycleLabel` / `lifecycleColor` / `LifecycleStatusTag` | 主数据三态固定为 `ENABLED=启用`、`DISABLED=停用`、`VOIDED=作废`；非主数据状态机保留在 feature；catalog 的 `shapeKey` 等域内枚举继续消费 manifest |
+| 跨 App 协作闭集词表 | `collaborationCodeLabels` / `collaborationAttributePresentation` / `collaborationAttributeValueLabel` | foundation 只持有纯值与纯逻辑；两 App 在各自 adapter 中用 generated union 做穷举校验；不得把 generated API、problem-code 或 TestIds 带入 foundation |
+| 状态变更确认 | `StatusChangeConfirm` | 统一确认、loading、错误原位呈现；可恢复的停用使用普通确认，只有作废传 `dangerous`；二态实体不伪造 VOIDED |
+| 列表行操作菜单 | `AdminRowActionMenu` | 统一行末 Dropdown、危险/禁用/loading/testId 形态；详情动作仍用 `AdminDetailActionMenu` |
+| 规范时间呈现 | `formatCanonicalDateTime` | 固定 `zh-CN`、`Asia/Shanghai`、medium date/time；`null`/`undefined`/`0`/空串/非法值统一为 `—`，字段调用点不得先写业务 fallback |
+| 字段级空值呈现 | `displayFieldValue` | `null`/`undefined`/空串显示 `—`，`0` 与 `false` 保留；列表空态、无权限态和未配置业务说明不经过该字段 helper |
 | 列表状态与查询身份 | `adminListState` / `usePageQuery` / `createPageQueryIdentity` / `createCursorQueryIdentity` / `isCurrentQueryIdentity` | **旧 query 不回写当前 surface** 靠它 |
 | 上下文作用域查询参数 | `contextScopedQueryArgs` | scope/tab 切换时的参数隔离 |
 | cursor 分页控件 / 栈 | `CursorPagination` / `useCursorStack` / `collectCursorPages` | ⛔ `useCursorStack` **不能**承担需要任意页码跳转的表格 |
@@ -42,6 +48,7 @@ sourceRefs: ["doc/platform/foundation-charter.md"]
 | UUID 上线 | `wireUuid` | —— |
 | HTTP protocol / body | `platformHttpProtocol` / `serializeJsonOrMultipartBody` | —— |
 | 埋点与日志 | `createSafeLogger` / `createObservedBaseQuery` / `createBeaconLogSink` | 脱敏由 `SafeLogger` 负责 |
+| 扩展字段列表搜索呈现 | `extensionSearchValueType` / `extensionSearchFieldProps` | foundation 只生成纯控件配置；TestId 由各 App 注入，ProColumns 与 generated field projection 留在 App |
 | testId | `testId` | —— |
 
 ## 仓内页面样板(要抄形态就抄这些)

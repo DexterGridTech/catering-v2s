@@ -24,6 +24,8 @@ type Props = {
   disabled?: boolean;
   readOnly?: boolean;
   hideLabel?: boolean;
+  /** Overrides only the user-facing label; descriptor semantics and helper text remain manifest-owned. */
+  labelOverride?: string;
   disabledMessage?: string;
   /** A persisted business label for a selected value which is not in the current candidate page. */
   selectedLabel?: string;
@@ -84,6 +86,7 @@ export function CatalogDescriptorPicker({
   disabled = false,
   readOnly = false,
   hideLabel = false,
+  labelOverride,
   disabledMessage,
   selectedLabel,
   actions,
@@ -162,7 +165,7 @@ export function CatalogDescriptorPicker({
     return <Alert type="error" showIcon title="字段暂不可用" {...testId(`${testIdValue}-descriptor-error`)} />;
 
   const selectionHint = field.controlKind === 'multiSelect';
-  const fieldLabel = selectionHint ? `${field.label}（可多选）` : field.label;
+  const fieldLabel = labelOverride ?? (selectionHint ? `${field.label}（可多选）` : field.label);
   const fieldHelpText = hideLabel ? '' : selectionHint ? `${field.helpText} 当前可选择多项。` : field.helpText;
   const renderedField = (effectiveDisabled || readOnly) && !field.readonly ? {...field, readonly: true} : field;
   const presentationField = {...renderedField, label: fieldLabel, helpText: fieldHelpText};

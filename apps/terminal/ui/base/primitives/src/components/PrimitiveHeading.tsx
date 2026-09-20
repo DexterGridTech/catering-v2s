@@ -3,12 +3,12 @@ import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
 import type {PrimitiveHeadingProps} from '../types/types';
 
-export const PrimitiveHeading = ({testID, children}: PrimitiveHeadingProps) => (
+export const PrimitiveHeading = ({testID, appearance = 'default', children}: PrimitiveHeadingProps) => (
   <RnrText
     testID={assertTestID(testID)}
     accessibilityRole="header"
     accessibilityLiveRegion="polite"
-    className={baseTokens.heading}
+    className={appearance === 'login' ? baseTokens.headingLogin : baseTokens.heading}
   >
     {children}
   </RnrText>

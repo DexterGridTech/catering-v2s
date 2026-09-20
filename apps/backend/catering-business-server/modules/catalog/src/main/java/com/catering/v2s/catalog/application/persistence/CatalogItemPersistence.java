@@ -171,7 +171,7 @@ public class CatalogItemPersistence {
 
     public boolean itemExists(String dataNodeRef, String brandRef, String itemCode) {
         Integer count = jdbc.queryForObject(
-                CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_CODE_STATUS + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_VOIDED,
+                CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_CODE_STATUS + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_VOIDED,
                 Integer.class,
                 dataNodeRef,
                 brandRef,
@@ -214,9 +214,9 @@ public class CatalogItemPersistence {
         arguments.addAll(refs);
         return jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_ITEM_REF_CODE_NAME_SHORT_NAME
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_SOURCE_SCOPE_REF_DATA_NODE_REF_BRAND_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_SOURCE_SCOPE_REF_DATA_NODE_REF_BRAND_REF
                         + scopePredicate
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_REF
                         + placeholders
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_B,
                 (result, row) -> new BatchStatusCandidateRow(
@@ -227,7 +227,7 @@ public class CatalogItemPersistence {
     public List<ItemRow> lockBatchStatusItem(UUID itemRef, String dataNodeRef, String brandRef) {
         return jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_REF_CODE_NAME_SHORT_NAME
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_REF_CODE_NAME_SHORT_NAME
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_SOURCE_SCOPE_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_FROM_CLAUSE_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_ITEM_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_LOCK_FOR_UPDATE,
@@ -250,45 +250,45 @@ public class CatalogItemPersistence {
                 ? CatalogItemServiceSql.SKU_STATUS_ENABLED_PREDICATE
                 : CatalogItemServiceSql.SKU_STATUS_NOT_VOIDED_PREDICATE;
         StringBuilder sql = new StringBuilder(CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CTE_ITEM_SCOPE_ITEM_REF_PREPARATION_PROFILE
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_CODE
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_MATCHING_SKU_PRODUCT_SKU_REF_SKU_CODE
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_SKU_STANDARD_SALE_PRICE
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_SKU_SALES_UNIT_OVERRIDE_REF_SALES_UNIT_REF_SALES_UNIT_CODE
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_SKU_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_SKU
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_SKU_ALTERNATE_A
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_BASE_UNIT_STATUS_ENABLED_SKU
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_PRIMARY_MEDIA_ASSET_REF_ATTRIBUTES_ATTRIBUTE_VALUES
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_PREPARATION_PROFILE_TEXT_SKU
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_CODE
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_MATCHING_SKU_PRODUCT_SKU_REF_SKU_CODE
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SKU_STANDARD_SALE_PRICE
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SKU_SALES_UNIT_OVERRIDE_REF_SALES_UNIT_REF_SALES_UNIT_CODE
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SKU_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SKU
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SKU_ALTERNATE_A
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_BASE_UNIT_STATUS_ENABLED_SKU
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_PRIMARY_MEDIA_ASSET_REF_ATTRIBUTES_ATTRIBUTE_VALUES
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_PREPARATION_PROFILE_TEXT_SKU
                 + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_FROM_CLAUSE_ITEM_SCOPE_SKU_ITEM
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_ITEM_REF_SKU
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_UNIT_DEFINITION_SALES_UNIT_UNIT_REF_SKU_SALES_UNIT_REF
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_UNIT_DEFINITION_BASE_UNIT_UNIT_REF_SKU_BASE_MEASURE_UNIT_REF
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_SKU_MEDIA_MEDIA_ASSET_REF
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_ITEM_REF_SKU
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UNIT_DEFINITION_SALES_UNIT_UNIT_REF_SKU_SALES_UNIT_REF
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UNIT_DEFINITION_BASE_UNIT_UNIT_REF_SKU_BASE_MEASURE_UNIT_REF
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_SKU_MEDIA_MEDIA_ASSET_REF
                 + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_WHERE_MEDIA_PRODUCT_SKU_REF_SKU_DISPLAY_ORDER
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_MEDIA_ASSET_REF_PRIMARY_MEDIA
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_REFERENCE_RELATION_REF
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_MEDIA_ASSET_REF_PRIMARY_MEDIA
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_REFERENCE_RELATION_REF
                 + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_WHERE_RELATION_ITEM_REF_ITEM_KIND
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_LATERAL_JSONB_AGG_JSONB_BUILD_OBJECT_ATTRIBUTE_REF
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ATTRIBUTE_ENTRY_REF_TEXT
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ATTRIBUTE_CODE_ATTRIBUTE_CODE_ATTRIBUTE_NAME
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ATTRIBUTE_VALUE_REF_VALUE_ENTRY_REF_TEXT
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_VALUE_CODE_VALUE_CODE_VALUE_LABEL
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_AXIS_VALUE_DISPLAY_ORDER_STATUS_VALUE
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_LATERAL_JSONB_AGG_JSONB_BUILD_OBJECT_ATTRIBUTE_REF
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ATTRIBUTE_ENTRY_REF_TEXT
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ATTRIBUTE_CODE_ATTRIBUTE_CODE_ATTRIBUTE_NAME
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ATTRIBUTE_VALUE_REF_VALUE_ENTRY_REF_TEXT
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_VALUE_CODE_VALUE_CODE_VALUE_LABEL
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_AXIS_VALUE_DISPLAY_ORDER_STATUS_VALUE
                 + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ORDER_BY_AXIS_VALUE_DISPLAY_ORDER_ATTRIBUTE_CODE
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ATTRIBUTE_VALUES
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ATTRIBUTE_VALUES
                 + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_FROM_CLAUSE_CATALOG_SKU_ATTRIBUTE_VALUE_ASSIGNMENT
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_DICTIONARY_ENTRY_ATTRIBUTE_ENTRY_REF_ASSIGNMENT
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_DICTIONARY_ENTRY_ATTRIBUTE_ENTRY_REF_ASSIGNMENT
                 + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_JOIN_DICTIONARY_ENTRY_VALUE
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_VALUE_ENTRY_REF_ASSIGNMENT_ATTRIBUTE_VALUE_REF
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_SKU_VARIANT_AXIS_AXIS
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_VALUE_ENTRY_REF_ASSIGNMENT_ATTRIBUTE_VALUE_REF
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_SKU_VARIANT_AXIS_AXIS
                 + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_JOIN_CONDITION_AXIS_ITEM_REF_SKU_ATTRIBUTE_REF
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_SKU_VARIANT_AXIS_VALUE_AXIS_VALUE
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_SKU_VARIANT_AXIS_VALUE_AXIS_VALUE
                 + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_JOIN_CONDITION_AXIS_VALUE_SKU_VARIANT_AXIS_REF_AXIS
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_AXIS_VALUE_VALUE_REF_ASSIGNMENT_ATTRIBUTE_VALUE_REF
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_AXIS_VALUE_VALUE_REF_ASSIGNMENT_ATTRIBUTE_VALUE_REF
                 + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_WHERE_ASSIGNMENT_PRODUCT_SKU_REF_SKU_ATTRIBUTES
                 + skuStatusPredicate + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_C
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_MATCHING_AGGREGATE_TOTAL_PAGED);
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_MATCHING_AGGREGATE_TOTAL_PAGED);
         List<Object> args = new ArrayList<>(List.of(dataNodeRef, brandRef, itemCode));
         if (cursorDisplayOrder != null) {
             sql.append(CatalogItemServiceSql.CATALOG_ITEM_SERVICE_WHERE_DISPLAY_ORDER_SKU_CODE + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OPEN_PAREN_DISPLAY_ORDER_SKU_CODE_PRODUCT_SKU_REF);
@@ -416,13 +416,13 @@ public class CatalogItemPersistence {
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONDITION_PUBLISHED_VERSION_KIND_PUBLISHED
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UNION_ALTERNATE_B
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_SNAPSHOT_ASSET_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_0_9A_F_8_0_9A_F_4_1_5_0_9A_F
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_0_9A_F_8_0_9A_F_4_1_5_0_9A_F
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_THEN_SNAPSHOT_ASSET_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_FROM_CLAUSE_SALES_VERSION_ITEM_PUBLISHED_ALTERNATE_A
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_JOIN_SALES_COLLECTION_VERSION_PUBLISHED_VERSION_ALTERNATE_A
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_JOIN_CONDITION_PUBLISHED_VERSION_VERSION_REF_PUBLISHED_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_LATERAL_JSONB_ARRAY_ELEMENTS_TEXT
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_PUBLISHED_PUBLISHED_CATALOG_IMAGE_ASSET_REFS_SNAPSHOT_ASSET_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_LATERAL_JSONB_ARRAY_ELEMENTS_TEXT
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_PUBLISHED_PUBLISHED_CATALOG_IMAGE_ASSET_REFS_SNAPSHOT_ASSET_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_WHERE_SNAPSHOT_ASSET_REF + placeholders + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_A
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONDITION_PUBLISHED_VERSION_KIND_PUBLISHED_ALTERNATE_A
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_REFERENCED_ASSETS,
@@ -466,12 +466,12 @@ public class CatalogItemPersistence {
         Map<String, Map<String, String>> result = new LinkedHashMap<>();
         jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_CATALOG_SKU_ITEM_CODE_SKU_SKU_CODE
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_SKU_ITEM_REF_ITEM_DATA_NODE_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_CODE
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SKU_ITEM_REF_ITEM_DATA_NODE_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_CODE
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_IN_LIST_PREFIX
                         + placeholders
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ITEM_STATUS_VOIDED_SKU
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_CODE_SKU_DISPLAY_ORDER,
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_CODE_SKU_DISPLAY_ORDER,
                 args.toArray(),
                 rows -> {
                     while (rows.next()) {
@@ -499,7 +499,7 @@ public class CatalogItemPersistence {
             long updatedAt) {
         return jdbc.update(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_INSERT_INTO_CATALOG_ITEM_ITEM_REF_DATA_NODE_REF_BRAND_REF_CODE
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_SHAPE_KEY_STATUS_SECTIONS_VERSION
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SHAPE_KEY_STATUS_SECTIONS_VERSION
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_DISABLED
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_PARAMETER_PLACEHOLDER,
                 itemRef,
@@ -545,10 +545,10 @@ public class CatalogItemPersistence {
         values.add(expectedVersion);
         return jdbc.update(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UPDATE_CATALOG_ITEM_NAME_SHORT_NAME_SECTIONS
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_SALES_UNIT_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_SALES_UNIT_PRECISION_BASE_MEASURE_UNIT_REF_BASE_MEASURE_UNIT_CODE
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_BASE_MEASURE_UNIT_NAME
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_VERSION_UPDATED_AT_EPOCH_MILLIS_DATA_NODE_REF_BRAND_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SALES_UNIT_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SALES_UNIT_PRECISION_BASE_MEASURE_UNIT_REF_BASE_MEASURE_UNIT_CODE
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_BASE_MEASURE_UNIT_NAME
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS_DATA_NODE_REF_BRAND_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONDITION_CODE_VERSION_STATUS_VOIDED,
                 values.toArray());
     }
@@ -556,10 +556,8 @@ public class CatalogItemPersistence {
     public void writeItemUnitSnapshots(List<ItemUnitSnapshotRow> rows) {
         if (rows.isEmpty()) return;
         jdbc.batchUpdate(
-                CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UPDATE_CATALOG_ITEM
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_MENSION_SALES_UNIT_PRECISION
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_BASE_MEASURE_UNIT_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_NIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_ITEM_REF,
+                CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UPDATE_CATALOG_CATALOG_ITEM_SET_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_BASE_MEASURE_UNIT_REF_BASE_MEASURE_UNIT_CODE_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_WHERE_BASE_MEASURE_UNIT_PRECISION_WHERE_ITEM_REF,
                 rows.stream()
                         .map(row -> new Object[] {
                             row.salesUnitRef(),
@@ -581,10 +579,9 @@ public class CatalogItemPersistence {
         if (rows.isEmpty()) return;
         jdbc.batchUpdate(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UPDATE_CATALOG_SKU_UPDATE_CATALOG_CATALOG_SKU_S
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_SALES_UNIT_REF_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_RECISION
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_BASE_MEASURE_UNIT_REF_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_BASE_MEASURE_UNIT_REF_ALTERNATE_A
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_VALUE_SEPARATOR_UPDATED_AT_EPOCH_MILLIS
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_WHERE_PRODUCT_SKU_REF,
                 rows.stream()
@@ -618,8 +615,8 @@ public class CatalogItemPersistence {
     public List<UUID> findSkuItemRefs(String dataNodeRef, String brandRef, UUID skuRef) {
         return jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_CATALOG_ITEM_SKU_ITEM_REF_ITEM
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_ITEM_REF_SKU_DATA_NODE_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_SKU_PRODUCT_SKU_REF,
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_ITEM_REF_SKU_DATA_NODE_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SKU_PRODUCT_SKU_REF,
                 (result, row) -> result.getObject(1, UUID.class),
                 dataNodeRef,
                 brandRef,
@@ -644,26 +641,26 @@ public class CatalogItemPersistence {
         UUID[] orderedSkuRefs = new LinkedHashSet<>(skuRefs == null ? List.of() : skuRefs).toArray(UUID[]::new);
         return jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_SKU
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_KIND_COMPONENT_PRODUCT_SKU_REF_COMPOSITE_COMPONENT_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_OWNER_ITEM_CODE_NAME_BIGINT
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_KIND_COMPONENT_PRODUCT_SKU_REF_COMPOSITE_COMPONENT_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OWNER_ITEM_CODE_NAME_BIGINT
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_FROM_CLAUSE_CATALOG_COMPOSITE_GROUP_COMPONENT
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_GROUP_ROW_COMPOSITE_GROUP_REF_COMPONENT
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_OWNER_ITEM_ITEM_REF_GROUP_ROW
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_SKU_TARGET_SKU_PRODUCT_SKU_REF_COMPONENT
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_GROUP_ROW_COMPOSITE_GROUP_REF_COMPONENT
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_OWNER_ITEM_ITEM_REF_GROUP_ROW
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_SKU_TARGET_SKU_PRODUCT_SKU_REF_COMPONENT
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_WHERE
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_OWNER_ITEM_DATA_NODE_REF_BRAND_REF_STATUS
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_COMPONENT_PRODUCT_SKU_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_OWNER_ITEM_ITEM_REF_TARGET_SKU
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_COMPONENT_COMPOSITE_COMPONENT_REF_OWNER_ITEM
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_OWNER_ITEM_CODE_NAME_BIGINT_ALTERNATE_A
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OWNER_ITEM_DATA_NODE_REF_BRAND_REF_STATUS
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_COMPONENT_PRODUCT_SKU_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OWNER_ITEM_ITEM_REF_TARGET_SKU
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_COMPONENT_COMPOSITE_COMPONENT_REF_OWNER_ITEM
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OWNER_ITEM_CODE_NAME_BIGINT_ALTERNATE_A
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_FROM_CLAUSE_CATALOG_COMPOSITE_GROUP_COMPONENT_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_GROUP_ROW_COMPOSITE_GROUP_REF_COMPONENT_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_OWNER_ITEM_ITEM_REF_GROUP_ROW_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_OWNER_ITEM_DATA_NODE_REF_BRAND_REF_STATUS_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_COMPONENT_COMPONENT_ITEM_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_GENERATION_TEXT
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_VERSION
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF,
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_GROUP_ROW_COMPOSITE_GROUP_REF_COMPONENT_ALTERNATE_A
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_OWNER_ITEM_ITEM_REF_GROUP_ROW_ALTERNATE_A
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OWNER_ITEM_DATA_NODE_REF_BRAND_REF_STATUS_ALTERNATE_A
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_COMPONENT_COMPONENT_ITEM_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_GENERATION_TEXT
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_VERSION
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF,
                 statement -> {
                     statement.setString(1, dataNodeRef);
                     statement.setString(2, brandRef);
@@ -709,17 +706,17 @@ public class CatalogItemPersistence {
         UUID[] values = orderedRefs.toArray(UUID[]::new);
         return jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_COMPONENT_PRODUCT_SKU_REF_COMPOSITE_COMPONENT_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_OWNER_ITEM_ITEM_REF_CODE_NAME
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_COMPOSITE_GROUP_CATALOG_COMPOSITE_COMPONENT_COMPONENT
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_GROUP_ROW
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_GROUP_ROW_COMPOSITE_GROUP_REF_COMPONENT
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_SKU_OWNER_ITEM_ITEM_REF_GROUP_ROW_TARGET_SKU
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_TARGET_SKU_PRODUCT_SKU_REF_COMPONENT_OWNER_ITEM
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_OWNER_ITEM_BRAND_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OWNER_ITEM_ITEM_REF_CODE_NAME
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_COMPOSITE_GROUP_CATALOG_COMPOSITE_COMPONENT_COMPONENT
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_GROUP_ROW
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_GROUP_ROW_COMPOSITE_GROUP_REF_COMPONENT
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_SKU_OWNER_ITEM_ITEM_REF_GROUP_ROW_TARGET_SKU
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_TARGET_SKU_PRODUCT_SKU_REF_COMPONENT_OWNER_ITEM
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OWNER_ITEM_BRAND_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONDITION
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_OWNER_ITEM_STATUS_VOIDED_COMPONENT
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OWNER_ITEM_STATUS_VOIDED_COMPONENT
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONDITION_OWNER_ITEM_ITEM_REF_TARGET_SKU
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_COMPONENT_PRODUCT_SKU_REF_OWNER_ITEM_CODE,
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_COMPONENT_PRODUCT_SKU_REF_OWNER_ITEM_CODE,
                 statement -> {
                     statement.setString(1, dataNodeRef);
                     statement.setString(2, brandRef);
@@ -754,7 +751,7 @@ public class CatalogItemPersistence {
     public int transitionItem(
             String target, long updatedAt, UUID itemRef, String dataNodeRef, String brandRef, long expectedVersion) {
         return jdbc.update(
-                CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UPDATE_CATALOG_ITEM_STATUS_VERSION_UPDATED_AT_EPOCH_MILLIS_ALTERNATE_A + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_REF_DATA_NODE_REF_BRAND_REF_VERSION,
+                CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UPDATE_CATALOG_ITEM_STATUS_VERSION_UPDATED_AT_EPOCH_MILLIS_ALTERNATE_A + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_REF_DATA_NODE_REF_BRAND_REF_VERSION,
                 target,
                 updatedAt,
                 itemRef,
@@ -765,7 +762,7 @@ public class CatalogItemPersistence {
 
     public boolean formalCodeAvailable(String dataNodeRef, String brandRef, String code, UUID currentRef) {
         Long count = jdbc.queryForObject(
-                CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_CODE + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_REF_STATUS_VOIDED,
+                CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_CODE + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_REF_STATUS_VOIDED,
                 Long.class,
                 dataNodeRef,
                 brandRef,
@@ -786,10 +783,10 @@ public class CatalogItemPersistence {
             long expectedVersion) {
         return jdbc.update(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UPDATE_CATALOG_ITEM_UPDATE_CATALOG_CATALOG_ITEM_
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_NAME_SHORT_NAME_SHAPE_KEY_STATUS
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_VERSION_UPDATED_AT_EPOCH_MILLIS
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_NAME_SHORT_NAME_SHAPE_KEY_STATUS
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_WHERE_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_DATA_NODE_REF_BRAND_REF_CODE_VERSION,
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_DATA_NODE_REF_BRAND_REF_CODE_VERSION,
                 name,
                 shortName,
                 shapeKey,
@@ -817,8 +814,7 @@ public class CatalogItemPersistence {
         return jdbc.update(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_INSERT_INTO_CATALOG_ITEM_INSERT_INTO_CATALOG_CATALOG_
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OPEN_PAREN_ITEM_REF_DATA_NODE_REF_BRAND_REF_CODE
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_SOURCE_ITEM_CODE_SOURCE_SCOPE_REF_VERSION_CREATED_AT_EPOCH_MILLIS
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_S
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SOURCE_ITEM_CODE_SOURCE_SCOPE_REF_VERSION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_SOURCE_SCOPE_REF_VERSION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_VALUES_DISABLED,
                 itemRef,
                 dataNodeRef,
@@ -857,7 +853,7 @@ public class CatalogItemPersistence {
         args.addAll(stable);
         return jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_CATEGORY_REF_CODE_NAME_PARENT_CODE
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF
                         + placeholders
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_STATUS_VOIDED_CATEGORY_REF,
                 (result, row) -> new CategoryRow(
@@ -885,7 +881,7 @@ public class CatalogItemPersistence {
         args.addAll(stable);
         return jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_CATEGORY_REF_CODE_NAME_PARENT_CODE_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_ALTERNATE_A
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_CATEGORY_DATA_NODE_REF_BRAND_REF_CATEGORY_REF_ALTERNATE_A
                         + placeholders
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_CATEGORY_REF,
                 (result, row) -> new CategoryRow(
@@ -904,10 +900,10 @@ public class CatalogItemPersistence {
             String scope, String brand, String itemCode) {
         return jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_ITEM_ITEM_REF_CODE_NAME
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_SECTIONS_TEXT
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_VERSION_UPDATED_AT_EPOCH_MILLIS_SOURCE_SCOPE_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_PRODUCT_IDENTIFIER_IDENTIFIER
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_IDENTIFIER_ITEM_REF_ITEM
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_SECTIONS_TEXT
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_VERSION_UPDATED_AT_EPOCH_MILLIS_SOURCE_SCOPE_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_PRODUCT_IDENTIFIER_IDENTIFIER
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_IDENTIFIER_ITEM_REF_ITEM
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_FROM_CLAUSE_CATALOG_ITEM_ITEM_DATA_NODE_REF_BRAND_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONDITION_ITEM_CODE,
                 result -> {
@@ -928,12 +924,12 @@ public class CatalogItemPersistence {
         return jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_COMPONENT_COMPONENT_ITEM_REF_OWNER_ITEM_ITEM_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_FROM_CLAUSE_CATALOG_COMPOSITE_COMPONENT_COMPONENT
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_COMPOSITE_GROUP_GROUP_ROW
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_GROUP_ROW_COMPOSITE_GROUP_REF_COMPONENT_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_OWNER_ITEM_ITEM_REF_GROUP_ROW_DATA_NODE_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_OWNER_ITEM_BRAND_REF_STATUS_VOIDED
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_COMPOSITE_GROUP_GROUP_ROW
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_GROUP_ROW_COMPOSITE_GROUP_REF_COMPONENT_ALTERNATE_A
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OWNER_ITEM_ITEM_REF_GROUP_ROW_DATA_NODE_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OWNER_ITEM_BRAND_REF_STATUS_VOIDED
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONDITION_COMPONENT_COMPONENT_ITEM_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_OWNER_ITEM_CODE_ITEM_REF,
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OWNER_ITEM_CODE_ITEM_REF,
                 statement -> {
                     statement.setString(1, scope);
                     statement.setString(2, brand);
@@ -958,10 +954,10 @@ public class CatalogItemPersistence {
         return jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_OWNER_ITEM_ITEM_REF_CODE_NAME
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_FROM_CLAUSE_CATALOG_COMPOSITE_COMPONENT_COMPONENT_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_COMPOSITE_GROUP_GROUP_ROW_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_GROUP_ROW_COMPOSITE_GROUP_REF_COMPONENT_ALTERNATE_B
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_OWNER_ITEM_ITEM_REF_GROUP_ROW_DATA_NODE_REF_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_OWNER_ITEM_BRAND_REF_STATUS_VOIDED_ALTERNATE_A
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_COMPOSITE_GROUP_GROUP_ROW_ALTERNATE_A
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_GROUP_ROW_COMPOSITE_GROUP_REF_COMPONENT_ALTERNATE_B
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OWNER_ITEM_ITEM_REF_GROUP_ROW_DATA_NODE_REF_ALTERNATE_A
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_OWNER_ITEM_BRAND_REF_STATUS_VOIDED_ALTERNATE_A
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ORDER_BY_OWNER_ITEM_CODE_ITEM_REF,
                 (result, row) -> new InboundItemReferenceRow(
                         result.getObject(1, UUID.class), result.getString(2), result.getString(3)),
@@ -976,14 +972,14 @@ public class CatalogItemPersistence {
         result.put("SKU_ATTRIBUTE_VALUE", new LinkedHashSet<>());
         jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_SKU_ATTRIBUTE_DICTIONARY_KIND_RELATION_ATTRIBUTE_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_SKU_CATALOG_SKU_ATTRIBUTE_VALUE_RELATION_SKU
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_SKU_PRODUCT_SKU_REF_RELATION_ITEM
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_ITEM_REF_SKU_DATA_NODE_REF_ALTERNATE_A
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_SKU_CATALOG_SKU_ATTRIBUTE_VALUE_RELATION_SKU
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_SKU_PRODUCT_SKU_REF_RELATION_ITEM
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_ITEM_REF_SKU_DATA_NODE_REF_ALTERNATE_A
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONDITION_ITEM_ITEM_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UNION_SKU_ATTRIBUTE_VALUE_RELATION_ATTRIBUTE_VALUE_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_SKU_CATALOG_SKU_ATTRIBUTE_VALUE_RELATION_SKU_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_SKU_PRODUCT_SKU_REF_RELATION_ITEM_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_ITEM_REF_SKU_DATA_NODE_REF_ALTERNATE_B
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_SKU_CATALOG_SKU_ATTRIBUTE_VALUE_RELATION_SKU_ALTERNATE_A
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_SKU_PRODUCT_SKU_REF_RELATION_ITEM_ALTERNATE_A
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_ITEM_REF_SKU_DATA_NODE_REF_ALTERNATE_B
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONDITION_ITEM_ITEM_REF_ALTERNATE_A,
                 (rows, row) -> {
                     String kind = rows.getString(1);
@@ -1060,7 +1056,7 @@ public class CatalogItemPersistence {
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_SKU_PRODUCT_SKU_REF_ITEM_REF_ITEM
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_FROM_CLAUSE_CATALOG_ITEM_SKU_ITEM
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_JOIN_CONDITION_ITEM_ITEM_REF_SKU_DATA_NODE_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_SKU_PRODUCT_SKU_REF_ALTERNATE_A
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SKU_PRODUCT_SKU_REF_ALTERNATE_A
                         + placeholders
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_SKU_PRODUCT_SKU_REF_KEY_SHARE,
                 (result, row) -> Map.entry(
@@ -1095,20 +1091,20 @@ public class CatalogItemPersistence {
                         + placeholders
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_CATEGORY_DATA_NODE_REF_BRAND_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONDITION_CATEGORY_STATUS_VOIDED
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATEGORY_PATHS_LEAF_REF_CATEGORY_REF_PARENT_CATEGORY_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATEGORY_PATHS_LEAF_REF_CATEGORY_REF_PARENT_CATEGORY_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_CATEGORY_CATEGORY_REF_PARENT_CATEGORY_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_JSONB_BUILD_ARRAY_JSONB_BUILD_OBJECT_CATEGORY_REF_CATEGORY
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CODE_CATEGORY_NAME
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_JSONB_BUILD_ARRAY_JSONB_BUILD_OBJECT_CATEGORY_REF_CATEGORY
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CODE_CATEGORY_NAME
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_FROM_CLAUSE_CATALOG_CATEGORY_CATEGORY
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_JOIN_CONDITION_CATEGORY_CATEGORY_REF_SELECTED
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UNION_PATHS_LEAF_REF_PARENT_CATEGORY_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_JSONB_BUILD_ARRAY_JSONB_BUILD_OBJECT_CATEGORY_REF_PARENT
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CODE_PARENT_NAME_PATHS
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_JSONB_BUILD_ARRAY_JSONB_BUILD_OBJECT_CATEGORY_REF_PARENT
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CODE_PARENT_NAME_PATHS
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_FROM_CLAUSE_CATEGORY_PATHS_PATHS
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_JOIN_CATALOG_CATEGORY_PARENT_DATA_NODE_REF_BRAND_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONDITION_PARENT_CATEGORY_REF_PATHS_PARENT_CATEGORY_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_SELECTED_ITEM_REF_CATEGORY_REF_PATHS_PATH_NODES
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATEGORY_PATHS_PATHS_LEAF_REF_SELECTED_CATEGORY_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATEGORY_PATHS_PATHS_LEAF_REF_SELECTED_CATEGORY_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONDITION_PATHS_PARENT_CATEGORY_REF,
                 (result, row) -> new CategorySummaryRow(
                         result.getObject(1, UUID.class),
@@ -1124,17 +1120,17 @@ public class CatalogItemPersistence {
                 CatalogItemServiceSql.VALUE_SEPARATOR,
                 Collections.nCopies(refs.size(), CatalogItemServiceSql.PARAMETER_PLACEHOLDER));
         String sql = CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_ALTERNATE_D
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_SKU_ITEM_REF + placeholders
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_SKU_ITEM_REF + placeholders
                 + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_STATUS_VOIDED
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_CATEGORY_ITEM_REF_ALTERNATE_A + placeholders + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_D
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_COMPOSITE_GROUP_ITEM_REF_ALTERNATE_A + placeholders + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_E
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_ITEM_REF_ALTERNATE_A + placeholders
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_CATEGORY_ITEM_REF_ALTERNATE_A + placeholders + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_D
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_COMPOSITE_GROUP_ITEM_REF_ALTERNATE_A + placeholders + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_E
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_ITEM_REF_ALTERNATE_A + placeholders
                 + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_F
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_CONFIG_ITEM_REF_ALTERNATE_A + placeholders
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_ORDER_OPTION_CONFIG_ITEM_REF_ALTERNATE_A + placeholders
                 + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_G
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_SKU_VARIANT_AXIS_ITEM_REF_ALTERNATE_A + placeholders + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_H
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_IMAGE_ITEM_REF_ALTERNATE_A + placeholders + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_I
-                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_REFERENCE_ITEM_REF_ALTERNATE_A + placeholders + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_J;
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_SKU_VARIANT_AXIS_ITEM_REF_ALTERNATE_A + placeholders + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_H
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_IMAGE_ITEM_REF_ALTERNATE_A + placeholders + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_I
+                + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_REFERENCE_ITEM_REF_ALTERNATE_A + placeholders + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_J;
         List<Object> args = new ArrayList<>();
         for (int index = 0; index < 8; index++) args.addAll(refs);
         return jdbc.query(
@@ -1166,10 +1162,8 @@ public class CatalogItemPersistence {
         args.addAll(codes);
         return jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_REF_CODE_NAME_SHORT_NAME_ALTERNATE_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ED_A
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_T_EPOCH_MILLIS_SOURCE_SCOPE_REF_DATA_NODE_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_BRAND_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_REF_CODE_NAME_SHORT_NAME_SHAPE_KEY_STATUS_SECTIONS_TEXT_VERSION_UPDATED_AT_EPOCH_MILLIS_CATALOG_ITEM_WHERE_DATA_NODE_REF_AND
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_BRAND_REF
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONDITION_CODE
                         + placeholders
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_STATUS_VOIDED_CODE,
@@ -1186,7 +1180,7 @@ public class CatalogItemPersistence {
         args.addAll(codes);
         return jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_ALTERNATE_B
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_ITEM_REF_CODE_NAME_SHORT_NAME_ALTERNATE_B
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_ITEM_REF_CODE_NAME_SHORT_NAME_ALTERNATE_B
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_SOURCE_SCOPE_REF_ALTERNATE_A
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_FROM_CLAUSE_CATALOG_ITEM_DATA_NODE_REF_BRAND_REF_CODE
                         + placeholders
@@ -1198,22 +1192,22 @@ public class CatalogItemPersistence {
     public SaveFactPresenceRow readSaveFactPresence(UUID itemRef) {
         return jdbc.query(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_ALTERNATE_C
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_PRODUCT_IDENTIFIER_ITEM_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_ITEM_REF_PREPARATION_PROFILE
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_SKU_ITEM_REF_PREPARATION_OVERRIDE
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_SKU_MEDIA_SKU
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_SKU_PRODUCT_SKU_REF_MEDIA_ITEM_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_CATEGORY_ITEM_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_COMPOSITE_GROUP_ITEM_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_ITEM_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_CONFIG_ITEM_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_ORDER_OPTION_CONFIG_CONFIG
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CONFIG_ITEM_ORDER_OPTION_CONFIG_REF_OVERRIDE
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_PRODUCT_IDENTIFIER_ITEM_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_ITEM_REF_PREPARATION_PROFILE
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_SKU_ITEM_REF_PREPARATION_OVERRIDE
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_SKU_MEDIA_SKU
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SKU_PRODUCT_SKU_REF_MEDIA_ITEM_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_CATEGORY_ITEM_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_COMPOSITE_GROUP_ITEM_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_ATTRIBUTE_ASSIGNMENT_ITEM_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_ORDER_OPTION_CONFIG_ITEM_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_ORDER_OPTION_VALUE_OV_OVERRIDE
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_ORDER_OPTION_CONFIG_CONFIG
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONFIG_ITEM_ORDER_OPTION_CONFIG_REF_OVERRIDE
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_WHERE_CONFIG_ITEM_REF_OVERRIDE_PREPARATION_EFFECT
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_SKU_VARIANT_AXIS_ITEM_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_IMAGE_ITEM_REF
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CATALOG_ITEM_REFERENCE_ITEM_REF,
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_SKU_VARIANT_AXIS_ITEM_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_IMAGE_ITEM_REF
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CATALOG_ITEM_REFERENCE_ITEM_REF,
                 result -> {
                     if (!result.next()) return new SaveFactPresenceRow(false, false, false, false, false, false, false, false, false, false, false, false);
                     return new SaveFactPresenceRow(
@@ -1242,10 +1236,8 @@ public class CatalogItemPersistence {
                 CatalogItemServiceSql.VALUE_SEPARATOR,
                 Collections.nCopies(refs.size(), CatalogItemServiceSql.PARAMETER_PLACEHOLDER));
         return jdbc.query(
-                CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_ITEM_REF_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_CISION
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_BASE_MEASURE_UNIT_REF_ALTERNATE_B
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_MENSION_BASE_MEASURE_UNIT_PRECISION
+                CatalogItemServiceSql.CATALOG_ITEM_SERVICE_SELECT_ITEM_REF_SALES_UNIT_REF_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION_SALES_UNIT_CODE_SALES_UNIT_NAME_SALES_UNIT_DIMENSION_SALES_UNIT_PRECISION
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_BASE_MEASURE_UNIT_REF_BASE_MEASURE_UNIT_CODE_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION_BASE_MEASURE_UNIT_NAME_BASE_MEASURE_UNIT_DIMENSION_BASE_MEASURE_UNIT_PRECISION
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_FROM_CLAUSE_CATALOG_ITEM_ITEM_REF
                         + placeholders
                         + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CLOSE_PAREN_ALTERNATE_B,
@@ -1302,9 +1294,8 @@ public class CatalogItemPersistence {
             String scope, String key, String operationId, String requestHash, String responseJson, long createdAt) {
         jdbc.update(
                 CatalogItemServiceSql.CATALOG_ITEM_SERVICE_INSERT_INTO
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_CONTINUATION_RESP
-                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_JOIN_CONDITION_ONSE_CREATED_AT_EPOCH_MILLIS,
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_COMMAND_RECEIPT_RECEIPT_REF_DATA_NODE_REF_IDEMPOTENCY_KEY
+                        + CatalogItemServiceSql.CATALOG_ITEM_SERVICE_RESPONSE_CREATED_AT_EPOCH_MILLIS_VALUES_CAST_AS_JSONB_VALUES_CAST_AS_JSONB,
                 UUID.randomUUID(),
                 scope,
                 key,

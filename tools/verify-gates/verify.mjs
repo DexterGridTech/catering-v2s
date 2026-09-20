@@ -44,7 +44,15 @@ const staticCommands = Object.freeze([
     ['--suite', 'sales-menu', '--self-test'],
     ['BROWSER_L2_SALES_MENU_RUNTIME_SELF_TEST=PASS'],
   ],
+  [
+    'l2-locator-bindings-static',
+    'node',
+    ['--test', 'scripts/test/l2-locator-bindings.static.test.mjs'],
+    ['tests 3', 'pass 3'],
+  ],
   ['runtime-environment-keys', 'scripts/check/runtime-environment-keys', [], ['R5_RUNTIME_ENVIRONMENT_KEYS=PASS']],
+  ['lifecycle-vocabulary', 'scripts/check/lifecycle-vocabulary', [], ['R6_LIFECYCLE_VOCABULARY=PASS']],
+  ['reuse-consistency', 'node', ['tools/verify-gates/cli.mjs', 'r11'], ['R11_REUSE_CONSISTENCY=PASS']],
   [
     'backend-archunit',
     'gradle',

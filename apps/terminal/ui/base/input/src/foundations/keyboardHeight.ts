@@ -36,12 +36,26 @@ const MIN_CONTENT_HEIGHT = 208;
 const MAX_DOCK_HEIGHT = 320;
 const MAX_DOCK_RATIO = 0.5;
 const KEY_CELL_HEIGHT = 48;
-const DOCK_PADDING_HORIZONTAL = 8;
-const DOCK_PADDING_VERTICAL = 9;
-const ROW_GAP = 3;
-const DENSE_KEY_MIN_WIDTH = 32;
-const DENSE_COLUMN_GAP = 2;
+const COMPACT_KEY_CELL_HEIGHT = 38;
+const DOCK_PADDING_HORIZONTAL = 14;
+const COMPACT_DOCK_PADDING_HORIZONTAL = 10;
+const DOCK_PADDING_VERTICAL = 14;
+const COMPACT_DOCK_PADDING_VERTICAL = 10;
+const DOCK_BORDER_WIDTH = 1;
+const ROW_GAP = 8;
+const COMPACT_ROW_GAP = 5;
+const DENSE_KEY_MIN_WIDTH = 30;
+const COMPACT_COLUMN_GAP = 4;
 const STANDARD_COLUMN_GAP = 8;
+const DOCK_OUTER_HORIZONTAL_MARGIN = 16;
+const COMPACT_NUMERIC_DOCK_WIDTH = 330;
+const DOCK_MAX_WIDTH: Readonly<Record<KeyboardLayout, number>> = Object.freeze({
+  full: 820,
+  alpha: 820,
+  numeric: 560,
+  financial: 560,
+});
+const MOBILE_SYMBOL_MAX_FRAME_WIDTH = 480;
 
 const isReady = (frame: FrameMetricsInput | null): frame is FrameMetricsInput =>
   frame !== null &&
@@ -60,18 +74,45 @@ const calculateAvailableDockHeight = (frameHeight: number): number => {
   return Math.max(0, candidate);
 };
 
-const calculateVerticalRequired = (rowCount: number): number =>
-  rowCount * KEY_CELL_HEIGHT + (rowCount - 1) * ROW_GAP + DOCK_PADDING_VERTICAL * 2;
+const isCompactFrameWidth = (frameWidth: number): boolean => frameWidth <= MOBILE_SYMBOL_MAX_FRAME_WIDTH;
 
-const calculateCellWidth = (frameWidth: number, columnCount: number, horizontalMode: 'dense' | 'standard'): number => {
-  const columnGap = horizontalMode === 'dense' ? DENSE_COLUMN_GAP : STANDARD_COLUMN_GAP;
-  const available = frameWidth - DOCK_PADDING_HORIZONTAL * 2 - (columnCount - 1) * columnGap;
+const calculateVerticalRequired = (rowCount: number, compact: boolean): number =>
+  rowCount * (compact ? COMPACT_KEY_CELL_HEIGHT : KEY_CELL_HEIGHT) +
+  (rowCount - 1) * (compact ? COMPACT_ROW_GAP : ROW_GAP) +
+  (compact ? COMPACT_DOCK_PADDING_VERTICAL : DOCK_PADDING_VERTICAL) * 2 +
+  DOCK_BORDER_WIDTH * 2;
+
+const calculateCellWidth = (
+  frameWidth: number,
+  columnCount: number,
+  compact = isCompactFrameWidth(frameWidth),
+): number => {
+  const columnGap = compact ? COMPACT_COLUMN_GAP : STANDARD_COLUMN_GAP;
+  const horizontalPadding = compact ? COMPACT_DOCK_PADDING_HORIZONTAL : DOCK_PADDING_HORIZONTAL;
+  const available = frameWidth - horizontalPadding * 2 - (columnCount - 1) * columnGap;
   return Math.floor(available / columnCount);
 };
 
-export const calculateVirtualKeyboardCellWidth = (frameWidth: number, layout: KeyboardLayout): number => {
+/**
+ * Keeps the keyboard as a floating card on wide surfaces while preserving the
+ * minimum dense-key width on the 360 logical-unit mobile surface.
+ */
+export const calculateVirtualKeyboardDockWidth = (frameWidth: number, layout: KeyboardLayout = 'full'): number => {
+  if (frameWidth <= MIN_SUPPORTED_FRAME_WIDTH && (layout === 'numeric' || layout === 'financial')) {
+    return Math.min(frameWidth - 30, COMPACT_NUMERIC_DOCK_WIDTH);
+  }
+  const insetWidth = frameWidth - DOCK_OUTER_HORIZONTAL_MARGIN * 2;
+  const availableWidth = insetWidth >= MIN_SUPPORTED_FRAME_WIDTH ? insetWidth : frameWidth;
+  return Math.min(availableWidth, DOCK_MAX_WIDTH[layout]);
+};
+
+export const calculateVirtualKeyboardCellWidth = (
+  frameWidth: number,
+  layout: KeyboardLayout,
+  compact?: boolean,
+): number => {
   const definition = getKeyboardLayout(layout);
-  return calculateCellWidth(frameWidth, definition.maxColumns, definition.horizontalMode);
+  return calculateCellWidth(frameWidth, definition.maxColumns, compact);
 };
 
 const emptyMetrics = (layout: KeyboardLayout): VirtualKeyboardMetrics => {
@@ -97,15 +138,18 @@ export const calculateVirtualKeyboardMetrics = (
   const definition = getKeyboardLayout(layout);
   if (!isReady(frame)) return emptyMetrics(layout);
 
+  const compact = isCompactFrameWidth(frame.width);
   const availableDockHeight = calculateAvailableDockHeight(frame.height);
-  const verticalRequired = calculateVerticalRequired(definition.visualRowCount);
+  const verticalRequired = calculateVerticalRequired(definition.visualRowCount, compact);
   // The visible dock wraps the actual layout instead of reserving the longest
   // layout height for every layout. This keeps alpha compact while preserving the
   // same measured surface/content boundary for every supported frame.
   const height = Math.min(availableDockHeight, verticalRequired);
   const contentHeight = Math.max(0, frame.height - height);
   const cellWidth = calculateVirtualKeyboardCellWidth(frame.width, layout);
-  const minimumCellWidth = definition.horizontalMode === 'dense' ? DENSE_KEY_MIN_WIDTH : KEY_CELL_HEIGHT;
+  const minimumCellWidth = definition.horizontalMode === 'dense'
+    ? DENSE_KEY_MIN_WIDTH
+    : compact ? COMPACT_KEY_CELL_HEIGHT : KEY_CELL_HEIGHT;
   const horizontalFeasible = cellWidth >= minimumCellWidth;
   const verticalFeasible = availableDockHeight >= verticalRequired;
   const capacity: KeyboardCapacity =
@@ -137,10 +181,19 @@ export const INPUT_LAYOUT_CONSTANTS = Object.freeze({
   MAX_DOCK_HEIGHT,
   MAX_DOCK_RATIO,
   KEY_CELL_HEIGHT,
+  COMPACT_KEY_CELL_HEIGHT,
   DOCK_PADDING_HORIZONTAL,
+  COMPACT_DOCK_PADDING_HORIZONTAL,
   DOCK_PADDING_VERTICAL,
+  COMPACT_DOCK_PADDING_VERTICAL,
+  DOCK_BORDER_WIDTH,
   ROW_GAP,
+  COMPACT_ROW_GAP,
   DENSE_KEY_MIN_WIDTH,
-  DENSE_COLUMN_GAP,
+  COMPACT_COLUMN_GAP,
   STANDARD_COLUMN_GAP,
+  DOCK_OUTER_HORIZONTAL_MARGIN,
+  COMPACT_NUMERIC_DOCK_WIDTH,
+  DOCK_MAX_WIDTH,
+  MOBILE_SYMBOL_MAX_FRAME_WIDTH,
 });

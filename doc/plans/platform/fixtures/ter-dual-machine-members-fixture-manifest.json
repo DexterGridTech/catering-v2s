@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "authority": "D-12-design-fixture-manifest",
+  "authoritativeBusinessFixtureId": "ter-dual-machine-members-capacity-v1",
+  "note": "authoritative fixture remains the required U-8/U-9 business payload; supplemental fixtures only exercise physical boundary branches that the business fixture cannot reach",
+  "fixtures": [
+    {
+      "fixtureId": "ter-dual-machine-members-capacity-v1",
+      "path": "doc/plans/platform/fixtures/ter-dual-machine-members-capacity-fixture.json",
+      "role": "authoritative-business",
+      "recordCount": 570,
+      "fileBytes": 90556,
+      "fileSha256": "05d7b0736a229da36839236bee598eefa3cd172e6cd66709577b7729a5f19e58",
+      "canonicalMembersUtf8Bytes": 62389,
+      "canonicalMembersSha256": "1e545ad3f510b1075c55f1096122aaaa659880ee908362f40bddfdeea911adee",
+      "measuredEncodedBytesAfterFflate": 16180,
+      "measuredChunkCountAfterFflate": 1,
+      "measurementMethod": "CP-0_ACTUAL: fflate 0.8.3",
+      "purposes": [
+        "U-8 full business round-trip",
+        "U-9 forced codec and round-trip"
+      ]
+    },
+    {
+      "fixtureId": "ter-dual-machine-members-multi-chunk-stress-v1",
+      "path": "doc/plans/platform/fixtures/ter-dual-machine-members-multi-chunk-stress-fixture.json",
+      "role": "supplemental-physical-stress",
+      "recordCount": 512,
+      "fileBytes": 492105,
+      "fileSha256": "d9629a15c2894e4d7fc6605fb871ff5fa151a8859b0bed83778de1983c5d202a",
+      "canonicalMembersUtf8Bytes": 466323,
+      "canonicalMembersSha256": "cdcaf036fcd42b3bb629217d611e10a839093ef62835913c672acc4bb8dbe86d",
+      "minimumEncodedChunkCountAfterFflate": 4,
+      "measuredEncodedBytesAfterFflate": 392012,
+      "measuredChunkCountAfterFflate": 8,
+      "measurementMethod": "CP-0_ACTUAL: fflate 0.8.3",
+      "purposes": [
+        "U-8 ordering/duplicate/drop/partial and reassembly bounds",
+        "U-18 delayed multi-chunk heartbeat"
+      ]
+    },
+    {
+      "fixtureId": "ter-dual-machine-members-low-compressibility-v3",
+      "path": "doc/plans/platform/fixtures/ter-dual-machine-members-low-compressibility-fixture.json",
+      "role": "supplemental-codec-boundary",
+      "recordCount": 4,
+      "fileBytes": 24365,
+      "fileSha256": "ae3b76ceae616dd5b638de8ff857aafff00f314dc3bc5f2906f153876f08c90d",
+      "canonicalMembersUtf8Bytes": 23985,
+      "canonicalMembersSha256": "906f2d32330ae94bf009539090ec14a59697dbc514a03997be5a8d73eb76ea98",
+      "expectedBranch": "compression-not-beneficial",
+      "measuredEncodedBytesAfterFflate": 30224,
+      "measuredChunkCountAfterFflate": 1,
+      "measurementMethod": "CP-0_ACTUAL: fflate 0.8.3",
+      "purposes": [
+        "U-9 raw fallback"
+      ]
+    },
+    {
+      "fixtureId": "ter-dual-machine-members-small-raw-v1",
+      "path": "doc/plans/platform/fixtures/ter-dual-machine-members-small-raw-fixture.json",
+      "role": "supplemental-codec-boundary",
+      "recordCount": 2,
+      "fileBytes": 484,
+      "fileSha256": "434af4961a41b8a417968ef07a81fd06b967fae994880f1ea76d4051afc85cfd",
+      "canonicalMembersUtf8Bytes": 213,
+      "canonicalMembersSha256": "f8b5f6f8b497f1dbd9c38d3506a0c13a9a72135b022ffb7006b89410d03f4831",
+      "expectedBranch": "below-threshold",
+      "measuredEncodedBytesAfterFflate": 160,
+      "measuredChunkCountAfterFflate": 1,
+      "measurementMethod": "CP-0_ACTUAL: fflate 0.8.3",
+      "purposes": [
+        "U-9 raw fallback"
+      ]
+    }
+  ],
+  "overflow": {
+    "fixtureId": "ter-dual-machine-members-overflow-generated-v1",
+    "role": "programmatic-boundary",
+    "persisted": false,
+    "generator": "fixed-seed Member[] generator; keep adding deterministic high-entropy name segments until encodedBytes exceeds topologyReassemblyMaxBytes",
+    "purposes": [
+      "U-8/U-10 reassembly overflow"
+    ],
+    "canonicalBytes": 10896174,
+    "encodedBytesAfterFflate": 8443440,
+    "topologyReassemblyMaxBytes": 8388608,
+    "fflateMeasurement": "CP-0_ACTUAL: fflate 0.8.3"
+  }
+}

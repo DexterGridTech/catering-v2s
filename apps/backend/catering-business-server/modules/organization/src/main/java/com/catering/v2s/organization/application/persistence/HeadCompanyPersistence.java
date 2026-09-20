@@ -12,16 +12,18 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class HeadCompanyPersistence {
     private final JdbcTemplate jdbc;
+    private final OrganizationAuditEventWriter auditEvents;
 
     public HeadCompanyPersistence(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
+        this.auditEvents = new OrganizationAuditEventWriter(jdbc);
     }
 
     public int addBrandAuthorization(UUID headCompanyId, UUID brandId, long authorizedAtEpochMillis) {
         return jdbc.update(
                 HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_INSERT_INTO_HEAD_COMPANY_BRAND_AUTHORIZATION_HEAD_COMPANY_ID
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_BRAND_ID_AUTHORIZED_AT_EPOCH_MILLIS
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION,
+                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_BRAND_ID_AUTHORIZED_AT_EPOCH_MILLIS
+                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_ON_CONFLICT_NOTHING,
                 headCompanyId,
                 brandId,
                 authorizedAtEpochMillis);
@@ -30,7 +32,7 @@ public class HeadCompanyPersistence {
     public int removeBrandAuthorization(UUID headCompanyId, UUID brandId) {
         return jdbc.update(
                 HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_DELETE_HEAD_COMPANY_BRAND_AUTHORIZATION_DELETE_FROM_ORGANIZATION_HEA
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_HEAD_COMPANY_ID_BRAND_ID,
+                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_HEAD_COMPANY_ID_BRAND_ID,
                 headCompanyId,
                 brandId);
     }
@@ -47,7 +49,7 @@ public class HeadCompanyPersistence {
             long now) {
         return jdbc.update(
                 HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_INSERT_INTO_HEAD_COMPANY_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE_NAME
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_LEGAL_NAME_CREDIT_CODE_REMARK_STATUS
+                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_LEGAL_NAME_CREDIT_CODE_REMARK_STATUS
                         + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_ENABLED,
                 id,
                 workspaceUuid,
@@ -76,12 +78,12 @@ public class HeadCompanyPersistence {
             long expectedVersion) {
         List<OrganizationEntityReadback> values = jdbc.query(
                 HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_UPDATE_HEAD_COMPANY_CODE_NAME_LEGAL_NAME_CREDIT_CODE
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_EXTENSION_VALUES_EXTENSION_RULE_REVISION_VERSION
+                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_EXTENSION_VALUES_EXTENSION_RULE_REVISION_VERSION
                         + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_VERSION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_CREDIT_CODE_VARCHAR_ALIAS_REMARK
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_EXTENSION_RULE_REVISION
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_EXTENSION_VALUES_TEXT,
+                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_VERSION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE
+                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CREDIT_CODE_VARCHAR_ALIAS_REMARK
+                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_EXTENSION_RULE_REVISION
+                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_EXTENSION_VALUES_TEXT,
                 statement -> {
                     statement.setString(1, code);
                     statement.setString(2, name);
@@ -110,7 +112,7 @@ public class HeadCompanyPersistence {
         return jdbc.update(
                 HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_UPDATE_HEAD_COMPANY_STATUS_VERSION
                         + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_WORKSPACE_UUID
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_VERSION,
+                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_GROUP_WORKSPACE_KEY_VERSION,
                 status,
                 now,
                 id,
@@ -127,7 +129,7 @@ public class HeadCompanyPersistence {
             String name) {
         String exclusion = currentId == null ? "" : HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONDITION_AND_ID;
         String sql = HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_SELECT_HEAD_COMPANY_WORKSPACE_UUID
-                + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_STATUS_VOIDED_CODE
+                + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_GROUP_WORKSPACE_KEY_STATUS_VOIDED_CODE
                 + exclusion
                 + HeadCompanyServiceSql.CODE_CONFLICT_EXISTS_SUFFIX
                 + HeadCompanyServiceSql.NAME_CONFLICT_PREDICATE
@@ -159,7 +161,7 @@ public class HeadCompanyPersistence {
     public int replaceExtensionValues(UUID id, String extensionValues, long extensionRuleRevision) {
         return jdbc.update(
                 HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_UPDATE_HEAD_COMPANY_EXTENSION_VALUES
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_EXTENSION_RULE_REVISION_ALTERNATE_A,
+                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_EXTENSION_RULE_REVISION_ALTERNATE_A,
                 extensionValues,
                 extensionRuleRevision,
                 id);
@@ -179,7 +181,7 @@ public class HeadCompanyPersistence {
     public boolean isBrandAuthorized(UUID headCompanyId, UUID brandId) {
         return !jdbc.query(
                         HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_SELECT_HEAD_COMPANY_BRAND_AUTHORIZATION_HEAD_COMPANY_ID
-                                + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_BRAND_ID,
+                                + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_BRAND_ID,
                         (row, index) -> row.getInt(1),
                         headCompanyId,
                         brandId)
@@ -189,7 +191,7 @@ public class HeadCompanyPersistence {
     public boolean hasStoreReference(UUID workspaceUuid, String groupWorkspaceKey, UUID headCompanyId, UUID brandId) {
         return !jdbc.query(
                         HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_SELECT_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                                + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_HEAD_COMPANY_ID_BRAND_ID_ALTERNATE_A,
+                                + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_HEAD_COMPANY_ID_BRAND_ID_ALTERNATE_A,
                         (row, index) -> row.getInt(1),
                         workspaceUuid,
                         groupWorkspaceKey,
@@ -210,11 +212,7 @@ public class HeadCompanyPersistence {
             String action,
             long occurredAtEpochMillis,
             String changesJson) {
-        return jdbc.update(
-                HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON
-                        + HeadCompanyServiceSql.HEAD_COMPANY_SERVICE_CONTINUATION_ALTERNATE_A,
+        return auditEvents.write(
                 id,
                 workspaceUuid,
                 groupWorkspaceKey,

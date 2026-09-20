@@ -5,6 +5,7 @@ import {
   AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
+  formatCanonicalDateTime,
   isKnownClosedCode,
   NameCodePathText,
   testId,
@@ -37,7 +38,7 @@ import {platformDetailDrawerTestIds} from '../../../app/automation/platformDetai
 type DetailDrawerState = {target?: OwnerBindingView; isOpen: boolean; close: () => void};
 
 export function formatOwnerBindingTimestamp(value: number): string {
-  return new Intl.DateTimeFormat('zh-CN', {dateStyle: 'medium', timeStyle: 'medium'}).format(value);
+  return formatCanonicalDateTime(value);
 }
 
 export function retainOwnerBindingOnRefresh(

@@ -8,6 +8,7 @@ import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
 import com.catering.v2s.collaboration.api.CollaborationReadback;
+import com.catering.v2s.platform.foundation.collection.CanonicalCursorIdentity;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import java.nio.charset.StandardCharsets;
@@ -119,13 +120,12 @@ public final class OperationsExternalCollaborationController {
 
     private static String cursorIdentity(
             UUID workspaceUuid, String groupWorkspaceKey, String capabilityClass, String nodeType, int pageSize) {
-        return String.join(
-                "\u001f",
+        return CanonicalCursorIdentity.encode(
                 "external-provider-candidates",
                 workspaceUuid.toString(),
                 groupWorkspaceKey,
-                capabilityClass == null ? "<null>" : capabilityClass,
-                nodeType == null ? "<null>" : nodeType,
+                capabilityClass,
+                nodeType,
                 Integer.toString(pageSize));
     }
 

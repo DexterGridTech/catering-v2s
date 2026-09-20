@@ -25,6 +25,7 @@ import type {MenuProps, TableColumnsType} from 'antd';
 import type {TextAreaRef} from 'antd/es/input/TextArea';
 import {
   CursorPagination,
+  AdminRowActionMenu,
   NameCodeText,
   adminDrawerSurfaceProps,
   adminListState,
@@ -251,23 +252,17 @@ function SalesMenuSectionPanel({
               >
                 {section.name} <Typography.Text type="secondary">({section.itemCount})</Typography.Text>
               </Button>
-              <Dropdown
-                menu={{
-                  items: menuItems,
-                  onClick: event => {
-                    if (event.key === 'rename') onRename(section);
-                    if (event.key === 'delete') onDelete(section);
-                    if (event.key === 'up' || event.key === 'down') onMove(section, event.key === 'up' ? 'UP' : 'DOWN');
-                  },
+              <AdminRowActionMenu
+                items={menuItems}
+                ariaLabel="更多分区操作"
+                icon={<MoreOutlined />}
+                triggerTestId={salesMenuTestIds.sectionAction(section.salesSectionRef)}
+                onClick={event => {
+                  if (event.key === 'rename') onRename(section);
+                  if (event.key === 'delete') onDelete(section);
+                  if (event.key === 'up' || event.key === 'down') onMove(section, event.key === 'up' ? 'UP' : 'DOWN');
                 }}
-              >
-                <Button
-                  type="text"
-                  icon={<MoreOutlined />}
-                  aria-label="更多分区操作"
-                  {...testId(salesMenuTestIds.sectionAction(section.salesSectionRef))}
-                />
-              </Dropdown>
+              />
             </div>
           );
         })}
@@ -354,34 +349,28 @@ function DraftSalesItemTable({
       fixed: 'right',
       width: 72,
       render: (_, row) => (
-        <Dropdown
-          menu={{
-            items: [
-              {
-                key: 'up',
-                label: '上移',
-                disabled: !canEdit || !row.canMoveUp,
-                ...testId(salesMenuTestIds.itemMenuAction(row.salesItemRef, 'up')),
-              },
-              {
-                key: 'down',
-                label: '下移',
-                disabled: !canEdit || !row.canMoveDown,
-                ...testId(salesMenuTestIds.itemMenuAction(row.salesItemRef, 'down')),
-              },
-            ],
-            onClick: event => {
-              if (event.key === 'up' || event.key === 'down') onMove(row, event.key === 'up' ? 'UP' : 'DOWN');
+        <AdminRowActionMenu
+          items={[
+            {
+              key: 'up',
+              label: '上移',
+              disabled: !canEdit || !row.canMoveUp,
+              ...testId(salesMenuTestIds.itemMenuAction(row.salesItemRef, 'up')),
             },
+            {
+              key: 'down',
+              label: '下移',
+              disabled: !canEdit || !row.canMoveDown,
+              ...testId(salesMenuTestIds.itemMenuAction(row.salesItemRef, 'down')),
+            },
+          ]}
+          onClick={event => {
+            if (event.key === 'up' || event.key === 'down') onMove(row, event.key === 'up' ? 'UP' : 'DOWN');
           }}
-        >
-          <Button
-            type="text"
-            icon={<MoreOutlined />}
-            aria-label="更多销售项操作"
-            {...testId(salesMenuTestIds.itemAction(row.salesItemRef, 'menu'))}
-          />
-        </Dropdown>
+          ariaLabel="更多销售项操作"
+          icon={<MoreOutlined />}
+          triggerTestId={salesMenuTestIds.itemAction(row.salesItemRef, 'menu')}
+        />
       ),
     },
   ];
@@ -1360,6 +1349,7 @@ export function SalesMenuPage({queryContext, actionCapabilityKeys}: OperationsPa
                           'data-testid': salesMenuTestIds.channelOption(channel.channelRef),
                         };
                       })}
+                      popupRender={menu => <div data-testid={salesMenuTestIds.channelPopup}>{menu}</div>}
                       onPopupScroll={event =>
                         read.channels.candidates.onPopupScroll(event, read.channels.query.isFetching)
                       }

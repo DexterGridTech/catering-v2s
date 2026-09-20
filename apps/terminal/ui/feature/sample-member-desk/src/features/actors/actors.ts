@@ -1,6 +1,7 @@
 import {
   clearLayersCommand,
   closeLayerCommand,
+  isCurrentWorkspaceOwnedByInstance,
   openLayerCommand,
   selectLayers,
   showScreenCommand,
@@ -23,9 +24,11 @@ import {
   memberPendingCommand as registryMemberPendingCommand,
   memberRejectedCommand as registryMemberRejectedCommand,
   memberWithdrawnCommand as registryMemberWithdrawnCommand,
+  selectPendingMember,
   withdrawMemberCommand as registryWithdrawMemberCommand,
 } from '@catering-v2s/kernel-feature-sample-member-registry'
-import {selectTopologyFacts} from '@catering-v2s/kernel-base-topology'
+import {selectTopologyFacts, topologyHostEventCommand} from '@catering-v2s/kernel-base-topology'
+import {selectSessionState} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {
   deskSystemFailureDismissedCommand,
   deskSystemFailureObservedCommand,
@@ -42,20 +45,75 @@ const primary = 'PRIMARY' as const
 const secondary = 'SECONDARY' as const
 const main = 'main' as const
 
-const hasSecondarySurface = (context: ActorExecutionContext): boolean =>
-  selectTopologyFacts(context.getState()).hasTopologySecondarySurface
+const navigationLog = (
+  context: ActorExecutionContext,
+  event: string,
+  data: Readonly<Record<string, string | boolean | number | null>>,
+): void => {
+  context.platformPorts.logger.info({
+    category: 'sample.member-desk.navigation',
+    event,
+    message: 'Member desk navigation decision observed',
+    data,
+  })
+}
+
+const readErrorField = (error: unknown, field: string): string | null => {
+  if (typeof error !== 'object' || error === null) return null
+  const value = (error as Record<string, unknown>)[field]
+  return typeof value === 'string' ? value : null
+}
+
+const boundedErrorMessage = (error: unknown): string | null => {
+  const message = readErrorField(error, 'message')
+  if (message === null) return null
+  if (/(password|passcode|otp|token|cookie|authorization|phone|address|ip)/i.test(message)) return '[redacted]'
+  return message.slice(0, 160)
+}
+
+const navigationErrorData = (error: unknown): Readonly<Record<string, string | null>> => ({
+  errorType: error instanceof Error ? error.name : typeof error,
+  errorName: readErrorField(error, 'name'),
+  errorCode: readErrorField(error, 'code'),
+  errorKey: readErrorField(error, 'key'),
+  errorCategory: readErrorField(error, 'category'),
+  errorMessage: boundedErrorMessage(error),
+})
+
+const hasSecondarySurface = (context: ActorExecutionContext): boolean => {
+  const facts = selectTopologyFacts(context.getState())
+  return facts?.hasTopologySecondarySurface === true
+}
 
 const show = (input: Readonly<{
   context: ActorExecutionContext
   displayMode: typeof primary | typeof secondary
   partKey: string
   props?: Readonly<Record<string, string>>
-}>) => input.context.dispatchCommand(showScreenCommand, {
-  displayMode: input.displayMode,
-  containerKey: main,
-  partKey: input.partKey,
-  ...(input.props === undefined ? {} : {props: input.props}),
-})
+}>) => {
+  const dispatch = input.context.dispatchCommand(showScreenCommand, {
+    displayMode: input.displayMode,
+    containerKey: main,
+    partKey: input.partKey,
+    ...(input.props === undefined ? {} : {props: input.props}),
+  })
+  return dispatch.then(result => {
+    navigationLog(input.context, 'show-screen-result', {
+      displayMode: input.displayMode,
+      partKey: input.partKey,
+      status: result.status,
+    })
+    return result
+  }, error => {
+    navigationLog(input.context, 'show-screen-failed', {
+      displayMode: input.displayMode,
+      partKey: input.partKey,
+      status: 'rejected',
+      ...navigationErrorData(error),
+    })
+    throw error
+  })
+}
 
 const clearPrimaryLayers = (context: ActorExecutionContext) =>
   context.dispatchCommand(clearLayersCommand, {displayMode: primary})
@@ -81,16 +139,19 @@ const returnToForm = async (
 
 export const createDeskNavigationActor = (): ActorDefinition => defineActor(moduleName, 'desk-navigation', [
   onCommand(staffLoginSucceededCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await show({context, displayMode: primary, partKey: 'sample.desk.member-list'})
     if (hasSecondarySurface(context)) await show({context, displayMode: secondary, partKey: 'sample.desk.customer-welcome'})
     return null
   }),
   onCommand(staffSessionRestoredAuthenticatedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await show({context, displayMode: primary, partKey: 'sample.desk.member-list'})
     if (hasSecondarySurface(context)) await show({context, displayMode: secondary, partKey: 'sample.desk.customer-welcome'})
     return null
   }),
   onCommand(staffLogoutSucceededCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await clearPrimaryLayers(context)
     const secondarySurface = hasSecondarySurface(context)
     if (secondarySurface) {
@@ -100,13 +161,69 @@ export const createDeskNavigationActor = (): ActorDefinition => defineActor(modu
     return null
   }),
   onCommand(staffSessionRestoredAnonymousCommand, async context => {
-    if (hasSecondarySurface(context)) await show({context, displayMode: secondary, partKey: 'sample.desk.customer-welcome'})
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
+    const facts = selectTopologyFacts(context.getState())
+    const secondarySurface = hasSecondarySurface(context)
+    navigationLog(context, 'anonymous-session-restored', {
+      sessionStatus: selectSessionState(context.getState()).status,
+      paired: facts?.paired ?? null,
+      instanceMode: facts?.instanceMode ?? null,
+      displayRole: facts?.displayRole ?? null,
+      hasTopologySecondarySurface: facts?.hasTopologySecondarySurface ?? null,
+      hasSecondarySurface: secondarySurface,
+    })
+    if (secondarySurface) await show({context, displayMode: secondary, partKey: 'sample.desk.customer-welcome'})
+    return null
+  }),
+  onCommand(topologyHostEventCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
+    const event = context.command.payload.event
+    if (event !== 'peer-accepted' && event !== 'state-transfer-recovered') return null
+    // Session bootstrap can run before a paired slave hydrates its locator and
+    // VICE role. Re-run only the anonymous customer placement after the peer
+    // handshake establishes those facts.
+    const facts = selectTopologyFacts(context.getState())
+    const sessionStatus = selectSessionState(context.getState()).status
+    const secondarySurface = hasSecondarySurface(context)
+    const pendingMember = selectPendingMember(context.getState())
+    if (event === 'peer-accepted') {
+      navigationLog(context, event, {
+        sessionStatus,
+        paired: facts?.paired ?? null,
+        instanceMode: facts?.instanceMode ?? null,
+        displayRole: facts?.displayRole ?? null,
+        hasTopologySecondarySurface: facts?.hasTopologySecondarySurface ?? null,
+        hasSecondarySurface: secondarySurface,
+      })
+      if (sessionStatus === 'anonymous' && secondarySurface) {
+        await show({context, displayMode: secondary, partKey: 'sample.desk.customer-welcome'})
+      }
+      return null
+    }
+    navigationLog(context, 'state-transfer-recovered', {
+      sessionStatus,
+      paired: facts?.paired ?? null,
+      instanceMode: facts?.instanceMode ?? null,
+      displayRole: facts?.displayRole ?? null,
+      hasTopologySecondarySurface: facts?.hasTopologySecondarySurface ?? null,
+      hasSecondarySurface: secondarySurface,
+      pendingMember: pendingMember !== null,
+    })
+    if (sessionStatus === 'anonymous' && secondarySurface) {
+      await show({
+        context,
+        displayMode: secondary,
+        partKey: pendingMember === null ? 'sample.desk.customer-welcome' : 'sample.desk.customer-member',
+        ...(pendingMember === null ? {} : {props: {mode: 'confirm'}}),
+      })
+    }
     return null
   }),
 ])
 
 export const createDeskFormActor = (): ActorDefinition => defineActor(moduleName, 'desk-form', [
   onCommand(memberFormOpenedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await show({context, displayMode: primary, partKey: 'sample.desk.member-form'})
     return null
   }),
@@ -114,6 +231,7 @@ export const createDeskFormActor = (): ActorDefinition => defineActor(moduleName
 
 export const createDeskPendingActor = (): ActorDefinition => defineActor(moduleName, 'desk-pending', [
   onCommand(registryMemberPendingCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     const secondarySurface = hasSecondarySurface(context)
     if (secondarySurface) {
       await show({context, displayMode: primary, partKey: 'sample.desk.member-list'})
@@ -129,6 +247,7 @@ export const createDeskPendingActor = (): ActorDefinition => defineActor(moduleN
     return null
   }),
   onCommand(memberSubmissionWithdrawnCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await context.dispatchCommand(registryWithdrawMemberCommand, {})
     return null
   }),
@@ -136,6 +255,7 @@ export const createDeskPendingActor = (): ActorDefinition => defineActor(moduleN
 
 export const createDeskConfirmedActor = (): ActorDefinition => defineActor(moduleName, 'desk-confirmed', [
   onCommand(registryMemberConfirmedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     const secondarySurface = hasSecondarySurface(context)
     await returnToList(context, secondarySurface)
     if (secondarySurface) {
@@ -147,6 +267,7 @@ export const createDeskConfirmedActor = (): ActorDefinition => defineActor(modul
 
 export const createDeskRejectedActor = (): ActorDefinition => defineActor(moduleName, 'desk-rejected', [
   onCommand(registryMemberRejectedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await context.dispatchCommand(openLayerCommand, {
       displayMode: primary,
       layerId: 'sample.desk.registry-notice',
@@ -164,6 +285,7 @@ export const createDeskRejectedActor = (): ActorDefinition => defineActor(module
 
 export const createDeskNoticeActor = (): ActorDefinition => defineActor(moduleName, 'desk-notice', [
   onCommand(memberFormCancelledCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     const secondarySurface = hasSecondarySurface(context)
     if (context.command.payload.dirty) {
       await context.dispatchCommand(openLayerCommand, {
@@ -178,6 +300,7 @@ export const createDeskNoticeActor = (): ActorDefinition => defineActor(moduleNa
     return null
   }),
   onCommand(memberDraftDiscardedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await closePrimaryLayer(context, 'sample.desk.discard-confirm')
     if (context.command.payload.intent === 'logout') {
       await context.dispatchCommand(staffLogoutCommand, {})
@@ -187,6 +310,7 @@ export const createDeskNoticeActor = (): ActorDefinition => defineActor(moduleNa
     return null
   }),
   onCommand(memberRegistrationRetryRequestedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await closePrimaryLayer(context, 'sample.desk.registry-notice')
     const secondarySurface = hasSecondarySurface(context)
     if (secondarySurface) await closePrimaryLayer(context, 'sample.desk.waiting-confirm')
@@ -194,6 +318,7 @@ export const createDeskNoticeActor = (): ActorDefinition => defineActor(moduleNa
     return null
   }),
   onCommand(memberRegistrationAbandonedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await context.dispatchCommand(registryWithdrawMemberCommand, {})
     await closePrimaryLayer(context, 'sample.desk.registry-notice')
     const secondarySurface = hasSecondarySurface(context)
@@ -202,6 +327,7 @@ export const createDeskNoticeActor = (): ActorDefinition => defineActor(moduleNa
     return null
   }),
   onCommand(registryMemberWithdrawnCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     const hasWithdrawConfirmation = selectLayers(context.getState(), primary)
       .some(layer => layer.layerId === 'sample.desk.withdraw-confirm')
     const secondarySurface = hasSecondarySurface(context)
@@ -218,6 +344,7 @@ export const createDeskNoticeActor = (): ActorDefinition => defineActor(moduleNa
 
 export const createDeskSystemNoticeActor = (): ActorDefinition => defineActor(moduleName, 'desk-system-notice', [
   onCommand(deskSystemFailureObservedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     const hasNotice = selectLayers(context.getState(), primary)
       .some(layer => layer.layerId === 'sample.desk.system-notice')
     if (hasNotice) return null
@@ -231,6 +358,7 @@ export const createDeskSystemNoticeActor = (): ActorDefinition => defineActor(mo
     return null
   }),
   onCommand(deskSystemFailureDismissedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await closePrimaryLayer(context, 'sample.desk.system-notice')
     return null
   }),

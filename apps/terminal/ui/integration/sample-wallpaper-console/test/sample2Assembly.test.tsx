@@ -28,6 +28,7 @@ import {
   selectWallpaperId,
 } from '@catering-v2s/kernel-feature-sample-wallpaper'
 import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
+import {topologyActions} from '@catering-v2s/kernel-base-topology'
 import {PrimitiveContainer, PrimitiveImage} from '@catering-v2s/ui-base-primitives'
 import {
   createSurfaceForDisplayIndex,
@@ -286,6 +287,33 @@ describe('sample2 wallpaper console assembly', () => {
     } finally {
       releaseRuntimeForTest(laptop.runtime)
       releaseRuntimeForTest(mobile.runtime)
+    }
+  })
+
+  it('places the secondary on a paired single-screen master through topology facts', async () => {
+    const events: LogEvent[] = []
+    const assembly = await createSampleWallpaperConsoleAssembly({
+      platformPorts: createTestPlatformPorts({displayCount: 1, events}),
+      persistenceKey: `sample2-paired-single-screen-master-${Date.now()}`,
+      surfaceForm: 'laptop',
+    })
+    try {
+      assembly.runtime.getStore().dispatch(topologyActions.setPeerIdentity({
+        protocolVersion: 1,
+        moduleName: 'ui.integration.sample-wallpaper-console',
+        nodeId: 'paired-slave',
+        displayName: 'paired slave',
+        instanceMode: 'SLAVE',
+        displayRole: 'VICE',
+      }))
+      await assembly.runtime.dispatchCommand(sessionRestoredAnonymousCommand, {}, dispatchOptions())
+      expect(selectScreen(assembly.runtime.getState(), 'SECONDARY', 'main')?.partKey)
+        .toBe('sample.wallpaper-console.waiting')
+      expect(events.some(event => event.event === 'sample-wallpaper-console.secondary-placement'
+        && event.data?.hasTopologySecondarySurface === true
+        && event.data?.secondaryAvailable === true)).toBe(true)
+    } finally {
+      releaseRuntimeForTest(assembly.runtime)
     }
   })
 

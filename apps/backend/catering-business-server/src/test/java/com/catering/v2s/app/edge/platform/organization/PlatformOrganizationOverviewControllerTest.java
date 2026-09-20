@@ -147,6 +147,105 @@ class PlatformOrganizationOverviewControllerTest {
     }
 
     @Test
+    void hierarchyAndFlatOverviewPreserveVoidedLifecycleStatus() {
+        PlatformSessionResolver sessions = mock(PlatformSessionResolver.class);
+        PlatformSessionResolver.PlatformReadSessionFacts readFacts =
+                mock(PlatformSessionResolver.PlatformReadSessionFacts.class);
+        PlatformSessionResolver.EnabledSelectedWorkspaceFact workspace =
+                mock(PlatformSessionResolver.EnabledSelectedWorkspaceFact.class);
+        WorkspaceAdministrationService workspaces = mock(WorkspaceAdministrationService.class);
+        OrganizationOverviewTaskReadService overview = mock(OrganizationOverviewTaskReadService.class);
+        EdgeRequestContext request = mock(EdgeRequestContext.class);
+        UUID workspaceId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        when(sessions.requireRead(request)).thenReturn(readFacts);
+        when(readFacts.requireEnabledSelectedWorkspace(workspaces, "organization-test"))
+                .thenReturn(workspace);
+        when(workspace.workspaceUuid()).thenReturn(workspaceId);
+        when(overview.platformHierarchyTree(workspaceId, "organization-test"))
+                .thenReturn(new OrganizationOverviewTaskReadService.HierarchyTree(
+                        "GROUP", "集团", List.of(new OrganizationOverviewTaskReadService.TreeNode(
+                                projectId,
+                                "REGION",
+                                "R-01",
+                                "大区",
+                                "VOIDED",
+                                null,
+                                3L,
+                                List.of(),
+                                List.of()))));
+        when(overview.platformOverviewTaskPage(any(), any(), any(), any(), any(Integer.class), any(Integer.class)))
+                .thenReturn(new OrganizationOverviewTaskReadService.Page(
+                        new OrganizationOverviewTaskReadService.Metadata(
+                                "organization-test", "BUSINESS_ENTITY", 1, 20, 1L, "UPDATED_AT", "DESC", null),
+                        List.of(new OrganizationOverviewTaskReadService.Item(
+                                projectId,
+                                "organization-test",
+                                "BUSINESS_ENTITY",
+                                "BRAND",
+                                "B-01",
+                                "品牌",
+                                List.of(),
+                                "VOIDED",
+                                "MANUAL",
+                                1L,
+                                1L,
+                                3L,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                List.of(),
+                                List.of(),
+                                null)),
+                        "AVAILABLE",
+                        3L,
+                        List.of(),
+                        List.of(),
+                        "AVAILABLE",
+                        3L,
+                        List.of()));
+        PlatformOrganizationOverviewController controller = new PlatformOrganizationOverviewController(
+                sessions,
+                workspaces,
+                overview,
+                mock(StoreCandidateTaskReadService.class),
+                mock(ExtensionDefinitionService.class));
+
+        assertEquals("VOIDED", controller.hierarchy(request, "organization-test").regions().getFirst().status().name());
+        assertEquals(
+                "VOIDED",
+                controller.page(
+                                request,
+                                "organization-test",
+                                "BUSINESS_ENTITY",
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                "UPDATED_AT",
+                                "DESC",
+                                1,
+                                20,
+                                null,
+                                null)
+                        .items()
+                        .getFirst()
+                        .status()
+                        .name());
+    }
+
+    @Test
     void hierarchyExtensionFiltersBecomeControlledEdgeValidation() {
         PlatformSessionResolver sessions = mock(PlatformSessionResolver.class);
         PlatformSessionResolver.PlatformReadSessionFacts readFacts =

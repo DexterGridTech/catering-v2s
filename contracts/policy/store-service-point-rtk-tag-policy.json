@@ -3,7 +3,7 @@
   "kind": "store-service-point-rtk-tag-policy",
   "revision": "STORE_SERVICE_POINT_RTK_TAGS_20260918",
   "tagType": "wire",
-  "operationCount": 15,
+  "operationCount": 16,
   "operations": [
     {
       "operationId": "getOperationsStoreServicePointAreas",
@@ -27,6 +27,14 @@
       "provides": [
         {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
         {"kind": "static", "id": "store-service-point-qr"}
+      ],
+      "invalidates": []
+    },
+    {
+      "operationId": "getOperationsStoreQrChannelCandidates",
+      "provides": [
+        {"kind": "requestPath", "prefix": "store-service-point-store", "path": "storeRef"},
+        {"kind": "static", "id": "store-service-point-qr-channel-candidates"}
       ],
       "invalidates": []
     },

@@ -16,7 +16,7 @@ import {
   Typography,
 } from 'antd';
 import {useMemo, type ReactNode} from 'react';
-import {testId} from '@catering-v2s/admin-ui-foundation';
+import {displayFieldValue, testId} from '@catering-v2s/admin-ui-foundation';
 import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 import type {CatalogUnitList} from '../../../app/api/generated/catalog-inventory-edge';
 import type {
@@ -79,7 +79,7 @@ export function truncateDecimalTowardZero(raw: string, precision: number): strin
 }
 
 function unitLabel(unit: Pick<UnitOption, 'name' | 'code'> | CatalogUnitSnapshot | null | undefined) {
-  return unit?.name || '—';
+  return displayFieldValue(unit?.name);
 }
 
 function lineLabel(line: BomLine) {

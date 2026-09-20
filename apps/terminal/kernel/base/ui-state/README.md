@@ -108,11 +108,12 @@ layer 还原会逐行校验非空 `layerId`/`partKey`、正的有限整数 `open
 丢弃并保留其他行，重复 `layerId` 保留先出现的一条。结构错误写入 `ui-state-hydration` 诊断，字段为
 `workspace`、`displayMode`、`layerId`、`partKey`、`reason`，在 module install 时交给 logger。
 
-install 期还会按 MAIN/BRANCH × PRIMARY/SECONDARY 四格检查 catalog membership：只清除已经不在
-catalog 的 part，并在发生清理时 flush；当前 `surfaceForm`、`displayMode`、`workspace` 或
-`instanceMode` 暂时不可用但仍在 catalog 的 layer 必须保留，由 renderer 的可见性过滤决定是否显示，
-不能因为一次不可用就永久删除。layer 的业务 props 所引用的数据是否仍存在，仍由拥有该业务 part 的
-feature 自行处理；本包不创建第二套恢复或业务校验机制。
+install 期只检查本机 `instanceMode` 所拥有的 workspace：`MASTER` 只清理 `MAIN`，`SLAVE` 只清理
+`BRANCH`，并在发生清理时 flush；另一侧 workspace 是权威节点的投影目标，不由本机 actor 做
+catalog prune。当前 `surfaceForm`、`displayMode` 或 `instanceMode` 暂时不可用但仍在 catalog 的
+layer 必须保留，由 renderer 的可见性过滤决定是否显示，不能因为一次不可用就永久删除。layer 的
+业务 props 所引用的数据是否仍存在，仍由拥有该业务 part 的 feature 自行处理；本包不创建第二套
+恢复或业务校验机制。
 
 P2/P3 已公开的 command/selector 与 module factory 形态如下：
 

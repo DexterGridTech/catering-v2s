@@ -33,21 +33,21 @@ public class WorkspaceUserPersistence {
             int page,
             int pageSize) {
         String joins = WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_FROM_CLAUSE_WORKSPACE_ACCOUNT_ACCOUNT_ID
-                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_AUTHENTICATED_AT_EPOCH_MILLIS_LAST_LOGIN_AT
-                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_WORKSPACE_AUTHENTICATION_HISTORY
+                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_AUTHENTICATED_AT_EPOCH_MILLIS_LAST_LOGIN_AT
+                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_WORKSPACE_AUTHENTICATION_HISTORY
                 + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_GROUP_BY_ACCOUNT_ID_LOGIN;
         String where = WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TEXT_DISPLAY_NAME
-                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_ILIKE_TEXT_MOBILE_NORMALIZED
+                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_ILIKE_TEXT_MOBILE_NORMALIZED
                 + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_SQL_PUNCTUATION
-                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_TEXT_LOGIN_NAME_NORMALIZED_ILIKE
+                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_TEXT_LOGIN_NAME_NORMALIZED_ILIKE
                 + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_OPEN_PAREN
-                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_TEXT_STATUS
+                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_TEXT_STATUS
                 + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONDITION
-                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_ROLE_ASSIGNMENT_ASSIGNMENT
+                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_ROLE_ASSIGNMENT_ASSIGNMENT
                 + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_WHERE_ASSIGNMENT_ACCOUNT_ID_WORKSPACE_UUID
-                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_ASSIGNMENT_GROUP_WORKSPACE_KEY_TEXT
-                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_ASSIGNMENT_SERVICE_NODE_TYPE
-                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_ASSIGNMENT_SERVICE_NODE_ID
+                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_ASSIGNMENT_GROUP_WORKSPACE_KEY_TEXT
+                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_ASSIGNMENT_SERVICE_NODE_TYPE
+                + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_ASSIGNMENT_SERVICE_NODE_ID
                 + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONDITION_ASSIGNMENT_ROLE_ID;
         Object[] predicateArguments = predicateArguments(
                 workspaceUuid,
@@ -84,8 +84,8 @@ public class WorkspaceUserPersistence {
         if (accountIds.isEmpty()) return List.of();
         return jdbc.query(
                 WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_SELECT_DISPLAY_NAME_MOBILE_NORMALIZED_LOGIN_NAME_NORMALIZED_STATUS
-                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_WORKSPACE_ACCOUNT
-                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
+                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_WORKSPACE_ACCOUNT
+                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                         + placeholders(accountIds.size())
                         + WorkspaceUserServiceSql.SQL_CLOSE_PAREN,
                 (row, index) -> new AccountRow(
@@ -104,9 +104,9 @@ public class WorkspaceUserPersistence {
         if (accountIds.isEmpty()) return List.of();
         return jdbc.query(
                 WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_SELECT_ACCOUNT_ID_ROLE_ID_ROLE_NAME
-                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_SOURCE_INVITATION_ID
+                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_SOURCE_INVITATION_ID
                         + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_FROM_CLAUSE
-                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_WORKSPACE_ROLE_ROLE_ASSIGNMENT_ROLE_ROLE_ID
+                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_WORKSPACE_ROLE_ROLE_ASSIGNMENT_ROLE_ROLE_ID
                         + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ACCOUNT_ID
                         + placeholders(accountIds.size())
                         + WorkspaceUserServiceSql.ASSIGNMENT_ORDER_SUFFIX,
@@ -130,8 +130,8 @@ public class WorkspaceUserPersistence {
         if (accountIds.isEmpty()) return List.of();
         return jdbc.query(
                 WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_SELECT_ACCOUNT_ID_AUTHENTICATED_AT_EPOCH_MILLIS
-                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_WORKSPACE_AUTHENTICATION_HISTORY_WORKSPACE_UUID
-                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY
+                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_WORKSPACE_AUTHENTICATION_HISTORY_WORKSPACE_UUID
+                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_GROUP_WORKSPACE_KEY
                         + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONDITION_ACCOUNT_ID
                         + placeholders(accountIds.size())
                         + WorkspaceUserServiceSql.LATEST_AUTHENTICATION_ORDER_SUFFIX,
@@ -145,9 +145,9 @@ public class WorkspaceUserPersistence {
         if (accountIds.isEmpty()) return List.of();
         return jdbc.query(
                 WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_SELECT_ACCOUNT_ID_AUTHENTICATED_AT_EPOCH_MILLIS_ALTERNATE_A
-                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_AUTHENTICATED_AT_EPOCH_MILLIS_ACCOUNT_ID
-                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_AUTHENTICATED_AT_EPOCH_MILLIS
-                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_WORKSPACE_AUTHENTICATION_HISTORY_ALTERNATE_A
+                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_AUTHENTICATED_AT_EPOCH_MILLIS_ACCOUNT_ID
+                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_AUTHENTICATED_AT_EPOCH_MILLIS
+                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_WORKSPACE_AUTHENTICATION_HISTORY_ALTERNATE_A
                         + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONDITION_ACCOUNT_ID_ALTERNATE_A
                         + placeholders(accountIds.size())
                         + WorkspaceUserServiceSql.AUTHENTICATION_HISTORY_ORDER_SUFFIX,
@@ -177,7 +177,7 @@ public class WorkspaceUserPersistence {
         if (accountIds.isEmpty()) return Set.of();
         return Set.copyOf(jdbc.query(
                 WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_SELECT_WORKSPACE_CREDENTIAL_ACCOUNT_ID_PASSWORD_CHANGE_REQUIRED
-                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_ACCOUNT_ID
+                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_ACCOUNT_ID
                         + placeholders(accountIds.size())
                         + WorkspaceUserServiceSql.SQL_CLOSE_PAREN,
                 (row, index) -> row.getObject(1, UUID.class),
@@ -189,7 +189,7 @@ public class WorkspaceUserPersistence {
         if (ids.isEmpty()) return List.of();
         return jdbc.query(
                 WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_SELECT_INVITATION_ID_SERVICE_NODE_TYPE_SERVICE_NODE_ID
-                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_CONTINUATION_INVITATION_ASSIGNMENT_INTENT_INVITATION_ID
+                        + WorkspaceUserServiceSql.WORKSPACE_USER_SERVICE_INVITATION_ASSIGNMENT_INTENT_INVITATION_ID
                         + placeholders(ids.size())
                         + WorkspaceUserServiceSql.SQL_CLOSE_PAREN,
                 (row, index) -> new InvitationTargetRow(

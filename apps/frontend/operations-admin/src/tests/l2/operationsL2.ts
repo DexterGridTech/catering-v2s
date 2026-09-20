@@ -162,7 +162,7 @@ export async function selectOperationsDataScope(
   const trigger = page.getByTestId(roleHomeTestIds.dataScope.trigger);
   await expect(trigger).toBeVisible();
   await trigger.click();
-  onControlTouch?.({testId: roleHomeTestIds.dataScope.trigger, phase: 'TRIGGER'});
+  onControlTouch?.({testId: roleHomeTestIds.dataScope.trigger, phase: 'TRIGGER', type});
   let submitted = false;
   if (type === 'HEAD_COMPANY') {
     submitted = await selectOrAssertOperationsScopeOption(

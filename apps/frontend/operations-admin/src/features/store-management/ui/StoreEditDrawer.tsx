@@ -14,6 +14,7 @@ import {
 } from 'antd';
 import {
   adminDrawerSurfaceProps,
+  displayFieldValue,
   NameCodeText,
   testId,
   useDrawerFormLifecycle,
@@ -276,7 +277,9 @@ export function StoreEditDrawer({
           </Typography.Text>
         </Form.Item>
         <Form.Item label="门店编码">
-          <Typography.Text {...testId(storeManagementTestIds.editCode)}>{store?.code ?? '—'}</Typography.Text>
+          <Typography.Text {...testId(storeManagementTestIds.editCode)}>
+            {displayFieldValue(store?.code)}
+          </Typography.Text>
         </Form.Item>
         <Form.Item name="name" label="门店名称" rules={[{required: true, whitespace: true, message: '请输入门店名称'}]}>
           <Input maxLength={120} {...testId(storeManagementTestIds.editName)} />

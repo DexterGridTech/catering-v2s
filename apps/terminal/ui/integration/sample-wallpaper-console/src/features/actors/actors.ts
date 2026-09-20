@@ -1,19 +1,17 @@
 import type {ActorDefinition, ActorExecutionContext} from '@catering-v2s/kernel-base-runtime'
 import {defineActor, onCommand} from '@catering-v2s/kernel-base-runtime'
 import {
-  readDisplayInfo,
-  resolveSecondarySurfaceAvailable,
-} from '@catering-v2s/kernel-base-display-context'
-import {
   loginSucceededCommand,
   logoutSucceededCommand,
   sessionRestoredAnonymousCommand,
   sessionRestoredAuthenticatedCommand,
 } from '@catering-v2s/kernel-feature-sample-staff-session'
-import {showScreenCommand} from '@catering-v2s/kernel-base-ui-state'
+import {isCurrentWorkspaceOwnedByInstance, showScreenCommand} from '@catering-v2s/kernel-base-ui-state'
+import {selectTopologyFacts} from '@catering-v2s/kernel-base-topology'
 import {moduleName} from '../../moduleName'
 
 const showPrimary = async (context: ActorExecutionContext, partKey: string): Promise<void> => {
+  if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return
   await context.dispatchCommand(showScreenCommand, {
     displayMode: 'PRIMARY',
     containerKey: 'main',
@@ -25,8 +23,8 @@ const showSecondaryIfAvailable = async (
   context: ActorExecutionContext,
   partKey: string,
 ): Promise<void> => {
-  const displayInfo = await readDisplayInfo(context.platformPorts.device)
-  const available = resolveSecondarySurfaceAvailable(displayInfo)
+  const facts = selectTopologyFacts(context.getState())
+  const available = facts?.hasTopologySecondarySurface === true
   context.platformPorts.logger.info({
     category: 'display-diagnostics',
     event: 'sample-wallpaper-console.secondary-placement',
@@ -34,11 +32,14 @@ const showSecondaryIfAvailable = async (
     data: {
       source: 'sample-wallpaper-console.placement-actor',
       requestedPartKey: partKey,
-      displayInfoStatus: displayInfo.status,
+      instanceMode: facts?.instanceMode ?? null,
+      paired: facts?.paired ?? null,
+      displayCount: facts?.displayCount ?? null,
+      hasTopologySecondarySurface: facts?.hasTopologySecondarySurface ?? null,
       secondaryAvailable: available,
     },
   })
-  if (!available) return
+  if (!available || !isCurrentWorkspaceOwnedByInstance(context.getState())) return
   await context.dispatchCommand(showScreenCommand, {
     displayMode: 'SECONDARY',
     containerKey: 'main',
@@ -48,20 +49,24 @@ const showSecondaryIfAvailable = async (
 
 export const createWallpaperConsolePlacementActor = (): ActorDefinition => defineActor(moduleName, 'placement', [
   onCommand(loginSucceededCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await showPrimary(context, 'sample.wallpaper.picker')
     await showSecondaryIfAvailable(context, 'sample.wallpaper-console.welcome')
     return null
   }),
   onCommand(sessionRestoredAuthenticatedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await showPrimary(context, 'sample.wallpaper.picker')
     await showSecondaryIfAvailable(context, 'sample.wallpaper-console.welcome')
     return null
   }),
   onCommand(logoutSucceededCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await showSecondaryIfAvailable(context, 'sample.wallpaper-console.waiting')
     return null
   }),
   onCommand(sessionRestoredAnonymousCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await showSecondaryIfAvailable(context, 'sample.wallpaper-console.waiting')
     return null
   }),

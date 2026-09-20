@@ -3,6 +3,9 @@ import {Alert, Button, Card, Tag, Typography} from 'antd';
 import {
   adminListState,
   createPageQueryIdentity,
+  displayFieldValue,
+  formatCanonicalDateTime,
+  LifecycleStatusTag,
   testId,
   useAsyncGenerationGuard,
   useDetailDrawer,
@@ -264,16 +267,16 @@ function RolesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
                 Object.entries(workspaceIamLifecycleLabels).map(([value, label]) => [value, {text: label}]),
               ),
               fieldProps: {...testId('workspace-role-filter-status'), allowClear: true},
-              render: (_, row) => <Tag>{workspaceIamLifecycleLabels[row.status]}</Tag>,
+              render: (_, row) => <LifecycleStatusTag status={row.status} />,
             },
-            {title: '说明', dataIndex: 'description', search: false, render: value => value || '—'},
+            {title: '说明', dataIndex: 'description', search: false, render: value => displayFieldValue(value)},
             {
               key: 'updatedAt',
               title: '更新时间',
               dataIndex: 'updatedAt',
-              valueType: 'dateTime',
               sorter: true,
               search: false,
+              render: (_, row) => formatCanonicalDateTime(row.updatedAt),
             },
           ]}
           onChange={(tablePagination, _, sorter, extra) => {

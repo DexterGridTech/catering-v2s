@@ -146,7 +146,7 @@ export const OPERATIONS_PROBLEM_FEEDBACK: Record<OperationsProblemCode, ProblemF
   SALES_MENU_VERSION_CONFLICT: {title: '销售菜单已被更新', detail: '请查看最新销售菜单后再试。'},
   SALES_SECTION_NOT_FOUND: {title: '销售分区不存在', detail: '请刷新销售菜单后重试。'},
   VERSION_CONFLICT: {title: '资料已被更新', detail: '请查看最新资料后再试。'},
-  VOIDED_RECORD_IMMUTABLE: {title: '对象已标记删除', detail: '该对象已标记删除，不能继续修改。'},
+  VOIDED_RECORD_IMMUTABLE: {title: '对象已作废', detail: '该对象已作废，不能继续修改。'},
   WORKSPACE_IAM_ACCOUNT_DISABLED: {title: '账号已停用', detail: '当前账号无法继续操作，请联系管理员。'},
   WORKSPACE_IAM_ASSIGNMENT_CONFLICT: {title: '任职资料发生冲突', detail: '请刷新任职资料后重试。'},
   WORKSPACE_IAM_CREDENTIAL_LOCKED: {title: '凭据已锁定', detail: '请稍后再试或联系管理员。'},

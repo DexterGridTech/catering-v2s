@@ -6,7 +6,7 @@
 > SUPERSEDES: doc/plans/platform/2026-09-06-v2s-terminal-input-keyboard-visual-redesign-requirements-codex.md
 > FORM INPUT: doc/plans/platform/2026-09-06-v2s-terminal-input-surface-form-requirements-codex.md
 > SCOPE: full、alpha、numeric 与 financial 四种程序虚拟键盘；alpha/financial 由 sample 会员资料中的受控能力验证字段消费
-> USER_VISUAL_REVISION: 2026-09-07：按实际视觉复核与 V1 POC 对照，键盘外框按当前布局内容自适应，功能键并入最后内容行；numeric/financial 的末端改为一行三列对齐网格，列内复合键水平分布；本条 supersede 本文原先的“四布局外框同高”“独立动作行”以及 numeric/financial 五等分末行表述
+> USER_VISUAL_REVISION: 2026-09-07：按实际视觉复核与 V1 POC 对照，键盘外框按当前布局内容自适应，功能键并入最后内容行；numeric/financial 的末端改为一行三列对齐网格，列内复合键水平分布；本条 supersede 本文原先的“四布局外框同高”“独立动作行”以及 numeric/financial 五等分末行表述；2026-09-19 Dexter 确认 alpha 加入 CAPS，沿用现有 capsLock 语义，保持三行高度不变
 
 ## 1. 需求关系与第一性目标
 
@@ -115,7 +115,7 @@ surface。
 ### 3.2 不能新增的键语义
 
 full 必须保留当前可达集合：0 至 9、a 至 z、shift、caps、backspace、complete。
-alpha 必须保留 a 至 z、shift、backspace、complete。
+alpha 必须保留 a 至 z、caps、shift、backspace、complete。
 numeric 必须保留 0 至 9、backspace、complete。
 financial 必须保留 0 至 9、句点、负号、backspace、complete。
 
@@ -195,7 +195,12 @@ full 的要求：
 
 ### 5.2 numeric
 
-numeric 使用三列数字网格，末端保持一行高度。`0` 横跨前两列，backspace 与 complete
+numeric 使用三列数字网格，末端保持一行高度。**历史口径说明：本段原始的 `0` 横跨前两列
+描述已由文首 `USER_VISUAL_REVISION` 2026-09-19 的用户视觉修订 supersede；当前实施唯一
+有效口径是 `BACKSPACE | 0 | COMPLETE` 三列底行，以下旧示意仅保留为历史记录，不得作为实现或
+验收正本。**
+
+旧版示意（已 supersede）：`0` 横跨前两列，backspace 与 complete
 在右侧第三列内部左右分布：
 
     1 2 3
@@ -215,12 +220,13 @@ maxLength=3 仍由输入字段与同一纯编辑边界共同保证。
 alpha 是纯拉丁字母能力验证布局：
 
     Q W E R T Y U I O P
-      A S D F G H J K L
+    CAPS A S D F G H J K L
     shift Z X C V B N M backspace 完成
 
-它只给 sample-only “英文字符测试”字段消费。它不承担中文姓名，不提供系统 IME
-替代，不新增 caps、space 或 enter。compact/portrait 下仍须保持全部 26 个字母
-和动作键可达。
+它只给 sample-only “英文字符测试”字段消费。`CAPS` 是持久大小写锁定，`shift`
+仍是一次性大写；两者都复用现有 `KeyboardKey`/`EditState.capsLock` 编辑语义。
+它不承担中文姓名，不提供系统 IME 替代，不新增 space 或 enter。`CAPS` 与字母共用
+第二行，不增加视觉行数；compact/portrait 下仍须保持全部 26 个字母和动作键可达。
 
 ### 5.4 financial
 
@@ -420,6 +426,7 @@ harness 必须使用与生产相同的 InputProvider/InputSurfaceFrame/VirtualKe
 | KEY-R8  | 只 mock onFocus 并断言 dismiss 次数                                                                                | 行为测试无法观察首击焦点，必须被测试门拒绝         |
 | KEY-R9  | 把任一能力验证值写入业务 command、Member/PendingMember，或让它改变业务 dirty/顾客确认路径                          | sample-only 字段边界失败                           |
 | KEY-R10 | 移除 `PrimitiveButton` 的 `Pressable` pressed style，或只用调用次数证明按下反馈                                    | 按键按下时没有可观察的局部视觉反馈，或行为证明无效 |
+| KEY-R11 | 从 alpha 布局删除 `caps`，或把 `caps` 实现成只影响下一次输入的临时 shift                         | alpha 缺少持久大小写切换，或 `EditState.capsLock` 语义未被真实 alpha 键位承接 |
 
 模型红向量的 FAIL 只说明判据可证伪；生产树的静态/编译/运行结果必须分开报告，
 不得把模型 FAIL 伪装成生产源码 FAIL。

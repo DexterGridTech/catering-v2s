@@ -1,5 +1,6 @@
 package com.catering.v2s.salesmenu.api;
 
+import com.catering.v2s.platform.foundation.contract.OwnerProblem;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.salesmenu.domain.SalesMenuActivationStatus;
@@ -357,7 +358,7 @@ public interface SalesMenuOwnerApi {
         }
     }
 
-    final class Problem extends RuntimeException {
+    final class Problem extends RuntimeException implements OwnerProblem {
         private final String code;
         private final int status;
 
@@ -373,10 +374,12 @@ public interface SalesMenuOwnerApi {
             this.status = status;
         }
 
+        @Override
         public String code() {
             return code;
         }
 
+        @Override
         public int status() {
             return status;
         }

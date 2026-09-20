@@ -24,9 +24,9 @@ public class ContractDerivedStoreStatusPersistence {
         jdbc.query(
                 ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_SELECT_STORE_ID_FILTER_STATUS_ACTIVE
                         + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_OPEN_PAREN_EFFECTIVE_TO_OPERATING_FILTER
-                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_STATUS_ACTIVE_EFFECTIVE_FROM_PREPARING
-                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_STORE_CONTRACT_DERIVED_STATUS_WORKSPACE_UUID
-                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY
+                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_STATUS_ACTIVE_EFFECTIVE_FROM_PREPARING
+                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_STORE_CONTRACT_DERIVED_STATUS_WORKSPACE_UUID
+                        + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_GROUP_WORKSPACE_KEY
                         + ContractTaskReadServiceSql.CONTRACT_TASK_READ_SERVICE_CONDITION_STORE_ID
                         + String.join(
                                 ContractTaskReadServiceSql.PLACEHOLDER_SEPARATOR,

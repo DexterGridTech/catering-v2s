@@ -1,6 +1,6 @@
 import {Alert, Button, Descriptions, Form, Input, Modal, Select, Space, Typography} from 'antd';
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import {createContentIdempotencyKey, NameCodeText, testId} from '@catering-v2s/admin-ui-foundation';
+import {createContentIdempotencyKey, displayFieldValue, NameCodeText, testId} from '@catering-v2s/admin-ui-foundation';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {
   CATALOG_INVENTORY_OPERATION_IDS,
@@ -283,7 +283,7 @@ export function CatalogTemporaryPromotionTask({
                 items={preflight.changes.map(change => ({
                   key: change.field,
                   label: temporaryPromotionFieldLabel(change.field),
-                  children: `${change.before ?? '—'} → ${change.after ?? '—'}`,
+                  children: `${displayFieldValue(change.before)} → ${displayFieldValue(change.after)}`,
                 }))}
               />
             )}

@@ -1,15 +1,11 @@
-import {useCallback, useMemo, useState} from 'react'
+import {useCallback, useState} from 'react'
 import type {
-  TopologyAdminCapability,
   TopologyAdminCommandResult,
   TopologyFacts,
-  TopologyIdentity,
   TopologyOperation,
   TopologyOperationEligibility,
 } from '@catering-v2s/kernel-base-contracts'
-import {topologyTransportConfig} from '@catering-v2s/kernel-base-contracts'
 import {areTopologyFactsEqual, topologyReasonMessages} from '@catering-v2s/kernel-base-topology'
-import {type StateRoot} from '@catering-v2s/kernel-base-state'
 import {
   PrimitiveButton,
   PrimitiveContainer,
@@ -39,27 +35,15 @@ const unavailableEligibility = (operation: TopologyOperation): TopologyOperation
 const messageFor = (result: TopologyOperationEligibility): string =>
   topologyReasonMessages[result.reasonCode] || '当前操作不可用'
 
-const resultMessage = (operation: TopologyOperation, result: TopologyAdminCommandResult): string =>
+const resultMessage = (_operation: TopologyOperation, result: TopologyAdminCommandResult): string =>
   result.reasonCode === undefined
-    ? result.status !== 'completed'
-      ? '拓扑操作未完成，请重试'
-      : operation === 'query-host' && result.identity === undefined
-        ? topologyReasonMessages.TOPOLOGY_IDENTITY_FAILED
-        : ''
+    ? result.status !== 'completed' ? '拓扑操作未完成，请重试' : ''
     : topologyReasonMessages[result.reasonCode] || '拓扑操作未完成，请重试'
-
-const identityLabel = (identity: TopologyIdentity): string =>
-  `${identity.displayName} / ${identity.nodeId} / ${identity.instanceMode} / ${identity.displayRole}`
 
 export const TopologySection = ({context}: AdminSectionProps) => {
   const {logger} = useRenderContext()
   const capability = context.topologyCapability
-  const factsSelector = useMemo(
-    () => (_root: StateRoot) => capability?.getSnapshot(),
-    [capability],
-  )
-  const facts = useUiStateSelector<TopologyFacts | undefined>(factsSelector, areTopologyFactsEqual)
-  const [identity, setIdentity] = useState<TopologyIdentity | undefined>()
+  const facts = useUiStateSelector<TopologyFacts | undefined>(() => capability?.getSnapshot(), areTopologyFactsEqual)
   const [busy, setBusy] = useState<TopologyOperation | null>(null)
   const [error, setError] = useState('')
   const hostField = useInputField({
@@ -115,13 +99,45 @@ export const TopologySection = ({context}: AdminSectionProps) => {
     }
   }, [busy, eligibility, logger])
 
-  const queryEligibility = eligibility('query-host')
   const pairEligibility = eligibility('pair')
   const unpairEligibility = eligibility('unpair')
   const hostEligibility = eligibility('enable-host')
-  const queryDisabledReason = host.trim().length === 0 ? '请输入主机地址' : messageFor(queryEligibility)
-  const pairDisabledReason = identity === undefined ? '请先查询并确认主机身份' : messageFor(pairEligibility)
+  const pageAvailability = capability?.getPageAvailability() ?? Object.freeze({
+    available: false,
+    reasonCode: 'TOPOLOGY_UNAVAILABLE' as const,
+  })
+  const isMaster = facts?.instanceMode === 'MASTER'
+  const isPaired = facts?.paired === true
+  const showHostAction = isMaster
+  const showPairAction = isMaster && !isPaired && facts?.hostActual === 'stopped'
+  const showUnpairAction = isPaired
+  const pairDisabledReason = host.trim().length === 0 ? '请输入主机地址' : messageFor(pairEligibility)
   const hostDisabledReason = messageFor(hostEligibility)
+  const payloadFailureMessage = facts?.payloadFailure === null || facts?.payloadFailure === undefined
+    ? ''
+    : topologyReasonMessages[facts.payloadFailure.code] || '拓扑状态同步失败，请等待下一次同步'
+
+  if (!pageAvailability.available) {
+    return (
+      <PrimitiveContainer testID={topologyIds.section} layout="content" bounded style={sectionStyle}>
+        <InputScrollArea testID={topologyIds.scroll}>
+          <PrimitiveHeading testID={topologyIds.title}>{context.catalogEntry.title}</PrimitiveHeading>
+          <PrimitiveStatusRow
+            testID={topologyIds.pageGate}
+            label="当前功能"
+            value="当前功能不可用"
+            tone="warn"
+          />
+          <PrimitiveStatusRow
+            testID={topologyIds.pageGateReason}
+            label="原因"
+            value={topologyReasonMessages[pageAvailability.reasonCode] || '拓扑能力当前不可用'}
+            tone="warn"
+          />
+        </InputScrollArea>
+      </PrimitiveContainer>
+    )
+  }
 
   return (
     <PrimitiveContainer testID={topologyIds.section} layout="content" bounded style={sectionStyle}>
@@ -154,78 +170,57 @@ export const TopologySection = ({context}: AdminSectionProps) => {
           label="主机服务"
           value={`${facts?.hostActual ?? 'stopped'} / ${facts?.hostDesired ? '期望开启' : '期望关闭'}`}
         />
-        <PrimitiveFormField testID={topologyIds.formField} label="主机地址">
-          <PrimitiveInput {...hostField.inputProps} />
-        </PrimitiveFormField>
-        <PrimitiveButton
-          testID={topologyIds.query}
-          accessibilityLabel="查询主机身份"
-          disabled={busy !== null || !queryEligibility.allowed || host.trim().length === 0}
-          busy={busy === 'query-host'}
-          onPress={() => {
-            if (capability === undefined) return
-            void run('query-host', () => capability.queryMasterIdentity({host: host.trim()}), result => {
-              if (result.status === 'completed' && result.identity !== undefined) setIdentity(result.identity)
-              else setIdentity(undefined)
-            })
-          }}
-        >
-          查询主机身份
-        </PrimitiveButton>
-        {identity === undefined ? null : (
-          <PrimitiveKeyValueRow
-            testID={topologyIds.identity}
-            label="主机身份"
-            value={identityLabel(identity)}
+        {showPairAction ? (
+          <PrimitiveFormField testID={topologyIds.formField} label="主机地址">
+            <PrimitiveInput {...hostField.inputProps} />
+          </PrimitiveFormField>
+        ) : null}
+        {showPairAction ? (
+          <PrimitiveButton
+            testID={topologyIds.pair}
+            accessibilityLabel="直接配对副机"
+            disabled={busy !== null || !pairEligibility.allowed || host.trim().length === 0}
+            busy={busy === 'pair'}
+            onPress={() => {
+              if (capability === undefined) return
+              void run('pair', () => capability.pairByHost({host: host.trim()}))
+            }}
+          >
+            直接配对副机
+          </PrimitiveButton>
+        ) : null}
+        {showUnpairAction ? (
+          <PrimitiveButton
+            testID={topologyIds.unpair}
+            accessibilityLabel="解除配对"
+            disabled={busy !== null || !unpairEligibility.allowed}
+            busy={busy === 'unpair'}
+            onPress={() => {
+              if (capability === undefined) return
+              void run('unpair', () => capability.unpair())
+            }}
+          >
+            解除配对
+          </PrimitiveButton>
+        ) : null}
+        {showHostAction ? (
+          <PrimitiveSwitch
+            testID={topologyIds.enable}
+            accessibilityLabel={facts?.hostDesired ? '关闭主机服务' : '开启主机服务'}
+            checked={facts?.hostDesired ?? false}
+            disabled={busy !== null || !hostEligibility.allowed}
+            busy={busy === 'enable-host'}
+            onCheckedChange={enabled => {
+              if (capability === undefined) return
+              void run('enable-host', () => capability.setHostEnabled(enabled))
+            }}
           />
-        )}
-        <PrimitiveButton
-          testID={topologyIds.pair}
-          accessibilityLabel="配对副机"
-          disabled={busy !== null || !pairEligibility.allowed || identity === undefined}
-          busy={busy === 'pair'}
-          onPress={() => {
-            if (capability === undefined || identity === undefined) return
-            void run('pair', () => capability.pair({
-              locator: {
-                host: host.trim(),
-                port: topologyTransportConfig.port,
-                basePath: topologyTransportConfig.basePath,
-                identity,
-              },
-            }))
-          }}
-        >
-          配对副机
-        </PrimitiveButton>
-        <PrimitiveButton
-          testID={topologyIds.unpair}
-          accessibilityLabel="解除配对"
-          disabled={busy !== null || !unpairEligibility.allowed}
-          busy={busy === 'unpair'}
-          onPress={() => {
-            if (capability === undefined) return
-            void run('unpair', () => capability.unpair())
-          }}
-        >
-          解除配对
-        </PrimitiveButton>
-        <PrimitiveSwitch
-          testID={topologyIds.enable}
-          accessibilityLabel="开启主机服务"
-          checked={facts?.hostDesired ?? false}
-          disabled={busy !== null || !hostEligibility.allowed}
-          busy={busy === 'enable-host'}
-          onCheckedChange={enabled => {
-            if (capability === undefined) return
-            void run('enable-host', () => capability.setHostEnabled(enabled))
-          }}
-        />
+        ) : null}
         <PrimitiveStatusRow
           testID={topologyIds.reason}
           label="操作说明"
-          value={error || (facts?.hostErrorCode ?? hostDisabledReason)}
-          tone={error.length > 0 || facts?.hostErrorCode !== null ? 'warn' : 'neutral'}
+          value={error || payloadFailureMessage || (facts?.hostErrorCode ?? hostDisabledReason)}
+          tone={error.length > 0 || payloadFailureMessage.length > 0 || facts?.hostErrorCode !== null ? 'warn' : 'neutral'}
         />
         {error.length === 0 ? null : (
           <PrimitiveInlineAlert testID={topologyIds.alert} accessibilityLabel="拓扑操作提示">
@@ -233,16 +228,10 @@ export const TopologySection = ({context}: AdminSectionProps) => {
           </PrimitiveInlineAlert>
         )}
         <PrimitiveStatusRow
-          testID={topologyIds.queryReason}
-          label="查询可用性"
-          value={queryEligibility.allowed ? '可用' : queryDisabledReason}
-          tone={queryEligibility.allowed ? 'ok' : 'warn'}
-        />
-        <PrimitiveStatusRow
           testID={topologyIds.pairReason}
           label="配对可用性"
-          value={pairEligibility.allowed && identity !== undefined ? '可用' : pairDisabledReason}
-          tone={pairEligibility.allowed && identity !== undefined ? 'ok' : 'warn'}
+          value={showPairAction && pairEligibility.allowed && host.trim().length > 0 ? '可用' : showPairAction ? pairDisabledReason : '当前状态无需直接配对'}
+          tone={showPairAction && pairEligibility.allowed && host.trim().length > 0 ? 'ok' : 'warn'}
         />
       </InputScrollArea>
     </PrimitiveContainer>

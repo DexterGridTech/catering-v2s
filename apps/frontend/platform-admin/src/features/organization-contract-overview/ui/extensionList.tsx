@@ -3,6 +3,8 @@ import type {ExtensionDefinition, ExtensionFilter, JsonValue} from '../../../app
 import {
   EllipsisTooltip,
   extensionFilterFormPath,
+  extensionSearchFieldProps,
+  extensionSearchValueType,
   formatTypedExtensionValue,
   orderTypedExtensionFields,
   serializeExtensionFilters,
@@ -49,10 +51,13 @@ export function extensionListAndSearchColumns<Row extends ExtensionRow>(
       order: -1,
       hideInTable: field.listDisplay !== true,
       search: field.searchable === true ? undefined : false,
-      valueType: field.searchable === true ? searchValueType(field.type) : undefined,
-      fieldProps: field.searchable === true ? searchFieldProps(field, testIdPrefix) : undefined,
+      valueType: field.searchable === true ? extensionSearchValueType(field.type) : undefined,
+      fieldProps:
+        field.searchable === true
+          ? extensionSearchFieldProps(field, testId(extensionListSearchTestId(testIdPrefix, field.key)))
+          : undefined,
       render: (_value: unknown, row: Row) => {
-        const display = extensionDisplayValue(row.extensionValues?.[field.key], field);
+        const display = formatTypedExtensionValue(row.extensionValues?.[field.key], field);
         return (
           <EllipsisTooltip title={display}>
             <span style={{display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
@@ -70,35 +75,4 @@ export function extensionQueryValues(definition: ExtensionDefinition | undefined
     values,
     definition?.revision,
   );
-}
-
-function searchValueType(type: ExtensionDefinition['definitions'][number]['type']) {
-  return type === 'NUMBER' ? 'digit' : type === 'DATE' ? 'date' : type === 'TEXT' ? 'text' : 'select';
-}
-
-function searchFieldProps(field: ExtensionDefinition['definitions'][number], testIdPrefix: string) {
-  const placeholder =
-    field.type === 'SELECT' || field.type === 'BOOLEAN'
-      ? '全部'
-      : field.type === 'DATE'
-        ? '请选择'
-        : `请输入${field.label}`;
-  const common = {...testId(extensionListSearchTestId(testIdPrefix, field.key)), allowClear: true, placeholder};
-  if (field.type === 'SELECT')
-    return {...common, options: field.options.map(option => ({value: option, label: option}))};
-  if (field.type === 'BOOLEAN')
-    return {
-      ...common,
-      options: [
-        {value: true, label: '是'},
-        {value: false, label: '否'},
-      ],
-    };
-  if (field.type === 'NUMBER') return {...common, controls: false};
-  if (field.type === 'DATE') return {...common, format: 'YYYY-MM-DD'};
-  return common;
-}
-
-function extensionDisplayValue(value: JsonValue | undefined, field: ExtensionDefinition['definitions'][number]) {
-  return formatTypedExtensionValue(value, field);
 }

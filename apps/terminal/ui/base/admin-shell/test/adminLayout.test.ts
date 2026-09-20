@@ -98,10 +98,12 @@ describe('admin layout structural contract', () => {
           && hasAttribute(card, node, 'bounded'),
         )
       expect(boundedCard, `${cardPath} must own its bounded card inside its center frame`).toBeDefined()
+      const cardOpening = boundedCard!
+      expect(hasAttribute(card, cardOpening, 'elevated')).toBe(cardPath === 'src/components/AdminLogin.tsx')
     }
   })
 
-  it('uses the shared surface keyboard and lifts the admin login card', () => {
+  it('uses the shared surface keyboard without applying a second manual lift', () => {
     const login = readSource('src/components/AdminLogin.tsx')
     const loginCard = openingWithTestId(login, '`${adminTestIds.login}:card`')
     const cardElement = loginCard.parent
@@ -110,7 +112,18 @@ describe('admin layout structural contract', () => {
     expect(descendants.some(node => node.tagName.getText(login) === 'InputKeyboard')).toBe(false)
     expect(jsxOpenings(login, 'InputKeyboard')).toHaveLength(0)
     expect(login.text).toContain("keyboardPlacement: 'surface'")
-    expect(login.text).toContain('translateY: -keyboardLift')
+    expect(login.text).not.toContain('keyboardLift')
+    expect(attributeText(login, loginCard, 'style')).toBeUndefined()
+  })
+
+  it('keeps the login owner responsible for both surface-dismiss event guards', () => {
+    const login = readSource('src/components/AdminLogin.tsx')
+    const pinInput = jsxOpenings(login, 'PrimitivePinInput')[0]
+    expect(pinInput).toBeDefined()
+    expect(attributeText(login, pinInput!, 'onTouchEnd')).toBe('onTouchEnd={stopSurfaceDismiss}')
+    expect(attributeText(login, pinInput!, 'onClick')).toBe('onClick={stopSurfaceDismiss}')
+    expect(login.text).toContain('const stopSurfaceDismiss = (event: PrimitivePinInputInteractionEvent) => event.stopPropagation()')
+    expect(login.text).not.toContain("useState('')")
   })
 
   it('keeps each content section as the bounded scroll owner', () => {

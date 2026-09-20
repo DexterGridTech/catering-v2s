@@ -4,13 +4,23 @@
 
 /* sample2 owns the application palette; shared primitives consume semantic names only. */
 :root {
-  --color-canvas: 241 245 249;
+  --color-canvas: 255 255 255;
   --color-surface: 255 255 255;
+  --color-surface-elevated: 255 255 255;
+  --color-surface-inset: 255 241 242;
   --color-foreground: 15 23 42;
   --color-muted-foreground: 71 85 105;
   --color-border: 203 213 225;
   --color-action: 159 18 57;
   --color-action-foreground: 255 255 255;
+  --color-keyboard-surface: 19 23 25;
+  --color-keyboard-key: 40 45 49;
+  --color-keyboard-action: 40 45 49;
+  --color-keyboard-key-foreground: 248 250 252;
+  --color-keyboard-action-foreground: 248 250 252;
+  --color-keyboard-border: 55 62 66;
+  --color-keyboard-focus: 225 29 72;
+  --color-focus: 225 29 72;
   --color-ok-foreground: 21 128 61;
   --color-ok-background: 240 253 244;
   --color-ok-border: 134 239 172;
@@ -23,4 +33,15 @@
   --color-info-foreground: 3 105 161;
   --color-info-background: 240 249 255;
   --color-info-border: 125 211 252;
+  --color-login-surface: 255 255 255;
+  --color-login-foreground: 15 23 42;
+  --color-login-muted: 71 85 105;
+  --color-login-border: 203 213 225;
+  --color-login-inset: 255 241 242;
+  --color-login-focus: 225 29 72;
+  --color-login-action: 159 18 57;
+  --color-login-action-start: 225 29 72;
+  --color-login-action-end: 159 18 57;
+  --color-login-action-foreground: 255 255 255;
+  --color-login-icon: 159 18 57;
 }

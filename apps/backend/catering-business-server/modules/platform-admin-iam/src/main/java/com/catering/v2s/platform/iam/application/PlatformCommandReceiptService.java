@@ -2,7 +2,7 @@ package com.catering.v2s.platform.iam.application;
 
 import com.catering.v2s.platform.foundation.json.LegacyReceiptJson;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
-import com.catering.v2s.platform.foundation.security.Sha256Hex;
+import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.iam.application.persistence.PlatformCommandReceiptPersistence;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,7 +36,7 @@ public final class PlatformCommandReceiptService {
             Supplier<PlatformAuthenticationService.PlatformAdminReadback> command) {
         if (key == null || key.length() < 16 || key.length() > 128)
             throw new PlatformAuthenticationService.InvalidAdministratorInputException();
-        String hash = sha256(canonicalRequest);
+        String hash = CommandReceiptSupport.requestHash(canonicalRequest);
         persistence.lock(key);
         PlatformCommandReceiptPersistence.Receipt prior = persistence.find(key).orElse(null);
         if (prior != null) {
@@ -56,15 +56,20 @@ public final class PlatformCommandReceiptService {
 
     private static String serialize(PlatformAuthenticationService.PlatformAdminReadback value) {
         try {
-            return JSON.writeValueAsString(value);
+            return CommandReceiptSupport.serialize(JSON, value, "platform receipt serialization failed");
         } catch (Exception failure) {
             throw new IllegalStateException("platform receipt serialization failed", failure);
         }
     }
 
     private static PlatformAuthenticationService.PlatformAdminReadback deserialize(String json) {
+        if (json == null) return null;
         try {
-            return JSON.readValue(json, PlatformAuthenticationService.PlatformAdminReadback.class);
+            return CommandReceiptSupport.deserialize(
+                    JSON,
+                    json,
+                    PlatformAuthenticationService.PlatformAdminReadback.class,
+                    "platform receipt deserialization failed");
         } catch (Exception directFailure) {
             try {
                 ObjectNode legacy = LegacyReceiptJson.decode(JSON, json, java.util.Set.of(), java.util.Set.of());
@@ -81,7 +86,7 @@ public final class PlatformCommandReceiptService {
 
     private static String sha256(String value) {
         try {
-            return Sha256Hex.digest(value);
+            return CommandReceiptSupport.requestHash(value);
         } catch (NullPointerException failure) {
             throw new IllegalStateException(failure);
         }

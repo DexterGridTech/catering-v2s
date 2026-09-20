@@ -2,11 +2,13 @@ package com.catering.v2s.app.edge.operations.externalcollaboration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.app.edge.generated.wire.ProviderProfileViewCatalogStatus;
+import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.collaboration.api.CollaborationCatalogReadApi;
@@ -105,11 +107,48 @@ class OperationsExternalCollaborationControllerTest {
         verify(catalog).listEnabledProviderProfiles(WORKSPACE, KEY, "DINE_IN", "STORE");
     }
 
+    @Test
+    void cursorIdentityRejectsAQueryCollisionThatTheLegacyDelimiterCouldAccept() {
+        OperationsSessionResolver sessions = mock(OperationsSessionResolver.class);
+        CollaborationCatalogReadApi catalog = mock(CollaborationCatalogReadApi.class);
+        EdgeRequestContext request = mock(EdgeRequestContext.class);
+        String firstGroupKey = "group\u001fA";
+        String secondGroupKey = "group";
+        String firstCapability = "B";
+        String secondCapability = "A\u001fB";
+        when(sessions.requireWorkspaceRead(request, firstGroupKey)).thenReturn(session(firstGroupKey));
+        when(sessions.requireWorkspaceRead(request, secondGroupKey)).thenReturn(session(secondGroupKey));
+        List<CollaborationReadback.ProviderProfile> providers =
+                List.of(provider("PROVIDER-A"), provider("PROVIDER-B"));
+        when(catalog.listEnabledProviderProfiles(WORKSPACE, firstGroupKey, firstCapability, "STORE"))
+                .thenReturn(providers);
+        when(catalog.listEnabledProviderProfiles(WORKSPACE, secondGroupKey, secondCapability, "STORE"))
+                .thenReturn(providers);
+        OperationsExternalCollaborationController controller =
+                new OperationsExternalCollaborationController(sessions, catalog);
+
+        var first = controller.providerCandidates(request, firstGroupKey, firstCapability, "STORE", null, 1);
+
+        assertThrows(
+                InvalidEdgeRequestException.class,
+                () -> controller.providerCandidates(
+                        request,
+                        secondGroupKey,
+                        secondCapability,
+                        "STORE",
+                        first.nextCursor().asText(),
+                        1));
+    }
+
     private static WorkspaceSessionReadback session() {
+        return session(KEY);
+    }
+
+    private static WorkspaceSessionReadback session(String groupWorkspaceKey) {
         return new WorkspaceSessionReadback(
                 UUID.randomUUID(),
                 WORKSPACE,
-                KEY,
+                groupWorkspaceKey,
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 null,

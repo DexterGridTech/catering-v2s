@@ -35,3 +35,8 @@ export {
   createModuleUiVariableFactory,
   createUiVariableWrite,
 } from './foundations/uiVariable';
+export {
+  isCurrentWorkspaceOwnedByInstance,
+  isWorkspaceOwnedByInstanceMode,
+  workspaceOwnedByInstanceMode,
+} from './foundations/workspaceOwnership';

@@ -4,12 +4,19 @@ import {appendFileSync} from 'node:fs';
 import fs from 'node:fs';
 import path from 'node:path';
 import type {InventoryUnitSnapshot} from '../../features/inventory-management/ui/inventoryManagementModel';
+import {
+  inventoryActionResultCloseTestId,
+  inventoryActionDirectionTestId,
+  inventoryStockViewTestId,
+  inventoryZoneDiagnosticsTestId,
+} from '../../features/inventory-management/inventoryTestIds';
 import {operationsDetailDrawerTestIds} from '../../app/automation/operationsDetailDrawerTestIds';
 import {
   clickOperationsDetailAction,
   openOperationsDetailActionMenu,
   selectOperationsDataScope,
   selectOperationsOption,
+  type OperationsDataScopeTouch,
   visibleOperationsMenuTestId,
 } from './operationsL2';
 import {
@@ -19,6 +26,11 @@ import {
   catalogTestIdControls,
   catalogTestIds,
 } from '../../features/catalog-management/catalogTestIds';
+import {
+  assertCatalogL2NetworkClosure,
+  type CatalogL2NetworkDeclaration,
+  type CatalogL2NetworkObservation,
+} from './catalog-inventory-network';
 
 function inventoryUnitText(snapshot: InventoryUnitSnapshot) {
   return `${snapshot.name}（${snapshot.code}）`;
@@ -70,7 +82,10 @@ type OwnerCase = {
   keyword?: string;
   treeNodeText?: string;
   treeParentNodeText?: string;
+  treeNodeCode?: string;
+  treeParentNodeCode?: string;
   productionTagTreeNodeText?: string;
+  productionTagTreeNodeCode?: string;
   productionTagCode?: string | null;
   existingProductionTagRef?: string;
   existingProductionTagCode?: string;
@@ -88,6 +103,7 @@ type OwnerCase = {
   note?: string;
   createCode?: string;
   createName?: string;
+  createShapeKey?: string;
   createShapeLabel?: string;
   expectedSkuMatrix?: 'readonly' | 'editor';
   forbiddenScope?: ScopeFacts;
@@ -102,13 +118,27 @@ type BlueprintCase = {
   caseId: string;
   scenarioId: string;
   fixtureRef: string;
-  parameter: {controlKeys: string[]; declaredActions?: Array<{actionId: string; kind: 'USER_JOURNEY'}>};
+  parameter: {
+    controlKeys: string[];
+    operationIds?: string[];
+    network?: CatalogL2NetworkDeclaration;
+    declaredActions?: Array<{actionId: string; kind: 'USER_JOURNEY'}>;
+  };
   executionApplicability?: string;
 };
 type Binding = {
   testId?: string;
   testIdTemplate?: string;
-  testIdFactory?: 'CATALOG_MEDIA' | 'CATALOG_ITEM_ROW' | 'CATALOG_ITEM_SELECTION';
+  optionTestIdFactory?: 'CATALOG_VIEW_SWITCH' | 'INVENTORY_STOCK_VIEW' | 'INVENTORY_ACTION_DIRECTION';
+  testIdFactory?:
+    | 'CATALOG_MEDIA'
+    | 'CATALOG_ITEM_ROW'
+    | 'CATALOG_ITEM_SELECTION'
+    | 'CATALOG_CATEGORY_NODE'
+    | 'CATALOG_CATEGORY_EXPANDER'
+    | 'CATALOG_PRODUCTION_TAG_NODE'
+    | 'CATALOG_ITEM_TAB';
+  tabKey?: string;
   mediaAction?: 'status' | 'retry' | 'move-up' | 'move-down' | 'set-primary' | 'remove';
   alternatives?: string[];
   parentTestId?: string;
@@ -116,6 +146,7 @@ type Binding = {
   name?: string;
   names?: string[];
   interaction?: string;
+  actualActionNode?: string;
 };
 type Contract = {
   kind: string;
@@ -151,7 +182,6 @@ type OwnerFixture = {
 };
 
 type GeneratedOperation = {operationId: string; method: string; path: string};
-
 function findRepoFile(relativePath: string, envName: string): string {
   const candidates = [
     process.env[envName],
@@ -374,6 +404,17 @@ function observeFixtureWholeSave(page: Page, boundary: 'COPY' | 'EDIT' | 'BATCH'
           completionSource: headers['x-l2-completion-source'] ?? 'BACKEND',
           backendExpected: headers['x-l2-backend-expected'] !== 'false',
         });
+        // The version-drift save runs in the isolated owner context, so it is
+        // not visible to the primary page's response listener. Keep it in the
+        // same typed observation stream used by the case network oracle; the
+        // join artifact still records it separately as a fixture mutation.
+        caseContext.fixtureOwnerOperationObservations.push({
+          operationId: operation.operationId,
+          method: request.method(),
+          routeTemplate: operation.path,
+          pathname,
+          status: response.status(),
+        });
       })(),
     );
   });
@@ -386,12 +427,33 @@ function observeFixtureWholeSave(page: Page, boundary: 'COPY' | 'EDIT' | 'BATCH'
   };
 }
 
-let activeCaseContext: {caseId: string; scenarioId: string} | undefined;
+let activeCaseContext:
+  | {
+      caseId: string;
+      scenarioId: string;
+      declaredControlKeys: string[];
+      touchedControlKeys: Set<string>;
+      actionControlKeys: Set<string>;
+      expectedFailureOperationIds: Set<string>;
+      fixtureOwnerOperationObservations: CatalogL2NetworkObservation[];
+    }
+  | undefined;
 let activeActionContext: {actionId: string} | undefined;
+let fixtureMutationActive = false;
 const locatorMetadata = new WeakMap<object, {controlKey: string; testId: string}>();
 
-function recordControlTouch(controlKey: string, testId: string, interaction: 'LOCATOR' | 'ACTION' = 'LOCATOR'): void {
+function recordControlTouch(
+  controlKey: string,
+  testId: string,
+  interaction: 'LOCATOR' | 'ACTION' = 'LOCATOR',
+  metadata: Record<string, unknown> = {},
+): void {
+  if (fixtureMutationActive) return;
   if (!activeCaseContext) throw new Error('CATALOG_INVENTORY_L2_CASE_CONTEXT_MISSING');
+  if (!activeCaseContext.declaredControlKeys.includes(controlKey))
+    throw new Error(`CATALOG_INVENTORY_L2_CONTROL_TOUCH_UNDECLARED:${activeCaseContext.caseId}:${controlKey}`);
+  activeCaseContext.touchedControlKeys.add(controlKey);
+  if (interaction === 'ACTION') activeCaseContext.actionControlKeys.add(controlKey);
   appendJoinEvent({
     kind: interaction === 'ACTION' ? 'ACTION_TOUCH' : 'CONTROL_TOUCH',
     caseId: activeCaseContext.caseId,
@@ -399,14 +461,25 @@ function recordControlTouch(controlKey: string, testId: string, interaction: 'LO
     controlKey,
     testId,
     actionId: interaction === 'ACTION' ? activeActionContext?.actionId : undefined,
+    ...metadata,
   });
 }
 
+function markExpectedCatalogFailure(operationId: string): void {
+  if (!activeCaseContext) throw new Error('CATALOG_INVENTORY_L2_CASE_CONTEXT_MISSING');
+  activeCaseContext.expectedFailureOperationIds.add(operationId);
+}
+
 function recordActionForLocator(locator: Locator, action: string): void {
+  if (fixtureMutationActive) return;
   const metadata = locatorMetadata.get(locator);
   if (!metadata) throw new Error('CATALOG_INVENTORY_L2_ACTION_LOCATOR_METADATA_MISSING');
   if (!activeCaseContext) throw new Error('CATALOG_INVENTORY_L2_CASE_CONTEXT_MISSING');
+  if (!activeCaseContext.declaredControlKeys.includes(metadata.controlKey))
+    throw new Error(`CATALOG_INVENTORY_L2_CONTROL_TOUCH_UNDECLARED:${activeCaseContext.caseId}:${metadata.controlKey}`);
   if (!activeActionContext) throw new Error('CATALOG_INVENTORY_L2_ACTION_CONTEXT_MISSING');
+  activeCaseContext.touchedControlKeys.add(metadata.controlKey);
+  activeCaseContext.actionControlKeys.add(metadata.controlKey);
   appendJoinEvent({
     kind: 'ACTION_TOUCH',
     caseId: activeCaseContext.caseId,
@@ -430,6 +503,19 @@ function declaredActionFor(row: BlueprintCase): {actionId: string; kind: 'USER_J
     throw new Error(`CATALOG_INVENTORY_L2_DECLARED_ACTION_EXACT_SET_INVALID:${row.caseId}`);
   }
   return actions[0];
+}
+
+function assertControlTouchClosure(row: BlueprintCase): void {
+  if (!activeCaseContext) throw new Error('CATALOG_INVENTORY_L2_CASE_CONTEXT_MISSING');
+  const declared = new Set(row.parameter.controlKeys);
+  const missing = [...declared].filter(key => !activeCaseContext?.touchedControlKeys.has(key));
+  if (missing.length > 0)
+    throw new Error(`CATALOG_INVENTORY_L2_DECLARED_CONTROL_TOUCH_MISSING:${row.caseId}:${missing.join(',')}`);
+  const missingActions = [...declared].filter(
+    key => bindings.controls[key]?.interaction && !activeCaseContext?.actionControlKeys.has(key),
+  );
+  if (missingActions.length > 0)
+    throw new Error(`CATALOG_INVENTORY_L2_DECLARED_ACTION_TOUCH_MISSING:${row.caseId}:${missingActions.join(',')}`);
 }
 
 async function runDeclaredAction<T>(row: BlueprintCase, execute: () => Promise<T>): Promise<T> {
@@ -511,6 +597,10 @@ async function installOneShotCatalogApiFailure(
       return;
     }
     intercepted = true;
+    const operation = generatedOperations.find(
+      entry => entry.method === request.method() && operationTemplateRegExp(entry.path).test(pathname),
+    );
+    if (operation) markExpectedCatalogFailure(operation.operationId);
     const diagnosticHeaders = l2DiagnosticHeaders(request);
     const completionId = `l2-intercept-${randomUUID()}`;
     await route.fulfill({
@@ -697,6 +787,11 @@ function exactFact(
     const relation = String((expected as Record<string, unknown>).relation);
     if (relation === 'AT_LEAST_BASELINE') {
       if (!Number.isInteger(actual) || !baselineItem || Number(actual) < baselineItem.version)
+        throw new Error(`CATALOG_INVENTORY_L2_OWNER_FACT_RELATION_INVALID:${detail}:${relation}`);
+      return;
+    }
+    if (relation === 'EXACT_PRE_STATE') {
+      if (!Number.isInteger(actual) || !baselineItem || Number(actual) !== baselineItem.version)
         throw new Error(`CATALOG_INVENTORY_L2_OWNER_FACT_RELATION_INVALID:${detail}:${relation}`);
       return;
     }
@@ -999,6 +1094,13 @@ function interpolate(value: string, facts: OwnerCase): string {
   });
 }
 
+function requiredOwnerFact(facts: OwnerCase, key: string): string {
+  const value = facts[key];
+  if (typeof value !== 'string' || value.length === 0)
+    throw new Error(`CATALOG_INVENTORY_L2_DYNAMIC_FACT_REQUIRED:${key}`);
+  return value;
+}
+
 async function boundControlWithMetadata(
   page: Page,
   key: string,
@@ -1018,6 +1120,19 @@ async function boundControlWithMetadata(
       case 'CATALOG_ITEM_SELECTION':
         if (!facts.itemCode) throw new Error(`CATALOG_INVENTORY_L2_DYNAMIC_FACT_REQUIRED:itemCode`);
         return [catalogItemSelectionTestId(facts.itemCode)];
+      case 'CATALOG_CATEGORY_NODE':
+        if (!facts.treeNodeCode) throw new Error(`CATALOG_INVENTORY_L2_DYNAMIC_FACT_REQUIRED:treeNodeCode`);
+        return [catalogTestIdControls.workbench.categoryNode(facts.treeNodeCode)];
+      case 'CATALOG_CATEGORY_EXPANDER':
+        if (!facts.treeParentNodeCode) throw new Error(`CATALOG_INVENTORY_L2_DYNAMIC_FACT_REQUIRED:treeParentNodeCode`);
+        return [catalogTestIdControls.workbench.categoryExpander(facts.treeParentNodeCode)];
+      case 'CATALOG_PRODUCTION_TAG_NODE':
+        if (!facts.productionTagTreeNodeCode)
+          throw new Error(`CATALOG_INVENTORY_L2_DYNAMIC_FACT_REQUIRED:productionTagTreeNodeCode`);
+        return [catalogTestIdControls.workbench.productionTagNode(facts.productionTagTreeNodeCode)];
+      case 'CATALOG_ITEM_TAB':
+        if (!binding.tabKey) throw new Error(`CATALOG_INVENTORY_L2_TAB_KEY_REQUIRED:${key}`);
+        return [catalogItemTabTestId(binding.tabKey)];
       case undefined:
         return [];
       default:
@@ -1028,37 +1143,62 @@ async function boundControlWithMetadata(
     .filter((value): value is string => Boolean(value))
     .map(value => interpolate(value, facts));
   if (ids.length) {
-    const candidates = ids.map(id => page.getByTestId(id));
-    for (const candidate of candidates) {
-      const count = await candidate.count();
-      for (let index = 0; index < count; index += 1) {
-        const instance = candidate.nth(index);
-        if (await instance.isVisible()) {
-          const resolved = {locator: instance, testId: ids[candidates.indexOf(candidate)]};
-          locatorMetadata.set(resolved.locator, {controlKey: key, testId: resolved.testId});
-          return resolved;
-        }
-      }
-    }
-    const resolved = {
-      locator: candidates.slice(1).reduce((combined, candidate) => combined.or(candidate), candidates[0]),
-      testId: ids[0],
-    };
+    let visibleMatches: Array<{locator: Locator; testId: string}> = [];
+    await expect
+      .poll(
+        async () => {
+          const nextMatches: Array<{locator: Locator; testId: string}> = [];
+          for (const id of ids) {
+            const visibleInstances = page.getByTestId(id).filter({visible: true});
+            const count = await visibleInstances.count();
+            for (let index = 0; index < count; index += 1) {
+              nextMatches.push({locator: visibleInstances.nth(index), testId: id});
+            }
+          }
+          visibleMatches = nextMatches;
+          return visibleMatches.length;
+        },
+        {
+          timeout: 10_000,
+          message: `等待 L2 控件进入用户可见状态: ${key}:${ids.join(',')}`,
+        },
+      )
+      .toBeGreaterThan(0);
+    if (visibleMatches.length === 0)
+      throw new Error(`CATALOG_INVENTORY_L2_CONTROL_NOT_VISIBLE:${key}:${ids.join(',')}`);
+    if (visibleMatches.length > 1) throw new Error(`CATALOG_INVENTORY_L2_CONTROL_AMBIGUOUS:${key}:${ids.join(',')}`);
+    const resolved = visibleMatches[0];
     locatorMetadata.set(resolved.locator, {controlKey: key, testId: resolved.testId});
     return resolved;
   }
-  if (!binding.parentTestId || !binding.role) throw new Error(`CATALOG_INVENTORY_L2_CONTROL_LOCATOR_INVALID:${key}`);
-  const parent = page.getByTestId(interpolate(binding.parentTestId, facts));
-  const testId = interpolate(binding.parentTestId, facts);
-  const locator = binding.name
-    ? parent.getByRole(binding.role, {name: binding.name, exact: true})
-    : parent.getByRole(binding.role);
-  locatorMetadata.set(locator, {controlKey: key, testId});
-  return {locator, testId};
+  throw new Error(`CATALOG_INVENTORY_L2_CONTROL_LOCATOR_INVALID:${key}`);
 }
 
 async function boundControl(page: Page, key: string, facts: OwnerCase): Promise<Locator> {
   return (await boundControlWithMetadata(page, key, facts)).locator;
+}
+
+function optionTestIdFor(key: string, value: string): string {
+  const factory = bindings.controls[key]?.optionTestIdFactory;
+  switch (factory) {
+    case 'CATALOG_VIEW_SWITCH':
+      if (value === 'TREE_TABLE') return catalogTestIdControls.workbench.viewTree;
+      if (value === 'TABLE_ONLY') return catalogTestIdControls.workbench.viewTable;
+      break;
+    case 'INVENTORY_STOCK_VIEW':
+      return inventoryStockViewTestId(value as Parameters<typeof inventoryStockViewTestId>[0]);
+    case 'INVENTORY_ACTION_DIRECTION':
+      return inventoryActionDirectionTestId(value as Parameters<typeof inventoryActionDirectionTestId>[0]);
+  }
+  throw new Error(`CATALOG_INVENTORY_L2_OPTION_TEST_ID_FACTORY_INVALID:${key}:${value}`);
+}
+
+async function boundOption(page: Page, key: string, value: string): Promise<Locator> {
+  const testId = optionTestIdFor(key, value);
+  const option = visibleTestId(page, testId);
+  locatorMetadata.set(option, {controlKey: key, testId});
+  await expect(option).toBeVisible();
+  return option;
 }
 
 async function requireControl(page: Page, key: string, facts: OwnerCase): Promise<Locator> {
@@ -1068,13 +1208,40 @@ async function requireControl(page: Page, key: string, facts: OwnerCase): Promis
   return resolved.locator;
 }
 
+function actualActionLocator(locator: Locator, key: string): Locator {
+  const actionNode = bindings.controls[key]?.actualActionNode;
+  if (actionNode !== 'TREE_TITLE') return locator;
+  const metadata = locatorMetadata.get(locator);
+  if (!metadata) throw new Error('CATALOG_INVENTORY_L2_ACTION_LOCATOR_METADATA_MISSING');
+  const title = locator
+    .locator(
+      'xpath=ancestor::span[contains(concat(" ", normalize-space(@class), " "), " ant-tree-node-content-wrapper ")]',
+    )
+    .first();
+  locatorMetadata.set(title, metadata);
+  return title;
+}
+
 async function clickRequiredControl(page: Page, key: string, facts: OwnerCase): Promise<Locator> {
   const actionMenuTestId = detailActionMenuTestIdByControlKey[key];
   if (actionMenuTestId) await openOperationsDetailActionMenu(page, actionMenuTestId);
-  const locator = await requireControl(page, key, facts);
-  await locator.click();
-  recordActionForLocator(locator, 'click');
-  return locator;
+  const control = await requireControl(page, key, facts);
+  const action = actualActionLocator(control, key);
+  await expect(action).toBeVisible();
+  await action.click();
+  recordActionForLocator(action, 'click');
+  return action;
+}
+
+async function selectBoundCatalogOption(
+  page: Page,
+  controlKey: string,
+  selectTestId: string,
+  label: string,
+  optionTestId: string,
+): Promise<void> {
+  await selectOperationsOption(page, selectTestId, label, optionTestId);
+  recordControlTouch(controlKey, optionTestId, 'ACTION');
 }
 
 function routeFromStoreProfile(suffix: 'catalog/store-items' | 'catalog/brand-items' | 'inventory/status'): string {
@@ -1129,23 +1296,43 @@ async function signIn(page: Page, principal: OperationsPrincipal = storePrincipa
   await expect(shellMenu).toBeVisible();
 }
 
+function recordCatalogScopeTouch(
+  controlKey: 'STORE_SCOPE' | 'HEAD_COMPANY_SCOPE',
+  touch: OperationsDataScopeTouch,
+): void {
+  recordControlTouch(controlKey, touch.testId, 'ACTION', {
+    scopePhase: touch.phase,
+    scopeType: touch.type ?? null,
+  });
+}
+
 async function selectOwnerScope(page: Page, facts: OwnerCase): Promise<void> {
   if (!facts.scope) throw new Error('CATALOG_INVENTORY_L2_SCOPE_FACT_REQUIRED');
   if (facts.scope.kind === 'HEAD_COMPANY') {
-    await selectOperationsDataScope(page, 'HEAD_COMPANY', {
-      headCompanyName: facts.scope.headCompanyName,
-      headCompanyRef: facts.scope.headCompanyRef,
-    });
+    await selectOperationsDataScope(
+      page,
+      'HEAD_COMPANY',
+      {
+        headCompanyName: facts.scope.headCompanyName,
+        headCompanyRef: facts.scope.headCompanyRef,
+      },
+      touch => recordCatalogScopeTouch('HEAD_COMPANY_SCOPE', touch),
+    );
     return;
   }
-  await selectOperationsDataScope(page, 'STORE', {
-    regionName: facts.scope.regionName,
-    regionRef: facts.scope.regionRef,
-    projectName: facts.scope.projectName,
-    projectRef: facts.scope.projectRef,
-    storeName: facts.scope.storeName,
-    storeRef: facts.scope.storeRef,
-  });
+  await selectOperationsDataScope(
+    page,
+    'STORE',
+    {
+      regionName: facts.scope.regionName,
+      regionRef: facts.scope.regionRef,
+      projectName: facts.scope.projectName,
+      projectRef: facts.scope.projectRef,
+      storeName: facts.scope.storeName,
+      storeRef: facts.scope.storeRef,
+    },
+    touch => recordCatalogScopeTouch('STORE_SCOPE', touch),
+  );
 }
 
 async function openCatalogStore(page: Page, facts: OwnerCase): Promise<void> {
@@ -1178,8 +1365,10 @@ async function openInventory(page: Page, facts: OwnerCase): Promise<void> {
 }
 
 async function typeSequentially(control: Locator, value: string): Promise<void> {
-  const nested = control.locator('input, textarea').first();
-  const input = (await nested.count()) > 0 ? nested : control;
+  const nested = control.locator('input, textarea');
+  const nestedCount = await nested.count();
+  if (nestedCount > 1) throw new Error(`CATALOG_INVENTORY_L2_NATIVE_INPUT_AMBIGUOUS:${nestedCount}`);
+  const input = nestedCount === 1 ? nested : control;
   await expect(input).toBeVisible();
   await input.fill('');
   // Keep the user-visible sequential-input contract while allowing the
@@ -1195,15 +1384,26 @@ async function typeSequentially(control: Locator, value: string): Promise<void> 
  * test act on a historical, hidden surface instead of the user-facing one.
  */
 function visibleTestId(page: Page, testId: string): Locator {
-  return page.locator(`[data-testid=${JSON.stringify(testId)}]:visible`).first();
+  // Playwright's semantic visibility filter keeps the test-id binding while
+  // rejecting hidden Drawer/Modal copies. Strict-mode action errors remain
+  // intentional: more than one visible owner of a semantic id is a source
+  // defect, not a reason to pick the first node.
+  return page.getByTestId(testId).filter({visible: true});
+}
+
+function visibleModalDialogByTestId(page: Page, testId: string): Locator {
+  // Ant Design puts Modal's test id on the zero-layout root and the actual
+  // visible surface on its descendant role=dialog.  Filtering the root with
+  // visible=true would reject a genuinely open modal, so bind the assertion
+  // to the user-facing dialog while retaining the declared surface id.
+  return page.getByTestId(testId).getByRole('dialog').filter({visible: true});
 }
 
 async function searchCatalogByKeyword(page: Page, facts: OwnerCase, keyword: string): Promise<void> {
   await typeSequentially(await requireControl(page, 'CATALOG_LOCAL_SEARCH', facts), keyword);
-  await visibleTestId(page, catalogTestIdControls.workbench.filterKeyword).locator('input').press('Enter');
-  await expect(visibleTestId(page, catalogTestIdControls.workbench.filterKeyword).locator('input')).toHaveValue(
-    keyword,
-  );
+  const filter = await visibleTestId(page, catalogTestIdControls.workbench.filterKeyword);
+  await filter.locator('input').press('Enter');
+  await expect(filter.locator('input')).toHaveValue(keyword);
 }
 
 async function searchCatalog(page: Page, facts: OwnerCase): Promise<void> {
@@ -1214,34 +1414,21 @@ async function searchCatalog(page: Page, facts: OwnerCase): Promise<void> {
 async function clickTreeNode(page: Page, facts: OwnerCase): Promise<void> {
   if (!facts.treeNodeText) throw new Error('CATALOG_INVENTORY_L2_TREE_NODE_FACT_REQUIRED');
   await requireControl(page, 'CATALOG_TREE', facts);
-  const tree = page.getByTestId(catalogTestIds.surface.navigationTree);
-  if (facts.treeParentNodeText) {
-    const parent = tree.getByRole('treeitem').filter({hasText: facts.treeParentNodeText}).first();
-    await expect(parent).toBeVisible();
-    if ((await parent.getAttribute('aria-expanded')) === 'false') {
-      await parent.locator('.ant-tree-switcher').first().click();
-      await expect(parent).toHaveAttribute('aria-expanded', 'true');
-    }
+  if (!facts.treeNodeCode) throw new Error('CATALOG_INVENTORY_L2_TREE_NODE_CODE_FACT_REQUIRED');
+  if (facts.treeParentNodeCode) {
+    const expander = await requireControl(page, 'CATALOG_TREE_CATEGORY_EXPANDER', facts);
+    await expander.click();
+    recordActionForLocator(expander, 'click');
   }
-  const node = page
-    .getByTestId(catalogTestIds.surface.navigationTree)
-    .getByRole('treeitem')
-    .filter({hasText: facts.treeNodeText})
-    .first();
-  await expect(node).toBeVisible();
-  await node.click();
+  await clickRequiredControl(page, 'CATALOG_TREE_CATEGORY_NODE', facts);
 }
 
 async function clickLookupTreeNode(page: Page, facts: OwnerCase): Promise<void> {
   await requireControl(page, 'CATALOG_TREE', facts);
   if (facts.productionTagTreeNodeText) {
-    const productionTagNode = page
-      .getByTestId(catalogTestIds.surface.navigationTree)
-      .getByRole('treeitem')
-      .filter({hasText: facts.productionTagTreeNodeText})
-      .first();
-    await expect(productionTagNode).toBeVisible();
-    await productionTagNode.click();
+    if (!facts.productionTagTreeNodeCode)
+      throw new Error('CATALOG_INVENTORY_L2_PRODUCTION_TAG_NODE_CODE_FACT_REQUIRED');
+    await clickRequiredControl(page, 'CATALOG_TREE_PRODUCTION_TAG_NODE', facts);
     return;
   }
   await clickTreeNode(page, facts);
@@ -1305,14 +1492,11 @@ async function openProductionTagCreate(
   productionTagsControlKey = 'CATALOG_CONFIG_PRODUCTION_TAGS',
   code = facts.productionTagCode,
 ): Promise<Locator> {
-  const navigation = page.locator(`[data-testid="${catalogTestIds.static.dictionaryTabs}"]:visible`).first();
+  const navigation = await visibleTestId(page, catalogTestIds.static.dictionaryTabs);
   await navigation.getByTestId(catalogTestIdControls.config.library('PRODUCTION_TAG')).click();
   await requireControl(page, productionTagsControlKey, facts);
-  await page.locator(`[data-testid="${catalogTestIds.static.dictionaryOpenCreate}"]:visible`).first().click();
-  const modal = page
-    .locator('.ant-modal')
-    .filter({has: page.getByTestId(catalogTestIds.static.dictionaryName)})
-    .last();
+  await clickRequiredControl(page, 'CATALOG_DICTIONARY_OPEN_CREATE', facts);
+  const modal = visibleModalDialogByTestId(page, catalogTestIds.static.dictionaryCreateModal);
   await expect(modal).toBeVisible();
   await expect(modal).toContainText('新建生产标签');
   const name = typeof facts.productionTagName === 'string' ? facts.productionTagName : 'L2 临时生产标签';
@@ -1343,22 +1527,9 @@ async function openTab(drawer: Locator, key: string): Promise<void> {
   const testId = catalogItemTabTestId(key);
   const anchor = drawer.getByTestId(testId);
   await expect(anchor).toBeVisible();
-  // The central testId belongs to the semantic label, while Ant Design owns
-  // focus, keyboard support and selection state on its role=tab ancestor.
-  // Resolve that one real control instead of clicking a presentational child.
-  const tab = anchor.locator('xpath=ancestor-or-self::*[@role="tab"]');
-  await expect(tab).toHaveCount(1);
-  await expect(tab).toBeVisible();
-  await tab.click();
+  await anchor.click();
   recordControlTouch('CATALOG_ITEM_TABS', testId, 'ACTION');
-  // Ant Design may replace the label subtree while switching an active tab.
-  // The semantic control is the tab role, so resolve it again after the click
-  // rather than keeping a stale label-scoped locator.
-  await expect(drawer.getByRole('tab', {name: await anchor.innerText(), exact: true})).toHaveAttribute(
-    'aria-selected',
-    'true',
-  );
-  await expect(drawer).toBeVisible();
+  await expect(anchor).toHaveAttribute('data-active', 'true');
 }
 
 /**
@@ -1371,6 +1542,7 @@ async function reopenCatalogItemForOwnerReadback(
   facts: OwnerCase,
   itemCode: string,
   itemName?: string,
+  drawerControlKey: 'CATALOG_ITEM_DRAWER' | 'CATALOG_ITEM_VIEW_DRAWER' = 'CATALOG_ITEM_DRAWER',
 ): Promise<Locator> {
   const readbackFacts: OwnerCase = {
     ...facts,
@@ -1379,7 +1551,7 @@ async function reopenCatalogItemForOwnerReadback(
     itemName: itemName ?? facts.itemName,
   };
   await searchCatalog(page, readbackFacts);
-  return openCatalogItem(page, readbackFacts);
+  return openCatalogItem(page, readbackFacts, drawerControlKey);
 }
 
 /**
@@ -1395,7 +1567,11 @@ async function reopenCurrentCatalogItemForOwnerReadback(page: Page, facts: Owner
     await page.keyboard.press('Escape');
     await expect(current).toBeHidden();
   }
-  return reopenCatalogItemForOwnerReadback(page, facts, facts.itemCode, facts.itemName);
+  // This helper first closes and then reopens the read-only view Drawer above;
+  // its readback locator must therefore use the same declared view surface,
+  // not the legacy union control whose default can record the wrong semantic
+  // touch for lifecycle cases.
+  return reopenCatalogItemForOwnerReadback(page, facts, facts.itemCode, facts.itemName, 'CATALOG_ITEM_VIEW_DRAWER');
 }
 
 async function closeDrawer(page: Page, drawer: Locator): Promise<void> {
@@ -1412,8 +1588,7 @@ async function openLocalCopy(page: Page, drawer: Locator, facts: OwnerCase): Pro
 }
 
 async function openBrandCopy(page: Page, facts: OwnerCase): Promise<Locator> {
-  await requireControl(page, 'CATALOG_COPY_OPEN', facts);
-  await visibleTestId(page, catalogTestIdControls.workbench.openBrandCopy).click();
+  await clickRequiredControl(page, 'CATALOG_COPY_OPEN', facts);
   const copy = await requireControl(page, 'CATALOG_COPY_DRAWER', facts);
   return copy;
 }
@@ -1460,9 +1635,9 @@ async function selectParentCatalogRows(page: Page, facts: OwnerCase): Promise<vo
       testId: catalogItemSelectionTestId(itemCode),
     });
     await selection.scrollIntoViewIfNeeded();
-    const checkbox = selection.getByRole('checkbox').first();
-    await expect(checkbox).toBeVisible();
-    await checkbox.check();
+    await expect(selection).toHaveCount(1);
+    await expect(selection).toBeVisible();
+    await selection.click();
     recordActionForLocator(selection, 'check');
   }
   await expect(visibleTestId(page, catalogTestIds.static.inventorySelectionSummary)).toContainText('已选择');
@@ -1470,32 +1645,43 @@ async function selectParentCatalogRows(page: Page, facts: OwnerCase): Promise<vo
 
 async function openBatchAction(page: Page, facts: OwnerCase, actionName = '批量改状态'): Promise<Locator> {
   await selectParentCatalogRows(page, facts);
-  await requireControl(page, 'CATALOG_BATCH_OPEN', facts);
-  await visibleTestId(page, catalogTestIdControls.batch.action).click();
-  await page.getByRole('menuitem', {name: actionName}).click();
+  await clickRequiredControl(page, 'CATALOG_BATCH_OPEN', facts);
+  await clickRequiredControl(page, 'CATALOG_BATCH_STATUS_ACTION', facts);
   const modal = await requireControl(page, 'CATALOG_BATCH_MODAL', facts);
   await expect(page.getByRole('dialog').filter({hasText: actionName}).last()).toBeVisible();
   // The fixture item starts ENABLED. Choose a real lifecycle transition so
   // the success path changes state and the failure mutation can exercise the
   // owner's expected-version guard instead of the same-status no-op path.
-  await selectOperationsOption(page, catalogTestIds.static.inventoryBatchStatus, '停用');
+  await selectBoundCatalogOption(
+    page,
+    'CATALOG_BATCH_MODAL',
+    catalogTestIds.static.inventoryBatchStatus,
+    '停用',
+    catalogTestIdControls.batch.statusOption('DISABLED'),
+  );
   return modal;
 }
 
-async function submitBatchAction(page: Page): Promise<{command: Response; refreshedItems: Response}> {
-  // Ant Design renders Modal footer buttons in the dialog portal, outside
-  // the batch content surface. Resolve the shared control at page scope;
-  // scoping it to catalog-batch-task-modal would never reach the footer. The
-  // workbench itself refreshes after a batch command. Register the generated
-  // reader before the click so the owner oracle cannot accidentally consume a
-  // pre-command list response.
+async function submitBatchAction(page: Page, facts: OwnerCase): Promise<{command: Response; refreshedItems: Response}> {
+  // The batch editor has two user actions: the outer "执行" button opens the
+  // confirmation dialog, and the confirmation button sends the owner command.
+  // Keep those controls separately bound so L2 cannot mistake an open dialog
+  // for a submitted command. Register the generated reader only after the
+  // confirmation surface is visible; the earlier click is intentionally
+  // command-free.
+  await clickRequiredControl(page, 'CATALOG_BATCH_SUBMIT', facts);
+  const confirmation = await requireControl(page, 'CATALOG_BATCH_STATUS_CONFIRM', facts);
+  await expect(confirmation).toHaveAccessibleName('确认停用');
   const refreshedItems = waitForGeneratedOperation(page, 'getOperationsCatalogItems');
-  const command = await clickGeneratedCommand(
-    page,
-    visibleTestId(page, catalogTestIdControls.batch.submit),
-    'batchTransitionOperationsCatalogItemStatus',
-    {controlKey: 'CATALOG_BATCH_MODAL', testId: catalogTestIdControls.batch.submit},
-  );
+  // Progress is a submission-state control. Start observing it before the
+  // command click; after the command and list readback settle, the controller
+  // intentionally clears submitting and the transient control is gone.
+  const progressVisible = requireControl(page, 'CATALOG_BATCH_PROGRESS', facts);
+  const command = await clickGeneratedCommand(page, confirmation, 'batchTransitionOperationsCatalogItemStatus', {
+    controlKey: 'CATALOG_BATCH_STATUS_CONFIRM',
+    testId: catalogTestIdControls.batch.statusConfirm,
+  });
+  await progressVisible;
   return {command, refreshedItems: await refreshedItems};
 }
 
@@ -1517,13 +1703,11 @@ async function runBrandCopyPreflight(page: Page, facts: OwnerCase): Promise<Loca
   const copy = await openBrandCopy(page, facts);
   const actionInput = facts.actionInput as {copySourceItemCode?: string} | undefined;
   await selectBrandCopyCandidate(copy, actionInput?.copySourceItemCode ?? facts.sourceItemCode);
-  await copy.getByTestId('catalog-brand-copy-selection-next').click();
-  await requireControl(page, 'CATALOG_COPY_PREFLIGHT', facts);
+  await clickRequiredControl(page, 'CATALOG_COPY_SELECTION', facts);
   const preflight = await clickGeneratedCommand(
     page,
-    copy.getByTestId('catalog-copy-preflight'),
+    await requireControl(page, 'CATALOG_COPY_PREFLIGHT', facts),
     'preflightOperationsBrandCatalogCopy',
-    {controlKey: 'CATALOG_COPY_PREFLIGHT', testId: 'catalog-copy-preflight'},
   );
   if (!preflight.ok()) throw new Error(`CATALOG_INVENTORY_L2_COPY_PREFLIGHT_FAILED:${preflight.status()}`);
   await advanceBrandCopyPreflight(copy);
@@ -1569,6 +1753,7 @@ async function invalidateFixtureItemVersion(
   const mutationContext = await browser.newContext();
   const mutationPage = await mutationContext.newPage();
   try {
+    fixtureMutationActive = true;
     await installGeneratedL2Diagnostics(mutationPage);
     const mutationCompletion = observeFixtureWholeSave(mutationPage, boundary);
     // A fresh BrowserContext intentionally has no session state. Authenticate
@@ -1613,16 +1798,29 @@ async function invalidateFixtureItemVersion(
       status: response.status(),
     });
   } finally {
+    fixtureMutationActive = false;
     await mutationContext.close();
   }
 }
 
 async function confirmCatalogLifecycle(page: Page, label: string, facts: OwnerCase): Promise<void> {
-  const dialog = page.getByRole('dialog').filter({hasText: label}).last();
+  // The view Drawer and the lifecycle confirmation Modal are both role=dialog
+  // and both can contain the action label.  Bind this helper to the owner's
+  // unique Modal surface instead of guessing by text or DOM order; otherwise
+  // Escape/hidden assertions can target the wrong overlay after the command
+  // response settles.
+  // Ant Design attaches the surface test id to the zero-sized Modal root.
+  // Assert the mounted dialog descendant so visibility represents the actual
+  // user-facing confirmation surface rather than the portal container.
+  const dialog = page.getByTestId(catalogTestIds.surface.lifecycleConfirm).getByRole('dialog');
   await expect(dialog).toBeVisible();
   const confirm = await requireControl(page, 'CATALOG_LIFECYCLE_CONFIRM', facts);
   await expect(confirm).toHaveAccessibleName(`确认${label}`);
   await confirm.click();
+  // The command response can settle before the shared confirmation Modal has
+  // finished closing.  Wait for the overlay boundary here so the next visible
+  // readback/close action cannot accidentally target the still-open Modal.
+  await expect(dialog).toBeHidden();
 }
 
 function generatedOperation(operationId: string): {method: string; path: string} {
@@ -1660,7 +1858,8 @@ async function clickGeneratedCommand(
 ): Promise<Response> {
   const completion = waitForGeneratedOperation(page, operationId);
   await control.click();
-  if (touch) recordControlTouch(touch.controlKey, touch.testId, 'ACTION');
+  if (touch) locatorMetadata.set(control, touch);
+  recordActionForLocator(control, 'click');
   return completion;
 }
 
@@ -1670,7 +1869,13 @@ async function openCatalogStatusActions(page: Page, facts: OwnerCase): Promise<v
 }
 
 async function disableCatalogItem(page: Page, facts: OwnerCase): Promise<void> {
-  await clickOperationsDetailAction(page, catalogTestIdControls.view.action, catalogTestIds.control.statusDisable);
+  // Lifecycle cases declare the action-menu trigger as a semantic control.
+  // Open it through the case-aware helper so the join records that touch
+  // before selecting the generated status action; the generic cross-feature
+  // click helper cannot know this catalog case's denominator.
+  await openCatalogStatusActions(page, facts);
+  const disable = await visibleOperationsMenuTestId(page, catalogTestIds.control.statusDisable);
+  await disable.click();
   const completion = waitForGeneratedOperation(page, 'transitionOperationsCatalogItemStatus');
   await confirmCatalogLifecycle(page, '停用', facts);
   const response = await completion;
@@ -1739,10 +1944,10 @@ async function exerciseInventoryAction(
     await requireControl(page, 'INVENTORY_CONFIG_CONVERSION', facts);
     await expect(modal).toContainText(inventoryUnitText(consumptionSnapshot));
     await selectOperationsOption(page, 'inventory-config-counting-unit', inventoryUnitText(countingSnapshot));
-    await page
-      .getByTestId('inventory-config-conversion-factor')
-      .locator('input')
-      .fill(requiredUnitFact(facts, 'conversionFactor'));
+    await typeSequentially(
+      await requireControl(page, 'INVENTORY_CONFIG_CONVERSION', facts),
+      requiredUnitFact(facts, 'conversionFactor'),
+    );
   } else {
     const consumptionSnapshot = requiredUnitSnapshot(facts, 'consumptionUnitSnapshot');
     const actionSnapshot = requiredActionUnitSnapshot(facts);
@@ -1750,29 +1955,29 @@ async function exerciseInventoryAction(
     await requireControl(page, 'INVENTORY_ACTION_UNIT', facts);
     await requireControl(page, 'INVENTORY_ACTION_NOTE', facts);
     await expect(modal).toContainText(inventoryUnitText(consumptionSnapshot));
-    await page
-      .getByTestId('inventory-action-quantity')
-      .locator('input')
-      .fill(facts.quantity ?? '1');
+    await typeSequentially(await requireControl(page, 'INVENTORY_ACTION_QUANTITY', facts), facts.quantity ?? '1');
     await selectOperationsOption(page, 'inventory-action-unit', inventoryUnitText(actionSnapshot));
     if (actionKey === 'INVENTORY_ACTION_ADJUST') {
       await requireControl(page, 'INVENTORY_ACTION_REASON', facts);
       if (facts.reasonLabel) await selectOperationsOption(page, 'inventory-action-reason', facts.reasonLabel);
-      await page
-        .getByTestId('inventory-action-direction')
-        .getByRole('radio', {name: facts.direction === 'DECREASE' ? '减少' : '增加'})
-        .check();
+      await requireControl(page, 'INVENTORY_ACTION_DIRECTION', facts);
+      const direction = await boundOption(
+        page,
+        'INVENTORY_ACTION_DIRECTION',
+        facts.direction === 'DECREASE' ? 'DECREASE' : 'INCREASE',
+      );
+      await direction.click();
+      recordActionForLocator(direction, 'click');
     }
     await typeSequentially(
-      page.getByTestId('inventory-action-note'),
+      await requireControl(page, 'INVENTORY_ACTION_NOTE', facts),
       facts.note ?? 'catalog-inventory-l2-owner-http-fixture',
     );
   }
   if (submit) {
-    await requireControl(page, 'INVENTORY_ACTION_SUBMIT', facts);
-    await page.getByTestId('inventory-action-submit').click();
+    await clickRequiredControl(page, 'INVENTORY_ACTION_SUBMIT', facts);
     await requireControl(page, 'INVENTORY_ACTION_RESULT', facts);
-    await page.getByTestId('inventory-action-result-close').click();
+    await page.getByTestId(inventoryActionResultCloseTestId).click();
   } else {
     await page.keyboard.press('Escape');
     await expect(modal).toBeHidden();
@@ -1789,7 +1994,13 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
     case 'CI-L2-001-02':
       await signIn(page);
       await openCatalogBrand(page, facts);
-      await selectOperationsOption(page, catalogTestIdControls.workbench.brandSwitch, facts.brandName);
+      await selectBoundCatalogOption(
+        page,
+        'CATALOG_BRAND_SWITCH',
+        catalogTestIdControls.workbench.brandSwitch,
+        facts.brandName ?? '',
+        catalogTestIdControls.workbench.brandOption(requiredOwnerFact(facts, 'brandRef')),
+      );
       await requireControl(page, 'CATALOG_RESULT_TABLE', facts);
       return;
     case 'CI-L2-001-03':
@@ -1832,8 +2043,17 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
     case 'CI-L2-003-01':
       await signIn(page);
       await openCatalogBrand(page, facts);
-      await selectOperationsOption(page, catalogTestIdControls.workbench.brandSwitch, facts.brandName);
-      await page.getByTestId(catalogTestIds.control.viewSwitch).getByRole('radio', {name: '仅表格'}).click();
+      await selectBoundCatalogOption(
+        page,
+        'CATALOG_BRAND_SWITCH',
+        catalogTestIdControls.workbench.brandSwitch,
+        facts.brandName ?? '',
+        catalogTestIdControls.workbench.brandOption(requiredOwnerFact(facts, 'brandRef')),
+      );
+      await requireControl(page, 'CATALOG_VIEW_SWITCH', facts);
+      const tableView = await boundOption(page, 'CATALOG_VIEW_SWITCH', 'TABLE_ONLY');
+      await tableView.click();
+      recordActionForLocator(tableView, 'click');
       await requireControl(page, 'CATALOG_RESULT_TABLE', facts);
       return;
     case 'CI-L2-004-01':
@@ -1848,7 +2068,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
     case 'CI-L2-005-01':
       await signIn(page);
       await openCatalogStore(page, facts);
-      await expect(page.getByTestId('catalog-inventory-no-authorized-brand')).toBeVisible();
+      await expect(page.getByTestId(catalogTestIds.static.inventoryNoAuthorizedBrand)).toBeVisible();
       await expect(page.getByTestId(catalogTestIdControls.workbench.openBrandCopy)).toHaveCount(0);
       return;
     case 'CI-L2-005-02':
@@ -1883,14 +2103,12 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       {
         const drawer = await openCatalogItem(page, facts);
         await clickRequiredControl(page, 'CATALOG_ITEM_EDIT', facts);
-        await typeSequentially(page.getByTestId('catalog-item-edit-name'), `${facts.itemName ?? '商品'}-L2`);
+        await typeSequentially(page.getByTestId(catalogTestIds.static.itemEditName), `${facts.itemName ?? '商品'}-L2`);
         await page.keyboard.press('Escape');
-        await requireControl(page, 'CATALOG_DIRTY_CONTINUE', facts);
-        await page.getByTestId('catalog-item-dirty-continue').click();
+        await clickRequiredControl(page, 'CATALOG_DIRTY_CONTINUE', facts);
         await expect(drawer).toBeVisible();
         await page.keyboard.press('Escape');
-        await requireControl(page, 'CATALOG_DIRTY_DISCARD', facts);
-        await page.getByTestId('catalog-item-dirty-discard').click();
+        await clickRequiredControl(page, 'CATALOG_DIRTY_DISCARD', facts);
         await expect(drawer).toBeHidden();
         return;
       }
@@ -1901,8 +2119,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       {
         const drawer = await openCatalogItem(page, facts);
         await requireControl(page, 'CATALOG_ITEM_PROBLEM', facts);
-        await requireControl(page, 'CATALOG_ITEM_PROBLEM_RETRY', facts);
-        await page.getByTestId('catalog-item-problem-retry').click();
+        await clickRequiredControl(page, 'CATALOG_ITEM_PROBLEM_RETRY', facts);
         await expect(drawer).toBeVisible();
         return;
       }
@@ -1937,8 +2154,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         const drawer = await openCatalogItem(page, facts);
         await openTab(drawer, 'inventory-bom');
         await closeDrawer(page, drawer);
-        await requireControl(page, 'CATALOG_CREATE_OPEN', facts);
-        await page.getByTestId(catalogTestIdControls.workbench.openCreate).click();
+        await clickRequiredControl(page, 'CATALOG_CREATE_OPEN', facts);
         await requireControl(page, 'CATALOG_CREATE_SHAPE', facts);
         return;
       }
@@ -1965,18 +2181,23 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
     case 'CI-L2-007-07':
       await signIn(page);
       await openCatalogStore(page, facts);
-      await requireControl(page, 'CATALOG_CREATE_OPEN', facts);
-      await page.getByTestId(catalogTestIdControls.workbench.openCreate).click();
+      await clickRequiredControl(page, 'CATALOG_CREATE_OPEN', facts);
       await requireControl(page, 'CATALOG_CREATE_SHAPE', facts);
       await requireControl(page, 'CATALOG_CREATE_SUBMIT', facts);
-      await selectOperationsOption(page, catalogTestIdControls.create.shape, facts.createShapeLabel);
+      await selectBoundCatalogOption(
+        page,
+        'CATALOG_CREATE_SHAPE',
+        catalogTestIdControls.create.shape,
+        facts.createShapeLabel ?? '',
+        catalogTestIdControls.create.shapeOption(requiredOwnerFact(facts, 'createShapeKey')),
+      );
       await typeSequentially(
         page.getByTestId(catalogTestIdControls.create.code),
         facts.createCode ?? 'L2-CATALOG-CONTROL',
       );
       await typeSequentially(page.getByTestId(catalogTestIdControls.create.name), facts.createName ?? 'L2 控件验证');
-      await page.getByTestId(catalogTestIdControls.create.submit).click();
-      await expect(page.getByTestId('catalog-item-create-drawer')).toBeVisible();
+      await clickRequiredControl(page, 'CATALOG_CREATE_SUBMIT', facts);
+      await expect(page.getByTestId(catalogTestIds.surface.itemCreateModal)).toBeVisible();
       return;
     case 'CI-L2-008-01':
       await signIn(page);
@@ -1999,11 +2220,10 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       {
         const drawer = await openCatalogItem(page, facts);
         const copy = await openLocalCopy(page, drawer, facts);
-        await requireControl(page, 'CATALOG_COPY_SELECTION', facts);
         if (facts.sourceItemCode) {
           await copy.getByTestId(catalogTestIdControls.copy.sourceRow(facts.sourceItemCode)).click();
         }
-        await copy.getByTestId('catalog-local-copy-source-item-next').click();
+        await clickRequiredControl(page, 'CATALOG_COPY_SELECTION', facts);
         await requireControl(page, 'CATALOG_COPY_PREFLIGHT', facts);
         return;
       }
@@ -2013,7 +2233,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       {
         const copy = await openBrandCopy(page, facts);
         await selectBrandCopyCandidate(copy, facts.sourceItemCode);
-        await copy.getByTestId('catalog-brand-copy-selection-next').click();
+        await clickRequiredControl(page, 'CATALOG_COPY_SELECTION', facts);
         await requireControl(page, 'CATALOG_COPY_PREFLIGHT', facts);
         return;
       }
@@ -2046,15 +2266,14 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
     case 'CI-L2-012-01':
       await signIn(page);
       await openInventory(page, facts);
-      for (const label of ['全部', '需处理', '低库存', '无库存', '负库存', '未知'])
-        await page
-          .getByTestId('inventory-stock-view')
-          .getByRole('radio', {name: new RegExp(label)})
-          .click();
-      await requireControl(page, 'INVENTORY_FILTER_SUBMIT', facts);
-      await requireControl(page, 'INVENTORY_FILTER_RESET', facts);
-      await page.getByTestId('inventory-filter-submit').click();
-      await page.getByTestId('inventory-filter-reset').click();
+      await requireControl(page, 'INVENTORY_STOCK_VIEW', facts);
+      for (const view of ['ALL', 'NEEDS_ATTENTION', 'LOW', 'OUT', 'NEGATIVE', 'UNKNOWN'] as const) {
+        const option = await boundOption(page, 'INVENTORY_STOCK_VIEW', view);
+        await option.click();
+        recordActionForLocator(option, 'click');
+      }
+      await clickRequiredControl(page, 'INVENTORY_FILTER_SUBMIT', facts);
+      await clickRequiredControl(page, 'INVENTORY_FILTER_RESET', facts);
       return;
     case 'CI-L2-012-02':
       await signIn(page);
@@ -2077,7 +2296,6 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
           ['全部变化记录', 'INVENTORY_LEDGER_ZONE'],
         ];
         for (const [label, key] of zones) {
-          await drawer.getByText(new RegExp(label), {exact: false}).first().click();
           await requireControl(page, key, facts);
         }
         return;
@@ -2092,7 +2310,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         };
         page.on('request', listener);
         const drawer = await openInventoryTarget(page, facts);
-        await expect(page.getByTestId('inventory-zone-diagnostics')).toHaveCount(0);
+        await expect(page.getByTestId(inventoryZoneDiagnosticsTestId)).toHaveCount(0);
         await requireControl(page, 'INVENTORY_CURRENT_ZONE', facts);
         page.off('request', listener);
         expect(requestUrls).toHaveLength(0);
@@ -2113,10 +2331,10 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await openInventory(page, facts);
       await openInventoryTarget(page, facts);
       await clickRequiredControl(page, 'INVENTORY_ACTION_ADJUST', facts);
-      await page
-        .getByTestId('inventory-action-quantity')
-        .locator('input')
-        .fill(facts.negativeQuantity ?? '-1');
+      await typeSequentially(
+        await requireControl(page, 'INVENTORY_ACTION_QUANTITY', facts),
+        facts.negativeQuantity ?? '-1',
+      );
       await requireControl(page, 'INVENTORY_NEGATIVE_PREVIEW', facts);
       await page.keyboard.press('Escape');
       await exerciseInventoryAction(page, facts, 'INVENTORY_ACTION_CONFIGURE');
@@ -2127,11 +2345,14 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       {
         const copy = await openBrandCopy(page, facts);
         await selectBrandCopyCandidate(copy, facts.sourceItemCode);
-        await copy.getByTestId('catalog-brand-copy-selection-next').click();
-        await copy.getByTestId('catalog-copy-preflight').click();
+        await clickRequiredControl(page, 'CATALOG_COPY_SELECTION', facts);
+        await clickGeneratedCommand(
+          page,
+          await requireControl(page, 'CATALOG_COPY_PREFLIGHT', facts),
+          'preflightOperationsBrandCatalogCopy',
+        );
         await advanceBrandCopyPreflight(copy);
-        await requireControl(page, 'CATALOG_COPY_EXECUTE', facts);
-        await copy.getByTestId('catalog-copy-execute').click();
+        await clickRequiredControl(page, 'CATALOG_COPY_EXECUTE', facts);
         await requireControl(page, 'CATALOG_COPY_PREFLIGHT_PROBLEM', facts);
         return;
       }
@@ -2142,8 +2363,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       {
         const drawer = await openCatalogItem(page, facts);
         const copy = await openLocalCopy(page, drawer, facts);
-        await requireControl(page, 'CATALOG_COPY_PREFLIGHT', facts);
-        await copy.getByTestId('catalog-local-copy-preflight').click();
+        await clickRequiredControl(page, 'CATALOG_COPY_PREFLIGHT', facts);
         await requireControl(page, 'CATALOG_COMPATIBILITY_FACTS', facts);
         return;
       }
@@ -2152,11 +2372,15 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await openCatalogStore(page, facts);
       await searchCatalog(page, facts);
       {
-        const table = await requireControl(page, 'CATALOG_RESULT_TABLE', facts);
-        const pagination = table.getByRole('button');
-        if ((await pagination.count()) > 0) {
-          await pagination.last().click();
-          await pagination.first().click();
+        const next = await requireControl(page, 'CATALOG_PAGINATION_NEXT', facts);
+        const previous = await requireControl(page, 'CATALOG_PAGINATION_PREVIOUS', facts);
+        if (await next.isEnabled()) {
+          await next.click();
+          recordActionForLocator(next, 'click');
+        }
+        if (await previous.isEnabled()) {
+          await previous.click();
+          recordActionForLocator(previous, 'click');
         }
         return;
       }
@@ -2165,8 +2389,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await openCatalogStore(page, facts);
       await searchCatalog(page, facts);
       await requireControl(page, 'CATALOG_WORKBENCH_PROBLEM', facts);
-      await requireControl(page, 'CATALOG_WORKBENCH_RETRY', facts);
-      await page.getByTestId(catalogTestIdControls.workbench.retry).click();
+      await clickRequiredControl(page, 'CATALOG_WORKBENCH_RETRY', facts);
       await requireControl(page, 'CATALOG_RESULT_TABLE', facts);
       return;
     case 'CI-L2-017-01':
@@ -2188,12 +2411,9 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await openInventory(page, facts);
       await openInventoryTarget(page, facts);
       await clickRequiredControl(page, 'INVENTORY_ACTION_ADJUST', facts);
-      await typeSequentially(page.getByTestId('inventory-action-note'), facts.note ?? 'overlay lock');
-      await page
-        .getByTestId('inventory-action-quantity')
-        .locator('input')
-        .fill(facts.quantity ?? '1');
-      await page.getByTestId('inventory-action-submit').click();
+      await typeSequentially(await requireControl(page, 'INVENTORY_ACTION_NOTE', facts), facts.note ?? 'overlay lock');
+      await typeSequentially(await requireControl(page, 'INVENTORY_ACTION_QUANTITY', facts), facts.quantity ?? '1');
+      await clickRequiredControl(page, 'INVENTORY_ACTION_SUBMIT', facts);
       await requireControl(page, 'INVENTORY_ACTION_MODAL', facts);
       await requireControl(page, 'INVENTORY_ACTION_RESULT', facts);
       return;
@@ -2202,12 +2422,9 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       {
         const forbidden = {...facts, scope: facts.forbiddenScope ?? facts.scope};
         await openCatalogStore(page, forbidden);
-        await expect(page.getByTestId('catalog-inventory-workbench-scope-forbidden')).toBeVisible();
+        await expect(page.getByTestId(catalogTestIds.static.inventoryWorkbenchScopeForbidden)).toBeVisible();
         await expect(page.getByTestId(catalogTestIds.surface.itemTable)).toHaveCount(0);
-        await page
-          .getByTestId('catalog-inventory-workbench-scope-forbidden')
-          .getByRole('button', {name: '重试'})
-          .click();
+        await clickRequiredControl(page, 'CATALOG_WORKBENCH_RETRY', forbidden);
         return;
       }
     case 'catalog-find-success':
@@ -2258,8 +2475,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       });
       await searchCatalog(page, facts);
       await findRecoveryFailure.waitForIntercept();
-      await requireControl(page, 'CATALOG_WORKBENCH_RETRY', facts);
-      await visibleTestId(page, catalogTestIdControls.workbench.retry).click();
+      await clickRequiredControl(page, 'CATALOG_WORKBENCH_RETRY', facts);
       await requireControl(page, 'CATALOG_RESULT_TABLE', facts);
       await openCatalogItem(page, facts);
       return;
@@ -2273,7 +2489,6 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         await openTab(drawer, 'sku-specifications-pricing');
         await openTab(drawer, 'production-prompts');
         await openTab(drawer, 'inventory-bom');
-        await requireControl(page, 'CATALOG_ITEM_EDIT', facts);
         return;
       }
     case 'catalog-view-failure':
@@ -2297,7 +2512,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         await originalRow.focus();
         const {drawer, trigger} = await openCatalogItemWithOneShotFailure(page, facts, 'CATALOG_ITEM_VIEW_DRAWER');
         await requireControl(page, 'CATALOG_ITEM_PROBLEM_RETRY', facts);
-        await visibleTestId(page, 'catalog-item-problem-retry').click();
+        await clickRequiredControl(page, 'CATALOG_ITEM_PROBLEM_RETRY', facts);
         await requireControl(page, 'CATALOG_ITEM_TABS', facts);
         await closeDrawer(page, drawer);
         await expect(trigger).toBeFocused();
@@ -2306,11 +2521,16 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
     case 'catalog-create-success':
       await signIn(page);
       await openCatalogStore(page, facts);
-      await requireControl(page, 'CATALOG_CREATE_OPEN', facts);
-      await visibleTestId(page, catalogTestIdControls.workbench.openCreate).click();
+      await clickRequiredControl(page, 'CATALOG_CREATE_OPEN', facts);
       await requireControl(page, 'CATALOG_CREATE_SHAPE', facts);
       await requireControl(page, 'CATALOG_CREATE_SUBMIT', facts);
-      await selectOperationsOption(page, catalogTestIdControls.create.shape, facts.createShapeLabel);
+      await selectBoundCatalogOption(
+        page,
+        'CATALOG_CREATE_SHAPE',
+        catalogTestIdControls.create.shape,
+        facts.createShapeLabel ?? '',
+        catalogTestIdControls.create.shapeOption(requiredOwnerFact(facts, 'createShapeKey')),
+      );
       const createAction = facts.actionInput as {create?: {successCode?: string}} | undefined;
       await typeSequentially(
         visibleTestId(page, catalogTestIdControls.create.code),
@@ -2340,11 +2560,16 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
     case 'catalog-create-failure':
       await signIn(page);
       await openCatalogStore(page, facts);
-      await requireControl(page, 'CATALOG_CREATE_OPEN', facts);
-      await visibleTestId(page, catalogTestIdControls.workbench.openCreate).click();
+      await clickRequiredControl(page, 'CATALOG_CREATE_OPEN', facts);
       await requireControl(page, 'CATALOG_CREATE_SHAPE', facts);
       await requireControl(page, 'CATALOG_CREATE_SUBMIT', facts);
-      await selectOperationsOption(page, catalogTestIdControls.create.shape, facts.createShapeLabel);
+      await selectBoundCatalogOption(
+        page,
+        'CATALOG_CREATE_SHAPE',
+        catalogTestIdControls.create.shape,
+        facts.createShapeLabel ?? '',
+        catalogTestIdControls.create.shapeOption(requiredOwnerFact(facts, 'createShapeKey')),
+      );
       const createFailureAction = facts.actionInput as {create?: {failureCode?: string}} | undefined;
       await typeSequentially(
         visibleTestId(page, catalogTestIdControls.create.code),
@@ -2355,6 +2580,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         facts.createName ?? facts.itemName ?? '',
       );
       await requireControl(page, 'CATALOG_CREATE_CATEGORY', facts);
+      markExpectedCatalogFailure('createOperationsCatalogItem');
       const createFailureResponse = await clickGeneratedCommand(
         page,
         visibleTestId(page, catalogTestIdControls.create.submit),
@@ -2377,16 +2603,23 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
     case 'catalog-create-recovery':
       await signIn(page);
       await openCatalogStore(page, facts);
-      await requireControl(page, 'CATALOG_CREATE_OPEN', facts);
-      await visibleTestId(page, catalogTestIdControls.workbench.openCreate).click();
+      await clickRequiredControl(page, 'CATALOG_CREATE_OPEN', facts);
+      await requireControl(page, 'CATALOG_CREATE_SHAPE', facts);
       await requireControl(page, 'CATALOG_CREATE_SUBMIT', facts);
+      await selectBoundCatalogOption(
+        page,
+        'CATALOG_CREATE_SHAPE',
+        catalogTestIdControls.create.shape,
+        facts.createShapeLabel ?? '',
+        catalogTestIdControls.create.shapeOption(requiredOwnerFact(facts, 'createShapeKey')),
+      );
       await requireControl(page, 'CATALOG_CREATE_CATEGORY', facts);
-      await selectOperationsOption(page, catalogTestIdControls.create.shape, facts.createShapeLabel);
       await typeSequentially(visibleTestId(page, catalogTestIdControls.create.code), facts.itemCode ?? '');
       await typeSequentially(
         visibleTestId(page, catalogTestIdControls.create.name),
         facts.createName ?? facts.itemName ?? '',
       );
+      markExpectedCatalogFailure('createOperationsCatalogItem');
       const createRecoveryFailureResponse = await clickGeneratedCommand(
         page,
         visibleTestId(page, catalogTestIdControls.create.submit),
@@ -2421,7 +2654,13 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         await openTab(editor, 'production-prompts');
         await requireControl(page, 'CATALOG_ITEM_PRODUCTION_TAGS', facts);
         if (!facts.existingProductionTagName) throw new Error('CATALOG_INVENTORY_L2_EDIT_PRODUCTION_TAG_NAME_REQUIRED');
-        await selectOperationsOption(page, catalogTestIds.static.itemProductionTags, facts.existingProductionTagName);
+        await selectBoundCatalogOption(
+          page,
+          'CATALOG_ITEM_PRODUCTION_TAGS',
+          catalogTestIds.static.itemProductionTags,
+          facts.existingProductionTagName ?? '',
+          catalogTestIdControls.edit.productionTagOption(requiredOwnerFact(facts, 'existingProductionTagRef')),
+        );
         const saveResponse = await saveCatalogItem(page, editor, facts);
         if (!saveResponse.ok()) throw new Error(`CATALOG_INVENTORY_L2_EDIT_SAVE_FAILED:${saveResponse.status()}`);
         // A successful whole-save intentionally closes the editor and returns
@@ -2442,13 +2681,31 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await searchCatalog(page, facts);
       {
         const editor = await openCatalogEditor(page, facts);
-        await typeSequentially(visibleTestId(page, 'catalog-item-edit-name'), '冲突草稿');
+        await typeSequentially(visibleTestId(page, catalogTestIds.static.itemEditName), '冲突草稿');
         await requireControl(page, 'CATALOG_ITEM_SAVE', facts);
         await invalidateFixtureItemVersion(page, facts, 'EDIT');
+        markExpectedCatalogFailure('saveOperationsCatalogItem');
         const editFailureResponse = await saveCatalogItem(page, editor, facts);
         if (editFailureResponse.ok()) throw new Error('CATALOG_INVENTORY_L2_EDIT_FAILURE_EXPECTED');
         await requireControl(page, 'CATALOG_ITEM_PROBLEM', facts);
         await expect(visibleTestId(page, catalogTestIds.static.itemEditName)).toHaveValue('冲突草稿');
+        // The failed save must leave the user's draft intact, but the strict
+        // owner oracle must not reuse the stale pre-mutation detail response.
+        // Make the user's discard decision explicit, then reopen the item
+        // through the normal visible path so the post-mutation owner version
+        // and production tag are actually read back before the case oracle.
+        await page.keyboard.press('Escape');
+        const discard = await requireControl(page, 'CATALOG_DIRTY_DISCARD', facts);
+        await expect(discard).toBeEnabled();
+        await clickRequiredControl(page, 'CATALOG_DIRTY_DISCARD', facts);
+        await expect(editor).toBeHidden();
+        await reopenCatalogItemForOwnerReadback(
+          page,
+          facts,
+          facts.itemCode ?? '',
+          facts.itemName,
+          'CATALOG_ITEM_VIEW_DRAWER',
+        );
         return;
       }
     case 'catalog-edit-recovery':
@@ -2457,16 +2714,15 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await searchCatalog(page, facts);
       {
         const editor = await openCatalogEditor(page, facts);
-        await typeSequentially(visibleTestId(page, 'catalog-item-edit-name'), '待恢复草稿');
+        await typeSequentially(visibleTestId(page, catalogTestIds.static.itemEditName), '待恢复草稿');
         await page.keyboard.press('Escape');
-        await requireControl(page, 'CATALOG_DIRTY_CONTINUE', facts);
-        await visibleTestId(page, 'catalog-item-dirty-continue').click();
-        await expect(visibleTestId(page, 'catalog-item-dirty-continue')).toHaveCount(0);
+        await clickRequiredControl(page, 'CATALOG_DIRTY_CONTINUE', facts);
+        await expect(visibleTestId(page, catalogTestIds.static.itemDirtyContinue)).toHaveCount(0);
         await expect(editor).toBeVisible();
         await page.keyboard.press('Escape');
         const discard = await requireControl(page, 'CATALOG_DIRTY_DISCARD', facts);
         await expect(discard).toBeEnabled();
-        await discard.click();
+        await clickRequiredControl(page, 'CATALOG_DIRTY_DISCARD', facts);
         await expect(editor).toBeHidden();
         return;
       }
@@ -2476,8 +2732,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await searchCatalog(page, facts);
       const configEditor = await openCatalogEditor(page, facts);
       await openTab(configEditor, 'production-prompts');
-      await requireControl(page, 'CATALOG_ITEM_PRODUCTION_TAG_MANAGE', facts);
-      await visibleTestId(page, catalogTestIds.static.itemProductionTagManage).click();
+      await clickRequiredControl(page, 'CATALOG_ITEM_PRODUCTION_TAG_MANAGE', facts);
       await requireControl(page, 'CATALOG_DICTIONARY_DRAWER', facts);
       for (const libraryKey of ['UNIT', 'SKU_ATTRIBUTE', 'PRODUCTION_TAG']) {
         await visibleTestId(page, catalogTestIdControls.config.library(libraryKey)).click();
@@ -2485,9 +2740,17 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await requireControl(page, 'CATALOG_CONFIG_PRODUCTION_TAGS', facts);
       const librarySearch = await requireControl(page, 'CATALOG_CONFIG_SEARCH', facts);
       await typeSequentially(librarySearch, facts.existingProductionTagCode ?? '');
-      await librarySearch.locator('input').first().press('Enter');
+      const librarySearchInput = librarySearch.locator('input');
+      await expect(librarySearchInput).toHaveCount(1);
+      await librarySearchInput.press('Enter');
       await requireControl(page, 'CATALOG_CONFIG_STATUS', facts);
-      await selectOperationsOption(page, catalogTestIds.control.configStatus, '启用');
+      await selectBoundCatalogOption(
+        page,
+        'CATALOG_CONFIG_STATUS',
+        catalogTestIds.control.configStatus,
+        '启用',
+        catalogTestIdControls.config.statusOption('ENABLED'),
+      );
       await expect(
         page
           .getByTestId(catalogTestIds.static.dictionaryTable)
@@ -2521,8 +2784,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await searchCatalog(page, facts);
       const configFailureEditor = await openCatalogEditor(page, facts);
       await openTab(configFailureEditor, 'production-prompts');
-      await requireControl(page, 'CATALOG_ITEM_PRODUCTION_TAG_MANAGE', facts);
-      await visibleTestId(page, catalogTestIds.static.itemProductionTagManage).click();
+      await clickRequiredControl(page, 'CATALOG_ITEM_PRODUCTION_TAG_MANAGE', facts);
       await requireControl(page, 'CATALOG_DICTIONARY_DRAWER', facts);
       const productionTagModal = await openProductionTagCreate(
         page,
@@ -2530,6 +2792,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         'CATALOG_CONFIG_PRODUCTION_TAGS',
         facts.existingProductionTagCode,
       );
+      markExpectedCatalogFailure('createOperationsProductionTag');
       const duplicateResponse = await submitProductionTagCreate(page, facts);
       if (duplicateResponse.ok()) throw new Error('CATALOG_INVENTORY_L2_CONFIG_DUPLICATE_EXPECTED');
       await expect(productionTagModal.getByText('当前作用域中已存在相同编码。', {exact: true})).toBeVisible();
@@ -2541,8 +2804,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
       await searchCatalog(page, facts);
       const configRecoveryEditor = await openCatalogEditor(page, facts);
       await openTab(configRecoveryEditor, 'production-prompts');
-      await requireControl(page, 'CATALOG_ITEM_PRODUCTION_TAG_MANAGE', facts);
-      await visibleTestId(page, catalogTestIds.static.itemProductionTagManage).click();
+      await clickRequiredControl(page, 'CATALOG_ITEM_PRODUCTION_TAG_MANAGE', facts);
       await requireControl(page, 'CATALOG_DICTIONARY_DRAWER', facts);
       const productionTagRecoveryModal = await openProductionTagCreate(
         page,
@@ -2550,6 +2812,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         'CATALOG_CONFIG_PRODUCTION_TAGS',
         facts.existingProductionTagCode,
       );
+      markExpectedCatalogFailure('createOperationsProductionTag');
       const recoveryDuplicateResponse = await submitProductionTagCreate(page, facts);
       if (recoveryDuplicateResponse.ok()) throw new Error('CATALOG_INVENTORY_L2_CONFIG_RECOVERY_DUPLICATE_EXPECTED');
       await expect(visibleTestId(page, catalogTestIds.static.dictionaryCode)).toHaveAttribute('aria-invalid', 'true');
@@ -2575,7 +2838,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         await searchCatalog(page, facts);
         await requireControl(page, 'CATALOG_RESULT_TABLE', facts);
         await openBatchAction(page, facts);
-        const batch = await submitBatchAction(page);
+        const batch = await submitBatchAction(page, facts);
         if (!batch.command.ok()) throw new Error(`CATALOG_INVENTORY_L2_BATCH_FAILED:${batch.command.status()}`);
         if (!batch.refreshedItems.ok())
           throw new Error(`CATALOG_INVENTORY_L2_BATCH_READBACK_FAILED:${batch.refreshedItems.status()}`);
@@ -2593,12 +2856,11 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         // item stale through the real owner before the UI submits its captured
         // expected versions. Do not forge an item failure in the browser.
         await invalidateFixtureItemVersion(page, facts, 'BATCH');
-        const batchFailure = await submitBatchAction(page);
+        const batchFailure = await submitBatchAction(page, facts);
         if (!batchFailure.command.ok())
           throw new Error(`CATALOG_INVENTORY_L2_BATCH_FAILURE_COMMAND_FAILED:${batchFailure.command.status()}`);
         if (!batchFailure.refreshedItems.ok())
           throw new Error(`CATALOG_INVENTORY_L2_BATCH_FAILURE_READBACK_FAILED:${batchFailure.refreshedItems.status()}`);
-        await requireControl(page, 'CATALOG_BATCH_PROGRESS', facts);
         await requireControl(page, 'CATALOG_BATCH_OUTCOME', facts);
         await expect(visibleTestId(page, catalogTestIds.static.batchOutcomeFailures)).toContainText(
           facts.itemCode ?? '',
@@ -2615,7 +2877,7 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
           method: 'GET',
           path: /\/operations\/catalog-inventory\/items$/,
         });
-        const batchRecovery = await submitBatchAction(page);
+        const batchRecovery = await submitBatchAction(page, facts);
         if (!batchRecovery.command.ok())
           throw new Error(`CATALOG_INVENTORY_L2_BATCH_RECOVERY_COMMAND_FAILED:${batchRecovery.command.status()}`);
         if (batchRecovery.refreshedItems.ok())
@@ -2639,9 +2901,9 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         await requireControl(page, 'CATALOG_COPY_EXECUTE', facts);
         const execute = await clickGeneratedCommand(
           page,
-          copy.getByTestId('catalog-copy-execute'),
+          copy.getByTestId(catalogTestIds.static.copyExecute),
           'executeOperationsBrandCatalogCopy',
-          {controlKey: 'CATALOG_COPY_EXECUTE', testId: 'catalog-copy-execute'},
+          {controlKey: 'CATALOG_COPY_EXECUTE', testId: catalogTestIds.static.copyExecute},
         );
         if (!execute.ok()) throw new Error(`CATALOG_INVENTORY_L2_COPY_EXECUTE_FAILED:${execute.status()}`);
         await requireControl(page, 'CATALOG_COPY_RESULT', facts);
@@ -2654,11 +2916,12 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         const copy = await runBrandCopyPreflight(page, facts);
         await invalidateFixtureItemVersion(page, facts, 'COPY');
         await requireControl(page, 'CATALOG_COPY_DRAWER', facts);
+        markExpectedCatalogFailure('executeOperationsBrandCatalogCopy');
         const staleExecute = await clickGeneratedCommand(
           page,
-          copy.getByTestId('catalog-copy-execute'),
+          copy.getByTestId(catalogTestIds.static.copyExecute),
           'executeOperationsBrandCatalogCopy',
-          {controlKey: 'CATALOG_COPY_EXECUTE', testId: 'catalog-copy-execute'},
+          {controlKey: 'CATALOG_COPY_EXECUTE', testId: catalogTestIds.static.copyExecute},
         );
         if (staleExecute.ok()) throw new Error('CATALOG_INVENTORY_L2_COPY_STALE_EXPECTED');
         const stale = await requireControl(page, 'CATALOG_COPY_PREFLIGHT_PROBLEM', facts);
@@ -2673,11 +2936,12 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         const copy = await runBrandCopyPreflight(page, facts);
         await invalidateFixtureItemVersion(page, facts, 'COPY');
         await requireControl(page, 'CATALOG_COPY_EXECUTE', facts);
+        markExpectedCatalogFailure('executeOperationsBrandCatalogCopy');
         const recoveryStaleExecute = await clickGeneratedCommand(
           page,
-          copy.getByTestId('catalog-copy-execute'),
+          copy.getByTestId(catalogTestIds.static.copyExecute),
           'executeOperationsBrandCatalogCopy',
-          {controlKey: 'CATALOG_COPY_EXECUTE', testId: 'catalog-copy-execute'},
+          {controlKey: 'CATALOG_COPY_EXECUTE', testId: catalogTestIds.static.copyExecute},
         );
         if (recoveryStaleExecute.ok()) throw new Error('CATALOG_INVENTORY_L2_COPY_RECOVERY_STALE_EXPECTED');
         const stale = await requireControl(page, 'CATALOG_COPY_PREFLIGHT_PROBLEM', facts);
@@ -2686,9 +2950,9 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         await advanceBrandCopyPreflight(copy);
         const recoveryExecute = await clickGeneratedCommand(
           page,
-          copy.getByTestId('catalog-copy-execute'),
+          copy.getByTestId(catalogTestIds.static.copyExecute),
           'executeOperationsBrandCatalogCopy',
-          {controlKey: 'CATALOG_COPY_EXECUTE', testId: 'catalog-copy-execute'},
+          {controlKey: 'CATALOG_COPY_EXECUTE', testId: catalogTestIds.static.copyExecute},
         );
         if (!recoveryExecute.ok())
           throw new Error(`CATALOG_INVENTORY_L2_COPY_RECOVERY_EXECUTE_FAILED:${recoveryExecute.status()}`);
@@ -2696,8 +2960,8 @@ async function runCase(row: BlueprintCase, facts: OwnerCase, page: Page): Promis
         // The result alert is intentionally business-language only; source
         // codes remain in the readback tabs rather than leaking technical
         // identifiers into the success copy.
-        await expect(copy.getByTestId('catalog-copy-result')).toContainText('品牌商品已复制');
-        await expect(copy.getByTestId('catalog-copy-result')).toContainText(
+        await expect(copy.getByTestId(catalogTestIds.static.copyResult)).toContainText('品牌商品已复制');
+        await expect(copy.getByTestId(catalogTestIds.static.copyResult)).toContainText(
           '目录、库存、配方、制作信息和引用已完成复制',
         );
         return;
@@ -2766,6 +3030,7 @@ test.describe('商品库存域 · no-seed owner-HTTP browser controls (framework
       const itemReadbacks = new Map<string, CatalogItemReadback>();
       const ownerReadbacksByReader = new Map<string, unknown[]>();
       const ownerRequestsByOperation = new Map<string, unknown[]>();
+      const operationObservations: CatalogL2NetworkObservation[] = [];
       const actionIdsByRequest = new WeakMap<Request, string>();
       page.on('pageerror', error => {
         if (!activeCaseContext) return;
@@ -2793,6 +3058,13 @@ test.describe('商品库存域 · no-seed owner-HTTP browser controls (framework
             );
             if (!operation)
               throw new Error(`CATALOG_INVENTORY_L2_OPERATION_METADATA_MISSING:${request.method()}:${pathname}`);
+            operationObservations.push({
+              operationId: operation.operationId,
+              method: request.method(),
+              routeTemplate: operation.path,
+              pathname,
+              status: response.status(),
+            });
             let payload: unknown;
             try {
               payload = await response.json();
@@ -2867,7 +3139,15 @@ test.describe('商品库存域 · no-seed owner-HTTP browser controls (framework
         declaredActionIds: [declaredAction.actionId],
         startedAtMs: Date.now(),
       });
-      activeCaseContext = {caseId: row.caseId, scenarioId: row.scenarioId};
+      activeCaseContext = {
+        caseId: row.caseId,
+        scenarioId: row.scenarioId,
+        declaredControlKeys: row.parameter.controlKeys,
+        touchedControlKeys: new Set(),
+        actionControlKeys: new Set(),
+        expectedFailureOperationIds: new Set(),
+        fixtureOwnerOperationObservations: [],
+      };
       try {
         await runDeclaredAction(row, async () => {
           await runCase(row, facts, page);
@@ -2895,6 +3175,12 @@ test.describe('商品库存域 · no-seed owner-HTTP browser controls (framework
             ownerRequestsByOperation,
           );
         }
+        assertCatalogL2NetworkClosure(
+          row,
+          [...operationObservations, ...(activeCaseContext?.fixtureOwnerOperationObservations ?? [])],
+          activeCaseContext?.expectedFailureOperationIds ?? new Set(),
+        );
+        assertControlTouchClosure(row);
         appendJoinEvent({
           kind: 'CASE_COMPLETE',
           caseId: row.caseId,

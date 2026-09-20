@@ -46,6 +46,16 @@ FOUNDATION_PRIMITIVE=<一个或多个 @catering-v2s/admin-ui-foundation 的确�
 CONTAINER_LAYOUT=<容器宽高与来源 · 哪一部分不得超出视口 · 哪一段滚动 · 关键对齐>
 ```
 
+### 1.2 管理后台交互一致性引用
+
+所有 `platform-admin` 与 `operations-admin` 的 UI-bearing screen 必须逐 screen 填写本表，且逐字引用
+`doc/platform/frontend-coding-standard.md` §3-K-1..§3-K-10。该引用覆盖控件位置、样式、行为、失败/恢复、
+可访问性与 testId；只允许对 Dexter 已接受的承载形态做例外，例外不得豁免文案、颜色或控件行为。
+
+| screen id | UI surface / 容器 | §3-K 适用范围 | 已接受的承载形态例外 | 逐控件验证观察 |
+| --- | --- | --- | --- | --- |
+| `<screen-id>` | `<具体 surface 与容器>` | `<逐条列出 §3-K 条目或 N/A_WITH_REASON>` | `<NONE 或精确裁决>` | `<位置、形态、行为、失败/恢复、焦点与 testId 的可执行观察>` |
+
 `CONTAINER_LAYOUT` 是 2026-08-20 Dexter 要求新增的第十项声明。原因:
 **它是"看得见但只有渲染出来才发现"的一类事实** —— 线框画得下,真机上却横向溢出、
 出现双层滚动条、或多栏基线不齐;而这些在 Dexter 体验之前无人发现。

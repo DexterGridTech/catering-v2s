@@ -148,6 +148,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   canvas: {
+    // The input backdrop is intentionally transparent. Keep the host canvas
+    // opaque so transparent keyboard margins reveal the business surface,
+    // never the Android window/theme background.
+    backgroundColor: '#ffffff',
     position: 'relative',
     transformOrigin: 'top left',
   },

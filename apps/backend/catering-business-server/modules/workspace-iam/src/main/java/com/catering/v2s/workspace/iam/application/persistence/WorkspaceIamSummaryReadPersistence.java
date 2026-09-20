@@ -19,7 +19,7 @@ public class WorkspaceIamSummaryReadPersistence {
     public WorkspaceIamSummaryLookup.AccountAndRoleSummary accountAndRoleSummary(UUID workspaceUuid) {
         return jdbc.queryForObject(
                 WorkspaceIamSummaryReadServiceSql.WORKSPACE_IAM_SUMMARY_READ_SERVICE_SELECT_WORKSPACE_ACCOUNT_WORKSPACE_UUID
-                        + WorkspaceIamSummaryReadServiceSql.WORKSPACE_IAM_SUMMARY_READ_SERVICE_CONTINUATION_ACCOUNT_COUNT
+                        + WorkspaceIamSummaryReadServiceSql.WORKSPACE_IAM_SUMMARY_READ_SERVICE_ACCOUNT_COUNT
                         + WorkspaceIamSummaryReadServiceSql.WORKSPACE_IAM_SUMMARY_READ_SERVICE_OPEN_PAREN_WORKSPACE_ROLE_WORKSPACE_UUID_ROLE_COUNT,
                 (result, row) -> new WorkspaceIamSummaryLookup.AccountAndRoleSummary(
                         result.getLong("account_count"), result.getLong("role_count")),

@@ -23,6 +23,8 @@
       "STORE_SCOPE_TRIGGER": {
         "testId": "operations-data-scope-trigger",
         "interaction": "scope-trigger",
+        "actualActionNode": "SCOPE_TRIGGER",
+        "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
         "sourceFiles": [
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
@@ -31,6 +33,8 @@
       "STORE_SCOPE_HEAD_COMPANY_SELECTOR": {
         "testId": "operations-data-scope-head-company",
         "interaction": "scope-selector",
+        "actualActionNode": "SELECT_INPUT",
+        "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
         "sourceFiles": [
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
@@ -39,6 +43,8 @@
       "STORE_SCOPE_HEAD_COMPANY_OPTION": {
         "testIdTemplate": "operations-data-scope-option-head_company-${headCompanyRef}",
         "interaction": "scope-option",
+        "actualActionNode": "SELECT_OPTION",
+        "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
         "sourceFiles": [
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
@@ -47,6 +53,8 @@
       "STORE_SCOPE_REGION_SELECTOR": {
         "testId": "operations-data-scope-region",
         "interaction": "scope-selector",
+        "actualActionNode": "SELECT_INPUT",
+        "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
         "sourceFiles": [
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
@@ -55,6 +63,8 @@
       "STORE_SCOPE_REGION_OPTION": {
         "testIdTemplate": "operations-data-scope-option-region-${regionRef}",
         "interaction": "scope-option",
+        "actualActionNode": "SELECT_OPTION",
+        "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
         "sourceFiles": [
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
@@ -63,6 +73,8 @@
       "STORE_SCOPE_PROJECT_SELECTOR": {
         "testId": "operations-data-scope-project",
         "interaction": "scope-selector",
+        "actualActionNode": "SELECT_INPUT",
+        "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
         "sourceFiles": [
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
@@ -71,6 +83,8 @@
       "STORE_SCOPE_PROJECT_OPTION": {
         "testIdTemplate": "operations-data-scope-option-project-${projectRef}",
         "interaction": "scope-option",
+        "actualActionNode": "SELECT_OPTION",
+        "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
         "sourceFiles": [
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
@@ -79,6 +93,8 @@
       "STORE_SCOPE_STORE_SELECTOR": {
         "testId": "operations-data-scope-store",
         "interaction": "scope-selector",
+        "actualActionNode": "SELECT_INPUT",
+        "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
         "sourceFiles": [
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
@@ -87,14 +103,8 @@
       "STORE_SCOPE_STORE_OPTION": {
         "testIdTemplate": "operations-data-scope-option-store-${storeRef}",
         "interaction": "scope-option",
-        "sourceFiles": [
-          "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
-          "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
-        ]
-      },
-      "STORE_SCOPE_CANCEL": {
-        "testId": "operations-data-scope-cancel",
-        "interaction": "scope-cancel",
+        "actualActionNode": "SELECT_OPTION",
+        "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
         "sourceFiles": [
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
@@ -103,6 +113,8 @@
       "STORE_SCOPE_CONFIRM": {
         "testId": "operations-data-scope-confirm",
         "interaction": "scope-confirm",
+        "actualActionNode": "BUTTON",
+        "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
         "sourceFiles": [
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts",
           "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx"
@@ -400,6 +412,26 @@
       "SALES_MENU_ITEM_LISTED_PRICE": {
         "testId": "sales-menu-item-listed-price",
         "sourceFiles": ["apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts"]
+      },
+      "SALES_MENU_ITEM_MIN_QUANTITY": {
+        "testId": "sales-menu-item-min-quantity",
+        "interaction": "INPUT_NUMBER",
+        "actualActionNode": "INPUT_NUMBER",
+        "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+          "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+        ]
+      },
+      "SALES_MENU_ITEM_QUANTITY_STEP": {
+        "testId": "sales-menu-item-quantity-step",
+        "interaction": "INPUT_NUMBER",
+        "actualActionNode": "INPUT_NUMBER",
+        "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
+        "sourceFiles": [
+          "apps/frontend/operations-admin/src/features/sales-menu/salesMenuTestIds.ts",
+          "apps/frontend/operations-admin/src/features/sales-menu/ui/SalesMenuItemEditorDrawer.tsx"
+        ]
       },
       "SALES_MENU_ITEM_SKU_SELECTION": {
         "testId": "sales-menu-item-sku-selection",
@@ -1228,6 +1260,8 @@
             "SALES_MENU_ITEM_EDITOR",
             "SALES_MENU_ITEM_DISPLAY_NAME",
             "SALES_MENU_ITEM_LISTED_PRICE",
+            "SALES_MENU_ITEM_MIN_QUANTITY",
+            "SALES_MENU_ITEM_QUANTITY_STEP",
             "SALES_MENU_ITEM_ORDER_OPTION_GROUP",
             "SALES_MENU_ITEM_ORDER_OPTION_VALUE",
             "SALES_MENU_ITEM_MEDIA_EDITOR",

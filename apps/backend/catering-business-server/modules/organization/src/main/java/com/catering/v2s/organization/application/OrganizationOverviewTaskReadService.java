@@ -206,7 +206,7 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                     : direction;
             if (!List.of("NAME", "CODE", "UPDATED_AT").contains(safeSort)
                     || !List.of("ASC", "DESC").contains(safeDirection)
-                    || !validStatus(category, status)
+                    || !validStatus(status)
                     || (source != null && !List.of("MANUAL", "SYSTEM").contains(source)))
                 throw new QueryValidationException("invalid overview query");
             if ("HIERARCHY".equals(category)) {
@@ -260,11 +260,9 @@ public class OrganizationOverviewTaskReadService implements OperationsStoreComma
                     definitionRevision);
         }
 
-        private static boolean validStatus(String category, String status) {
+        private static boolean validStatus(String status) {
             if (status == null) return true;
-            if (com.catering.v2s.platform.foundation.contract.ServiceNodeTypes.STORE.equals(category))
-                return List.of("ENABLED", "DISABLED", "VOIDED").contains(status);
-            return List.of("ENABLED", "DISABLED").contains(status);
+            return List.of("ENABLED", "DISABLED", "VOIDED").contains(status);
         }
     }
 

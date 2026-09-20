@@ -267,6 +267,7 @@ function CompositeSkuDescriptorPicker({
       manifest={manifest}
       shapeKey={shapeKey}
       fieldKey="compositeComponentSku"
+      labelOverride="规格"
       value={value}
       selectedLabel={skuName ? catalogBusinessName(skuName, undefined, '规格名称暂时无法读取') : undefined}
       context={context}
@@ -363,7 +364,7 @@ function CompositeComponentsTable({
         >
           <Row gutter={[12, 12]}>
             <Col span={24}>
-              <Typography.Text strong>商品</Typography.Text>
+              <Typography.Text strong>组件选择</Typography.Text>
               <CompositeCandidatePicker
                 manifest={manifest}
                 value={{name: component.itemName, code: component.itemCode, itemRef: component.itemRef}}
@@ -388,7 +389,6 @@ function CompositeComponentsTable({
               />
             </Col>
             <Col xs={24} lg={12}>
-              <Typography.Text strong>规格</Typography.Text>
               <CompositeSkuDescriptorPicker
                 manifest={manifest}
                 shapeKey={shapeKey}

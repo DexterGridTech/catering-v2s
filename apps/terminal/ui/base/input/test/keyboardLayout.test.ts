@@ -10,7 +10,11 @@ describe('virtual keyboard visual row alignment', () => {
       ['caps', 'text-a', 'text-s', 'text-d', 'text-f', 'text-g', 'text-h', 'text-j', 'text-k', 'text-l'],
       ['shift', 'text-z', 'text-x', 'text-c', 'text-v', 'text-b', 'text-n', 'text-m', 'backspace', 'complete'],
     ]);
-    expect(getKeyboardLayout('alpha').rows.map(row => row.align)).toEqual(['start', 'center', 'start']);
+    expect(getKeyboardLayout('alpha').rows.map(row => row.align)).toEqual(['start', 'start', 'start']);
+    expect(getKeyboardLayout('alpha').rows.map(row => row.region)).toEqual(['letters', 'actions', 'actions']);
+    expect(getKeyboardLayout('alpha').rows[1]?.keys.map(key => key.keyId)).toEqual([
+      'caps', 'text-a', 'text-s', 'text-d', 'text-f', 'text-g', 'text-h', 'text-j', 'text-k', 'text-l',
+    ]);
     expect(
       getKeyboardLayout('alpha')
         .rows.at(-1)
@@ -24,7 +28,7 @@ describe('virtual keyboard visual row alignment', () => {
       getKeyboardLayout('numeric')
         .rows.at(-1)
         ?.keys.map(key => key.keyId),
-    ).toEqual(['text-0', 'backspace', 'complete']);
+    ).toEqual(['backspace', 'text-0', 'complete']);
     expect(getKeyboardLayout('numeric').visualRowCount).toBe(4);
     expect(
       getKeyboardLayout('numeric')
@@ -35,8 +39,9 @@ describe('virtual keyboard visual row alignment', () => {
           keys: column.keys.map(key => key.keyId),
         })),
     ).toEqual([
-      {span: 2, direction: 'row', keys: ['text-0']},
-      {span: 1, direction: 'row', keys: ['backspace', 'complete']},
+      {span: 1, direction: 'row', keys: ['backspace']},
+      {span: 1, direction: 'row', keys: ['text-0']},
+      {span: 1, direction: 'row', keys: ['complete']},
     ]);
     expect(getKeyboardLayout('financial').rows.map(row => row.align)).toEqual(['start', 'start', 'start', 'start']);
     expect(

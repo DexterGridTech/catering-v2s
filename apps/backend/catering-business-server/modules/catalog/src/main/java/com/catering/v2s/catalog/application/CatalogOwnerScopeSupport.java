@@ -25,7 +25,8 @@ final class CatalogOwnerScopeSupport {
                 || context.operationToken() == null
                 || operationId == null
                 || !operationId.equals(context.operationToken().operationId())) {
-            throw new CatalogOwnerApi.Problem("SCOPE_FORBIDDEN", 403, "catalog command token does not match owner command");
+            throw new CatalogOwnerApi.Problem(
+                    "SCOPE_FORBIDDEN", 403, "catalog command token does not match owner command");
         }
         return requireTypedContext(context, "catalog");
     }

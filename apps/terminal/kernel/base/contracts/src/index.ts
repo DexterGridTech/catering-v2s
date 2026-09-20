@@ -36,6 +36,8 @@ export type {
   TopologyAdminCommandResult,
   TopologyAdminCommandStatus,
   TopologyFailureReasonCode,
+  TopologyPayloadFailure,
+  TopologyPayloadFailureCode,
   TopologyFacts,
   TopologyIdentity,
   TopologyIdentityResponse,
@@ -45,11 +47,14 @@ export type {
   TopologyLocator,
   TopologyOperation,
   TopologyOperationEligibility,
+  TopologyPageAvailability,
   TopologyWireError,
   TopologyWireErrorCode,
+  TopologyStateFullMessage,
   TopologyWireMessage,
 } from './types/topology';
 export {
+  isTopologyJsonValue,
   parseTopologyWireMessage,
   parseTopologyIdentityResponse,
   serializeTopologyWireMessage,
@@ -59,6 +64,15 @@ export {
 export {
   topologyTransportConfig,
   topologyTransportServerConfig,
+  topologyCompressionThresholdBytes,
+  topologyCompressionMinimumSavingsBytes,
+  topologyCompressionMinimumSavingsRatio,
+  topologyChunkTargetBytes,
+  topologyReassemblyMaxBytes,
+  topologyReassemblyMaxInflightTransfers,
+  topologyReassemblyTimeoutMs,
+  topologyPeerCommandMaxInflight,
+  topologyCancelledCommandTtlMs,
 } from './foundations/topologyTransportConfig';
 export type {TopologyTransportConfig} from './foundations/topologyTransportConfig';
 

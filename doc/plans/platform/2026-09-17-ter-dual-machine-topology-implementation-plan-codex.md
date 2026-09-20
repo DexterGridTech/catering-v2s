@@ -5,10 +5,11 @@ SKILL_USED=cs-writing-plans@72190c88b2b5a67a96b91d66aa72b9161913e10e8769da3f28a2
 BUSINESS_SOURCE=doc/plans/platform/2026-09-17-ter-dual-machine-topology-requirements-claude.md
 DESIGN_SOURCE=doc/plans/platform/2026-09-17-ter-dual-machine-topology-implementation-design-codex.md
 DEPENDENCY_SOURCE=doc/plans/platform/2026-09-16-ter-screen-part-form-resolution-requirements-claude.md
-AUTHORIZED=Dexter 已授权按本计划实施并完成阶段一、阶段二动态验证；本计划不扩大需求范围
+AUTHORIZED=历史拓扑实现计划；当前双机拓扑基建加固以 2026-09-18 implementation-facing 详设/计划为唯一实施指令
 IMPLEMENTATION_AUTHORITY=true
-PLAN_STATUS=READY_FOR_IMPLEMENTATION_REVIEW_MAIN_AGENT_FALLBACK
-NOT_AUTHORIZED=扩大需求范围、改变已裁定语义、未列入计划的生产落点、设备级开机自启、seed、UAT、部署、Roadmap 推进及仓库控制动作
+PLAN_STATUS=SUPERSEDED_FOR_CURRENT_HARDENING
+SUPERSEDED_BY=doc/plans/platform/2026-09-18-ter-dual-machine-topology-infrastructure-hardening-implementation-plan-codex.md
+NOT_AUTHORIZED=本历史计划不得作为当前 CP-0～CP-4 指令；当前实施仍不得扩大需求范围、改变已裁定语义、增加设备级开机自启、seed、UAT、部署、Roadmap 推进或仓库控制动作
 
 ## 1. 计划目标和边界
 
@@ -48,7 +49,7 @@ NOT_AUTHORIZED=扩大需求范围、改变已裁定语义、未列入计划的�
 |---|---|---|
 | shared surface/topology contracts | apps/terminal/kernel/base/contracts | SurfaceForm、wire types/parser/golden vectors |
 | topology kernel | apps/terminal/kernel/base/topology | eligibility、pairing、lifecycle、sync policy、operation capability |
-| transport extensions | apps/terminal/kernel/base/contracts、apps/terminal/kernel/base/transport | canonical transport config、contracts config resolver、ordered failover、sticky address、frame/session、bounded retry/cancel、concurrency/rate limiting、WS profile/connection-token |
+| transport extensions（历史清单，当前按 superseding hardening plan 重算） | apps/terminal/kernel/base/contracts、apps/terminal/kernel/base/transport | 保留 canonical config、ordered failover、retry/cancel、connection-token 形态；本批不新增 limiter、profile registration 或 generic transport consumers |
 | display-context extensions | apps/terminal/kernel/base/display-context | SurfaceForm import、root route stamp、power confirm |
 | runtime/state extensions | apps/terminal/kernel/base/runtime、state | dispatch route、receiver normalize、ledger local、full sync |
 | integration assembly changes | apps/terminal/ui/integration/sample-console、sample-wallpaper-console | topology parts/allowlist/assembly capability |
@@ -142,45 +143,20 @@ CP-1 focused/red：
 
 期望结果：纯规则、类型、graph、协议 parser 的 focused/static 均成立；尚未宣称 native/Android。
 
-### 4.3 CP-2：transport、Android host 和 App/JS restore
+### 4.3 CP-2（历史章节，已由当前 hardening plan supersede）
 
-预定落点：
+本节原先描述的 transport/Android host/App restore 方案不再是当前实施指令。D-15 首步核对后的唯一有效指令见：
+`doc/plans/platform/2026-09-18-ter-dual-machine-topology-infrastructure-hardening-implementation-plan-codex.md` §6。
 
-- apps/terminal/kernel/base/transport/src/foundations/resolveTransportServerAddresses.ts
-- apps/terminal/kernel/base/transport/src/foundations/createTransportRetryController.ts
-- apps/terminal/kernel/base/transport/src/foundations/createTransportLimiter.ts
-- apps/terminal/kernel/base/transport/src/foundations/createTransportWebSocketController.ts
-- apps/terminal/kernel/base/transport/src/foundations/createTopologyIdentityClient.ts
-- apps/terminal/kernel/base/transport/src/... topology frame/session
-- apps/terminal/kernel/base/platform-ports/src/types/topologyHost.ts（只扩展现有 port 所需能力）
-- apps/terminal/assembly/android/sample-terminal/android/app/src/main/java/.../topology/
-- apps/terminal/assembly/android/sample-wallpaper-terminal/android/app/src/main/java/.../topology/
-- 两个 Android app 的 platformPorts、MainApplication/MainActivity 或现有 native module 接线
-- apps/terminal/kernel/base/topology 的 host lifecycle actor
+逐项分类如下：
 
-步骤：
+- `createTransportLimiter`：本批删除其未接线 source/export/invariant/README/test 记录；不得在后续 control queue 中换名恢复。
+- `concurrency/rate limiting`：本历史通用原语形态不作为本批新增能力；本批只保留 contracts 已冻结的 pending/reassembly bounds 与阶段二 control-priority queue。
+- `replaceServers`、WS profile registration、generic transport consumer：保留可逆公共形态或既有已消费 selector/failover，但本批不新增生产消费；不得按本历史章节接线。
+- `resolveTransportServerAddresses`、`createTransportRetryController`、identity client 已消费的多地址 failover、connection-token 形态：按当前 hardening plan 保留并回源复核。
+- Android host、App/JS restore、双阶段动态证据：按当前 hardening plan 的 CP-1/CP-2/CP-5 与 U-2/U-3/U-4/U-18 执行；本历史章节的落点清单和顺序不再优先。
 
-1. 依 CP-0 已确认的 server 依赖实现同构的 Android adapter；若无现成依赖，只使用通过 review 的 Android-compatible 单一 server 依赖，禁止手写 HTTP/WebSocket framing。
-2. 让 transport 的 address selector 消费既有 `TransportServerConfig` 及其 definition/address/options 类型，按顺序 failover 并记录 sticky 成功地址；identity client 必须走该 selector，不得再拼接固定 URL。
-3. 用 bounded retry controller、外部 cancellation token、attempt metrics、heartbeat controller、concurrency/rate limiter 和 WS profile controller 闭合 R-7 的通用原语；`replaceServers` 必须使旧 connection token 失效，focused fixture 要让慢连接不能覆盖新决策；heartbeat focused fixture 要覆盖序号 ping、pong 更新与超时。
-4. adapter 消费 contracts 导出的 topology config，提供固定 port/base path、只读 status identity endpoint 和单 peer WS；start/stop 幂等，关闭时释放 listener/session；bind 失败若为占用必须返回 TOPOLOGY_HOST_PORT_OCCUPIED。不得在 adapter、runner 或 UI 再声明 port/basePath 字面量。
-5. native host 只通过现有 TopologyHostPort 暴露 status/address/diagnostics；不让 UI 直接调用 start/stop；不新增 BootReceiver、BOOT_COMPLETED 权限或设备级自启。
-6. topology lifecycle actor 以 enableSlave、MASTER、single-screen、laptop 和 desired/actual 指纹串行决定起停；start 后先读真实 address/status，再 connect、hello、snapshot。
-7. 复用 AppControlPort.resetRuntime。pair 中 host/服务稳定后切 slave/vice，再 reset JS；reset 不重建 native host。失败调用 repair，确保 CHIEF→MASTER→clear locator。
-8. 两 app 的 package/application identity、HTTP status、WS frame、错误 code、heartbeat 和日志字段使用同一 contracts vectors；不要从 app 名称分叉协议。
-9. 记录真实 native/readback 日志；敏感字段不写入。
-
-CP-2 focused/native red：
-
-- 删除 desired/actual reconcile；
-- 把 fixture 对 TopologyHostPort.start 的直接调用当成成功；
-- 在 SLAVE 上 enable host；
-- 删除 JS hydrate restore；
-- 增加 BootReceiver；
-- 把端口占用吞成无原因的 TOPOLOGY_HOST_FAILED；
-- Kotlin parser 接受未知字段或错误 direction。
-
-CP-2 收口需要 native adapter 的 focused/Android supporting evidence；没有双设备 runner 不得把 U-7/U-17/U-19 标成完成。
+任何实施者若同时读取本历史计划与当前 hardening plan，必须以当前 hardening plan 为准；出现相反指令即回到 CP-0，不得自行折中。
 
 ### 4.4 CP-3：机制批
 

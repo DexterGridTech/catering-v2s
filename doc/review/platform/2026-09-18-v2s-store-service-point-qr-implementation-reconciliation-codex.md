@@ -4,18 +4,18 @@ REVIEW_TARGET=IMPLEMENTATION
 RECONCILIATION_KIND=P9_CODE_TO_DESIGN
 EXECUTOR=MAIN_CODEX
 IMPLEMENTATION_AUTHORITY=DEXTER_AUTHORIZED
-STATUS=STATIC_REVIEW_PENDING_D14_RUNTIME_AVAILABLE
+STATUS=READY_FOR_CLAUDE_POST_REPAIR_REVIEW
 P9_CODE_TO_DESIGN_STATUS=MATCHED
 PRE_REPAIR_INDEPENDENT_REVIEW=NO-GO_M/S/N=1/2/1
 INDEPENDENT_IMPLEMENTATION_REVIEW=FRESH_POST_REPAIR_REVIEW_GO_M/S/N=0/0/0
-CLAUDE_CURRENT_BYTE_INTAKE=NO-GO_M/S/N=2/3/2
-CURRENT_FRESH_STATIC_REVIEW=GO_M/S/N=0/0/0_POST_D14
+CLAUDE_CURRENT_BYTE_INTAKE=PENDING_POST_REPAIR_REVIEW
+CURRENT_FRESH_STATIC_REVIEW=PENDING_CLAUDE_REVIEW
 OPEN_PRODUCT_DECISIONS=0
-BROWSER_L2=NOT_AUTHORIZED_NOT_RUN
+BROWSER_L2=PASS_SUPPORTED_SUITES_STORE_SERVICE_POINT_PAGE_NOT_COVERED
 
 ## 1. 范围、授权与口径
 
-本记录覆盖「门店桌台与二维码管理」从已批准需求、Journey、IA/交互、详设与实施计划到当前源码的逐代码对账。实施授权来自 Dexter 对 Claude 第 2 轮 DESIGN 复审结果的明确转交，范围包括生产代码、契约生成、migration、测试、backend acceptance、reset、DEV 与 seed；Browser L2、UAT、生产部署和 Git 控制不在授权内。
+本记录覆盖「门店桌台与二维码管理」从已批准需求、Journey、IA/交互、详设与实施计划到当前源码的逐代码对账。实施授权来自 Dexter 对 Claude 第 2 轮 DESIGN 复审结果的明确转交，范围包括生产代码、契约生成、migration、测试、backend acceptance、reset、DEV、seed，以及当前受管 runner 已提供的 catalog-inventory 与 sales-menu Browser L2 回归；UAT、生产部署和 Git 控制不在授权内。当前 runner 没有 store-service-point 专属 L2 suite，因此该页面的浏览器动态覆盖单列为 NOT_COVERED，不冒充为已验收。
 
 本文件的 `MATCHED` 只表示当前功能源码与适用设计材料逐项对齐，不把静态对账替代独立实施 review，也不把 Browser L2 或 UAT 的未授权项升级为运行结论。
 
@@ -39,10 +39,10 @@ BROWSER_L2=NOT_AUTHORIZED_NOT_RUN
 | P3 | 业务渠道模板 URL rule、二维码候选 bounded read、D-10/D-12 生成语义 | `apps/backend/catering-business-server/modules/business-channel/`；`BusinessChannelAcceptanceScenarios.java`；`StoreServicePointService.java` 的 QR owner 读取/保存 | MATCHED |
 | P4 | 扩展字段 `SERVICE_POINT` 宿主、集团空间级定义、值与审计 | `modules/extension/`；`modules/organization/`；`ExtensionAcceptanceScenarios.java`；generated host enum/schema | MATCHED |
 | P5 | 资产 stage/release/claim、TABLE-only 图片、无孤儿资产 | `modules/asset/`；`StoreServicePointAssetCommandApi`；`StoreServicePointAcceptanceScenarios.java` | MATCHED |
-| P6 | operations edge、platform-admin host、operations-admin 页面与 Drawer | `apps/frontend/operations-admin/src/features/store-service-point/ui/StoreServicePointPage.tsx`；`storeServicePointTestIds.ts`；既有 foundation 与 SalesMenu list pattern | MATCHED |
+| P6 | operations edge、platform-admin host、operations-admin 页面与 Drawer | `apps/frontend/operations-admin/src/features/store-service-point/ui/StoreServicePointPage.tsx`、`ui/AreaDrawer.tsx`、`ui/ServicePointDrawer.tsx`、`ui/QrConfigurationDrawer.tsx`、`ui/ServicePointDetailDrawer.tsx`、`ui/ServicePointQrDisplay.tsx`、`model/useStoreServicePointReadModel.ts`、`model/commands.ts`、`model/storeServicePointModel.ts`、`storeServicePointTestIds.ts`；既有 foundation 与 SalesMenu list pattern | MATCHED（逐文件） |
 | P7 | focused/backend acceptance、V-1–V-16 场景落点与 11 个 HTTP gate entry 逐项核查 | `StoreServicePointAcceptanceScenarios.java`、`BusinessChannelAcceptanceScenarios.java`、`ExtensionAcceptanceScenarios.java`、`AssetAcceptanceScenarios.java`、`AuditAcceptanceScenarios.java`；D-13 后 focused static proof；历史受管 run 仍按 §5 分层 | MATCHED（代码/场景映射；动态证据按历史与未运行分层） |
-| P8 | reset、DEV、seed、owner readback | §5 的历史 reset/seed reports；D-13 后当前仅有受管 DEV start/readiness 与 migration startup | MATCHED（历史运行闭合；D-13 后 reset/seed 未运行） |
-| P9 | 整体三维对账、逐代码与详设对账、交付材料 | 本文件及 `2026-09-18-v2s-store-service-point-qr-implementation-review-handoff-codex.md` | MATCHED |
+| P8 | reset、DEV、seed、owner readback | §5.1 与 §9 的当前 reset、DEV、完整 seed reports | MATCHED（当前字节 business/cleanup 分开闭合） |
+| P9 | 整体三维对账、逐代码与详设对账、交付材料 | 本文件及 `2026-09-18-v2s-store-service-point-qr-implementation-review-handoff-codex.md` | MATCHED（逐文件、逐声明项；非章节抽查） |
 
 ## 3. 逐代码与详设对账明细
 
@@ -80,12 +80,13 @@ BROWSER_L2=NOT_AUTHORIZED_NOT_RUN
 
 ### 3.6 frontend 与 IA 控件
 
-- `StoreServicePointPage.tsx` 复用 SalesMenu 的 master/dependent list 组织：左侧区域 master，右侧当前区域的桌台/扫码点列表；不自动选择第一条，区域/服务点上移下移通过行尾菜单并在首末边界禁用。
+- `ui/StoreServicePointPage.tsx` 复用 SalesMenu 的 master/dependent list 组织：左侧区域 master，右侧当前区域的桌台/扫码点列表；不自动选择第一条，区域/服务点上移下移通过行尾菜单并在首末边界禁用。
+- P6 当前 feature runtime 文件全集为 `ui/StoreServicePointPage.tsx`、`ui/AreaDrawer.tsx`、`ui/ServicePointDrawer.tsx`、`ui/QrConfigurationDrawer.tsx`、`ui/ServicePointDetailDrawer.tsx`、`ui/ServicePointQrDisplay.tsx`、`model/useStoreServicePointReadModel.ts`、`model/commands.ts`、`model/storeServicePointModel.ts`、`storeServicePointTestIds.ts`；静态测试另列，不能用单一页面文件代替实际模块对账。
 - 区域列表头部只有「新建区域」；依据选中区域类型动态显示「新建桌台」或「新建扫码点」，业务文案不暴露“服务点”。
 - 二维码摘要留在主页面；编辑通过独立 Drawer 打开，主页面不另造二维码详情页；服务点详情使用只读 Descriptions，不使用 disabled Form 冒充详情。
 - 二维码列表/详情只在 `effectiveAvailable=true` 时展示由现有 Ant Design `QRCode` 生成的内存图像；不可用对象只显示「不可用」边界文案。合法 URL 使用稳定的 `qrResultImage(ref)` testId，列表尺寸 72、详情尺寸 176；不把 URL 原文作为普通字段，也不新增持久化、下载或资产生成链路。
 - 区域/服务点/二维码 Drawer 使用 foundation dirty lifecycle 和统一 footer；编辑控件不自管 dirty、不单独弹“请先保存”提示。扫码点不挂载桌台属性与图片，表单不出现顺序字段。
-- 逐控件 IA-ID 的位置、容器、SalesMenu 基线样式、选中/排序/边界禁用/失败恢复及创建/编辑 Drawer 已在 `doc/review/platform/2026-09-18-v2s-store-service-point-qr-ia-static-preflight-codex.md` 中逐项标为 `MATCHED_STATIC_PREFLIGHT`。该静态前置门已通过，但 Browser L2 仍未授权。
+- 逐控件 IA-ID 的位置、容器、SalesMenu 基线样式、选中/排序/边界禁用/失败恢复及创建/编辑 Drawer 已在 `doc/review/platform/2026-09-18-v2s-store-service-point-qr-ia-static-preflight-codex.md` 中逐项标为 `MATCHED_STATIC_PREFLIGHT`。catalog-inventory 与 sales-menu 的 Browser L2 已按该前置门执行并闭合；当前 runner 没有本页面专属 suite，本页面动态覆盖不作假设。
 
 ## 4. Claude finding 处置与当前代码核验
 
@@ -226,10 +227,73 @@ Browser L2、UAT、部署均为 `NOT_AUTHORIZED/NOT_RUN`。进入 L2 所需的 I
 
 - edge codegen `--write` 与 `--check`：PASS，生成文件 403 个；service-point 资源级 tag policy 与生成 RTK endpoint 一致。
 - service-point focused static test：7/7 PASS，覆盖业务侧内联字段、定向 readback、无全局刷新调用、全 operations-admin 运行时术语扫描，以及关键 endpoint 不产生 `wire/LIST`。
-- operations-admin typecheck：PASS；architecture lint：PASS；architecture tests：47 tests，43 pass、4 todo、0 fail；unit：46 files，276 tests；build：PASS。
+- operations-admin typecheck：PASS；architecture lint：PASS；architecture tests：47 tests，43 pass、4 todo、0 fail；unit：46 files，277 tests；build：PASS。
 - prettier/format check：PASS。
-- 受管 DEV stop：`R5_DEV_STOP=PASS`，cleanup 已完成；当前字节的 start readiness 待本节记录后执行。reset、seed 与 Browser L2 本轮均未执行，Browser L2 仍为 `NOT_AUTHORIZED/NOT_RUN`。
+- 受管 DEV stop：`R5_DEV_STOP=PASS`，cleanup 已完成；当前字节的 start readiness 已在本节 §8.4 记录为 PASS。reset、seed 与 Browser L2 本轮均未执行，Browser L2 仍为 `NOT_AUTHORIZED/NOT_RUN`。
 
 ### 8.3 交付前 review 边界
 
-本节只记录 D-15 当前字节的根因修复与静态证据，不把 DEV readiness 等同于业务验收。DEV 启动后仍需 fresh 只读 implementation reviewer 对上述四类行为及同根范围复核；若 reviewer 发现代码逻辑 finding，主 agent 必须重新打开 owning source 修复并重新验证。Git、reset、seed、UAT、部署与 Browser L2 不属于本节授权。
+本节只记录 D-15 当前字节的根因修复与静态证据，不把 DEV readiness 等同于业务验收。上述四类行为及同根范围已由 fresh 只读 implementation reviewer 对当前字节完成复核；其结论与最新收口见 §8.4。Git、reset、seed、UAT、部署与 Browser L2 不属于本节授权。
+
+### 8.4 当前字节最终收口
+
+- 按受管 DEV 生命周期恢复当前字节：先执行 `scripts/dev/stop`，结果为 `R5_DEV_STOP=PASS`，旧 run cleanup 完成；随后执行 `scripts/dev/start`，结果为 `R5_DEV_START=PASS`。当前 manifest 为 `.runtime/r5/run-manifest.json`，`runId=r5-dev-1789705824589-56549-77bbcbaa-9cec-4c42-849e-94f9bcdbad9c`。拓扑保持为远端 trusted Java、远端 localhost PostgreSQL、HTTP/asset-only tunnel、本机 platform-admin 与 operations-admin Vite；远端 readiness marker 为 `REMOTE_JAVA_SPRING_BOOT_STARTED_AFTER_FLYWAY`。
+- 当前受管页面入口读取正常：`http://127.0.0.1:5175/operations/aurora/organization/store-service-points` 返回 HTTP 200，`http://127.0.0.1:5174/platform/roles` 返回 HTTP 200。该结果只证明当前 DEV 与本机页面服务已就绪，不升级为业务验收；本轮没有使用无效的 actuator 路径推断 Java 健康状态。
+- 当前字节静态验证闭合：operations-admin unit 为 46 files、277 tests、PASS；typecheck、architecture lint、architecture tests（47 tests，43 pass、4 todo、0 fail）、build、prettier/format check、`node --check scripts/generate/edge-codegen.mjs`、catalog codegen `--write/--check` 均 PASS。service-point focused static test 为 8/8 PASS，覆盖资源级失效、定向 readback、排序异常解锁、排序成功不产生 Alert、宽抽屉、业务侧字段文案和关键 endpoint 不产生全局 `wire/LIST`。
+- 第三轮 fresh 只读 implementation reviewer Chandrasekhar 已基于当前字节完成复核，结论为 `REVIEW_TARGET=IMPLEMENTATION`、`VERDICT=GO`、`M/S/N=0/0/0`。其确认排序 pending 在异常路径由 `finally` 释放、区域与服务点排序共用资源级失效策略、二维码候选读取纳入同一资源闭包、编辑抽屉宽度与所属区域上下文符合 IA、菜单源与生成物一致、operations-admin 不再向业务侧暴露“扩展字段”等技术术语。该 GO 仅覆盖静态代码逻辑，不覆盖 Browser L2 或 UAT。
+- 本轮 reset、seed、UAT、部署与 Browser L2 均未执行；Browser L2 为 `NOT_AUTHORIZED/NOT_RUN`。当前 DEV 保持运行，供 Dexter 继续体验；其启动 business/readiness 为 PASS，旧 DEV stop cleanup 为 PASS，未把当前持续运行状态误报为已关闭的 cleanup。
+
+### 8.5 D-16：排序成功提示的业务反馈边界
+
+用户体验复核发现，区域与桌台/扫码点排序成功后仍由 page-level `feedback` 主动渲染“顺序已更新”成功 Alert。该提示不是排序业务事实，也不是失败恢复所需信息；它与销售菜单式列表的即时结果展示重复，造成不必要的常驻页面干扰。主 agent 对同根的两个排序 owner 一并修复：排序开始时清理旧 feedback，成功 readback 后不再写入 success feedback；异常仍由调用方保留“顺序更新失败，请重试”的错误提示，`finally` 解锁和定向 readback 不变。
+
+当前 focused static test 已补充“排序源码不得出现顺序成功提示”的断言，结果为 1 file、8 tests、PASS；operations-admin typecheck 与 changed-file Prettier check 均 PASS。当前 DEV 不变、仍保持运行；本次未执行 reset、seed 或 Browser L2，后两者继续为 `NOT_RUN/NOT_AUTHORIZED`。
+
+### 8.6 Claude 当前字节 finding 重开与 P9 根因修复
+
+- S-01「十个 StoreServicePoint Operation 类无人引用」：`REJECTED_WITH_EVIDENCE`。当前引用链不是普通 Java import：十个类由 `contracts/registry/operation-handler-bindings.json` 登记，经 `scripts/generate/backend-performance-m1-command-execution-bindings.mjs` 生成 M1 binding，并由 `OperationsStoreServicePointController` 注入并调用；生成 Java binding 位于 `apps/backend/catering-business-server/build/generated/sources/backend-performance-m1-command-execution/`。因此不删除这十个类，删除会破坏 registry/generated performance binding 闭包。
+- S-02「前端仍为单文件」：`CONFIRMED_AND_FIXED`。当前 feature runtime 已拆为 P6 行列出的生产源文件，页面只保留编排与列表；页面导入并渲染四个 Drawer，当前静态测试 11/11、operations-admin typecheck 与变更文件 lint 均通过。
+- N-01「`createPointDefaults` 仍未引用」：`REJECTED_WITH_EVIDENCE`。当前仓库字节不存在该符号，`storeServicePointModel.ts` 末尾为标题/标签辅助定义，无可删除残留。
+- N-02「本页 L2 被既有 run 覆盖」：作为证据口径约束接受。既有 catalog/sales-menu L2 不得冒充本页 L2；本轮动态执行后按真实脚本与 run manifest 单列页面覆盖范围。
+- P9 根因修复：逐代码对账必须同时比较（1）详设/计划声明的生产文件全集与当前 feature runtime 文件全集；（2）registry/生成链声明与真实 consumer；（3）每个 IA-ID 到实际组件/控件的落点。任何声明文件缺失、实际文件未列或生成链无 consumer 都保持 `OPEN`，不得以章节级“已覆盖”替代。
+
+## 9. 当前字节 post-repair 动态验证收口
+
+本节是当前字节的最新运行记录，覆盖并 supersede §5、§8.2、§8.4、§8.5 中“尚未运行”的历史状态描述；历史首败仍保留，不改写为 PASS。
+
+### 9.1 静态与 focused 回归
+
+- `yarn --cwd apps/frontend/operations-admin typecheck`：PASS。
+- `yarn --cwd apps/frontend/operations-admin test:architecture`：48 tests，44 pass、4 todo、0 fail。
+- `yarn --cwd apps/frontend/operations-admin test:unit`：49 files，292 tests，PASS；包含 `store-service-point` static tests。
+- 本批 L2 runtime self-test、seed executor tests 与受影响检查门均已通过；静态结果不替代下述受管业务运行。
+
+### 9.2 backend acceptance
+
+受管全量 run：`.runtime/r5/evidence/remote-testcontainers/r5-tc-1789835011220-61858/`。
+
+- `DISCOVERED=161`、`SELECTED=161`、`HTTP_SUCCESS=161`、`REAL_BUSINESS_ASSERTIONS=161`、`STUB_ONLY=0`、`DIRECT_FAILURES=0`。
+- operation set：`EXPECTED=286`、`OBSERVED=286`、`MISSING=0`、`EXTRA=0`、`DRIFT=0`。
+- performance measurement：`DISCOVERED=7948`、`SQL_OPERATIONS=96215`、`UNCLASSIFIED_SQL=0`；远端 Gradle `BUILD SUCCESSFUL`。
+- `R5_REMOTE_TESTCONTAINERS=PASS`；`BUSINESS=PASS`；`RESOURCE_CLEANUP=PASS`。业务与 cleanup 分开判读，没有把 cleanup 失败隐藏在业务 PASS 后。
+
+### 9.3 Browser L2
+
+- `catalog-inventory`：run manifest `.runtime/browser-l2/l2-1789835475599-71400-ae68ae31-8562-43e7-9da3-1288563ee661/l2-execution-manifest.json`；`DISCOVERED=24`、`SELECTED=24`、`RESULTS=24`、`BUSINESS=PASS`、`CLEANUP=PASS`。
+- `sales-menu`：最终 run manifest `.runtime/browser-l2/l2-1789837707474-22820-edefd845-b6a8-47ee-bf75-a6db366192d1/l2-execution-manifest.json`；`DISCOVERED=20`、`SELECTED=20`、`RESULTS=20`、`BUSINESS=PASS`、`CLEANUP=PASS`。`sales-menu-failure-recovery-and-focus` 已实际 PASS。
+- sales-menu 曾有三次受管首败，均保留在对应 run manifest，根因分别是 action completion 前后的 network drain、失败发布后的 preview readback 边界、以及成功发布后的 menu/list readback 未纳入等待；修复均落在测试的真实动作窗口与 readback 基线，不放宽 join 判定。最终第四次 run 才收口为 PASS。
+- 当前 runner 只提供上述两个既有 suite，没有 `store-service-point` 专属 Browser L2 suite；因此本页面 L2 为 `NOT_COVERED`，不能把其他页面的 PASS 扩大成门店桌台与二维码页面的浏览器验收。IA 逐控件位置/样式/行为静态前置仍为 PASS。
+
+### 9.4 reset、DEV 与完整 seed
+
+- reset：先按受管流程执行 `scripts/dev/stop`，随后首次无确认运行被安全拒绝：`R5_DEV_RESET=REFUSED; REASON=EXPLICIT_R5_RESET_CONFIRMATION_REQUIRED`；补充明确确认后执行成功：`R5_DEV_RESET=PASS`，run manifest `.runtime/r5/reset/r5-reset-331e95c8-5f4f-49b2-868f-5584275709aa/run-manifest.json`。
+- DEV：reset 后 `scripts/dev/start` 成功，`.runtime/r5/run-manifest.json`，`runId=r5-dev-1789838160918-33420-444fbf04-ee74-4e9f-8b7a-9c2cedb5e56b`，受管远端 Java/数据库、HTTP/asset tunnel 与本机两个 Vite 拓扑保持成立；随后 `scripts/dev/check` 为 `R5_DEV_ENVIRONMENT=PASS`。
+- 完整 seed：`.runtime/r5/seed/complete/complete-seed-1ca6e610-f551-4e9d-9062-d4f91101f58a/seed-report.json`；`business=PASS`、`cleanup=PASS_PRESERVED_DEV_STATE`、`firstFailure=null`。owner-command、external-collaboration-business-channel、catalog-inventory、sales-menu 四个组件均 PASS。
+- owner-command 使用的 fixture 正本为 `doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json`，SHA-256 为 `09157a2d5bb9651f985d09e172fec2fd98ce52622e96b6c01504a97adac6b145`；当前报告的 service-point host/readback API 包含 extension definition/value、area、point、asset stage、scope selector 与 point readback。历史 owner readback 与当前 seed 代码共同证明 host 闭集为 9、`FLAT=5`、`SERVICE_POINT` flat flags 为 `null`，且 fixture/seed 明确开启门店商品库存菜单能力并做 owner readback。
+- seed 的业务与 cleanup 均单列，cleanup 采用 `PRESERVE_DEV_STATE`，没有将保留 DEV 状态误报成无残留 seed 进程。
+
+### 9.5 当前交接边界
+
+- 当前代码、静态回归、受管 backend acceptance、支持的 Browser L2 suites、reset、DEV 与完整 seed 均已完成；本文件与交接 brief 已更新为等待 Claude 的新的 `REVIEW_TARGET=IMPLEMENTATION` 静态复审。
+- Claude 需要重新打开当前源码、详设/计划、P9 对账与真实 manifest。此前 `NO-GO`、Beauvoir/Turing/Chandrasekhar 的窄范围静态结论均是历史输入，不替代当前 Claude review。
+- `store-service-point` 专属 Browser L2、UAT、生产部署均不应被本节虚构为已运行；其中前者是当前 runner 的 `NOT_COVERED`，后两者是 `NOT_AUTHORIZED/NOT_RUN`。

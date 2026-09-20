@@ -195,6 +195,8 @@ function assertL2LocatorBindingSourceFiles(bindings) {
   for (const [controlKey, binding] of Object.entries(bindings.controls)) {
     if (!Array.isArray(binding?.sourceFiles) || binding.sourceFiles.length === 0)
       throw new Error(`P1_L2_LOCATOR_BINDING_SOURCE_MISSING:${controlKey}`);
+    if (binding.parentTestId || binding.role || binding.name || binding.names)
+      throw new Error(`P1_L2_LOCATOR_BINDING_ROLE_FALLBACK_FORBIDDEN:${controlKey}`);
     for (const sourceFile of binding.sourceFiles) {
       if (typeof sourceFile !== 'string' || !fs.existsSync(abs(sourceFile)))
         throw new Error(`P1_L2_LOCATOR_BINDING_SOURCE_NOT_FOUND:${controlKey}:${sourceFile}`);
@@ -205,17 +207,104 @@ const L2_TEST_ID_FACTORIES = Object.freeze({
   CATALOG_MEDIA: 'media: (businessIdentity',
   CATALOG_ITEM_ROW: 'catalogItemRowTestId',
   CATALOG_ITEM_SELECTION: 'catalogItemSelectionTestId',
+  CATALOG_CATEGORY_NODE: 'categoryNode(node.code)',
+  CATALOG_CATEGORY_EXPANDER: 'categoryExpander(node.code)',
+  CATALOG_PRODUCTION_TAG_NODE: 'productionTagNode(node.code)',
+  CATALOG_ITEM_TAB: 'catalogItemTabTestId',
 });
+const L2_OPTION_TEST_ID_FACTORIES = Object.freeze({
+  CATALOG_VIEW_SWITCH: 'catalogTestIdControls.workbench.viewTable',
+  INVENTORY_STOCK_VIEW: 'inventoryStockViewTestId',
+  INVENTORY_ACTION_DIRECTION: 'inventoryActionDirectionTestId',
+});
+const L2_INTERACTION_ACTION_NODES = Object.freeze({
+  STORE_SCOPE: 'SCOPE_TRIGGER_SELECTOR_OPTION_CONFIRM',
+  HEAD_COMPANY_SCOPE: 'SCOPE_TRIGGER_SELECTOR_OPTION_CONFIRM',
+  CATALOG_TREE_CATEGORY_NODE: 'TREE_TITLE',
+  CATALOG_TREE_CATEGORY_EXPANDER: 'TREE_SWITCHER_ICON',
+  CATALOG_TREE_PRODUCTION_TAG_NODE: 'TREE_TITLE',
+  CATALOG_VIEW_SWITCH: 'COMPOSITE_OPTION_ANCHOR',
+  CATALOG_BASIC_TAB: 'TAB_LABEL_ANCHOR',
+  CATALOG_SKU_TAB: 'TAB_LABEL_ANCHOR',
+  CATALOG_ORDER_OPTIONS_TAB: 'TAB_LABEL_ANCHOR',
+  CATALOG_PRODUCTION_PROMPTS_TAB: 'TAB_LABEL_ANCHOR',
+  CATALOG_INVENTORY_BOM_TAB: 'TAB_LABEL_ANCHOR',
+  CATALOG_DICTIONARY_OPEN_CREATE: 'BUTTON',
+  CATALOG_PAGINATION: 'PAGINATION_CONTROL_GROUP',
+  CATALOG_PAGINATION_NEXT: 'PAGINATION_BUTTON',
+  CATALOG_PAGINATION_PREVIOUS: 'PAGINATION_BUTTON',
+  INVENTORY_STOCK_VIEW: 'COMPOSITE_OPTION_ANCHOR',
+  INVENTORY_ACTION_DIRECTION: 'RADIO_OPTION_ANCHOR',
+  CATALOG_BATCH_STATUS_ACTION: 'MENU_ITEM',
+});
+const L2_SCOPE_TOUCH_PHASES = Object.freeze(['TRIGGER', 'SELECTOR', 'OPTION', 'CONFIRM']);
+const L2_SCOPE_FIXED_TEST_IDS = Object.freeze({
+  STORE_SCOPE: Object.freeze([
+    'operations-data-scope-trigger',
+    'operations-data-scope-region',
+    'operations-data-scope-project',
+    'operations-data-scope-store',
+    'operations-data-scope-confirm',
+  ]),
+  HEAD_COMPANY_SCOPE: Object.freeze([
+    'operations-data-scope-trigger',
+    'operations-data-scope-head-company',
+    'operations-data-scope-confirm',
+  ]),
+});
+function assertL2ScopeBinding(controlKey, binding, source) {
+  const expected = L2_SCOPE_FIXED_TEST_IDS[controlKey];
+  if (!expected) return;
+  if (binding.actualActionNode !== 'SCOPE_TRIGGER_SELECTOR_OPTION_CONFIRM')
+    throw new Error(`P1_L2_SCOPE_ACTION_NODE_INVALID:${controlKey}`);
+  if (JSON.stringify(binding.touchPhases) !== JSON.stringify(L2_SCOPE_TOUCH_PHASES))
+    throw new Error(`P1_L2_SCOPE_PHASES_INVALID:${controlKey}`);
+  if (JSON.stringify([...(binding.touchTestIds || [])].sort()) !== JSON.stringify([...expected].sort()))
+    throw new Error(`P1_L2_SCOPE_TOUCH_IDS_INVALID:${controlKey}`);
+  if (binding.touchOptionTestIdFactory !== 'roleHomeTestIds.dataScope.option')
+    throw new Error(`P1_L2_SCOPE_OPTION_FACTORY_INVALID:${controlKey}`);
+  if (!source.includes('roleHomeTestIds.dataScope')) throw new Error(`P1_L2_SCOPE_SOURCE_MISSING:${controlKey}`);
+}
 function assertL2LocatorBindingFactories(bindings) {
   for (const [controlKey, binding] of Object.entries(bindings.controls)) {
-    if (!binding?.testIdFactory) continue;
-    const factoryMarker = L2_TEST_ID_FACTORIES[binding.testIdFactory];
-    if (!factoryMarker) throw new Error(`P1_L2_LOCATOR_BINDING_FACTORY_UNKNOWN:${controlKey}:${binding.testIdFactory}`);
-    if (binding.testIdTemplate)
-      throw new Error(`P1_L2_LOCATOR_BINDING_FACTORY_TEMPLATE_CONFLICT:${controlKey}:${binding.testIdFactory}`);
     const source = binding.sourceFiles.map(sourceFile => fs.readFileSync(abs(sourceFile), 'utf8')).join('\n');
-    if (!source.includes(factoryMarker))
-      throw new Error(`P1_L2_LOCATOR_BINDING_FACTORY_SOURCE_MISSING:${controlKey}:${binding.testIdFactory}`);
+    assertL2ScopeBinding(controlKey, binding, source);
+    if (binding?.interaction) {
+      if (L2_INTERACTION_ACTION_NODES[controlKey] !== binding.actualActionNode)
+        throw new Error(`P1_L2_INTERACTION_ACTION_NODE_INVALID:${controlKey}`);
+      if (typeof binding.focusedStaticProof !== 'string' || !fs.existsSync(abs(binding.focusedStaticProof)))
+        throw new Error(`P1_L2_INTERACTION_STATIC_PROOF_INVALID:${controlKey}`);
+    }
+    if (binding?.testIdFactory) {
+      const factoryMarker = L2_TEST_ID_FACTORIES[binding.testIdFactory];
+      if (!factoryMarker)
+        throw new Error(`P1_L2_LOCATOR_BINDING_FACTORY_UNKNOWN:${controlKey}:${binding.testIdFactory}`);
+      if (binding.testIdTemplate)
+        throw new Error(`P1_L2_LOCATOR_BINDING_FACTORY_TEMPLATE_CONFLICT:${controlKey}:${binding.testIdFactory}`);
+      if (!source.includes(factoryMarker))
+        throw new Error(`P1_L2_LOCATOR_BINDING_FACTORY_SOURCE_MISSING:${controlKey}:${binding.testIdFactory}`);
+    }
+    if (binding?.optionTestIdFactory) {
+      const optionFactoryMarker = L2_OPTION_TEST_ID_FACTORIES[binding.optionTestIdFactory];
+      if (!optionFactoryMarker)
+        throw new Error(`P1_L2_LOCATOR_BINDING_OPTION_FACTORY_UNKNOWN:${controlKey}:${binding.optionTestIdFactory}`);
+      if (binding.actualActionNode !== 'COMPOSITE_OPTION_ANCHOR' && binding.actualActionNode !== 'RADIO_OPTION_ANCHOR')
+        throw new Error(`P1_L2_LOCATOR_BINDING_OPTION_ACTION_NODE_INVALID:${controlKey}`);
+      if (!source.includes(optionFactoryMarker))
+        throw new Error(
+          `P1_L2_LOCATOR_BINDING_OPTION_FACTORY_SOURCE_MISSING:${controlKey}:${binding.optionTestIdFactory}`,
+        );
+    }
+    if (binding?.testIdFactory === 'CATALOG_ITEM_TAB') {
+      if (binding.actualActionNode !== 'TAB_LABEL_ANCHOR')
+        throw new Error(`P1_L2_TAB_ACTION_NODE_INVALID:${controlKey}`);
+      if (
+        typeof binding.focusedStaticProof !== 'string' ||
+        !fs.existsSync(abs(binding.focusedStaticProof)) ||
+        !fs.readFileSync(abs(binding.focusedStaticProof), 'utf8').includes('data-active={activeTab === tab.tabKey')
+      )
+        throw new Error(`P1_L2_TAB_STATIC_PROOF_INVALID:${controlKey}`);
+    }
   }
 }
 function assertL2LocatorBindingSourceGuard() {
@@ -246,6 +335,28 @@ function assertL2LocatorBindingSourceGuard() {
     factoryRejected = true;
   }
   if (!factoryRejected) throw new Error('P1_L2_LOCATOR_BINDING_FACTORY_RED_MUTATION_NOT_REJECTED');
+  const roleFallbackMutation = structuredClone(bindings);
+  roleFallbackMutation.controls[firstControlKey].parentTestId = 'catalog-item-table';
+  roleFallbackMutation.controls[firstControlKey].role = 'button';
+  let roleFallbackRejected = false;
+  try {
+    assertL2LocatorBindingSourceFiles(roleFallbackMutation);
+  } catch {
+    roleFallbackRejected = true;
+  }
+  if (!roleFallbackRejected) throw new Error('P1_L2_LOCATOR_BINDING_ROLE_FALLBACK_RED_MUTATION_NOT_REJECTED');
+  const scopeBinding = Object.entries(bindings.controls).find(([controlKey]) => L2_SCOPE_FIXED_TEST_IDS[controlKey]);
+  if (!scopeBinding) throw new Error('P1_L2_SCOPE_BINDING_REQUIRED');
+  const [scopeControlKey] = scopeBinding;
+  const scopeMutation = structuredClone(bindings);
+  delete scopeMutation.controls[scopeControlKey].touchPhases;
+  let scopeRejected = false;
+  try {
+    assertL2LocatorBindingFactories(scopeMutation);
+  } catch {
+    scopeRejected = true;
+  }
+  if (!scopeRejected) throw new Error('P1_L2_SCOPE_RED_MUTATION_NOT_REJECTED');
 }
 function skipJsonWhitespace(raw, index) {
   while (index < raw.length && /\s/.test(raw[index])) index += 1;
@@ -1567,12 +1678,11 @@ const legacyOperationMetadata = operationRows.map(function (row) {
   return {
     ordinal: row.ordinal,
     operationId: row.operationId,
-    method:
-      row.operationId.startsWith('getOperations')
-        ? 'GET'
-        : row.operationId.startsWith('updateOperations') || row.operationId.startsWith('saveOperations')
-          ? 'PATCH'
-          : 'POST',
+    method: row.operationId.startsWith('getOperations')
+      ? 'GET'
+      : row.operationId.startsWith('updateOperations') || row.operationId.startsWith('saveOperations')
+        ? 'PATCH'
+        : 'POST',
     path: routeByOrdinal[row.ordinal],
     consumerFaces: ['operations-admin'],
     pageKeys: pageKeys,
@@ -1970,10 +2080,7 @@ const catalogOperationMetadata = [
     ? {
         ...entry,
         problemCodes: Array.from(new Set([...entry.problemCodes, STORE_CATALOG_MANAGEMENT_DISABLED])),
-        conditionToProblem: [
-          storeCatalogManagementGateCondition,
-          ...entry.conditionToProblem,
-        ],
+        conditionToProblem: [storeCatalogManagementGateCondition, ...entry.conditionToProblem],
       }
     : entry,
 );
@@ -4037,7 +4144,10 @@ const responseFieldMap = {
         productionTags: arrayField(
           'saved production tags',
           typedEntry(
-            {code: stringField('tag code'), status: enumField('dictionaryEntryStatus', 'production tag lifecycle status')},
+            {
+              code: stringField('tag code'),
+              status: enumField('dictionaryEntryStatus', 'production tag lifecycle status'),
+            },
             ['code', 'status'],
           ),
         ),
@@ -4299,7 +4409,8 @@ const applyDefinitionFactsToCatalogItemDetail = detailSchema => {
     'specificationOrOptionSummary',
     'attributeSummary',
     'preparationSummary',
-  ]) delete item.properties[field];
+  ])
+    delete item.properties[field];
   item.properties.categoryRef = {
     type: ['string', 'null'],
     format: 'uuid',
@@ -4334,7 +4445,10 @@ const applyDefinitionFactsToCatalogItemDetail = detailSchema => {
     'typed ordering option definition and value facts',
     orderOptionConfigSchema,
   );
-  item.properties.attributeFacts = arrayField('typed product attribute assignment facts', attributeAssignmentReadbackSchema);
+  item.properties.attributeFacts = arrayField(
+    'typed product attribute assignment facts',
+    attributeAssignmentReadbackSchema,
+  );
   item.properties.preparationFacts = preparationFactsSchema;
   const skuItems = item.properties.skus?.items;
   if (skuItems?.properties) {
@@ -4458,7 +4572,8 @@ const applySingleCategoryToCatalogItemPage = pageSchema => {
     'specificationOrOptionSummary',
     'attributeSummary',
     'preparationSummary',
-  ]) delete item.properties[field];
+  ])
+    delete item.properties[field];
   item.properties.categoryRef = {
     type: ['string', 'null'],
     format: 'uuid',
@@ -4478,7 +4593,10 @@ const applySingleCategoryToCatalogItemPage = pageSchema => {
     'typed ordering option definition and value facts',
     orderOptionConfigSchema,
   );
-  item.properties.attributeFacts = arrayField('typed product attribute assignment facts', attributeAssignmentReadbackSchema);
+  item.properties.attributeFacts = arrayField(
+    'typed product attribute assignment facts',
+    attributeAssignmentReadbackSchema,
+  );
   item.properties.preparationFacts = preparationFactsSchema;
   item.properties.productionTagRef = {
     type: ['string', 'null'],
@@ -5020,7 +5138,7 @@ const assertOwnerAdmissionSourcesMatchGenerated = ownerSource => {
 };
 const validateOwnerAdmissionSourcesForSelfTest = () => {
   const ownerPath =
-    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java';
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemService.java';
   const ownerSource = fs.readFileSync(abs(ownerPath), 'utf8');
   assertOwnerAdmissionSourcesMatchGenerated(ownerSource);
   const mutationMarker = 'Set.of("BARCODE", "MNEMONIC").contains(type);';
@@ -5056,14 +5174,20 @@ for (const [schemaName, path, kind] of closedStatusPointers) applyClosedEnumAtPa
 for (const [schemaName, path] of [
   ['LocalCopyPreflight', 'data.mappingPreview[].status'],
   ['BrandCatalogCopyPreflight', 'mappingPreview[].status'],
-]) applyClosedEnumAtPath(schemaName, path, 'copyMappingStatus');
+])
+  applyClosedEnumAtPath(schemaName, path, 'copyMappingStatus');
 for (const [schemaName, path] of [
   ['LocalCopyReadback', 'data.ownerReadbacks[].status'],
   ['BrandCatalogCopyReadback', 'data.ownerReadbacks[].status'],
-]) applyClosedEnumAtPath(schemaName, path, 'copyOwnerStatus');
+])
+  applyClosedEnumAtPath(schemaName, path, 'copyOwnerStatus');
 applyClosedEnumAtPath('LocalCopyPreflight', 'data.compatibilityResults[].result', 'copyCompatibilityResult');
 applyClosedEnumAtPath('BrandCatalogCopyPreflight', 'compatibilityResults[].result', 'copyCompatibilityResult');
-applyClosedEnumToArrayItems('TemporaryPromotionPreflight', 'data.blockedReasons', 'temporaryPromotionBlockingReasonCode');
+applyClosedEnumToArrayItems(
+  'TemporaryPromotionPreflight',
+  'data.blockedReasons',
+  'temporaryPromotionBlockingReasonCode',
+);
 const skuTransitionTargetStatus = schemaAtPath(
   componentSchemas.CatalogItemSaveRequest,
   'skuTransitions[].targetStatus',
@@ -5168,7 +5292,8 @@ const catalogDefinitionSelfTest = () => {
     const reason = schema.properties.blockingReasons.items;
     if (
       !Array.isArray(reason.properties.reasonCode.enum) ||
-      JSON.stringify(reason.properties.reasonCode.enum) !== JSON.stringify(enumValues('catalogVoidBlockingReasonCode')) ||
+      JSON.stringify(reason.properties.reasonCode.enum) !==
+        JSON.stringify(enumValues('catalogVoidBlockingReasonCode')) ||
       reason.properties.count.minimum !== 1
     )
       throw new Error(`P1_VOID_REASON_ENTRY_CONSTRAINT_MISSING:${label}`);
@@ -5190,7 +5315,11 @@ const catalogDefinitionSelfTest = () => {
     if (JSON.stringify(field.enum) !== JSON.stringify(expected))
       throw new Error(`P1_CATALOG_CLOSED_ENUM_DRIFT:${schemaName}.${path}`);
   }
-  const promotionReasons = schemaAtPath(componentSchemas.TemporaryPromotionPreflight, 'data.blockedReasons', 'temporary promotion');
+  const promotionReasons = schemaAtPath(
+    componentSchemas.TemporaryPromotionPreflight,
+    'data.blockedReasons',
+    'temporary promotion',
+  );
   if (
     promotionReasons.type !== 'array' ||
     JSON.stringify(promotionReasons.items?.enum) !== JSON.stringify(enumValues('temporaryPromotionBlockingReasonCode'))
@@ -6973,6 +7102,14 @@ function catalogLibraryFactTemplate(journey, item) {
           },
         },
         unchanged: itemFacts,
+        // The stale-save case performs a real owner mutation before the
+        // browser submits its old version. The recovery case does not mutate
+        // the owner, so the version relation must be selected by journey
+        // state rather than shared by both cases.
+        unchangedReadbackVersionRelationByJourneyState: {
+          FAILURE: 'SAME_AS_FIXTURE_MUTATION',
+          RECOVERY: 'EXACT_PRE_STATE',
+        },
       };
     default:
       throw new Error(`P1_L2_FACT_TEMPLATE_TARGET_INVALID:${journey}:${item.code}`);
@@ -7023,7 +7160,9 @@ function assertCatalogLibraryFactTemplate(journey, template) {
   if (
     journey === 'EDIT' &&
     (expected.item?.productionTagRef !== '${existingProductionTagRef}' ||
-      expected.item?.version?.relation !== 'AT_LEAST_BASELINE')
+      expected.item?.version?.relation !== 'AT_LEAST_BASELINE' ||
+      template.unchangedReadbackVersionRelationByJourneyState?.FAILURE !== 'SAME_AS_FIXTURE_MUTATION' ||
+      template.unchangedReadbackVersionRelationByJourneyState?.RECOVERY !== 'EXACT_PRE_STATE')
   ) {
     throw new Error('P1_L2_EDIT_TARGET_FACT_TEMPLATE_INVALID');
   }
@@ -7057,6 +7196,16 @@ try {
   catalogLibraryCopyFactTemplateRedRejected = true;
 }
 if (!catalogLibraryCopyFactTemplateRedRejected) throw new Error('P1_L2_COPY_TARGET_FACT_RED_MUTATION_NOT_REJECTED');
+const catalogLibraryEditFactTemplateRedMutation = cloneJson(catalogLibraryFactTemplate('EDIT', {code: 'SELF_TEST'}));
+catalogLibraryEditFactTemplateRedMutation.unchangedReadbackVersionRelationByJourneyState.FAILURE = 'EXACT_PRE_STATE';
+let catalogLibraryEditFactTemplateRedRejected = false;
+try {
+  assertCatalogLibraryFactTemplate('EDIT', catalogLibraryEditFactTemplateRedMutation);
+} catch {
+  catalogLibraryEditFactTemplateRedRejected = true;
+}
+if (!catalogLibraryEditFactTemplateRedRejected)
+  throw new Error('P1_L2_EDIT_TARGET_FACT_RELATION_RED_MUTATION_NOT_REJECTED');
 const catalogLibraryFixtureGraph = journey => {
   const root = {
     type: 'CatalogCategory',
@@ -7151,6 +7300,13 @@ const catalogLibraryFixtureGraph = journey => {
       },
       expectedReadback: strictExpected,
       unchangedReadback: strictUnchanged,
+      ...(factTemplate.unchangedReadbackVersionRelationByJourneyState
+        ? {
+            unchangedReadbackVersionRelationByJourneyState: {
+              ...factTemplate.unchangedReadbackVersionRelationByJourneyState,
+            },
+          }
+        : {}),
       recoveryReadbackKind: journey === 'EDIT' ? 'UNCHANGED' : 'EXPECTED',
       requiredVisibleTabKeys:
         {
@@ -8784,6 +8940,16 @@ Object.assign(fixtureSchema.$defs.dataset.properties.expected.properties, {
       RECOVERY: {type: 'string', enum: ['NOT_APPLICABLE', 'DECLARED_REFERENCE_REMOVED']},
     },
   },
+  unchangedReadbackVersionRelationByJourneyState: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      SUCCESS: {type: 'string', enum: ['EXACT_PRE_STATE', 'SAME_AS_FIXTURE_MUTATION']},
+      FAILURE: {type: 'string', enum: ['EXACT_PRE_STATE', 'SAME_AS_FIXTURE_MUTATION']},
+      RECOVERY: {type: 'string', enum: ['EXACT_PRE_STATE', 'SAME_AS_FIXTURE_MUTATION']},
+    },
+    description: 'state-specific owner version relation for unchanged readback',
+  },
   preState: {type: 'object', additionalProperties: true, description: 'owner facts before the UI action'},
   actionInput: {type: 'object', additionalProperties: true, description: 'business action input'},
   expectedReadback: {type: 'object', additionalProperties: true, description: 'successful business readback'},
@@ -9113,6 +9279,59 @@ const assertCatalogLibraryExecutionSuite = blueprint => {
   return selected;
 };
 const l2CatalogLibraryExecutionScenarios = assertCatalogLibraryExecutionSuite(l2CaseBlueprint);
+// These controls are touched by the shared brand-copy preflight helper.  Keep
+// the helper's input contract in the generator so a failure/recovery branch
+// cannot omit a common preflight control while still looking complete from its
+// branch-specific assertions.
+const CATALOG_L2_SHARED_CONTROL_REQUIREMENTS = Object.freeze([
+  Object.freeze({
+    name: 'brand-copy-preflight',
+    caseIds: Object.freeze(['catalog-copy-success', 'catalog-copy-failure', 'catalog-copy-recovery']),
+    requiredControlKeys: Object.freeze([
+      'CATALOG_COPY_OPEN',
+      'CATALOG_COPY_DRAWER',
+      'CATALOG_COPY_SELECTION',
+      'CATALOG_COPY_PREFLIGHT',
+    ]),
+  }),
+]);
+const assertCatalogL2SharedControlClosure = blueprint => {
+  for (const requirement of CATALOG_L2_SHARED_CONTROL_REQUIREMENTS) {
+    const cases = requirement.caseIds.map(caseId => {
+      const match = blueprint.scenarios
+        .flatMap(scenario => scenario.cases)
+        .find(blueprintCase => blueprintCase.caseId === caseId);
+      if (!match) throw new Error(`P1_L2_SHARED_CONTROL_CASE_MISSING:${requirement.name}:${caseId}`);
+      return match;
+    });
+    for (const blueprintCase of cases) {
+      const controls = new Set(blueprintCase.controlKeys);
+      for (const controlKey of requirement.requiredControlKeys) {
+        if (!controls.has(controlKey))
+          throw new Error(
+            `P1_L2_SHARED_CONTROL_CLOSURE_MISSING:${requirement.name}:${blueprintCase.caseId}:${controlKey}`,
+          );
+      }
+    }
+  }
+};
+assertCatalogL2SharedControlClosure(l2CaseBlueprint);
+const l2SharedControlRedMutation = cloneJson(l2CaseBlueprint);
+const l2SharedControlRedMutationCase = l2SharedControlRedMutation.scenarios
+  .flatMap(scenario => scenario.cases)
+  .find(blueprintCase => blueprintCase.caseId === 'catalog-copy-failure');
+l2SharedControlRedMutationCase.controlKeys = l2SharedControlRedMutationCase.controlKeys.filter(
+  controlKey => controlKey !== 'CATALOG_COPY_OPEN',
+);
+let l2SharedControlRedRejected = false;
+try {
+  assertCatalogL2SharedControlClosure(l2SharedControlRedMutation);
+} catch (error) {
+  l2SharedControlRedRejected =
+    error?.message ===
+    'P1_L2_SHARED_CONTROL_CLOSURE_MISSING:brand-copy-preflight:catalog-copy-failure:CATALOG_COPY_OPEN';
+}
+if (!l2SharedControlRedRejected) throw new Error('P1_L2_SHARED_CONTROL_RED_MUTATION_NOT_REJECTED');
 const l2ExecutionSuiteRedMutation = cloneJson(l2CaseBlueprint);
 delete l2ExecutionSuiteRedMutation.scenarios.find(
   scenario => scenario.executionSuite === L2_CATALOG_LIBRARY_EXECUTION_SUITE,
@@ -9163,10 +9382,16 @@ const l2NetworkFlows = Object.freeze({
   // RTK cache. The reload performs one additional shape-manifest fetch; keep
   // this test setup fact isolated to the failure Journey instead of giving
   // ordinary view success/recovery unearned request headroom.
-  VIEW_FAILURE_BASELINE_RELOAD: Object.freeze([{operationId: 'getOperationsCatalogShapeManifest', maxRequestCount: 1}]),
+  VIEW_FAILURE_BASELINE_RELOAD: Object.freeze([
+    {operationId: 'getOperationsWorkspaceSessionEntry', maxRequestCount: 1},
+    {operationId: 'getOperationsCatalogShapeManifest', maxRequestCount: 1},
+  ]),
   DETAIL_READ: Object.freeze([{operationId: 'getOperationsCatalogItem', maxRequestCount: 2}]),
   SKU_READ: Object.freeze([{operationId: 'getOperationsCatalogItemSkus', maxRequestCount: 1}]),
   UNIT_CANDIDATES: Object.freeze([{operationId: 'listOperationsCatalogUnits', maxRequestCount: 1}]),
+  CREATE_EDITOR_CATEGORY_CANDIDATES: Object.freeze([
+    {operationId: 'getOperationsCatalogCategoryCandidates', maxRequestCount: 1},
+  ]),
   PRODUCTION_TAG_CANDIDATES: Object.freeze([{operationId: 'getOperationsProductionTags', maxRequestCount: 1}]),
   CREATE: Object.freeze([{operationId: 'createOperationsCatalogItem', maxRequestCount: 2}]),
   SAVE: Object.freeze([{operationId: 'saveOperationsCatalogItem', maxRequestCount: 1}]),
@@ -9254,12 +9479,24 @@ const l2JourneyFlowNamesFor = caseId => {
     'catalog-view': {
       success: ['FRESH_CATALOG_WORKBENCH', 'DETAIL_READ'],
       failure: ['FRESH_CATALOG_WORKBENCH', 'DETAIL_READ', 'VIEW_FAILURE_BASELINE_RELOAD'],
-      recovery: ['FRESH_CATALOG_WORKBENCH', 'DETAIL_READ'],
+      recovery: ['FRESH_CATALOG_WORKBENCH', 'DETAIL_READ', 'VIEW_FAILURE_BASELINE_RELOAD'],
     },
     'catalog-create': {
-      success: ['FRESH_CATALOG_WORKBENCH', 'CREATE', 'DETAIL_READ'],
+      success: [
+        'FRESH_CATALOG_WORKBENCH',
+        'CREATE',
+        'DETAIL_READ',
+        'CREATE_EDITOR_CATEGORY_CANDIDATES',
+        'UNIT_CANDIDATES',
+      ],
       failure: ['FRESH_CATALOG_WORKBENCH', 'CREATE', 'DETAIL_READ'],
-      recovery: ['FRESH_CATALOG_WORKBENCH', 'CREATE', 'DETAIL_READ'],
+      recovery: [
+        'FRESH_CATALOG_WORKBENCH',
+        'CREATE',
+        'DETAIL_READ',
+        'CREATE_EDITOR_CATEGORY_CANDIDATES',
+        'UNIT_CANDIDATES',
+      ],
     },
     'catalog-edit': {
       success: ['FRESH_CATALOG_WORKBENCH', 'DETAIL_READ', 'UNIT_CANDIDATES', 'PRODUCTION_TAG_CANDIDATES', 'SAVE'],
@@ -9313,21 +9550,42 @@ const l2JourneyFlowNamesFor = caseId => {
   if (!journeyFlowNames) throw new Error(`P1_L2_NETWORK_DECLARATION_MISSING:${caseId}`);
   return journeyFlowNames;
 };
+const l2ForbiddenOperationIdsFor = caseId =>
+  caseId === 'catalog-governance-failure' ? ['transitionOperationsCatalogItemStatus'] : [];
+const l2OperatingRuleReadMaxFor = caseId =>
+  ['catalog-view-failure', 'catalog-view-recovery'].includes(caseId) ? 2 : 1;
+const l2BackgroundAllowedOperationIdsFor = caseId =>
+  ['catalog-create-success', 'catalog-create-recovery'].includes(caseId)
+    ? ['getOperationsCatalogWorkbenchContext', 'listOperationsCatalogUnits']
+    : ['getOperationsCatalogWorkbenchContext'];
 const l2NetworkFor = caseId => {
   if (!String(caseId).startsWith('catalog-')) return {required: [], forbidden: [], backgroundAllowed: [], requests: []};
   const journeyFlowNames = l2JourneyFlowNamesFor(caseId);
-  const requests = mergeL2RequestBudgets(...journeyFlowNames.map(flowName => l2NetworkFlows[flowName]));
+  // The page gate reads the selected store's operating-rule snapshot during
+  // every catalog Journey. It is a real page read, not an unbounded background
+  // refresh, so keep it in the same required/request budget denominator for
+  // every case instead of allowing the join layer to classify it as noise.
+  const requests = mergeL2RequestBudgets(
+    [{operationId: 'getOperationsOrganizationStoreOperatingRule', maxRequestCount: l2OperatingRuleReadMaxFor(caseId)}],
+    ...journeyFlowNames.map(flowName => l2NetworkFlows[flowName]),
+  );
+  const backgroundAllowed = l2BackgroundAllowedOperationIdsFor(caseId);
+  const backgroundAllowedSet = new Set(backgroundAllowed);
   return {
-    required: requests.map(({operationId}) => operationId),
-    forbidden: [],
-    backgroundAllowed: ['getOperationsCatalogWorkbenchContext'],
+    required: requests
+      .map(({operationId}) => operationId)
+      .filter(operationId => !backgroundAllowedSet.has(operationId)),
+    forbidden: l2ForbiddenOperationIdsFor(caseId),
+    backgroundAllowed,
     requests,
   };
 };
-const assertL2NetworkDeclaration = (caseId, network, requiredOperationIds = []) => {
+const assertL2NetworkDeclaration = (caseId, network, requiredOperationIds = [], requiredForbiddenOperationIds = []) => {
   const requests = Array.isArray(network?.requests) ? network.requests : [];
   const required = Array.isArray(network?.required) ? network.required : [];
+  const forbidden = Array.isArray(network?.forbidden) ? network.forbidden : [];
   const seen = new Set();
+  const seenForbidden = new Set();
   for (const request of requests) {
     if (
       !request ||
@@ -9341,11 +9599,35 @@ const assertL2NetworkDeclaration = (caseId, network, requiredOperationIds = []) 
     }
     seen.add(request.operationId);
   }
-  if (required.length !== requests.length || required.some(operationId => !seen.has(operationId))) {
+  if (required.some(operationId => !seen.has(operationId))) {
     throw new Error(`P1_L2_NETWORK_REQUIRED_SET_INVALID:${caseId}`);
+  }
+  const backgroundAllowed = Array.isArray(network?.backgroundAllowed) ? network.backgroundAllowed : [];
+  const seenBackgroundAllowed = new Set();
+  for (const operationId of backgroundAllowed) {
+    if (typeof operationId !== 'string' || !operationId || seenBackgroundAllowed.has(operationId)) {
+      throw new Error(`P1_L2_NETWORK_BACKGROUND_SET_INVALID:${caseId}`);
+    }
+    seenBackgroundAllowed.add(operationId);
+  }
+  const declaredOperations = new Set([...required, ...seenBackgroundAllowed]);
+  if (requests.some(({operationId}) => !declaredOperations.has(operationId))) {
+    throw new Error(`P1_L2_NETWORK_REQUEST_NOT_DECLARED:${caseId}`);
   }
   if (requiredOperationIds.some(operationId => !seen.has(operationId))) {
     throw new Error(`P1_L2_NETWORK_REQUIRED_OPERATION_MISSING:${caseId}`);
+  }
+  for (const operationId of forbidden) {
+    if (typeof operationId !== 'string' || !operationId || seenForbidden.has(operationId)) {
+      throw new Error(`P1_L2_NETWORK_FORBIDDEN_SET_INVALID:${caseId}`);
+    }
+    seenForbidden.add(operationId);
+  }
+  if (required.some(operationId => seenForbidden.has(operationId))) {
+    throw new Error(`P1_L2_NETWORK_REQUIRED_FORBIDDEN_OVERLAP:${caseId}`);
+  }
+  if (requiredForbiddenOperationIds.some(operationId => !seenForbidden.has(operationId))) {
+    throw new Error(`P1_L2_NETWORK_FORBIDDEN_OPERATION_MISSING:${caseId}`);
   }
 };
 const l2FreshJourneyOperationIds = l2NetworkFlows.FRESH_CATALOG_WORKBENCH.map(({operationId}) => operationId);
@@ -9360,11 +9642,41 @@ for (const caseId of [
   'catalog-governance-success',
 ]) {
   const declared = l2NetworkFor(caseId);
-  if (l2FreshJourneyOperationIds.some(operationId => !declared.required.includes(operationId)))
+  const declaredOperations = new Set([...(declared.required ?? []), ...(declared.backgroundAllowed ?? [])]);
+  if (l2FreshJourneyOperationIds.some(operationId => !declaredOperations.has(operationId)))
     throw new Error(`P1_L2_FRESH_JOURNEY_TIMING_ENVELOPE_MISSING:${caseId}`);
   assertL2NetworkDeclaration(caseId, declared, l2FreshJourneyOperationIds);
 }
 const l2EditNetwork = l2NetworkFor('catalog-edit-success');
+const l2CreateSuccessNetwork = l2NetworkFor('catalog-create-success');
+assertL2NetworkDeclaration('catalog-create-success', l2CreateSuccessNetwork, [
+  'createOperationsCatalogItem',
+  'getOperationsCatalogItem',
+]);
+const l2CreateSuccessUnitsBudget = l2CreateSuccessNetwork.requests.find(
+  request => request.operationId === 'listOperationsCatalogUnits',
+);
+if (l2CreateSuccessUnitsBudget?.maxRequestCount !== 1)
+  throw new Error(`P1_L2_CREATE_SUCCESS_UNITS_BUDGET_INVALID:${l2CreateSuccessUnitsBudget?.maxRequestCount}`);
+const l2CreateSuccessCategoryBudget = l2CreateSuccessNetwork.requests.find(
+  request => request.operationId === 'getOperationsCatalogCategoryCandidates',
+);
+if (l2CreateSuccessCategoryBudget?.maxRequestCount !== 3)
+  throw new Error(`P1_L2_CREATE_SUCCESS_CATEGORY_BUDGET_INVALID:${l2CreateSuccessCategoryBudget?.maxRequestCount}`);
+if (!l2CreateSuccessNetwork.backgroundAllowed.includes('listOperationsCatalogUnits'))
+  throw new Error('P1_L2_CREATE_SUCCESS_OPTIONAL_UNITS_NOT_BACKGROUND_ALLOWED');
+const l2CreateSuccessWithoutUnits = cloneJson(l2CreateSuccessNetwork);
+l2CreateSuccessWithoutUnits.backgroundAllowed = l2CreateSuccessWithoutUnits.backgroundAllowed.filter(
+  operationId => operationId !== 'listOperationsCatalogUnits',
+);
+let l2CreateSuccessWithoutUnitsRejected = false;
+try {
+  assertL2NetworkDeclaration('catalog-create-success', l2CreateSuccessWithoutUnits);
+} catch (error) {
+  l2CreateSuccessWithoutUnitsRejected = error?.message === 'P1_L2_NETWORK_REQUEST_NOT_DECLARED:catalog-create-success';
+}
+if (!l2CreateSuccessWithoutUnitsRejected)
+  throw new Error('P1_L2_CREATE_SUCCESS_OPTIONAL_UNITS_RED_MUTATION_NOT_REJECTED');
 assertL2NetworkDeclaration('catalog-edit-success', l2EditNetwork, [
   'getOperationsCatalogItem',
   'listOperationsCatalogUnits',
@@ -9385,6 +9697,30 @@ try {
   l2NetworkRedRejected = error?.message === 'P1_L2_NETWORK_REQUIRED_OPERATION_MISSING:catalog-edit-success';
 }
 if (!l2NetworkRedRejected) throw new Error('P1_L2_NETWORK_RED_MUTATION_NOT_REJECTED');
+const l2GovernanceFailureNetwork = l2NetworkFor('catalog-governance-failure');
+assertL2NetworkDeclaration(
+  'catalog-governance-failure',
+  l2GovernanceFailureNetwork,
+  [],
+  ['transitionOperationsCatalogItemStatus'],
+);
+if (l2GovernanceFailureNetwork.required.includes('transitionOperationsCatalogItemStatus'))
+  throw new Error('P1_L2_GOVERNANCE_FAILURE_REQUIRED_LIFECYCLE_PRESENT');
+const l2GovernanceForbiddenRedMutation = cloneJson(l2GovernanceFailureNetwork);
+l2GovernanceForbiddenRedMutation.forbidden = [];
+let l2GovernanceForbiddenRedRejected = false;
+try {
+  assertL2NetworkDeclaration(
+    'catalog-governance-failure',
+    l2GovernanceForbiddenRedMutation,
+    [],
+    ['transitionOperationsCatalogItemStatus'],
+  );
+} catch (error) {
+  l2GovernanceForbiddenRedRejected =
+    error?.message === 'P1_L2_NETWORK_FORBIDDEN_OPERATION_MISSING:catalog-governance-failure';
+}
+if (!l2GovernanceForbiddenRedRejected) throw new Error('P1_L2_GOVERNANCE_FORBIDDEN_RED_MUTATION_NOT_REJECTED');
 const assertL2RequestCount = (caseId, network, operationId, expectedCount) => {
   const actualCount = network.requests.find(request => request.operationId === operationId)?.maxRequestCount;
   if (actualCount !== expectedCount)
@@ -9397,10 +9733,16 @@ const l2ConfigRecoveryNetwork = l2NetworkFor('catalog-config-recovery');
 const l2CopySuccessNetwork = l2NetworkFor('catalog-copy-success');
 const l2CopyRecoveryNetwork = l2NetworkFor('catalog-copy-recovery');
 const l2ViewFailureNetwork = l2NetworkFor('catalog-view-failure');
+const l2ViewRecoveryNetwork = l2NetworkFor('catalog-view-recovery');
 assertL2RequestCount('catalog-config-recovery', l2ConfigRecoveryNetwork, 'createOperationsProductionTag', 2);
 assertL2RequestCount('catalog-copy-success', l2CopySuccessNetwork, 'getOperationsBrandCatalogCopyCandidates', 3);
 assertL2RequestCount('catalog-copy-recovery', l2CopyRecoveryNetwork, 'getOperationsBrandCatalogCopyCandidates', 4);
+assertL2RequestCount('catalog-view-failure', l2ViewFailureNetwork, 'getOperationsOrganizationStoreOperatingRule', 2);
+assertL2RequestCount('catalog-view-recovery', l2ViewRecoveryNetwork, 'getOperationsOrganizationStoreOperatingRule', 2);
 assertL2RequestCount('catalog-view-failure', l2ViewFailureNetwork, 'getOperationsCatalogShapeManifest', 4);
+assertL2RequestCount('catalog-view-failure', l2ViewFailureNetwork, 'getOperationsWorkspaceSessionEntry', 3);
+assertL2RequestCount('catalog-view-recovery', l2ViewRecoveryNetwork, 'getOperationsCatalogShapeManifest', 4);
+assertL2RequestCount('catalog-view-recovery', l2ViewRecoveryNetwork, 'getOperationsWorkspaceSessionEntry', 3);
 assertL2RequestCount('catalog-copy-recovery', l2CopyRecoveryNetwork, 'preflightOperationsBrandCatalogCopy', 4);
 assertL2RequestCount('catalog-copy-recovery', l2CopyRecoveryNetwork, 'executeOperationsBrandCatalogCopy', 2);
 const l2CopyRecoveryNetworkRedMutation = cloneJson(l2CopyRecoveryNetwork);
@@ -9451,6 +9793,25 @@ try {
     error?.message === 'P1_L2_NETWORK_REQUEST_COUNT_INVALID:catalog-view-failure:getOperationsCatalogShapeManifest:3:4';
 }
 if (!l2ViewFailureNetworkRedRejected) throw new Error('P1_L2_VIEW_FAILURE_NETWORK_RED_MUTATION_NOT_REJECTED');
+const l2ViewOperatingRuleNetworkRedMutation = cloneJson(l2ViewFailureNetwork);
+l2ViewOperatingRuleNetworkRedMutation.requests.find(
+  request => request.operationId === 'getOperationsOrganizationStoreOperatingRule',
+).maxRequestCount = 1;
+let l2ViewOperatingRuleNetworkRedRejected = false;
+try {
+  assertL2RequestCount(
+    'catalog-view-failure',
+    l2ViewOperatingRuleNetworkRedMutation,
+    'getOperationsOrganizationStoreOperatingRule',
+    2,
+  );
+} catch (error) {
+  l2ViewOperatingRuleNetworkRedRejected =
+    error?.message ===
+    'P1_L2_NETWORK_REQUEST_COUNT_INVALID:catalog-view-failure:getOperationsOrganizationStoreOperatingRule:1:2';
+}
+if (!l2ViewOperatingRuleNetworkRedRejected)
+  throw new Error('P1_L2_VIEW_OPERATING_RULE_NETWORK_RED_MUTATION_NOT_REJECTED');
 for (const caseId of [
   'catalog-edit-failure',
   'catalog-batch-failure',

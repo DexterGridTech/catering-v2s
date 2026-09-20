@@ -41,7 +41,7 @@ describe('input edit model', () => {
     })
   })
 
-  it('applies shift and caps without changing the text until a key is inserted', () => {
+  it('applies shift and caps as independent toggles with standard XOR case semantics', () => {
     const shifted = applyKeyboardKey(state('', 0), {kind: 'shift'}, 10)
     expect(shifted).toEqual({state: state('', 0, 0, {shift: true}), effect: 'mode'})
     const inserted = applyKeyboardKey(shifted.state, {kind: 'text', text: 'a'}, 10)
@@ -50,6 +50,16 @@ describe('input edit model', () => {
     const capped = applyKeyboardKey(state('', 0, 0, {capsLock: true}), {kind: 'text', text: 'ab'}, 10)
     expect(capped.state.value).toBe('AB')
     expect(capped.state.selection).toEqual({start: 2, end: 2})
+
+    const capsAndShift = applyKeyboardKey(
+      state('', 0, 0, {capsLock: true, shift: true}),
+      {kind: 'text', text: 'ab'},
+      10,
+    )
+    expect(capsAndShift.state.value).toBe('ab')
+
+    const capsToggledOff = applyKeyboardKey(state('', 0, 0, {capsLock: true}), {kind: 'caps'}, 10)
+    expect(applyKeyboardKey(capsToggledOff.state, {kind: 'text', text: 'a'}, 10).state.value).toBe('a')
   })
 
   it('enforces maxLength in the edit model', () => {

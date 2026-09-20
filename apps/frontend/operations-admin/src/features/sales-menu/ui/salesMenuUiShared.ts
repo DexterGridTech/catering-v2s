@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import {formatCanonicalDateTime} from '@catering-v2s/admin-ui-foundation';
 import {operationsProblemOf} from '../../../app/api/OperationsTransport';
 import {
   buildCatalogNavigationCategoryTree,
@@ -48,7 +49,7 @@ export function commandErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function formatOccurredAt(value: number): string {
-  return new Date(value).toLocaleString();
+  return formatCanonicalDateTime(value);
 }
 
 export function menuStateLabel(menu: Pick<SalesMenuDetail, 'archived' | 'draftDirty'>): string {

@@ -22,6 +22,7 @@ import {
   closeLayerCommand,
   createUiCatalog,
   createUiStateModule,
+  isWorkspaceOwnedByInstanceMode,
   openLayerCommand,
   selectLayers,
   selectScreen,
@@ -32,7 +33,7 @@ import {
   createDisplayPlatformPorts,
   FakeDevicePort,
 } from '../../display-context/test/testSupport'
-import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing'
+import {releaseRuntimeForTest, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing'
 import {createFakeStorage} from '../../state/test/testSupport'
 import {parseLayerEntries} from '../src/foundations/workspaceSlices'
 
@@ -176,6 +177,13 @@ const currentTuple = (runtime: Runtime, displayIndex: 0 | 1 = 0) => {
 describe('ui-state workspace content commands', () => {
   const runtimes: Runtime[] = []
 
+  it('keeps write ownership independent from the render workspace', () => {
+    expect(isWorkspaceOwnedByInstanceMode({instanceMode: 'MASTER', workspace: 'MAIN'})).toBe(true)
+    expect(isWorkspaceOwnedByInstanceMode({instanceMode: 'MASTER', workspace: 'BRANCH'})).toBe(false)
+    expect(isWorkspaceOwnedByInstanceMode({instanceMode: 'SLAVE', workspace: 'BRANCH'})).toBe(true)
+    expect(isWorkspaceOwnedByInstanceMode({instanceMode: 'SLAVE', workspace: 'MAIN'})).toBe(false)
+  })
+
   afterEach(() => {
     for (const runtime of runtimes.splice(0)) releaseRuntimeForTest(runtime)
   })
@@ -255,10 +263,11 @@ describe('ui-state workspace content commands', () => {
     expect(currentTuple(fixture.runtime)).toEqual({workspace: 'MAIN', displayMode: 'SECONDARY'})
     expect(selectScreen(fixture.runtime.getState(), 'SECONDARY', 'root')).toBeUndefined()
 
-    await fixture.runtime.dispatchCommand(showScreenCommand, {
+    const rejected = await fixture.runtime.dispatchCommand(showScreenCommand, {
       displayMode: 'SECONDARY', containerKey: 'root', partKey: 'vice-screen',
     }, dispatchOptions('PRIMARY'))
-    expect(selectScreen(fixture.runtime.getState(), 'SECONDARY', 'root')?.partKey).toBe('vice-screen')
+    expect(rejected.status).toBe('error')
+    expect(selectScreen(fixture.runtime.getState(), 'SECONDARY', 'root')).toBeUndefined()
 
     await fixture.runtime.dispatchCommand(switchDisplayRoleCommand, {
       displayRole: 'CHIEF',
@@ -517,7 +526,7 @@ describe('ui-state workspace content commands', () => {
     expect([...plainStorage.values.values()].some(value => value.includes('retired-screen'))).toBe(false)
   })
 
-  it('prunes unknown catalog members across all four buckets without pruning known layers', async () => {
+  it('prunes unknown catalog members only in the instance-owned workspace', async () => {
     const persistenceKey = 'ui-state-content-membership-prune'
     const plainStorage = createFakeStorage()
     const protectedStorage = createFakeStorage()
@@ -551,16 +560,68 @@ describe('ui-state workspace content commands', () => {
     await second.runtime.dispatchCommand(switchInstanceModeCommand, {
       instanceMode: 'MASTER',
     }, dispatchOptions('PRIMARY'))
-    expect(selectLayers(second.runtime.getState(), 'PRIMARY').map(layer => layer.layerId)).toEqual(['kept-main'])
-    expect(selectLayers(second.runtime.getState(), 'SECONDARY')).toEqual([])
-    expect([...plainStorage.values.values()].some(value => value.includes('stale'))).toBe(false)
-    expect(second.events.filter(event => event.category === 'ui-state-hydration' && event.data?.reason === 'unknown-part')).toHaveLength(4)
+    expect(selectLayers(second.runtime.getState(), 'PRIMARY').map(layer => layer.layerId)).toEqual([
+      'stale-main-primary',
+      'kept-main',
+    ])
+    expect(selectLayers(second.runtime.getState(), 'SECONDARY').map(layer => layer.layerId)).toEqual([
+      'stale-main-secondary',
+    ])
+    expect([...plainStorage.values.values()].some(value => value.includes('stale'))).toBe(true)
+    expect(second.events.filter(event => event.category === 'ui-state-hydration' && event.data?.reason === 'unknown-part')).toHaveLength(2)
 
     await second.runtime.dispatchCommand(switchInstanceModeCommand, {
       instanceMode: 'SLAVE',
     }, dispatchOptions('PRIMARY'))
     expect(selectLayers(second.runtime.getState(), 'PRIMARY')).toEqual([])
     expect(selectLayers(second.runtime.getState(), 'SECONDARY')).toEqual([])
+  })
+
+  it('projects the owner content slice in both declared sync directions', async () => {
+    const source = await createFixture({persistenceKey: 'ui-state-content-projection-source'})
+    const target = await createFixture({persistenceKey: 'ui-state-content-projection-target'})
+    runtimes.push(source.runtime, target.runtime)
+
+    const mainSliceName = Object.keys(source.runtime.getState()).find(name => name.endsWith('.content.MAIN'))
+    const branchSliceName = Object.keys(source.runtime.getState()).find(name => name.endsWith('.content.BRANCH'))
+    expect(mainSliceName).toBeDefined()
+    expect(branchSliceName).toBeDefined()
+    if (mainSliceName === undefined || branchSliceName === undefined) return
+
+    await source.runtime.dispatchCommand(showScreenCommand, {
+      displayMode: 'SECONDARY',
+      containerKey: 'root',
+      partKey: 'one',
+    }, dispatchOptions('SECONDARY'))
+    const mainPayload = runtimeStateSyncForTest(source.runtime).createFullSyncPayload(mainSliceName)
+    expect(mainPayload.status).toBe('ready')
+    if (mainPayload.status !== 'ready') return
+    expect(runtimeStateSyncForTest(target.runtime).applyAuthoritativeSync(mainSliceName, mainPayload.payload).status)
+      .toBe('applied')
+    expect(selectScreen(target.runtime.getState(), 'SECONDARY', 'root')).toMatchObject({partKey: 'one'})
+
+    await source.runtime.dispatchCommand(switchInstanceModeCommand, {
+      instanceMode: 'SLAVE',
+    }, dispatchOptions('PRIMARY'))
+    await source.runtime.dispatchCommand(switchDisplayRoleCommand, {
+      displayRole: 'CHIEF',
+    }, dispatchOptions('PRIMARY'))
+    await source.runtime.dispatchCommand(showScreenCommand, {
+      displayMode: 'PRIMARY',
+      containerKey: 'root',
+      partKey: 'two',
+    }, dispatchOptions('PRIMARY'))
+    const branchPayload = runtimeStateSyncForTest(source.runtime).createFullSyncPayload(branchSliceName)
+    expect(branchPayload.status).toBe('ready')
+    if (branchPayload.status !== 'ready') return
+    expect(runtimeStateSyncForTest(target.runtime).applyAuthoritativeSync(branchSliceName, branchPayload.payload).status)
+      .toBe('applied')
+    const projectedBranch = target.runtime.getState()[branchSliceName] as {
+      readonly contentSets: {
+        readonly PRIMARY: {readonly containers: Record<string, {readonly partKey: string}>}
+      }
+    }
+    expect(projectedBranch.contentSets.PRIMARY.containers.root?.partKey).toBe('two')
   })
 
   it('keeps a catalog member when it is unavailable for the current surface', async () => {

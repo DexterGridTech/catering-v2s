@@ -1,6 +1,7 @@
 package com.catering.v2s.app.edge.operations.organization;
 
 import com.catering.v2s.app.edge.extension.ExtensionSubmissionWireMapper;
+import com.catering.v2s.app.edge.generated.backendperformancem1.BackendPerformanceM1CommandExecutionBindings;
 import com.catering.v2s.app.edge.generated.wire.StoreQrChannelCandidate;
 import com.catering.v2s.app.edge.generated.wire.StoreQrChannelCandidatePage;
 import com.catering.v2s.app.edge.generated.wire.StoreQrConfigurationUpdateRequest;
@@ -16,6 +17,7 @@ import com.catering.v2s.app.edge.generated.wire.StoreServicePointAreaUpdateReque
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointAssetReleaseReadback;
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointAssetReleaseRequest;
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointAssetStageReadback;
+import com.catering.v2s.app.edge.generated.wire.StoreServicePointAssetStageRequest;
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointCreateRequest;
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointDetail;
 import com.catering.v2s.app.edge.generated.wire.StoreServicePointOrderDirection;
@@ -33,7 +35,6 @@ import com.catering.v2s.organization.api.QrChannelEligibilityLookup;
 import com.catering.v2s.organization.api.StoreServicePointOwnerApi;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.StoreServicePointService;
-import com.catering.v2s.platform.asset.application.PlatformAssetService;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
 import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceCapabilityScopeResolver;
@@ -84,8 +85,8 @@ public class OperationsStoreServicePointController {
     private final WorkspaceCapabilityScopeResolver capabilityScopes;
     private final StoreServicePointOwnerApi owner;
     private final BusinessEntityService entities;
-    private final PlatformAssetService assets;
     private final QrChannelEligibilityLookup channels;
+    private final BackendPerformanceM1CommandExecutionBindings m1Bindings;
 
     public OperationsStoreServicePointController(
             OperationsSessionResolver sessions,
@@ -93,15 +94,15 @@ public class OperationsStoreServicePointController {
             WorkspaceCapabilityScopeResolver capabilityScopes,
             StoreServicePointOwnerApi owner,
             BusinessEntityService entities,
-            PlatformAssetService assets,
-            QrChannelEligibilityLookup channels) {
+            QrChannelEligibilityLookup channels,
+            BackendPerformanceM1CommandExecutionBindings m1Bindings) {
         this.sessions = sessions;
         this.user = user;
         this.capabilityScopes = capabilityScopes;
         this.owner = owner;
         this.entities = entities;
-        this.assets = assets;
         this.channels = channels;
+        this.m1Bindings = m1Bindings;
     }
 
     @GetMapping("/service-point-areas")
@@ -126,7 +127,7 @@ public class OperationsStoreServicePointController {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
         StoreServicePointAreaCreateRequest input = bodyRequired(body);
         OperationsOwnerScopeGrant grant = grant(session, REQ_CREATE_AREA, storeRef);
-        var result = owner.createArea(new StoreServicePointOwnerApi.AreaCommand(
+        var result = m1Bindings.bindPostOperationsStoreServicePointArea(new StoreServicePointOwnerApi.AreaCommand(
                 session.workspaceUuid(), groupWorkspaceKey, storeRef, null, input.name(), input.code(),
                 input.areaType().wire(), StoreServicePointStatus.ENABLED.wire(), null, idempotencyKey, sessions.actor(session), grant));
         return ResponseEntity.status(HttpStatus.CREATED).body(area(result));
@@ -141,7 +142,7 @@ public class OperationsStoreServicePointController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody StoreServicePointAreaUpdateRequest body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
-        var value = owner.updateArea(new StoreServicePointOwnerApi.AreaCommand(
+        var value = m1Bindings.bindPatchOperationsStoreServicePointArea(new StoreServicePointOwnerApi.AreaCommand(
                 session.workspaceUuid(), groupWorkspaceKey, storeRef, areaRef, bodyRequired(body).name(), body.code(),
                 body.areaType().wire(), body.status().wire(), body.expectedVersion(), idempotencyKey, sessions.actor(session),
                 grant(session, REQ_UPDATE_AREA, storeRef)));
@@ -157,7 +158,7 @@ public class OperationsStoreServicePointController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody StoreServicePointAreaStatusRequest body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
-        var value = owner.transitionArea(new StoreServicePointOwnerApi.StatusCommand(
+        var value = m1Bindings.bindPostOperationsStoreServicePointAreaStatus(new StoreServicePointOwnerApi.StatusCommand(
                 session.workspaceUuid(), groupWorkspaceKey, storeRef, areaRef, "AREA", bodyRequired(body).status().wire(),
                 required(body.expectedVersion(), "expectedVersion"), idempotencyKey, sessions.actor(session),
                 grant(session, REQ_AREA_STATUS, storeRef)));
@@ -173,7 +174,7 @@ public class OperationsStoreServicePointController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody StoreServicePointAreaOrderRequest body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
-        var value = owner.moveArea(new StoreServicePointOwnerApi.OrderCommand(
+        var value = m1Bindings.bindPostOperationsStoreServicePointAreaOrder(new StoreServicePointOwnerApi.OrderCommand(
                 session.workspaceUuid(), groupWorkspaceKey, storeRef, areaRef, "AREA", bodyRequired(body).direction().wire(),
                 required(body.expectedVersion(), "expectedVersion"), idempotencyKey, sessions.actor(session),
                 grant(session, REQ_AREA_ORDER, storeRef)));
@@ -203,7 +204,7 @@ public class OperationsStoreServicePointController {
             @RequestBody StoreServicePointCreateRequest body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
         StoreServicePointCreateRequest input = bodyRequired(body);
-        var result = owner.createPoint(new StoreServicePointOwnerApi.PointCommand(
+        var result = m1Bindings.bindPostOperationsStoreServicePoint(new StoreServicePointOwnerApi.PointCommand(
                 session.workspaceUuid(), groupWorkspaceKey, storeRef, null, areaRef, input.name(), input.code(),
                 input.pointType().wire(), StoreServicePointStatus.ENABLED.wire(), longValue(input.seatCapacity()),
                 textValue(input.tableShape()), booleanValue(input.reservable()), input.imageAssetRef(),
@@ -234,7 +235,7 @@ public class OperationsStoreServicePointController {
             @RequestBody StoreServicePointUpdateRequest body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
         StoreServicePointUpdateRequest input = bodyRequired(body);
-        var result = owner.updatePoint(new StoreServicePointOwnerApi.PointCommand(
+        var result = m1Bindings.bindPatchOperationsStoreServicePoint(new StoreServicePointOwnerApi.PointCommand(
                 session.workspaceUuid(), groupWorkspaceKey, storeRef, servicePointRef, null, input.name(), input.code(),
                 input.pointType().wire(), input.status().wire(), longValue(input.seatCapacity()), textValue(input.tableShape()),
                 booleanValue(input.reservable()), input.imageAssetRef(), textValue(input.imageBindGrant()),
@@ -253,7 +254,7 @@ public class OperationsStoreServicePointController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody StoreServicePointStatusRequest body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
-        var value = owner.transitionPoint(new StoreServicePointOwnerApi.StatusCommand(
+        var value = m1Bindings.bindPostOperationsStoreServicePointStatus(new StoreServicePointOwnerApi.StatusCommand(
                 session.workspaceUuid(), groupWorkspaceKey, storeRef, servicePointRef, "POINT", bodyRequired(body).status().wire(),
                 required(body.expectedVersion(), "expectedVersion"), idempotencyKey, sessions.actor(session),
                 grant(session, REQ_POINT_STATUS, storeRef)));
@@ -269,7 +270,7 @@ public class OperationsStoreServicePointController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @RequestBody StoreServicePointOrderRequest body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
-        var value = owner.movePoint(new StoreServicePointOwnerApi.OrderCommand(
+        var value = m1Bindings.bindPostOperationsStoreServicePointOrder(new StoreServicePointOwnerApi.OrderCommand(
                 session.workspaceUuid(), groupWorkspaceKey, storeRef, servicePointRef, "POINT", bodyRequired(body).direction().wire(),
                 required(body.expectedVersion(), "expectedVersion"), idempotencyKey, sessions.actor(session),
                 grant(session, REQ_POINT_ORDER, storeRef)));
@@ -295,7 +296,7 @@ public class OperationsStoreServicePointController {
             @RequestBody StoreQrConfigurationUpdateRequest body) {
         WorkspaceSessionReadback session = commandSession(request, groupWorkspaceKey);
         StoreQrConfigurationUpdateRequest input = bodyRequired(body);
-        var value = owner.updateQrConfiguration(new StoreServicePointOwnerApi.QrConfigurationCommand(
+        var value = m1Bindings.bindPatchOperationsStoreQrConfiguration(new StoreServicePointOwnerApi.QrConfigurationCommand(
                 session.workspaceUuid(), groupWorkspaceKey, storeRef, Boolean.TRUE.equals(input.enabled()), input.channelRef(),
                 required(input.expectedVersion(), "expectedVersion"), idempotencyKey, sessions.actor(session),
                 grant(session, REQ_UPDATE_QR, storeRef)));
@@ -332,12 +333,14 @@ public class OperationsStoreServicePointController {
         String normalizedMediaType = bounded(mediaType, "mediaType", 120);
         String normalizedDigest = bounded(contentDigest, "contentDigest", 128);
         try (var stream = content.getInputStream()) {
-            var staged = assets.stageStoreServicePointImage(
-                    session.workspaceUuid(), groupWorkspaceKey, normalizedMediaType, content.getSize(), stream,
-                    idempotencyKey, normalizedDigest);
-            long version = assets.require(staged.assetRef()).version();
-            return ResponseEntity.status(HttpStatus.CREATED).body(new StoreServicePointAssetStageReadback(
-                    staged.assetRef(), staged.bindGrant(), "STAGED", version));
+            StoreServicePointAssetStageReadback staged = m1Bindings.bindStageStoreServicePointImage(
+                    new StoreServicePointAssetStageRequest(fileName, normalizedMediaType, normalizedDigest, null),
+                    content.getSize(),
+                    stream,
+                    session.workspaceUuid(),
+                    groupWorkspaceKey,
+                    idempotencyKey);
+            return ResponseEntity.status(HttpStatus.CREATED).body(staged);
         } catch (IOException failure) {
             throw new InvalidEdgeRequestException("图片内容读取失败", failure);
         }
@@ -355,9 +358,7 @@ public class OperationsStoreServicePointController {
         grant(session, REQ_RELEASE_ASSET, storeRef);
         requireOperatingRule(session, groupWorkspaceKey, storeRef);
         StoreServicePointAssetReleaseRequest input = bodyRequired(body);
-        var released = assets.releaseStagedStoreServicePointImage(
-                session.workspaceUuid(), groupWorkspaceKey, assetRef, required(input.expectedAssetVersion(), "expectedAssetVersion"));
-        return new StoreServicePointAssetReleaseReadback(released.assetRef(), "RELEASED", released.version());
+        return m1Bindings.bindReleaseStagedStoreServicePointImage(input, session.workspaceUuid(), groupWorkspaceKey, assetRef);
     }
 
     private WorkspaceSessionReadback readSession(EdgeRequestContext request, String groupWorkspaceKey, UUID storeRef) {

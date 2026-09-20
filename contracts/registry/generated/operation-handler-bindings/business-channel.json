@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "generated-owner-operation-bindings",
   "owner": "business-channel",
-  "operationCount": 12,
-  "readCount": 6,
+  "operationCount": 13,
+  "readCount": 7,
   "commandCount": 6,
   "dispatchStrategy": "CLOSED_SWITCH",
   "commandBindingBoundary": "KIND_SPECIFIC_TYPED_METHODS",
@@ -200,6 +200,22 @@
       "copyRole": "NONE",
       "commandBoundary": "NOT_APPLICABLE",
       "dispatchMethod": "getOperationsBusinessChannelTemplateVisibleStores"
+    },
+    {
+      "operationId": "getOperationsStoreQrChannelCandidates",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-channel-candidates",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-channel-candidates",
+      "face": "operations-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.business.channel.application.GetOperationsStoreQrChannelCandidatesOperation",
+      "wireRequest": "NoBody",
+      "wireResponse": "StoreQrChannelCandidatePage",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE",
+      "dispatchMethod": "getOperationsStoreQrChannelCandidates"
     }
   ],
   "commandContextGroups": {

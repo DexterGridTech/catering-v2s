@@ -5,6 +5,9 @@ import {
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
   closedCodeLabel,
+  displayFieldValue,
+  lifecycleLabel,
+  LifecycleStatusTag,
   testId,
   useDetailDrawer,
   useOverlayLock,
@@ -28,12 +31,7 @@ import {
 import {readBusinessChannelTemplates, readExternalProviderCandidates} from '../application/queries';
 import {BusinessChannelBindingDrawer} from './BusinessChannelBindingDrawer';
 import {ownerBindingBusinessDisplay, ownerBindingExternalOwnerDisplay} from './ownerBindingPresentation';
-import {
-  bindingStatusLabels,
-  lifecycleStatusLabels,
-  ownerNodeTypeLabels,
-  statusDimensionTypeLabels,
-} from '../model/businessChannelCodeLabels';
+import {bindingStatusLabels, ownerNodeTypeLabels, statusDimensionTypeLabels} from '../model/businessChannelCodeLabels';
 import {accessKindLabels, dineInFormLabels, orderKindLabels} from '../model/businessChannelCodeLabels';
 import {
   businessChannelActionAvailability,
@@ -43,10 +41,8 @@ import {operationsDetailDrawerTestIds} from '../../../app/automation/operationsD
 import {businessChannelTemplateTestIds} from '../../../app/automation/businessChannelTemplateTestIds';
 
 function dimensionStatusLabel(status: string) {
-  if (status === 'ENABLED') return lifecycleStatusLabels.ENABLED;
-  if (status === 'DISABLED') return lifecycleStatusLabels.DISABLED;
-  if (status === 'VOIDED') return lifecycleStatusLabels.VOIDED;
-  return '当前状态无法识别';
+  const label = lifecycleLabel(status);
+  return label === status ? '当前状态无法识别' : label;
 }
 
 function providerCapabilityForOrderKind(
@@ -248,9 +244,9 @@ export function BusinessChannelDetailDrawer({
               <Descriptions
                 {...adminDetailDescriptionsProps}
                 items={[
-                  {key: 'code', label: '渠道编码', children: channel.channelCode || '—'},
+                  {key: 'code', label: '渠道编码', children: displayFieldValue(channel.channelCode)},
                   {key: 'name', label: '渠道名称', children: channel.channelName},
-                  {key: 'template', label: '来源模板', children: template?.templateName || '—'},
+                  {key: 'template', label: '来源模板', children: displayFieldValue(template?.templateName)},
                   {
                     key: 'operator',
                     label: '经营主体',
@@ -296,7 +292,7 @@ export function BusinessChannelDetailDrawer({
                   {
                     key: 'status',
                     label: '状态',
-                    children: <Tag>{closedCodeLabel(lifecycleStatusLabels, channel.status)}</Tag>,
+                    children: <LifecycleStatusTag status={channel.status} />,
                   },
                   {
                     key: 'statusDimensions',

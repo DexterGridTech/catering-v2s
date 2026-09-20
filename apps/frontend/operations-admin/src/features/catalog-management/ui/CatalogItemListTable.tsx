@@ -1,6 +1,14 @@
 import {Button, Space, Table, Tag, Typography, type TableProps} from 'antd';
-import {EllipsisTooltip, testId} from '@catering-v2s/admin-ui-foundation';
-import {useMemo, type Key, type ReactNode, type CSSProperties, type MouseEvent} from 'react';
+import {EllipsisTooltip, formatCanonicalDateTime, testId} from '@catering-v2s/admin-ui-foundation';
+import {
+  cloneElement,
+  isValidElement,
+  useMemo,
+  type Key,
+  type ReactNode,
+  type CSSProperties,
+  type MouseEvent,
+} from 'react';
 import {CatalogAssetPreview} from './CatalogAssetPreview';
 import {CatalogLifecycleStatusTag} from './CatalogLifecycleStatusTag';
 import {catalogEnumLabel} from '../model/catalogManifestLabels';
@@ -114,7 +122,11 @@ export function catalogCellBusinessLines(lines: Array<string | undefined | null>
  */
 export function catalogItemRowSelectionCell(row: CatalogTableRow, originNode: ReactNode): ReactNode {
   if (row.rowType === 'ITEM') {
-    return <span {...testId(catalogItemSelectionTestId(row.item.code))}>{originNode}</span>;
+    const selectionId = catalogItemSelectionTestId(row.item.code);
+    // The checkbox is the action node. Keep the business-identity test id on
+    // that node instead of forcing L2 to search inside a presentation wrapper.
+    if (isValidElement(originNode)) return cloneElement(originNode, testId(selectionId));
+    return <span {...testId(selectionId)}>{originNode}</span>;
   }
   return <span aria-hidden="true" style={{display: 'inline-block', width: '100%'}} />;
 }
@@ -192,13 +204,11 @@ function skuSpecificationLines(row: CatalogSkuListRow): string[] {
 }
 
 function formattedUpdateTime(value: number): ReactNode {
-  if (!value) return <Typography.Text type="secondary">—</Typography.Text>;
-  const date = new Date(value);
-  const pad = (part: number) => String(part).padStart(2, '0');
-  const short = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const formatted = formatCanonicalDateTime(value);
+  if (formatted === '—') return <Typography.Text type="secondary">—</Typography.Text>;
   return (
-    <EllipsisTooltip title={date.toISOString()}>
-      <span>{short}</span>
+    <EllipsisTooltip title={formatted}>
+      <span>{formatted}</span>
     </EllipsisTooltip>
   );
 }

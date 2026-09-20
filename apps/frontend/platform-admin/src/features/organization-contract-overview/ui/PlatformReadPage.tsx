@@ -7,8 +7,12 @@ import {
   contextScopedQueryArgs,
   createExtensionFilterRecoveryState,
   createPageQueryIdentity,
+  displayFieldValue,
   ExtensionFilterInvalidSummary,
+  formatCanonicalDateTime,
   isExtensionDefinitionRevisionAtLeast,
+  lifecycleColor,
+  lifecycleLabel,
   reconcileExtensionFilterValues,
   NameCodeText,
   testId,
@@ -41,6 +45,8 @@ import {
   defaultOrganizationTabQueryState,
   filtersForOrganizationTab,
   organizationOverviewQuery,
+  organizationOverviewStatusLabel,
+  organizationOverviewStatusValueEnum,
   ownerFilterOptions,
   updateOrganizationTabQueryState,
   type OrganizationFilters,
@@ -85,7 +91,6 @@ const organizationTabs: OrganizationTab[] = [
   {key: 'HEAD_COMPANY', label: '总公司', category: 'BUSINESS_ENTITY', type: 'HEAD_COMPANY'},
   {key: 'STORE', label: '门店', category: 'STORE', type: 'STORE'},
 ];
-const statusLabel = (value: string) => (value === 'ENABLED' ? '已启用' : value === 'DISABLED' ? '已停用' : '—');
 export function PlatformReadPage({kind}: {kind: 'organization' | 'contracts'}) {
   return (
     <WorkspaceScope>
@@ -118,7 +123,7 @@ function hierarchyNodeTitle(
     <span>
       <Tag color="cyan">{hierarchyTypeLabels[type]}</Tag>
       <span>{<NameCodeText name={name} code={code} />}</span>
-      {status === 'DISABLED' && <Tag color="default">已停用</Tag>}
+      {status !== 'ENABLED' && <Tag color={lifecycleColor(status)}>{lifecycleLabel(status)}</Tag>}
     </span>
   );
 }
@@ -169,7 +174,7 @@ function hierarchyDetailPresentation(item: OrganizationOverviewItem): Organizati
     extensionFields: (item.extensionFields ?? []).map(field => ({
       key: `extension-${field.name}`,
       label: field.name,
-      children: field.value || '—',
+      children: displayFieldValue(field.value),
     })),
   };
 }
@@ -887,8 +892,12 @@ function PlatformReadForWorkspace({
                   ? [
                       {key: 'name', label: '名称', children: displayedHierarchyDetail.name},
                       {key: 'code', label: '编码', children: displayedHierarchyDetail.code},
-                      {key: 'status', label: '状态', children: statusLabel(displayedHierarchyDetail.status)},
-                      {key: 'notes', label: '备注', children: displayedHierarchyDetail.notes || '—'},
+                      {
+                        key: 'status',
+                        label: '状态',
+                        children: organizationOverviewStatusLabel(displayedHierarchyDetail.status),
+                      },
+                      {key: 'notes', label: '备注', children: displayFieldValue(displayedHierarchyDetail.notes)},
                       ...(displayedHierarchyDetail.type === 'PROJECT'
                         ? [
                             {
@@ -901,9 +910,7 @@ function PlatformReadForWorkspace({
                       {
                         key: 'updatedAt',
                         label: '更新时间',
-                        children: new Date(displayedHierarchyDetail.updatedAt).toLocaleString('zh-CN', {
-                          timeZone: 'Asia/Shanghai',
-                        }),
+                        children: formatCanonicalDateTime(displayedHierarchyDetail.updatedAt),
                       },
                       ...displayedHierarchyDetail.extensionFields,
                     ]
@@ -1064,7 +1071,7 @@ function PlatformReadForWorkspace({
                       title: '别名',
                       dataIndex: 'alias',
                       search: false,
-                      render: (_: unknown, row: OrganizationOverviewItem) => row.alias || '—',
+                      render: (_: unknown, row: OrganizationOverviewItem) => displayFieldValue(row.alias),
                     },
                   ]
                 : []),
@@ -1160,7 +1167,7 @@ function PlatformReadForWorkspace({
                 title: '备注',
                 dataIndex: 'notes',
                 search: false,
-                render: (_: unknown, row: OrganizationOverviewItem) => row.notes || '—',
+                render: (_: unknown, row: OrganizationOverviewItem) => displayFieldValue(row.notes),
               },
               ...extensionListAndSearchColumns<OrganizationOverviewItem>(
                 organizationDefinitionQuery.currentData,
@@ -1170,9 +1177,9 @@ function PlatformReadForWorkspace({
                 title: '状态',
                 dataIndex: 'status',
                 valueType: 'select',
-                valueEnum: {ENABLED: {text: '已启用'}, DISABLED: {text: '已停用'}},
+                valueEnum: organizationOverviewStatusValueEnum,
                 fieldProps: {...testId('platform-organization-filter-status'), allowClear: true, placeholder: '全部'},
-                render: (_, row) => statusLabel(row.status),
+                render: (_, row) => organizationOverviewStatusLabel(row.status),
               },
               {
                 title: '来源',
@@ -1185,9 +1192,9 @@ function PlatformReadForWorkspace({
                 key: 'updatedAt',
                 title: '更新时间',
                 dataIndex: 'updatedAt',
-                valueType: 'dateTime',
                 sorter: true,
                 search: false,
+                render: (_: unknown, row: OrganizationOverviewItem) => formatCanonicalDateTime(row.updatedAt),
               },
             ]}
           />
@@ -1427,9 +1434,9 @@ function PlatformReadForWorkspace({
                 key: 'updatedAt',
                 title: '更新时间',
                 dataIndex: 'updatedAt',
-                valueType: 'dateTime',
                 sorter: true,
                 search: false,
+                render: (_: unknown, row: ContractOverviewItem) => formatCanonicalDateTime(row.updatedAt),
               },
             ]}
           />

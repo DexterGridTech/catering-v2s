@@ -8,7 +8,7 @@ import {
 
 describe('workspace IAM lifecycle presentation', () => {
   it('covers all three lifecycle labels', () => {
-    expect(workspaceIamLifecycleLabels).toEqual({ENABLED: '启用', DISABLED: '停用', VOIDED: '标记删除'});
+    expect(workspaceIamLifecycleLabels).toEqual({ENABLED: '启用', DISABLED: '停用', VOIDED: '作废'});
   });
 
   it.each([

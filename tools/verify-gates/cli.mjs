@@ -125,6 +125,38 @@ function assertNoFrontendCapabilityLiterals(files, base = root) {
     visit(parsed);
   }
 }
+function assertNoFrontendCrossAppImports(app, base = root) {
+  const forbidden = app === 'platform-admin' ? 'operations-admin/src' : 'platform-admin/src';
+  const files = sourceFiles(`apps/frontend/${app}`, base).filter(file => /\.(?:c?m?js|jsx|tsx?)$/.test(file));
+  const assertModuleBoundary = (file, sourceFile, moduleSpecifier) => {
+    if (moduleSpecifier.text.includes(forbidden)) {
+      const line = sourceFile.getLineAndCharacterOfPosition(moduleSpecifier.getStart(sourceFile)).line + 1;
+      fail('R4_FRONTEND_CROSS_APP_IMPORT', `${file}:${line}`);
+    }
+  };
+  for (const file of files) {
+    const sourceFile = ts.createSourceFile(file, read(file, base), ts.ScriptTarget.Latest, true, frontendScriptKind(file));
+    const visit = node => {
+      if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+        assertModuleBoundary(file, sourceFile, node.moduleSpecifier);
+      } else if (ts.isExportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+        assertModuleBoundary(file, sourceFile, node.moduleSpecifier);
+      } else if (
+        ts.isImportEqualsDeclaration(node) &&
+        ts.isExternalModuleReference(node.moduleReference) &&
+        ts.isStringLiteral(node.moduleReference.expression)
+      ) {
+        assertModuleBoundary(file, sourceFile, node.moduleReference.expression);
+      } else if (ts.isCallExpression(node) && node.arguments.length === 1 && ts.isStringLiteral(node.arguments[0])) {
+        const isDynamicImport = node.expression.kind === ts.SyntaxKind.ImportKeyword;
+        const isRequire = ts.isIdentifier(node.expression) && node.expression.text === 'require';
+        if (isDynamicImport || isRequire) assertModuleBoundary(file, sourceFile, node.arguments[0]);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
+  }
+}
 function assertNoHandwrittenEdgeRouteLiterals(base = root) {
   const isSyntheticTest = file => /\.test\.[cm]?[jt]sx?$/.test(file);
   const consumers = sourceFiles('apps/frontend', base)
@@ -752,18 +784,8 @@ function frontend(base = root) {
       base,
     );
   }
-  assertNoMatch(
-    sourceFiles('apps/frontend/platform-admin', base),
-    /operations-admin\/src/,
-    'R4_FRONTEND_CROSS_APP_IMPORT',
-    base,
-  );
-  assertNoMatch(
-    sourceFiles('apps/frontend/operations-admin', base),
-    /platform-admin\/src/,
-    'R4_FRONTEND_CROSS_APP_IMPORT',
-    base,
-  );
+  assertNoFrontendCrossAppImports('platform-admin', base);
+  assertNoFrontendCrossAppImports('operations-admin', base);
   assertNoMatch(
     sourceFiles('apps/frontend/operations-admin', base),
     /platform-commercial-group-edge|PLATFORM_COMMERCIAL_GROUP_OPERATIONS|PLATFORM_ADMIN_OPERATIONS/,
@@ -1397,6 +1419,216 @@ function runtimeEnvironmentKeys(base = root) {
     `R5_RUNTIME_ENVIRONMENT_KEYS=PASS\nCROSS_LAYER_KEYS=${keys.length}\nJAVA_KEYS=${javaValues.size}\nSCRIPT_SOURCES=${scriptFiles.length}\n`,
   );
 }
+
+function r11ProductionFrontendFiles(base = root) {
+  return sourceFiles('apps/frontend', base).filter(
+    file =>
+      file.includes('/src/') &&
+      !file.includes('/src/api/generated/') &&
+      !file.includes('/src/tests/') &&
+      !/\.test\.[cm]?[jt]sx?$/.test(file) &&
+      !/\.stories\.[cm]?[jt]sx?$/.test(file),
+  );
+}
+
+function r11AssertNoDirectDateFormatting(base = root) {
+  for (const file of r11ProductionFrontendFiles(base)) {
+    const parsed = ts.createSourceFile(file, read(file, base), ts.ScriptTarget.Latest, true, frontendScriptKind(file));
+    const visit = node => {
+      const directLocaleCall =
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.name.text === 'toLocaleString';
+      const directIntlFormatter =
+        ts.isNewExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        ts.isIdentifier(node.expression.expression) &&
+        node.expression.expression.text === 'Intl' &&
+        node.expression.name.text === 'DateTimeFormat';
+      if (directLocaleCall || directIntlFormatter) {
+        const line = parsed.getLineAndCharacterOfPosition(node.getStart(parsed)).line + 1;
+        fail('R11_FRONTEND_DIRECT_DATE_FORMATTER', `${file}:${line}`);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(parsed);
+  }
+}
+
+function r11AssertStatusConfirmDangerSemantics(base = root) {
+  for (const file of r11ProductionFrontendFiles(base)) {
+    const parsed = ts.createSourceFile(file, read(file, base), ts.ScriptTarget.Latest, true, frontendScriptKind(file));
+    const visit = node => {
+      const opening = ts.isJsxElement(node) ? node.openingElement : ts.isJsxSelfClosingElement(node) ? node : undefined;
+      if (opening && ts.isIdentifier(opening.tagName) && opening.tagName.text === 'StatusChangeConfirm') {
+        const dangerous = opening.attributes.properties.find(
+          property => ts.isJsxAttribute(property) && property.name.text === 'dangerous',
+        );
+        if (dangerous && ts.isJsxAttribute(dangerous)) {
+          const actionLabel = opening.attributes.properties.find(
+            property => ts.isJsxAttribute(property) && property.name.text === 'actionLabel',
+          );
+          const actionLabelText =
+            actionLabel && ts.isJsxAttribute(actionLabel) && actionLabel.initializer && ts.isStringLiteral(actionLabel.initializer)
+              ? actionLabel.initializer.text
+              : undefined;
+          const expression = dangerous.initializer?.getText(parsed) ?? '';
+          const isVoidAction = expression.includes('VOIDED') || actionLabelText === '作废';
+          if (!dangerous.initializer || !isVoidAction || /DISABLED|停用|!==\s*['"](?:ENABLED|启用)['"]/.test(expression)) {
+            const line = parsed.getLineAndCharacterOfPosition(dangerous.getStart(parsed)).line + 1;
+            fail('R11_STATUS_CONFIRM_DANGER_SEMANTICS', `${file}:${line}`);
+          }
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(parsed);
+  }
+}
+
+function r11AssertNoDateFieldFallback(base = root) {
+  const forbiddenFallbacks = new Set(['暂无', '暂未配置']);
+  for (const file of r11ProductionFrontendFiles(base)) {
+    const parsed = ts.createSourceFile(file, read(file, base), ts.ScriptTarget.Latest, true, frontendScriptKind(file));
+    const visit = node => {
+      if (ts.isConditionalExpression(node)) {
+        const branches = [node.whenTrue, node.whenFalse];
+        const hasDateFormatter = branches.some(branch => branch.getText(parsed).includes('formatCanonicalDateTime('));
+        const hasForbiddenFallback = branches.some(
+          branch => ts.isStringLiteral(branch) && forbiddenFallbacks.has(branch.text),
+        );
+        if (hasDateFormatter && hasForbiddenFallback) {
+          const line = parsed.getLineAndCharacterOfPosition(node.getStart(parsed)).line + 1;
+          fail('R11_DATE_FIELD_FALLBACK_BYPASS', `${file}:${line}`);
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(parsed);
+  }
+}
+
+function r11AssertNoRetiredLifecyclePhrase(base = root) {
+  for (const file of r11ProductionFrontendFiles(base)) {
+    if (read(file, base).includes('标记删除')) fail('R11_RETIRED_LIFECYCLE_PHRASE', file);
+  }
+}
+
+function r11PropertyName(property) {
+  if (!ts.isPropertyAssignment(property) && !ts.isShorthandPropertyAssignment(property)) return undefined;
+  const name = property.name;
+  if (!name) return undefined;
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) return name.text;
+  return undefined;
+}
+
+function r11StringInitializer(property) {
+  if (!ts.isPropertyAssignment(property)) return undefined;
+  const initializer = property.initializer;
+  return ts.isStringLiteral(initializer) || ts.isNoSubstitutionTemplateLiteral(initializer)
+    ? initializer.text
+    : undefined;
+}
+
+function r11AssertNoInlineLifecyclePresentation(base = root) {
+  const expectedLabels = new Map([
+    ['ENABLED', '启用'],
+    ['DISABLED', '停用'],
+    ['VOIDED', '作废'],
+  ]);
+  const expectedColors = new Map([
+    ['ENABLED', new Set(['success', 'green'])],
+    ['DISABLED', new Set(['warning', 'orange'])],
+    ['VOIDED', new Set(['error', 'red'])],
+  ]);
+  for (const file of r11ProductionFrontendFiles(base)) {
+    const parsed = ts.createSourceFile(file, read(file, base), ts.ScriptTarget.Latest, true, frontendScriptKind(file));
+    const visit = node => {
+      if (ts.isObjectLiteralExpression(node)) {
+        const properties = new Map(
+          node.properties
+            .map(property => [r11PropertyName(property), r11StringInitializer(property)])
+            .filter(([name, value]) => name && value !== undefined),
+        );
+        if ([...expectedLabels.keys()].every(key => properties.get(key) === expectedLabels.get(key))) {
+          const line = parsed.getLineAndCharacterOfPosition(node.getStart(parsed)).line + 1;
+          fail('R11_FRONTEND_INLINE_LIFECYCLE_LABELS', `${file}:${line}`);
+        }
+        if (
+          [...expectedColors.entries()].every(([key, values]) => {
+            const value = properties.get(key);
+            return value !== undefined && values.has(value);
+          })
+        ) {
+          const line = parsed.getLineAndCharacterOfPosition(node.getStart(parsed)).line + 1;
+          fail('R11_FRONTEND_INLINE_LIFECYCLE_COLORS', `${file}:${line}`);
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(parsed);
+  }
+}
+
+function r11AssertNoLocalCollectionParsers(base = root) {
+  const files = sourceFiles(`${appRoot}/modules`, base).filter(file => file.includes('/src/main/java/'));
+  const allowed = new Set([
+    `${appRoot}/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/collection/CollectionRequestSupport.java`,
+  ]);
+  const methodPattern =
+    /(?:public|protected|private)\s+(?:static\s+)?[\w<>, ?\[\].]+\s+(?:parsePageSize|parseCursor)\s*\(|(?:public|protected|private)\s+(?:static\s+)?[\w<>, ?\[\].]+\s+optional\s*\(\s*(?:ObjectNode|JsonNode)/g;
+  for (const file of files) {
+    if (allowed.has(file)) continue;
+    const source = read(file, base);
+    const match = methodPattern.exec(source);
+    methodPattern.lastIndex = 0;
+    if (match) {
+      const bodyEnd = source.indexOf('\n    }', match.index);
+      const methodBody = source.slice(match.index, bodyEnd === -1 ? source.length : bodyEnd);
+      if (methodBody.includes('CollectionRequestSupport.')) continue;
+      const line = source.slice(0, match.index).split('\n').length;
+      fail('R11_BACKEND_LOCAL_COLLECTION_PARSER', `${file}:${line}`);
+    }
+  }
+}
+
+function r11AssertNoAdvisorySqlBypass(base = root) {
+  const files = sourceFiles(`${appRoot}/modules`, base).filter(file => file.includes('/src/main/java/'));
+  const helper = `${appRoot}/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/persistence/AdvisoryLock.java`;
+  for (const file of files) {
+    if (file === helper) continue;
+    const source = read(file, base);
+    const directJdbcSql = /\b(?:jdbc|template|jdbcTemplate)\s*\.\s*(?:queryForObject|queryForList|queryForRowSet|batchUpdate|query|update|execute)\s*\([\s\S]{0,500}?['"][^'"]*pg_advisory_xact_lock[^'"]*['"]/;
+    const match = directJdbcSql.exec(source);
+    if (match) {
+      const line = source.slice(0, match.index).split('\n').length;
+      fail('R11_ADVISORY_LOCK_BYPASS', `${file}:${line}`);
+    }
+  }
+}
+
+function reuseConsistency(base = root) {
+  assertFile(
+    'libraries/frontend/admin-ui-foundation/src/time/formatCanonicalDateTime.ts',
+    'R11_CANONICAL_TIME_HELPER_MISSING',
+    base,
+  );
+  assertFile(
+    `${appRoot}/modules/foundation/src/main/java/com/catering/v2s/platform/foundation/collection/CollectionRequestSupport.java`,
+    'R11_COLLECTION_HELPER_MISSING',
+    base,
+  );
+  r11AssertNoDirectDateFormatting(base);
+  r11AssertStatusConfirmDangerSemantics(base);
+  r11AssertNoDateFieldFallback(base);
+  r11AssertNoRetiredLifecyclePhrase(base);
+  r11AssertNoInlineLifecyclePresentation(base);
+  r11AssertNoLocalCollectionParsers(base);
+  r11AssertNoAdvisorySqlBypass(base);
+  process.stdout.write(
+    `R11_REUSE_CONSISTENCY=PASS\nFRONTEND_FILES=${r11ProductionFrontendFiles(base).length}\nLIFECYCLE_PRESENTATION_GATE=PASS\nBACKEND_PARSER_GATE=PASS\nADVISORY_GATE=PASS\n`,
+  );
+}
 const actions = {
   security,
   frontend,
@@ -1411,6 +1643,7 @@ const actions = {
   'affected-l2': affectedL2,
   'flyway-test-locations': flywayTestLocations,
   'runtime-environment-keys': runtimeEnvironmentKeys,
+  r11: reuseConsistency,
 };
 
 function prepareSelfTestClean(action, base) {
@@ -2505,6 +2738,122 @@ final class R4BudgetIncompleteSelectStarSql {
       fs.rmSync(path.join(scratch, singleSided));
       process.stdout.write(
         'R5_RUNTIME_ENVIRONMENT_KEYS_JAVA_RED=PASS\nR5_RUNTIME_ENVIRONMENT_KEYS_SCRIPT_RED=PASS\nR5_RUNTIME_ENVIRONMENT_KEYS_SINGLE_SIDED_NEGATIVE=PASS\n',
+      );
+      return;
+    } else if (action === 'r11') {
+      const dateSource = 'apps/frontend/operations-admin/src/features/r11-self-test/ui/Date.tsx';
+      write(dateSource, 'export function DateValue(value: number) { return new Intl.DateTimeFormat("zh-CN").format(value); }\n');
+      let dateRed = false;
+      try {
+        actions[action](scratch);
+      } catch (error) {
+        dateRed = String(error).includes('R11_FRONTEND_DIRECT_DATE_FORMATTER');
+      }
+      if (!dateRed) fail('R11_FRONTEND_DATE_SELF_TEST_NOT_DETECTED');
+      fs.rmSync(path.join(scratch, 'apps/frontend/operations-admin/src/features/r11-self-test'), {
+        recursive: true,
+        force: true,
+      });
+
+      const dangerSource = 'apps/frontend/operations-admin/src/features/r11-self-test/ui/StatusConfirm.tsx';
+      writeScratch(
+        scratch,
+        dangerSource,
+        "export function StatusConfirm({status}: {status: string}) { return <StatusChangeConfirm dangerous={status === 'DISABLED'} actionLabel=\"停用\" />; }\n",
+      );
+      let dangerRed = false;
+      try {
+        actions[action](scratch);
+      } catch (error) {
+        dangerRed = String(error).includes('R11_STATUS_CONFIRM_DANGER_SEMANTICS');
+      }
+      if (!dangerRed) fail('R11_STATUS_CONFIRM_DANGER_SELF_TEST_NOT_DETECTED');
+      fs.rmSync(path.join(scratch, 'apps/frontend/operations-admin/src/features/r11-self-test'), {
+        recursive: true,
+        force: true,
+      });
+
+      const bareDangerSource = 'apps/frontend/operations-admin/src/features/r11-self-test/ui/BareDanger.tsx';
+      writeScratch(
+        scratch,
+        bareDangerSource,
+        '<StatusChangeConfirm dangerous actionLabel="停用" />;\n',
+      );
+      let bareDangerRed = false;
+      try {
+        actions[action](scratch);
+      } catch (error) {
+        bareDangerRed = String(error).includes('R11_STATUS_CONFIRM_DANGER_SEMANTICS');
+      }
+      if (!bareDangerRed) fail('R11_STATUS_CONFIRM_BARE_DANGER_SELF_TEST_NOT_DETECTED');
+      fs.rmSync(path.join(scratch, 'apps/frontend/operations-admin/src/features/r11-self-test'), {
+        recursive: true,
+        force: true,
+      });
+
+      const dateFallbackSource = 'apps/frontend/operations-admin/src/features/r11-self-test/ui/DateFallback.tsx';
+      writeScratch(
+        scratch,
+        dateFallbackSource,
+        "export function DateFallback(value: number) { return value ? formatCanonicalDateTime(value) : '暂无'; }\n",
+      );
+      let dateFallbackRed = false;
+      try {
+        actions[action](scratch);
+      } catch (error) {
+        dateFallbackRed = String(error).includes('R11_DATE_FIELD_FALLBACK_BYPASS');
+      }
+      if (!dateFallbackRed) fail('R11_DATE_FIELD_FALLBACK_SELF_TEST_NOT_DETECTED');
+      fs.rmSync(path.join(scratch, 'apps/frontend/operations-admin/src/features/r11-self-test'), {
+        recursive: true,
+        force: true,
+      });
+
+      const lifecycleSource = 'apps/frontend/operations-admin/src/features/r11-self-test/ui/Lifecycle.tsx';
+      writeScratch(
+        scratch,
+        lifecycleSource,
+        "export const labels = { ENABLED: '启用', DISABLED: '停用', VOIDED: '作废' };\n",
+      );
+      let lifecycleRed = false;
+      try {
+        actions[action](scratch);
+      } catch (error) {
+        lifecycleRed = String(error).includes('R11_FRONTEND_INLINE_LIFECYCLE_LABELS');
+      }
+      if (!lifecycleRed) fail('R11_FRONTEND_LIFECYCLE_SELF_TEST_NOT_DETECTED');
+      fs.rmSync(path.join(scratch, 'apps/frontend/operations-admin/src/features/r11-self-test'), {
+        recursive: true,
+        force: true,
+      });
+
+      const parser =
+        `${appRoot}/modules/catalog/src/main/java/com/catering/v2s/catalog/application/R11ParserMutation.java`;
+      write(parser, 'final class R11ParserMutation { private static int parseCursor(String value) { return 0; } }\n');
+      let parserRed = false;
+      try {
+        actions[action](scratch);
+      } catch (error) {
+        parserRed = String(error).includes('R11_BACKEND_LOCAL_COLLECTION_PARSER');
+      }
+      if (!parserRed) fail('R11_BACKEND_PARSER_SELF_TEST_NOT_DETECTED');
+      fs.rmSync(path.join(scratch, parser), {force: true});
+
+      const advisory =
+        `${appRoot}/modules/catalog/src/main/java/com/catering/v2s/catalog/application/R11AdvisoryMutation.java`;
+      write(
+        advisory,
+        'final class R11AdvisoryMutation { void bypass() { jdbc.execute("SELECT pg_advisory_xact_lock(?, ?)"); } }\n',
+      );
+      let advisoryRed = false;
+      try {
+        actions[action](scratch);
+      } catch (error) {
+        advisoryRed = String(error).includes('R11_ADVISORY_LOCK_BYPASS');
+      }
+      if (!advisoryRed) fail('R11_ADVISORY_SELF_TEST_NOT_DETECTED');
+      process.stdout.write(
+        'R11_FRONTEND_DATE_RED=PASS\nR11_STATUS_CONFIRM_DANGER_RED=PASS\nR11_STATUS_CONFIRM_BARE_DANGER_RED=PASS\nR11_DATE_FIELD_FALLBACK_RED=PASS\nR11_FRONTEND_LIFECYCLE_RED=PASS\nR11_BACKEND_PARSER_RED=PASS\nR11_ADVISORY_RED=PASS\nR11_REUSE_SELF_TEST=PASS\n',
       );
       return;
     }

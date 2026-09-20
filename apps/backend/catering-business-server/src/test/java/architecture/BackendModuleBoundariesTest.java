@@ -15,6 +15,7 @@ import com.catering.v2s.app.edge.operations.session.OperationsDependsOnPlatformS
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.platform.session.PlatformDependsOnOperationsSessionFixture;
 import com.tngtech.archunit.core.domain.Dependency;
+import com.tngtech.archunit.core.domain.JavaCodeUnit;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -27,6 +28,7 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /** Production architecture boundary: the business deployable owns no TDP source tree. */
@@ -115,6 +117,36 @@ class BackendModuleBoundariesTest {
             .dependOnClassesThat()
             .areAssignableTo(IllegalArgumentException.class);
 
+    @ArchTest
+    static final ArchRule COLLECTION_BOUNDARY_PARSERS_DELEGATE_TO_FOUNDATION = classes()
+            .that()
+            .resideInAnyPackage("..application..")
+            .should(new ArchCondition<>("delegate collection parsing to CollectionRequestSupport") {
+                @Override
+                public void check(JavaClass item, ConditionEvents events) {
+                    for (JavaCodeUnit codeUnit : item.getCodeUnits()) {
+                        if (Set.of("parsePageSize", "parseCursor").contains(codeUnit.getName())) {
+                            // always inspect these parser entry points
+                        } else if ("optional".equals(codeUnit.getName())
+                                && codeUnit.getRawParameterTypes().stream()
+                                        .noneMatch(type -> Set.of("ObjectNode", "JsonNode")
+                                                .contains(type.getSimpleName()))) {
+                            continue;
+                        } else if (!"optional".equals(codeUnit.getName())) {
+                            continue;
+                        }
+                        boolean delegates = codeUnit.getMethodCallsFromSelf().stream()
+                                .anyMatch(call -> call.getTargetOwner().getFullName().equals(
+                                        "com.catering.v2s.platform.foundation.collection.CollectionRequestSupport"));
+                        if (!delegates) {
+                            events.add(SimpleConditionEvent.violated(
+                                    codeUnit,
+                                    codeUnit.getFullName() + " must delegate to CollectionRequestSupport"));
+                        }
+                    }
+                }
+            });
+
     @Test
     void backendModuleBoundaries() throws Exception {
         Path root = repositoryRoot();
@@ -177,6 +209,15 @@ class BackendModuleBoundariesTest {
                 () -> EDGE_CONTROLLERS_USE_TYPED_REQUEST_PROBLEMS.check(
                         new ClassFileImporter().importClasses(architecture.fixture.IllegalArgumentController.class)));
         assertTrue(failure.getMessage().contains("IllegalArgumentController"));
+    }
+
+    @Test
+    void collectionParserBoundaryRejectsAFunctionallyEquivalentLocalParser() {
+        AssertionError failure = org.junit.jupiter.api.Assertions.assertThrows(
+                AssertionError.class,
+                () -> COLLECTION_BOUNDARY_PARSERS_DELEGATE_TO_FOUNDATION.check(new ClassFileImporter()
+                        .importClasses(architecture.fixture.application.LocalCollectionParserFixture.class)));
+        assertTrue(failure.getMessage().contains("LocalCollectionParserFixture"));
     }
 
     private Path repositoryRoot() {

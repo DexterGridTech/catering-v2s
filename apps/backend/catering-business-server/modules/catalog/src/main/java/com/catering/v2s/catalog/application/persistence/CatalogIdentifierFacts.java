@@ -57,7 +57,7 @@ public class CatalogIdentifierFacts {
         });
         jdbc.query(
                 CatalogIdentifierFactsSql.CATALOG_IDENTIFIER_FACTS_SELECT_IDENTIFIER_REF_ITEM_REF_PRODUCT_SKU_REF_IDENTIFIER_TYPE
-                        + CatalogIdentifierFactsSql.CATALOG_IDENTIFIER_FACTS_CONTINUATION_PRODUCT_IDENTIFIER_NORMALIZED_VALUE_DISPLAY_ORDER_ITEM_REF
+                        + CatalogIdentifierFactsSql.CATALOG_IDENTIFIER_FACTS_PRODUCT_IDENTIFIER_NORMALIZED_VALUE_DISPLAY_ORDER_ITEM_REF
                         + placeholders
                         + CatalogIdentifierFactsSql.CATALOG_IDENTIFIER_FACTS_CLOSE_PAREN_ITEM_REF_PRODUCT_SKU_REF_DISPLAY_ORDER_IDENTIFIER_REF,
                 statement -> bind(statement, refs),
@@ -131,7 +131,7 @@ public class CatalogIdentifierFacts {
         try {
             jdbc.batchUpdate(
                     CatalogIdentifierFactsSql.CATALOG_IDENTIFIER_FACTS_INSERT_INTO_PRODUCT_IDENTIFIER
-                            + CatalogIdentifierFactsSql.CATALOG_IDENTIFIER_FACTS_CONTINUATION_PRODUCT_SKU_REF
+                            + CatalogIdentifierFactsSql.CATALOG_IDENTIFIER_FACTS_PRODUCT_SKU_REF
                             + CatalogIdentifierFactsSql.CATALOG_IDENTIFIER_FACTS_VALUES,
                     values);
         } catch (DuplicateKeyException failure) {

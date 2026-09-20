@@ -267,6 +267,26 @@ public final class OperationBindingTypes {
     public record StoreContractInvalidateRequest() {}
     public record StoreContractPage() {}
     public record StoreContractUpdateRequest() {}
+    public record StoreQrChannelCandidatePage() {}
+    public record StoreQrConfigurationUpdateRequest() {}
+    public record StoreQrConfigurationView() {}
+    public record StoreServicePoint() {}
+    public record StoreServicePointArea() {}
+    public record StoreServicePointAreaCreateRequest() {}
+    public record StoreServicePointAreaOrderRequest() {}
+    public record StoreServicePointAreaPage() {}
+    public record StoreServicePointAreaStatusRequest() {}
+    public record StoreServicePointAreaUpdateRequest() {}
+    public record StoreServicePointAssetReleaseReadback() {}
+    public record StoreServicePointAssetReleaseRequest() {}
+    public record StoreServicePointAssetStageReadback() {}
+    public record StoreServicePointAssetStageRequest() {}
+    public record StoreServicePointCreateRequest() {}
+    public record StoreServicePointDetail() {}
+    public record StoreServicePointOrderRequest() {}
+    public record StoreServicePointPage() {}
+    public record StoreServicePointStatusRequest() {}
+    public record StoreServicePointUpdateRequest() {}
     public record TemporaryPromotionExecuteRequest() {}
     public record TemporaryPromotionPreflight() {}
     public record TemporaryPromotionPreflightRequest() {}

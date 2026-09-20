@@ -318,12 +318,16 @@ compound row；numeric/financial 的最后一个 `KeyboardRow` 是一行三列 c
 用于表达跨列与列内水平分组，不把同一个 key 复制成多个按钮。numeric 的 `0` 横跨前两列，
 右侧一列内部左右放 backspace/complete；financial 的 `-/.` 在第一列内部左右分布，`0`
 独占第二列，backspace/complete 在第三列内部左右分布。这样末行所有按键保持完整的一行
-高度，并与上方 `7/8/9` 三列对齐：
+高度，并与上方 `7/8/9` 三列对齐。
+
+alpha 的第二行包含 `caps` 与九个 home-row 字母，`caps` 使用现有
+`KeyboardKey.kind='caps'` 与 `EditState.capsLock` 的持久大小写语义；它与 full 一样
+保持十列 dense row，不新增 alpha 的视觉行或高度：
 
 | layout    | rows（从上到下）                                                                 | maxColumns | mode            |
 | --------- | -------------------------------------------------------------------------------- | ---------: | --------------- |
 | full      | `1234567890`; `qwertyuiop`; `caps,asdfghjkl`; `shift,zxcvbnm,backspace,complete` |         10 | dense/shared    |
-| alpha     | `qwertyuiop`; `asdfghjkl`; `shift,zxcvbnm,backspace,complete`                    |         10 | dense/shared    |
+| alpha     | `qwertyuiop`; `caps,asdfghjkl`; `shift,zxcvbnm,backspace,complete`                |         10 | dense/shared    |
 | numeric   | `123`; `456`; `789`; grid(`0`跨前两列, `backspace/complete`右列左右)              |          3 | standard/shared |
 | financial | `123`; `456`; `789`; grid(`-/.`左列左右, `0`中列, `backspace/complete`右列左右)      |          3 | standard/shared |
 
@@ -505,7 +509,7 @@ phone 字段之后、业务动作之前新增两行：
 
 | 字段         | label                       | layout    | fieldId/testID                                     | 业务边界                                                   |
 | ------------ | --------------------------- | --------- | -------------------------------------------------- | ---------------------------------------------------------- |
-| 英文字符测试 | `英文字符测试（仅 sample）` | alpha     | `sample.desk.member-form:keyboard-alpha-probe`     | 只验证拉丁/shift/edit/complete；不进 Member/command/dirty  |
+| 英文字符测试 | `英文字符测试（仅 sample）` | alpha     | `sample.desk.member-form:keyboard-alpha-probe`     | 只验证拉丁/caps/shift/edit/complete；不进 Member/command/dirty  |
 | 金额格式测试 | `金额格式测试（仅 sample）` | financial | `sample.desk.member-form:keyboard-financial-probe` | 只验证数字、`.`、`-` 与编辑可达；不进 Member/command/dirty |
 
 下方固定辅助文案 `不保存到会员资料`，保证体验者不会把能力验证字段理解成业务字段。
@@ -609,7 +613,8 @@ phone 字段之后、业务动作之前新增两行：
 | FORM-3    | InputSurfaceFrame + handheld-confirm       | portrait-shaped local frame fixture           | measure PRIMARY-shaped frame and focus age                                 | input chooses geometry from local onLayout; age remains actionable; no topology claim                                                                                                     |
 | FORM-4    | dev-host SurfaceCanvas + input             | narrow/resize responsive fixture              | resize frame across landscape/portrait/unsupported width                   | host geometry recomputes one shared scale; surface logical boxes stay fixed; browser observes actual pointer rect; input local metrics do not consume host scale |
 | FORM-5    | InputSurfaceFrame/provider                 | no initial layout callback                    | focus before first valid layout                                            | no dock/default size/dead focus; remeasure and retry works                                                                                                                                |
-| KEY-R3    | MemberForm                                 | real sample business tree                     | numeric→alpha→financial and back                                           | probe fields render and edit; no command/member/dirty/confirmation effect                                                                                                                 |
+| KEY-R3    | MemberForm                                 | real sample business tree                     | numeric→alpha→financial and back                                           | probe fields render and edit; alpha exposes persistent caps plus one-shot shift; no command/member/dirty/confirmation effect                                                               |
+| KEY-ALPHA-CAPS | `VirtualKeyboard` + `editText`                | alpha layout/edit fixture                      | press alpha `caps`, type two letters, press `caps` again, type one letter | first two letters are uppercase, final letter follows the unlocked mode; deleting the alpha `caps` key or making it one-shot must fail |
 | KEY-R8    | InputProvider/useInputField                | real focus harness, not hand-called callbacks | pointer focus and virtual complete focus-next across system/virtual fields | first click and programmatic focus-next both get target focus; at most one owner; mutation removing shared preflight must fail                                                            |
 | S-36/S-37 | geometry + scroll                          | target baselines and insufficient axes        | focus field under dock                                                     | field complete visible after shrink/scroll; formula source local; no double subtract                                                                                                      |
 | S-38      | sample-member-desk actor + customer-member | double-screen age-entry race fixture          | customer is editing age on SECONDARY while staff selects 撤回              | three business oracles must all hold: SECONDARY leaves confirmation and returns to `customer-welcome`; a subsequent customer 确认 produces no registration; store contains no age residue |

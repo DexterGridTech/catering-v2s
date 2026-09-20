@@ -218,9 +218,36 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
     // single fact-producing call point while this action is only a transport
     // into the owner slice.
     try {
+      if (transition.context.commandName === 'ui.integration.sample-console.startup-ready') {
+        input.logger.info({
+          category: 'startup.ready-dispatch',
+          event: 'startup.ready-ledger-write-start',
+          message: 'PRIMARY startup-ready ledger transition started',
+          data: {transition: transition.kind, requestId: transition.context.requestId},
+        })
+      }
       const dispatchRequestLedgerAction = createRequestLedgerActionDispatcher(
         () => selectRuntimeInstanceMode(input.stateRuntime.getState()),
-        action => input.stateRuntime.getStore().dispatch(action),
+        action => {
+          if (transition.context.commandName === 'ui.integration.sample-console.startup-ready') {
+            input.logger.info({
+              category: 'startup.ready-dispatch',
+              event: 'startup.ready-ledger-dispatch-start',
+              message: 'PRIMARY startup-ready ledger store dispatch started',
+              data: {transition: transition.kind},
+            })
+          }
+          const result = input.stateRuntime.getStore().dispatch(action)
+          if (transition.context.commandName === 'ui.integration.sample-console.startup-ready') {
+            input.logger.info({
+              category: 'startup.ready-dispatch',
+              event: 'startup.ready-ledger-dispatch-end',
+              message: 'PRIMARY startup-ready ledger store dispatch completed',
+              data: {transition: transition.kind},
+            })
+          }
+          return result
+        },
       )
       if (currentRecord === undefined) {
         const expiredRequestIds = findExpiredRequestLedgerIds({
@@ -249,6 +276,14 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
         record,
         updatedAt,
       }))
+      if (transition.context.commandName === 'ui.integration.sample-console.startup-ready') {
+        input.logger.info({
+          category: 'startup.ready-dispatch',
+          event: 'startup.ready-ledger-write-end',
+          message: 'PRIMARY startup-ready ledger transition completed',
+          data: {transition: transition.kind},
+        })
+      }
     } catch (error) {
       throw ledgerWriteFailureError(transition.context, error)
     }
@@ -508,6 +543,15 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
         state: input.stateRuntime.getState(),
       })
       ?? definition.defaultTarget
+    const isStartupReadyCommand = definition.commandName === 'ui.integration.sample-console.startup-ready'
+    if (isStartupReadyCommand) {
+      input.logger.info({
+        category: 'startup.ready-dispatch',
+        event: 'startup.ready-dispatch-target',
+        message: 'Resolved PRIMARY startup-ready command target',
+        data: {target, routeIntent: options.routeIntent ?? null, hasRouteContext: routeContext !== null},
+      })
+    }
     const command: DispatchedCommand<TPayload> = Object.freeze({
       runtimeId: input.runtimeId,
       requestId,
@@ -562,11 +606,27 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
       }
 
       emit({kind: 'command.started', context}, observer)
+      if (isStartupReadyCommand) {
+        input.logger.info({
+          category: 'startup.ready-dispatch',
+          event: 'startup.ready-dispatch-started',
+          message: 'PRIMARY startup-ready command entered dispatcher',
+          data: {target},
+        })
+      }
       activeRoleContexts.set(String(commandId), Object.freeze({context, observer}))
 
       const handlers = target === 'local'
         ? [...(input.handlersByCommand.get(command.commandName) ?? [])]
         : []
+      if (isStartupReadyCommand) {
+        input.logger.info({
+          category: 'startup.ready-dispatch',
+          event: 'startup.ready-dispatch-handlers',
+          message: 'Resolved PRIMARY startup-ready command handlers',
+          data: {target, handlerCount: handlers.length},
+        })
+      }
       const actorResults = target === 'peer'
         ? [await dispatchPeer({command, definition, lifecycleContext: context, observer})]
         : await Promise.all(handlers.map(handler => dispatchActor({
@@ -577,6 +637,14 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
           observer,
           actorAncestors,
         })))
+      if (isStartupReadyCommand) {
+        input.logger.info({
+          category: 'startup.ready-dispatch',
+          event: 'startup.ready-dispatch-actors-settled',
+          message: 'PRIMARY startup-ready command actors settled',
+          data: {target, actorCount: actorResults.length},
+        })
+      }
 
       const completedAt = nowTimestampMs()
       emit({kind: 'command.completed', context, completedAt}, observer)

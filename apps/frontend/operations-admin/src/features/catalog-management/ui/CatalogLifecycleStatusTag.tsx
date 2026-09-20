@@ -1,13 +1,8 @@
 import {Tag, Tooltip} from 'antd';
+import {LIFECYCLE_COLORS, lifecycleLabel} from '@catering-v2s/admin-ui-foundation';
 import {catalogEnumLabel} from '../model/catalogManifestLabels';
 
 type LifecycleKind = 'ITEM' | 'SKU';
-
-const lifecycleColors: Record<string, 'default' | 'success' | 'warning' | 'processing' | 'error'> = {
-  ENABLED: 'success',
-  DISABLED: 'warning',
-  VOIDED: 'error',
-};
 
 export function catalogLifecycleStatusPresentation(
   manifest: Parameters<typeof catalogEnumLabel>[0],
@@ -16,8 +11,11 @@ export function catalogLifecycleStatusPresentation(
   itemStatus?: string,
 ) {
   return {
-    color: lifecycleColors[status] ?? 'default',
-    label: catalogEnumLabel(manifest, kind === 'ITEM' ? 'catalogItemStatus' : 'skuStatus', status),
+    color: LIFECYCLE_COLORS[status as keyof typeof LIFECYCLE_COLORS] ?? 'default',
+    label:
+      status in LIFECYCLE_COLORS
+        ? lifecycleLabel(status)
+        : catalogEnumLabel(manifest, kind === 'ITEM' ? 'catalogItemStatus' : 'skuStatus', status),
     tooltip:
       kind === 'SKU'
         ? itemStatus && itemStatus !== 'ENABLED'

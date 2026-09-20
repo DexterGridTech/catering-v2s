@@ -31,3 +31,5 @@ no-op capability 兜底。
 的 D-5/D-6 与 `terminal-invariants.json`，再核对两个 App 的原生注册顺序和资源编译
 入口。不要在此加入 feature、integration、runtime state 或第二条 loading bridge；
 修改后必须跑对应 static/focused/native proof。
+
+Android 的 Tailwind shared color mapping 包含全部 `keyboard-*` 语义名；两个 Android App 继续从各自 integration 的 `global.css` 读取 RGB，base config 不保存应用颜色。

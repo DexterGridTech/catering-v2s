@@ -11,6 +11,7 @@ import type {
   TopologyHostDiagnostics,
   TopologyHostPort,
   TopologyHostStatus,
+  LoggerPort,
 } from '@catering-v2s/kernel-base-platform-ports'
 import {unavailableAppControlPort as defaultAppControlPort} from '@catering-v2s/kernel-base-platform-ports'
 import type {TopologyPeerChannel, TopologyPeerChannelEvent} from '@catering-v2s/kernel-base-transport'
@@ -40,10 +41,13 @@ type NativeTopologyHostModule = Readonly<{
     basePath: string,
     heartbeatIntervalMs: number,
     heartbeatTimeoutMs: number,
-    nodeId: string,
-    displayName: string,
-    instanceMode: string,
-    displayRole: string,
+    identity: Readonly<{
+      readonly nodeId: string
+      readonly moduleName: string
+      readonly displayName: string
+      readonly instanceMode: string
+      readonly displayRole: string
+    }>,
   ) => Promise<NativePortResult>
   readonly stop: (timeoutMs: number) => Promise<NativePortResult>
   readonly getStatus: (timeoutMs: number) => Promise<NativePortResult>
@@ -60,6 +64,8 @@ type NativeConnectionPayload = Readonly<{
   readonly event?: unknown
   readonly connectionId?: unknown
   readonly reason?: unknown
+  readonly code?: unknown
+  readonly readyState?: unknown
 }>
 
 type NativeFramePayload = Readonly<{
@@ -171,23 +177,32 @@ const readNativeActionResult = (
 const readString = (value: unknown): string | undefined =>
   typeof value === 'string' && value.length > 0 ? value : undefined
 
+const readFiniteNumber = (value: unknown): number | undefined =>
+  typeof value === 'number' && Number.isFinite(value) ? value : undefined
+
 const readConnectionEvent = (value: unknown): TopologyPeerChannelEvent | undefined => {
   if (!isRecord(value)) return undefined
   const event = readString(value.event)
   const connectionId = readString(value.connectionId)
   const reason = readString(value.reason)
+  const code = readFiniteNumber(value.code)
+  const readyState = readFiniteNumber(value.readyState)
   if (event === 'open') return {type: 'open', ...(connectionId === undefined ? {} : {connectionId})}
   if (event === 'close')
     return {
       type: 'close',
       ...(connectionId === undefined ? {} : {connectionId}),
       ...(reason === undefined ? {} : {reason}),
+      ...(code === undefined ? {} : {code}),
+      ...(readyState === undefined ? {} : {readyState}),
     }
   if (event === 'error')
     return {
       type: 'error',
       ...(connectionId === undefined ? {} : {connectionId}),
       ...(reason === undefined ? {} : {reason}),
+      ...(code === undefined ? {} : {code}),
+      ...(readyState === undefined ? {} : {readyState}),
     }
   return undefined
 }
@@ -206,7 +221,21 @@ const readWebSocketConstructor = (): WebSocketConstructor => {
   return candidate as WebSocketConstructor
 }
 
-export const createAndroidTopologyHostPort = (): TopologyHostPort => {
+export const createAndroidTopologyHostPort = (
+  loggerProvider: () => LoggerPort | undefined = () => undefined,
+): TopologyHostPort => {
+  const logBridgeFailure = (capability: string, error: unknown): void => {
+    const normalized = error instanceof Error
+      ? {name: error.name, message: error.message, stack: error.stack}
+      : {name: 'UnknownError', message: String(error)}
+    loggerProvider()?.error({
+      category: 'adapter.android.topology-host',
+      event: 'topology-native-bridge-failed',
+      message: 'Native topology host bridge call failed',
+      data: {capability, errorName: normalized.name},
+      error: normalized,
+    })
+  }
   const port: TopologyHostPort = {
     start: async (input: TopologyHostConfig): Promise<PortResult<TopologyHostAddress>> => {
       try {
@@ -224,13 +253,17 @@ export const createAndroidTopologyHostPort = (): TopologyHostPort => {
           input.basePath,
           input.heartbeatIntervalMs,
           input.heartbeatTimeoutMs,
-          identity.nodeId,
-          identity.displayName,
-          identity.instanceMode,
-          identity.displayRole,
+          {
+            nodeId: identity.nodeId,
+            moduleName: identity.moduleName,
+            displayName: identity.displayName,
+            instanceMode: identity.instanceMode,
+            displayRole: identity.displayRole,
+          },
         )
         return readNativeResult<TopologyHostAddress>(result, 'topologyHost', 'start')
-      } catch (_error) {
+      } catch (error) {
+        logBridgeFailure('start', error)
         return bridgeFailure({
           port: 'topologyHost',
           capability: 'start',
@@ -242,7 +275,8 @@ export const createAndroidTopologyHostPort = (): TopologyHostPort => {
     stop: async ({timeoutMs}: TopologyHostCall): Promise<PortResult<NoOutput>> => {
       try {
         return readNativeResult<NoOutput>(await nativeHost().stop(timeoutMs), 'topologyHost', 'stop')
-      } catch (_error) {
+      } catch (error) {
+        logBridgeFailure('stop', error)
         return bridgeFailure({
           port: 'topologyHost',
           capability: 'stop',
@@ -258,7 +292,8 @@ export const createAndroidTopologyHostPort = (): TopologyHostPort => {
           'topologyHost',
           'getStatus',
         )
-      } catch (_error) {
+      } catch (error) {
+        logBridgeFailure('getStatus', error)
         return bridgeFailure({
           port: 'topologyHost',
           capability: 'getStatus',
@@ -274,7 +309,8 @@ export const createAndroidTopologyHostPort = (): TopologyHostPort => {
           'topologyHost',
           'getDiagnosticsSnapshot',
         )
-      } catch (_error) {
+      } catch (error) {
+        logBridgeFailure('getDiagnosticsSnapshot', error)
         return bridgeFailure({
           port: 'topologyHost',
           capability: 'getDiagnosticsSnapshot',
@@ -338,11 +374,11 @@ export const createAndroidTopologyPeerChannel = (): TopologyPeerChannel => {
     nativeSubscriptions = [
       nativeEmitter.addListener('onTopologyConnection', value => {
         const event = readConnectionEvent(value)
-        if (event !== undefined) publish(event)
+        publish(event ?? {type: 'error', reason: 'TOPOLOGY_NATIVE_CONNECTION_EVENT_INVALID'})
       }) as EventSubscription,
       nativeEmitter.addListener('onTopologyFrame', value => {
         const event = readFrameEvent(value)
-        if (event !== undefined) publish(event)
+        publish(event ?? {type: 'error', reason: 'TOPOLOGY_NATIVE_FRAME_EVENT_INVALID'})
       }) as EventSubscription,
     ]
   }
@@ -394,21 +430,33 @@ export const createAndroidTopologyPeerChannel = (): TopologyPeerChannel => {
       }
       created.onmessage = event => {
         if (socket !== created || typeof event.data !== 'string') {
-          publish({type: 'error', connectionId, reason: 'TOPOLOGY_PROTOCOL_REJECTED'})
+          publish({
+            type: 'error',
+            connectionId,
+            reason: socket === created ? 'TOPOLOGY_PROTOCOL_REJECTED' : 'TOPOLOGY_STALE_SOCKET_MESSAGE',
+            readyState: created.readyState,
+          })
           return
         }
         publish({type: 'message', connectionId, raw: event.data})
       }
       created.onerror = () => {
-        if (socket === created) publish({type: 'error', connectionId, reason: 'TOPOLOGY_PEER_UNREACHABLE'})
+        publish({
+          type: 'error',
+          connectionId,
+          reason: socket === created ? 'TOPOLOGY_PEER_UNREACHABLE' : 'TOPOLOGY_STALE_SOCKET_ERROR',
+          readyState: created.readyState,
+        })
       }
       created.onclose = event => {
-        if (socket !== created) return
-        socket = null
+        const isCurrent = socket === created
+        if (isCurrent) socket = null
         publish({
           type: 'close',
           connectionId,
-          reason: readString(event.reason) ?? 'TOPOLOGY_PEER_UNREACHABLE',
+          reason: readString(event.reason) ?? (isCurrent ? 'TOPOLOGY_PEER_UNREACHABLE' : 'TOPOLOGY_STALE_SOCKET_CLOSED'),
+          ...(readFiniteNumber(event.code) === undefined ? {} : {code: readFiniteNumber(event.code)}),
+          readyState: created.readyState,
         })
       }
     },

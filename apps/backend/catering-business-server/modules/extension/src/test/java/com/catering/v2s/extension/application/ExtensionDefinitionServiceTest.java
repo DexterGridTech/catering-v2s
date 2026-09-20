@@ -290,7 +290,9 @@ class ExtensionDefinitionServiceTest {
                     assertEquals(1, attempt.get(10, TimeUnit.SECONDS).version());
                     winners++;
                 } catch (java.util.concurrent.ExecutionException failure) {
-                    assertTrue(failure.getCause() instanceof ExtensionDefinitionService.DefinitionVersionConflictException);
+                    assertTrue(
+                            failure.getCause()
+                                    instanceof ExtensionDefinitionService.DefinitionVersionConflictException);
                     conflicts++;
                 }
             }
@@ -313,12 +315,13 @@ class ExtensionDefinitionServiceTest {
                         "[]",
                         2,
                         0));
-        var afterStaleUpdate = persistence.findDefinition(isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE);
+        var afterStaleUpdate =
+                persistence.findDefinition(isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE);
         assertEquals(1, afterStaleUpdate.revision());
         assertTrue(afterStaleUpdate.definitionsJson().contains("capacity"));
         assertThrows(
                 ExtensionDefinitionService.DefinitionVersionConflictException.class,
-        () -> service.replace(isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE, 0, List.of()));
+                () -> service.replace(isolatedWorkspace, groupWorkspaceKey, ExtensionHostTypes.STORE, 0, List.of()));
     }
 
     private static UUID createWorkspace(String groupWorkspaceKey) {
@@ -453,7 +456,16 @@ class ExtensionDefinitionServiceTest {
                         "REGION",
                         0,
                         List.of(new ExtensionDefinitionService.Field(
-                                "missingStatus", "Missing status", "TEXT", null, null, false, List.of(), null, 0, null))));
+                                "missingStatus",
+                                "Missing status",
+                                "TEXT",
+                                null,
+                                null,
+                                false,
+                                List.of(),
+                                null,
+                                0,
+                                null))));
     }
 
     @Test

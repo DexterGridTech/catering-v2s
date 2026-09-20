@@ -1,0 +1,23 @@
+{
+  "fixtureId": "ter-dual-machine-members-small-raw-v1",
+  "schemaVersion": 1,
+  "sourceType": "sample-member-registry.Member[]",
+  "recordCount": 2,
+  "members": [
+    {
+      "memberId": "MSMALL000000",
+      "name": "张三",
+      "phone": "010-0000-0000",
+      "age": 37,
+      "registeredAt": 1700000000000
+    },
+    {
+      "memberId": "MSMALL000001",
+      "name": "李四",
+      "phone": "010-0000-0001",
+      "age": 38,
+      "registeredAt": 1700086400000
+    }
+  ]
+}
+

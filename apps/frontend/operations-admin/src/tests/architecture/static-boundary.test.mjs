@@ -212,7 +212,7 @@ test('catalog configuration drawer keeps one first-level workspace with stable l
   assert.match(navigation, /\{key: 'ORDER_OPTIONS', label: '点单选项库'\}/);
   assert.match(
     configurationSurface,
-    /title=\{presentation === 'EDITOR_CHILD' \? '维护商品基础数据' : '商品配置'\}[\s\S]*push=\{false\}[\s\S]*adminWideDrawerSurfaceProps/,
+    /title=\{presentation === 'EDITOR_CHILD' \? '维护商品元数据' : '商品配置'\}[\s\S]*push=\{false\}[\s\S]*adminWideDrawerSurfaceProps/,
   );
   assert.match(
     configurationSurface,
@@ -248,7 +248,7 @@ test('catalog configuration drawer keeps one first-level workspace with stable l
   assert.match(skuAttributeLibrary, /<Splitter[\s\S]*catalogTestIds\.static\.skuAttributeManager/);
   assert.match(skuAttributeLibrary, /rowSelection=\{\{[\s\S]*type: 'radio'/);
   assert.match(simpleLibrary, /placeholder="搜索名称或编码"[\s\S]*catalogTestIds\.control\.configSearch/);
-  assert.match(simpleLibrary, /全部状态[\s\S]*已停用/);
+  assert.match(simpleLibrary, /全部状态[\s\S]*LIFECYCLE_LABELS\.DISABLED/);
   assert.match(
     dictionary,
     /dictionaryKind: 'SKU_ATTRIBUTE_VALUE',[\s\S]*parentEntryRef: wireUuid\(selectedAttributeRef\)/,
@@ -274,8 +274,8 @@ test('catalog configuration drawer keeps one first-level workspace with stable l
     definitionLibraries,
     /选项组[\s\S]*onOpenDefinitionEditor\(\{library: 'ORDER_OPTIONS', mode: 'EDIT', definitionRef: row\.definitionRef\}\)/,
   );
-  assert.match(workbench, /商品基础数据/);
-  assert.doesNotMatch(workbench, /商品元数据/);
+  assert.match(workbench, /商品元数据/);
+  assert.doesNotMatch(workbench, /商品基础数据/);
   assert.doesNotMatch(workbench, /<Tabs\b|catalogArea|catalog-inventory-area-tabs|CatalogDefinitionLibraries/);
   assert.doesNotMatch(workbench, /catalog-inventory-production-tags/);
 });

@@ -1,7 +1,6 @@
 package com.catering.v2s.organization.application.persistence;
 
 import com.catering.v2s.audit.contract.AuditActor;
-import com.catering.v2s.audit.contract.AuditChangeJson;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.organization.api.OrganizationNodeReadback;
 import com.catering.v2s.organization.application.OrganizationHierarchyService.HierarchyPathNode;
@@ -21,9 +20,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class OrganizationHierarchyPersistence {
     private final JdbcTemplate jdbc;
+    private final OrganizationAuditEventWriter auditEvents;
 
     public OrganizationHierarchyPersistence(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
+        this.auditEvents = new OrganizationAuditEventWriter(jdbc);
     }
 
     public int insertNode(
@@ -41,7 +42,7 @@ public class OrganizationHierarchyPersistence {
             long extensionRuleRevision) {
         return jdbc.update(
                 OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_INSERT_INTO_ORGANIZATION_NODE
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_NODE_TYPE_CODE_NAME_NOTES
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_NODE_TYPE_CODE_NAME_NOTES
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_PARAMETER_PLACEHOLDER
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_PARAMETER_PLACEHOLDER_ENABLED,
@@ -62,9 +63,9 @@ public class OrganizationHierarchyPersistence {
     public List<OrganizationNodeReadback> listNodes(UUID workspaceUuid, String groupWorkspaceKey) {
         List<OrganizationNodeReadback> nodes = jdbc.query(
                 OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_VERSION
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_ORGANIZATION_NODE_EXTENSION_RULE_REVISION_WORKSPACE_UUID
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_NODE_TYPE_REGION_PROJECT,
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_VERSION
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_ORGANIZATION_NODE_EXTENSION_RULE_REVISION_WORKSPACE_UUID
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_GROUP_WORKSPACE_KEY_NODE_TYPE_REGION_PROJECT,
                 (result, row) -> node(result, List.of()),
                 workspaceUuid,
                 groupWorkspaceKey);
@@ -118,8 +119,8 @@ public class OrganizationHierarchyPersistence {
         values.add(offset);
         return jdbc.query(
                 OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE_ALTERNATE_A
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_VERSION_ALTERNATE_A
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_ORGANIZATION_NODE_EXTENSION_RULE_REVISION
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_VERSION_ALTERNATE_A
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_ORGANIZATION_NODE_EXTENSION_RULE_REVISION
                         + filter.where()
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_ORDER_BY
                         + order
@@ -133,7 +134,7 @@ public class OrganizationHierarchyPersistence {
     public int updateProjectPhaseVersion(UUID projectId, long now, long expectedVersion) {
         return jdbc.update(
                 OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_UPDATE_ORGANIZATION_NODE_VERSION_UPDATED_AT_EPOCH_MILLIS
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_VERSION_ALTERNATE_B,
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_VERSION_ALTERNATE_B,
                 now,
                 projectId,
                 expectedVersion);
@@ -171,9 +172,9 @@ public class OrganizationHierarchyPersistence {
             long expectedVersion) {
         return jdbc.update(
                 OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_UPDATE_ORGANIZATION_NODE_CODE_NAME_NOTES
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_EXTENSION_VALUES_EXTENSION_RULE_REVISION
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_VERSION_UPDATED_AT_EPOCH_MILLIS
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_WORKSPACE_UUID
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_EXTENSION_VALUES_EXTENSION_RULE_REVISION
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_WORKSPACE_UUID
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_VERSION_ALTERNATE_A,
                 code,
                 name,
@@ -191,16 +192,16 @@ public class OrganizationHierarchyPersistence {
             UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId, String requiredType) {
         return jdbc.query(
                 OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_SELECT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PARENT_ID_NODE_TYPE_ALTERNATE_B
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_NOTES_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_EXTENSION_VALUES_TEXT_EXTENSION_RULE_REVISION_ARRAY_AGG
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_NOTES_STATUS_VERSION_CREATED_AT_EPOCH_MILLIS
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_EXTENSION_VALUES_TEXT_EXTENSION_RULE_REVISION_ARRAY_AGG
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_ORDER_BY_DISPLAY_ORDER_FILTER_PHASE_NAME_TEXT
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_PHASE_NAMES
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_PHASE_NAMES
                         + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_ALTERNATIVE_PROJECT_PHASE_NAME_ORGANIZATION_NODE
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_PROJECT_ID_NODE_TYPE_PROJECT_WORKSPACE_UUID
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_WORKSPACE_UUID
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_PARENT_ID
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_NODE_TYPE_CODE_NAME_NOTES_ALTERNATE_B
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_UPDATED_AT_EPOCH_MILLIS,
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_PROJECT_ID_NODE_TYPE_PROJECT_WORKSPACE_UUID
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_GROUP_WORKSPACE_KEY_WORKSPACE_UUID
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_PARENT_ID
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_NODE_TYPE_CODE_NAME_NOTES_ALTERNATE_B
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_UPDATED_AT_EPOCH_MILLIS,
                 statement -> {
                     statement.setObject(1, nodeId);
                     statement.setObject(2, workspaceUuid);
@@ -238,7 +239,7 @@ public class OrganizationHierarchyPersistence {
     public boolean isEnterable(UUID workspaceUuid, String groupWorkspaceKey, UUID nodeId) {
         return jdbc.query(
                 OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_SELECT_ORGANIZATION_NODE_STATUS_WORKSPACE_UUID
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY,
+                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, nodeId);
                     statement.setObject(2, workspaceUuid);
@@ -309,7 +310,7 @@ public class OrganizationHierarchyPersistence {
                 + OrganizationHierarchyServiceSql.PATH_PARENT_FROM
                 + OrganizationHierarchyServiceSql.PATH_PARENT_WHERE
                 + OrganizationHierarchyServiceSql.PATH_SELECT_PROJECTION
-                + OrganizationHierarchyServiceSql.PATH_SELECT_PROJECTION_CONTINUATION
+                + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_PATH_SELECT_PROJECTION_GROUP_BY
                 + OrganizationHierarchyServiceSql.PATH_TARGET_ID_COLUMN;
         return jdbc.query(
                 sql,
@@ -345,22 +346,16 @@ public class OrganizationHierarchyPersistence {
             long occurredAt,
             AuditActor actor,
             String changesJson) {
-        return jdbc.update(
-                OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_INSERT_INTO_AUDIT_EVENT
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_ENTITY_REF_TEXT
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON_ORGANIZATION_NODE
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_PARAMETER_PLACEHOLDER_ALTERNATE_B
-                        + OrganizationHierarchyServiceSql.ORGANIZATION_HIERARCHY_SERVICE_CONTINUATION_CAST_AS_JSONB,
+        return auditEvents.write(
                 UUID.randomUUID(),
                 workspaceUuid,
                 groupWorkspaceKey,
+                "ORGANIZATION_NODE",
                 nodeId.toString(),
-                actor.actorType(),
-                actor.actorId(),
-                actor.displaySnapshot(),
+                actor,
                 action,
                 occurredAt,
-                AuditChangeJson.write(AuditChangeJson.read(changesJson)));
+                changesJson);
     }
 
     public int deletePhases(UUID projectId) {

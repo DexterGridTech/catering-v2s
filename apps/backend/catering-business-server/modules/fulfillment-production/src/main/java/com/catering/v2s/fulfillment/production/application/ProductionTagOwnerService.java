@@ -6,7 +6,9 @@ import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.CatalogTargetCapability;
 import com.catering.v2s.platform.command.WorkspaceCommandOperationToken;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
+import com.catering.v2s.platform.foundation.collection.CanonicalCursorIdentity;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
+import com.catering.v2s.platform.foundation.collection.CollectionRequestSupport;
 import com.catering.v2s.platform.foundation.persistence.OwnerOperationDiagnostics;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.fulfillment.production.application.persistence.ProductionTagOwnerPersistence;
@@ -124,31 +126,23 @@ public class ProductionTagOwnerService implements ProductionTagOwnerApi {
     }
 
     private static int parsePageSize(ObjectNode request, String key, int fallback) {
-        JsonNode value = request == null ? null : request.get(key);
-        if (value == null || value.isNull() || value.asText().isBlank()) return fallback;
         try {
-            int parsed = Integer.parseInt(value.asText());
-            if (parsed < 1 || parsed > 100) throw new NumberFormatException();
-            return parsed;
-        } catch (NumberFormatException failure) {
-            throw new ProductionTagOwnerApi.Problem(
-                    "VALIDATION_ERROR", 422, key + " must be between 1 and 100", failure);
+            return CollectionRequestSupport.pageSize(request, key, fallback);
+        } catch (CollectionRequestSupport.InvalidRequestValue failure) {
+            throw new ProductionTagOwnerApi.Problem("VALIDATION_ERROR", 422, failure.getMessage(), failure);
         }
     }
 
     private static String optional(ObjectNode request, String key) {
-        JsonNode value = request == null ? null : request.get(key);
-        if (value == null || value.isNull() || value.asText().isBlank()) return null;
-        return value.asText();
+        String value = CollectionRequestSupport.optional(request, key);
+        return value == null || value.isBlank() ? null : value;
     }
 
     private static String cursorIdentity(String operationId, String... parts) {
-        StringBuilder identity = new StringBuilder(operationId);
-        for (String part : parts) {
-            String value = part == null ? "" : part;
-            identity.append('|').append(value.length()).append(':').append(value);
-        }
-        return identity.toString();
+        String[] components = new String[parts.length + 1];
+        components[0] = operationId;
+        System.arraycopy(parts, 0, components, 1, parts.length);
+        return CanonicalCursorIdentity.encode(components);
     }
 
     @Override

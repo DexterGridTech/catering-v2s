@@ -75,14 +75,13 @@ public class BusinessChannelPersistence {
             int limit) {
         List<Object> arguments = new ArrayList<>(List.of(workspaceUuid, groupWorkspaceKey, ownerNodeType, ownerNodeRef));
         StringBuilder predicate = new StringBuilder(
-                BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_WHERE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TARGET_NODE_TYPE_TARGET_NODE_R
-                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONTINUATION_EF);
+                BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_WHERE_C_WORKSPACE_UUID_AND_C_GROUP_WORKSPACE_KEY_AND_C_TARGET_NODE_TYPE_AND_TARGET_NODE_TYPE_AND_C_TARGET_NODE_REF);
         if (status != null) {
             predicate.append(BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONDITION_STATUS);
             arguments.add(status);
         }
         return query(
-                BusinessChannelQuerySupport.channelProjection(BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONTINUATION_BUSINESS_CHANNEL_TEMPLATE_LEFT_JOIN_BUSINESS_CHANNEL_B
+                BusinessChannelQuerySupport.channelProjection(BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_BUSINESS_CHANNEL_TEMPLATE_LEFT_JOIN_BUSINESS_CHANNEL_B
                                 + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_JOIN_CONDITION_TEMPLATE_REF_WORKSPACE_UUID
                                 + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONDITION_GROUP_WORKSPACE_KEY)
                         + predicate
@@ -96,7 +95,7 @@ public class BusinessChannelPersistence {
             UUID workspaceUuid, String groupWorkspaceKey, UUID channelRef) {
         return jdbc.query(
                 BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_SELECT_CHANNEL_REF_TEMPLATE_REF_TARGET_NODE_TYPE_TARGET_NODE_REF
-                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONTINUATION_BINDING_REF_VERSION_ACCESS_KIND_ORDER_KIND
+                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_BINDING_REF_VERSION_ACCESS_KIND_ORDER_KIND
                         + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_FROM_CLAUSE_BUSINESS_CHANNEL_FROM_BUSINESS_CHANNEL_BUSINE
                         + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_JOIN_BUSINESS_CHANNEL_TEMPLATE_TEMPLATE_REF
                         + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
@@ -127,9 +126,9 @@ public class BusinessChannelPersistence {
             return jdbc.query(
                     BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CTE_BUSINESS_CHANNEL_INSERTED
                             + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_OPEN_PAREN_CHANNEL_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_TARGET_NODE_TYPE
-                            + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONTINUATION_TEMPLATE_REF_CHANNEL_CODE_CHANNEL_NAME_BINDING_REF
-                            + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONTINUATION_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
-                            + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONTINUATION_1
+                            + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_TEMPLATE_REF_CHANNEL_CODE_CHANNEL_NAME_BINDING_REF
+                            + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS
+                            + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_1
                             + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_RETURNING
                             + BusinessChannelQuerySupport.insertedChannelProjection(),
                     statement -> {
@@ -162,7 +161,7 @@ public class BusinessChannelPersistence {
             long expectedVersion) {
         return jdbc.update(
                 BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_UPDATE_BUSINESS_CHANNEL_CHANNEL_NAME_BINDING_REF
-                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONTINUATION_VERSION_UPDATED_AT_EPOCH_MILLIS_CHANNEL_REF
+                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS_CHANNEL_REF
                         + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
                 channelName,
                 bindingRef,
@@ -182,7 +181,7 @@ public class BusinessChannelPersistence {
             long expectedVersion) {
         return jdbc.update(
                 BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_UPDATE_BUSINESS_CHANNEL_STATUS
-                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONTINUATION_VERSION_UPDATED_AT_EPOCH_MILLIS_CHANNEL_REF_ALTERNATE_A
+                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS_CHANNEL_REF_ALTERNATE_A
                         + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION_ALTERNATE_A,
                 targetStatus,
                 now,
@@ -200,7 +199,7 @@ public class BusinessChannelPersistence {
             long expectedVersion) {
         return jdbc.update(
                 BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_UPDATE_BUSINESS_CHANNEL_BINDING_REF
-                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONTINUATION_VERSION_UPDATED_AT_EPOCH_MILLIS_CHANNEL_REF_ALTERNATE_B
+                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_VERSION_UPDATED_AT_EPOCH_MILLIS_CHANNEL_REF_ALTERNATE_B
                         + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONDITION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION_ALTERNATE_B,
                 now,
                 channelRef,
@@ -274,7 +273,7 @@ public class BusinessChannelPersistence {
                         + placeholders
                         + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CLOSE_PAREN_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                         + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_UNION_CHILD_SOURCE_REF_PARENT_PARENT_ID
-                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONTINUATION_PARENT_NODE_TYPE_STATUS_CHILD
+                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_PARENT_NODE_TYPE_STATUS_CHILD
                         + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_FROM_CLAUSE_ANCESTRY_PARENT_CHILD_PARENT_ID
                         + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_WHERE_PARENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
                         + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_SELECT_ANCESTRY_SOURCE_REF_NODE_TYPE_STATUS_DEPTH,
@@ -304,8 +303,8 @@ public class BusinessChannelPersistence {
             long occurredAtEpochMillis) {
         jdbc.update(
                 BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_INSERT_INTO_AUDIT_EVENT_EVENT_REF_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONTINUATION_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT_ENTITY_TYPE
-                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CONTINUATION_CHANGES_JSON_OCCURRED_AT_EPOCH_MILLIS,
+                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT_ENTITY_TYPE
+                        + BusinessChannelServiceSql.BUSINESS_CHANNEL_SERVICE_CHANGES_JSON_OCCURRED_AT_EPOCH_MILLIS,
                 UUID.randomUUID(),
                 workspaceUuid,
                 groupWorkspaceKey,

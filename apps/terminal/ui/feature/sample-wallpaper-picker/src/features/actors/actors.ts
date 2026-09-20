@@ -1,4 +1,9 @@
-import {closeLayerCommand, openLayerCommand, selectLayers} from '@catering-v2s/kernel-base-ui-state'
+import {
+  closeLayerCommand,
+  isCurrentWorkspaceOwnedByInstance,
+  openLayerCommand,
+  selectLayers,
+} from '@catering-v2s/kernel-base-ui-state'
 import type {ActorDefinition, ActorExecutionContext, CommandDispatchResult} from '@catering-v2s/kernel-base-runtime'
 import {defineActor, onCommand} from '@catering-v2s/kernel-base-runtime'
 import {
@@ -64,6 +69,7 @@ const effectiveWallpaperId = (context: ActorExecutionContext): WallpaperId =>
 
 export const createWallpaperPickerActor = (): ActorDefinition => defineActor(moduleName, 'wallpaper-picker', [
   onCommand(wallpaperOptionSelectedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     const wallpaperId = context.command.payload.wallpaperId
     if (!isWallpaperId(wallpaperId)) {
       throw new Error('[ui.feature.sample-wallpaper-picker] invalid wallpaper option')
@@ -77,6 +83,7 @@ export const createWallpaperPickerActor = (): ActorDefinition => defineActor(mod
     return null
   }),
   onCommand(confirmWallpaperRequestedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     const pending = selectPendingWallpaperId(context.getState())
     const confirmed = selectWallpaperId(context.getState())
     if (pending === undefined || pending === confirmed) return null
@@ -88,6 +95,7 @@ export const createWallpaperPickerActor = (): ActorDefinition => defineActor(mod
     return null
   }),
   onCommand(wallpaperSystemFailureObservedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     const hasNotice = selectLayers(context.getState(), 'PRIMARY')
       .some(layer => layer.layerId === noticeLayerId)
     if (hasNotice) return null
@@ -104,6 +112,7 @@ export const createWallpaperPickerActor = (): ActorDefinition => defineActor(mod
     return null
   }),
   onCommand(wallpaperSystemFailureDismissedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await context.dispatchCommand(closeLayerCommand, {
       displayMode: 'PRIMARY',
       layerId: noticeLayerId,

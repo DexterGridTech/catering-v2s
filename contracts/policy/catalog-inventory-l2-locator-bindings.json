@@ -9,11 +9,22 @@
   },
   "bindingMode": "CASE_PARAMETER_CONTROL_KEYS",
   "caseCount": 65,
-  "locatorKind": "PLAYWRIGHT_TEST_ID_OR_ROLE_WITHIN_TEST_ID",
+  "locatorKind": "PLAYWRIGHT_TEST_ID_OR_COMPOSITE_OPTION_ANCHOR",
   "controls": {
     "STORE_SCOPE": {
       "testId": "operations-data-scope-trigger",
       "interaction": "scope",
+      "actualActionNode": "SCOPE_TRIGGER_SELECTOR_OPTION_CONFIRM",
+      "touchPhases": ["TRIGGER", "SELECTOR", "OPTION", "CONFIRM"],
+      "touchTestIds": [
+        "operations-data-scope-trigger",
+        "operations-data-scope-region",
+        "operations-data-scope-project",
+        "operations-data-scope-store",
+        "operations-data-scope-confirm"
+      ],
+      "touchOptionTestIdFactory": "roleHomeTestIds.dataScope.option",
+      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx",
         "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts"
@@ -23,6 +34,15 @@
       "testId": "operations-data-scope-trigger",
       "interaction": "scope",
       "scopeFieldTestId": "operations-data-scope-head-company",
+      "actualActionNode": "SCOPE_TRIGGER_SELECTOR_OPTION_CONFIRM",
+      "touchPhases": ["TRIGGER", "SELECTOR", "OPTION", "CONFIRM"],
+      "touchTestIds": [
+        "operations-data-scope-trigger",
+        "operations-data-scope-head-company",
+        "operations-data-scope-confirm"
+      ],
+      "touchOptionTestIdFactory": "roleHomeTestIds.dataScope.option",
+      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/role-home-bootstrap/ui/DataScopeSelector.tsx",
         "apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts"
@@ -53,6 +73,39 @@
         "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
+    "CATALOG_TREE_CATEGORY_NODE": {
+      "testIdFactory": "CATALOG_CATEGORY_NODE",
+      "interaction": "TREE_NODE_SELECTION",
+      "actualActionNode": "TREE_TITLE",
+      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
+      "ownerTestIdExpressions": ["catalogTestIdControls.workbench.categoryNode(node.code)"],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchNavigationTree.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_TREE_CATEGORY_EXPANDER": {
+      "testIdFactory": "CATALOG_CATEGORY_EXPANDER",
+      "interaction": "TREE_EXPAND",
+      "actualActionNode": "TREE_SWITCHER_ICON",
+      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
+      "ownerTestIdExpressions": ["catalogTestIdControls.workbench.categoryExpander(node.code)"],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchNavigationTree.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_TREE_PRODUCTION_TAG_NODE": {
+      "testIdFactory": "CATALOG_PRODUCTION_TAG_NODE",
+      "interaction": "TREE_NODE_SELECTION",
+      "actualActionNode": "TREE_TITLE",
+      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
+      "ownerTestIdExpressions": ["catalogTestIdControls.workbench.productionTagNode(node.code)"],
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchNavigationTree.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
     "CATALOG_TREE_SEARCH": {
       "testId": "catalog-navigation-tree-search",
       "sourceFiles": [
@@ -69,6 +122,10 @@
     },
     "CATALOG_VIEW_SWITCH": {
       "testId": "catalog-workbench-view-switch",
+      "optionTestIdFactory": "CATALOG_VIEW_SWITCH",
+      "interaction": "SEGMENTED",
+      "actualActionNode": "COMPOSITE_OPTION_ANCHOR",
+      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchToolbar.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
@@ -140,9 +197,11 @@
       ]
     },
     "CATALOG_BASIC_TAB": {
-      "parentTestId": "catalog-item-tabs",
-      "role": "tab",
-      "name": "基础",
+      "testIdFactory": "CATALOG_ITEM_TAB",
+      "tabKey": "basic",
+      "interaction": "TAB_LABEL_ANCHOR",
+      "actualActionNode": "TAB_LABEL_ANCHOR",
+      "focusedStaticProof": "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemTabs.static.test.ts",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/model/catalogTabLabels.ts",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
@@ -151,9 +210,11 @@
       ]
     },
     "CATALOG_SKU_TAB": {
-      "parentTestId": "catalog-item-tabs",
-      "role": "tab",
-      "name": "规格与价格",
+      "testIdFactory": "CATALOG_ITEM_TAB",
+      "tabKey": "sku-specifications-pricing",
+      "interaction": "TAB_LABEL_ANCHOR",
+      "actualActionNode": "TAB_LABEL_ANCHOR",
+      "focusedStaticProof": "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemTabs.static.test.ts",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/model/catalogTabLabels.ts",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
@@ -162,9 +223,11 @@
       ]
     },
     "CATALOG_ORDER_OPTIONS_TAB": {
-      "parentTestId": "catalog-item-tabs",
-      "role": "tab",
-      "name": "点单选项",
+      "testIdFactory": "CATALOG_ITEM_TAB",
+      "tabKey": "order-options",
+      "interaction": "TAB_LABEL_ANCHOR",
+      "actualActionNode": "TAB_LABEL_ANCHOR",
+      "focusedStaticProof": "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemTabs.static.test.ts",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/model/catalogTabLabels.ts",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
@@ -173,9 +236,11 @@
       ]
     },
     "CATALOG_PRODUCTION_PROMPTS_TAB": {
-      "parentTestId": "catalog-item-tabs",
-      "role": "tab",
-      "name": "制作信息",
+      "testIdFactory": "CATALOG_ITEM_TAB",
+      "tabKey": "production-prompts",
+      "interaction": "TAB_LABEL_ANCHOR",
+      "actualActionNode": "TAB_LABEL_ANCHOR",
+      "focusedStaticProof": "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemTabs.static.test.ts",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/model/catalogTabLabels.ts",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
@@ -184,9 +249,11 @@
       ]
     },
     "CATALOG_INVENTORY_BOM_TAB": {
-      "parentTestId": "catalog-item-tabs",
-      "role": "tab",
-      "name": "库存扣减与用料",
+      "testIdFactory": "CATALOG_ITEM_TAB",
+      "tabKey": "inventory-bom",
+      "interaction": "TAB_LABEL_ANCHOR",
+      "actualActionNode": "TAB_LABEL_ANCHOR",
+      "focusedStaticProof": "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemTabs.static.test.ts",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/model/catalogTabLabels.ts",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogItemViewDrawer.tsx",
@@ -273,6 +340,17 @@
         "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchToolbar.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
+    },
+    "CATALOG_DICTIONARY_OPEN_CREATE": {
+      "testId": "catalog-dictionary-open-create",
+      "interaction": "OPEN_CREATE",
+      "actualActionNode": "BUTTON",
+      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogSimpleDictionaryLibrary.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ],
+      "ownerTestIdExpressions": ["testId(catalogTestIds.static.dictionaryOpenCreate)"]
     },
     "CATALOG_DICTIONARY_DRAWER": {
       "alternatives": ["catalog-dictionary-drawer"],
@@ -500,9 +578,33 @@
       ]
     },
     "CATALOG_PAGINATION": {
-      "parentTestId": "catalog-item-table",
-      "role": "button",
+      "testId": "catalog-item-table",
+      "interaction": "PAGINATION_CONTEXT",
+      "actualActionNode": "PAGINATION_CONTROL_GROUP",
+      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
       "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchItemList.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_PAGINATION_NEXT": {
+      "testId": "catalog-inventory-item-pagination-next",
+      "interaction": "PAGINATION_NEXT",
+      "actualActionNode": "PAGINATION_BUTTON",
+      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
+      "sourceFiles": [
+        "libraries/frontend/admin-ui-foundation/src/list/cursorPagination.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchItemList.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_PAGINATION_PREVIOUS": {
+      "testId": "catalog-inventory-item-pagination-previous",
+      "interaction": "PAGINATION_PREVIOUS",
+      "actualActionNode": "PAGINATION_BUTTON",
+      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
+      "sourceFiles": [
+        "libraries/frontend/admin-ui-foundation/src/list/cursorPagination.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchItemList.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
@@ -570,7 +672,14 @@
     },
     "INVENTORY_STOCK_VIEW": {
       "testId": "inventory-stock-view",
-      "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx"]
+      "optionTestIdFactory": "INVENTORY_STOCK_VIEW",
+      "interaction": "SEGMENTED",
+      "actualActionNode": "COMPOSITE_OPTION_ANCHOR",
+      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryManagementPage.tsx",
+        "apps/frontend/operations-admin/src/features/inventory-management/inventoryTestIds.ts"
+      ]
     },
     "INVENTORY_RESULT_TABLE": {
       "testId": "inventory-target-table",
@@ -657,6 +766,17 @@
       "testId": "inventory-action-unit",
       "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"]
     },
+    "INVENTORY_ACTION_DIRECTION": {
+      "testId": "inventory-action-direction",
+      "optionTestIdFactory": "INVENTORY_ACTION_DIRECTION",
+      "interaction": "RADIO_GROUP",
+      "actualActionNode": "RADIO_OPTION_ANCHOR",
+      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx",
+        "apps/frontend/operations-admin/src/features/inventory-management/inventoryTestIds.ts"
+      ]
+    },
     "INVENTORY_ACTION_REASON": {
       "testId": "inventory-action-reason",
       "sourceFiles": ["apps/frontend/operations-admin/src/features/inventory-management/ui/InventoryActionModal.tsx"]
@@ -719,8 +839,33 @@
         "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
       ]
     },
+    "CATALOG_BATCH_STATUS_ACTION": {
+      "testId": "catalog-batch-status-action",
+      "interaction": "BATCH_STATUS_ACTION",
+      "actualActionNode": "MENU_ITEM",
+      "focusedStaticProof": "scripts/test/l2-locator-bindings.static.test.mjs",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogWorkbenchItemList.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ],
+      "ownerTestIdExpressions": ["testId(catalogTestIds.static.batchStatusAction)"]
+    },
     "CATALOG_BATCH_MODAL": {
       "testId": "catalog-batch-task-modal",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogBatchActionModal.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_BATCH_SUBMIT": {
+      "testId": "catalog-batch-submit",
+      "sourceFiles": [
+        "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogBatchActionModal.tsx",
+        "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"
+      ]
+    },
+    "CATALOG_BATCH_STATUS_CONFIRM": {
+      "testId": "catalog-batch-status-confirm",
       "sourceFiles": [
         "apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogBatchActionModal.tsx",
         "apps/frontend/operations-admin/src/features/catalog-management/catalogTestIds.ts"

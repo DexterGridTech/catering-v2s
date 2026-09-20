@@ -4,13 +4,18 @@ export {
   PrimitiveActions,
 } from './components/PrimitiveActions';
 export {PrimitiveButton} from './components/PrimitiveButton';
+export {PrimitiveIcon} from './components/PrimitiveIcon';
 export {PrimitiveBadge, PrimitiveEmptyState, PrimitiveInlineAlert, PrimitiveProgress, PrimitiveSkeleton, PrimitiveSpinner} from './components/PrimitiveFeedback';
 export {PrimitiveCard, PrimitiveCenter, PrimitiveDivider, PrimitiveGrid, PrimitiveStack} from './components/PrimitiveLayout';
 export {PrimitiveCodeBlock} from './components/PrimitiveCodeBlock';
-export {PrimitiveCheckbox, PrimitiveCodeInput, PrimitiveFormField, PrimitivePressOption, PrimitiveRadio, PrimitiveSelect, PrimitiveSwitch, PrimitiveTextarea} from './components/PrimitiveForms';
+export {PrimitiveCheckbox, PrimitiveCodeInput, PrimitiveDropdownSelect, PrimitiveFormField, PrimitivePressOption, PrimitiveRadio, PrimitiveSelect, PrimitiveSwitch, PrimitiveTextarea} from './components/PrimitiveForms';
 export type {PrimitivePressOptionProps} from './components/PrimitiveForms';
+export {PrimitiveDisclosure, PrimitiveRatioBar, PrimitiveSurfaceMap} from './components/PrimitiveAdmin';
 export {PrimitiveKeyValueRow, PrimitiveList, PrimitiveSegmentedControl, PrimitiveStatusRow, PrimitiveTable, PrimitiveTabs} from './components/PrimitiveData';
 export {PrimitiveContainer} from './components/PrimitiveContainer';
+export {PrimitiveKeyboardBackdrop} from './components/PrimitiveKeyboardBackdrop';
+export {PrimitiveKeyboardSurface} from './components/PrimitiveKeyboardSurface';
+export {PrimitivePinInput} from './components/PrimitivePinInput';
 export {PrimitiveImage} from './components/PrimitiveImage';
 export {PrimitiveHeading} from './components/PrimitiveHeading';
 export {PrimitiveInput} from './components/PrimitiveInput';
@@ -34,7 +39,11 @@ export type {
   PrimitiveListProps,
   PrimitiveListRenderItem,
   PrimitiveOption,
+  PrimitiveDisclosureProps,
+  PrimitiveDropdownSelectProps,
   PrimitiveProgressProps,
+  PrimitiveRatioBarProps,
+  PrimitiveRatioSegment,
   PrimitiveRadioProps,
   PrimitiveSegmentedControlProps,
   PrimitiveSelectProps,
@@ -47,7 +56,14 @@ export type {
   PrimitiveTextareaProps,
   PrimitiveTone,
   PrimitiveContainerProps,
+  PrimitiveKeyboardSurfaceInteractionEvent,
+  PrimitiveKeyboardBackdropProps,
+  PrimitiveKeyboardSurfaceProps,
+  PrimitivePinInputInteractionEvent,
+  PrimitivePinInputProps,
   PrimitiveImageProps,
+  PrimitiveIconName,
+  PrimitiveIconProps,
   PrimitiveHeadingProps,
   PrimitiveInputProps,
   PrimitiveInputHandle,
@@ -61,6 +77,8 @@ export type {
   PrimitiveScrollViewLayout,
   PrimitiveScrollViewHandle,
   PrimitiveStatusProps,
+  PrimitiveSurfaceMapProps,
+  PrimitiveSurfaceMapSurface,
   PrimitiveTextProps,
 } from './types/types';
 export {

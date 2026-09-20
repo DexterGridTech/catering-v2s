@@ -42,7 +42,7 @@ public class WorkspaceIamAuditHistoryPersistence {
     public long countEvents(AuditReadScope scope, AuditTarget target) {
         return jdbc.queryForObject(
                 WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_SELECT_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY
-                        + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_ENTITY_TYPE_ENTITY_REF_TEXT,
+                        + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_ENTITY_TYPE_ENTITY_REF_TEXT,
                 Long.class,
                 scope.workspaceUuid(),
                 scope.groupWorkspaceKey(),
@@ -53,9 +53,9 @@ public class WorkspaceIamAuditHistoryPersistence {
     public List<AuditHistoryItem> readPage(AuditReadScope scope, AuditTarget target, long page, long pageSize) {
         return jdbc.query(
                 WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_SELECT_OCCURRED_AT_EPOCH_MILLIS
-                        + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_AUDIT_EVENT_CHANGES_JSON_TEXT_WORKSPACE_UUID
-                        + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_GROUP_WORKSPACE_KEY_ENTITY_TYPE_ENTITY_REF_TEXT
-                        + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_OCCURRED_AT_EPOCH_MILLIS
+                        + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_AUDIT_EVENT_CHANGES_JSON_TEXT_WORKSPACE_UUID
+                        + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_GROUP_WORKSPACE_KEY_ENTITY_TYPE_ENTITY_REF_TEXT
+                        + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_OCCURRED_AT_EPOCH_MILLIS
                         + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_DESC_DIRECTION_DESC_ID_DESC_LIMIT_OFFSET,
                 (result, ignored) -> new AuditHistoryItem(
                         result.getObject("id", UUID.class),
@@ -131,10 +131,10 @@ public class WorkspaceIamAuditHistoryPersistence {
         String table = account ? "workspace_account" : "invitation";
         String targets = account
                 ? WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_SELECT_ROLE_ASSIGNMENT
-                        + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_ASSIGNMENT_ACCOUNT_ID_SUBJECT_WORKSPACE_UUID
-                        + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_ASSIGNMENT_GROUP_WORKSPACE_KEY_STATUS_ACTIVE
+                        + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_ASSIGNMENT_ACCOUNT_ID_SUBJECT_WORKSPACE_UUID
+                        + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_ASSIGNMENT_GROUP_WORKSPACE_KEY_STATUS_ACTIVE
                 : WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_SELECT_INTENT_SERVICE_NODE_TYPE_SERVICE_NODE_ID
-                        + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_INVITATION_ASSIGNMENT_INTENT;
+                        + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_INVITATION_ASSIGNMENT_INTENT;
         String allowed = WorkspaceIamAuditHistoryServiceSql.ALLOWED_TARGET_SCOPE;
         String authorization = account
                 ? WorkspaceIamAuditHistoryServiceSql.AUTHORIZATION_EXISTS_PREFIX
@@ -153,16 +153,16 @@ public class WorkspaceIamAuditHistoryPersistence {
                 + WorkspaceIamAuditHistoryServiceSql.AUTH_SCOPE_PREFIX
                 + authorization
                 + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_THEN_SUBJECT_AUTHORIZED_AUDIT_ROWS_EVENT_AUDIT_ID
-                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_EVENT
-                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_EVENT_ENTITY_REF_TEXT_CHANGES_JSON_TEXT
-                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_AUTH_SCOPE_AUDIT_EVENT_EVENT_FOUND
-                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_AUTH_SCOPE_AUTHORIZED_EVENT_WORKSPACE_UUID
-                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_AUDIT_ROWS
-                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_OCCURRED_AT_EPOCH_MILLIS_AUDIT_ID_TOTAL_ROWS
-                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_AUDIT_ROWS_TOTAL_AUTH_SCOPE_FOUND
-                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_AUTH_SCOPE_AUTHORIZED_TOTAL_ROWS_TOTAL
-                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_PAGE_ROWS
-                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_CONTINUATION_AUTH_SCOPE
+                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_EVENT
+                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_EVENT_ENTITY_REF_TEXT_CHANGES_JSON_TEXT
+                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_AUTH_SCOPE_AUDIT_EVENT_EVENT_FOUND
+                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_AUTH_SCOPE_AUTHORIZED_EVENT_WORKSPACE_UUID
+                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_AUDIT_ROWS
+                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_OCCURRED_AT_EPOCH_MILLIS_AUDIT_ID_TOTAL_ROWS
+                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_AUDIT_ROWS_TOTAL_AUTH_SCOPE_FOUND
+                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_AUTH_SCOPE_AUTHORIZED_TOTAL_ROWS_TOTAL
+                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_PAGE_ROWS
+                + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_AUTH_SCOPE
                 + WorkspaceIamAuditHistoryServiceSql.WORKSPACE_IAM_AUDIT_HISTORY_SERVICE_JOIN_PAGE_ROWS_JOIN_TOTAL_ROWS_LEFT_JOIN_PA;
     }
 

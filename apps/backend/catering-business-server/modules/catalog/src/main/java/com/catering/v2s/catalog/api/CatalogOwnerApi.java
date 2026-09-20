@@ -1,6 +1,7 @@
 package com.catering.v2s.catalog.api;
 
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
+import com.catering.v2s.platform.foundation.contract.OwnerProblem;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
 import com.catering.v2s.platform.command.WorkspaceExecutionContext;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -814,7 +815,7 @@ public interface CatalogOwnerApi {
      */
     JsonNode skuNamesByItemCodes(String dataNodeRef, String brandRef, JsonNode itemCodes);
 
-    final class Problem extends RuntimeException {
+    final class Problem extends RuntimeException implements OwnerProblem {
         private final String code;
         private final int status;
 
@@ -830,10 +831,12 @@ public interface CatalogOwnerApi {
             this.status = status;
         }
 
+        @Override
         public String code() {
             return code;
         }
 
+        @Override
         public int status() {
             return status;
         }

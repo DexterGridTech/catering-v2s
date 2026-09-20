@@ -7,7 +7,10 @@ import {
   createPageQueryIdentity,
   createExtensionFilterRecoveryState,
   ExtensionFilterInvalidSummary,
+  formatCanonicalDateTime,
+  displayFieldValue,
   isExtensionDefinitionRevisionAtLeast,
+  lifecycleColor,
   reconcileExtensionFilterValues,
   useExtensionFilterStaleRecovery,
   useExtensionFilterInvalidFocus,
@@ -298,7 +301,7 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
             title: '别名',
             dataIndex: 'alias',
             search: false,
-            render: (_: unknown, entity: BusinessEntity) => ('alias' in entity ? (entity.alias ?? '—') : '—'),
+            render: (_: unknown, entity: BusinessEntity) => ('alias' in entity ? displayFieldValue(entity.alias) : '—'),
           },
         ]
       : [
@@ -321,7 +324,13 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
             },
           },
         ]),
-    {key: 'remark', title: '备注', dataIndex: 'remark', search: false, render: (_, entity) => entity.remark ?? '—'},
+    {
+      key: 'remark',
+      title: '备注',
+      dataIndex: 'remark',
+      search: false,
+      render: (_, entity) => displayFieldValue(entity.remark),
+    },
     ...extensionListAndSearchColumns<BusinessEntity>(
       definitionQuery.currentData as ExtensionDefinition | undefined,
       `operations-business-entity-filter-extension-${config.kind.toLowerCase()}`,
@@ -338,9 +347,7 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
         allowClear: true,
       },
       render: (_, entity) => (
-        <Tag color={entity.status === 'ENABLED' ? 'green' : entity.status === 'VOIDED' ? 'error' : 'default'}>
-          {businessEntityLifecycleLabels[entity.status]}
-        </Tag>
+        <Tag color={lifecycleColor(entity.status)}>{businessEntityLifecycleLabels[entity.status]}</Tag>
       ),
     },
     {
@@ -349,7 +356,7 @@ export function BusinessEntityManagementPage({pageDesignKey, queryContext, actio
       dataIndex: 'updatedAt',
       sorter: true,
       search: false,
-      render: (_, entity) => new Date(entity.updatedAt).toLocaleString(),
+      render: (_, entity) => formatCanonicalDateTime(entity.updatedAt),
     },
   ];
 

@@ -4,6 +4,7 @@ import {
   adminListState,
   closedCodeLabel,
   createRefreshSignal,
+  displayFieldValue,
   testId,
   useAsyncGenerationGuard,
   useRefreshVersion,
@@ -130,7 +131,7 @@ export function StoreBusinessChannelPage({queryContext}: OperationsPageProps) {
         key: 'templateCode',
         sorter: true,
         sortOrder: templateSort.sortKey === 'TEMPLATE_CODE' ? proSortOrder(templateSort.sortDirection) : undefined,
-        render: (_value: unknown, row: BusinessChannelTemplateView) => row.templateCode || '—',
+        render: (_value: unknown, row: BusinessChannelTemplateView) => displayFieldValue(row.templateCode),
       },
       {
         title: '接入类型',

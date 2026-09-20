@@ -12,9 +12,11 @@ import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {renderSeedReportMarkdown} from "../test/seed-report.mjs";
 import {availabilityReceiptFacts, validateAvailabilityReceiptAgainstPlan} from "./catalog-availability-receipt.mjs";
+import {validateFixtureContract, validateFixtureSeedStages} from "./r5-fixture-contract.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const runtimeRoot = path.resolve(process.env.V2S_RUNTIME_DIR || path.join(root, ".runtime/r5"));
+const fixturePath = path.join(root, "doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json");
 export const COMPLETE_SEED_STAGE_IDS = Object.freeze(["owner-command", "external-collaboration-business-channel", "catalog-inventory", "sales-menu"]);
 
 export function completeSeedMarkdownPath(reportPath) {
@@ -54,7 +56,8 @@ function requireCleanupPass(value, code) {
 }
 
 /** Pure boundary validation; unit tests exercise every red case without DEV. */
-export function validateCompleteSeedEvidence({managedDevRunId, stages}) {
+export function validateCompleteSeedEvidence({managedDevRunId, stages, fixture = null}) {
+  if (fixture) validateFixtureSeedStages(fixture);
   if (typeof managedDevRunId !== "string" || !managedDevRunId) throw failure("COMPLETE_SEED_MANAGED_RUN_ID_REQUIRED");
   if (!Array.isArray(stages) || stages.length !== COMPLETE_SEED_STAGE_IDS.length) throw failure("COMPLETE_SEED_STAGE_DENOMINATOR_INVALID");
   if (stages.map((stage) => stage.id).join(",") !== COMPLETE_SEED_STAGE_IDS.join(",")) throw failure("COMPLETE_SEED_STAGE_ORDER_INVALID");
@@ -304,6 +307,8 @@ function dryRun() {
 
 async function execute() {
   const manifest = managedRun();
+  const fixture = readJson(fixturePath, "COMPLETE_SEED_FIXTURE_CONTRACT");
+  validateFixtureContract(fixture);
   const runId = `complete-seed-${randomUUID()}`;
   const directory = path.join(runtimeRoot, "seed", "complete", runId);
   const manifestPath = path.join(directory, "run-manifest.json");
@@ -381,7 +386,7 @@ async function execute() {
     salesMenu.manifest = readJson(salesMenu.manifestPath, "COMPLETE_SEED_SALES_MENU_MANIFEST");
     salesMenu.report = readJson(salesMenu.reportPath, "COMPLETE_SEED_SALES_MENU_REPORT");
     components.push({id: salesMenu.id, business: salesMenu.manifest.business, cleanup: salesMenu.manifest.cleanup, durationMs: salesMenu.durationMs, manifestPath: salesMenu.manifestPath, reportPath: salesMenu.reportPath});
-    validateCompleteSeedEvidence({managedDevRunId: manifest.runId, stages: [owner, businessChannel, catalog, salesMenu]});
+    validateCompleteSeedEvidence({managedDevRunId: manifest.runId, stages: [owner, businessChannel, catalog, salesMenu], fixture});
     phase("sales-menu", "PASS", {durationMs: salesMenu.durationMs});
     business = "PASS";
     cleanup = "PASS_PRESERVED_DEV_STATE";

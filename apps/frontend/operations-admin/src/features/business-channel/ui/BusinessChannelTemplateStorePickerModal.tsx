@@ -1,6 +1,6 @@
 import {Alert, Button, Checkbox, Input, Modal, Space, Tag, Typography} from 'antd';
 import type {InputRef} from 'antd/es/input';
-import {NameCodeText, testId, useOverlayLock, wireUuid} from '@catering-v2s/admin-ui-foundation';
+import {LifecycleStatusTag, NameCodeText, testId, useOverlayLock, wireUuid} from '@catering-v2s/admin-ui-foundation';
 import type {BusinessChannelTemplateVisibleStore} from '../../../app/api/generated/operations-edge';
 import {useEffect, useMemo, useRef, useState, type UIEvent} from 'react';
 import {businessChannelTemplateTestIds} from '../../../app/automation/businessChannelTemplateTestIds';
@@ -206,7 +206,7 @@ export function BusinessChannelTemplateStorePickerModal({
             {staleStores.map(store => (
               <Space key={store.storeRef} size={8} wrap>
                 <NameCodeText name={store.storeName} code={store.storeCode} />
-                <Tag>{store.storeStatus === 'VOIDED' ? '作废' : '停用'}</Tag>
+                <LifecycleStatusTag status={store.storeStatus} />
               </Space>
             ))}
           </Space>

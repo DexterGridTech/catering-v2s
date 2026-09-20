@@ -15,14 +15,16 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class StorePersistence {
     private final JdbcTemplate jdbc;
+    private final OrganizationAuditEventWriter auditEvents;
 
     public StorePersistence(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
+        this.auditEvents = new OrganizationAuditEventWriter(jdbc);
     }
 
     public UpdateFacts readUpdateFacts(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
         return jdbc.query(
-                StoreServiceSql.STORE_SERVICE_SELECT_STORE_PROJECT_ID_TENANT_ID_BRAND_ID_CODE + StoreServiceSql.STORE_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
+                StoreServiceSql.STORE_SERVICE_SELECT_STORE_PROJECT_ID_TENANT_ID_BRAND_ID_CODE + StoreServiceSql.STORE_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, storeId);
                     statement.setObject(2, workspaceUuid);
@@ -89,7 +91,7 @@ public class StorePersistence {
             long now) {
         return jdbc.update(
                 StoreServiceSql.STORE_SERVICE_INSERT_INTO_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_PROJECT_ID_TENANT_ID
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_BRAND_ID_HEAD_COMPANY_ID_CODE_NAME_NOTES_OPERATING_RULE
+                        + StoreServiceSql.STORE_SERVICE_BRAND_ID_HEAD_COMPANY_ID_CODE_NAME_NOTES_OPERATING_RULE
                         + StoreServiceSql.STORE_SERVICE_UPDATE_UPDATED_AT_EPOCH_MILLIS_ENABLED,
                 id,
                 workspaceUuid,
@@ -128,8 +130,8 @@ public class StorePersistence {
             long expectedVersion) {
         return jdbc.update(
                 StoreServiceSql.STORE_SERVICE_UPDATE_STORE_PROJECT_ID_TENANT_ID_BRAND_ID_HEAD_COMPANY_ID
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_NAME_NOTES_OPERATING_RULE_VERSION_UPDATED_AT_EPOCH_MILLIS
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
+                        + StoreServiceSql.STORE_SERVICE_NAME_NOTES_OPERATING_RULE_VERSION_UPDATED_AT_EPOCH_MILLIS
+                        + StoreServiceSql.STORE_SERVICE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_VERSION,
                 projectId,
                 tenantId,
                 brandId,
@@ -171,28 +173,28 @@ public class StorePersistence {
             UUID headCompanyId) {
         return jdbc.query(
                 StoreServiceSql.STORE_SERVICE_CTE_REQUESTED_WORKSPACE_UUID_TEXT_GROUP_WORKSPACE_KEY
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_TENANT_ID_BRAND_ID_HEAD_COMPANY_ID_STORE
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_LEGAL_NAME_VARCHAR_CREDIT_CODE_ALIAS
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_STORE_NOTES_STATUS_VERSION
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_STORE_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_EXTENSION_VALUES
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_STORE_PROJECT_ID_TENANT_ID_BRAND_ID
+                        + StoreServiceSql.STORE_SERVICE_TENANT_ID_BRAND_ID_HEAD_COMPANY_ID_STORE
+                        + StoreServiceSql.STORE_SERVICE_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE
+                        + StoreServiceSql.STORE_SERVICE_LEGAL_NAME_VARCHAR_CREDIT_CODE_ALIAS
+                        + StoreServiceSql.STORE_SERVICE_STORE_NOTES_STATUS_VERSION
+                        + StoreServiceSql.STORE_SERVICE_STORE_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_EXTENSION_VALUES
+                        + StoreServiceSql.STORE_SERVICE_STORE_PROJECT_ID_TENANT_ID_BRAND_ID
                         + StoreServiceSql.STORE_SERVICE_OPEN_PAREN_TENANT_PROJECT_STATUS_ENABLED_PROJECT_ENABLED
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_TENANT_REQUESTED_REQUEST_TENANT_ID
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_TENANT_WORKSPACE_UUID_REQUEST_GROUP_WORKSPACE_KEY
+                        + StoreServiceSql.STORE_SERVICE_TENANT_REQUESTED_REQUEST_TENANT_ID
+                        + StoreServiceSql.STORE_SERVICE_TENANT_WORKSPACE_UUID_REQUEST_GROUP_WORKSPACE_KEY
                         + StoreServiceSql.STORE_SERVICE_CONDITION_BRAND_TENANT_STATUS_ENABLED_TENANT_ENABLED
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_REQUESTED_REQUEST_BRAND_BRAND_ID
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_BRAND_GROUP_WORKSPACE_KEY_REQUEST_STATUS
+                        + StoreServiceSql.STORE_SERVICE_REQUESTED_REQUEST_BRAND_BRAND_ID
+                        + StoreServiceSql.STORE_SERVICE_BRAND_GROUP_WORKSPACE_KEY_REQUEST_STATUS
                         + StoreServiceSql.STORE_SERVICE_OPEN_PAREN_HEAD_COMPANY_REQUEST_HEAD_COMPANY_ID
                         + StoreServiceSql.STORE_SERVICE_WHERE_HEAD_COMPANY_REQUEST_HEAD_COMPANY_ID_WORKSPACE_UUID
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_HEAD_COMPANY_GROUP_WORKSPACE_KEY_REQUEST_STATUS
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_HEAD_COMPANY_ENABLED_REQUEST_HEAD_COMPANY_ID
+                        + StoreServiceSql.STORE_SERVICE_HEAD_COMPANY_GROUP_WORKSPACE_KEY_REQUEST_STATUS
+                        + StoreServiceSql.STORE_SERVICE_HEAD_COMPANY_ENABLED_REQUEST_HEAD_COMPANY_ID
                         + StoreServiceSql.STORE_SERVICE_ALTERNATIVE_HEAD_COMPANY_BRAND_AUTHORIZATION_HBA_HEAD_COMPANY_ID_REQUEST
                         + StoreServiceSql.STORE_SERVICE_CONDITION_STORE_HBA_BRAND_ID_REQUEST_HEAD_COMPANY_AUTHORIZED
                         + StoreServiceSql.STORE_SERVICE_ALTERNATIVE_ORGANIZATION_NODE_PROJECT_STORE_PROJECT_ID
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_PROJECT_WORKSPACE_UUID_STORE_GROUP_WORKSPACE_KEY
+                        + StoreServiceSql.STORE_SERVICE_PROJECT_WORKSPACE_UUID_STORE_GROUP_WORKSPACE_KEY
                         + StoreServiceSql.STORE_SERVICE_CONDITION_REQUESTED_PROJECT_NODE_TYPE_REQUEST_STORE
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
+                        + StoreServiceSql.STORE_SERVICE_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY,
                 statement -> {
                     statement.setObject(1, workspaceUuid);
                     statement.setString(2, groupWorkspaceKey);
@@ -223,13 +225,13 @@ public class StorePersistence {
     public StatusFacts readStatusFacts(UUID workspaceUuid, String groupWorkspaceKey, UUID storeId) {
         return jdbc.query(
                 StoreServiceSql.STORE_SERVICE_SELECT_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_CODE
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_VARCHAR_LEGAL_NAME_CREDIT_CODE_ALIAS
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_VARCHAR_REMARK_STORE_NOTES
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_STORE_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_EXTENSION_VALUES_ALTERNATE_A
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_ORGANIZATION_NODE_PROJECT_ID_PROJECT
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_PROJECT_STORE_PROJECT_ID_WORKSPACE_UUID
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_PROJECT_GROUP_WORKSPACE_KEY_STORE_NODE_TYPE
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A,
+                        + StoreServiceSql.STORE_SERVICE_VARCHAR_LEGAL_NAME_CREDIT_CODE_ALIAS
+                        + StoreServiceSql.STORE_SERVICE_VARCHAR_REMARK_STORE_NOTES
+                        + StoreServiceSql.STORE_SERVICE_STORE_CREATED_AT_EPOCH_MILLIS_UPDATED_AT_EPOCH_MILLIS_EXTENSION_VALUES_ALTERNATE_A
+                        + StoreServiceSql.STORE_SERVICE_ORGANIZATION_NODE_PROJECT_ID_PROJECT
+                        + StoreServiceSql.STORE_SERVICE_PROJECT_STORE_PROJECT_ID_WORKSPACE_UUID
+                        + StoreServiceSql.STORE_SERVICE_PROJECT_GROUP_WORKSPACE_KEY_STORE_NODE_TYPE
+                        + StoreServiceSql.STORE_SERVICE_STORE_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ALTERNATE_A,
                 statement -> {
                     statement.setObject(1, storeId);
                     statement.setObject(2, workspaceUuid);
@@ -252,19 +254,19 @@ public class StorePersistence {
             UUID headCompanyId) {
         return jdbc.query(
                 StoreServiceSql.STORE_SERVICE_CTE_REQUESTED_WORKSPACE_UUID_TEXT_GROUP_WORKSPACE_KEY_ALTERNATE_A
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_PROJECT_ID_TENANT_ID_BRAND_ID_HEAD_COMPANY_ID
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_ORGANIZATION_NODE_NODE_REQUESTED_REQUEST_PROJECT_ID
+                        + StoreServiceSql.STORE_SERVICE_PROJECT_ID_TENANT_ID_BRAND_ID_HEAD_COMPANY_ID
+                        + StoreServiceSql.STORE_SERVICE_ORGANIZATION_NODE_NODE_REQUESTED_REQUEST_PROJECT_ID
                         + StoreServiceSql.STORE_SERVICE_CONDITION_NODE_WORKSPACE_UUID_REQUEST_GROUP_WORKSPACE_KEY
                         + StoreServiceSql.STORE_SERVICE_CONDITION_NODE_NODE_TYPE_PROJECT_STATUS
                         + StoreServiceSql.STORE_SERVICE_ALTERNATIVE_TENANT_REQUESTED_REQUEST_TENANT_ID
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_TENANT_WORKSPACE_UUID_REQUEST_GROUP_WORKSPACE_KEY_ALTERNATE_A
+                        + StoreServiceSql.STORE_SERVICE_TENANT_WORKSPACE_UUID_REQUEST_GROUP_WORKSPACE_KEY_ALTERNATE_A
                         + StoreServiceSql.STORE_SERVICE_CONDITION_BRAND_TENANT_STATUS_ENABLED_TENANT_ENABLED_ALTERNATE_A
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_REQUESTED_REQUEST_BRAND_BRAND_ID_ALTERNATE_A
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_BRAND_GROUP_WORKSPACE_KEY_REQUEST_STATUS_ALTERNATE_A
+                        + StoreServiceSql.STORE_SERVICE_REQUESTED_REQUEST_BRAND_BRAND_ID_ALTERNATE_A
+                        + StoreServiceSql.STORE_SERVICE_BRAND_GROUP_WORKSPACE_KEY_REQUEST_STATUS_ALTERNATE_A
                         + StoreServiceSql.STORE_SERVICE_OPEN_PAREN_HEAD_COMPANY_REQUEST_HEAD_COMPANY_ID_ALTERNATE_A
                         + StoreServiceSql.STORE_SERVICE_WHERE_HEAD_COMPANY_REQUEST_HEAD_COMPANY_ID_WORKSPACE_UUID_ALTERNATE_A
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_HEAD_COMPANY_GROUP_WORKSPACE_KEY_REQUEST_STATUS_ALTERNATE_A
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_HEAD_COMPANY_ENABLED_REQUEST_HEAD_COMPANY_ID_ALTERNATE_A
+                        + StoreServiceSql.STORE_SERVICE_HEAD_COMPANY_GROUP_WORKSPACE_KEY_REQUEST_STATUS_ALTERNATE_A
+                        + StoreServiceSql.STORE_SERVICE_HEAD_COMPANY_ENABLED_REQUEST_HEAD_COMPANY_ID_ALTERNATE_A
                         + StoreServiceSql.STORE_SERVICE_ALTERNATIVE_HEAD_COMPANY_BRAND_AUTHORIZATION_HBA_HEAD_COMPANY_ID_REQUEST_ALTERNATE_A
                         + StoreServiceSql.STORE_SERVICE_CONDITION_REQUESTED_HBA_BRAND_ID_REQUEST_HEAD_COMPANY_AUTHORIZED,
                 statement -> {
@@ -306,10 +308,7 @@ public class StorePersistence {
             String action,
             long occurredAtEpochMillis,
             String changesJson) {
-        return jdbc.update(
-                StoreServiceSql.STORE_SERVICE_INSERT_INTO_AUDIT_EVENT_WORKSPACE_UUID_GROUP_WORKSPACE_KEY_ENTITY_TYPE
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_ENTITY_REF_TEXT_ACTOR_TYPE_ACTOR_ID_ACTOR_DISPLAY_SNAPSHOT
-                        + StoreServiceSql.STORE_SERVICE_CONTINUATION_OCCURRED_AT_EPOCH_MILLIS_CHANGES_JSON,
+        return auditEvents.write(
                 id,
                 workspaceUuid,
                 groupWorkspaceKey,

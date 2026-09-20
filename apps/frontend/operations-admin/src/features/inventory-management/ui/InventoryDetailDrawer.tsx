@@ -5,6 +5,8 @@ import {
   adminWideDetailDescriptionsProps,
   adminWideDrawerSurfaceProps,
   CursorPagination,
+  displayFieldValue,
+  formatCanonicalDateTime,
   NameCodeText,
   testId,
   useCursorStack,
@@ -268,7 +270,9 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                 {
                   key: 'threshold',
                   label: '阈值 / 差额',
-                  children: currentView ? `${currentView.threshold ?? '—'} / ${currentView.gap ?? '—'}` : '—',
+                  children: currentView
+                    ? `${displayFieldValue(currentView.threshold)} / ${displayFieldValue(currentView.gap)}`
+                    : '—',
                 },
                 {key: 'source', label: '来源', children: inventoryAuthorityLabel(currentView?.target.authorityType)},
                 {
@@ -299,7 +303,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                   },
                   {title: '数量', dataIndex: 'quantity'},
                   {title: '来源', dataIndex: 'source', render: (value: string) => inventoryOperationLabel(value)},
-                  {title: '时间', dataIndex: 'occurredAt', render: (value: number) => new Date(value).toLocaleString()},
+                  {title: '时间', dataIndex: 'occurredAt', render: (value: number) => formatCanonicalDateTime(value)},
                 ]}
               />
             ) : (
@@ -354,7 +358,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                   {title: '数量', dataIndex: 'quantity'},
                   {title: '变更前', dataIndex: 'beforeQuantity'},
                   {title: '变更后', dataIndex: 'afterQuantity'},
-                  {title: '时间', dataIndex: 'occurredAt', render: (value: number) => new Date(value).toLocaleString()},
+                  {title: '时间', dataIndex: 'occurredAt', render: (value: number) => formatCanonicalDateTime(value)},
                 ]}
               />
               <CursorPagination
@@ -446,7 +450,7 @@ export function InventoryDetailDrawer({targetRef, canEdit, queryContext, onClose
                   {title: '变更前', dataIndex: 'beforeQuantity'},
                   {title: '变化量', dataIndex: 'changeQuantity'},
                   {title: '变更后', dataIndex: 'afterQuantity'},
-                  {title: '时间', dataIndex: 'occurredAt', render: (value: number) => new Date(value).toLocaleString()},
+                  {title: '时间', dataIndex: 'occurredAt', render: (value: number) => formatCanonicalDateTime(value)},
                 ]}
               />
               <CursorPagination

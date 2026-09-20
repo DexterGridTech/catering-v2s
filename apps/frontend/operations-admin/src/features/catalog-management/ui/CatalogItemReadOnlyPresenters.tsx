@@ -1,5 +1,10 @@
 import {Button, Card, Descriptions, Space, Tag, Tooltip, Typography} from 'antd';
-import {adminWideDetailDescriptionsProps, NameCodeText, testId} from '@catering-v2s/admin-ui-foundation';
+import {
+  adminWideDetailDescriptionsProps,
+  displayFieldValue,
+  NameCodeText,
+  testId,
+} from '@catering-v2s/admin-ui-foundation';
 import type {ComponentProps, ReactNode} from 'react';
 import type {CatalogShapeManifestView, JsonValue} from '../../../app/api/generated/catalog-inventory-edge';
 import type {
@@ -278,9 +283,13 @@ export function PreparationProfileReadOnly({
               label: '生产标签',
               children: tag ? <Tag>{catalogBusinessName(tag.name, tag.code, '生产标签名称暂时无法读取')}</Tag> : '—',
             },
-            {key: 'name', label: '制作单显示名称', children: profile?.productionDisplayName || '—'},
-            {key: 'seconds', label: '预计制作时长（秒）', children: profile?.estimatedPreparationSeconds ?? '—'},
-            {key: 'notes', label: '制作说明', children: profile?.preparationNotes || '—'},
+            {key: 'name', label: '制作单显示名称', children: displayFieldValue(profile?.productionDisplayName)},
+            {
+              key: 'seconds',
+              label: '预计制作时长（秒）',
+              children: displayFieldValue(profile?.estimatedPreparationSeconds),
+            },
+            {key: 'notes', label: '制作说明', children: displayFieldValue(profile?.preparationNotes)},
           ]}
         />
       )}
@@ -372,7 +381,7 @@ export function PreparationVariationSummary({
                 {
                   key: 'instruction',
                   label: '制作说明',
-                  children: effect.effect.instruction || '—',
+                  children: displayFieldValue(effect.effect.instruction),
                 },
                 {
                   key: 'seconds',
@@ -475,7 +484,10 @@ export function AttributeAssignmentsReadOnly({values}: {values: CatalogAttribute
       items={values.map(value => ({
         key: value.definitionRef,
         label: value.name,
-        children: value.valueType === 'TEXT' ? value.textValue || '—' : value.selectedOptionNames.join('、') || '—',
+        children:
+          value.valueType === 'TEXT'
+            ? displayFieldValue(value.textValue)
+            : displayFieldValue(value.selectedOptionNames.join('、')),
       }))}
     />
   ) : (

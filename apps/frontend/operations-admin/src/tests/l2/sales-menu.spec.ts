@@ -5,8 +5,10 @@ import path from 'node:path';
 import {CATALOG_INVENTORY_OPERATIONS} from '../../app/api/generated/catalog-inventory-edge';
 import {OPERATIONS_ADMIN_OPERATIONS} from '../../app/api/generated/operations-edge';
 import {PUBLIC_OPERATIONS} from '../../app/api/generated/public-edge';
+import {businessChannelTemplateTestIds} from '../../app/automation/businessChannelTemplateTestIds';
 import {salesMenuTestIds} from '../../features/sales-menu/salesMenuTestIds';
 import {selectOperationsDataScope, selectOperationsOption, type OperationsDataScopeTouch} from './operationsL2';
+import {assertSalesMenuL2NetworkClosure} from './sales-menu-network';
 
 type JsonObject = Record<string, unknown>;
 type SalesMenuCase = {
@@ -122,6 +124,7 @@ type CaseRuntime = {
   row: SalesMenuCase;
   facts: OwnerCase;
   observations: OperationObservation[];
+  expectedFailureOperationIds: Set<string>;
 };
 type SignInProfile = {
   loginNameEnv: string;
@@ -271,7 +274,15 @@ const generatedOperations: readonly GeneratedOperation[] = [
   ...PUBLIC_OPERATIONS.filter(operation => operation.operationId === 'getPublicAssetContent'),
 ];
 
-let activeCaseContext: {caseId: string; scenarioId: string} | undefined;
+let activeCaseContext:
+  | {
+      caseId: string;
+      scenarioId: string;
+      declaredControlKeys: string[];
+      touchedControlKeys: Set<string>;
+      actionControlKeys: Set<string>;
+    }
+  | undefined;
 let activeActionContext: {actionId: string} | undefined;
 let activeRuntime: CaseRuntime | undefined;
 const locatorMetadata = new WeakMap<object, {controlKey: string; testId: string}>();
@@ -445,8 +456,10 @@ function observeGeneratedResponses(page: Page): {drain: () => Promise<void>} {
 
 function recordControlTouch(controlKey: string, testId: string, interaction: 'LOCATOR' | 'ACTION' = 'LOCATOR'): void {
   if (!activeCaseContext) throw new Error('SALES_MENU_L2_CASE_CONTEXT_MISSING');
-  if (activeRuntime && !activeRuntime.row.parameter.controlKeys.includes(controlKey))
-    throw new Error(`SALES_MENU_L2_CONTROL_TOUCH_UNDECLARED:${activeRuntime.row.caseId}:${controlKey}`);
+  if (!activeCaseContext.declaredControlKeys.includes(controlKey))
+    throw new Error(`SALES_MENU_L2_CONTROL_TOUCH_UNDECLARED:${activeCaseContext.caseId}:${controlKey}`);
+  activeCaseContext.touchedControlKeys.add(controlKey);
+  if (interaction === 'ACTION') activeCaseContext.actionControlKeys.add(controlKey);
   appendJoinEvent({
     kind: interaction === 'ACTION' ? 'ACTION_TOUCH' : 'CONTROL_TOUCH',
     caseId: activeCaseContext.caseId,
@@ -461,6 +474,10 @@ function recordActionForLocator(locator: Locator, action: string): void {
   const metadata = locatorMetadata.get(locator);
   if (!metadata) throw new Error('SALES_MENU_L2_ACTION_LOCATOR_METADATA_MISSING');
   if (!activeCaseContext || !activeActionContext) throw new Error('SALES_MENU_L2_ACTION_CONTEXT_MISSING');
+  if (!activeCaseContext.declaredControlKeys.includes(metadata.controlKey))
+    throw new Error(`SALES_MENU_L2_CONTROL_TOUCH_UNDECLARED:${activeCaseContext.caseId}:${metadata.controlKey}`);
+  activeCaseContext.touchedControlKeys.add(metadata.controlKey);
+  activeCaseContext.actionControlKeys.add(metadata.controlKey);
   appendJoinEvent({
     kind: 'ACTION_TOUCH',
     caseId: activeCaseContext.caseId,
@@ -666,7 +683,7 @@ async function clickRequiredControl(page: Page, key: string, facts: OwnerCase): 
 }
 
 function visibleTestId(page: Page, testId: string): Locator {
-  return page.getByTestId(testId);
+  return page.getByTestId(testId).filter({visible: true});
 }
 
 async function assertLoadedAssetPreview(page: Page, testId: string, runtime: CaseRuntime): Promise<void> {
@@ -811,6 +828,7 @@ async function waitForFailedOperation(
   operationId: string,
   count = 1,
 ): Promise<OperationObservation> {
+  runtime.expectedFailureOperationIds.add(operationId);
   await expect
     .poll(() => runtime.observations.filter(entry => entry.operationId === operationId).length, {timeout: 20_000})
     .toBeGreaterThanOrEqual(count);
@@ -825,14 +843,16 @@ async function waitForFailedOperation(
 async function assertExpectedOperations(runtime: CaseRuntime): Promise<void> {
   const network = runtime.row.parameter.network;
   const required = network?.required ?? runtime.row.parameter.operationIds;
-  const backgroundAllowed = new Set(network?.backgroundAllowed ?? []);
-  const forbidden = new Set(network?.forbidden ?? []);
-  const declared = new Set([...runtime.row.parameter.operationIds, ...backgroundAllowed]);
   for (const operationId of required) {
     await expect
       .poll(() => runtime.observations.filter(entry => entry.operationId === operationId).length, {timeout: 20_000})
       .toBeGreaterThan(0);
-    const completion = runtime.observations.find(entry => entry.operationId === operationId);
+  }
+  assertSalesMenuL2NetworkClosure(runtime.row, runtime.observations, runtime.expectedFailureOperationIds);
+  for (const operationId of required) {
+    const observations = runtime.observations.filter(entry => entry.operationId === operationId);
+    const successfulCompletion = observations.find(entry => entry.status >= 200 && entry.status < 300);
+    const completion = successfulCompletion ?? observations.find(entry => entry.status >= 400 && entry.status < 600);
     appendDebugEvent({
       kind: 'TEST_CHECKPOINT',
       caseId: runtime.row.caseId,
@@ -842,19 +862,19 @@ async function assertExpectedOperations(runtime: CaseRuntime): Promise<void> {
       status: completion?.status ?? null,
     });
   }
-  for (const observation of runtime.observations) {
-    if (forbidden.has(observation.operationId))
-      throw new Error(`SALES_MENU_L2_FORBIDDEN_OPERATION_OBSERVED:${runtime.row.caseId}:${observation.operationId}`);
-    if (!declared.has(observation.operationId))
-      throw new Error(`SALES_MENU_L2_UNDECLARED_OPERATION_OBSERVED:${runtime.row.caseId}:${observation.operationId}`);
-  }
-  for (const budget of runtime.row.parameter.network?.requests ?? []) {
-    const count = runtime.observations.filter(entry => entry.operationId === budget.operationId).length;
-    if (count > budget.maxRequestCount)
-      throw new Error(
-        `SALES_MENU_L2_OPERATION_REQUEST_BUDGET_EXCEEDED:${runtime.row.caseId}:${budget.operationId}:${count}`,
-      );
-  }
+}
+
+function assertControlTouchClosure(runtime: CaseRuntime): void {
+  if (!activeCaseContext) throw new Error('SALES_MENU_L2_CASE_CONTEXT_MISSING');
+  const declared = new Set(runtime.row.parameter.controlKeys);
+  const missing = [...declared].filter(key => !activeCaseContext?.touchedControlKeys.has(key));
+  if (missing.length > 0)
+    throw new Error(`SALES_MENU_L2_DECLARED_CONTROL_TOUCH_MISSING:${runtime.row.caseId}:${missing.join(',')}`);
+  const missingActions = [...declared].filter(
+    key => bindings.controls[key]?.interaction && !activeCaseContext?.actionControlKeys.has(key),
+  );
+  if (missingActions.length > 0)
+    throw new Error(`SALES_MENU_L2_DECLARED_ACTION_TOUCH_MISSING:${runtime.row.caseId}:${missingActions.join(',')}`);
 }
 
 function responseObject(payload: unknown): JsonObject | undefined {
@@ -1043,7 +1063,7 @@ async function selectStoreScope(page: Page, facts: OwnerCase): Promise<void> {
       storeName: scope.storeName,
       storeRef: scope.storeRef,
     },
-    touch => recordControlTouch(storeScopeControlKey(touch), touch.testId),
+    touch => recordControlTouch(storeScopeControlKey(touch), touch.testId, 'ACTION'),
   );
 }
 
@@ -1058,7 +1078,7 @@ async function selectProjectScope(page: Page, facts: OwnerCase): Promise<void> {
       projectName: scope.projectName,
       projectRef: scope.projectRef,
     },
-    touch => recordControlTouch(storeScopeControlKey(touch), touch.testId),
+    touch => recordControlTouch(storeScopeControlKey(touch), touch.testId, 'ACTION'),
   );
 }
 
@@ -1069,7 +1089,7 @@ function storeScopeControlKey(touch: OperationsDataScopeTouch): string {
     return `STORE_SCOPE_${touch.type}_${touch.phase}`;
   }
   if (touch.phase === 'CONFIRM') return 'STORE_SCOPE_CONFIRM';
-  return 'STORE_SCOPE_CANCEL';
+  throw new Error('SALES_MENU_L2_SCOPE_CANCEL_NOT_IN_ACTIVE_DENOMINATOR');
 }
 
 async function openSalesMenu(page: Page, facts: OwnerCase, verifyChannelSelector: boolean): Promise<void> {
@@ -1116,9 +1136,12 @@ async function loadChannelOption(page: Page, channelRef: string): Promise<Locato
     throw new Error(`SALES_MENU_L2_TEST_ID_NOT_UNIQUE:SALES_MENU_CHANNEL_SELECTOR:${optionTestId}:${initialCount}`);
   if (initialCount === 1) return waitForChannelOption(page, channelRef);
 
-  const popup = page.locator('.ant-select-dropdown:visible').last();
+  // The popup root is an application-owned test id. The holder class below is
+  // only an Ant Design virtual-list scroll adapter; it is not used to find or
+  // activate a business control.
+  const popup = visibleTestId(page, salesMenuTestIds.channelPopup);
   await expect(popup).toBeVisible();
-  const scrollHolder = popup.locator('.rc-virtual-list-holder').last();
+  const scrollHolder = popup.locator('.rc-virtual-list-holder').filter({visible: true});
   const scrollTarget = (await scrollHolder.count()) > 0 ? scrollHolder : popup;
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const beforeOptionCount = await popup.getByRole('option').count();
@@ -1459,7 +1482,8 @@ async function fillBoundControl(page: Page, key: string, facts: OwnerCase, value
   await input.fill(value);
   const metadata = locatorMetadata.get(control);
   if (!metadata) throw new Error('SALES_MENU_L2_FILL_CONTROL_METADATA_MISSING');
-  recordControlTouch(key, metadata.testId, 'ACTION');
+  locatorMetadata.set(input, {controlKey: key, testId: metadata.testId});
+  recordActionForLocator(input, 'fill');
 }
 
 async function clickBoundControl(page: Page, key: string, facts: OwnerCase, label?: string | RegExp): Promise<void> {
@@ -1486,7 +1510,8 @@ async function checkBoundControl(page: Page, key: string, facts: OwnerCase): Pro
   await target.check();
   const metadata = locatorMetadata.get(control);
   if (!metadata) throw new Error('SALES_MENU_L2_CHECK_CONTROL_METADATA_MISSING');
-  recordControlTouch(key, metadata.testId, 'ACTION');
+  locatorMetadata.set(target, {controlKey: key, testId: metadata.testId});
+  recordActionForLocator(target, 'check');
 }
 
 async function openDraftEditor(page: Page, facts: OwnerCase, runtime: CaseRuntime): Promise<void> {
@@ -1557,7 +1582,7 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await expect(detail).toContainText('到店点餐');
       await expect(detail).toContainText('外部接入');
       await expect(detail).toContainText('外部系统不使用 POS、扫码或自助机点餐形式');
-      await expect(page.getByTestId('business-channel-template-dine-in-form')).toHaveCount(0);
+      await expect(page.getByTestId(businessChannelTemplateTestIds.dineInForm)).toHaveCount(0);
 
       await expect
         .poll(() => observationsFor(runtime, 'getOperationsExternalProviderCandidates').length, {timeout: 20_000})
@@ -1847,6 +1872,8 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
         facts,
         String(factNumber(facts, ['listedPriceCents'], 1888)),
       );
+      await fillBoundControl(page, 'SALES_MENU_ITEM_MIN_QUANTITY', facts, '2');
+      await fillBoundControl(page, 'SALES_MENU_ITEM_QUANTITY_STEP', facts, '3');
       const customMediaRadio = visibleTestId(page, salesMenuTestIds.itemMediaChoice('CUSTOM'));
       const customMediaRadioCount = await customMediaRadio.count();
       appendDebugEvent({
@@ -2374,7 +2401,7 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await clickBoundControl(page, 'SALES_MENU_MENU_PUBLISH', facts, '更新到前台');
       await requireControl(page, 'SALES_MENU_PUBLISH_DRAWER', facts);
       const publishFailure = await installOneShotFailure(page, 'publishOperationsSalesMenu');
-      const publicationPreviewCountBeforeSuccessfulPublish = selectedMenuOperationObservations(
+      const publicationPreviewCountBeforeFailedPublish = selectedMenuOperationObservations(
         runtime,
         facts,
         'getOperationsSalesMenuPublicationPreview',
@@ -2382,6 +2409,23 @@ async function runCaseJourney(page: Page, runtime: CaseRuntime): Promise<void> {
       await clickBoundControl(page, 'SALES_MENU_PUBLISH_SUBMIT', facts, '更新到前台');
       await publishFailure.waitForIntercept();
       await waitForFailedOperation(runtime, 'publishOperationsSalesMenu');
+      // The failed publish can invalidate the preview read model after the
+      // 503 itself has arrived. Bind that refresh to the failed publish before
+      // taking the baseline for the successful retry; otherwise the failure
+      // refresh can be mistaken for the retry's readback and leave a genuine
+      // completion outside the declared action window.
+      await waitForSelectedMenuOperation(
+        runtime,
+        facts,
+        'getOperationsSalesMenuPublicationPreview',
+        publicationPreviewCountBeforeFailedPublish + 1,
+      );
+      await page.waitForLoadState('networkidle');
+      const publicationPreviewCountBeforeSuccessfulPublish = selectedMenuOperationObservations(
+        runtime,
+        facts,
+        'getOperationsSalesMenuPublicationPreview',
+      ).length;
       await clickBoundControl(page, 'SALES_MENU_PUBLISH_SUBMIT', facts, '更新到前台');
       await waitForOperation(runtime, 'publishOperationsSalesMenu', 2);
       await expect(visibleTestId(page, salesMenuTestIds.feedback)).toContainText('本系统已生成新的前台菜单');
@@ -2433,8 +2477,14 @@ test.describe('销售菜单 · generated browser-L2 contract', () => {
       }
       const facts = ownerFacts(row);
       if (!facts) throw new Error(`SALES_MENU_L2_OWNER_FIXTURE_CASE_MISSING:${row.caseId}`);
-      const runtime: CaseRuntime = {row, facts, observations: []};
-      activeCaseContext = {caseId: row.caseId, scenarioId: row.scenarioId};
+      const runtime: CaseRuntime = {row, facts, observations: [], expectedFailureOperationIds: new Set()};
+      activeCaseContext = {
+        caseId: row.caseId,
+        scenarioId: row.scenarioId,
+        declaredControlKeys: row.parameter.controlKeys,
+        touchedControlKeys: new Set(),
+        actionControlKeys: new Set(),
+      };
       activeRuntime = runtime;
       page.on('console', message => {
         const event = frontendConsoleEvent(message.text());
@@ -2499,7 +2549,15 @@ test.describe('销售菜单 · generated browser-L2 contract', () => {
             await openProjectBusinessChannels(page, facts);
           else await openSalesMenu(page, facts, row.parameter.controlKeys.includes('SALES_MENU_CHANNEL_SELECTOR'));
           await runCaseJourney(page, runtime);
+          // A UI action is not terminal merely because its local assertion has
+          // settled. Mutation invalidation can schedule generated owner reads
+          // in a following browser turn. Keep ACTION_COMPLETE after the
+          // browser has reached network-idle and every response observer write
+          // has been drained, so the join artifact proves the full action
+          // window instead of racing the final readback.
+          await page.waitForLoadState('networkidle');
           await responseObserver.drain();
+          assertControlTouchClosure(runtime);
           await assertExpectedOperations(runtime);
         });
         appendJoinEvent({

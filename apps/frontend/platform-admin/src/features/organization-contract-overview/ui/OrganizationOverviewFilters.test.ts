@@ -3,6 +3,8 @@ import {
   defaultOrganizationTabQueryState,
   filtersForOrganizationTab,
   organizationOverviewQuery,
+  organizationOverviewStatusLabel,
+  organizationOverviewStatusValueEnum,
   ownerFilterOptions,
   updateOrganizationTabQueryState,
   type OrganizationFilters,
@@ -26,6 +28,15 @@ const selected: OrganizationFilters = {
 };
 
 describe('organization overview owner-backed filters', () => {
+  it('keeps the complete lifecycle status dictionary user-readable', () => {
+    expect(organizationOverviewStatusValueEnum).toEqual({
+      ENABLED: {text: '启用'},
+      DISABLED: {text: '停用'},
+      VOIDED: {text: '作废'},
+    });
+    expect(organizationOverviewStatusLabel('VOIDED')).toBe('作废');
+  });
+
   it('forwards every selected STORE condition into one generated-query argument', () => {
     expect(organizationOverviewQuery(storeTab, selected, 1, 10, 'NAME', 'ASC')).toEqual({
       category: 'STORE',

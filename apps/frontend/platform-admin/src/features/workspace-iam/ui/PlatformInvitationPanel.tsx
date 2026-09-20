@@ -24,6 +24,7 @@ import {
   activeInvitationPageUrl,
   adminDrawerSurfaceProps,
   createPageQueryIdentity,
+  formatCanonicalDateTime,
   NameCodePathText,
   testId,
   useAsyncGenerationGuard,
@@ -81,7 +82,7 @@ const statusLabels: Record<WorkspaceInvitationStatus, string> = {
   COMPLETED: '已完成',
 };
 
-const time = (value: number | null | undefined) => (value ? new Date(value).toLocaleString('zh-CN') : '—');
+const time = (value: number | null | undefined) => formatCanonicalDateTime(value);
 const text = (value?: string) => value?.trim() || undefined;
 const candidateOptions = (
   values: WorkspaceInvitationCandidatePage | undefined,

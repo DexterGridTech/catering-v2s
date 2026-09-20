@@ -1,5 +1,12 @@
 import {Alert, Button, Descriptions, Empty, List, Modal, Pagination, Space, Spin, Table, Typography} from 'antd';
-import {createPageQueryIdentity, testId, useOverlayLock, usePageQuery} from '@catering-v2s/admin-ui-foundation';
+import {
+  createPageQueryIdentity,
+  auditActionLabel,
+  formatCanonicalDateTime,
+  testId,
+  useOverlayLock,
+  usePageQuery,
+} from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo, useState} from 'react';
 import type {AuditChange, AuditHistoryItem, AuditHistoryPage} from '../../../app/api/generated/platform-edge';
 import {PLATFORM_ADMIN_OPERATION_IDS} from '../../../app/api/generated/platform-edge';
@@ -11,34 +18,7 @@ type AuditEntityType = Parameters<
   typeof platformAdminRtkRequest.getPlatformEntityAuditHistory
 >[1]['query']['entityType'];
 export type PlatformAuditTarget = {entityType: AuditEntityType; entityId: string; displayName: string};
-const actionLabels: Record<string, string> = {
-  GROUP_WORKSPACE_CREATED: '已创建集团空间',
-  GROUP_WORKSPACE_UPDATED: '已更新集团空间',
-  GROUP_WORKSPACE_STATUS_CHANGED: '已更新集团空间状态',
-  COMMERCIAL_GROUP_INITIALIZED: '已初始化商业集团',
-  PLATFORM_ADMIN_CREATED: '已创建管理员',
-  PLATFORM_ADMIN_PROFILE_UPDATED: '已更新管理员资料',
-  PLATFORM_ADMIN_STATUS_CHANGED: '已更新管理员状态',
-  PLATFORM_ADMIN_CREDENTIAL_RESET: '已重置管理员登录凭据',
-  WORKSPACE_ROLE_CREATED: '已创建业务角色',
-  ROLE_PERMISSIONS_REPLACED: '已更新业务角色授权',
-  WORKSPACE_ROLE_STATUS_CHANGED: '已更新业务角色状态',
-  WORKSPACE_ACCOUNT_STATUS_CHANGED: '已更新账号状态',
-  WORKSPACE_ACCOUNT_ASSIGNMENT_REVOKED: '已撤销账号任职',
-  WORKSPACE_ACCOUNT_CREDENTIAL_RESET_REQUESTED: '已请求重置账号登录凭据',
-  WORKSPACE_INVITATION_CREATED: '已发出邀请',
-  WORKSPACE_INVITATION_CANCELLED: '已取消邀请',
-  WORKSPACE_INVITATION_REISSUED: '已重发邀请',
-  EXTENSION_DEFINITION_REPLACED: '已更新字段定义',
-  CONTRACT_CREATED: '已创建合同',
-  CONTRACT_UPDATED: '已更新合同',
-  CONTRACT_INVALIDATED: '已设置合同失效',
-};
-const at = (value: number) =>
-  new Intl.DateTimeFormat('zh-CN', {dateStyle: 'medium', timeStyle: 'medium', timeZone: 'Asia/Shanghai'}).format(
-    new Date(value),
-  );
-const action = (value: string) => actionLabels[value] ?? '已记录操作';
+const at = (value: number) => formatCanonicalDateTime(value);
 
 /** Approved R5 master-detail read only: it is never a route, Drawer, or list action column. */
 export function PlatformAuditHistoryModal({
@@ -185,7 +165,7 @@ export function PlatformAuditHistoryModal({
                     <Typography.Text strong>{at(item.occurredAt)}</Typography.Text>
                     <br />
                     <Typography.Text>
-                      {item.actorDisplayName} · {action(item.action)}
+                      {item.actorDisplayName} · {auditActionLabel(item.action)}
                     </Typography.Text>
                   </button>
                 </List.Item>
@@ -222,7 +202,7 @@ function AuditDetail({item}: {item: AuditHistoryItem}) {
         items={[
           {key: 'occurredAt', label: '操作时间', children: at(item.occurredAt)},
           {key: 'actor', label: '操作人', children: item.actorDisplayName},
-          {key: 'action', label: '操作', children: action(item.action)},
+          {key: 'action', label: '操作', children: auditActionLabel(item.action)},
         ]}
       />
       <Table<AuditChange>
