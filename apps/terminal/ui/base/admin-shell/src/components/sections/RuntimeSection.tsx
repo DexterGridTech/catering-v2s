@@ -1,4 +1,4 @@
-import {PrimitiveCard, PrimitiveContainer, PrimitiveEmptyState, PrimitiveFactGrid, PrimitiveHeading, PrimitiveScrollView, PrimitiveStatusLine, PrimitiveSurfaceMap, PrimitiveText} from '@catering-v2s/ui-base-primitives'
+import {PrimitiveCard, PrimitiveContainer, PrimitiveEmptyState, PrimitiveFactGrid, PrimitiveHeading, PrimitiveScrollView, PrimitiveStack, PrimitiveStatusLine, PrimitiveSurfaceMap, PrimitiveText} from '@catering-v2s/ui-base-primitives'
 import {useRenderStatus} from '@catering-v2s/ui-base-render'
 import type {AdminSectionProps} from '../../types/adminSection'
 import {runtimeFrameId, useReportAdminFrame} from '../../foundations/adminFrameRegistry'
@@ -51,7 +51,7 @@ export const RuntimeSection = ({context}: AdminSectionProps) => {
           {display.status === 'ready' ? (
           <>
             {context.surface.surfaceForm === 'mobile' ? <PrimitiveText appearance="admin-muted" testID={adminTestIds.runtime.mobileSingleSurfaceBoundary}>mobile 形态仅显示一块实际屏幕</PrimitiveText> : null}
-            <PrimitiveCard appearance="admin" testID="admin.console.runtime:surface-card">
+            <PrimitiveStack testID="admin.console.runtime:surface-card">
               <PrimitiveSurfaceMap
                 testID={adminTestIds.runtime.surfaceMap}
                 accessibilityLabel="显示屏状态"
@@ -59,8 +59,8 @@ export const RuntimeSection = ({context}: AdminSectionProps) => {
                 surfaces={display.surfaces}
                 compact={context.surface.surfaceForm === 'mobile'}
               />
-            </PrimitiveCard>
-            <PrimitiveText appearance="admin-muted" testID={adminTestIds.runtime.legend}>当前屏幕显示完整事实；非当前屏幕仅显示存在性、角色与信息未提供边界</PrimitiveText>
+              <PrimitiveText appearance="admin-muted" testID={adminTestIds.runtime.legend}>当前屏幕显示完整事实；非当前屏幕仅显示存在性、角色与信息未提供边界</PrimitiveText>
+            </PrimitiveStack>
           </>
           ) : (
             <PrimitiveEmptyState testID={adminTestIds.runtime.displayFactsError} tone="warn">

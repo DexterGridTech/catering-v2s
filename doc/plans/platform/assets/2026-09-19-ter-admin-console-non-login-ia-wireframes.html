@@ -254,7 +254,7 @@
       return pairedTopology(frame);
     };
     const crossContent = () => {
-      const wrap = el('div', 'cross'); const runtime = el('div', 'cross-pane'); runtime.append(el('h3', '', '运行状态 tab')); const r = el('div', 'card'); r.append(el('strong', '', '检测到两块物理屏'), document.createTextNode('主屏：逻辑 1280 × 800 · 物理 1920 × 1200\n副屏：逻辑 1024 × 768 · 物理 1536 × 1152')); runtime.append(r);
+      const wrap = el('div', 'cross'); const runtime = el('div', 'cross-pane'); runtime.append(el('h3', '', '运行状态 tab')); const r = el('div', 'card'); r.append(el('strong', '', '检测到两块物理屏'), document.createTextNode('主屏：当前 surface · 逻辑 1280 × 800 · 物理 1920 × 1200\n副屏：非当前 surface · 该屏信息未提供（仅保留存在性与角色）')); runtime.append(r);
       const topo = el('div', 'cross-pane'); topo.append(el('h3', '', '双机拓扑 tab')); const t = el('div', 'card'); t.append(el('strong', '', '当前功能不可用'), document.createTextNode('双机拓扑要求本机只有一个物理屏')); topo.append(t); wrap.append(runtime, topo); return wrap;
     };
     const renderContent = frame => frame.kind === 'panel' ? panelContent(frame) : frame.kind === 'ports' ? portsContent(frame) : frame.kind === 'runtime' ? runtimeContent(frame) : frame.kind === 'unavailable' || frame.kind === 'topology' ? topologyContent(frame) : crossContent();

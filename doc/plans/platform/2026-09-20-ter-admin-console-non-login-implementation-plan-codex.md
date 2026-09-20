@@ -1,23 +1,25 @@
 # TER Admin console 非登录区实施计划
 
 ```text
-PLAN_STATUS=IMPLEMENTATION_IN_PROGRESS_STAGE1_PARTIAL_STAGE2_BLOCKED
+PLAN_STATUS=IMPLEMENTATION_IN_PROGRESS_STAGE2_PARTIAL_STAGE1_WAITING_FOR_SINGLE_SCREEN_VMS
 DESIGN=doc/plans/platform/2026-09-20-ter-admin-console-non-login-implementation-design-codex.md
 BUSINESS_SOURCE=doc/plans/platform/2026-09-19-ter-admin-console-non-login-requirements-codex.md
 IA=doc/plans/platform/2026-09-19-ter-admin-console-non-login-ia-frame-inventory-codex.md;doc/plans/platform/2026-09-19-ter-admin-console-non-login-ia-high-fidelity-codex.md
 IMPLEMENTATION_AUTHORITY=true
 IMPLEMENTATION=STATIC_AND_FOCUSED_GREEN_OWNER_GATES_CLOSED
-RUNTIME=R39_STAGE1_BUSINESS_PASS_CLEANUP_PASS_FRAME_COVERAGE_OPEN
-WEB_METRO_ANDROID_DEVICE=STAGE1_ANDROID_DEVICE_PARTIAL;STAGE2_DEVICE_SHAPES_NOT_VISIBLE
+RUNTIME=R11_MOBILE_AND_R12_DUAL_BUSINESS_PASS_CLEANUP_PASS_VISUAL_OPEN_FRAME_COVERAGE_OPEN
+WEB_METRO_ANDROID_DEVICE=ANDROID_STAGE2_DUAL_MOBILE_PASS;STAGE1_SINGLE_SCREEN_VMS_REQUIRED
 INDEPENDENT_DESIGN_REVIEW=COMPLETED_FINDINGS_OPEN_REVIEWED_BY_FRESH_SUBAGENT
 ADMISSION_BLOCKERS=DISPLAY_FACTS_OWNER:OPEN_WITH_FOCUSED_OWNER_EVIDENCE;TOPOLOGY_PAGE_AVAILABILITY_AND_DIRECT_PAIR_OWNER:OPEN_WITH_FOCUSED_OWNER_EVIDENCE;MASTER_UNPAIR_GUARD:OPEN_WITH_FOCUSED_OWNER_EVIDENCE
 ```
 
-本计划定义实施的可执行顺序、文件分母、测试与对账门。Dexter 已于 2026-09-20 明确授权进入实施；当前 CP-0/CP-1 已取得 owner contract、consumer、focused readback 与 red mutation 证据，但三条 admission blocker 仍为 OPEN，不能把 focused 证据写成 blocker 已关闭。r39 已完成第一批 single-screen topology dynamic journey，但 19 帧只真实捕获 16 帧，IA-03/05/07 为 OPEN；第二批仍按双屏/mobile 机器边界待执行。
+本计划定义实施的可执行顺序、文件分母、测试与对账门。Dexter 已于 2026-09-20 明确授权进入实施；当前 CP-0/CP-1 已取得 owner contract、consumer、focused readback 与 red mutation 证据，但三条 admission blocker 仍为 OPEN，不能把 focused 证据写成 blocker 已关闭。当前可用的第二批 dual/mobile 设备已完成受管 Android run；第一批两台 single-screen VM 尚未提供，不能伪造第一批拓扑形态或 IA-16。
 
-当前执行状态：`CP-0=PASS_CURRENT_SOURCE_RECONCILIATION`；`CP-1=OWNER_CONTRACT_AND_FOCUSED_PROOF_MATCHED_IMPLEMENTATION_REVIEW_PENDING`；`CP-2..CP-4=IMPLEMENTED_FOCUSED_GREEN`；`CP-5=STAGE1_BUSINESS_PASS_CLEANUP_PASS_FRAME_COVERAGE_OPEN_STAGE2_BLOCKED`。当前接受的动态证据只包括 r39 的真实 Android single-screen run；第一批分母 19 中实际截图 16，IA-03/05/07 为 OPEN；未把历史截图、历史 XML、旧 Web/Android/device 结果升级为第二批动态证据。三条 admission blocker 仍为 OPEN；已有 focused owner/readback/red-mutation 证据不能替代 blocker 的最终关闭。
+当前执行状态：`CP-0=PASS_CURRENT_SOURCE_RECONCILIATION`；`CP-1=OWNER_CONTRACT_AND_FOCUSED_PROOF_MATCHED_IMPLEMENTATION_REVIEW_PARTIAL`；`CP-2..CP-4=IMPLEMENTED_FOCUSED_GREEN`；`CP-5=STAGE2_BUSINESS_PASS_CLEANUP_PASS_VISUAL_OPEN_STAGE1_WAITING_FOR_VMS`。当前动态证据为 r11 mobile 与 r12 dual：两次 `BUSINESS=PASS`、`CLEANUP=PASS`；runner mechanical matched 分别为 mobile 的 IA-02/10/12/17 与 dual 的 IA-01/09/11/15/16/32，但这不构成视觉 PASS。IA-14 的移动长图例说明在真实滚动边界不可达，保持 OPEN；移动 panel 的 busy/error 变体没有被 release UI 暴露，保持 OPEN；三条 admission blocker 仍为 OPEN。
 
-当前 r39 运行目录：`.runtime/ter-dual-machine-topology/2026-09-20/non-login-stage1-r39/sample-terminal/`。副机 host 输入时看到的退格来自 runner `replaceHost()` 的有限清场：每次替换 16 次 backspace，r39 共 3 次替换即 48 次；`uiActionSettleDelayMs=1500` 使每次退格之间有观察等待，不能误判成业务循环。
+当前动态运行目录：`.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage2-mobile-sample-terminal-r11/` 与 `.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage2-dual-sample-terminal-r12/`。r12 已实测 laptop shell bounds 为 `[2,2][2558,1598]`，证明当前 dual 运行是全屏承载；r11/r12 均未把非当前 surface 补成分辨率字段。IA-32 high-fidelity cross-tab 对照帧中的副屏分辨率残留已修正为“该屏信息未提供”。
+
+第一批待外部提供两台单机单屏虚拟机后，仍需按 19 帧分母验证 IA-01/03/05/07、IA-09/11、IA-13 与 IA-18..IA-29；当前不能把第二批结果或结构/静态证据升级成这些帧的动态结论。
 
 ## 1. 目标、范围与不变量
 
