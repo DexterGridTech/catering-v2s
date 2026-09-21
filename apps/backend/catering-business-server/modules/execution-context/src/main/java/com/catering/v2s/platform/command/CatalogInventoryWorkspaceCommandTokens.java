@@ -5,9 +5,9 @@ import java.util.Map;
 
 /**
  * Generated command tokens. Binding source: contracts/registry/operation-handler-bindings.json Binding digest:
- * 9d3bcea0f262ffe42ea5b4465d97ea3d3a8a8e1b694826878ee523434866a98b Contract source:
+ * f75697612cf57ebe44bdf29aae544a9cb263654fbe575a9fc6a5c6308b2b0934 Contract source:
  * contracts/catalog/catalog-inventory-edge-contract.json Contract digest:
- * 60898f93ac40fa9981f54adc197161aa4c7b1a5fb1ed7cebc09a449ef04f33f8
+ * ba085e41f4c88aa833a76e62cface35934249be00563ecacec407674af20bec0
  */
 public final class CatalogInventoryWorkspaceCommandTokens {
     private CatalogInventoryWorkspaceCommandTokens() {}
@@ -128,7 +128,7 @@ public final class CatalogInventoryWorkspaceCommandTokens {
     public static final WorkspaceCommandOperationToken CREATE_OPERATIONS_PRODUCTION_TAG =
             new WorkspaceCommandOperationToken(
                     "createOperationsProductionTag",
-                    "fulfillment-production",
+                    "catalog",
                     "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_PRODUCTION_TAG",
                     List.of("HEAD_COMPANY", "STORE"),
                     Map.ofEntries(
@@ -365,7 +365,7 @@ public final class CatalogInventoryWorkspaceCommandTokens {
     public static final WorkspaceCommandOperationToken TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS =
             new WorkspaceCommandOperationToken(
                     "transitionOperationsProductionTagStatus",
-                    "fulfillment-production",
+                    "catalog",
                     "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS",
                     List.of("HEAD_COMPANY", "STORE"),
                     Map.ofEntries(
@@ -454,7 +454,7 @@ public final class CatalogInventoryWorkspaceCommandTokens {
     public static final WorkspaceCommandOperationToken UPDATE_OPERATIONS_PRODUCTION_TAG =
             new WorkspaceCommandOperationToken(
                     "updateOperationsProductionTag",
-                    "fulfillment-production",
+                    "catalog",
                     "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_PRODUCTION_TAG",
                     List.of("HEAD_COMPANY", "STORE"),
                     Map.ofEntries(

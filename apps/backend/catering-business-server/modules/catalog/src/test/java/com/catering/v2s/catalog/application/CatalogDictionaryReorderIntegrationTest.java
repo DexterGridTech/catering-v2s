@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
 import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
@@ -173,7 +174,13 @@ class CatalogDictionaryReorderIntegrationTest {
 
     private static CatalogOwnerService service(JdbcTemplate jdbc) {
         TimeProvider time = () -> 1_785_000_000_000L;
-        return new CatalogOwnerService(jdbc, MAPPER, time, mock(CatalogAssetReferenceLock.class));
+        return new CatalogOwnerService(
+                jdbc,
+                MAPPER,
+                time,
+                mock(CatalogAssetReferenceLock.class),
+                mock(CatalogProductionTagOwnerApi.class),
+                null);
     }
 
     private static Fixture fixture() {

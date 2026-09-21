@@ -5,7 +5,7 @@
   "sourceBindings": {
     "operationDesignContract": {
       "path": "doc/review/platform/2026-08-06-v2s-catalog-inventory-backend-operation-design-contract.json",
-      "sha256": "be304126ef29e22cccd69f736a14407ea9ea36cc69660bd34b4525999aa8254e"
+      "sha256": "e4547e43a10805261492605aad77271e6c303430d2184c050b0361a523fd6b72"
     },
     "categoryRemediationDesign": {
       "path": "doc/plans/platform/2026-08-08-v2s-catalog-reference-model-category-remediation-design-codex.md",
@@ -13,7 +13,7 @@
     },
     "referencePathMatrix": {
       "path": "contracts/policy/catalog-inventory-reference-path-matrix.json",
-      "sha256": "cf518954797d8154a7c0dc7b168497d4a40d2e9b5611b5d37bf9ea6a62b1d2d4"
+      "sha256": "795e28b08a4fa3cb630a4504a3661beb3a03bf3a407dd4b0d146c1c20abb6b37"
     },
     "ia": {
       "path": "doc/plans/platform/2026-08-06-v2s-catalog-inventory-information-architecture-codex.md",
@@ -762,8 +762,7 @@
       "face": "operations-admin",
       "initiatingOwner": "catalog",
       "coordinatedOwners": [
-        "inventory",
-        "fulfillment-production"
+        "inventory"
       ],
       "pageKeys": [
         "PG-CATALOG-STORE-ITEMS",
@@ -839,13 +838,6 @@
           "target": "inventory.api",
           "owner": "inventory",
           "purpose": "declared batch judgment or owner command"
-        },
-        {
-          "order": 6,
-          "kind": "COORDINATED_OWNER",
-          "target": "fulfillment-production.api",
-          "owner": "fulfillment-production",
-          "purpose": "declared batch judgment or owner command"
         }
       ],
       "conditionToProblem": [
@@ -890,16 +882,11 @@
           },
           {
             "owner": "catalog",
-            "readCount": 1,
+            "readCount": 2,
             "writeCount": 0
           },
           {
             "owner": "inventory",
-            "readCount": 1,
-            "writeCount": 0
-          },
-          {
-            "owner": "fulfillment-production",
             "readCount": 1,
             "writeCount": 0
           }
@@ -3385,7 +3372,7 @@
     {
       "operationId": "getOperationsProductionTags",
       "face": "operations-admin",
-      "initiatingOwner": "fulfillment-production",
+      "initiatingOwner": "catalog",
       "coordinatedOwners": [],
       "pageKeys": [
         "PG-CATALOG-STORE-ITEMS",
@@ -3444,8 +3431,8 @@
         {
           "order": 3,
           "kind": "INITIATING_OWNER",
-          "target": "fulfillment-production.api",
-          "owner": "fulfillment-production",
+          "target": "catalog.api",
+          "owner": "catalog",
           "purpose": "own decision and final readback"
         }
       ],
@@ -3483,7 +3470,7 @@
             "writeCount": 0
           },
           {
-            "owner": "fulfillment-production",
+            "owner": "catalog",
             "readCount": 2,
             "writeCount": 0
           }
@@ -3519,7 +3506,7 @@
     {
       "operationId": "createOperationsProductionTag",
       "face": "operations-admin",
-      "initiatingOwner": "fulfillment-production",
+      "initiatingOwner": "catalog",
       "coordinatedOwners": [
         "organization"
       ],
@@ -3590,8 +3577,8 @@
         {
           "order": 3,
           "kind": "INITIATING_OWNER",
-          "target": "fulfillment-production.api",
-          "owner": "fulfillment-production",
+          "target": "catalog.api",
+          "owner": "catalog",
           "purpose": "own decision and final readback"
         },
         {
@@ -3664,7 +3651,7 @@
             "writeCount": 0
           },
           {
-            "owner": "fulfillment-production",
+            "owner": "catalog",
             "readCount": 1,
             "writeCount": 1
           },
@@ -3704,7 +3691,7 @@
     {
       "operationId": "updateOperationsProductionTag",
       "face": "operations-admin",
-      "initiatingOwner": "fulfillment-production",
+      "initiatingOwner": "catalog",
       "coordinatedOwners": [],
       "pageKeys": [
         "PG-CATALOG-STORE-ITEMS",
@@ -3775,8 +3762,8 @@
         {
           "order": 3,
           "kind": "INITIATING_OWNER",
-          "target": "fulfillment-production.api",
-          "owner": "fulfillment-production",
+          "target": "catalog.api",
+          "owner": "catalog",
           "purpose": "own decision and final readback"
         }
       ],
@@ -3856,7 +3843,7 @@
             "writeCount": 0
           },
           {
-            "owner": "fulfillment-production",
+            "owner": "catalog",
             "readCount": 2,
             "writeCount": 2
           }
@@ -3891,10 +3878,8 @@
     {
       "operationId": "transitionOperationsProductionTagStatus",
       "face": "operations-admin",
-      "initiatingOwner": "fulfillment-production",
-      "coordinatedOwners": [
-        "catalog"
-      ],
+      "initiatingOwner": "catalog",
+      "coordinatedOwners": [],
       "pageKeys": [
         "PG-CATALOG-STORE-ITEMS",
         "PG-CATALOG-BRAND-ITEMS"
@@ -3966,16 +3951,9 @@
         {
           "order": 3,
           "kind": "INITIATING_OWNER",
-          "target": "fulfillment-production.api",
-          "owner": "fulfillment-production",
-          "purpose": "own decision and final readback"
-        },
-        {
-          "order": 4,
-          "kind": "COORDINATED_OWNER",
           "target": "catalog.api",
           "owner": "catalog",
-          "purpose": "declared batch judgment or owner command"
+          "purpose": "own decision and final readback"
         }
       ],
       "conditionToProblem": [
@@ -4068,14 +4046,9 @@
             "writeCount": 0
           },
           {
-            "owner": "fulfillment-production",
-            "readCount": 2,
-            "writeCount": 1
-          },
-          {
             "owner": "catalog",
-            "readCount": 2,
-            "writeCount": 1
+            "readCount": 4,
+            "writeCount": 2
           }
         ]
       },
@@ -5202,8 +5175,7 @@
       "initiatingOwner": "catalog",
       "coordinatedOwners": [
         "organization",
-        "inventory",
-        "fulfillment-production"
+        "inventory"
       ],
       "pageKeys": [
         "PG-CATALOG-STORE-ITEMS"
@@ -5291,13 +5263,6 @@
           "target": "inventory.api",
           "owner": "inventory",
           "purpose": "declared batch judgment or owner command"
-        },
-        {
-          "order": 7,
-          "kind": "COORDINATED_OWNER",
-          "target": "fulfillment-production.api",
-          "owner": "fulfillment-production",
-          "purpose": "declared batch judgment or owner command"
         }
       ],
       "conditionToProblem": [
@@ -5363,7 +5328,7 @@
           },
           {
             "owner": "catalog",
-            "readCount": 1,
+            "readCount": 2,
             "writeCount": 0
           },
           {
@@ -5373,11 +5338,6 @@
           },
           {
             "owner": "inventory",
-            "readCount": 1,
-            "writeCount": 0
-          },
-          {
-            "owner": "fulfillment-production",
             "readCount": 1,
             "writeCount": 0
           }
@@ -5542,8 +5502,7 @@
       "initiatingOwner": "catalog",
       "coordinatedOwners": [
         "organization",
-        "inventory",
-        "fulfillment-production"
+        "inventory"
       ],
       "pageKeys": [
         "PG-CATALOG-STORE-ITEMS"
@@ -5638,13 +5597,6 @@
           "kind": "COORDINATED_OWNER",
           "target": "inventory.api",
           "owner": "inventory",
-          "purpose": "declared batch judgment or owner command"
-        },
-        {
-          "order": 7,
-          "kind": "COORDINATED_OWNER",
-          "target": "fulfillment-production.api",
-          "owner": "fulfillment-production",
           "purpose": "declared batch judgment or owner command"
         }
       ],
@@ -5767,8 +5719,8 @@
           },
           {
             "owner": "catalog",
-            "readCount": 3,
-            "writeCount": 2
+            "readCount": 6,
+            "writeCount": 5
           },
           {
             "owner": "organization",
@@ -5779,11 +5731,6 @@
             "owner": "inventory",
             "readCount": 3,
             "writeCount": 2
-          },
-          {
-            "owner": "fulfillment-production",
-            "readCount": 3,
-            "writeCount": 3
           }
         ]
       },

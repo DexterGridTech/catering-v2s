@@ -152,13 +152,6 @@
   "crossOwnerWritesUsePublicCommandApi": true
 },
 {
-  "ownerRecheckId": "OWNER_RECHECK_FULFILLMENT_PRODUCTION",
-  "ownerModule": "fulfillment-production",
-  "requiredInOwnerCommand": true,
-  "transactionRequirement": "REQUIRED",
-  "crossOwnerWritesUsePublicCommandApi": true
-},
-{
   "ownerRecheckId": "OWNER_RECHECK_INVENTORY",
   "ownerModule": "inventory",
   "requiredInOwnerCommand": true,
@@ -247,13 +240,6 @@
 {
   "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
   "ownerModule": "catalog",
-  "typedProblemOnly": true,
-  "noTestCodeInResponse": true,
-  "unmappedExceptionFails": true
-},
-{
-  "typedProblemMappingId": "PROBLEM_FULFILLMENT_PRODUCTION_TYPED_OWNER_EXCEPTION",
-  "ownerModule": "fulfillment-production",
   "typedProblemOnly": true,
   "noTestCodeInResponse": true,
   "unmappedExceptionFails": true
@@ -880,7 +866,7 @@
     "method": "POST",
     "path": "/operations/catalog-inventory/production-tags",
     "consumerFace": "operations-admin",
-    "ownerModule": "fulfillment-production"
+    "ownerModule": "catalog"
   },
   "authorizationMode": "AUTHENTICATED_WORKSPACE",
   "capabilityMapping": {
@@ -892,9 +878,9 @@
     "unsupportedResourceTypeDecision": "DENY"
   },
   "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
-  "ownerModule": "fulfillment-production",
-  "ownerRecheckId": "OWNER_RECHECK_FULFILLMENT_PRODUCTION",
-  "typedProblemMappingId": "PROBLEM_FULFILLMENT_PRODUCTION_TYPED_OWNER_EXCEPTION",
+  "ownerModule": "catalog",
+  "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+  "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
   "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_PRODUCTION_TAG",
   "noClientDerivedAuthorization": true
 },
@@ -905,7 +891,7 @@
     "method": "PATCH",
     "path": "/operations/catalog-inventory/production-tags/{tagCode}",
     "consumerFace": "operations-admin",
-    "ownerModule": "fulfillment-production"
+    "ownerModule": "catalog"
   },
   "authorizationMode": "AUTHENTICATED_WORKSPACE",
   "capabilityMapping": {
@@ -917,9 +903,9 @@
     "unsupportedResourceTypeDecision": "DENY"
   },
   "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
-  "ownerModule": "fulfillment-production",
-  "ownerRecheckId": "OWNER_RECHECK_FULFILLMENT_PRODUCTION",
-  "typedProblemMappingId": "PROBLEM_FULFILLMENT_PRODUCTION_TYPED_OWNER_EXCEPTION",
+  "ownerModule": "catalog",
+  "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+  "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
   "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_PRODUCTION_TAG",
   "noClientDerivedAuthorization": true
 },
@@ -930,7 +916,7 @@
     "method": "POST",
     "path": "/operations/catalog-inventory/production-tags/{tagCode}/status",
     "consumerFace": "operations-admin",
-    "ownerModule": "fulfillment-production"
+    "ownerModule": "catalog"
   },
   "authorizationMode": "AUTHENTICATED_WORKSPACE",
   "capabilityMapping": {
@@ -942,9 +928,9 @@
     "unsupportedResourceTypeDecision": "DENY"
   },
   "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
-  "ownerModule": "fulfillment-production",
-  "ownerRecheckId": "OWNER_RECHECK_FULFILLMENT_PRODUCTION",
-  "typedProblemMappingId": "PROBLEM_FULFILLMENT_PRODUCTION_TYPED_OWNER_EXCEPTION",
+  "ownerModule": "catalog",
+  "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+  "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
   "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS",
   "noClientDerivedAuthorization": true
 },

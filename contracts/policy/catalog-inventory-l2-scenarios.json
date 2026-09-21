@@ -1804,7 +1804,7 @@
       "fixtureRefs": [
         "FIXTURE-SCENARIO-CI-L2-008"
       ],
-      "businessRequirement": "商品字典与生产处理标签是不同 owner surface，入口和回填不混用。",
+      "businessRequirement": "商品字典与生产标签是不同入口、不同编码空间，入口和回填不混用。",
       "primaryVerifier": "browser-business",
       "cases": [
         {
@@ -1879,7 +1879,7 @@
               }
             }
           },
-          "expectedBusinessResult": "商品字典与生产处理标签是不同 owner surface，入口和回填不混用。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-008\",\"journey\":\"商品字典入口\",\"controlKeys\":[\"CATALOG_DICTIONARY\",\"CATALOG_DICTIONARY_DRAWER\"],\"declaredActions\":[],\"steps\":[\"点击商品字典\",\"读取字典 kind 与当前数据节点\",\"打开字典控件\",\"关闭后确认工作台仍在原结果域\"],\"businessOracle\":[\"商品字典不包含分类载体\",\"字典写入只刷新当前候选\"],\"network\":{\"required\":[],\"forbidden\":[],\"backgroundAllowed\":[],\"requests\":[]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "商品字典与生产标签是不同入口、不同编码空间，入口和回填不混用。；case={\"journeyVariant\":1,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-008\",\"journey\":\"商品字典入口\",\"controlKeys\":[\"CATALOG_DICTIONARY\",\"CATALOG_DICTIONARY_DRAWER\"],\"declaredActions\":[],\"steps\":[\"点击商品字典\",\"读取字典 kind 与当前数据节点\",\"打开字典控件\",\"关闭后确认工作台仍在原结果域\"],\"businessOracle\":[\"商品字典不包含分类载体\",\"字典写入只刷新当前候选\"],\"network\":{\"required\":[],\"forbidden\":[],\"backgroundAllowed\":[],\"requests\":[]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":2000}}"
         },
         {
           "caseId": "CI-L2-008-02",
@@ -1901,7 +1901,7 @@
               "关闭后确认结果域未被重置"
             ],
             "businessOracle": [
-              "生产标签归 fulfillment-production owner",
+              "生产标签归 catalog owner",
               "不把生产标签当作商品标签字典"
             ],
             "network": {
@@ -1936,7 +1936,7 @@
                 "关闭后确认结果域未被重置"
               ],
               "businessOracle": [
-                "生产标签归 fulfillment-production owner",
+                "生产标签归 catalog owner",
                 "不把生产标签当作商品标签字典"
               ],
               "network": {
@@ -1953,7 +1953,7 @@
               }
             }
           },
-          "expectedBusinessResult": "商品字典与生产处理标签是不同 owner surface，入口和回填不混用。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-008\",\"journey\":\"生产标签独立入口\",\"controlKeys\":[\"CATALOG_PRODUCTION_TAGS\",\"CATALOG_DICTIONARY_DRAWER\"],\"declaredActions\":[],\"steps\":[\"点击生产标签\",\"读取独立标题与 owner surface\",\"检查与商品字典的切换边界\",\"关闭后确认结果域未被重置\"],\"businessOracle\":[\"生产标签归 fulfillment-production owner\",\"不把生产标签当作商品标签字典\"],\"network\":{\"required\":[],\"forbidden\":[],\"backgroundAllowed\":[],\"requests\":[]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":2000}}"
+          "expectedBusinessResult": "商品字典与生产标签是不同入口、不同编码空间，入口和回填不混用。；case={\"journeyVariant\":2,\"fixtureRef\":\"FIXTURE-SCENARIO-CI-L2-008\",\"journey\":\"生产标签独立入口\",\"controlKeys\":[\"CATALOG_PRODUCTION_TAGS\",\"CATALOG_DICTIONARY_DRAWER\"],\"declaredActions\":[],\"steps\":[\"点击生产标签\",\"读取独立标题与 owner surface\",\"检查与商品字典的切换边界\",\"关闭后确认结果域未被重置\"],\"businessOracle\":[\"生产标签归 catalog owner\",\"不把生产标签当作商品标签字典\"],\"network\":{\"required\":[],\"forbidden\":[],\"backgroundAllowed\":[],\"requests\":[]},\"timing\":{\"caseDbOperationUpperBound\":0,\"caseExpectedDbMs\":0,\"caseLocalActionMs\":1000,\"caseTimeoutMs\":2000}}"
         }
       ]
     },

@@ -9,6 +9,9 @@ import type {
 
 export type CatalogLifecycleStatus = 'ENABLED' | 'DISABLED' | 'VOIDED';
 
+/** Production tags are catalog-owned; this union prevents an old owner from re-entering UI read models. */
+export type CatalogProductionTagOwner = 'catalog';
+
 export type CatalogVoidBlockReasonCode =
   | 'HAS_SKUS'
   | 'HAS_IDENTIFIERS'
@@ -44,7 +47,13 @@ export type CatalogBusinessReference = {
 };
 
 export type CatalogPreparationFacts = {
-  productionTag: {tagRef: Uuid; code: string; name: string; status: CatalogLifecycleStatus; owner: string} | null;
+  productionTag: {
+    tagRef: Uuid;
+    code: string;
+    name: string;
+    status: CatalogLifecycleStatus;
+    owner: CatalogProductionTagOwner;
+  } | null;
   profile: CatalogPreparationProfile | null;
   skuVariation: {varies: boolean};
 };
@@ -124,7 +133,7 @@ export type CatalogNavigation = {
     code: string;
     name: string;
     status: CatalogLifecycleStatus;
-    owner: string;
+    owner: CatalogProductionTagOwner;
     count: number;
   }>;
   /** Optional until the navigation owner exposes the unclassified aggregate. */
@@ -218,7 +227,7 @@ export type CatalogDetail = {
     tagRef: Uuid;
     name: string;
     status: CatalogLifecycleStatus;
-    owner: string;
+    owner: CatalogProductionTagOwner;
   }>;
   compositeGroups: CatalogCompositeGroup[];
   actionAvailability: {

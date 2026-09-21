@@ -10,6 +10,7 @@ const adminTokens = [
   'admin-content-foreground',
   'admin-content-muted',
   'admin-content-border',
+  'admin-ratio-undeclared',
   'admin-inset',
   'admin-action',
   'admin-action-start',
@@ -29,7 +30,7 @@ const cssTokens = (source: string): readonly string[] => [...source.matchAll(/--
 const tailwindTokens = (source: string): readonly string[] => [...source.matchAll(/['"](admin-[a-z-]+)['"]\s*:/g)].map(match => match[1]!)
 
 describe('admin theme token contract', () => {
-  it('keeps both integration CSS variables and Tailwind mappings in the same 16-token set', () => {
+  it('keeps both integration CSS variables and Tailwind mappings in the same 17-token set', () => {
     const expected = [...adminTokens].sort()
     for (const integration of ['sample-console', 'sample-wallpaper-console']) {
       expect([...new Set(cssTokens(read(cssPath(integration))))].sort()).toEqual(expected)

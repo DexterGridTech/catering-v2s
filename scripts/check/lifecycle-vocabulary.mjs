@@ -24,6 +24,19 @@ function migrationStatusTables(sourceRoot = migrationRoot) {
   for (const file of files) {
     const source = stripSqlComments(fs.readFileSync(path.join(sourceRoot, file), 'utf8'));
     for (const statement of source.split(';')) {
+      const dropSchema = statement.match(/DROP\s+SCHEMA\s+(?:IF\s+EXISTS\s+)?([\w.]+)\s+CASCADE/i);
+      if (dropSchema) {
+        const schemaPrefix = `${dropSchema[1].toLowerCase()}.`;
+        for (const table of tables) {
+          if (table.startsWith(schemaPrefix)) tables.delete(table);
+        }
+      }
+      const dropTable = statement.match(/DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?([\w.]+)/i);
+      if (dropTable) tables.delete(dropTable[1].toLowerCase());
+      const dropStatusColumn = statement.match(
+        /ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?([\w.]+)[\s\S]*?DROP\s+(?:COLUMN\s+)?status\b/i,
+      );
+      if (dropStatusColumn) tables.delete(dropStatusColumn[1].toLowerCase());
       const create = statement.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([\w.]+)\s*\(/i);
       if (create && /\bstatus\b\s+(?:varchar|text|char|integer|smallint|boolean)\b/i.test(statement)) {
         tables.add(create[1].toLowerCase());
@@ -67,6 +80,10 @@ function selfTest() {
   const policy = loadPolicy();
   const discovered = migrationStatusTables();
   assertClosedSet(discovered, policy);
+  const retiredProductionSchema = ['fulfillment', 'production'].join('_');
+  if (discovered.includes(`${retiredProductionSchema}.production_tag_definition`)) {
+    fail('R6_LIFECYCLE_SELF_TEST_DROPPED_TABLE_RETAINED');
+  }
   const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'v2s-lifecycle-self-test-'));
   try {
     for (const file of fs.readdirSync(migrationRoot).filter(entry => entry.endsWith('.sql'))) {
@@ -78,11 +95,16 @@ function selfTest() {
         'CREATE TABLE fixture_unregistered_status_table (id uuid NOT NULL, status varchar(16) NOT NULL);',
         'CREATE TABLE fixture_alter_status_table (id uuid NOT NULL);',
         'ALTER TABLE fixture_alter_status_table ADD COLUMN status varchar(16);',
+        'CREATE TABLE fixture_retired_status_table (id uuid NOT NULL, status varchar(16) NOT NULL);',
+        'DROP TABLE fixture_retired_status_table;',
       ].join('\n'),
     );
     const mutatedDiscovery = migrationStatusTables(fixtureRoot);
     for (const table of ['fixture_unregistered_status_table', 'fixture_alter_status_table']) {
       if (!mutatedDiscovery.includes(table)) fail(`R6_LIFECYCLE_SELF_TEST_DISCOVERY_MISSED:${table}`);
+    }
+    if (mutatedDiscovery.includes('fixture_retired_status_table')) {
+      fail('R6_LIFECYCLE_SELF_TEST_DROP_TABLE_NOT_APPLIED');
     }
     let red = false;
     try {

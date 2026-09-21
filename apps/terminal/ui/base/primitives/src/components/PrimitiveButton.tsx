@@ -87,7 +87,7 @@ export const PrimitiveButton = ({
                 : baseTokens.button,
         tone === 'neutral' ? undefined : toneTokens.background,
         tone === 'neutral' ? undefined : toneTokens.border,
-        blocked && 'opacity-50',
+        blocked && !busy && 'opacity-50',
       )}
       disabled={blocked}
       onLayout={onLayout}

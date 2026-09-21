@@ -3,7 +3,9 @@ package com.catering.v2s.catalog.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
+import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.asset.application.AssetObjectStorage;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
@@ -55,7 +57,8 @@ class CatalogAssetGlobalReferenceTest {
         jdbc = new JdbcTemplate(dataSource);
         TimeProvider time = () -> 1_785_000_000_000L;
         assets = new PlatformAssetService(jdbc, time, new NoopObjects());
-        catalog = new CatalogOwnerService(jdbc, new ObjectMapper(), time, assets);
+        catalog = new CatalogOwnerService(
+                jdbc, new ObjectMapper(), time, assets, mock(CatalogProductionTagOwnerApi.class), null);
         insertItem("scope-a", "A", "{\"images\":[]}");
         scopeBItemRef = insertItem("scope-b", "B", "{}");
         insertItemImage(scopeBItemRef, UUID.fromString(SHARED_ASSET));
@@ -103,7 +106,13 @@ class CatalogAssetGlobalReferenceTest {
     void batchGlobalReferenceJudgmentUsesOneCollectionQueryPerMediaOwner() {
         CountingJdbcTemplate counting = new CountingJdbcTemplate(dataSource);
         CatalogOwnerService batchCatalog =
-                new CatalogOwnerService(counting, new ObjectMapper(), () -> 1_785_000_000_000L, assets);
+                new CatalogOwnerService(
+                        counting,
+                        new ObjectMapper(),
+                        () -> 1_785_000_000_000L,
+                        assets,
+                        mock(CatalogProductionTagOwnerApi.class),
+                        null);
 
         assertEquals(
                 java.util.Set.of(SHARED_ASSET),
@@ -116,7 +125,13 @@ class CatalogAssetGlobalReferenceTest {
     void assetReferenceReadbackUsesOneNarrowOwnerProjection() {
         CountingJdbcTemplate counting = new CountingJdbcTemplate(dataSource);
         CatalogOwnerService narrowCatalog =
-                new CatalogOwnerService(counting, new ObjectMapper(), () -> 1_785_000_000_000L, assets);
+                new CatalogOwnerService(
+                        counting,
+                        new ObjectMapper(),
+                        () -> 1_785_000_000_000L,
+                        assets,
+                        mock(CatalogProductionTagOwnerApi.class),
+                        null);
 
         assertEquals(
                 List.of(UUID.fromString(SHARED_ASSET)),

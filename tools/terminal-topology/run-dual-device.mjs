@@ -6,6 +6,7 @@ import path from 'node:path'
 import {spawn, spawnSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {fileURLToPath} from 'node:url'
+import {PNG} from 'pngjs'
 import WebSocket from 'ws'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
@@ -138,6 +139,9 @@ class RunnerFailure extends Error {
     this.label = label
   }
 }
+
+const failureBoundaryOf = (error, lastKnownGood) =>
+  error instanceof RunnerFailure ? error.label : lastKnownGood ?? 'before-first-known-good'
 
 const run = (command, commandArgs, options = {}) => {
   const startedAt = Date.now()
@@ -695,10 +699,40 @@ const scrollStage2NodeIntoView = async (target, displayId, resourceId, scrollRes
       // remains fully visible above the app's bottom safe-area padding.
       const viewportBottom = scroll.bottom
       const viewportTop = scroll.top
-      if (node.top >= viewportTop && node.bottom <= viewportBottom) return {xml: lastXml, node}
+      const nodeHasVisibleBounds = node.right > node.left && node.bottom > node.top
+      if (nodeHasVisibleBounds && node.top >= viewportTop && node.bottom <= viewportBottom) return {xml: lastXml, node}
       const x = Math.floor((scroll.left + scroll.right) / 2)
+      // React Native can publish a clipped child with zero or inverted
+      // accessibility bounds while its owning port card is already inside the
+      // ScrollView.  The direction is determined by the clipped edge: a
+      // bottom-edge child needs an upward finger swipe; a top-edge child needs
+      // a downward finger swipe.  Guessing one direction for both cases can
+      // move the owner farther out of the viewport and make the field
+      // unrecoverable.
+      const parentResourceId = resourceId.includes(':') ? resourceId.slice(0, resourceId.lastIndexOf(':')) : ''
+      const parent = parentResourceId === '' ? null : nodeForId(lastXml, parentResourceId)
+      const parentHasVisibleBounds = parent !== null && parent.right > parent.left && parent.bottom > parent.top
+      const parentInsideViewport = parentHasVisibleBounds && parent.top >= viewportTop && parent.bottom <= viewportBottom
+      if (!nodeHasVisibleBounds && parentInsideViewport) {
+        const targetAtTopEdge = node.top <= viewportTop
+        const targetAtBottomEdge = node.top >= viewportBottom || node.bottom >= viewportBottom
+        const startY = targetAtBottomEdge
+          ? Math.floor(viewportBottom - 100)
+          : Math.floor(viewportTop + 100)
+        const endY = targetAtBottomEdge
+          ? Math.floor(Math.max(viewportTop + 40, startY - 180))
+          : Math.floor(Math.min(viewportBottom - 40, startY + 180))
+        if (targetAtTopEdge ? endY > startY : targetAtBottomEdge && endY < startY) {
+          const displayArgs = displayId === 0 ? [] : ['-d', String(displayId)]
+          adb(target, ['shell', 'input', ...displayArgs, 'swipe', String(x), String(startY), String(x), String(endY), '350'], `nudge clipped ${resourceId} owner into view`)
+          target.lastUiActionAt = Date.now()
+          await sleep(700)
+          continue
+        }
+      }
       const startY = Math.max(viewportTop + 80, Math.min(viewportBottom - 24, node.bottom > viewportBottom ? viewportBottom - 24 : viewportTop + 260))
-      const endY = node.bottom > viewportBottom
+      const nodeIsBelowViewport = node.bottom > viewportBottom || node.top >= viewportBottom || !nodeHasVisibleBounds
+      const endY = nodeIsBelowViewport
         ? Math.max(viewportTop + 40, startY - Math.max(320, node.bottom - viewportBottom + 220))
         : Math.min(viewportBottom - 40, startY + Math.max(320, viewportTop - node.top + 220))
       if (startY !== endY) {
@@ -708,9 +742,14 @@ const scrollStage2NodeIntoView = async (target, displayId, resourceId, scrollRes
       }
     } else {
       const displayArgs = displayId === 0 ? [] : ['-d', String(displayId)]
-      const x = Math.floor((target.displayWidth ?? 360) / 2)
-      const startY = Math.floor((target.displayHeight ?? 640) * 0.78)
-      const endY = Math.floor((target.displayHeight ?? 640) * 0.22)
+      // A clipped child may be absent from UiAutomator while its real
+      // ScrollView is already observable. Keep both gesture endpoints inside
+      // that owner; screen-ratio endpoints can finish outside the viewport and
+      // be delivered to the shell instead of scrolling the list.
+      const scroll = nodeForId(lastXml, scrollResourceId)
+      const x = Math.floor(scroll === null ? (target.displayWidth ?? 360) / 2 : (scroll.left + scroll.right) / 2)
+      const startY = Math.floor(scroll === null ? (target.displayHeight ?? 640) * 0.78 : scroll.bottom - 80)
+      const endY = Math.floor(scroll === null ? (target.displayHeight ?? 640) * 0.22 : scroll.top + 80)
       adb(target, ['shell', 'input', ...displayArgs, 'swipe', String(x), String(startY), String(x), String(endY), '350'], `scroll display ${displayId} ${resourceId} into view without container`)
       target.lastUiActionAt = Date.now()
     }
@@ -842,29 +881,38 @@ const scrollNodeIntoView = async (target, resourceId, scrollResourceId = 'termin
   const displayBottom = target.displayHeight === null
     ? observed.node.bottom
     : Math.max(0, target.displayHeight - 96)
-  if (observed.node.right > observed.node.left
-    && observed.node.bottom > observed.node.top
-    && observed.node.bottom <= displayBottom) return observed
-
   const scroll = await waitForNode(target, scrollResourceId, current => current.right > current.left && current.bottom > current.top)
   // The accessibility bounds are the authoritative visible ScrollView
   // viewport. Do not subtract a guessed system-inset margin: that rejects a
   // real control which is inside the ScrollView but below the device-height
   // heuristic used by the old runner.
+  const viewportTop = scroll.node.top
   const viewportBottom = Math.min(scroll.node.bottom, displayBottom)
   if (observed.node.right > observed.node.left
     && observed.node.bottom > observed.node.top
+    && observed.node.top >= viewportTop
     && observed.node.bottom <= viewportBottom) return observed
 
-  // The topology form is a real scroll surface.  A control at the lower edge
+  // The topology form is a real scroll surface. A control at the lower edge
   // can have a clickable UiAutomator node while its center falls below the
   // RN viewport/system inset, so a raw center tap is not a delivered gesture.
-  // Scroll using the observed ScrollView bounds, then re-read the node;
-  // do not reuse its pre-scroll bounds.
+  // The mobile port detail union can also visit a later row first and then
+  // request an earlier row whose accessibility bounds are above the viewport
+  // (sometimes with inverted zero-height bounds). Choose the gesture
+  // direction from the observed bounds, then re-read the node; do not reuse
+  // its pre-scroll bounds.
   const x = Math.floor((scroll.node.left + scroll.node.right) / 2)
-  const startY = Math.max(scroll.node.top + 80, Math.min(scroll.node.bottom - 24, viewportBottom - 24))
-  const endY = Math.max(scroll.node.top + 40, startY - Math.max(480, observed.node.bottom - viewportBottom + 320))
-  if (endY >= startY) throw new RunnerFailure(`${target.tag} scroll ${resourceId}`, 'control could not be moved into the viewport')
+  const targetAboveViewport = observed.node.top <= viewportTop || observed.node.bottom <= viewportTop
+  const startY = targetAboveViewport
+    ? Math.max(scroll.node.top + 40, Math.min(scroll.node.bottom - 80, viewportTop + 80))
+    : Math.max(scroll.node.top + 80, Math.min(scroll.node.bottom - 24, viewportBottom - 24))
+  const travel = targetAboveViewport
+    ? Math.max(480, viewportTop - Math.min(observed.node.top, observed.node.bottom) + 320)
+    : Math.max(480, observed.node.bottom - viewportBottom + 320)
+  const endY = targetAboveViewport
+    ? Math.min(viewportBottom - 24, startY + travel)
+    : Math.max(viewportTop + 40, startY - travel)
+  if (targetAboveViewport ? endY <= startY : endY >= startY) throw new RunnerFailure(`${target.tag} scroll ${resourceId}`, 'control could not be moved into the viewport')
   adb(target, ['shell', 'input', 'swipe', String(x), String(startY), String(x), String(endY), '350'], `scroll ${resourceId} into view`)
   target.lastUiActionAt = Date.now()
   target.nextUiObservationAt = Math.max(target.nextUiObservationAt ?? 0, target.lastUiActionAt + (target.lastUiActionSettleDelayMs ?? uiActionSettleDelayMs))
@@ -956,6 +1004,41 @@ const captureStage1Screenshot = (target, label) => {
   return {path: path.relative(repositoryRoot, screenshotPath), width: Number(dimensions[1]), height: Number(dimensions[2]), fileText}
 }
 
+const screenshotFilePath = screenshot => path.isAbsolute(screenshot.path)
+  ? screenshot.path
+  : path.join(repositoryRoot, screenshot.path)
+
+const composeCrossTabScreenshot = (leftScreenshot, rightScreenshot) => {
+  const left = PNG.sync.read(fs.readFileSync(screenshotFilePath(leftScreenshot)))
+  const right = PNG.sync.read(fs.readFileSync(screenshotFilePath(rightScreenshot)))
+  const margin = 32
+  const gap = 32
+  const composed = new PNG({
+    width: margin + left.width + gap + right.width + margin,
+    height: margin + Math.max(left.height, right.height) + margin,
+  })
+  for (let offset = 0; offset < composed.data.length; offset += 4) {
+    composed.data[offset] = 245
+    composed.data[offset + 1] = 247
+    composed.data[offset + 2] = 250
+    composed.data[offset + 3] = 255
+  }
+  PNG.bitblt(left, composed, 0, 0, left.width, left.height, margin, margin)
+  PNG.bitblt(right, composed, 0, 0, right.width, right.height, margin + left.width + gap, margin)
+  const name = 'master-display-0-IA-32-cross-tab-dual-physical.png'
+  writeBinary(name, PNG.sync.write(composed))
+  const absolutePath = path.join(currentOutputDirectory, name)
+  const fileResult = localRun('file', [absolutePath], 'IA-32 cross-tab screenshot metadata', {allowFailure: true})
+  const fileText = textOf(fileResult)
+  writeText('master-display-0-IA-32-cross-tab-dual-physical.file.txt', fileText)
+  return {
+    path: path.relative(repositoryRoot, absolutePath),
+    width: composed.width,
+    height: composed.height,
+    fileText,
+  }
+}
+
 const upsertFrameEvidence = (record, entry) => {
   record.frameEvidence ??= []
   const existingIndex = record.frameEvidence.findIndex(candidate => candidate.frameId === entry.frameId)
@@ -1015,6 +1098,70 @@ const captureAdminFrame = async (record, target, frameId, label, expectedIds = [
   }
 }
 
+const captureStage1ScrolledFrame = async (record, target, frameId, label, summaryIds, detailIds, scrollResourceId) => {
+  const rootId = `terminal.admin:frame:${frameId}`
+  record.frameEvidence ??= []
+  const expectedIds = [...new Set([...summaryIds, ...detailIds])]
+  try {
+    const summary = await waitForNode(
+      target,
+      rootId,
+      (current, xml) => current.right > current.left
+        && current.bottom > current.top
+        && summaryIds.every(resourceId => nodeForId(xml, resourceId) !== null),
+    )
+    saveUi(target, `frame-${frameId}-${label}-summary`, summary.xml)
+    const summaryScreenshot = captureStage1Screenshot(target, `frame-${frameId}-${label}-summary`)
+    const detailViewports = []
+    let observedXml = [summary.xml]
+    for (const [index, resourceId] of detailIds.filter(id => id !== rootId).entries()) {
+      const detail = await scrollNodeIntoView(target, resourceId, scrollResourceId)
+      const detailLabel = `frame-${frameId}-${label}-detail-${String(index + 1).padStart(2, '0')}`
+      saveUi(target, detailLabel, detail.xml)
+      const screenshot = captureStage1Screenshot(target, detailLabel)
+      detailViewports.push({resourceId, xml: `${detailLabel}.xml`, screenshot: screenshot.path})
+      observedXml.push(detail.xml)
+    }
+    const observedIds = [...new Set(observedXml.flatMap(xml => [...xml.matchAll(/resource-id="([^"]+)"/g)].map(match => match[1])))]
+    const missingIds = expectedIds.filter(resourceId => !observedIds.includes(resourceId))
+    if (missingIds.length > 0) throw new RunnerFailure(`${target.tag} frame ${frameId} ${label}`, `missing UI nodes after scroll union: ${missingIds.join(', ')}`)
+    const screenshots = [summaryScreenshot.path, ...detailViewports.map(viewport => viewport.screenshot)]
+    const entry = {
+      frameId,
+      label,
+      deviceRole: target.role,
+      status: 'MATCHED',
+      screenshot: {path: screenshots[screenshots.length - 1]},
+      screenshots,
+      observedAt: new Date().toISOString(),
+      expectedIds,
+      expectedTexts: [],
+      observedIds,
+      viewportEvidence: {
+        summary: `frame-${frameId}-${label}-summary.xml`,
+        details: detailViewports,
+      },
+    }
+    upsertFrameEvidence(record, entry)
+    record.steps.push({label: `frame-${frameId}-${label}`, deviceRole: target.role, timestamp: new Date().toISOString(), expectedIds, expectedTexts: [], observedIds, screenshots})
+    record.lastKnownGood = `frame-${frameId}-${label}`
+    return entry
+  } catch (error) {
+    const entry = {
+      frameId,
+      label,
+      deviceRole: target.role,
+      status: 'OPEN',
+      firstFailure: sanitizeDiagnostic(error instanceof Error ? error.message : String(error)),
+      observedAt: new Date().toISOString(),
+      expectedIds,
+      expectedTexts: [],
+    }
+    upsertFrameEvidence(record, entry)
+    throw error
+  }
+}
+
 const captureVisiblePanelFrame = async (record, target, frameId, label, variantIds) => {
   const rootId = `terminal.admin:frame:${frameId}`
   const current = await readUi(target, `probe ${rootId}`)
@@ -1063,7 +1210,7 @@ const captureStage2Frame = async (record, target, frameId, label, expectedIds = 
   const existing = record.frameEvidence.find(entry => entry.frameId === frameId)
   if (existing?.status === 'MATCHED' && options.variant === undefined) return existing
   try {
-    const observed = await waitForStage2Node(
+      const observed = await waitForStage2Node(
       target,
       displayId,
       rootId,
@@ -1075,6 +1222,10 @@ const captureStage2Frame = async (record, target, frameId, label, expectedIds = 
     )
     const xml = observed.xml
     saveStage2Ui(target, displayId, `frame-${frameId}-${label}`, xml)
+    // Accessibility can publish the new React tree before the native surface
+    // has committed the same navigation state to pixels.  Keep the screenshot
+    // bound to the settled frame rather than the previous section.
+    await sleep(uiActionSettleDelayMs)
     const screenshot = captureStage2Screenshot(target, displayId, `frame-${frameId}-${label}`)
     const entry = {
       frameId,
@@ -1134,6 +1285,7 @@ const captureStage2ScrolledFrame = async (record, target, frameId, label, summar
       const detail = await scrollStage2NodeIntoView(target, displayId, resourceId, scrollResourceId)
       const detailLabel = `frame-${frameId}-${label}-detail-${String(index + 1).padStart(2, '0')}`
       saveStage2Ui(target, displayId, detailLabel, detail.xml)
+      await sleep(uiActionSettleDelayMs)
       const screenshot = captureStage2Screenshot(target, displayId, detailLabel)
       detailViewports.push({resourceId, xml: detailLabel + '.xml', screenshot: screenshot.path})
       observedXml.push(detail.xml)
@@ -1289,6 +1441,10 @@ const stage2OpenSection = async (target, partKey) => {
     throw new RunnerFailure(`${target.tag} ${partKey} navigation`, `section ${sectionId} and mobile navigation trigger were both unavailable`)
   }
   await waitForStage2Node(target, 0, sectionTitleId)
+  // Re-read after the observer settle window. The first accessibility tree can
+  // reflect the selected option before the native pixels finish committing.
+  await sleep(uiActionSettleDelayMs)
+  await waitForStage2Node(target, 0, sectionTitleId)
 }
 
 const stage2CapturePanel = async (record, target) => {
@@ -1320,7 +1476,7 @@ const stage2CapturePanel = async (record, target) => {
 const stage2CaptureRuntime = async (record, target) => {
   await stage2OpenSection(target, 'admin.console.runtime')
   if (stage2Shape === 'dual') {
-    await captureStage2Frame(record, target, 'IA-15', 'runtime-dual-surface', [
+    await captureStage2ScrolledFrame(record, target, 'IA-15', 'runtime-dual-surface', [
       'terminal.admin:section:runtime',
       'terminal.admin:runtime:title',
       'terminal.admin:runtime:overall-status',
@@ -1330,7 +1486,7 @@ const stage2CaptureRuntime = async (record, target) => {
       'terminal.admin:runtime:surface-map:surface:SECONDARY',
       'terminal.admin:runtime:surface-map:surface:SECONDARY:inside:0',
       'terminal.admin:runtime:surface-map:surface:SECONDARY:inside:1',
-    ], ['2'])
+    ], ['terminal.admin:runtime:surface:legend'], 0, 'admin.console.runtime:scroll')
     return
   }
   const normal = await captureStage2ScrolledFrame(record, target, 'IA-14', 'runtime-mobile-single-surface', [
@@ -1346,13 +1502,13 @@ const stage2CaptureRuntime = async (record, target) => {
     'terminal.admin:runtime:surface-map:surface:PRIMARY:role',
   ], [
     'terminal.admin:frame:IA-14',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:outside:0',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:logic-width',
     'terminal.admin:runtime:surface-map:surface:PRIMARY',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:logic-height',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:0',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:1',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:2',
-    'terminal.admin:runtime:surface-map:surface:PRIMARY:logic-width',
-    'terminal.admin:runtime:surface-map:surface:PRIMARY:logic-height',
-    'terminal.admin:runtime:surface-map:surface:PRIMARY:outside:0',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:outside:1',
     'terminal.admin:runtime:surface:legend',
   ], 0, 'admin.console.runtime:scroll')
@@ -1392,16 +1548,20 @@ const stage2CapturePorts = async (record, target) => {
   ]
   await captureStage2Frame(record, target, frameId, 'ports-overview', baseIds)
   await tapStage2Node(target, 0, 'terminal.admin:ports:category:logs:expand', {scrollIntoView: true, scrollResourceId: 'admin.console.platform-ports:scroll'})
-    await captureStage2ScrolledFrame(record, target, stage2Shape === 'dual' ? 'IA-11' : 'IA-12', 'ports-logs-expanded', [
+  await sleep(uiActionSettleDelayMs)
+  await captureStage2ScrolledFrame(record, target, stage2Shape === 'dual' ? 'IA-11' : 'IA-12', 'ports-logs-expanded', [
     ...baseIds,
+    'terminal.admin:ports:category:logs:row',
+  ], [
+    'terminal.admin:frame:' + (stage2Shape === 'dual' ? 'IA-11' : 'IA-12'),
     'terminal.admin:ports:category:logs:row',
     'terminal.admin:ports:item:logger:undeclared:name',
     'terminal.admin:ports:item:logger:undeclared:status',
     'terminal.admin:ports:item:logger:undeclared:reason',
+    // logger:source is earlier in the logs list than the logUpload fields.
+    // Visit it first so the accessibility scroll union does not need to
+    // reverse-scroll from a later row whose clipped bounds cannot recover it.
     'terminal.admin:ports:item:logger:undeclared:source',
-  ], [
-    'terminal.admin:frame:' + (stage2Shape === 'dual' ? 'IA-11' : 'IA-12'),
-    'terminal.admin:ports:category:logs:row',
     'terminal.admin:ports:item:logUpload:undeclared:name',
     'terminal.admin:ports:item:logUpload:undeclared:status',
     'terminal.admin:ports:item:logUpload:undeclared:reason',
@@ -1424,6 +1584,7 @@ const stage2RunDualAdminFrames = async (record, target) => {
   ], ['双机拓扑要求本机只有一个物理屏'])
   const runtime = record.frameEvidence?.find(entry => entry.frameId === 'IA-15' && entry.status === 'MATCHED')
   if (runtime?.screenshot !== undefined && topology.screenshot !== undefined) {
+    const crossTabScreenshot = composeCrossTabScreenshot(runtime.screenshot, topology.screenshot)
     const artifact = {
       frameId: 'IA-32',
       label: 'cross-tab-dual-physical',
@@ -1432,8 +1593,10 @@ const stage2RunDualAdminFrames = async (record, target) => {
       status: 'MATCHED',
       sourceFrames: ['IA-15', 'IA-16'],
       screenshots: [runtime.screenshot, topology.screenshot],
+      screenshot: crossTabScreenshot,
+      combinedScreenshot: crossTabScreenshot,
       displayShape: record.devices.stage2.displays,
-      note: '真实 dual-screen runtime 与同一设备 topology 不可用页的跨 tab 对照；不是结构测试或截图差分 oracle。',
+      note: '真实 dual-screen runtime 与同一设备 topology 不可用页的跨 tab 对照；combined screenshot 由两张真实运行截图组成，不是结构测试或截图差分 oracle。',
       observedAt: new Date().toISOString(),
     }
     writeJson('IA-32-cross-tab-dual-physical.json', artifact)
@@ -1759,10 +1922,6 @@ const openTopology = async (record, target) => {
   await observe(record, target, 'topology-open', [
     'terminal.admin:section:topology',
     'terminal.admin:topology:title',
-    'terminal.admin:topology:pair-result',
-    'terminal.admin:topology:goal-choice',
-    'terminal.admin:topology:goal:host',
-    'terminal.admin:topology:goal:slave',
   ])
 }
 
@@ -1960,7 +2119,24 @@ const replaceHost = async (target, value) => {
   for (let index = 0; index < clearCount; index += 1) await tapNode(target, 'ui.base.input:virtual-keyboard:backspace')
   for (const character of value) await tapNode(target, `ui.base.input:virtual-keyboard:text-${character}`)
   await tapNode(target, 'ui.base.input:virtual-keyboard:complete')
-  await waitForNode(target, 'terminal.admin:topology:pair', node => node.enabled)
+  await waitForPairSubmissionControl(target)
+}
+
+const waitForPairSubmissionControl = async target => {
+  const pairId = 'terminal.admin:topology:pair'
+  const retryId = 'terminal.admin:topology:retry'
+  const deadline = Date.now() + 20_000
+  let lastXml = ''
+  while (Date.now() < deadline) {
+    lastXml = await readUi(target, 'wait direct pair submission control')
+    const retry = nodeForId(lastXml, retryId)
+    if (retry !== null && retry.enabled) return retryId
+    const pair = nodeForId(lastXml, pairId)
+    if (pair !== null && pair.enabled) return pairId
+    await sleep(300)
+  }
+  saveUi(target, 'wait-failed-direct-pair-submission-control', lastXml)
+  throw new RunnerFailure(`${target.tag} direct pair submission control`, 'neither retry nor pair control became enabled')
 }
 
 const pairDevices = async (record, master, slave) => {
@@ -1970,15 +2146,51 @@ const pairDevices = async (record, master, slave) => {
   await tapNode(master, 'terminal.admin:section:platform-ports')
   await captureAdminFrame(record, master, 'IA-09', 'ports-overview', ['terminal.admin:ports:summary:ratio-bar'], [], {required: true})
   await tapNode(master, 'terminal.admin:ports:category:logs:expand', {scrollIntoView: true, scrollResourceId: 'admin.console.platform-ports:scroll'})
-  await captureAdminFrame(record, master, 'IA-11', 'ports-logs-expanded', ['terminal.admin:ports:category:logs:row', 'terminal.admin:ports:item:logger:undeclared:name', 'terminal.admin:ports:item:logUpload:undeclared:name'], [], {required: true})
+  await captureStage1ScrolledFrame(record, master, 'IA-11', 'ports-logs-expanded', [
+    'terminal.admin:section:platform-ports',
+    'terminal.admin:ports:title',
+    'terminal.admin:ports:overall-status',
+    'admin.console.platform-ports:total',
+    'terminal.admin:ports:summary:ratio-bar',
+    'terminal.admin:ports:category:logs:row',
+  ], [
+    'terminal.admin:ports:item:logger:undeclared:name',
+    'terminal.admin:ports:item:logger:undeclared:status',
+    'terminal.admin:ports:item:logger:undeclared:reason',
+    'terminal.admin:ports:item:logger:undeclared:source',
+    'terminal.admin:ports:item:logUpload:undeclared:name',
+    'terminal.admin:ports:item:logUpload:undeclared:status',
+    'terminal.admin:ports:item:logUpload:undeclared:reason',
+    'terminal.admin:ports:item:logUpload:undeclared:source',
+  ], 'admin.console.platform-ports:scroll')
   await tapNode(master, 'terminal.admin:section:runtime')
-  await captureAdminFrame(record, master, 'IA-13', 'runtime-single-surface', ['terminal.admin:runtime:surface-map', 'terminal.admin:runtime:physical-display-count'], [], {required: true})
+  await captureStage1ScrolledFrame(record, master, 'IA-13', 'runtime-single-surface', [
+    'terminal.admin:section:runtime',
+    'terminal.admin:runtime:title',
+    'terminal.admin:runtime:overall-status',
+    'admin.console.runtime:facts',
+    'terminal.admin:runtime:surface-map',
+    'terminal.admin:runtime:physical-display-count',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY',
+  ], [
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:outside:0',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:logic-width',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:logic-height',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:0',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:1',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:2',
+    'terminal.admin:runtime:surface-map:surface:PRIMARY:outside:1',
+    'terminal.admin:runtime:surface:legend',
+  ], 'admin.console.runtime:scroll')
   await tapNode(master, 'terminal.admin:section:topology')
   await assertTopologyValue(record, master, 'master-host-initially-stopped', 'terminal.admin:topology:pair-result', '尚未配对')
   await startPortOccupant(master, record)
   await tapNode(master, 'terminal.admin:topology:action:host-enable', {scrollIntoView: true, settleDelayMs: 0})
   await captureAdminFrame(record, master, 'IA-19', 'host-starting', ['terminal.admin:topology:host-service', 'terminal.admin:topology:host-service:state'], [], {timeoutMs: 2_000})
-  await waitForNode(master, 'terminal.admin:topology:host-service:state', (_node, xml) => resourceRegion(xml, 'terminal.admin:topology:host-service:state').includes('服务开启失败'), 10_000)
+  // IA-21 intentionally renders its error summary through pair-result. The
+  // host-service:state fact row exists in starting/ready frames, but the
+  // error frame exposes the typed failure through pair-result + failureReason.
+  await waitForNode(master, 'terminal.admin:topology:pair-result', (_node, xml) => resourceRegion(xml, 'terminal.admin:topology:pair-result').includes('主机服务未能开启'), 10_000)
   await captureAdminFrame(record, master, 'IA-21', 'host-error', ['terminal.admin:topology:host-service', 'terminal.admin:topology:failure:reason', 'terminal.admin:topology:retry'], [], {required: true})
   await stopPortOccupant(master, record)
   await tapNode(master, 'terminal.admin:topology:retry', {settleDelayMs: 0})
@@ -2003,7 +2215,7 @@ const pairDevices = async (record, master, slave) => {
     restoreOwnedReverseAfterPairFailure(slave, record)
   }
   await replaceHost(slave, hostAliasForAndroidEmulator)
-  await tapNode(slave, 'terminal.admin:topology:pair', {scrollIntoView: true, settleDelayMs: 0})
+  await tapNode(slave, await waitForPairSubmissionControl(slave), {scrollIntoView: true, settleDelayMs: 0})
   await waitForNode(slave, 'terminal.admin:frame:IA-22')
   await captureAdminFrame(record, slave, 'IA-22', 'direct-pair-submitted', ['terminal.admin:topology:pairing', 'terminal.admin:topology:pair-state', 'terminal.admin:topology:pairing:facts', 'terminal.admin:topology:host-ip', 'terminal.admin:topology:role', 'terminal.admin:topology:pairing:hint'], [], {required: true})
   // Pairing resets the slave JS runtime into its VICE surface.  A clean
@@ -2218,7 +2430,11 @@ const runSlaveUnpairCoverage = async (record, master, slave) => {
   await waitForNode(slave, 'terminal.admin:frame:IA-18', (_node, xml) => nodeForId(xml, 'terminal.admin:topology:goal-choice') !== null, 10_000)
   await observe(record, slave, 'slave-role-choice-after-unpair', ['terminal.admin:frame:IA-18', 'terminal.admin:topology:goal-choice', 'terminal.admin:topology:goal:host', 'terminal.admin:topology:goal:slave'], [])
   await assertTopologyValue(record, slave, 'slave-unpaired-after-own-unpair', 'terminal.admin:topology:pair-result', '尚未配对')
-  await assertTopologyValue(record, master, 'master-unpaired-after-slave-event', 'terminal.admin:topology:pair-result', '尚未配对')
+  // A slave unpair clears the master's peer facts but does not stop the
+  // owner-managed MASTER host. The approved result is IA-20: running host,
+  // waiting for the next slave, not the initial role-choice copy.
+  await assertTopologyValue(record, master, 'master-unpaired-after-slave-event', 'terminal.admin:topology:host-service:state', '运行中')
+  await assertTopologyValue(record, master, 'master-waiting-after-slave-event', 'terminal.admin:topology:pair-result', '等待副机配对')
   progress(record, 'slave-unpair-order-and-peer-clear', {deviceRole: 'slave'})
 }
 
@@ -2432,13 +2648,17 @@ const runProfile = async profile => {
   } catch (error) {
     record.business = 'FAIL'
     record.firstFailure = sanitizeDiagnostic(error instanceof Error ? error.message : String(error))
-    record.brokenBoundary = record.lastKnownGood ?? 'before-first-known-good'
+    record.brokenBoundary = failureBoundaryOf(error, record.lastKnownGood)
     await captureFailure(record, targets)
   } finally {
     finalizeFrameEvidence(record, master)
     for (const target of targets) captureTopologyLogcat(target, record)
     await cleanupProfile(record, targets)
     record.finishedAt = new Date().toISOString()
+    // `progress.json` is also the run's latest checkpoint. Persist the
+    // terminal cleanup state so that a reader never has to reconcile a stale
+    // pre-cleanup snapshot (`cleanup=NOT_RUN`) with the terminal result.
+    writeJson('progress.json', record)
     writeJson('result.json', record)
     currentOutputDirectory = originalOutputDirectory
   }
@@ -2543,12 +2763,16 @@ const runStage2Profile = async profile => {
   } catch (error) {
     record.business = 'FAIL'
     record.firstFailure = sanitizeDiagnostic(error instanceof Error ? error.message : String(error))
-    record.brokenBoundary = record.lastKnownGood ?? 'before-first-known-good'
+    record.brokenBoundary = failureBoundaryOf(error, record.lastKnownGood)
     await captureStage2Failure(record, target)
   } finally {
     finalizeFrameEvidence(record, target)
     await cleanupStage2Profile(record, target)
     record.finishedAt = new Date().toISOString()
+    // Keep the latest checkpoint terminal as well as the result.  Stage-two
+    // readers must not reconcile a stale NOT_RUN progress snapshot with a
+    // terminal PASS result after cleanup has completed.
+    writeJson('progress.json', record)
     writeJson('result.json', record)
     currentOutputDirectory = originalOutputDirectory
   }

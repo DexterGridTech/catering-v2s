@@ -24,7 +24,6 @@ const CATALOG_INVENTORY_PATH_SHARDS = [
 const CATALOG_INVENTORY_OWNER_AUTHORIZATION = Object.freeze({
   catalog: {ownerRecheckId: "OWNER_RECHECK_CATALOG", typedProblemMappingId: "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION"},
   inventory: {ownerRecheckId: "OWNER_RECHECK_INVENTORY", typedProblemMappingId: "PROBLEM_INVENTORY_TYPED_OWNER_EXCEPTION"},
-  "fulfillment-production": {ownerRecheckId: "OWNER_RECHECK_FULFILLMENT_PRODUCTION", typedProblemMappingId: "PROBLEM_FULFILLMENT_PRODUCTION_TYPED_OWNER_EXCEPTION"},
   asset: {ownerRecheckId: "OWNER_RECHECK_ASSET", typedProblemMappingId: "PROBLEM_ASSET_TYPED_OWNER_EXCEPTION"},
 });
 const CATALOG_SAVE_OPERATION_ID = "saveOperationsCatalogItem";
@@ -378,8 +377,8 @@ const TYPED_OWNER_EXCEPTION_ROOTS = [
   "apps/backend/catering-business-server/modules/workspace/src/main/java/com/catering/v2s/platform/workspace/application",
   "apps/backend/catering-business-server/modules/workspace-iam/src/main/java/com/catering/v2s/workspace/iam/application",
 ];
-const FROZEN_TYPED_OWNER_EXCEPTION_COUNT = 98;
-const FROZEN_TYPED_OWNER_EXCEPTION_SHA256 = "686c9c12994ed90c34cb84fcce4764357741c8b588f20e14ac61ff4805ac5631";
+const FROZEN_TYPED_OWNER_EXCEPTION_COUNT = 101;
+const FROZEN_TYPED_OWNER_EXCEPTION_SHA256 = "55d2baec1aed915b946e076f4d58fa2a7c5678a151cb7af033bb038342b4a798";
 const EXACT_TYPED_OWNER_EXCEPTION_MAPPINGS = [
   "com.catering.v2s.organization.application.BusinessEntityService.HeadCompanyBrandAuthorizationInUseException",
 ];

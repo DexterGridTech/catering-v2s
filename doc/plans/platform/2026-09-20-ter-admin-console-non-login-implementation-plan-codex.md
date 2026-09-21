@@ -1,25 +1,29 @@
 # TER Admin console 非登录区实施计划
 
 ```text
-PLAN_STATUS=IMPLEMENTATION_IN_PROGRESS_STAGE2_PARTIAL_STAGE1_WAITING_FOR_SINGLE_SCREEN_VMS
+PLAN_STATUS=IMPLEMENTATION_IN_PROGRESS_CURRENT_APK_R49_FIRST_BATCH_R50_R51_SECOND_BATCH_MECHANICAL_PASS_FULL_SCREEN_MATCHED_VISUAL_OPEN
 DESIGN=doc/plans/platform/2026-09-20-ter-admin-console-non-login-implementation-design-codex.md
 BUSINESS_SOURCE=doc/plans/platform/2026-09-19-ter-admin-console-non-login-requirements-codex.md
 IA=doc/plans/platform/2026-09-19-ter-admin-console-non-login-ia-frame-inventory-codex.md;doc/plans/platform/2026-09-19-ter-admin-console-non-login-ia-high-fidelity-codex.md
 IMPLEMENTATION_AUTHORITY=true
-IMPLEMENTATION=STATIC_AND_FOCUSED_GREEN_OWNER_GATES_CLOSED
-RUNTIME=R11_MOBILE_AND_R12_DUAL_BUSINESS_PASS_CLEANUP_PASS_VISUAL_OPEN_FRAME_COVERAGE_OPEN
-WEB_METRO_ANDROID_DEVICE=ANDROID_STAGE2_DUAL_MOBILE_PASS;STAGE1_SINGLE_SCREEN_VMS_REQUIRED
+IMPLEMENTATION=STATIC_AND_FOCUSED_GREEN_OWNER_EVIDENCE_PARTIAL
+RUNTIME=R49_FIRST_BATCH_R50_R51_SECOND_BATCH_CURRENT_APK_BUSINESS_PASS_CLEANUP_PASS;MECHANICAL_UNION_24_OF_30;FULL_SCREEN_BOUNDS_MATCHED;VISUAL_OPEN
+WEB_METRO_ANDROID_DEVICE=ANDROID_R49_FIRST_BATCH_R50_DUAL_R51_MOBILE_BUSINESS_PASS_CLEANUP_PASS;WEB_NOT_RUN
 INDEPENDENT_DESIGN_REVIEW=COMPLETED_FINDINGS_OPEN_REVIEWED_BY_FRESH_SUBAGENT
 ADMISSION_BLOCKERS=DISPLAY_FACTS_OWNER:OPEN_WITH_FOCUSED_OWNER_EVIDENCE;TOPOLOGY_PAGE_AVAILABILITY_AND_DIRECT_PAIR_OWNER:OPEN_WITH_FOCUSED_OWNER_EVIDENCE;MASTER_UNPAIR_GUARD:OPEN_WITH_FOCUSED_OWNER_EVIDENCE
 ```
 
-本计划定义实施的可执行顺序、文件分母、测试与对账门。Dexter 已于 2026-09-20 明确授权进入实施；当前 CP-0/CP-1 已取得 owner contract、consumer、focused readback 与 red mutation 证据，但三条 admission blocker 仍为 OPEN，不能把 focused 证据写成 blocker 已关闭。当前可用的第二批 dual/mobile 设备已完成受管 Android run；第一批两台 single-screen VM 尚未提供，不能伪造第一批拓扑形态或 IA-16。
+本计划定义实施的可执行顺序、文件分母、测试与对账门。Dexter 已于 2026-09-20 明确授权进入实施；2026-09-21 又明确裁定非登录 Admin console 必须 edge-to-edge 全屏，四周不得出现 shell 外部留白；该裁定与高保真 HTML 的 `.shell { inset: 0 }` 视觉正本一致，外层 shell 几何优先采用该全屏语义，内容内部 padding 仍由 IA 控制。当前 CP-0/CP-1 已取得 owner contract、consumer、focused readback 与 red mutation 证据，但三条 admission blocker 仍为 OPEN，不能把 focused 证据写成 blocker 已关闭。当前 APK 的 r49 第一批、r50 dual 与 r51 mobile 均完成受管 Android run，均 `BUSINESS=PASS`、`CLEANUP=PASS`；r49 第一批机械闭合 16/19，IA-03/05/07 OPEN；r50/r51 第二批计划范围闭合 8/11，IA-04/06/08 与 IA-14 error variant OPEN；三次运行 progress/result 终态一致。此前 r19/r20/r16/r30/r43/r44/r47/r48 只作为历史证据保留，不与当前 APK 混写。
 
-当前执行状态：`CP-0=PASS_CURRENT_SOURCE_RECONCILIATION`；`CP-1=OWNER_CONTRACT_AND_FOCUSED_PROOF_MATCHED_IMPLEMENTATION_REVIEW_PARTIAL`；`CP-2..CP-4=IMPLEMENTED_FOCUSED_GREEN`；`CP-5=STAGE2_BUSINESS_PASS_CLEANUP_PASS_VISUAL_OPEN_STAGE1_WAITING_FOR_VMS`。当前动态证据为 r11 mobile 与 r12 dual：两次 `BUSINESS=PASS`、`CLEANUP=PASS`；runner mechanical matched 分别为 mobile 的 IA-02/10/12/17 与 dual 的 IA-01/09/11/15/16/32，但这不构成视觉 PASS。IA-14 的移动长图例说明在真实滚动边界不可达，保持 OPEN；移动 panel 的 busy/error 变体没有被 release UI 暴露，保持 OPEN；三条 admission blocker 仍为 OPEN。
+当前执行状态：`CP-0=PASS_CURRENT_SOURCE_RECONCILIATION`；`CP-1=OWNER_CONTRACT_AND_FOCUSED_PROOF_MATCHED_IMPLEMENTATION_REVIEW_PARTIAL_NO_GO`；`CP-2..CP-4=IMPLEMENTED_FOCUSED_GREEN`；`CP-5=R49_FIRST_BATCH_MECHANICAL_16_OF_19_R50_R51_SECOND_BATCH_8_OF_11_FULL_SCREEN_BOUNDS_MATCHED_VISUAL_OPEN`。r49/r50/r51 均 `BUSINESS=PASS`、`CLEANUP=PASS`；三次 run 的 progress/result terminal snapshot 一致；当前 APK 机械 union 为 24/30，IA-03/04/05/06/07/08 OPEN，IA-14 display-facts-error 另行 OPEN；完整 30 帧逐控件视觉仍 OPEN；三条 admission blocker 仍为 OPEN；fresh vision review（r49/r47/r48 artifact）为 `NO-GO,M/S/N=0/0/3`，fresh verifier（r49/r47/r48 旧 terminal snapshot）为 `NO-GO,M/S/N=1/2/1`；r50/r51 的 runner terminal snapshot 已由主 agent 独立复核，此前 Epicurus/Popper/Meitner 结论作为历史复核保留。
 
-当前动态运行目录：`.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage2-mobile-sample-terminal-r11/` 与 `.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage2-dual-sample-terminal-r12/`。r12 已实测 laptop shell bounds 为 `[2,2][2558,1598]`，证明当前 dual 运行是全屏承载；r11/r12 均未把非当前 surface 补成分辨率字段。IA-32 high-fidelity cross-tab 对照帧中的副屏分辨率残留已修正为“该屏信息未提供”。
+历史动态运行目录仍包括 `.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage1-single-screen-sample-terminal-r30/`、r19、r20、r16、r36、r42、r43、r44、r47、r48；它们保留原始 SHA 与历史边界，不能代替 current APK 全量证据。当前 APK 为 `bytes=88910591`、SHA-256 `90f85820c34543d3b0689005a931bebe42f28e3bb392a87366b5adbc99d54acd`，r49 master/slave、r50 dual、r51 mobile 均已 exact installed readback。
 
-第一批待外部提供两台单机单屏虚拟机后，仍需按 19 帧分母验证 IA-01/03/05/07、IA-09/11、IA-13 与 IA-18..IA-29；当前不能把第二批结果或结构/静态证据升级成这些帧的动态结论。
+当前第二批目录为：`.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage2-dual-sample-terminal-r50/` 与 `.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage2-mobile-sample-terminal-r51/`。r50/r51 的 `BUSINESS=PASS`、`CLEANUP=PASS`、`FIRST_FAILURE=null`、`BROKEN_BOUNDARY=null`，且 progress/result terminal snapshot 一致；按第二批计划分母实际机械闭合 8/11：IA-02、10、12、14、15、16、17、32；IA-04/06/08 因合法 release 状态条件缺失保持 OPEN，IA-14 display-facts-error 仍 OPEN。
+
+最新 r49 运行时 `adb devices -l` 的 `emulator-5554` 与 `emulator-5556` 均为 single-screen、physical `2560x1600`、density `320`；第一批 current APK exact binding 已通过，机械闭合 16/19，`BUSINESS=PASS`、`CLEANUP=PASS`，`firstFailure=null`、`lastKnownGood=master-unpair-order-and-host-stop`、`brokenBoundary=null`。r50/r51 的 dual/mobile 事实仍作为第二批 current APK 证据保留；两批计划 union 仍严格为 19+11=30，任一机械 MATCHED 仍须经过逐控件视觉对账后才能形成 visual 结论。r49 root/panel bounds 与 r50/r51 的 fresh bounds 均 edge-to-edge。
+
+三条 admission blocker `DISPLAY_FACTS_OWNER`、`TOPOLOGY_PAGE_AVAILABILITY_AND_DIRECT_PAIR_OWNER`、`MASTER_UNPAIR_GUARD` 仍全部 OPEN。fresh Popper visual review 为 `REVIEW_TARGET=IMPLEMENTATION,VERDICT=NO-GO,M/S/N=0/1/3`；fresh Meitner implementation review 为 `REVIEW_TARGET=IMPLEMENTATION,VERDICT=NO-GO,M/S/N=2/2/0`；两者均不关闭 blocker。
 
 ## 1. 目标、范围与不变量
 
@@ -204,7 +208,7 @@ IA frame 对账分母：`IA-16/17` gate，`IA-18` role choice，`IA-19/20/21` ho
 
 ## 7. CP-5：验证与证据计划（当前部分执行）
 
-CP-5 已按 Dexter 授权执行第一批的一部分；下表仍是硬证据分档，当前只把 r39 的真实 single-screen run 记入 Android/native/device 与 cleanup，未把结构测试、历史产物或截图文件名升级为 visual PASS：
+CP-5 保留历史 r20/r16 的 Android/native run，并保留 r30/r43/r44/r47/r48 第一批与第二批历史运行；后续已按 Dexter 授权用当前 APK 在 r50 dual、r51 mobile 和 r49 single-screen 完成两批计划范围的可达子集。r49 已完成第一批 current APK exact rebind，r50/r51 已完成第二批 current APK run；IA-03/05/07 仍因 release 状态条件缺失 OPEN，IA-04/06/08 与 IA-14 error variant 也保持 OPEN；不能把历史 run 冒充当前 APK，也不能把第二批子集扩大为全量 30 帧。下表仍是硬证据分档，未把结构测试、历史产物或截图文件名升级为 visual PASS：
 
 | 档位 | 必须证明 | 不得冒充 |
 | --- | --- | --- |
@@ -215,11 +219,13 @@ CP-5 已按 Dexter 授权执行第一批的一部分；下表仍是硬证据分�
 | visual | IA 与运行截图/geometry/颜色/文案逐帧对账 | 截图单独不能证明业务状态 |
 | cleanup | 受管 process/device/resource 回收与 readback | business PASS 不能替代 cleanup |
 
-CP-5 后续必须继续遵循受管入口、日志/PID/readback、first failure/last known good、business 与 cleanup 分离。当前第一批 `BUSINESS=PASS`、`CLEANUP=PASS`，但 frame coverage/visual 为 OPEN；第二批需要真实 dual/mobile 设备，不能用第一批形态替代。
+CP-5 后续必须继续遵循受管入口、日志/PID/readback、first failure/last known good、business 与 cleanup 分离。r49 first batch、r50 dual 与 r51 mobile 均 `BUSINESS=PASS`、`CLEANUP=PASS`；r49 第一批机械闭合 16/19，IA-03/05/07 因当前 release UI 没有合法状态制造路径保持 `OPEN`；r50/r51 第二批计划范围机械闭合 8/11，IA-04/06/08 同样保持 `OPEN`，IA-14 display-facts-error 变体另行 `OPEN`。r49/r50/r51 的 terminal `progress.json` 均与 result 的 cleanup 终态一致。不能用结构测试或截图文件名替代动态/视觉结论。
 
 ## 8. 每个 CP 的统一闭环
 
 IA 正本优先级声明：frame inventory 是用户旅途、可见字段、状态、文案和动作的语义正本；high-fidelity IA 是同一 IA-ID 的位置、尺寸、形状、颜色、图标、字体和视觉 token 的视觉正本。任何 reconciliation/对账发现语义与视觉冲突，必须先修两份 IA；详设、实施与 reviewer 不得自行择一。
+
+全屏几何裁定：Dexter 2026-09-21 的直接验收要求是非登录 Admin console 充满可用 surface，shell 外部不得有四边留白；本门对账必须同时核对 desktop/mobile root 无 outer padding、shell 无 fixed max-width/min-height、实际运行 screenshot/hierarchy bounds 覆盖可用 surface。若历史证据仍把 bounded shell 写成当前结论，以当前源码、最新 IA 与新截图回源修正，不以旧文案延续误判。
 
 每一个 CP 都执行以下固定顺序：
 
@@ -293,4 +299,35 @@ IA 正本优先级声明：frame inventory 是用户旅途、可见字段、状�
 - fresh 独立 design adversarial review 的结果文件或明确 `OPEN` 披露；
 - `scripts/check/claude-review-handoff --file ...` 的 PASS 输出。
 
-当前不得写 `IMPLEMENTATION=COMPLETE`、`VISUAL=PASS`、`ANDROID=PASS` 或 `ACCEPTANCE=PASS`。当前状态是实施进行中、三条 admission blocker 仍 OPEN、第一批动态部分完成且第二批未运行；任一 blocker 无法在 CP-0/CP-1 由 owner 关闭时，必须停下并报告事实、反例、最小替代与边界。
+当前不得写 `IMPLEMENTATION=COMPLETE`、`VISUAL=PASS`、`ANDROID=PASS` 或 `ACCEPTANCE=PASS`。当前状态是实施进行中、三条 admission blocker 仍 OPEN、current APK r49/r50/r51 机械验证 union 仅 24/30、IA-03/04/05/06/07/08 与 IA-14 error variant 仍 OPEN、完整逐控件视觉仍 OPEN；任一 blocker 无法在 CP-0/CP-1 由 owner 关闭时，必须停下并报告事实、反例、最小替代与边界。
+
+## 13. r30 第一批历史执行增补（当前状态见文首与 CP-5）
+
+本节只记录当前实施授权下的新 run，不覆盖前文历史 r19/r20/r16 叙述。
+
+`RUN=.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage1-single-screen-sample-terminal-r30/sample-terminal`
+
+当前 release APK 已重新构建并绑定到 master/slave：88,910,779 bytes，SHA-256
+`94c83be9b78246f3ca1399891b46b74f2d006c2d54edc46ce9f52b8ef260e31f`。r30 结果为
+`BUSINESS=PASS`、`CLEANUP=PASS`、`FIRST_FAILURE=null`、
+`LAST_KNOWN_GOOD=master-unpair-order-and-host-stop`、`BROKEN_BOUNDARY=null`。
+
+第一批 19 帧分母未变；r30 runner 16 帧 MATCHED，`IA-03/05/07` 因 release UI 没有合法的真实
+empty/loading/error 状态制造路径保持 `OPEN`。IA-09 ratio bar 已接入独立 `admin-ratio-undeclared`
+语义 token；当前生产数据为 10 个 undeclared unit，所以真实画面显示该段占满，不引入 high-fidelity
+示例数据。IA-11 改为 summary/detail scroll union，IA-13 保留 summary/detail scroll union；两者
+均仍要通过 fresh 独立视觉逐控件审查后才可将 visual 列改为 MATCHED。
+
+r29 曾在 IA-11 首败，原因是 runner 的 summary resource-id 与生产 testID 不一致；其 raw
+`result.json` 保留 `firstFailure=master wait ... IA-11`、`lastKnownGood=frame-IA-09-ports-overview`，
+而旧 runner 误把上一成功帧写入 `brokenBoundary`，所以 raw `brokenBoundary` 也是
+`frame-IA-09-ports-overview`。语义上的失败边界仍是 IA-11；当前 runner 已改为对
+`RunnerFailure` 使用 owning label 记录失败边界，未知异常才回退到既有兜底值。r29 原始 artifact
+不改写为通过，修复后 r30 重新跑通。
+
+在 r30 运行时 `adb devices -l` 只发现两台单机单屏设备 `emulator-5556` 与 `emulator-5558`；当时
+第二批所需 single-machine dual-screen 与 mobile 未在场，故 r30 不得伪造 IA-16、不能用单屏替代双屏、
+不能把第一批结果外推到第二批。历史 r36/r42 曾补充第二批可达子集；当前 APK 的第二批以 r50/r51 增补为准，但不改变 r30
+历史结果的 SHA 与边界。三条 admission blocker
+`DISPLAY_FACTS_OWNER`、`TOPOLOGY_PAGE_AVAILABILITY_AND_DIRECT_PAIR_OWNER`、`MASTER_UNPAIR_GUARD`
+仍为 `OPEN`；r30 的 owner 行为/readback/red mutation 证据不能代替正式 closeout。

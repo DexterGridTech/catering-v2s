@@ -236,9 +236,11 @@ export type PrimitiveIconName = 'admin' | 'blocked' | 'check' | 'chevron-down' |
 
 export type PrimitiveIconProps = PrimitiveAddressableProps & Readonly<{
   readonly accessibilityLabel: string;
-    readonly appearance?: 'default' | 'login' | 'keyboard-action' | 'admin-shell' | 'admin-content';
+  readonly appearance?: 'default' | 'login' | 'keyboard-action' | 'admin-shell' | 'admin-content';
   readonly icon: PrimitiveIconName;
   readonly size?: number;
+  /** Semantic tone for icon foreground when the icon sits in a tone badge. */
+  readonly tone?: PrimitiveTone;
   /** Presentation-only alignment override for composite primitive composition. */
   readonly style?: StyleProp<ViewStyle>;
 }>;
@@ -247,6 +249,8 @@ export type PrimitiveIconBadgeProps = PrimitiveAddressableProps & Readonly<{
   readonly accessibilityLabel: string;
   readonly icon: PrimitiveIconName;
   readonly size?: number;
+  /** Optional semantic tone for a non-brand icon badge. */
+  readonly tone?: PrimitiveTone;
 }>;
 
 export type PrimitiveLayoutProps = PrimitiveAddressableProps &
@@ -345,6 +349,8 @@ export type PrimitiveStatusLineProps = PrimitiveAddressableProps &
     readonly accessibilityLabel?: string;
     readonly tone?: PrimitiveTone;
     readonly children?: ReactNode;
+    /** Presentation-only alignment override for composite status layouts. */
+    readonly style?: StyleProp<ViewStyle>;
   }>;
 
 export type PrimitiveFactItem = Readonly<{

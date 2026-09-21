@@ -33,6 +33,7 @@ module.exports = {
         'admin-content-foreground': 'rgb(var(--color-admin-content-foreground) / <alpha-value>)',
         'admin-content-muted': 'rgb(var(--color-admin-content-muted) / <alpha-value>)',
         'admin-content-border': 'rgb(var(--color-admin-content-border) / <alpha-value>)',
+        'admin-ratio-undeclared': 'rgb(var(--color-admin-ratio-undeclared) / <alpha-value>)',
         'admin-inset': 'rgb(var(--color-admin-inset) / <alpha-value>)',
         'admin-action': 'rgb(var(--color-admin-action) / <alpha-value>)',
         'admin-action-start': 'rgb(var(--color-admin-action-start) / <alpha-value>)',

@@ -5,7 +5,7 @@ import {useCursorCandidates} from '@catering-v2s/admin-ui-foundation';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {catalogInventoryRtkRequest} from '../../../app/api/generated/catalog-inventory-edge.rtk';
 import {wireUuid} from '../../../app/api/wireUuid';
-import type {CatalogOrderOptionConfig, CatalogSkuRow} from '../model/catalogModel';
+import type {CatalogOrderOptionConfig, CatalogProductionTagOwner, CatalogSkuRow} from '../model/catalogModel';
 import {catalogTestIdControls, catalogTestIds} from '../catalogTestIds';
 import {testId} from '@catering-v2s/admin-ui-foundation';
 import {
@@ -17,7 +17,13 @@ import {
 } from '../model/catalogItemEditorDraftAdapters';
 import {EmptySection, PreparationProfileReadOnly, PreparationVariationSummary} from './CatalogItemReadOnlyPresenters';
 
-export type ProductionTagOption = {tagRef: string; code: string; name: string; owner: string; status?: string};
+export type ProductionTagOption = {
+  tagRef: string;
+  code: string;
+  name: string;
+  owner: CatalogProductionTagOwner;
+  status?: string;
+};
 
 export function PreparationProfileEditor({
   profile,
@@ -220,7 +226,7 @@ export function CatalogItemProductionEditor({
         tagRef: entry.tagRef,
         code: entry.code,
         name: entry.name,
-        owner: 'fulfillment-production',
+        owner: 'catalog',
         status: entry.status,
       })),
       {
@@ -238,7 +244,7 @@ export function CatalogItemProductionEditor({
         tagRef: selectedTagRef,
         code: '',
         name: '已维护的生产标签',
-        owner: 'fulfillment-production',
+        owner: 'catalog',
         status: 'DISABLED',
       })
     : undefined;

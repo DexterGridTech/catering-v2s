@@ -13,6 +13,7 @@ import type {
   CatalogDetail,
   CatalogOrderOptionConfig,
   CatalogPreparationProfile,
+  CatalogProductionTagOwner,
   CatalogSkuRow,
   CatalogSkuVariantDimension,
 } from '../model/catalogModel';
@@ -29,7 +30,13 @@ export type CatalogReadOnlyManifest = Pick<
   CatalogShapeManifestView,
   'enumLabels' | 'fields' | 'fieldRules' | 'tabRules' | 'typeEffects' | 'identifierRules' | 'preparationRules'
 >;
-type ProductionTagOption = {tagRef: string; code: string; name: string; owner: string; status?: string};
+type ProductionTagOption = {
+  tagRef: string;
+  code: string;
+  name: string;
+  owner: CatalogProductionTagOwner;
+  status?: string;
+};
 
 function money(value: number | null | undefined) {
   return value === null || value === undefined ? '—' : `¥${(value / 100).toFixed(2)}`;

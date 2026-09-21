@@ -26,6 +26,10 @@ public final class CatalogOperationBindings {
     OperationBindingTypes.Wire.CatalogDictionaryEntryReadback updateOperationsCatalogDictionaryEntry(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogDictionaryEntryUpdateRequest request);
     OperationBindingTypes.Wire.CatalogDictionaryView reorderOperationsCatalogDictionaryEntry(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogDictionaryEntryReorderRequest request);
     OperationBindingTypes.Wire.CatalogDictionaryEntryReadback transitionOperationsCatalogDictionaryEntryStatus(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogDictionaryEntryTransitionRequest request);
+    OperationBindingTypes.Wire.ProductionTagPage getOperationsProductionTags(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.ProductionTagQuery request);
+    OperationBindingTypes.Wire.ProductionTagReadback createOperationsProductionTag(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.ProductionTagCreateRequest request);
+    OperationBindingTypes.Wire.ProductionTagReadback updateOperationsProductionTag(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.ProductionTagUpdateRequest request);
+    OperationBindingTypes.Wire.ProductionTagReadback transitionOperationsProductionTagStatus(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.ProductionTagTransitionRequest request);
     OperationBindingTypes.Wire.LocalCopyCandidatePage getOperationsLocalCatalogCopyCandidates(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.ReadContext context, OperationBindingTypes.Wire.LocalCopyCandidateQuery request);
     OperationBindingTypes.Wire.LocalCopyPreflight preflightOperationsLocalCatalogCopy(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.LocalCopyPreflightRequest request);
     OperationBindingTypes.Wire.LocalCopyReadback executeOperationsLocalCatalogCopy(OperationBindingTypes.OperationDescriptor descriptor, OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.LocalCopyExecuteRequest request);
@@ -74,6 +78,10 @@ public final class CatalogOperationBindings {
   public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_CATALOG_DICTIONARY_ENTRY_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsCatalogDictionaryEntry", "catalog", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor REORDER_OPERATIONS_CATALOG_DICTIONARY_ENTRY_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("reorderOperationsCatalogDictionaryEntry", "catalog", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("transitionOperationsCatalogDictionaryEntryStatus", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor GET_OPERATIONS_PRODUCTION_TAGS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getOperationsProductionTags", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor CREATE_OPERATIONS_PRODUCTION_TAG_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("createOperationsProductionTag", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor UPDATE_OPERATIONS_PRODUCTION_TAG_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("updateOperationsProductionTag", "catalog", "catalog-inventory");
+  public static final OperationBindingTypes.OperationDescriptor TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("transitionOperationsProductionTagStatus", "catalog", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor GET_OPERATIONS_LOCAL_CATALOG_COPY_CANDIDATES_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("getOperationsLocalCatalogCopyCandidates", "catalog", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor PREFLIGHT_OPERATIONS_LOCAL_CATALOG_COPY_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("preflightOperationsLocalCatalogCopy", "catalog", "catalog-inventory");
   public static final OperationBindingTypes.OperationDescriptor EXECUTE_OPERATIONS_LOCAL_CATALOG_COPY_DESCRIPTOR = new OperationBindingTypes.OperationDescriptor("executeOperationsLocalCatalogCopy", "catalog", "catalog-inventory");
@@ -107,6 +115,7 @@ public final class CatalogOperationBindings {
       case "getOperationsCatalogItems" -> { if (descriptor != GET_OPERATIONS_CATALOG_ITEMS_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getOperationsCatalogItem" -> { if (descriptor != GET_OPERATIONS_CATALOG_ITEM_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getOperationsCatalogDictionary" -> { if (descriptor != GET_OPERATIONS_CATALOG_DICTIONARY_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
+      case "getOperationsProductionTags" -> { if (descriptor != GET_OPERATIONS_PRODUCTION_TAGS_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getOperationsLocalCatalogCopyCandidates" -> { if (descriptor != GET_OPERATIONS_LOCAL_CATALOG_COPY_CANDIDATES_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getOperationsBrandCatalogCopyCandidates" -> { if (descriptor != GET_OPERATIONS_BRAND_CATALOG_COPY_CANDIDATES_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
       case "getOperationsCatalogShapeManifest" -> { if (descriptor != GET_OPERATIONS_CATALOG_SHAPE_MANIFEST_DESCRIPTOR || !"catalog".equals(descriptor.owner()) || !"catalog-inventory".equals(descriptor.routeRegistry())) throw new IllegalArgumentException("foreign descriptor"); }
@@ -128,6 +137,7 @@ public final class CatalogOperationBindings {
       case "getOperationsCatalogItems" -> adapters.getOperationsCatalogItems(GET_OPERATIONS_CATALOG_ITEMS_DESCRIPTOR, context, (OperationBindingTypes.Wire.CatalogItemPageQuery) request);
       case "getOperationsCatalogItem" -> adapters.getOperationsCatalogItem(GET_OPERATIONS_CATALOG_ITEM_DESCRIPTOR, context, (OperationBindingTypes.Wire.CatalogItemDetailQuery) request);
       case "getOperationsCatalogDictionary" -> adapters.getOperationsCatalogDictionary(GET_OPERATIONS_CATALOG_DICTIONARY_DESCRIPTOR, context, (OperationBindingTypes.Wire.CatalogDictionaryQuery) request);
+      case "getOperationsProductionTags" -> adapters.getOperationsProductionTags(GET_OPERATIONS_PRODUCTION_TAGS_DESCRIPTOR, context, (OperationBindingTypes.Wire.ProductionTagQuery) request);
       case "getOperationsLocalCatalogCopyCandidates" -> adapters.getOperationsLocalCatalogCopyCandidates(GET_OPERATIONS_LOCAL_CATALOG_COPY_CANDIDATES_DESCRIPTOR, context, (OperationBindingTypes.Wire.LocalCopyCandidateQuery) request);
       case "getOperationsBrandCatalogCopyCandidates" -> adapters.getOperationsBrandCatalogCopyCandidates(GET_OPERATIONS_BRAND_CATALOG_COPY_CANDIDATES_DESCRIPTOR, context, (OperationBindingTypes.Wire.BrandCopyCandidateQuery) request);
       case "getOperationsCatalogShapeManifest" -> adapters.getOperationsCatalogShapeManifest(GET_OPERATIONS_CATALOG_SHAPE_MANIFEST_DESCRIPTOR, context, (OperationBindingTypes.Wire.CatalogShapeManifestQuery) request);
@@ -183,6 +193,18 @@ public final class CatalogOperationBindings {
 
   public OperationBindingTypes.Wire.CatalogDictionaryEntryReadback transitionOperationsCatalogDictionaryEntryStatus(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.CatalogDictionaryEntryTransitionRequest request) {
     return adapters.transitionOperationsCatalogDictionaryEntryStatus(TRANSITION_OPERATIONS_CATALOG_DICTIONARY_ENTRY_STATUS_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.ProductionTagReadback createOperationsProductionTag(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.ProductionTagCreateRequest request) {
+    return adapters.createOperationsProductionTag(CREATE_OPERATIONS_PRODUCTION_TAG_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.ProductionTagReadback updateOperationsProductionTag(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.ProductionTagUpdateRequest request) {
+    return adapters.updateOperationsProductionTag(UPDATE_OPERATIONS_PRODUCTION_TAG_DESCRIPTOR, context, request);
+  }
+
+  public OperationBindingTypes.Wire.ProductionTagReadback transitionOperationsProductionTagStatus(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.ProductionTagTransitionRequest request) {
+    return adapters.transitionOperationsProductionTagStatus(TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS_DESCRIPTOR, context, request);
   }
 
   public OperationBindingTypes.Wire.LocalCopyPreflight preflightOperationsLocalCatalogCopy(OperationBindingTypes.WorkspaceExecutionContext context, OperationBindingTypes.Wire.LocalCopyPreflightRequest request) {

@@ -48,7 +48,7 @@ const staticCommands = Object.freeze([
     'l2-locator-bindings-static',
     'node',
     ['--test', 'scripts/test/l2-locator-bindings.static.test.mjs'],
-    ['tests 3', 'pass 3'],
+    ['tests 7', 'pass 7'],
   ],
   ['runtime-environment-keys', 'scripts/check/runtime-environment-keys', [], ['R5_RUNTIME_ENVIRONMENT_KEYS=PASS']],
   ['lifecycle-vocabulary', 'scripts/check/lifecycle-vocabulary', [], ['R6_LIFECYCLE_VOCABULARY=PASS']],
@@ -158,15 +158,6 @@ const runtimeCommands = [
     'THCL-JAVA-foundation',
     'node',
     ['scripts/test/r5-remote-testcontainers.mjs', ':apps:backend:catering-business-server:modules:foundation:test'],
-    true,
-  ],
-  [
-    'THCL-JAVA-fulfillment-production',
-    'node',
-    [
-      'scripts/test/r5-remote-testcontainers.mjs',
-      ':apps:backend:catering-business-server:modules:fulfillment-production:test',
-    ],
     true,
   ],
   [

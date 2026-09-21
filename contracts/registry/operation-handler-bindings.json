@@ -11,8 +11,8 @@
       "schemaVersion": 1,
       "revision": "CATALOG_INVENTORY_P1_20260806",
       "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
-      "contractDigest": "27221542c0e266d4e6361f164e78fd5b63b978b7acb48cfa30cdc834818034a4",
-      "contentSha256": "9d4a1248f59628eafa9748b62cc1f27037ba4911a9e36daff774af9f19712581"
+      "contractDigest": "3cf461f4a735b721f9d67b48e8dbd93117a64d4399c07985c9e94590c2db7836",
+      "contentSha256": "126708c23ee00d4a8f660d5d8dce85936d5a30daf1ef661b9ddb0809ba709d26"
     },
     "edge-face": {
       "schemaVersion": 2,
@@ -299,10 +299,10 @@
     },
     {
       "operationId": "getOperationsProductionTags",
-      "owner": "fulfillment-production",
+      "owner": "catalog",
       "routeRegistry": "catalog-inventory",
       "mode": "READ",
-      "adapter": "com.catering.v2s.fulfillment.production.application.GetOperationsProductionTagsOperation",
+      "adapter": "com.catering.v2s.catalog.application.GetOperationsProductionTagsOperation",
       "wireRequest": "ProductionTagQuery",
       "wireResponse": "ProductionTagPage",
       "contextKind": "READ_CONTEXT",
@@ -315,10 +315,10 @@
     },
     {
       "operationId": "createOperationsProductionTag",
-      "owner": "fulfillment-production",
+      "owner": "catalog",
       "routeRegistry": "catalog-inventory",
       "mode": "COMMAND",
-      "adapter": "com.catering.v2s.fulfillment.production.application.operations.CreateOperationsProductionTagOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.CreateOperationsProductionTagOperation",
       "wireRequest": "ProductionTagCreateRequest",
       "wireResponse": "ProductionTagReadback",
       "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
@@ -331,10 +331,10 @@
     },
     {
       "operationId": "updateOperationsProductionTag",
-      "owner": "fulfillment-production",
+      "owner": "catalog",
       "routeRegistry": "catalog-inventory",
       "mode": "COMMAND",
-      "adapter": "com.catering.v2s.fulfillment.production.application.operations.UpdateOperationsProductionTagOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.UpdateOperationsProductionTagOperation",
       "wireRequest": "ProductionTagUpdateRequest",
       "wireResponse": "ProductionTagReadback",
       "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
@@ -347,10 +347,10 @@
     },
     {
       "operationId": "transitionOperationsProductionTagStatus",
-      "owner": "fulfillment-production",
+      "owner": "catalog",
       "routeRegistry": "catalog-inventory",
       "mode": "COMMAND",
-      "adapter": "com.catering.v2s.fulfillment.production.application.operations.TransitionOperationsProductionTagStatusOperation",
+      "adapter": "com.catering.v2s.catalog.application.operations.TransitionOperationsProductionTagStatusOperation",
       "wireRequest": "ProductionTagTransitionRequest",
       "wireResponse": "ProductionTagReadback",
       "contextKind": "WORKSPACE_EXECUTION_CONTEXT",

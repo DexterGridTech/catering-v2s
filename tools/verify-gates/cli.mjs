@@ -978,7 +978,6 @@ function database(base = root) {
     'contract',
     'catalog',
     'inventory',
-    'fulfillment_production',
   ])
     if (!new RegExp(`CREATE\\s+SCHEMA\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?${schema}\\b`, 'i').test(fullMigrationText))
       fail('R5_DATABASE_OWNER_SCHEMA_MISSING', schema);

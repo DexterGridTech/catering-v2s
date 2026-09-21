@@ -461,6 +461,11 @@ export function CatalogWorkbenchNavigationTree({
           selectedKeys={[`${selection.kind}:${selection.ref}`]}
           treeData={treeData}
           onSelect={keys => selectTreeKey(String(keys[0] ?? ''))}
+          styles={{
+            root: {minWidth: 0, maxWidth: '100%', overflowX: 'hidden'},
+            item: {minWidth: 0, maxWidth: '100%'},
+            itemTitle: {display: 'block', width: '100%', minWidth: 0, maxWidth: '100%'},
+          }}
           style={{marginTop: 12, minWidth: 0, maxWidth: '100%', overflowX: 'hidden'}}
         />
       )}

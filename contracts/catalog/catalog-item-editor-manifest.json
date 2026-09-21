@@ -2556,7 +2556,7 @@
       ]
     },
     "productionTags": {
-      "owner": "fulfillment-production",
+      "owner": "catalog",
       "scopeLevels": [
         "headCompany+brand",
         "store+brand"
@@ -3308,5 +3308,5 @@
       "data"
     ]
   },
-  "manifestDigest": "04be8368bd8477c454654136a6510c0d8106f1e9902af70988a59237d944518c"
+  "manifestDigest": "61b5f3e38475762687a7143d7608a100eabde67d9e614fb8131789760671f61e"
 }

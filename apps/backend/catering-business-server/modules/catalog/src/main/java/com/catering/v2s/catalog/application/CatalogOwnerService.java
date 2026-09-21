@@ -1,7 +1,7 @@
 package com.catering.v2s.catalog.application;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
-import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
+import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
 import com.catering.v2s.platform.command.CatalogAuthorizationScope;
@@ -35,29 +35,11 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
     private final CatalogWorkbenchReadService workbenchReadService;
 
     public CatalogOwnerService(
-            JdbcTemplate jdbc, ObjectMapper mapper, TimeProvider time, CatalogAssetReferenceLock assetReferenceLocks) {
-        this(
-                jdbc,
-                mapper,
-                time,
-                assetReferenceLocks,
-                null,
-                null,
-                null,
-                new CatalogAttributeDefinitionService(jdbc, time),
-                new CatalogUnitDefinitionService(jdbc, time, null),
-                new CatalogOrderOptionDefinitionService(jdbc, time),
-                new CatalogCategoryService(jdbc, mapper, time),
-                new CatalogDictionaryService(jdbc, mapper, time),
-                null);
-    }
-
-    public CatalogOwnerService(
             JdbcTemplate jdbc,
             ObjectMapper mapper,
             TimeProvider time,
             CatalogAssetReferenceLock assetReferenceLocks,
-            ProductionTagOwnerApi productionTags,
+            CatalogProductionTagOwnerApi productionTags,
             InventoryOwnerApi inventory) {
         this(
                 jdbc,
@@ -80,7 +62,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             ObjectMapper mapper,
             TimeProvider time,
             CatalogAssetReferenceLock assetReferenceLocks,
-            ProductionTagOwnerApi productionTags,
+            CatalogProductionTagOwnerApi productionTags,
             InventoryOwnerApi inventory,
             PlatformTransactionManager transactions) {
         this(
@@ -104,7 +86,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             ObjectMapper mapper,
             TimeProvider time,
             CatalogAssetReferenceLock assetReferenceLocks,
-            ProductionTagOwnerApi productionTags,
+            CatalogProductionTagOwnerApi productionTags,
             InventoryOwnerApi inventory,
             PlatformTransactionManager transactions,
             CatalogAttributeDefinitionService attributeDefinitionService,
@@ -137,7 +119,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             ObjectMapper mapper,
             TimeProvider time,
             CatalogAssetReferenceLock assetReferenceLocks,
-            ProductionTagOwnerApi productionTags,
+            CatalogProductionTagOwnerApi productionTags,
             InventoryOwnerApi inventory,
             PlatformTransactionManager transactions,
             CatalogAttributeDefinitionService attributeDefinitionService,
@@ -172,7 +154,7 @@ public class CatalogOwnerService implements CatalogOwnerApi, CatalogTemporaryPro
             ObjectMapper mapper,
             TimeProvider time,
             CatalogAssetReferenceLock assetReferenceLocks,
-            ProductionTagOwnerApi productionTags,
+            CatalogProductionTagOwnerApi productionTags,
             InventoryOwnerApi inventory,
             PlatformTransactionManager transactions,
             CatalogAttributeDefinitionService attributeDefinitionService,

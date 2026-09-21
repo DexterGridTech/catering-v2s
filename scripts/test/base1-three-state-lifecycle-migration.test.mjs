@@ -104,14 +104,14 @@ function assertInventoryBomUpsertPredicates(sources) {
       method: 'upsertCatalogBomRows',
       persistence: sources.bomPersistence,
       sql: sources.bomSql,
-      constant: 'INVENTORY_BOM_SERVICE_CONTINUATION_DEFINITION_STATUS_ENABLED',
+      constant: 'INVENTORY_BOM_SERVICE_DEFINITION_STATUS_ENABLED',
       predicate: /WHERE definition_status='ENABLED'/,
     },
     {
       method: 'copyCatalogSkus',
       persistence: sources.copyPersistence,
       sql: sources.copySql,
-      constant: 'INVENTORY_COPY_SERVICE_CONTINUATION_DEFINITION_STATUS_ENABLED',
+      constant: 'INVENTORY_COPY_SERVICE_DEFINITION_STATUS_ENABLED',
       predicate: /WHERE definition_status='ENABLED'/,
     },
   ];

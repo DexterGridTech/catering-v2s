@@ -7,9 +7,9 @@ const read = (relativePath: string): string => readFileSync(new URL(`../${relati
 describe('admin visual contract', () => {
   it('declares the high-fidelity geometry as focused data, not a frame macro', () => {
     expect(adminGeometry.rootLaptop).toMatchObject({paddingHorizontal: 0, paddingVertical: 0})
-    expect(adminGeometry.rootMobile).toMatchObject({paddingHorizontal: 16, paddingVertical: 16})
-    expect(adminGeometry.shellLaptop).toMatchObject({flex: 1, maxWidth: 1360, minHeight: 760})
-    expect(adminGeometry.shellMobile).toMatchObject({width: 358, minHeight: 812})
+    expect(adminGeometry.rootMobile).toMatchObject({paddingHorizontal: 0, paddingVertical: 0})
+    expect(adminGeometry.shellLaptop).toMatchObject({flex: 1, width: '100%', maxWidth: '100%', minHeight: 0, minWidth: 0, alignSelf: 'stretch'})
+    expect(adminGeometry.shellMobile).toMatchObject({flex: 1, width: '100%', maxWidth: '100%', minHeight: 0, minWidth: 0, alignSelf: 'stretch'})
     expect(adminGeometry.headerLaptop).toMatchObject({height: 72, paddingHorizontal: 24, borderBottomWidth: 1})
     expect(adminGeometry.headerMobile).toMatchObject({height: 60, paddingHorizontal: 16, borderBottomWidth: 1})
     expect(adminGeometry.navigation).toMatchObject({width: 248, minWidth: 248, padding: 12, borderRightWidth: 1})
@@ -26,6 +26,8 @@ describe('admin visual contract', () => {
   it('uses admin semantic classes at the shared-rendering boundaries', () => {
     expect(baseTokens.adminShell).toContain('bg-admin-shell-surface')
     expect(baseTokens.adminShell).toContain('border-admin-shell-border')
+    expect(baseTokens.adminShell).not.toContain('rounded-[20px]')
+    expect(baseTokens.adminShell).not.toContain('shadow-2xl')
     expect(baseTokens.adminNavItemSelected).toContain('bg-admin-action')
     expect(baseTokens.adminNavFocusBar).toContain('bg-admin-focus')
     expect(baseTokens.adminContent).toContain('bg-admin-content-surface')

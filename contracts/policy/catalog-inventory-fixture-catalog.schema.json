@@ -1383,6 +1383,11 @@
           ],
           "description": "nullable standard sale price"
         },
+        "standardSalePriceCents": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "source fixture standard sale price in cents"
+        },
         "skuCodes": {
           "type": "array",
           "description": "SKU codes",

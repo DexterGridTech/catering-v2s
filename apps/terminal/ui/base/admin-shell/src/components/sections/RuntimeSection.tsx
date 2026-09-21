@@ -7,6 +7,7 @@ import {adminTestIds} from '../../foundations/adminTestIds'
 
 const sectionStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0})
 const runtimeScrollPaddingBottom = 48
+const mobileSurfaceCardStyle = Object.freeze({flexShrink: 0})
 const renderStatusLabel = (status: ReturnType<typeof useRenderStatus>): string => status === 'started' ? '正常' : status === 'created' ? '正在准备' : '不可用'
 
 export const RuntimeSection = ({context}: AdminSectionProps) => {
@@ -51,7 +52,10 @@ export const RuntimeSection = ({context}: AdminSectionProps) => {
           {display.status === 'ready' ? (
           <>
             {context.surface.surfaceForm === 'mobile' ? <PrimitiveText appearance="admin-muted" testID={adminTestIds.runtime.mobileSingleSurfaceBoundary}>mobile 形态仅显示一块实际屏幕</PrimitiveText> : null}
-            <PrimitiveStack testID="admin.console.runtime:surface-card">
+            <PrimitiveStack
+              testID="admin.console.runtime:surface-card"
+              style={context.surface.surfaceForm === 'mobile' ? mobileSurfaceCardStyle : undefined}
+            >
               <PrimitiveSurfaceMap
                 testID={adminTestIds.runtime.surfaceMap}
                 accessibilityLabel="显示屏状态"
@@ -59,8 +63,8 @@ export const RuntimeSection = ({context}: AdminSectionProps) => {
                 surfaces={display.surfaces}
                 compact={context.surface.surfaceForm === 'mobile'}
               />
-              <PrimitiveText appearance="admin-muted" testID={adminTestIds.runtime.legend}>当前屏幕显示完整事实；非当前屏幕仅显示存在性、角色与信息未提供边界</PrimitiveText>
             </PrimitiveStack>
+            <PrimitiveText appearance="admin-muted" testID={adminTestIds.runtime.legend}>当前屏幕显示完整事实；非当前屏幕仅显示存在性、角色与信息未提供边界</PrimitiveText>
           </>
           ) : (
             <PrimitiveEmptyState testID={adminTestIds.runtime.displayFactsError} tone="warn">

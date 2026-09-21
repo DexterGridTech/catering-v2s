@@ -12,9 +12,9 @@ import static org.mockito.Mockito.when;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerTypes;
-import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
-import com.catering.v2s.fulfillment.production.application.ProductionTagOwnerService;
-import com.catering.v2s.fulfillment.production.application.persistence.ProductionTagOwnerPersistence;
+import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
+import com.catering.v2s.catalog.application.CatalogProductionTagOwnerService;
+import com.catering.v2s.catalog.application.persistence.CatalogProductionTagOwnerPersistence;
 import com.catering.v2s.inventory.application.InventoryOwnerService;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
@@ -70,7 +70,7 @@ class CatalogCategoryOwnerIntegrationTest {
     private static JdbcTemplate jdbc;
     private static CatalogOwnerService service;
     private static InventoryOwnerService inventory;
-    private static ProductionTagOwnerService production;
+    private static CatalogProductionTagOwnerService production;
     private static CatalogOwnerApi.UnitDefinitionReadback defaultTestUnit;
 
     @BeforeAll
@@ -79,8 +79,8 @@ class CatalogCategoryOwnerIntegrationTest {
         flyway.migrate();
         jdbc = jdbc(POSTGRES);
         inventory = new InventoryOwnerService(jdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L);
-        production = new ProductionTagOwnerService(
-                new ProductionTagOwnerPersistence(jdbc, (TimeProvider) () -> 1_785_000_000_000L), MAPPER);
+        production = new CatalogProductionTagOwnerService(
+                new CatalogProductionTagOwnerPersistence(jdbc, (TimeProvider) () -> 1_785_000_000_000L), MAPPER);
         service = new CatalogOwnerService(
                 jdbc,
                 MAPPER,
@@ -798,21 +798,21 @@ class CatalogCategoryOwnerIntegrationTest {
                 .get(0);
         assertEquals(tagRef.toString(), tag.path("tagRef").asText());
         assertEquals("RELATION-PRODUCTION-TAG", tag.path("code").asText());
-        assertEquals("fulfillment-production", tag.path("owner").asText());
+        assertEquals("catalog", tag.path("owner").asText());
     }
 
     @Test
     void productionTagCommandReadbackCarriesTheCreatedOpaqueReference() {
         String code = generatedCatalogCode("TYPED-TAG-REF");
-        ProductionTagOwnerApi.ProductionTagCommandReadback readback = production.createTag(
+        CatalogProductionTagOwnerApi.ProductionTagCommandReadback readback = production.createTag(
                 context("createOperationsProductionTag", SCOPE, "typed-tag-ref"),
-                new ProductionTagOwnerApi.CreateTagCommand(code, "typed tag"),
+                new CatalogProductionTagOwnerApi.CreateTagCommand(code, "typed tag"),
                 "typed-tag-ref-key");
         assertTrue(readback.tagRef() != null);
         assertEquals(
                 readback.tagRef(),
                 jdbc.queryForObject(
-                        "SELECT tag_ref FROM fulfillment_production.production_tag_definition WHERE data_node_ref=? "
+                        "SELECT tag_ref FROM catalog.production_tag_definition WHERE data_node_ref=? "
                                 + "AND brand_ref=? AND code=?",
                         UUID.class,
                         SCOPE.toString(),
@@ -823,28 +823,28 @@ class CatalogCategoryOwnerIntegrationTest {
     @Test
     void typedProductionTagUpdateAndTransitionLockTheCurrentFactAndReturnTheirPersistedReadback() {
         String code = generatedCatalogCode("TYPED-TAG-MUTATION");
-        ProductionTagOwnerApi.ProductionTagCommandReadback created = production.createTag(
+        CatalogProductionTagOwnerApi.ProductionTagCommandReadback created = production.createTag(
                 context("createOperationsProductionTag", SCOPE, "typed-tag-mutation-create"),
-                new ProductionTagOwnerApi.CreateTagCommand(code, "initial production tag"),
+                new CatalogProductionTagOwnerApi.CreateTagCommand(code, "initial production tag"),
                 "typed-tag-mutation-create-key");
 
-        ProductionTagOwnerApi.ProductionTagCommandReadback renamed = production.updateTag(
+        CatalogProductionTagOwnerApi.ProductionTagCommandReadback renamed = production.updateTag(
                 context("updateOperationsProductionTag", SCOPE, "typed-tag-mutation-update"),
-                new ProductionTagOwnerApi.UpdateTagCommand(code, created.version(), "renamed production tag"),
+                new CatalogProductionTagOwnerApi.UpdateTagCommand(code, created.version(), "renamed production tag"),
                 "typed-tag-mutation-update-key");
         assertEquals("renamed production tag", renamed.name());
         assertEquals(created.version() + 1L, renamed.version());
 
-        ProductionTagOwnerApi.ProductionTagCommandReadback disabled = production.transitionTagStatus(
+        CatalogProductionTagOwnerApi.ProductionTagCommandReadback disabled = production.transitionTagStatus(
                 context("transitionOperationsProductionTagStatus", SCOPE, "typed-tag-mutation-transition"),
-                new ProductionTagOwnerApi.TransitionTagStatusCommand(code, renamed.version(), "DISABLED"),
+                new CatalogProductionTagOwnerApi.TransitionTagStatusCommand(code, renamed.version(), "DISABLED"),
                 "typed-tag-mutation-transition-key");
         assertEquals("DISABLED", disabled.status());
         assertEquals(renamed.version() + 1L, disabled.version());
         assertEquals(
                 List.of("renamed production tag", "DISABLED", String.valueOf(disabled.version())),
                 jdbc.queryForObject(
-                        "SELECT name,status,version FROM fulfillment_production.production_tag_definition "
+                        "SELECT name,status,version FROM catalog.production_tag_definition "
                                 + "WHERE data_node_ref=? AND brand_ref=? AND code=?",
                         (result, row) ->
                                 List.of(result.getString(1), result.getString(2), String.valueOf(result.getLong(3))),
@@ -3288,9 +3288,9 @@ class CatalogCategoryOwnerIntegrationTest {
         RecordingJdbcTemplate recordingJdbc = new RecordingJdbcTemplate(dataSource());
         InventoryOwnerService recordingInventory =
                 new InventoryOwnerService(recordingJdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L);
-        ProductionTagOwnerService recordingProduction =
-                new ProductionTagOwnerService(
-                        new ProductionTagOwnerPersistence(
+        CatalogProductionTagOwnerService recordingProduction =
+                new CatalogProductionTagOwnerService(
+                new CatalogProductionTagOwnerPersistence(
                                 recordingJdbc, (TimeProvider) () -> 1_785_000_000_000L),
                         MAPPER);
         CatalogOwnerService recordingService = new CatalogOwnerService(
@@ -3355,7 +3355,7 @@ class CatalogCategoryOwnerIntegrationTest {
                 MAPPER,
                 (TimeProvider) () -> 1_785_000_000_000L,
                 mock(CatalogAssetReferenceLock.class),
-                null,
+                mock(CatalogProductionTagOwnerApi.class),
                 new InventoryOwnerService(recordingJdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L));
         JsonNode detail = recordingService
                 .readItem(SCOPE.toString(), BRAND, itemCode, "qg10-sku-detail")
@@ -4684,7 +4684,7 @@ class CatalogCategoryOwnerIntegrationTest {
 
     private static void insertProductionTag(UUID scope, UUID ref, String code) {
         jdbc.update(
-                "INSERT INTO fulfillment_production.production_tag_definition "
+                "INSERT INTO catalog.production_tag_definition "
                         + "(tag_ref,data_node_ref,brand_ref,code,name,status,version,"
                         + "created_at_epoch_millis,updated_at_epoch_millis) "
                         + "VALUES (?,?,?,?,?,'ENABLED',1,1,1)",
@@ -4897,9 +4897,9 @@ class CatalogCategoryOwnerIntegrationTest {
             JdbcTemplate taskJdbc = new JdbcTemplate(dataSource);
             InventoryOwnerService taskInventory =
                     new InventoryOwnerService(taskJdbc, MAPPER, (TimeProvider) () -> 1_785_000_000_000L);
-            ProductionTagOwnerService taskProduction =
-                new ProductionTagOwnerService(
-                        new ProductionTagOwnerPersistence(taskJdbc, (TimeProvider) () -> 1_785_000_000_000L), MAPPER);
+            CatalogProductionTagOwnerService taskProduction =
+                new CatalogProductionTagOwnerService(
+                new CatalogProductionTagOwnerPersistence(taskJdbc, (TimeProvider) () -> 1_785_000_000_000L), MAPPER);
             CatalogOwnerService taskCatalog = new CatalogOwnerService(
                     taskJdbc,
                     MAPPER,

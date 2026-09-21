@@ -270,8 +270,8 @@ class CatalogInventoryCoordinatorCopySourceAuthorityTest {
         ObjectMapper mapper = new ObjectMapper();
         CatalogOwnerApi catalog = mock(CatalogOwnerApi.class);
         InventoryOwnerApi inventory = mock(InventoryOwnerApi.class);
-        com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi production =
-                mock(com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi.class);
+        com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi production =
+                mock(com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi.class);
         CatalogInventoryCoordinator service =
                 new CatalogInventoryCoordinator(catalog, inventory, production, null, mapper, null, null);
         UUID itemRef = UUID.randomUUID();

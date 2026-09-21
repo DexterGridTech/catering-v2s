@@ -26,6 +26,7 @@ const adminColors = Object.freeze([
   'admin-content-foreground',
   'admin-content-muted',
   'admin-content-border',
+  'admin-ratio-undeclared',
   'admin-inset',
   'admin-action',
   'admin-action-start',

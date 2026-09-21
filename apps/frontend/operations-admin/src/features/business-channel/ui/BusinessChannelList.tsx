@@ -19,7 +19,7 @@ import type {OperationsPageContext} from '../../../app/routing/model';
 import {operationsContentTabRefreshSignal, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import {useEffect, useMemo, useState} from 'react';
 import {readProjectBusinessChannels, readStoreBusinessChannels} from '../application/queries';
-import {bindingStatusLabels, lifecycleStatusLabels} from '../model/businessChannelCodeLabels';
+import {bindingStatusLabels} from '../model/businessChannelCodeLabels';
 import {businessChannelTemplateTestIds} from '../../../app/automation/businessChannelTemplateTestIds';
 
 type ProSortOrder = 'ascend' | 'descend';

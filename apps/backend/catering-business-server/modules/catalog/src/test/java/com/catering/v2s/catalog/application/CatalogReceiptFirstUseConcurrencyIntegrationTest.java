@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
 import com.catering.v2s.platform.command.CatalogInventoryWorkspaceCommandTokens;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
@@ -178,7 +179,12 @@ class CatalogReceiptFirstUseConcurrencyIntegrationTest {
 
     private static CatalogOwnerService service(JdbcTemplate jdbc) {
         return new CatalogOwnerService(
-                jdbc, JSON, (TimeProvider) () -> 1_785_000_000_000L, mock(CatalogAssetReferenceLock.class));
+                jdbc,
+                JSON,
+                (TimeProvider) () -> 1_785_000_000_000L,
+                mock(CatalogAssetReferenceLock.class),
+                mock(CatalogProductionTagOwnerApi.class),
+                null);
     }
 
     private static void assertEquivalentDictionaryResponses(JsonNode expected, JsonNode actual) {

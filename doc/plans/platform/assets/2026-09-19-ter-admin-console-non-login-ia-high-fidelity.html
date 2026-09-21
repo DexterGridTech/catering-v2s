@@ -271,7 +271,7 @@
     <div class="notice"><strong>视觉连续性核对：</strong>下方先展示已确认的登录卡与已登录 shell 的 token 连接，再展示全部 29 个 production frame 与 1 个跨 tab 对照工件。主题切换只改变语义 token 值，不改变布局、控件层级和用户旅途；本稿不修改源码、不代表实现完成。</div>
 
     <section class="bridge">
-      <div class="section-head"><h2>Style bridge · 登录前 → 登录后</h2><p>同一 `PrimitiveContainer elevated` 语法；同一 20/16 圆角、细描边、状态灯和 action family</p></div>
+      <div class="section-head"><h2>Style bridge · 登录前 → 登录后</h2><p>登录卡保留 20 圆角；非登录 console 采用 edge-to-edge surface，内容卡保留 16 圆角，继续共享细描边、状态灯和 action family</p></div>
       <div class="bridge-grid">
         <div class="bridge-card">
           <div class="bridge-caption"><span>PRE-LOGIN</span><span class="token">login tokens</span></div>

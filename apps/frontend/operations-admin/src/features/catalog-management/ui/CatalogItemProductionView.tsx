@@ -11,7 +11,7 @@ export function CatalogItemProductionView({
   onNavigateTab: (tabKey: string) => void;
 }) {
   const selectedTag = detail.productionTags.find(tag => tag.tagRef === detail.item.productionTagRef);
-  const tag = selectedTag ? {...selectedTag, owner: selectedTag.owner || 'fulfillment-production'} : undefined;
+  const tag = selectedTag ? {...selectedTag, owner: selectedTag.owner || 'catalog'} : undefined;
   return (
     <CatalogFactSectionView section="production-prompts">
       <Space direction="vertical" size={12} style={{display: 'flex'}}>

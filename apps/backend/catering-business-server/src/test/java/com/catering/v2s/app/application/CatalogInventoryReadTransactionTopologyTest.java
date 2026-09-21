@@ -12,8 +12,8 @@ import static org.mockito.Mockito.when;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.application.CatalogInventoryCoordinator;
 import com.catering.v2s.catalog.application.CatalogOwnerService;
-import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
-import com.catering.v2s.fulfillment.production.application.ProductionTagOwnerService;
+import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
+import com.catering.v2s.catalog.application.CatalogProductionTagOwnerService;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.inventory.application.InventoryReadRouter;
 import com.catering.v2s.inventory.application.InventoryOwnerService;
@@ -60,7 +60,7 @@ class CatalogInventoryReadTransactionTopologyTest {
     void allSixteenNamedGetsReachTypedOwnersWithoutAnActiveTransaction() throws Exception {
         CatalogOwnerApi catalog = mock(CatalogOwnerApi.class);
         InventoryOwnerApi inventory = mock(InventoryOwnerApi.class);
-        ProductionTagOwnerApi production = mock(ProductionTagOwnerApi.class);
+        CatalogProductionTagOwnerApi production = mock(CatalogProductionTagOwnerApi.class);
         CatalogScopeLookup catalogScopes = mock(CatalogScopeLookup.class);
         ObjectNode request = MAPPER.createObjectNode();
         JsonNode emptyEnvelope = envelope(MAPPER.createObjectNode());
@@ -261,7 +261,7 @@ class CatalogInventoryReadTransactionTopologyTest {
                 String.class,
                 String.class);
         assertNoTransaction(
-                ProductionTagOwnerService.class,
+                CatalogProductionTagOwnerService.class,
                 "readTags",
                 String.class,
                 String.class,
@@ -280,7 +280,7 @@ class CatalogInventoryReadTransactionTopologyTest {
                 .getMethod(
                         "read", String.class, String.class, String.class, ObjectNode.class, String.class, String.class)
                 .isAnnotationPresent(Transactional.class));
-        assertTrue(ProductionTagOwnerService.class
+        assertTrue(CatalogProductionTagOwnerService.class
                 .getMethod("read", String.class, String.class, String.class, ObjectNode.class, String.class)
                 .isAnnotationPresent(Transactional.class));
     }

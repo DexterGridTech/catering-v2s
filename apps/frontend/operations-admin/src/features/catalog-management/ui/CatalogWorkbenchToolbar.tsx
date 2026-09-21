@@ -75,9 +75,7 @@ export function CatalogWorkbenchToolbar({
               label: <NameCodeText name={brand.name} code={brand.code} />,
             }))}
             optionRender={option => (
-              <span {...testId(catalogTestIdControls.workbench.brandOption(String(option.value)))}>
-                {option.label}
-              </span>
+              <span {...testId(catalogTestIdControls.workbench.brandOption(String(option.value)))}>{option.label}</span>
             )}
             onChange={onBrandChange}
             style={catalogFieldWidth('regular')}

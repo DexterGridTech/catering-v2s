@@ -1,5 +1,5 @@
 import {ProTable} from '@ant-design/pro-components';
-import {Alert, Button, Card, Tag, Typography} from 'antd';
+import {Alert, Button, Card, Typography} from 'antd';
 import {
   adminListState,
   createPageQueryIdentity,

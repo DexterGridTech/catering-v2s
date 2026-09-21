@@ -521,6 +521,50 @@ class MasterDataLifecycleMigrationIntegrationTest {
                 "inventory", "ux_inventory_stock_bom_active_identity", "(definition_status = 'ENABLED'::text)");
     }
 
+    @Test
+    void productionTagCutoverCreatesCatalogOwnerAndRemovesLegacySchema() throws Exception {
+        resetDatabase();
+        migrateLatest();
+
+        assertEquals(
+                "catalog.production_tag_definition",
+                scalarString("SELECT to_regclass(?)", "catalog.production_tag_definition"));
+        assertEquals(
+                "catalog.production_tag_command_receipt",
+                scalarString("SELECT to_regclass(?)", "catalog.production_tag_command_receipt"));
+        assertNull(scalarString("SELECT to_regclass(?)", "fulfillment_production.production_tag_definition"));
+        assertNull(scalarString("SELECT to_regclass(?)", "fulfillment_production.command_receipt"));
+        assertTrue(indexExists("catalog", "ux_catalog_production_tag_active_code"));
+        assertFalse(indexExists("fulfillment_production", "ux_production_tag_active_code"));
+        assertConstraintEquals(
+                "catalog",
+                "production_tag_definition",
+                "production_tag_definition_status_check",
+                "CHECK ((status = ANY (ARRAY['ENABLED'::text, 'DISABLED'::text, 'VOIDED'::text])))");
+        assertConstraintEquals(
+                "catalog",
+                "production_tag_command_receipt",
+                "production_tag_command_receipt_scope_key",
+                "UNIQUE (data_node_ref, idempotency_key)");
+        assertEquals(
+                0,
+                scalarInt(
+                        """
+                        SELECT count(*)
+                          FROM pg_class c
+                          JOIN pg_namespace n ON n.oid = c.relnamespace
+                         WHERE n.nspname = 'catalog'
+                           AND c.relname LIKE 'production_tag%'
+                           AND c.relkind IN ('r', 'i', 'p')
+                           AND c.relname NOT IN (
+                               'production_tag_command_receipt',
+                               'production_tag_command_receipt_pkey',
+                               'production_tag_command_receipt_scope_key',
+                               'production_tag_definition',
+                               'production_tag_definition_pkey')
+                        """));
+    }
+
     private static void migrateTo(String targetVersion) {
         flyway(targetVersion).migrate();
     }

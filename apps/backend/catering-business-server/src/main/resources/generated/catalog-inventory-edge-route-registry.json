@@ -3,7 +3,7 @@
   "kind": "catalog-inventory-edge-route-registry",
   "revision": "CATALOG_INVENTORY_P1_20260806",
   "generatedFrom": "contracts/catalog/catalog-inventory-edge-contract.json",
-  "contractDigest": "27221542c0e266d4e6361f164e78fd5b63b978b7acb48cfa30cdc834818034a4",
+  "contractDigest": "3cf461f4a735b721f9d67b48e8dbd93117a64d4399c07985c9e94590c2db7836",
   "operations": [
     {
       "operationId": "getOperationsCatalogWorkbenchContext",
@@ -354,7 +354,7 @@
       "operationId": "getOperationsProductionTags",
       "method": "GET",
       "path": "/operations/catalog-inventory/production-tags",
-      "owner": "fulfillment-production",
+      "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
       ],
@@ -377,7 +377,7 @@
       "operationId": "createOperationsProductionTag",
       "method": "POST",
       "path": "/operations/catalog-inventory/production-tags",
-      "owner": "fulfillment-production",
+      "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
       ],
@@ -400,7 +400,7 @@
       "operationId": "updateOperationsProductionTag",
       "method": "PATCH",
       "path": "/operations/catalog-inventory/production-tags/{tagCode}",
-      "owner": "fulfillment-production",
+      "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
       ],
@@ -423,7 +423,7 @@
       "operationId": "transitionOperationsProductionTagStatus",
       "method": "POST",
       "path": "/operations/catalog-inventory/production-tags/{tagCode}/status",
-      "owner": "fulfillment-production",
+      "owner": "catalog",
       "consumerFaces": [
         "operations-admin"
       ],

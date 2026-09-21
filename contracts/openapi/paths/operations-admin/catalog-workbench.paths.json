@@ -388,8 +388,7 @@
         ],
         "x-owner-module": "catalog",
         "x-coordinated-owners": [
-          "inventory",
-          "fulfillment-production"
+          "inventory"
         ],
         "x-capability-keys": [],
         "x-capability-by-data-node-type": {},

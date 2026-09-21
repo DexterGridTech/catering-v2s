@@ -46,11 +46,12 @@ export const PrimitiveRatioBar = ({testID, accessibilityLabel, total, segments}:
   );
 };
 
-export const PrimitiveStatusLine = ({testID, accessibilityLabel, tone = 'neutral', children}: PrimitiveStatusLineProps) => (
+export const PrimitiveStatusLine = ({testID, accessibilityLabel, tone = 'neutral', children, style}: PrimitiveStatusLineProps) => (
   <RnrView
     testID={assertTestID(testID)}
     accessibilityLabel={accessibilityLabel}
     className={baseTokens.adminStatusLine}
+    style={style}
   >
     <RnrView testID={`${assertTestID(testID)}:dot`} className={toneClassName(tone, baseTokens.adminStatusLineDot)} />
     <RnrText className={toneForegroundClassName(tone, baseTokens.adminStatusLine)}>{children}</RnrText>
@@ -136,7 +137,11 @@ export const PrimitiveSurfaceMap = ({testID, accessibilityLabel, surfaces, direc
                   testID={`${address}:surface:${surface.key}`}
                   accessibilityRole="none"
                   className={baseTokens.adminSurfaceMapRectCurrent}
-                  style={{...(compact ? adminGeometry.surfaceRectMobile : adminGeometry.surfaceRectLaptop), aspectRatio: surface.aspectRatio}}
+                  style={{
+                    ...(compact ? adminGeometry.surfaceRectMobile : adminGeometry.surfaceRectLaptop),
+                    ...(direction === 'row' ? {maxWidth: 320, alignSelf: 'center' as const} : {}),
+                    aspectRatio: surface.aspectRatio,
+                  }}
                 >
                   {surface.logicHeightLabel === undefined ? null : <RnrText testID={`${address}:surface:${surface.key}:logic-height`} className={baseTokens.adminSurfaceMapLogicHeight}>{surface.logicHeightLabel}</RnrText>}
                   {surface.present ? surface.insideLabels.map((label, index) => (

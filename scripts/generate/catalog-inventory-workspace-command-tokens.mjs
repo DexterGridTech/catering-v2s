@@ -43,7 +43,7 @@ const copySourcePolicyByOperation = new Map([
   ["preflightOperationsBrandCatalogCopy", "ORGANIZATION_JUDGMENT"],
   ["executeOperationsBrandCatalogCopy", "ORGANIZATION_JUDGMENT"],
 ]);
-const storeOperatingRuleGateOwners = new Set(["catalog", "fulfillment-production", "inventory", "asset"]);
+const storeOperatingRuleGateOwners = new Set(["catalog", "inventory", "asset"]);
 const storeOperatingRuleGatePreflights = new Set([
   "preflightOperationsLocalCatalogCopy",
   "preflightOperationsTemporaryCatalogItemPromotion",

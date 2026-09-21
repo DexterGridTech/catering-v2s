@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import com.catering.v2s.catalog.application.persistence.CatalogWorkbenchReadPersistence;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
@@ -58,7 +59,12 @@ class CatalogInventoryDisplayFactsTest {
                     mapper.mapRow(row(second, "second", null, null, null), 1));
         });
         CatalogOwnerService service = new CatalogOwnerService(
-                jdbc, new ObjectMapper(), () -> 1_785_000_000_000L, mock(CatalogAssetReferenceLock.class));
+                jdbc,
+                new ObjectMapper(),
+                () -> 1_785_000_000_000L,
+                mock(CatalogAssetReferenceLock.class),
+                mock(CatalogProductionTagOwnerApi.class),
+                null);
 
         List<CatalogOwnerApi.InventoryDisplayFact> facts =
                 service.readInventoryDisplayFacts("scope", "brand", List.of(second, missing, first, second));

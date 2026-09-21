@@ -1436,7 +1436,7 @@ const linkageRules = {
     identity: ['targetType', 'itemCode', 'skuCode'],
   },
   productionTags: {
-    owner: 'fulfillment-production',
+    owner: 'catalog',
     scopeLevels: ['headCompany+brand', 'store+brand'],
     projectScope: false,
   },
@@ -2108,7 +2108,7 @@ const edgeContract = {
   kind: 'catalog-inventory-edge-contract',
   revision: REVISION,
   consumerFaces: ['operations-admin'],
-  ownerModules: ['catalog', 'inventory', 'fulfillment-production', 'asset', 'organization', 'workspace-iam'],
+  ownerModules: ['catalog', 'inventory', 'asset', 'organization', 'workspace-iam'],
   operationCount: operationMetadata.length,
   operations: operationMetadata,
   typedProblemCodes: Array.from(new Set(operationMetadata.flatMap(entry => entry.problemCodes))).sort(),
@@ -2167,7 +2167,7 @@ const placement = {
     'components/inventory/inventory-common.schemas.json',
     'components/inventory/inventory-workbench.schemas.json',
     'components/inventory/inventory-command.schemas.json',
-    'components/fulfillment-production/production-tag.schemas.json',
+    'components/catalog/production-tag.schemas.json',
     'paths/operations-admin/catalog-workbench.paths.json',
     'paths/operations-admin/catalog-item-management.paths.json',
     'paths/operations-admin/catalog-dictionary-management.paths.json',
@@ -5728,7 +5728,7 @@ const componentShardGroups = {
     'InventoryAdjustmentRequest',
     'InventoryTargetConfigurationRequest',
   ],
-  'components/fulfillment-production/production-tag.schemas.json': [
+  'components/catalog/production-tag.schemas.json': [
     'ProductionTagPage',
     'ProductionTagQuery',
     'ProductionTagCreateRequest',
@@ -5754,7 +5754,7 @@ const schemaShardForOrdinal = ordinal =>
                 : ordinal >= 21 && ordinal <= 28
                   ? 'components/catalog/catalog-copy.schemas.json'
                   : ordinal >= 17 && ordinal <= 20
-                    ? 'components/fulfillment-production/production-tag.schemas.json'
+                    ? 'components/catalog/production-tag.schemas.json'
                     : ordinal >= 8 && ordinal <= 16
                       ? 'components/catalog/catalog-dictionary.schemas.json'
                       : ordinal >= 5 && ordinal <= 7

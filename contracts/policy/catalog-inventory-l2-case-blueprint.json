@@ -304,7 +304,7 @@
     },
     {
       "scenarioId": "CI-L2-008",
-      "businessRequirement": "商品字典与生产处理标签是不同 owner surface，入口和回填不混用。",
+      "businessRequirement": "商品字典与生产标签是不同入口、不同编码空间，入口和回填不混用。",
       "cases": [
         {
           "caseId": "CI-L2-008-01",
@@ -325,7 +325,7 @@
             "检查与商品字典的切换边界",
             "关闭后确认结果域未被重置"
           ],
-          "businessOracle": ["生产标签归 fulfillment-production owner", "不把生产标签当作商品标签字典"]
+          "businessOracle": ["生产标签归 catalog owner", "不把生产标签当作商品标签字典"]
         }
       ]
     },

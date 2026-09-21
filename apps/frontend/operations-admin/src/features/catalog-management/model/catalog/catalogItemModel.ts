@@ -30,6 +30,7 @@ import type {
 } from './catalogTypes';
 import {
   asRecord,
+  catalogProductionTagOwner,
   decodeAttributeAssignmentReadback,
   decodeCatalogVoidAvailability,
   decodeCompositeGroups,
@@ -542,7 +543,7 @@ export function decodeNavigation(envelope: CatalogDataEnvelope | undefined): Cat
       code: text(row.code),
       name: text(row.name),
       status: catalogLifecycleStatus(row.status),
-      owner: text(row.owner),
+      owner: catalogProductionTagOwner(row.owner),
       count: integer(row.count),
     })),
     uncategorizedCount: optionalInteger(value.uncategorizedCount),
@@ -755,7 +756,7 @@ export function decodeDetail(envelope: CatalogDataEnvelope | undefined): Catalog
       tagRef: readUuid(row.tagRef),
       name: text(row.name),
       status: catalogLifecycleStatus(row.status),
-      owner: text(row.owner),
+      owner: catalogProductionTagOwner(row.owner),
     })),
     compositeGroups: rootCompositeGroups.length ? rootCompositeGroups : itemCompositeGroups,
     actionAvailability: {

@@ -66,7 +66,7 @@ test("normal verification keeps the explicit local, foundation and Java test ent
   const commands = new Map(verify.runtimeCommands.map(([label, command, args, remote = false]) => [label, {command, args, remote}]));
   assert.deepEqual(commands.get("THCL-04-node-tests"), {command: "node", args: ["scripts/test/test-health-entry-runner.mjs", "--node"], remote: false});
   assert.deepEqual(commands.get("THCL-04-foundation-tests"), {command: "yarn", args: ["--cwd", "libraries/frontend/admin-ui-foundation", "test"], remote: false});
-  const expectedModules = ["audit-model", "audit-read", "catalog", "execution-context", "extension", "foundation", "fulfillment-production", "inventory"];
+  const expectedModules = ["audit-model", "audit-read", "catalog", "execution-context", "extension", "foundation", "inventory"];
   assert.deepEqual(expectedModules.map((moduleName) => commands.get(`THCL-JAVA-${moduleName}`)), expectedModules.map((moduleName) => ({
     command: "node",
     args: ["scripts/test/r5-remote-testcontainers.mjs", `:apps:backend:catering-business-server:modules:${moduleName}:test`],

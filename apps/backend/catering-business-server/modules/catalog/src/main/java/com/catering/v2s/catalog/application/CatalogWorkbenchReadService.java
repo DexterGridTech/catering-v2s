@@ -4,7 +4,7 @@ import com.catering.v2s.catalog.application.persistence.CatalogWorkbenchReadPers
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerTypes;
 import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
-import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
+import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
@@ -84,7 +84,7 @@ public class CatalogWorkbenchReadService {
     private final CopyLimitPolicy copyLimits;
     private final TimeProvider time;
     private final CatalogAssetReferenceLock assetReferenceLocks;
-    private final ProductionTagOwnerApi productionTags;
+    private final CatalogProductionTagOwnerApi productionTags;
     private final InventoryOwnerApi inventory;
     private final CatalogSkuFacts skuFacts;
     private final CatalogIdentifierFacts identifierFacts;
@@ -111,7 +111,7 @@ public class CatalogWorkbenchReadService {
             ObjectMapper mapper,
             TimeProvider time,
             CatalogAssetReferenceLock assetReferenceLocks,
-            ProductionTagOwnerApi productionTags,
+            CatalogProductionTagOwnerApi productionTags,
             InventoryOwnerApi inventory,
             PlatformTransactionManager transactions) {
         this.persistence = persistence;
@@ -119,7 +119,7 @@ public class CatalogWorkbenchReadService {
         this.copyLimits = CopyLimitPolicy.load(mapper);
         this.time = time;
         this.assetReferenceLocks = assetReferenceLocks;
-        this.productionTags = productionTags;
+        this.productionTags = java.util.Objects.requireNonNull(productionTags, "productionTags");
         this.inventory = inventory;
         this.transactions = transactions;
         this.skuFacts = new CatalogSkuFacts(jdbc, mapper, time);
@@ -141,7 +141,7 @@ public class CatalogWorkbenchReadService {
             ObjectMapper mapper,
             TimeProvider time,
             CatalogAssetReferenceLock assetReferenceLocks,
-            ProductionTagOwnerApi productionTags,
+            CatalogProductionTagOwnerApi productionTags,
             InventoryOwnerApi inventory,
             PlatformTransactionManager transactions) {
         this(
@@ -677,17 +677,16 @@ private ObjectNode navigation(String dataNodeRef, String brandRef, String reques
                     .put("name", row.name())
                     .put("count", row.count());
         ArrayNode productionTagNodes = data.putArray("productionTags");
-        List<ProductionTagOwnerApi.ProductionTagNavigationReadback> productionTagDefinitions = productionTags == null
-                ? List.of()
-                : productionTags.readNavigationTags(dataNodeRef, brandRef, requestId);
+        List<CatalogProductionTagOwnerApi.ProductionTagNavigationReadback> productionTagDefinitions =
+                productionTags.readNavigationTags(dataNodeRef, brandRef, requestId);
         Map<UUID, Long> productionTagCounts = productionTagReferenceCounts(
                 dataNodeRef,
                 brandRef,
                 productionTagDefinitions.stream()
-                        .map(ProductionTagOwnerApi.ProductionTagNavigationReadback::tagRef)
+                        .map(CatalogProductionTagOwnerApi.ProductionTagNavigationReadback::tagRef)
 
                         .toList());
-        for (ProductionTagOwnerApi.ProductionTagNavigationReadback tag : productionTagDefinitions) {
+        for (CatalogProductionTagOwnerApi.ProductionTagNavigationReadback tag : productionTagDefinitions) {
             productionTagNodes
                     .addObject()
 
@@ -695,7 +694,7 @@ private ObjectNode navigation(String dataNodeRef, String brandRef, String reques
                     .put("code", tag.code())
                     .put("name", tag.name())
                     .put("status", tag.status())
-                    .put("owner", "fulfillment-production")
+                    .put("owner", "catalog")
                     .put("count", productionTagCounts.getOrDefault(tag.tagRef(), 0L));
         }
         ArrayNode views = data.putArray("smartViews");
@@ -989,7 +988,7 @@ private ObjectNode items(String dataNodeRef, String brandRef, String requestId, 
                         .map(PageItemRow::item)
                         .filter(java.util.Objects::nonNull)
                         .toList());
-        Map<UUID, ProductionTagOwnerApi.ProductionTagReferenceReadback> productionTagFactsByItem =
+        Map<UUID, CatalogProductionTagOwnerApi.ProductionTagReferenceReadback> productionTagFactsByItem =
                 productionTagFactsForItems(
                         dataNodeRef,
                         brandRef,
@@ -1124,7 +1123,7 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
      * a single production-owner task read for the page: consumers receive a display-ready summary and never infer a tag
      * name from an opaque reference or from navigation state.
      */
-    private Map<UUID, ProductionTagOwnerApi.ProductionTagReferenceReadback> productionTagFactsForItems(
+    private Map<UUID, CatalogProductionTagOwnerApi.ProductionTagReferenceReadback> productionTagFactsForItems(
             String dataNodeRef, String brandRef, List<ItemRow> rows, String requestId) {
         if (rows.isEmpty()) return Map.of();
         Map<UUID, UUID> productionTagRefByItem = new LinkedHashMap<>();
@@ -1133,11 +1132,8 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
             if (productionTagRef != null) productionTagRefByItem.put(row.ref(), productionTagRef);
         }
         if (productionTagRefByItem.isEmpty()) return Map.of();
-        if (productionTags == null) {
-            throw new CatalogOwnerApi.Problem("RESULT_UNKNOWN", 500, "生产标签摘要读取失败");
-        }
         List<UUID> requestedRefs = new ArrayList<>(new LinkedHashSet<>(productionTagRefByItem.values()));
-        Map<UUID, com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi.ProductionTagReferenceReadback>
+        Map<UUID, com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi.ProductionTagReferenceReadback>
                 tagsByRef =
                         productionTags.readTagReferencesByRefs(dataNodeRef, brandRef, requestedRefs, requestId).stream()
                                 .collect(java.util.stream.Collectors.toMap(
@@ -1145,7 +1141,7 @@ private static InventoryOwnerApi.UnitSnapshot unitSnapshot(
                                         value -> value,
                                         (left, right) -> left,
                                         LinkedHashMap::new));
-        Map<UUID, ProductionTagOwnerApi.ProductionTagReferenceReadback> result = new LinkedHashMap<>();
+        Map<UUID, CatalogProductionTagOwnerApi.ProductionTagReferenceReadback> result = new LinkedHashMap<>();
         productionTagRefByItem.forEach((itemRef, tagRef) -> {
             var tag = tagsByRef.get(tagRef);
             if (tag == null || tag.name() == null || tag.name().isBlank())
@@ -1167,7 +1163,7 @@ private ObjectNode itemSummary(
             Map<UUID, CatalogOwnerApi.UnitDefinitionReadback> unitDefinitions,
             CategorySummaryFacts categorySummaryFacts,
             Map<UUID, List<CatalogTagFact>> catalogTagFactsByItem,
-            Map<UUID, ProductionTagOwnerApi.ProductionTagReferenceReadback> productionTagFactsByItem) {
+            Map<UUID, CatalogProductionTagOwnerApi.ProductionTagReferenceReadback> productionTagFactsByItem) {
         JsonNode sections = json(row.sectionsJson());
         DerivedSkuFacts skuFacts = derivedSkuFacts(sections, shapeRule(row.shapeKey()));
         ObjectNode item = mapper.createObjectNode();
@@ -1185,7 +1181,7 @@ private ObjectNode itemSummary(
         if (productionTagRef.isTextual() && !productionTagRef.asText().isBlank())
             item.put("productionTagRef", productionTagRef.asText());
         else item.putNull("productionTagRef");
-        ProductionTagOwnerApi.ProductionTagReferenceReadback productionTagFact =
+        CatalogProductionTagOwnerApi.ProductionTagReferenceReadback productionTagFact =
                 productionTagFactsByItem.get(row.ref());
         if (productionTagRef.isTextual()
                 && !productionTagRef.asText().isBlank()
@@ -1332,7 +1328,7 @@ private ArrayNode specificationFacts(JsonNode sections) {
     }
 
 private ObjectNode preparationFacts(
-            ProductionTagOwnerApi.ProductionTagReferenceReadback productionTag,
+            CatalogProductionTagOwnerApi.ProductionTagReferenceReadback productionTag,
             JsonNode preparationProfile,
             DerivedSkuFacts skuFacts,
             JsonNode sections) {
@@ -1344,7 +1340,7 @@ private ObjectNode preparationFacts(
                     .put("code", productionTag.code())
                     .put("name", productionTag.name())
                     .put("status", productionTag.status())
-                    .put("owner", "fulfillment-production");
+                    .put("owner", "catalog");
         setNullableJson(result, "profile", preparationProfile);
         result.putObject("skuVariation")
                 .put("varies", skuFacts.totalCount() > 0 && skuPreparationDiffers(sections, preparationProfile));

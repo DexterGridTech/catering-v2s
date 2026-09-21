@@ -9,13 +9,16 @@ export const baseTokens = Object.freeze({
   containerCentered: 'flex-1 items-center justify-center bg-canvas p-6 gap-4',
   containerTransparent: 'flex-1 p-6 gap-4',
   adminRoot: 'flex-1 w-full bg-canvas',
-  adminShell: 'w-full overflow-hidden rounded-[20px] border border-admin-shell-border bg-admin-shell-surface shadow-2xl',
-  adminShellMobile: 'overflow-hidden rounded-[20px] border border-admin-shell-border bg-admin-shell-surface shadow-2xl',
+  // The non-login console is an edge-to-edge surface.  Card radius/shadow here
+  // would expose the canvas around the shell and violate the full-screen IA.
+  adminShell: 'overflow-hidden border border-admin-shell-border bg-admin-shell-surface',
+  adminShellMobile: 'overflow-hidden border border-admin-shell-border bg-admin-shell-surface',
   adminHeader: 'w-full flex-row items-center border-b border-admin-shell-border bg-admin-shell-surface',
   adminHeaderTitle: 'text-2xl leading-8 font-bold text-admin-shell-foreground',
   adminHeaderClose: 'min-h-7 min-w-7 items-center justify-center rounded-[9px] border border-admin-shell-border bg-transparent px-2',
   adminHeaderCloseText: 'text-sm leading-5 font-semibold text-admin-shell-muted',
   adminBrand: 'h-7 w-7 items-center justify-center rounded-lg border border-admin-shell-border bg-admin-action',
+  adminGateIcon: 'h-12 w-12 items-center justify-center rounded-[16px]',
   adminNav: 'w-full min-h-0 bg-admin-shell-surface',
   adminNavList: 'w-full flex-col gap-1.5 bg-admin-shell-surface',
   adminNavItem: 'relative w-full min-h-11 flex-row items-center gap-2 rounded-xl px-3 text-admin-shell-muted',
@@ -49,7 +52,7 @@ export const baseTokens = Object.freeze({
   adminDisclosureLabel: 'flex-1 text-sm leading-5 font-semibold text-admin-content-foreground',
   adminDisclosureSummary: 'text-xs leading-[18px] text-admin-content-muted',
   adminRatioBar: 'w-full h-3 flex-row overflow-hidden rounded-[6px] border border-admin-content-border bg-admin-inset',
-  adminRatioSegmentUndeclared: 'bg-admin-content-border',
+  adminRatioSegmentUndeclared: 'bg-admin-ratio-undeclared',
   adminStatusLine: 'w-full flex-row items-center gap-2 text-sm leading-5 text-admin-content-foreground',
   adminStatusLineDot: 'h-2 w-2 rounded-full',
   adminFactGrid: 'w-full flex-row flex-wrap gap-2',
@@ -212,12 +215,13 @@ export const baseLayout = Object.freeze({
  * NativeWind class names own semantic colors and typography.
  */
 export const adminGeometry = Object.freeze({
-  // The laptop admin frame owns the host surface. The high-fidelity 40/32
-  // reference is internal canvas spacing, not an outer native margin.
+  // The non-login Admin console owns the whole available surface.  Inner
+  // content padding belongs to the header/nav/content recipes below; no
+  // outer safe-area padding or centered bounded card is allowed here.
   rootLaptop: Object.freeze({paddingHorizontal: 0, paddingVertical: 0}),
-  rootMobile: Object.freeze({paddingHorizontal: 16, paddingVertical: 16}),
-  shellLaptop: Object.freeze({flex: 1, width: '100%' as const, maxWidth: 1360, minHeight: 760}),
-  shellMobile: Object.freeze({width: 358, minHeight: 812}),
+  rootMobile: Object.freeze({paddingHorizontal: 0, paddingVertical: 0}),
+  shellLaptop: Object.freeze({flex: 1, width: '100%' as const, maxWidth: '100%' as const, minHeight: 0, minWidth: 0, alignSelf: 'stretch' as const}),
+  shellMobile: Object.freeze({flex: 1, width: '100%' as const, maxWidth: '100%' as const, minHeight: 0, minWidth: 0, alignSelf: 'stretch' as const}),
   headerLaptop: Object.freeze({height: 72, paddingHorizontal: 24, borderBottomWidth: 1, gap: 12, flexDirection: 'row' as const, alignItems: 'center' as const, flexWrap: 'nowrap' as const}),
   headerMobile: Object.freeze({height: 60, paddingHorizontal: 16, borderBottomWidth: 1, gap: 12, flexDirection: 'row' as const, alignItems: 'center' as const, flexWrap: 'nowrap' as const}),
   navigation: Object.freeze({width: 248, minWidth: 248, minHeight: 0, padding: 12, borderRightWidth: 1, flexShrink: 0}),

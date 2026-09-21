@@ -134,6 +134,9 @@ final class CatalogAcceptanceScenarios {
             new BackendAcceptanceTest.RouteIdentity(
                     "updateOperationsInventoryTargetConfiguration",
                     "/api/operations/catalog-inventory/inventory-targets/{targetRef}/configuration");
+    private static final BackendAcceptanceTest.RouteIdentity OPERATIONS_PRODUCTION_TAG_UPDATE =
+            new BackendAcceptanceTest.RouteIdentity(
+                    "updateOperationsProductionTag", "/api/operations/catalog-inventory/production-tags/{tagCode}");
 
     CatalogAcceptanceScenarios(BackendAcceptanceTest host) {
         this.host = host;
@@ -2233,6 +2236,141 @@ final class CatalogAcceptanceScenarios {
                 "VALIDATION_ERROR",
                 queryChangedCursor.problemCode(),
                 "BUSINESS: a cursor cannot cross from the management query to a filtered query");
+    }
+
+    @AcceptanceScenario(
+            id = "production-tag-create-duplicate-code",
+            module = "CATALOG",
+            operation = "createOperationsProductionTag")
+    void productionTagCreateDuplicateCode(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG"));
+        host.completeInvitation(context, fixture);
+        Session session = host.login(context, fixture);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String code = "ACC-DUPLICATE-TAG-" + suffix;
+        createProductionTag(context, fixture, session, code, "Original production tag");
+
+        Response duplicate = context.post(
+                OPERATIONS_PRODUCTION_TAG_CREATE,
+                "/api/operations/catalog-inventory/production-tags",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef", fixture.storeId().toString(),
+                        "code", code,
+                        "name", "Duplicate production tag"),
+                Map.of("Idempotency-Key", "acceptance-production-tag-duplicate-" + suffix),
+                Set.of(409, 422));
+        assertEquals("DUPLICATE_CODE", duplicate.problemCode(), "BUSINESS: duplicate production-tag code is typed");
+
+        Response listing = context.get(
+                OPERATIONS_PRODUCTION_TAGS,
+                "/api/operations/catalog-inventory/production-tags?dataNodeRef=" + fixture.storeId()
+                        + "&query=" + code,
+                session.cookie(),
+                Set.of(200));
+        assertEquals(
+                1,
+                listing.json().path("data").path("entries").size(),
+                "BUSINESS: duplicate production-tag rejection does not create a second catalog row");
+    }
+
+    @AcceptanceScenario(
+            id = "production-tag-idempotency-replay-negative",
+            module = "CATALOG",
+            operation = "createOperationsProductionTag")
+    void productionTagIdempotencyReplayNegative(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG"));
+        host.completeInvitation(context, fixture);
+        Session session = host.login(context, fixture);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String code = "ACC-IDEMPOTENT-TAG-" + suffix;
+        Map<String, Object> body = Map.of(
+                "dataNodeRef", fixture.storeId().toString(), "code", code, "name", "Idempotent production tag");
+        Map<String, String> headers = Map.of("Idempotency-Key", "acceptance-production-tag-replay-" + suffix);
+
+        Response first = context.post(
+                OPERATIONS_PRODUCTION_TAG_CREATE,
+                "/api/operations/catalog-inventory/production-tags",
+                session.cookie(),
+                body,
+                headers,
+                Set.of(200));
+        Response replay = context.post(
+                OPERATIONS_PRODUCTION_TAG_CREATE,
+                "/api/operations/catalog-inventory/production-tags",
+                session.cookie(),
+                body,
+                headers,
+                Set.of(200));
+        assertEquals(
+                first.json().path("result").path("tagRef").asText(),
+                replay.json().path("result").path("tagRef").asText(),
+                "BUSINESS: same production-tag idempotency request replays the catalog readback");
+
+        Response mismatchedReplay = context.post(
+                OPERATIONS_PRODUCTION_TAG_CREATE,
+                "/api/operations/catalog-inventory/production-tags",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef", fixture.storeId().toString(),
+                        "code", code,
+                        "name", "Mismatched replay"),
+                headers,
+                Set.of(409, 422));
+        assertEquals(
+                "IDEMPOTENCY_MISMATCH",
+                mismatchedReplay.problemCode(),
+                "BUSINESS: same key with a different production-tag request hash is rejected");
+    }
+
+    @AcceptanceScenario(
+            id = "production-tag-update-version-readback",
+            module = "CATALOG",
+            operation = "updateOperationsProductionTag")
+    void productionTagUpdateVersionReadback(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        Fixture fixture = host.fixture("STORE", Set.of("EDIT_STORE_CATALOG"));
+        host.completeInvitation(context, fixture);
+        Session session = host.login(context, fixture);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String code = "ACC-VERSION-TAG-" + suffix;
+        createProductionTag(context, fixture, session, code, "Versioned production tag");
+
+        Response updated = context.patch(
+                OPERATIONS_PRODUCTION_TAG_UPDATE,
+                "/api/operations/catalog-inventory/production-tags/" + code,
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef",
+                        fixture.storeId().toString(),
+                        "tagCode",
+                        code,
+                        "expectedVersion",
+                        1,
+                        "name",
+                        "Updated production tag"),
+                Map.of("Idempotency-Key", "acceptance-production-tag-update-" + suffix),
+                Set.of(200));
+        assertEquals(
+                "Updated production tag",
+                updated.json().path("result").path("name").asText(),
+                "BUSINESS: catalog owner update returns the changed production-tag name");
+
+        Response stale = context.patch(
+                OPERATIONS_PRODUCTION_TAG_UPDATE,
+                "/api/operations/catalog-inventory/production-tags/" + code,
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef",
+                        fixture.storeId().toString(),
+                        "tagCode",
+                        code,
+                        "expectedVersion",
+                        1,
+                        "name",
+                        "Stale production tag"),
+                Map.of("Idempotency-Key", "acceptance-production-tag-stale-" + suffix),
+                Set.of(409, 422));
+        assertEquals("VERSION_CONFLICT", stale.problemCode(), "BUSINESS: stale catalog owner version is typed");
     }
 
     @AcceptanceScenario(

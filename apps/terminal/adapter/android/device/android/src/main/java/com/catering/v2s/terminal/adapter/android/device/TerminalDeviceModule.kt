@@ -14,6 +14,7 @@ import android.util.Log
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.util.UUID
+import kotlin.math.roundToInt
 
 class TerminalDeviceModule : Module() {
   private val powerReceiverLock = Any()
@@ -346,7 +347,13 @@ class TerminalDeviceModule : Module() {
     display.getMetrics(metrics)
     display.getRealMetrics(realMetrics)
     val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) display.mode else null
-    val logicalSize = sizeOrNull(metrics.widthPixels, metrics.heightPixels)
+    // React Native/Web layout and the IA use logical layout units, not Android
+    // physical pixels. `getMetrics()`/`getRealMetrics()` expose pixel counts;
+    // convert the authoritative full-display metrics by the display density
+    // before publishing logicalSize. Keep physicalSize independently sourced
+    // from the display mode/real metrics so one surface's values are never
+    // derived from the other.
+    val logicalSize = logicalSizeFrom(realMetrics)
     val physicalWidth = mode?.physicalWidth?.takeIf { it > 0 } ?: realMetrics.widthPixels
     val physicalHeight = mode?.physicalHeight?.takeIf { it > 0 } ?: realMetrics.heightPixels
     val physicalSize = sizeOrNull(physicalWidth, physicalHeight)
@@ -362,6 +369,15 @@ class TerminalDeviceModule : Module() {
       "logicalSize" to logicalSize,
       "physicalSize" to physicalSize,
       "readiness" to readiness,
+    )
+  }
+
+  private fun logicalSizeFrom(metrics: DisplayMetrics): Map<String, Int>? {
+    val density = metrics.density
+    if (!density.isFinite() || density <= 0f) return null
+    return sizeOrNull(
+      (metrics.widthPixels / density).roundToInt(),
+      (metrics.heightPixels / density).roundToInt(),
     )
   }
 

@@ -12,14 +12,16 @@ import com.catering.v2s.contract.application.ContractCommandService;
 import com.catering.v2s.extension.application.ExtensionCommandReceiptService;
 import com.catering.v2s.extension.application.ExtensionDefinitionService;
 import com.catering.v2s.extension.api.ExtensionFilterQuery;
-import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
+import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.organization.application.BusinessEntityCommandReceiptService;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationCommandService;
 import com.catering.v2s.organization.application.OrganizationHierarchyCommandReceiptService;
 import com.catering.v2s.organization.application.OrganizationHierarchyService;
+import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
 import com.catering.v2s.organization.application.OrganizationTaskPathService;
+import com.catering.v2s.organization.application.StoreOperatingRuleCodec;
 import com.catering.v2s.organization.api.StoreOperatingRuleGate;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
 import com.catering.v2s.platform.asset.application.PlatformAssetService.AssetIdempotencyConflictException;
@@ -84,7 +86,7 @@ public final class ContractProblemAdvice {
     @ExceptionHandler({
         CatalogOwnerApi.Problem.class,
         InventoryOwnerApi.Problem.class,
-        ProductionTagOwnerApi.Problem.class
+        CatalogProductionTagOwnerApi.Problem.class
     })
     ResponseEntity<Problem> catalogInventory(RuntimeException exception, HttpServletRequest request) {
         OwnerProblem ownerProblem = (OwnerProblem) exception;
@@ -433,6 +435,8 @@ public final class ContractProblemAdvice {
         InvalidEdgeRequestException.class,
         ContractCommandService.ContractValidationException.class,
         ExtensionDefinitionService.DefinitionInvalidException.class,
+        OrganizationOverviewTaskReadService.QueryValidationException.class,
+        StoreOperatingRuleCodec.InvalidValuesException.class,
         BusinessEntityService.OrganizationValidationException.class,
         OrganizationHierarchyService.OrganizationValidationException.class,
         WorkspaceInvitationService.InvitationValidationException.class,

@@ -1,4 +1,4 @@
-import {Alert, Button, Checkbox, Input, Modal, Space, Tag, Typography} from 'antd';
+import {Alert, Button, Checkbox, Input, Modal, Space, Typography} from 'antd';
 import type {InputRef} from 'antd/es/input';
 import {LifecycleStatusTag, NameCodeText, testId, useOverlayLock, wireUuid} from '@catering-v2s/admin-ui-foundation';
 import type {BusinessChannelTemplateVisibleStore} from '../../../app/api/generated/operations-edge';

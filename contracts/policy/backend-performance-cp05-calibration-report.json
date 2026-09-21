@@ -5218,7 +5218,7 @@
       "operationId": "createOperationsProductionTag",
       "method": "POST",
       "routeTemplate": "/api/operations/catalog-inventory/production-tags",
-      "owner": "fulfillment-production",
+      "owner": "catalog",
       "consumerFace": "operations-admin",
       "eventCount": 30,
       "maxDatabaseOperationCount": 7,
@@ -8771,7 +8771,7 @@
       "operationId": "getOperationsProductionTags",
       "method": "GET",
       "routeTemplate": "/api/operations/catalog-inventory/production-tags",
-      "owner": "fulfillment-production",
+      "owner": "catalog",
       "consumerFace": "operations-admin",
       "eventCount": 7,
       "maxDatabaseOperationCount": 8,
@@ -17047,7 +17047,7 @@
       "operationId": "transitionOperationsProductionTagStatus",
       "method": "POST",
       "routeTemplate": "/api/operations/catalog-inventory/production-tags/{tagCode}/status",
-      "owner": "fulfillment-production",
+      "owner": "catalog",
       "consumerFace": "operations-admin",
       "eventCount": 4,
       "maxDatabaseOperationCount": 7,
@@ -18147,7 +18147,7 @@
       "operationId": "updateOperationsProductionTag",
       "method": "PATCH",
       "routeTemplate": "/api/operations/catalog-inventory/production-tags/{tagCode}",
-      "owner": "fulfillment-production",
+      "owner": "catalog",
       "consumerFace": "operations-admin",
       "eventCount": 1,
       "maxDatabaseOperationCount": 7,
@@ -18822,6 +18822,6 @@
       "6f4b1914c16b40ccd8e8dc934f9da240a8b0f35b25449c1c24e4e6b932589740"
     ],
     "operationIdentityDigest": "951398f127b78903ff26b0d40fdf73f638f29bcbc3c21d7bb68258ccaa94cbb3",
-    "contentDigest": "04e6675bb5497685c7a738028bdde76a66ce3ebc579cba6fd8f295a4ea45e1f3"
+    "contentDigest": "bcd0b01a21cb99bbcca164bd5f3ec396ed73c844e8994dbdc635ccc8d8daf2f9"
   }
 }

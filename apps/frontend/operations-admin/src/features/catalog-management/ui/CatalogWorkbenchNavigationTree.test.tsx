@@ -34,9 +34,10 @@ describe('catalog category child entry availability', () => {
     expect(source).toContain("width: '100%'");
     expect(source).toContain("maxWidth: '100%'");
     expect(source).toContain('className="catalog-navigation-tree"');
+    expect(source).toContain('itemTitle:');
+    expect(source).toContain("overflowX: 'hidden'");
     const styles = readFileSync(new URL('../../../styles.css', import.meta.url), 'utf8');
-    expect(styles).toContain('.catalog-navigation-tree .ant-tree-node-content-wrapper');
-    expect(styles).toContain('.catalog-navigation-tree .ant-tree-title');
+    expect(styles).not.toContain('.catalog-navigation-tree .ant-tree-');
   });
 
   it('uses the same business-facing three-level limit wording as the owner problem', () => {

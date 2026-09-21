@@ -315,7 +315,7 @@ test('navigation derives both all and uncategorized counts from its one scoped s
 
   assert.notEqual(navigation, '');
   assert.match(persistence, /readNavigationShapes\(/);
-  assert.match(navigationSql, /COUNT\(\*\) FILTER \(WHERE NOT EXISTS \(SELECT 1 FROM /);
+  assert.match(navigationSql, /COUNT\(\*\) FILTER \(WHERE NOT EXISTS \(SELECT 1 FROM/);
   assert.match(navigationSql, /catalog\.catalog_item_category relation WHERE relation\.item_ref=catalog_item\.item_ref/);
   assert.match(navigation, /allCount\s*\+=\s*row\.count\(\)/);
   assert.match(navigation, /uncategorizedCount\s*\+=\s*row\.uncategorizedCount\(\)/);
@@ -324,7 +324,7 @@ test('navigation derives both all and uncategorized counts from its one scoped s
   assert.doesNotMatch(navigation, /jdbc\.queryForObject\(|jdbc\.query\(/);
 
   const splitCountMutation = navigationSql.replace(
-    'COUNT(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM ',
+    'COUNT(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM',
     'COUNT(*) ',
   );
   assert.throws(
@@ -571,14 +571,14 @@ test('every catalog-management GET consumer preserves its generated strict respo
   );
 });
 
-test('catalog dictionary delete copy keeps history without starting a rebuild', () => {
+test('catalog dictionary void confirmation keeps history without starting a rebuild', () => {
   const drawer = read(
     'apps/frontend/operations-admin/src/features/catalog-management/ui/dictionary/CatalogDictionaryDrawerState.tsx',
   );
   const modal = read('apps/frontend/operations-admin/src/features/catalog-management/ui/CatalogDictionaryAtomModals.tsx');
-  assert.match(drawer, /删除后会保留历史记录/);
-  assert.match(drawer, /不会自动创建新记录/);
-  assert.match(drawer, /确认删除/);
+  assert.match(modal, /作废后会保留历史记录/);
+  assert.match(modal, /不会自动创建新记录/);
+  assert.match(modal, /statusTarget === 'VOIDED'/);
   assert.doesNotMatch(drawer, /作废并重建|作废并继续重建|setCreatingKind\(dictionaryKind\)/);
   assert.doesNotMatch(modal, /正在重建作废记录|旧编码|重建/);
 });
@@ -768,10 +768,10 @@ test('catalog hierarchy, production-tag navigation, and SKU page preserve their 
     'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogItemServiceSql.java',
   );
   const productionOwner = read(
-    'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogProductionTagOwnerService.java',
   );
   const productionSql = read(
-    'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/persistence/ProductionTagOwnerServiceSql.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogProductionTagOwnerServiceSql.java',
   );
   const moveCategory =
     categoryOwner.match(
@@ -783,7 +783,7 @@ test('catalog hierarchy, production-tag navigation, and SKU page preserve their 
     itemOwner.match(/private ObjectNode itemSkus\([\s\S]*?List<SkuCandidateRow> rows = persistence\.readSkuCandidates\(/)?.[0] ?? '';
   const navigationTags =
     productionOwner.match(
-      /public List<ProductionTagOwnerApi\.ProductionTagNavigationReadback> readNavigationTags\([\s\S]*?\n    \}/,
+      /public List<CatalogProductionTagOwnerApi\.ProductionTagNavigationReadback> readNavigationTags\([\s\S]*?\n    \}/,
     )?.[0] ?? '';
 
   assert.notEqual(moveCategory, '');
@@ -840,13 +840,13 @@ test('catalog hierarchy, production-tag navigation, and SKU page preserve their 
 
 test('typed production-tag commands atomically claim their receipt, lock the fact, and persist the returned readback', () => {
   const owner = read(
-    'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogProductionTagOwnerService.java',
   );
   const persistence = read(
-    'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/persistence/ProductionTagOwnerPersistence.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogProductionTagOwnerPersistence.java',
   );
   const sql = read(
-    'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/persistence/ProductionTagOwnerServiceSql.java',
+    'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogProductionTagOwnerServiceSql.java',
   );
   const p1 = read('scripts/generate/catalog-inventory-p1.mjs');
   const existingMutation = sql;
@@ -857,8 +857,8 @@ test('typed production-tag commands atomically claim their receipt, lock the fac
   assert.match(owner, /persistence\.updateTypedTagName\(/);
   assert.match(owner, /persistence\.updateTypedTagStatus\(/);
   assert.match(owner, /persistence\.createTypedTag\(/);
-  assert.match(persistence, /ProductionTagOwnerServiceSql\.MUTATE_TYPED_TAG_PREFIX/);
-  assert.match(persistence, /ProductionTagOwnerServiceSql\.CREATE_TYPED_TAG/);
+  assert.match(persistence, /CatalogProductionTagOwnerServiceSql\.MUTATE_TYPED_TAG_PREFIX/);
+  assert.match(persistence, /CatalogProductionTagOwnerServiceSql\.CREATE_TYPED_TAG/);
   assert.match(existingMutation, /WITH receipt_lock AS MATERIALIZED/);
   assert.match(existingMutation, /current_tag AS MATERIALIZED/);
   assert.match(existingMutation, /FOR UPDATE/);

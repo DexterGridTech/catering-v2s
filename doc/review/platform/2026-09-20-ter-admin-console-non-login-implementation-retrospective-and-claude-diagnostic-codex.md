@@ -2,21 +2,23 @@
 
 ```text
 REVIEW_TARGET=IMPLEMENTATION_DIAGNOSTIC
-STATUS=NO-GO_STAGE1_PARTIAL_STAGE2_BLOCKED
+STATUS=NO-GO_R49_FIRST_BATCH_MECHANICAL_16_OF_19_R50_R51_SECOND_BATCH_8_OF_11_VISUAL_OPEN
 DESIGN_REVIEW=NO-GO_M/S/N=0/1/1
-IMPLEMENTATION_REVIEW=NOT_YET_PERFORMED
+IMPLEMENTATION_REVIEW=PERFORMED_NO_GO_POPPER_0/1/3_MEITNER_2/2/0
+FRESH_IMPLEMENTATION_REVIEW=NO_GO_VISION_0/0/3_VERIFIER_1/2/1
+FRESH_REVIEW_ARTIFACTS=R49_R47_R48;R50_R51_RUNNER_TERMINAL_RECHECK_BY_MAIN_AGENT
 IMPLEMENTATION_AUTHORITY=DEXTER_DIRECT_SESSION_AUTHORIZATION
-DYNAMIC_VALIDATION=STAGE1_BUSINESS_PASS_CLEANUP_PASS_FRAME_COVERAGE_OPEN
-VISUAL_VALIDATION=STAGE1_16_CAPTURED_3_OPEN;逐控件视觉对账未收口
-CLEANUP=STAGE1_PASS;STAGE2_NOT_RUN
+DYNAMIC_VALIDATION=R49_R50_R51_BUSINESS_PASS_CLEANUP_PASS;MECHANICAL_UNION_24_OF_30;FULL_SCREEN_BOUNDS_MATCHED;FRAME_COVERAGE_OPEN
+VISUAL_VALIDATION=STAGE2_FOCUSED_SUBSET_REVIEWED;30_FRAME_CONTROL_AUDIT_OPEN
+CLEANUP=R49_R50_R51_RUNS_PASS;PROGRESS_TERMINAL_SNAPSHOT_REPAIRED;OVERALL_DELIVERY_OPEN
 ADMISSION_BLOCKERS=DISPLAY_FACTS_OWNER;TOPOLOGY_PAGE_AVAILABILITY_AND_DIRECT_PAIR_OWNER;MASTER_UNPAIR_GUARD
 SOURCE_OF_TRUTH=CURRENT_REPOSITORY_BYTES_AND_APPROVED_REQUIREMENTS_IA_DESIGN_PLAN
-CURRENT_FOLLOW_UP=OWNER_FOCUSED_EVIDENCE_PRESENT_BLOCKERS_OPEN;R39_STAGE1_16_CAPTURED_3_PANEL_OPEN;STAGE2_DEVICE_SHAPES_NOT_VISIBLE
+CURRENT_FOLLOW_UP=OWNER_FOCUSED_EVIDENCE_PRESENT_BLOCKERS_OPEN;R49_CURRENT_APK_STAGE1_16_OF_19;R50_R51_SECOND_BATCH_8_OF_11;FULL_SCREEN_ROOT_PANEL_BOUNDS_MATCHED;IA-03/04/05/06/07/08_AND_IA-14_ERROR_OPEN;VISUAL_OPEN
 ```
 
 SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301afb584e2f86599b137787
 
-本文件前半记录此前错误实施的复盘与诊断请求，保持其历史 first failure、last known good 和当时的整体 `NO-GO` 结论不改写。后续实施已补齐 owner focused red mutation、30 帧 registry/root marker 绑定与静态对账；最新 r39 已完成第一批拓扑动态旅途，但第一批 19 帧只真实捕获 16 帧，IA-03/05/07 仍 `OPEN`，因此动态、逐控件真实视觉和整批交付仍不能升格为通过。
+本文件前半记录此前错误实施的复盘与诊断请求，保持其历史 first failure、last known good 和当时的整体 `NO-GO` 结论不改写。后续实施已补齐 owner focused red mutation、30 帧 registry/root marker 绑定与静态对账；当前 r49 已完成 current APK 第一批拓扑动态旅途，r50/r51 已完成第二批可达范围，三次运行均 business/cleanup PASS。全屏 root/panel bounds 已在 laptop、dual、mobile 三种形态 MATCHED；第一批仍只真实捕获 16/19，第二批计划范围 8/11，IA-03/04/05/06/07/08 与 IA-14 error variant 仍 `OPEN`，因此动态、逐控件真实视觉和整批交付仍不能升格为通过。
 
 ## 1. 直接结论
 
@@ -287,7 +289,11 @@ token mapping PASS
 7. 实施完成前必须有 fresh 独立 implementation review，并把 static、focused、Web、Android/native/device、visual、cleanup 分开报告。
 8. 增加防假绿门禁：删除 disclosure layout、改变 surface map 比例位置、加入未知导航项、断开 admin token 消费链路时，测试必须变红。
 
-## 7. 可直接交给 Claude 的诊断 brief
+## 7. 可直接交给 Claude 的历史诊断 brief（已由 §10 当前状态补充）
+
+以下 code block 是早期 r39/r30 复盘时形成的历史诊断请求；其中关于“第二批未运行”的句子只描述
+当时的设备边界，不代表当前状态。当前 Claude review 应以文末 §12 的 brief、当前 APK SHA 和 r49/r50/r51
+artifact 为准。
 
 ```text
 Claude，请对仓库根目录当前字节做一次 REVIEW_TARGET=IMPLEMENTATION 的独立、证伪式、只读诊断。本 brief 中所有源码与文档路径均相对仓库根目录。
@@ -383,7 +389,7 @@ F. 直接视觉证据
 最终请明确回答：之前“源码实施主体已经改完”的说法为什么不成立；本次主要是实现缺口、验收方法缺口，还是两者叠加；下一次如何确保进入任何虚拟机前，30 帧四维控件对账确实全 MATCHED。
 ```
 
-### 7.1 当前 r39 结果增补 brief
+### 7.1 r39 历史结果增补 brief
 
 以下增补覆盖旧 brief 之后的当前字节与真实运行结果。Claude 请以当前仓库源码、以下运行目录和正本文档为准，不以旧截图或旧复盘中的动态未启动表述为准：
 
@@ -425,12 +431,185 @@ STAGE2=NOT_RUN; current adb inventory only showed emulator-5554 and emulator-555
 第一批动态拓扑旅途：BUSINESS=PASS；CLEANUP=PASS
 第一批 frame 捕获：16/19 CAPTURED；IA-03/05/07 OPEN；逐控件视觉判定仍 OPEN
 第一批逐控件视觉对账：未完成
-第二批动态：未运行；当前 adb 只见 emulator-5554、emulator-5556
+第二批动态：r36 dual 与 r42 mobile 已运行，均 BUSINESS=PASS、CLEANUP=PASS；第一批 current APK r44 exact rebind 已完成，机械 16/19
 高保真 IA 实现：OPEN
-30 帧动态验证：OPEN（第一批 16/19，第二批 0/11）
+30 帧动态验证：OPEN（第一批 r44 机械 16/19；第二批按计划范围 8/11；IA-03/04/05/06/07/08 与 IA-14 error OPEN）
 逐控件视觉对账：未完成
-cleanup：第一批 PASS；整体未完成
+cleanup：r30/r36/r42/r44 各自 PASS；r44 progress terminal snapshot 与 result 一致；整体交付未完成
 整体实施：NO-GO
 ```
 
 本记录记录复盘、诊断请求和当前动态证据；它不把第一批业务 PASS 或 runner 的 frame locator 结果扩大成整体完成，也不授权伪造 IA-03/05/07、IA-14、IA-16 或 IA-32。后续实施授权来自 Dexter 的直接会话指令，不来自本记录。
+
+## 9. r30 第一批历史执行补记（已被 r36/r42 当前 APK 子集证据补充）
+
+在上述历史复盘之后，主 agent 对共享 ratio semantic token、IA-11 summary/detail 采集和 IA-13
+scroll visibility predicate 做了最小修复，并重新构建 current release APK。r30 目录为：
+
+`.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage1-single-screen-sample-terminal-r30/sample-terminal`
+
+当前 APK SHA-256=`94c83be9b78246f3ca1399891b46b74f2d006c2d54edc46ce9f52b8ef260e31f`；两台单屏设备的
+真实第一批结果为 `BUSINESS=PASS`、`CLEANUP=PASS`、`FIRST_FAILURE=null`，第一批分母 19 中 runner
+捕获 16，`IA-03/05/07` 因 release 状态制造条件缺失显式 `OPEN`。fresh 独立视觉审查将 ratio bar
+的单一 undeclared 段标为待进一步判定，并确认 IA-11/IA-13 的 scroll union 不能写成单帧完整；
+截图和 runner 状态不能写成整体视觉 PASS。
+
+r29 的 IA-11 首败已按日志和当前 XML 回溯为采集器 resource-id 错写，修正后 r30 已真实产出 IA-11
+逐项 detail union；这说明上一轮“把节点/截图当作形态完成”的问题已被方法修正了一部分，但不改变
+第二批设备缺失、三条 admission blocker OPEN、IA-03/05/07 和 IA-14 error variant 等交付边界。
+在 r30 运行时两台设备均仅有 display 0；当时 dual-screen/mobile 不在 `adb devices -l`，因此 r30
+不得继续执行或伪造第二批。该历史边界已由后续 r36/r42 当前 APK 子集记录补充，不能覆盖当前设备事实。
+
+fresh 独立 implementation verifier Galileo 对当前源码与 r30 evidence 给出
+`REVIEW_TARGET=IMPLEMENTATION, VERDICT=NO-GO, M/S/N=2/2/0`：确认 30 帧只关闭 16/30 的机械捕获、
+三条 admission blocker 仍 OPEN，current/non-current 的 dual 动态证据仍缺；同时以当前源码与 PNG
+像素证据拒绝“ratio token 缺失”这一 finding。该 verifier 还指出 r29 raw `brokenBoundary` 误写为
+上一成功帧 IA-09；主 agent 已修 runner，让 `RunnerFailure.label` 记录真实 owning failure boundary，
+并在计划/evidence 中解释而不改写 r29 原始 artifact。该修复仅以 `node --check` 做 focused/static
+验证，尚未以失败型新动态 run 重新触发。
+
+## 10. 当前 r36/r42 执行补记与独立复审
+
+随后 Dexter 明确授权继续执行，双屏与 mobile 虚拟机进入场。当前 release APK 为
+`bytes=88910819`、SHA-256=`4a70d6513130e2be3c229dba319063223d513f972720bb87d0b1cf0b4b7e24ae`。
+
+- r36 dual 目录为 `.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage2-dual-sample-terminal-r36/sample-terminal/`，真实 `BUSINESS=PASS`、`CLEANUP=PASS`、`FIRST_FAILURE=null`、`BROKEN_BOUNDARY=null`；产生 IA-15、IA-16、IA-32，并额外观察 IA-01/09/11。IA-32 是 IA-15 与 IA-16 的真实截图 combined artifact，不是结构测试或差分 oracle。
+- r42 mobile 目录为 `.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage2-mobile-sample-terminal-r42/sample-terminal/`，真实 `BUSINESS=PASS`、`CLEANUP=PASS`、`FIRST_FAILURE=null`、`BROKEN_BOUNDARY=null`；产生 IA-02/10/12/14 normal/17。IA-12 用 summary + 9 个 detail viewport 闭合 logger/logUpload 四字段；IA-14 display-facts-error 因 mobile 只有一块 physical display、没有真实 multi-surface fact claim 仍 OPEN。
+- r40/r41 的 IA-12 首败来自窄屏 Android accessibility clipped child bounds；主 agent 先读取 XML，确认 owner card 已在 viewport，再在 runner 中按 clipped edge 选择向上或向下 nudge，r42 重新证明了该边界。这个修复是证据采集器边界修复，不是用结构测试冒充视觉通过。
+- r44 已在 `emulator-5554` master 与 `emulator-5556` slave 两台 single-screen VM 上完成 current APK exact rebind 和第一批机械验证；旧 r30 的 SHA `94c83...` 仍不能和 current APK 聚合。r44 第一批为 16/19，IA-03/05/07 OPEN；r44/r36/r42 的 current APK mechanical union 为 24/30。
+
+Fresh 独立审查结果：
+
+- Popper（只读视觉 PNG 审查）：`REVIEW_TARGET=IMPLEMENTATION,VERDICT=NO-GO,M/S/N=0/1/3`。IA-12、IA-15、IA-16/17、IA-32 的重点形态大体 MATCHED；full 30-frame visual denominator OPEN。
+- Meitner（只读源码/证据/分母对账）：`REVIEW_TARGET=IMPLEMENTATION,VERDICT=NO-GO,M/S/N=2/2/0`。确认 30 帧源码分母未缩水，第二批并非“未运行”而是按计划范围闭合 8/11，r30 与 r36/r42 SHA 不同，三条 admission blocker 仍 OPEN。
+
+本次结果再次证明：阶段 business/cleanup PASS、runner hierarchy MATCHED 和 focused owner evidence 不能升级为
+30 帧 visual/device acceptance，也不能关闭 `DISPLAY_FACTS_OWNER`、`TOPOLOGY_PAGE_AVAILABILITY_AND_DIRECT_PAIR_OWNER`、
+`MASTER_UNPAIR_GUARD`。后续 Claude review 必须以当前 r36/r42 artifact、当前 APK SHA、第一批缺失条件和两份
+独立 NO-GO 为正本，不能引用文档中旧的“第二批未运行”表述。
+
+## 10.1 当前 r44 第一批复核补记
+
+当前 APK r44 目录为
+`.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage1-single-screen-sample-terminal-r44/sample-terminal/`，
+bytes=`88910819`，SHA-256=`4a70d6513130e2be3c229dba319063223d513f972720bb87d0b1cf0b4b7e24ae`。两台
+single-screen VM 为 `emulator-5554` master 与 `emulator-5556` slave，physical=`2560x1600`、density=`320`。
+
+r44 `BUSINESS=PASS`、`CLEANUP=PASS`、`FIRST_FAILURE=null`、`LAST_KNOWN_GOOD=master-unpair-order-and-host-stop`、
+`BROKEN_BOUNDARY=null`。第一批分母仍是 19，runner 实际 MATCHED 16，`IA-03/05/07` 因 fresh release
+hierarchy 不存在 frame root 保持 OPEN；与 current APK r36/r42 第二批计划范围合并仍为 24/30，不改变 30
+帧总分母。
+
+r44 同时复核了 runner 的 evidence snapshot 修复：cleanup 后同步写 terminal `progress.json`，所以
+`progress.json` 与 `result.json` 都是 `BUSINESS=PASS`、`CLEANUP=PASS`，不再出现 cleanup 已完成但 progress
+仍为 `NOT_RUN` 的假不一致。该修复不改变生产 UI、业务状态、frame 结果或 admission blocker。
+
+IA-13 的 fresh visual finding 仍为 OPEN，但归因必须精确：IA 正本/高保真 IA 把 runtime 作为可滚动内容，
+r44 summary viewport 在底部裁切 surface map 与状态信息，detail viewport union 可证明字段可达，但不能证明
+summary 首屏完整。因此这是“首屏视觉完整性证据 OPEN”，不是已经确认的源码几何 mismatch；不应为此未经设计裁决
+强行缩放真实 surface map。
+
+## 11. 全屏问题的根因、修复与当前边界
+
+本轮用户验收阻断是“非登录 Admin console 四周仍有空隙”。回源后确认它不是截图裁剪或虚拟机
+形态问题，而是共享外层几何把画板安全区误实现成了产品 shell 外边距：
+
+- `apps/terminal/ui/base/primitives/src/theme/tokens.ts` 的 `adminGeometry.rootLaptop/rootMobile`
+  原先分别提供 40/32 与 16/16 outer padding；`shellLaptop/shellMobile` 还提供 fixed width/max width、
+  min height 和 centered alignment。
+- `apps/terminal/ui/base/admin-shell/src/components/AdminShellFrame.tsx` 继续把这两套 bounded geometry
+  组合到 `layout="card"`，并通过 root `alignItems/justifyContent=center` 放在画板中央。
+- `baseTokens.adminShell/adminShellMobile` 另外带 20 圆角和 shadow；即使 shell 尺寸被放大，外层仍会在
+  角部暴露 canvas。
+
+最小根因修复只改 shared non-login surface：root 两种形态 outer padding 归零，shell 两种形态改为
+`flex:1`、`width/maxWidth:100%`、`minHeight/minWidth:0`、stretch；移除 shell 外圆角和 shadow；header、nav、
+content、card 内部高保真几何不变。同步更新 `adminVisualGeometry.test.ts`，并把 high-fidelity IA 的
+`panel.shell` 与计划 reconciliation gate 收敛为 edge-to-edge；IA 资产本身的 `.shell { inset: 0 }` 与修复后
+运行结果一致。
+
+修复后的真实证据：APK `88910591` bytes、SHA-256
+`90f85820c34543d3b0689005a931bebe42f28e3bb392a87366b5adbc99d54acd`；r50 dual、r51 mobile、r49
+single-screen 均 business/cleanup PASS 且 exact binding 通过。hierarchy root/panel 分别为：laptop
+`[0,0][2560,1600]` / `[2,2][2558,1598]`，mobile `[0,0][720,1280]` / `[2,2][718,1278]`。2px
+panel inset 是自身 1px border 的内外边界，不是旧实现的四周外隙。
+
+这次把“全屏 geometry 已闭合”和“整体实施已完成”分开：fresh vision review 对全屏、header/nav/content、
+ratio bar、runtime/topology 代表帧给出 `MATCHED`，但整体仍 `REVIEW_TARGET=IMPLEMENTATION,VERDICT=NO-GO,
+M/S/N=0/0/3`，因为状态条件缺失的 IA-03/04/05/06/07/08、IA-14 error variant 和完整 30 帧逐控件视觉
+对账不能用 testID、截图路径或 runner 结果替代。三条 admission blocker 仍全部 `OPEN`。
+
+## 12. 当前可直接交给 Claude 的 implementation review brief
+
+```text
+Claude，请以仓库根目录当前字节为唯一实现正本，对 TER Admin console 非登录区做一次
+REVIEW_TARGET=IMPLEMENTATION 的独立、证伪式、只读复核。不要修改源码、测试、依赖、脚本、证据或文档；
+不要把已有 runner MATCHED、testID/XML、截图文件存在、focused test 或单批 business/cleanup PASS 升级为
+整体 GO。
+
+当前目标：判断当前源码是否真正按已批准 requirements、IA、详设和 implementation plan 实现，并分别给出
+static、focused、Web、Android/native/device、visual、cleanup；确认 30 帧分母仍是
+IA-01..IA-29 + IA-32 = 30，批次仍是第一批 19 + 第二批 11，不因设备缺失或状态条件缺失缩水。
+
+必须优先读取：
+- doc/plans/platform/2026-09-19-ter-admin-console-non-login-requirements-codex.md
+- doc/plans/platform/2026-09-19-ter-admin-console-non-login-ia-frame-inventory-codex.md
+- doc/plans/platform/2026-09-19-ter-admin-console-non-login-ia-high-fidelity-codex.md
+- doc/plans/platform/2026-09-20-ter-admin-console-non-login-implementation-design-codex.md
+- doc/plans/platform/2026-09-20-ter-admin-console-non-login-implementation-plan-codex.md
+- doc/evidence/platform/2026-09-21-ter-admin-console-non-login-cp5-execution-codex.md
+- doc/evidence/platform/2026-09-21-ter-admin-console-non-login-control-reconciliation-codex.md
+- doc/review/platform/2026-09-20-ter-admin-console-non-login-implementation-design-review-round2-claude.md
+
+当前 implementation/evidence 重点源码：
+- apps/terminal/ui/base/admin-shell/src/components/sections/TopologySection.tsx
+- apps/terminal/ui/base/admin-shell/src/components/sections/RuntimeSection.tsx
+- apps/terminal/ui/base/admin-shell/src/components/AdminShellFrame.tsx
+- apps/terminal/ui/base/primitives/src/components/PrimitiveAdmin.tsx
+- apps/terminal/ui/base/primitives/src/components/PrimitiveFeedback.tsx
+- apps/terminal/ui/base/primitives/src/theme/tokens.ts
+- apps/terminal/adapter/android/device/android/src/main/java/com/catering/v2s/terminal/adapter/android/device/TerminalDeviceModule.kt
+- tools/terminal-topology/run-dual-device.mjs
+- 两个 terminal/assembly/android 与 terminal/ui/integration 的 sharedColors、Android config、keyboardThemeConfig.test.ts
+
+当前 APK 与动态边界：
+- current APK bytes=88910591
+- current APK SHA-256=90f85820c34543d3b0689005a931bebe42f28e3bb392a87366b5adbc99d54acd
+- r50 dual：.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage2-dual-sample-terminal-r50/sample-terminal/
+  BUSINESS=PASS，CLEANUP=PASS，实际第二批计划范围帧 IA-15/16/32（并观察 IA-01/09/11）
+- r51 mobile：.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage2-mobile-sample-terminal-r51/sample-terminal/
+  BUSINESS=PASS，CLEANUP=PASS，实际第二批计划范围帧 IA-02/10/12/14-normal/17
+- r49 first batch：.runtime/ter-dual-machine-topology/2026-09-21/non-login-implementation/stage1-single-screen-sample-terminal-r49/sample-terminal/
+  BUSINESS=PASS，CLEANUP=PASS，实际第一批帧 16/19（IA-03/05/07 OPEN），current APK exact binding 通过；
+  `progress.json` 与 `result.json` 的 terminal cleanup 快照一致
+- 第二批计划范围实际闭合 8/11；IA-04/06/08 因 release UI 没有合法状态制造路径 OPEN；IA-14 display-facts-error
+  因 mobile 没有真实 multi-surface fact claim OPEN。
+- r30 是旧 APK（SHA=94c83be9...）的第一批历史结果，不能与 current APK 合并；r49 已在 current APK 上完成
+  两台 single-screen VM 的 exact rebind 与第一批机械验证，但 IA-03/05/07 仍因 release 状态条件缺失 OPEN，
+  topology IA-18..IA-29 的 current visual proof 仍需独立逐控件审查。
+- r49 的 single-screen 设备为 emulator-5554 master 与 emulator-5556 slave；其后续 adb 变化不得被用来伪造
+  其他批次形态。
+
+三条 admission blocker 必须继续独立判断且保持 OPEN 直到 owner 正式 closeout：
+DISPLAY_FACTS_OWNER、TOPOLOGY_PAGE_AVAILABILITY_AND_DIRECT_PAIR_OWNER、MASTER_UNPAIR_GUARD。
+peerIdentity-only unpair 的真实 readback 只能证明该场景行为，不自动关闭 blocker，也不得写成“可用但未测试”。
+
+请逐控件核验而非只核验 testID：centered/full-screen shell、header、品牌/状态 pill、laptop navigation icon
+和 focus bar、mobile selector、card/disclosure、ports ratio bar 与三类单位分母、runtime surface map、
+current/non-current 字段边界、busy/error 形态、topology 角色/配对/重连/unpair guard。尤其检查 IA-15 非当前
+surface 是否只显示存在性、主副角色和“该屏信息未提供”，没有混入分辨率或 readiness；检查实际端口状态柱状图是否
+在所有应有帧出现；检查两个 integration 的 token/config 映射是否真的进入渲染链路，而不是 config test 假绿。
+
+请输出：
+1. 独立 GO/NO-GO 与 M/S/N；
+2. CONFIRMED、PARTIALLY_CONFIRMED、REJECTED_WITH_EVIDENCE、UNVERIFIED_REQUIRES_EVIDENCE findings；
+3. first failure、last known good、broken boundary；
+4. 每个 finding 的需求/IA/详设位置与源码/证据位置；
+5. 30 帧逐帧、逐控件四维对账是否真的 MATCHED，明确哪些 OPEN 只是缺设备/状态条件、哪些是实现缺口；
+6. 当前两批实际帧与缺帧，不把 19+11 改成更小分母；
+7. 最小修复路径和必须重跑的帧；
+8. 是否存在把 static/focused/runner/截图证据误写成 visual/device/acceptance 的 false green。
+
+最终请明确回答：当前实现距离批准 IA/详设的真实边界是什么；三条 blocker 是否仍 OPEN；为什么当前不能写
+IMPLEMENTATION=COMPLETE、VISUAL=PASS 或 ACCEPTANCE=PASS；以及进入下一次虚拟机前必须满足哪些可核验硬条件。
+```

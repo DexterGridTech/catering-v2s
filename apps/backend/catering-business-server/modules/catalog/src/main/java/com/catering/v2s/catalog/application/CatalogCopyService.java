@@ -5,7 +5,7 @@ import com.catering.v2s.catalog.application.persistence.CatalogCopyPersistence;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.catalog.api.CatalogOwnerTypes;
 import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
-import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
+import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
@@ -86,7 +86,7 @@ public class CatalogCopyService {
     private final CopyLimitPolicy copyLimits;
     private final TimeProvider time;
     private final CatalogAssetReferenceLock assetReferenceLocks;
-    private final ProductionTagOwnerApi productionTags;
+    private final CatalogProductionTagOwnerApi productionTags;
     private final InventoryOwnerApi inventory;
     private final CatalogSkuFacts skuFacts;
     private final CatalogIdentifierFacts identifierFacts;
@@ -113,7 +113,7 @@ public class CatalogCopyService {
             ObjectMapper mapper,
             TimeProvider time,
             CatalogAssetReferenceLock assetReferenceLocks,
-            ProductionTagOwnerApi productionTags,
+            CatalogProductionTagOwnerApi productionTags,
             InventoryOwnerApi inventory,
             PlatformTransactionManager transactions) {
         this.jdbc = jdbc;
@@ -144,7 +144,7 @@ public class CatalogCopyService {
             ObjectMapper mapper,
             TimeProvider time,
             CatalogAssetReferenceLock assetReferenceLocks,
-            ProductionTagOwnerApi productionTags,
+            CatalogProductionTagOwnerApi productionTags,
             InventoryOwnerApi inventory,
             PlatformTransactionManager transactions) {
         this(

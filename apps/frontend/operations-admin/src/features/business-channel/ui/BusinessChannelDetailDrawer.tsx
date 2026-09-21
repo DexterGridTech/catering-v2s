@@ -1,4 +1,4 @@
-import {Alert, Descriptions, Drawer, Space, Tag, Typography} from 'antd';
+import {Alert, Descriptions, Drawer, Space, Typography} from 'antd';
 import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,

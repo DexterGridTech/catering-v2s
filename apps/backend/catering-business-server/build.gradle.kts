@@ -68,7 +68,6 @@ dependencies {
     implementation(project(":apps:backend:catering-business-server:modules:audit-read"))
     implementation(project(":apps:backend:catering-business-server:modules:catalog"))
     implementation(project(":apps:backend:catering-business-server:modules:inventory"))
-    implementation(project(":apps:backend:catering-business-server:modules:fulfillment-production"))
     implementation(project(":apps:backend:catering-business-server:modules:collaboration"))
     implementation(project(":apps:backend:catering-business-server:modules:business-channel"))
     implementation(project(":apps:backend:catering-business-server:modules:sales-menu"))

@@ -186,8 +186,7 @@
         "x-owner-module": "catalog",
         "x-coordinated-owners": [
           "organization",
-          "inventory",
-          "fulfillment-production"
+          "inventory"
         ],
         "x-capability-keys": [
           "EDIT_STORE_CATALOG"
@@ -271,8 +270,7 @@
         "x-owner-module": "catalog",
         "x-coordinated-owners": [
           "organization",
-          "inventory",
-          "fulfillment-production"
+          "inventory"
         ],
         "x-capability-keys": [
           "EDIT_STORE_CATALOG"

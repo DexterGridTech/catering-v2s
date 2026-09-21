@@ -14,6 +14,7 @@ import {
   PrimitiveFormField,
   PrimitiveHeading,
   PrimitiveIcon,
+  PrimitiveIconBadge,
   PrimitiveInlineAlert,
   PrimitiveInput,
   PrimitiveStatusLine,
@@ -38,7 +39,7 @@ const topologyScrollContentPaddingBottom = 192
 // long enough for the user to perceive it and for the busy control contract to
 // remain true. This does not delay the owner command itself or change its
 // result/feedback semantics.
-const topologyOperationMinimumBusyMs = 1_000
+const topologyOperationMinimumBusyMs = 2_000
 const topologyOperationPreDispatchBusyMs = 800
 
 const waitForTopologyBusyWindow = async (startedAt: number): Promise<void> => {
@@ -150,7 +151,10 @@ export const TopologySection = ({context}: AdminSectionProps) => {
   const isHostBusy = busy === 'enable-host' || facts?.hostActual === 'starting' || facts?.hostActual === 'stopping'
   const isHostError = facts?.hostActual === 'error' && !showTargetChoice && busy === null
   const isPairError = feedback?.tone === 'warn' && !isPaired && !isHostError && !showTargetChoice && busy === null
-  const showGoalChoice = !isPaired && busy === null && (facts?.hostActual === 'stopped' || showTargetChoice)
+  // A pair failure owns its own recovery frame. Do not render the unpaired
+  // goal-choice cards beneath it; IA-23 keeps only the IP field, error reason,
+  // direct retry, and return-to-choice action visible.
+  const showGoalChoice = !isPaired && busy === null && !isPairError && (facts?.hostActual === 'stopped' || showTargetChoice)
   const showHostStarting = busy === 'enable-host' || facts?.hostActual === 'starting' || facts?.hostActual === 'stopping'
   const showHostReady = facts?.hostActual === 'running' && !isPaired && !showTargetChoice
   const showPairing = isPairing
@@ -180,11 +184,13 @@ export const TopologySection = ({context}: AdminSectionProps) => {
           <PrimitiveCard
             appearance="admin"
             testID={`${topologyIds.pageGate}:card`}
-            style={{minHeight: 230, alignItems: 'center', justifyContent: 'center'}}
+            style={{minHeight: 230, alignItems: 'center', justifyContent: 'center', padding: 18}}
           >
-            <PrimitiveIcon testID={`${topologyIds.pageGate}:icon`} accessibilityLabel="功能不可用" appearance="admin-content" icon="blocked" size={28} />
-            <PrimitiveStatusLine testID={topologyIds.pageGate} tone="warn">当前功能不可用</PrimitiveStatusLine>
-            <PrimitiveText appearance="admin-muted" testID={topologyIds.pageGateReason}>
+            <PrimitiveIconBadge testID={`${topologyIds.pageGate}:icon`} accessibilityLabel="功能不可用" icon="blocked" size={28} tone="warn" />
+            <PrimitiveStatusLine testID={topologyIds.pageGate} tone="warn" style={{justifyContent: 'center', marginTop: 11}}>
+              当前功能不可用
+            </PrimitiveStatusLine>
+            <PrimitiveText appearance="admin-muted" testID={topologyIds.pageGateReason} style={{maxWidth: 360, marginTop: 6, textAlign: 'center'}}>
               {pageAvailability.reasonCode === 'TOPOLOGY_REQUIRES_SINGLE_SCREEN'
                 ? '双机拓扑要求本机只有一个物理屏'
                 : topologyReasonMessages[pageAvailability.reasonCode] || '拓扑能力当前不可用'}

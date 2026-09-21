@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
+import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
 import com.catering.v2s.platform.asset.api.CatalogAssetReferenceLock;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -278,7 +279,12 @@ class CatalogSalesMenuTaskReadTest {
 
     private static CatalogOwnerService service(JdbcTemplate jdbc) {
         return new CatalogOwnerService(
-                jdbc, new ObjectMapper(), () -> 1_785_000_000_000L, mock(CatalogAssetReferenceLock.class));
+                jdbc,
+                new ObjectMapper(),
+                () -> 1_785_000_000_000L,
+                mock(CatalogAssetReferenceLock.class),
+                mock(CatalogProductionTagOwnerApi.class),
+                null);
     }
 
     private static void stubEmptyFactQueries(JdbcTemplate jdbc) throws Exception {

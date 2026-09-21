@@ -208,7 +208,7 @@
         "method": "POST",
         "path": "/operations/catalog-inventory/production-tags",
         "consumerFace": "operations-admin",
-        "ownerModule": "fulfillment-production"
+        "ownerModule": "catalog"
       },
       "requirementId": "CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_PRODUCTION_TAG",
       "capabilityKey": null,
@@ -219,9 +219,9 @@
       "unsupportedResourceTypeDecision": "DENY",
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
-      "ownerModule": "fulfillment-production",
-      "ownerRecheckId": "OWNER_RECHECK_FULFILLMENT_PRODUCTION",
-      "typedProblemMappingId": "PROBLEM_FULFILLMENT_PRODUCTION_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "catalog",
+      "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+      "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_CREATE_OPERATIONS_PRODUCTION_TAG"
     },
     {
@@ -621,7 +621,7 @@
         "method": "POST",
         "path": "/operations/catalog-inventory/production-tags/{tagCode}/status",
         "consumerFace": "operations-admin",
-        "ownerModule": "fulfillment-production"
+        "ownerModule": "catalog"
       },
       "requirementId": "CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS",
       "capabilityKey": null,
@@ -632,9 +632,9 @@
       "unsupportedResourceTypeDecision": "DENY",
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
-      "ownerModule": "fulfillment-production",
-      "ownerRecheckId": "OWNER_RECHECK_FULFILLMENT_PRODUCTION",
-      "typedProblemMappingId": "PROBLEM_FULFILLMENT_PRODUCTION_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "catalog",
+      "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+      "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_TRANSITION_OPERATIONS_PRODUCTION_TAG_STATUS"
     },
     {
@@ -774,7 +774,7 @@
         "method": "PATCH",
         "path": "/operations/catalog-inventory/production-tags/{tagCode}",
         "consumerFace": "operations-admin",
-        "ownerModule": "fulfillment-production"
+        "ownerModule": "catalog"
       },
       "requirementId": "CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_PRODUCTION_TAG",
       "capabilityKey": null,
@@ -785,9 +785,9 @@
       "unsupportedResourceTypeDecision": "DENY",
       "authorizationMode": "AUTHENTICATED_WORKSPACE",
       "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
-      "ownerModule": "fulfillment-production",
-      "ownerRecheckId": "OWNER_RECHECK_FULFILLMENT_PRODUCTION",
-      "typedProblemMappingId": "PROBLEM_FULFILLMENT_PRODUCTION_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "catalog",
+      "ownerRecheckId": "OWNER_RECHECK_CATALOG",
+      "typedProblemMappingId": "PROBLEM_CATALOG_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_CATALOG_INVENTORY_OPERATION_UPDATE_OPERATIONS_PRODUCTION_TAG"
     },
     {

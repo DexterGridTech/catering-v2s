@@ -128,7 +128,7 @@ function renderPreparationProfile() {
     tagRef: uuid('tag-hot-kitchen'),
     code: 'HOT_KITCHEN',
     name: '热厨制作',
-    owner: 'FULFILLMENT_PRODUCTION',
+    owner: 'catalog',
     status: 'ENABLED',
   };
   return renderToStaticMarkup(
@@ -216,7 +216,7 @@ describe('catalog identification and preparation editor boundaries', () => {
       tagRef: uuid('tag-hot-kitchen'),
       code: 'HOT_KITCHEN',
       name: '热厨制作',
-      owner: 'FULFILLMENT_PRODUCTION',
+      owner: 'catalog',
       status: 'ENABLED',
     };
     const specificationMarkup = renderToStaticMarkup(
@@ -699,11 +699,11 @@ describe('catalog identification and preparation editor boundaries', () => {
       [
         undefined,
         {
-          items: [{tagRef: uuid('tag-1'), code: 'HOT', name: '热厨制作', owner: 'FULFILLMENT_PRODUCTION'}],
+          items: [{tagRef: uuid('tag-1'), code: 'HOT', name: '热厨制作', owner: 'catalog'}],
           nextCursor: 'cursor-2',
         },
       ],
-      ['cursor-2', {items: [{tagRef: uuid('tag-2'), code: 'COLD', name: '冷菜制作', owner: 'FULFILLMENT_PRODUCTION'}]}],
+      ['cursor-2', {items: [{tagRef: uuid('tag-2'), code: 'COLD', name: '冷菜制作', owner: 'catalog'}]}],
     ]);
     await expect(
       collectCursorPages<ProductionTagOption>({

@@ -20,18 +20,16 @@ export const adminPanelStatusFromRuntime = (runtimeStatus: RuntimeStatus): Admin
   return {tone: 'warn', label: '正在准备'}
 }
 
-/** Shared full-canvas frame; form-specific components own their internal layout. */
+/** Shared full-canvas root with a full-surface non-login console. */
 export const AdminShellFrame = ({onClose, status, frameId, children}: AdminShellFrameProps) => {
   const surface = useSurfaceContext()
   const mobile = surface.surfaceForm === 'mobile'
   const normalFrameId = frameId ?? panelFrameId(surface.surfaceForm, 'normal')
   const rootStyle = mobile
-    ? {flex: 1, width: '100%' as const, minWidth: 0, alignItems: 'center' as const, justifyContent: 'center' as const, ...adminGeometry.rootMobile}
-    : {flex: 1, width: '100%' as const, minWidth: 0, alignItems: 'center' as const, justifyContent: 'center' as const, ...adminGeometry.rootLaptop}
-  // Keep the shell inside the surface while each page owns its own scroll.
-  // Without this cap, a topology page can grow the card beyond the viewport;
-  // centering then places the fixed header/close control above the visible
-  // surface instead of letting the content area scroll.
+    ? {flex: 1, width: '100%' as const, minWidth: 0, ...adminGeometry.rootMobile}
+    : {flex: 1, width: '100%' as const, minWidth: 0, ...adminGeometry.rootLaptop}
+  // The shell fills the available surface; each page still owns its own
+  // bounded content scroll area below the fixed header.
   const panelStyle = mobile
     ? {...adminGeometry.shellMobile, maxHeight: '100%' as const, overflow: 'hidden' as const}
     : {...adminGeometry.shellLaptop, maxHeight: '100%' as const, overflow: 'hidden' as const}

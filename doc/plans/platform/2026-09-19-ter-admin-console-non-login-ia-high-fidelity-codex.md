@@ -20,6 +20,10 @@
 
 `IA_SOURCE_PRIORITY=frame inventory 是用户旅途、可见字段、状态、文案和动作的语义正本；本稿是同一 IA-ID 的位置、尺寸、形状、颜色、图标、字体和视觉 token 的视觉正本；冲突先修两份 IA，不由详设或实施择一`
 
+`ADMIN_CONSOLE_SURFACE_MODE=FULL_SCREEN_EDGE_TO_EDGE`
+
+`DEXTER_FULL_SCREEN_ACCEPTANCE=CONFIRMED_2026-09-21`
+
 `DEXTER_LOW_FIDELITY_APPROVAL=CONFIRMED`
 
 `DEXTER_HIGH_FIDELITY_APPROVAL=CONFIRMED_2026-09-20`
@@ -47,7 +51,7 @@
 
 | 语法 | 登录框现状 | 非登录区高保真延续 |
 | --- | --- | --- |
-| 外框 | `PrimitiveContainer` 的 login card，20 逻辑单位圆角、1 单位边框、elevated shadow | Admin shell 外框同样使用 20 圆角、1 单位边框和 elevated shadow；内容卡使用 16 圆角 |
+| 外框 | `PrimitiveContainer` 的 login card，20 逻辑单位圆角、1 单位边框、elevated shadow | Admin console 充满可用 surface、无外部留白；内容卡使用 16 圆角，header/nav 继续消费 shell semantic surface |
 | 主操作 | `login-primary` 使用 integration 提供的 action/gradient | 开启服务、直接配对、解除配对、重试等主要动作沿用同一 action/gradient；危险动作改用 error 语义，不复制红色常量 |
 | 文字 | 标题 30/40、正文 16/24、辅助文字 16/24 | shell 标题 24/32；页面标题 22/30；卡片标题 16/22；正文 14/20；辅助文字 12/18；都保留清晰的重量层级 |
 | 状态 | 点色 + 文字 | 所有状态继续点色 + 文字；不可只用颜色表达 |
@@ -84,16 +88,16 @@
 
 单位为逻辑单位（`lu`），1 `lu` 对应 React Native/Web 布局中的一个逻辑布局单位，不等同于 Android 物理像素。
 
-| 形态 | 高保真画板 | shell 内容安全区 | 说明 |
+| 形态 | 高保真画板 | shell 外部安全区 | 说明 |
 | --- | --- | --- | --- |
-| laptop | `1440 × 900 lu` | 左右 40、上下 32 | 横向导航与内容并列；内容最小宽 720 |
-| mobile | `390 × 844 lu` | 左右 16、上下 16 | 竖屏单列；selector 固定在 header 下方，内容独立滚动 |
+| laptop | `1440 × 900 lu` | 0 | shell edge-to-edge；横向导航与内容并列；内容内部 padding 24，内容最小宽 720 |
+| mobile | `390 × 844 lu` | 0 | shell edge-to-edge；竖屏单列；selector 固定在 header 下方；内容内部 padding 16、独立滚动 |
 
 ### 3.2 Shell 几何
 
 | IA-ID | 位置 | 尺寸 | 形状/背景 | 文字/图标 | 间距 |
 | --- | --- | --- | --- | --- | --- |
-| `panel.shell` | 画板居中 | laptop 最大宽 1360、最小高 760；mobile 宽 358、最小高 812 | 20 圆角；1 `color-admin-shell-border`；`color-admin-shell-surface`；elevated shadow | 无 | 画板安全区 |
+| `panel.shell` | 可用 surface 左上角，横向与纵向均铺满 | laptop/mobile `width: 100%`、`height: 100%`；`minHeight: 0` | 0 圆角；1 `color-admin-shell-border`；`color-admin-shell-surface`；无外部 shadow | 无 | 外部无留白；内部 header/nav/content 按各自 padding |
 | `panel.header` | shell 顶部 | laptop 高 72；mobile 高 60 | 透明，继承 shell surface；底部 1 边框 | `panel.header.title` 24/32/700；关闭图标 `close` 20 | 左右 24；标题与 status gap 12 |
 | `panel.header.overall-status` | 标题右侧 | 高 28，最小宽 112 | 14 圆角；状态背景 token | 12/18/600；8 圆点 | 与标题 gap 16 |
 | `panel.nav.laptop` | header 下方左侧 | 宽 248；填满内容高 | 16 圆角；`color-admin-shell-surface`；选中项使用 action token | 14/20/600；选中项带 `terminal` 图标 | nav 内 padding 12；项高 44，gap 6 |

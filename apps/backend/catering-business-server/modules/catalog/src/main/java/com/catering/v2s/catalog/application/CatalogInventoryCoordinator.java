@@ -2,7 +2,7 @@ package com.catering.v2s.catalog.application;
 
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
 import com.catering.v2s.contracts.generated.cataloginventory.CatalogInventoryShapeManifest;
-import com.catering.v2s.fulfillment.production.api.ProductionTagOwnerApi;
+import com.catering.v2s.catalog.api.CatalogProductionTagOwnerApi;
 import com.catering.v2s.inventory.api.InventoryOwnerApi;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.platform.asset.api.CatalogAssetCommandApi;
@@ -56,7 +56,7 @@ public class CatalogInventoryCoordinator {
 
     private final CatalogOwnerApi catalog;
     private final InventoryOwnerApi inventory;
-    private final ProductionTagOwnerApi production;
+    private final CatalogProductionTagOwnerApi production;
     private final PlatformAssetService assets;
     private final CatalogAssetCommandApi assetCommands;
     private final ObjectMapper mapper;
@@ -69,7 +69,7 @@ public class CatalogInventoryCoordinator {
     public CatalogInventoryCoordinator(
             CatalogOwnerApi catalog,
             InventoryOwnerApi inventory,
-            ProductionTagOwnerApi production,
+            CatalogProductionTagOwnerApi production,
             PlatformAssetService assets,
             ObjectMapper mapper,
             TimeProvider time,
@@ -80,7 +80,7 @@ public class CatalogInventoryCoordinator {
     public CatalogInventoryCoordinator(
             CatalogOwnerApi catalog,
             InventoryOwnerApi inventory,
-            ProductionTagOwnerApi production,
+            CatalogProductionTagOwnerApi production,
             PlatformAssetService assets,
             ObjectMapper mapper,
             TimeProvider time,
@@ -93,7 +93,7 @@ public class CatalogInventoryCoordinator {
     public CatalogInventoryCoordinator(
             CatalogOwnerApi catalog,
             InventoryOwnerApi inventory,
-            ProductionTagOwnerApi production,
+            CatalogProductionTagOwnerApi production,
             PlatformAssetService assets,
             ObjectMapper mapper,
             TimeProvider time,
@@ -770,9 +770,9 @@ public class CatalogInventoryCoordinator {
                 owners.inventoryPreparation());
         ownerReadbacks.add(new CatalogOwnerApi.CopyOwnerReadback(
                 inventoryReadback.owner(), inventoryReadback.status(), inventoryReadback.version()));
-        ProductionTagOwnerApi.BrandCopyExecutionReadback productionReadback = production.executeBrandCopy(
+        CatalogProductionTagOwnerApi.BrandCopyExecutionReadback productionReadback = production.executeBrandCopy(
                 context,
-                new ProductionTagOwnerApi.BrandCopyExecuteCommand(
+                new CatalogProductionTagOwnerApi.BrandCopyExecuteCommand(
                         command.selectedItemCodes(),
                         command.targetDataNodeRef(),
                         owners.productionDigest(),
@@ -793,9 +793,9 @@ public class CatalogInventoryCoordinator {
                 new InventoryOwnerApi.BrandCopyPreflightCommand(
                         command.selectedItemCodes(), command.targetDataNodeRef(), plan));
         InventoryOwnerApi.LocalCopyPreflightReadback inventoryReadback = inventoryPreparation.preflight();
-        ProductionTagOwnerApi.BrandCopyPreflightReadback productionReadback = production.preflightBrandCopy(
+        CatalogProductionTagOwnerApi.BrandCopyPreflightReadback productionReadback = production.preflightBrandCopy(
                 context,
-                new ProductionTagOwnerApi.BrandCopyPreflightCommand(
+                new CatalogProductionTagOwnerApi.BrandCopyPreflightCommand(
                         command.selectedItemCodes(), command.targetDataNodeRef(), plan));
         return new OwnerPreflight(
                 inventoryReadback.preflightDigest(),

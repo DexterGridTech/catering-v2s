@@ -13,7 +13,7 @@
     },
     "referencePathMatrix": {
       "path": "contracts/policy/catalog-inventory-reference-path-matrix.json",
-      "sha256": "cf518954797d8154a7c0dc7b168497d4a40d2e9b5611b5d37bf9ea6a62b1d2d4"
+      "sha256": "795e28b08a4fa3cb630a4504a3661beb3a03bf3a407dd4b0d146c1c20abb6b37"
     }
   },
   "models": [

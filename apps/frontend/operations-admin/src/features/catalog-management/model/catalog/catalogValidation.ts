@@ -17,6 +17,7 @@ import type {
   CatalogPreparationEffect,
   CatalogPreparationFacts,
   CatalogPreparationProfile,
+  CatalogProductionTagOwner,
   CatalogSkuRow,
   CatalogSkuVariantDimension,
   CatalogSpecificationFact,
@@ -104,6 +105,11 @@ export function requiredRecordArray(
 
 export function text(value: JsonValue | undefined): string {
   return typeof value === 'string' ? value : value === undefined || value === null ? '' : String(value);
+}
+
+export function catalogProductionTagOwner(value: JsonValue | undefined): CatalogProductionTagOwner {
+  if (text(value) === 'catalog') return 'catalog';
+  throw new Error('INVALID_CATALOG_PRODUCTION_TAG_OWNER');
 }
 
 export function readUuid(value: JsonValue | undefined): Uuid {
@@ -268,7 +274,7 @@ export function decodePreparationFacts(value: JsonValue | undefined): CatalogPre
         code: text(productionTagRow.code),
         name: text(productionTagRow.name),
         status: catalogLifecycleStatus(productionTagRow.status),
-        owner: text(productionTagRow.owner),
+        owner: catalogProductionTagOwner(productionTagRow.owner),
       }
     : null;
   const variation = asRecord(row.skuVariation);

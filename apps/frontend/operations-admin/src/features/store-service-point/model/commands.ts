@@ -70,10 +70,13 @@ export async function changeStoreServicePointAreaStatus(
     areaRef: wireUuid(context.area.areaRef),
   };
   const body = {status: context.status, expectedVersion: context.area.version};
-  const key = await createContentIdempotencyKey(OPERATIONS_ADMIN_OPERATION_IDS.postOperationsStoreServicePointAreaStatus, {
-    path,
-    body,
-  });
+  const key = await createContentIdempotencyKey(
+    OPERATIONS_ADMIN_OPERATION_IDS.postOperationsStoreServicePointAreaStatus,
+    {
+      path,
+      body,
+    },
+  );
   return operationsClient.postOperationsStoreServicePointAreaStatus(path, {
     body,
     headers: {'Idempotency-Key': key},
@@ -89,11 +92,14 @@ export async function moveStoreServicePointArea(
     areaRef: wireUuid(context.area.areaRef),
   };
   const body = {direction: context.direction, expectedVersion: context.area.version};
-  const key = await createContentIdempotencyKey(OPERATIONS_ADMIN_OPERATION_IDS.postOperationsStoreServicePointAreaOrder, {
-    receiptVersion: STORE_SERVICE_POINT_ORDER_RECEIPT_VERSION,
-    path,
-    body,
-  });
+  const key = await createContentIdempotencyKey(
+    OPERATIONS_ADMIN_OPERATION_IDS.postOperationsStoreServicePointAreaOrder,
+    {
+      receiptVersion: STORE_SERVICE_POINT_ORDER_RECEIPT_VERSION,
+      path,
+      body,
+    },
+  );
   return operationsClient.postOperationsStoreServicePointAreaOrder(path, {
     body,
     headers: {'Idempotency-Key': key},
@@ -124,7 +130,9 @@ export async function stageStoreServicePointImage(
 
 export async function releaseStoreServicePointImages(context: StoreCommandContext & {items: StoreServicePointImage[]}) {
   const failures: unknown[] = [];
-  for (const item of context.items.filter(current => current.staged && current.assetRef && current.version !== undefined)) {
+  for (const item of context.items.filter(
+    current => current.staged && current.assetRef && current.version !== undefined,
+  )) {
     const path = {
       groupWorkspaceKey: context.groupWorkspaceKey,
       storeRef: context.storeWireRef,
@@ -132,10 +140,13 @@ export async function releaseStoreServicePointImages(context: StoreCommandContex
     };
     const body = {expectedAssetVersion: item.version as number};
     try {
-      const key = await createContentIdempotencyKey(OPERATIONS_ADMIN_OPERATION_IDS.releaseStagedStoreServicePointImage, {
-        path,
-        body,
-      });
+      const key = await createContentIdempotencyKey(
+        OPERATIONS_ADMIN_OPERATION_IDS.releaseStagedStoreServicePointImage,
+        {
+          path,
+          body,
+        },
+      );
       await operationsClient.releaseStagedStoreServicePointImage(path, {
         body,
         headers: {'Idempotency-Key': key},

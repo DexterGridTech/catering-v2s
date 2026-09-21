@@ -55,7 +55,6 @@ const OWNER_NAMESPACES = Object.freeze({
   "platform-iam": "platform.admin.iam",
   contract: "store.contract",
   "platform-workspace": "platform.workspace",
-  "fulfillment-production": "fulfillment.production",
   extension: "extension",
   "platform-asset": "platform.asset",
   asset: "platform.asset",

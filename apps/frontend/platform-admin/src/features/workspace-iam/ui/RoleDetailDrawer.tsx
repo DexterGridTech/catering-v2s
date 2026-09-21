@@ -11,12 +11,7 @@ import {
 import type {WorkspaceRole, WorkspaceRolePage, WorkspaceRoleStatus} from '../../../app/api/generated/platform-edge';
 import {platformDetailDrawerTestIds} from '../../../app/automation/platformDetailDrawerTestIds';
 import {RolePermissionSummaryTrees, serviceNodeTypeLabel} from './RolePermissionFields';
-import {
-  canManageWorkspaceIam,
-  canVoidWorkspaceIam,
-  toggleWorkspaceIamStatus,
-  workspaceIamLifecycleLabels,
-} from '../model/workspaceIamLifecycle';
+import {canManageWorkspaceIam, canVoidWorkspaceIam, toggleWorkspaceIamStatus} from '../model/workspaceIamLifecycle';
 
 type Props = {
   open: boolean;

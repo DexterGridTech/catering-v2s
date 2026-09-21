@@ -167,7 +167,7 @@ export function loadGeneratedCatalogOperationRegistry(registryPath = catalogRegi
     const registry = loadGeneratedOperationRegistry(registryPath);
     const catalogOperations = registry.filter((operation) =>
       operation.consumerFaces?.includes('operations-admin')
-      && ['catalog', 'inventory', 'fulfillment-production', 'asset'].includes(operation.owner)
+      && ['catalog', 'inventory', 'asset'].includes(operation.owner)
       && operation.path.startsWith('/operations/catalog-inventory/'));
     assert(catalogOperations.length > 0, 'L2_CATALOG_FIXTURE_OPERATION_REGISTRY_INVALID');
     return Object.freeze(catalogOperations);
@@ -229,7 +229,7 @@ function validateStage(stage, group, registry) {
   } catch {
     fail('L2_CATALOG_FIXTURE_OPERATION_UNRESOLVED', stage.operationId);
   }
-  assert(['catalog', 'inventory', 'fulfillment-production', 'asset'].includes(operation.owner), 'L2_CATALOG_FIXTURE_OWNER_OPERATION_FORBIDDEN', stage.operationId);
+  assert(['catalog', 'inventory', 'asset'].includes(operation.owner), 'L2_CATALOG_FIXTURE_OWNER_OPERATION_FORBIDDEN', stage.operationId);
   const pathParameters = stage.pathParameters ?? {};
   const queryParameters = stage.queryParameters ?? {};
   assert(isPlainObject(pathParameters), 'L2_CATALOG_FIXTURE_STAGE_INVALID', stageId);

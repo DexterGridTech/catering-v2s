@@ -147,6 +147,36 @@ describe('TopologySection host input', () => {
     act(() => { renderer.unmount() })
   })
 
+  it('keeps pair failure as a dedicated recovery frame without goal cards underneath', async () => {
+    const pairByHost = vi.fn(async () => ({status: 'failed' as const, reasonCode: 'TOPOLOGY_HOST_UNREACHABLE' as const}))
+    const pairErrorContext = {
+      ...context,
+      topologyCapability: {...topologyCapability, pairByHost},
+    } as unknown as AdminSectionProps['context']
+    const renderer = mount(undefined, pairErrorContext)
+    const input = renderer.root.findAllByType(TextInput).find(node => node.props.testID === 'terminal.admin:topology:host')
+    expect(input).toBeDefined()
+
+    act(() => {
+      input!.props.onPressIn({stopPropagation: () => undefined})
+      input!.props.onFocus({nativeEvent: {}})
+    })
+    for (const character of '127.0.0.1') {
+      act(() => {
+        renderer.root.findByProps({testID: `ui.base.input:virtual-keyboard:text-${character}`}).props.onPress()
+      })
+    }
+    await act(async () => {
+      renderer.root.findByProps({testID: 'terminal.admin:topology:pair'}).props.onPress()
+      await new Promise(resolve => setTimeout(resolve, 2_900))
+    })
+
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.failureReason})).toBeDefined()
+    expect(renderer.root.findAllByProps({testID: adminTestIds.topology.goalChoice})).toHaveLength(0)
+    expect(renderer.root.findByProps({testID: adminTestIds.topology.retry})).toBeDefined()
+    act(() => { renderer.unmount() })
+  })
+
   it('keeps paired reconnecting semantics and exposes unpair for both roles', () => {
     const pairedFacts = {
       ...topologyFacts,
@@ -211,7 +241,7 @@ describe('TopologySection host input', () => {
 
     await act(async () => {
       renderer.root.findByProps({testID: adminTestIds.topology.unpair}).props.onPress()
-      await new Promise(resolve => setTimeout(resolve, 1_900))
+      await new Promise(resolve => setTimeout(resolve, 2_400))
     })
 
     expect(renderer.root.findByProps({testID: adminTestIds.topology.pairResult}).props.children).toContain('尚未配对')
@@ -262,6 +292,9 @@ describe('TopologySection host input', () => {
     const renderer = mount(undefined, unavailableContext)
 
     expect(renderer.root.findByProps({testID: 'terminal.admin:topology:page-gate'})).toBeDefined()
+    expect(renderer.root.findByProps({testID: 'terminal.admin:topology:page-gate:icon:icon'}).props.tone).toBe('warn')
+    expect(renderer.root.findByProps({testID: 'terminal.admin:topology:page-gate'}).props.style).toEqual(expect.objectContaining({justifyContent: 'center'}))
+    expect(renderer.root.findByProps({testID: 'terminal.admin:topology:page-gate-reason'}).props.style).toEqual(expect.objectContaining({textAlign: 'center'}))
     expect(renderer.root.findAllByProps({testID: 'terminal.admin:topology:host'})).toHaveLength(0)
     expect(renderer.root.findAllByProps({testID: 'terminal.admin:topology:pair'})).toHaveLength(0)
     expect(renderer.root.findAllByProps({testID: 'terminal.admin:topology:unpair'})).toHaveLength(0)

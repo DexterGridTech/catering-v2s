@@ -68,7 +68,6 @@ export function CatalogDictionaryDrawerView({viewModel}: {viewModel: CatalogDict
     productionCursor,
     lifecycle,
     requestConfigClose,
-    manifest,
     dictionaryQuery,
     unitQuery,
     attributeValuesQuery,

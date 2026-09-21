@@ -494,7 +494,6 @@ export function StoreServicePointPage({queryContext, actionCapabilityKeys}: Oper
     [qrConfiguration, qrLifecycle, queryContext.groupWorkspaceKey, readBack, storeWireRef],
   );
 
-
   const askStatusChange = useCallback(
     (target: 'area' | 'point', row: StoreServicePointArea | StoreServicePoint, status: StoreServicePointStatus) => {
       const label = target === 'area' ? '区域' : titleForArea(selectedArea?.areaType);

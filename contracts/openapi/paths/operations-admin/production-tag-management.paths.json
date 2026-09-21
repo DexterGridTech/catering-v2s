@@ -17,7 +17,7 @@
         "x-consumer-faces": [
           "operations-admin"
         ],
-        "x-owner-module": "fulfillment-production",
+        "x-owner-module": "catalog",
         "x-coordinated-owners": [],
         "x-capability-keys": [],
         "x-capability-by-data-node-type": {},
@@ -139,7 +139,7 @@
         "x-consumer-faces": [
           "operations-admin"
         ],
-        "x-owner-module": "fulfillment-production",
+        "x-owner-module": "catalog",
         "x-coordinated-owners": [
           "organization"
         ],
@@ -225,7 +225,7 @@
         "x-consumer-faces": [
           "operations-admin"
         ],
-        "x-owner-module": "fulfillment-production",
+        "x-owner-module": "catalog",
         "x-coordinated-owners": [],
         "x-capability-keys": [
           "EDIT_HEAD_COMPANY_CATALOG",
@@ -317,10 +317,8 @@
         "x-consumer-faces": [
           "operations-admin"
         ],
-        "x-owner-module": "fulfillment-production",
-        "x-coordinated-owners": [
-          "catalog"
-        ],
+        "x-owner-module": "catalog",
+        "x-coordinated-owners": [],
         "x-capability-keys": [
           "EDIT_HEAD_COMPANY_CATALOG",
           "EDIT_STORE_CATALOG"

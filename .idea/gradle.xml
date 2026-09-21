@@ -22,7 +22,6 @@
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/execution-context" />
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/extension" />
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/foundation" />
-            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/fulfillment-production" />
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/inventory" />
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/organization" />
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/platform-admin-iam" />

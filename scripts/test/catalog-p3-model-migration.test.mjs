@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readdirSync, readFileSync} from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
@@ -14,6 +14,7 @@ const itemCodeReleaseMigration = readFileSync(path.join(root, 'apps/backend/cate
 const skuCodeReleaseMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260816_020000_000__catalog_sku_voided_code_release.sql'), 'utf8');
 const dictionaryTagReleaseMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260816_030000_000__catalog_dictionary_tag_voided_code_release.sql'), 'utf8');
 const deadIndexMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260816_040000_000__remove_unusable_stock_bom_option_value_index.sql'), 'utf8');
+const productionTagCutoverMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260921_000000_000__catalog_production_tag_owner_cutover.sql'), 'utf8');
 const dictionaryMigration = readFileSync(path.join(root, 'apps/backend/catering-business-server/src/main/resources/db/migration/V20260816_010000_000__catalog_dictionary_attribute_parent_and_order_option_kind.sql'), 'utf8');
 const catalogOwner = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogOwnerService.java'), 'utf8');
 const catalogDictionaryService = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogDictionaryService.java'), 'utf8');
@@ -23,8 +24,8 @@ const catalogCopyService = readFileSync(path.join(root, 'apps/backend/catering-b
 const catalogCopyPersistence = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogCopyPersistence.java'), 'utf8');
 const catalogCopyServiceSql = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogCopyServiceSql.java'), 'utf8');
 const catalogItemService = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogItemService.java'), 'utf8');
-const productionTagOwner = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/ProductionTagOwnerService.java'), 'utf8');
-const productionTagServiceSql = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/fulfillment-production/src/main/java/com/catering/v2s/fulfillment/production/application/persistence/ProductionTagOwnerServiceSql.java'), 'utf8');
+const productionTagOwner = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/CatalogProductionTagOwnerService.java'), 'utf8');
+const productionTagServiceSql = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/catalog/src/main/java/com/catering/v2s/catalog/application/persistence/CatalogProductionTagOwnerServiceSql.java'), 'utf8');
 const platformAuthentication = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/PlatformAuthenticationService.java'), 'utf8');
 const platformAuthenticationServiceSql = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/platform-admin-iam/src/main/java/com/catering/v2s/platform/iam/application/persistence/PlatformAuthenticationServiceSql.java'), 'utf8');
 const inventoryOwner = readFileSync(path.join(root, 'apps/backend/catering-business-server/modules/inventory/src/main/java/com/catering/v2s/inventory/application/InventoryOwnerService.java'), 'utf8');
@@ -115,8 +116,8 @@ test('dictionary and production-tag codes are reusable only after VOIDED while l
   assert.match(dictionaryTagReleaseMigration, /CREATE UNIQUE INDEX ux_production_tag_active_code[\s\S]*WHERE status <> 'VOIDED';/);
   assert.match(catalogCopyServiceSql, /CATALOG_COPY_SERVICE_OPEN_PAREN_ON_CONFLICT\s*=\s*"[^\n]*ON CONFLICT "/);
   assert.match(catalogCopyServiceSql, /CATALOG_COPY_SERVICE_OPEN_PAREN_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE\s*=\s*"[^\n]*WHERE status <> 'VOIDED' DO "/);
-  assert.match(catalogCopyServiceSql, /CATALOG_COPY_SERVICE_CONTINUATION\s*=\s*"NOTHING"/);
-  assert.match(catalogCopyPersistence, /OPEN_PAREN_ON_CONFLICT[\s\S]*OPEN_PAREN_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE[\s\S]*CONTINUATION/);
+  assert.match(catalogCopyServiceSql, /CATALOG_COPY_SERVICE_ON_CONFLICT_NOTHING\s*=\s*"NOTHING"/);
+  assert.match(catalogCopyPersistence, /OPEN_PAREN_ON_CONFLICT[\s\S]*OPEN_PAREN_DATA_NODE_REF_BRAND_REF_DICTIONARY_KIND_CODE[\s\S]*ON_CONFLICT_NOTHING/);
   const dictionaryListing = catalogDictionaryService.match(/private DictionaryListing loadDictionaryListing\([\s\S]*?\n    private Set<UUID> relationalSkuDictionaryReferences/)?.[0] ?? '';
   assert.notEqual(dictionaryListing, '');
   assert.doesNotMatch(dictionaryListing, /status\s*<>\s*'VOIDED'/);
@@ -127,10 +128,91 @@ test('dictionary and production-tag codes are reusable only after VOIDED while l
 
 test('only the stock BOM partial index without a matching production predicate is retired', () => {
   assert.match(deadIndexMigration, /DROP INDEX inventory\.ix_stock_bom_option_value;/);
-  assert.match(normalizedProductionTagServiceSql, /FROM fulfillment_production\.production_tag_definition WHERE data_node_ref=\? AND brand_ref=\?/);
+  assert.match(normalizedProductionTagServiceSql, /FROM catalog\.production_tag_definition WHERE data_node_ref=\? AND brand_ref=\?/);
   assert.match(normalizedProductionTagServiceSql, /ORDER BY code NULLS LAST,\s*tag_ref LIMIT \?/);
   assert.match(normalizedPlatformAuthenticationServiceSql, /FROM platform_iam\.platform_password_recovery_flow WHERE token_hash=\? FOR UPDATE/);
   assert.doesNotMatch(inventoryOwner, /stock_bom[\s\S]{0,240}option_value_code\s+IS\s+NOT\s+NULL/);
+});
+
+test('production-tag cutover creates the catalog-owned final shape without a data migration', () => {
+  assert.match(productionTagCutoverMigration, /CREATE TABLE catalog\.production_tag_definition/);
+  assert.match(productionTagCutoverMigration, /CREATE UNIQUE INDEX ux_catalog_production_tag_active_code[\s\S]*WHERE status <> 'VOIDED'/);
+  assert.match(productionTagCutoverMigration, /CREATE TABLE catalog\.production_tag_command_receipt/);
+  assert.match(productionTagCutoverMigration, /response_json JSONB/);
+  assert.match(productionTagCutoverMigration, /DROP SCHEMA IF EXISTS fulfillment_production CASCADE/);
+  assert.doesNotMatch(productionTagCutoverMigration, /\b(?:INSERT INTO|UPDATE|DELETE FROM|SELECT .* INTO)\b/i);
+  assert.doesNotMatch(productionTagCutoverMigration, /tag_kind/);
+});
+
+const legacyOwnerVariants = [
+  ['fulfillment', 'production'].join('-'),
+  ['fulfillment', 'production'].join('_'),
+  ['fulfillment', 'production'].join('_').toUpperCase(),
+  ['fulfillment', 'production'].join(''),
+  ['Fulfillment', 'Production'].join(''),
+];
+const legacyOwnerAllowedPaths = new Set([
+  'apps/backend/catering-business-server/src/test/java/database/MasterDataLifecycleMigrationIntegrationTest.java',
+  'apps/backend/catering-business-server/src/main/resources/db/migration/V20260921_000000_000__catalog_production_tag_owner_cutover.sql',
+  'scripts/test/catalog-p3-model-migration.test.mjs',
+]);
+const historicalOwnerMigrationPrefixes = new Set([
+  'V20260806_',
+  'V20260807_',
+  'V20260808_',
+  'V20260816_',
+  'V20260825_',
+  'V20260919_',
+]);
+
+function activeOwnerScanFiles(directory, files = []) {
+  for (const entry of readdirSync(directory, {withFileTypes: true})) {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (new Set(['build', 'dist', 'node_modules', '.runtime', '.git']).has(entry.name)) continue;
+      activeOwnerScanFiles(absolute, files);
+    } else if (entry.isFile()) {
+      const relative = path.relative(root, absolute).split(path.sep).join('/');
+      if (relative.includes('/src/main/resources/db/migration/')) {
+        const basename = path.basename(relative);
+        if ([...historicalOwnerMigrationPrefixes].some(prefix => basename.startsWith(prefix))) continue;
+      }
+      files.push({path: relative, text: readFileSync(absolute, 'utf8')});
+    }
+  }
+  return files;
+}
+
+function activeOwnerFindings(files) {
+  return files.flatMap(({path: filePath, text}) =>
+    legacyOwnerVariants.flatMap(variant => {
+      const matches = [...text.matchAll(new RegExp(variant, 'g'))];
+      return matches.map(match => ({path: filePath, variant, offset: match.index}));
+    }),
+  );
+}
+
+function assertLegacyOwnerClosure(files) {
+  const findings = activeOwnerFindings(files);
+  const unexpected = findings.filter(({path: filePath}) => !legacyOwnerAllowedPaths.has(filePath));
+  assert.deepEqual(unexpected, [], `active legacy owner variants found: ${JSON.stringify(unexpected)}`);
+  assert.deepEqual(
+    [...new Set(findings.map(({path: filePath}) => filePath))].sort(),
+    [...legacyOwnerAllowedPaths].sort(),
+  );
+}
+
+test('legacy production owner closure scans all five spellings and its red mutation', () => {
+  const roots = ['apps', 'contracts', 'scripts', 'tools'].map(relative => path.join(root, relative));
+  const files = roots.flatMap(directory => activeOwnerScanFiles(directory));
+  files.push({path: 'settings.gradle.kts', text: readFileSync(path.join(root, 'settings.gradle.kts'), 'utf8')});
+  assertLegacyOwnerClosure(files);
+
+  const redMutation = [
+    ...files,
+    {path: 'apps/backend/catering-business-server/modules/catalog/src/main/java/LegacyOwnerMutation.java', text: `owner = "${legacyOwnerVariants[2]}";`},
+  ];
+  assert.throws(() => assertLegacyOwnerClosure(redMutation), /active legacy owner variants found/);
 });
 
 test('P3 keeps only unordered item-owned sets in the shared reference table', () => {

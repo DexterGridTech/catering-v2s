@@ -1,11 +1,7 @@
 import {Button, Drawer, Form, Input, Select, Space} from 'antd';
 import type {FormInstance} from 'antd';
 import {adminDrawerSurfaceProps, testId} from '@catering-v2s/admin-ui-foundation';
-import type {
-  AreaEditor,
-  AreaFormValues,
-  StoreServicePointDrawerLifecycle,
-} from '../model/storeServicePointModel';
+import type {AreaEditor, AreaFormValues, StoreServicePointDrawerLifecycle} from '../model/storeServicePointModel';
 import {storeServicePointAreaTypeLabels} from '../model/storeServicePointModel';
 import {storeServicePointTestIds} from '../storeServicePointTestIds';
 
@@ -61,18 +57,10 @@ export function AreaDrawer({
         onFinish={onFinish}
         onValuesChange={onValuesChange}
       >
-        <Form.Item
-          name="name"
-          label="区域名称"
-          rules={[{required: true, whitespace: true, message: '请输入区域名称'}]}
-        >
+        <Form.Item name="name" label="区域名称" rules={[{required: true, whitespace: true, message: '请输入区域名称'}]}>
           <Input maxLength={120} {...testId(storeServicePointTestIds.areaName)} />
         </Form.Item>
-        <Form.Item
-          name="code"
-          label="区域编码"
-          rules={[{required: true, whitespace: true, message: '请输入区域编码'}]}
-        >
+        <Form.Item name="code" label="区域编码" rules={[{required: true, whitespace: true, message: '请输入区域编码'}]}>
           <Input maxLength={64} {...testId(storeServicePointTestIds.areaCode)} />
         </Form.Item>
         <Form.Item name="areaType" label="区域类型" rules={[{required: true, message: '请选择区域类型'}]}>

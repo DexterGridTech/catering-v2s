@@ -62,13 +62,18 @@ test('business-channel seed resolves only the declared source fixture identities
   ]);
   assert.equal(validated.dataset.entities.enablements.length, 6);
   assert.equal(validated.templatesByCode.size, 10);
-  assert.equal(validated.dataset.entities.channels.length, 9);
+  assert.equal(validated.dataset.entities.channels.length, 10);
   assert.deepEqual(
     validated.dataset.entities.channels
       .filter((entry) => entry.ownerNodeType === 'STORE' && entry.accessKind === 'INTERNAL' && entry.status === 'ENABLED')
       .map((entry) => entry.channelCode)
       .sort(),
-    ['CHANNEL-STORE-INTERNAL-DINE-IN-POS', 'CHANNEL-STORE-INTERNAL-TAKEAWAY', 'CHANNEL-STORE-INTERNAL-TAKEAWAY-B'],
+    [
+      'CHANNEL-STORE-INTERNAL-DINE-IN-POS',
+      'CHANNEL-STORE-INTERNAL-DINE-IN-QR',
+      'CHANNEL-STORE-INTERNAL-TAKEAWAY',
+      'CHANNEL-STORE-INTERNAL-TAKEAWAY-B',
+    ],
   );
   assert.deepEqual(
     validated.templatesByCode.get('TEMPLATE-STORE-INTERNAL-TAKEAWAY'),

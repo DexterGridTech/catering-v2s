@@ -1,4 +1,4 @@
-import {Alert, Button, Card, Space, Tag} from 'antd';
+import {Alert, Button, Card, Space} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
 import {
   adminListState,
@@ -34,7 +34,6 @@ import {BusinessChannelTemplateDetailDrawer} from './BusinessChannelTemplateDeta
 import {BusinessChannelTemplateDrawer} from './BusinessChannelTemplateDrawer';
 import {
   accessKindLabels,
-  lifecycleStatusLabels,
   operatorKindLabels,
   orderKindLabels,
   businessChannelTemplateStoreVisibilitySummary,

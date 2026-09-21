@@ -15,7 +15,6 @@ dependencies {
     implementation(project(":apps:backend:catering-business-server:modules:asset"))
     implementation(project(":apps:backend:catering-business-server:modules:inventory"))
     implementation(project(":apps:backend:catering-business-server:modules:organization"))
-    implementation(project(":apps:backend:catering-business-server:modules:fulfillment-production"))
     implementation(project(":apps:backend:catering-business-server:modules:workspace-iam"))
     implementation("org.springframework.boot:spring-boot-starter-jdbc:4.1.0")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.19.1")

@@ -12,7 +12,7 @@
     "components/inventory/inventory-common.schemas.json",
     "components/inventory/inventory-workbench.schemas.json",
     "components/inventory/inventory-command.schemas.json",
-    "components/fulfillment-production/production-tag.schemas.json",
+    "components/catalog/production-tag.schemas.json",
     "paths/operations-admin/catalog-workbench.paths.json",
     "paths/operations-admin/catalog-item-management.paths.json",
     "paths/operations-admin/catalog-dictionary-management.paths.json",
@@ -115,25 +115,25 @@
     {
       "operationId": "getOperationsProductionTags",
       "face": "operations-admin",
-      "ownerModule": "fulfillment-production",
+      "ownerModule": "catalog",
       "shard": "paths/operations-admin/production-tag-management.paths.json"
     },
     {
       "operationId": "createOperationsProductionTag",
       "face": "operations-admin",
-      "ownerModule": "fulfillment-production",
+      "ownerModule": "catalog",
       "shard": "paths/operations-admin/production-tag-management.paths.json"
     },
     {
       "operationId": "updateOperationsProductionTag",
       "face": "operations-admin",
-      "ownerModule": "fulfillment-production",
+      "ownerModule": "catalog",
       "shard": "paths/operations-admin/production-tag-management.paths.json"
     },
     {
       "operationId": "transitionOperationsProductionTagStatus",
       "face": "operations-admin",
-      "ownerModule": "fulfillment-production",
+      "ownerModule": "catalog",
       "shard": "paths/operations-admin/production-tag-management.paths.json"
     },
     {
@@ -371,5 +371,5 @@
       "shard": "paths/operations-admin/catalog-item-management.paths.json"
     }
   ],
-  "placementDigest": "c294e5a458c4fc930cf32eeb46c8f6fe2db8d04bcc9c20e7f856fe37568fea9e"
+  "placementDigest": "454f891df771d843239e7c16f73069c115884d5830cd815605186c91e87c3108"
 }
