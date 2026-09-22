@@ -4,7 +4,9 @@ import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@cat
 import {type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render'
 import {
   createConsoleAssembly,
+  createStartupReadyPayload,
   createSurfaceForDisplayIndex as createSharedSurfaceForDisplayIndex,
+  selectStateSyncSlices,
   type ConsoleAssembly,
 } from '@catering-v2s/ui-base-console-assembly'
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth'
@@ -18,7 +20,6 @@ import {parts as wallpaperConsoleParts} from '../parts/parts'
 import {
   getSurfaceDeclarations,
   terminalSurfaces,
-  type SurfaceCreationInput,
   type SurfaceForm,
   type TerminalSurfaces,
 } from '../application/terminalSurfaces'
@@ -78,12 +79,7 @@ export async function createSampleWallpaperConsoleAssembly(
     variables: [...sampleStaffAuthAssembly.variables],
     surfaceHostSourcesByDisplayIndex: input.surfaceHostSourcesByDisplayIndex,
     startupReadyCommand,
-    createStartupReadyPayload: ({surfaceKey, displayIndex, readyPartKey, contentFailure}) => ({
-      surfaceKey,
-      displayIndex,
-      readyPartKey,
-      contentFailure,
-    }),
+    createStartupReadyPayload,
     resolveCommandTarget: resolveTopologyCommandTarget,
     createTopologyAdminCapability,
     createApplicationModules: ({uiStateModule}) => [
@@ -94,13 +90,7 @@ export async function createSampleWallpaperConsoleAssembly(
         surfaceForm,
         identityClient: createTopologyIdentityClient(),
         peerChannel: input.topologyPeerChannel,
-        stateSyncSlices: (uiStateModule.stateSlices ?? []).reduce<Array<{
-          readonly name: string
-          readonly syncIntent: 'master-to-slave' | 'slave-to-master'
-        }>>((result, slice) => {
-          if (slice.syncIntent !== 'isolated') result.push({name: slice.name, syncIntent: slice.syncIntent})
-          return result
-        }, []),
+        stateSyncSlices: selectStateSyncSlices(uiStateModule.stateSlices ?? []),
       }),
       createSampleWallpaperConsoleModule(),
       createSampleStaffSessionModule(),

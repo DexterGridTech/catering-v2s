@@ -88,7 +88,7 @@ export const baseTokens = Object.freeze({
   // read and did not match the high-fidelity IA.
   adminSurfaceMapLogicHeight: 'absolute right-2 top-1/2 -translate-y-1/2 text-right text-xs leading-[18px] text-admin-content-muted whitespace-nowrap',
   adminSurfaceMapPhysicalWidth: 'absolute top-0 self-center text-[10px] leading-4 text-admin-content-muted whitespace-nowrap',
-  adminSurfaceMapPhysicalHeight: 'absolute -right-1 top-1/2 -translate-y-1/2 text-[10px] leading-4 text-admin-content-muted whitespace-nowrap',
+  adminSurfaceMapPhysicalHeight: 'absolute left-full top-1/2 -translate-y-1/2 text-[10px] leading-4 text-admin-content-muted whitespace-nowrap',
   adminSurfaceMapLabel: 'text-sm leading-5 font-bold text-admin-content-foreground',
   adminSurfaceMapRole: 'text-xs leading-[18px] font-medium text-admin-content-muted',
   adminSurfaceMapInside: 'text-sm leading-5 text-admin-content-foreground',

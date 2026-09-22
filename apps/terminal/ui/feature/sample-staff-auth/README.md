@@ -22,7 +22,9 @@ resolved 的 `SYSTEM`/timeout/partial failure 与 Promise rejection 统一观察
 
 ## 结构
 
-- `src/components`：登录 screen、业务失败层和系统失败层的呈现部件。
+- `src/components/laptop` 与 `src/components/mobile`：登录 screen、业务失败层和系统失败层
+  的两套机型 renderer；`src/components/StaffLoginPasscodeInput.tsx` 是真正共用的输入部件。
+- `src/hooks`：按职责拆分的共享认证行为；`src/types` 与 `src/foundations` 保存纯类型和提示映射。
 - `src/features/commands`：feature-owned UI 意图命令；`src/features/actors`：登录与失败观察 actor。
 - `src/features/variables`：记住工号等 UI variable 声明。
 - `src/parts/parts.ts`：part、layer identity 与呈现声明。

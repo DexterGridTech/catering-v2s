@@ -23,12 +23,13 @@ import type {RenderProviderProps} from '@catering-v2s/ui-base-render'
 import {createUiCatalog, createUiStateModule, selectLayers, selectScreen} from '@catering-v2s/kernel-base-ui-state'
 import {sampleMemberDeskAssembly} from '../src/index'
 import {createSampleMemberDeskModule} from '../src/application/module'
-import {CustomerMember} from '../src/components/CustomerMember'
-import {DeskSystemNotice} from '../src/components/DeskSystemNotice'
-import {MemberList} from '../src/components/MemberList'
-import {MemberForm} from '../src/components/MemberForm'
-import {RegistryNotice} from '../src/components/RegistryNotice'
-import {WaitingConfirm} from '../src/components/WaitingConfirm'
+import {CustomerMember} from '../src/components/laptop/CustomerMember'
+import {DeskSystemNotice} from '../src/components/laptop/DeskSystemNotice'
+import {DeskSystemNotice as MobileDeskSystemNotice} from '../src/components/mobile/DeskSystemNotice'
+import {MemberList} from '../src/components/laptop/MemberList'
+import {MemberForm} from '../src/components/laptop/MemberForm'
+import {RegistryNotice} from '../src/components/laptop/RegistryNotice'
+import {WaitingConfirm} from '../src/components/laptop/WaitingConfirm'
 import {
   confirmMemberCommand,
   submitMemberCommand,
@@ -201,8 +202,9 @@ const runningActor = (): object => ({
 })
 
 describe('sample member desk UI feature', () => {
-  it('exports one assembly description with nine exact parts and no transient variables', () => {
-    expect(sampleMemberDeskAssembly.parts.map(part => part.catalogEntry.partKey)).toEqual([
+  it('exports laptop/mobile renderer siblings for nine exact parts and no transient variables', () => {
+    const partKeys = sampleMemberDeskAssembly.parts.map(part => part.catalogEntry.partKey)
+    expect(new Set(partKeys)).toEqual(new Set([
       'sample.desk.member-list',
       'sample.desk.member-form',
       'sample.desk.waiting-confirm',
@@ -212,12 +214,18 @@ describe('sample member desk UI feature', () => {
       'sample.desk.system-notice',
       'sample.desk.customer-welcome',
       'sample.desk.customer-member',
-    ])
+    ]))
+    expect(partKeys).toHaveLength(18)
+    for (const partKey of new Set(partKeys)) {
+      expect(sampleMemberDeskAssembly.parts.filter(part => part.catalogEntry.partKey === partKey).map(part => part.catalogEntry.surfaceForm)).toEqual([
+        ['laptop'], ['mobile'],
+      ])
+    }
     expect(sampleMemberDeskAssembly).not.toHaveProperty('variables')
   })
 
   it('uses the topology secondary fact for member navigation on a paired single-screen master', async () => {
-    const catalog = createUiCatalog(sampleMemberDeskAssembly.parts.map(part => part.catalogEntry))
+    const catalog = createUiCatalog(sampleMemberDeskAssembly.parts.filter(part => part.catalogEntry.surfaceForm.includes('laptop')).map(part => part.catalogEntry))
     const runtime = createTestRuntime([
       createDisplayContextModule(),
       createTransportModule(),
@@ -257,7 +265,7 @@ describe('sample member desk UI feature', () => {
   })
 
   it('keeps the customer surface on a paired single-screen slave before staff login', async () => {
-    const catalog = createUiCatalog(sampleMemberDeskAssembly.parts.map(part => part.catalogEntry))
+    const catalog = createUiCatalog(sampleMemberDeskAssembly.parts.filter(part => part.catalogEntry.surfaceForm.includes('laptop')).map(part => part.catalogEntry))
     const runtime = createTestRuntime([
       createDisplayContextModule(),
       createTransportModule(),
@@ -296,7 +304,7 @@ describe('sample member desk UI feature', () => {
   })
 
   it('reconciles the customer surface after a recovered members state transfer', async () => {
-    const catalog = createUiCatalog(sampleMemberDeskAssembly.parts.map(part => part.catalogEntry))
+    const catalog = createUiCatalog(sampleMemberDeskAssembly.parts.filter(part => part.catalogEntry.surfaceForm.includes('laptop')).map(part => part.catalogEntry))
     const runtime = createTestRuntime([
       createDisplayContextModule(),
       createTransportModule(),
@@ -641,24 +649,34 @@ describe('sample member desk UI feature', () => {
     }
   })
 
-  it('renders an allowlisted system operation with fixed copy only', () => {
-    const {logger} = createLogger()
-    const renderer = mount(createElement(
-      RenderProvider,
-      {
-        stateSource: createStateSource(memberRoot({name: 'Alice', phone: '010-1234-5678'})),
-        uiCatalog: createUiCatalog([]),
-        rendererCatalog: createRendererCatalog([]),
-        logger,
-        dispatchCommand: (async () => completedResult()) as RenderProviderProps['dispatchCommand'],
-        selectUiVariable: (_root, declaration) => declaration.defaultValue,
-      },
-      createElement(DeskSystemNotice, {operation: 'confirm-member'}),
-    ))
+  it('renders both system-notice profiles with fixed copy and shared semantics', () => {
+    for (const [Component, isMobile] of [[DeskSystemNotice, false], [MobileDeskSystemNotice, true]] as const) {
+      const {logger} = createLogger()
+      const renderer = mount(createElement(
+        RenderProvider,
+        {
+          stateSource: createStateSource(memberRoot({name: 'Alice', phone: '010-1234-5678'})),
+          uiCatalog: createUiCatalog([]),
+          rendererCatalog: createRendererCatalog([]),
+          logger,
+          dispatchCommand: (async () => completedResult()) as RenderProviderProps['dispatchCommand'],
+          selectUiVariable: (_root, declaration) => declaration.defaultValue,
+        },
+        createElement(Component, {operation: 'confirm-member'}),
+      ))
 
-    expectTextValue(renderer, 'sample.desk.system-notice:message', '操作没有完成，请重试')
-    expectTextAbsent(renderer, 'ledger write failed')
-    act(() => { renderer.unmount() })
+      expectTextValue(renderer, 'sample.desk.system-notice:message', '操作没有完成，请重试')
+      expectTextAbsent(renderer, 'ledger write failed')
+      expect(renderer.root.findAllByProps({testID: 'sample.desk.system-notice'}).map(node => node.props.style))
+        .toContainEqual(isMobile ? {flex: 1, minHeight: 0, padding: 16, alignItems: 'stretch'} : {flex: 1, minHeight: 0, padding: 24})
+      expect(renderer.root.findAllByProps({testID: 'sample.desk.system-notice:card'}).map(node => node.props.style))
+        .toContainEqual(isMobile ? {width: '100%'} : {width: '100%', maxWidth: 720})
+      expect(renderer.root.findAllByProps({testID: 'sample.desk.system-notice:actions'}).map(node => node.props.className))
+        .toContain(isMobile ? 'w-full items-center gap-3' : 'flex-row flex-wrap items-start gap-3')
+      expect(renderer.root.findAllByProps({testID: 'sample.desk.system-notice:dismiss'}).map(node => node.props.style))
+        .toContainEqual(isMobile ? {width: '100%'} : undefined)
+      act(() => { renderer.unmount() })
+    }
   })
 
   it('passes the approved member-list row testID into the feature-owned MemberRow', () => {
@@ -895,7 +913,7 @@ describe('sample member desk UI feature', () => {
   })
 
   it('treats a repeated system failure observation as an idempotent existing notice', async () => {
-    const catalog = createUiCatalog(sampleMemberDeskAssembly.parts.map(part => part.catalogEntry))
+    const catalog = createUiCatalog(sampleMemberDeskAssembly.parts.filter(part => part.catalogEntry.surfaceForm.includes('mobile')).map(part => part.catalogEntry))
     const loggerEvents: LogEvent[] = []
     const runtime = createTestRuntime([
       createDisplayContextModule(),

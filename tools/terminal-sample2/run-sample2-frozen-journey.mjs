@@ -3,6 +3,7 @@ import path from 'node:path'
 import {spawnSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {fileURLToPath} from 'node:url'
+import {wallpaperIds, wallpaperLabels} from './wallpaperCatalog.mjs'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const packageName = 'com.catering.v2s.terminal.samplewallpaper'
@@ -30,7 +31,6 @@ const serial = args.get('serial') ?? 'emulator-5556'
 const shape = args.get('shape') ?? 'mobile'
 if (!['mobile', 'dual'].includes(shape)) throw new Error(`invalid shape: ${shape}`)
 const outputDirectory = path.resolve(args.get('output') ?? defaultOutput)
-const wallpaperLabels = Object.freeze({none: '无壁纸', w1: '山景', w2: '湖景', w3: '海滩'})
 const wallpaperIdForLabel = Object.freeze(Object.fromEntries(
   Object.entries(wallpaperLabels).map(([id, label]) => [label, id]),
 ))
@@ -156,9 +156,9 @@ const nodeForId = (xml, resourceId) => {
 
 const parseLogicalDisplays = commandText => commandText
   .split('\n')
-  .filter(line => /^Display id \d+:/.test(line))
+  .filter(line => /^\s*Display id \d+:/.test(line))
   .map(line => {
-    const normalized = line.replace(/\\"/g, '"')
+    const normalized = line.trim().replace(/\\"/g, '"')
     const id = Number(normalized.match(/^Display id (\d+):/)?.[1])
     const name = normalized.match(/DisplayInfo\{"([^"]+)"/)?.[1] ?? null
     const real = normalized.match(/real (\d+) x (\d+)/)
@@ -204,12 +204,17 @@ const surfaceInventory = () => {
     .filter(Boolean)
   const primaryDisplays = blocks
     .filter(block => /^Display \S+/.test(block))
-    .map(block => ({
-      id: block.match(/^Display (\S+)/)?.[1] ?? '',
-      name: block.match(/^\s*name="([^"]+)"/m)?.[1] ?? null,
-      width: Number(block.match(/activeMode=.*resolution=(\d+)x(\d+)/)?.[1] ?? 0),
-      height: Number(block.match(/activeMode=.*resolution=(\d+)x(\d+)/)?.[2] ?? 0),
-    }))
+    .map(block => {
+      const resolution = block.match(/(?:activeMode|displayModes)=[\s\S]*?resolution=(\d+)x(\d+)/)
+      return {
+        id: block.match(/^Display (\S+)/)?.[1] ?? '',
+        name: block.match(/^\s*name="([^"]+)"/m)?.[1]
+          ?? block.match(/^Display \S+ \([^,]+, primary, "([^"]+)"\)/)?.[1]
+          ?? null,
+        width: resolution === null ? 0 : Number(resolution[1]),
+        height: resolution === null ? 0 : Number(resolution[2]),
+      }
+    })
   const virtualDisplays = blocks
     .filter(block => /^Virtual Display \S+/.test(block))
     .map(block => {
@@ -411,7 +416,7 @@ const readState = async (name, inventory, surfaces, directory, record) => {
     throw new Error(`${name}: primary partKey missing: ${expectation.primaryPartKey}`)
   }
   assertTexts(xml, expectation.primaryTexts, `${name} primary`)
-  let selectedOptions = ['none', 'w1', 'w2', 'w3']
+  let selectedOptions = wallpaperIds
     .filter(id => nodeForId(xml, `sample.wallpaper.picker:options:${id}`)?.selected)
   if (expectation.selectedWallpaperId !== undefined) {
     if (selectedOptions.length !== 1 || selectedOptions[0] !== expectation.selectedWallpaperId) {
@@ -422,7 +427,7 @@ const readState = async (name, inventory, surfaces, directory, record) => {
         await swipeToTop()
         xml = await readUi()
         selectionXml = xml
-        selectedOptions = ['none', 'w1', 'w2', 'w3']
+        selectedOptions = wallpaperIds
           .filter(id => nodeForId(xml, `sample.wallpaper.picker:options:${id}`)?.selected)
       }
       if (selectedOptions.length !== 1 || selectedOptions[0] !== expectation.selectedWallpaperId) {
@@ -439,7 +444,7 @@ const readState = async (name, inventory, surfaces, directory, record) => {
     xml = await readUi()
     confirmationXml = xml
     confirmNode = nodeForId(xml, 'sample.wallpaper.picker:confirm')
-    const bottomSelectedOptions = ['none', 'w1', 'w2', 'w3']
+    const bottomSelectedOptions = wallpaperIds
       .filter(id => nodeForId(xml, `sample.wallpaper.picker:options:${id}`)?.selected)
     if (selectedOptions.length === 0 && bottomSelectedOptions.length === 1) selectedOptions = bottomSelectedOptions
   }
@@ -537,7 +542,7 @@ const readState = async (name, inventory, surfaces, directory, record) => {
       ...selectionXml.matchAll(/resource-id="([^"]+)"/g),
       ...confirmationXml.matchAll(/resource-id="([^"]+)"/g),
     ].map(match => match[1]))],
-    selected: ['none', 'w1', 'w2', 'w3'].map(id => ({
+    selected: wallpaperIds.map(id => ({
       id,
       node: nodeForId(selectionXml, `sample.wallpaper.picker:options:${id}`)
         ?? nodeForId(confirmationXml, `sample.wallpaper.picker:options:${id}`),
@@ -721,7 +726,7 @@ const execute = async () => {
     await readState('picker-after-login', display, surfaces, outputDirectory, record)
     record.lastKnownGood = 'picker-after-login'
 
-    for (const id of ['w1', 'w2']) {
+    for (const id of wallpaperIds.filter(id => id !== 'none').slice(0, 2)) {
       await swipeToTop()
       await tapResource(`sample.wallpaper.picker:options:${id}`)
       await waitForNode(`sample.wallpaper.picker:options:${id}`, node => node.selected)

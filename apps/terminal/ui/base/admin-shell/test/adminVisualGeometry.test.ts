@@ -180,7 +180,7 @@ describe('admin visual contract', () => {
     expect(baseTokens.adminSurfaceMapLogicHeight).toContain('right-2 top-1/2')
     expect(baseTokens.adminSurfaceMapPhysicalWidth).toContain('top-0')
     expect(baseTokens.adminSurfaceMapPhysicalHeight).not.toContain('rotate-90')
-    expect(baseTokens.adminSurfaceMapPhysicalHeight).toContain('-right-1 top-1/2')
+    expect(baseTokens.adminSurfaceMapPhysicalHeight).toContain('left-full top-1/2')
     expect(baseTokens.adminSurfaceMapWrap).toContain('pb-12')
   })
 

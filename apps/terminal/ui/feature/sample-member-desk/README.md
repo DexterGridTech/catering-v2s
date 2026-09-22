@@ -26,7 +26,10 @@ display-context 物理屏 helper 仍保持原语义。runtime 组装与平台启
 
 ## 结构
 
-- `src/components`：会员列表、表单、确认层和系统失败提示等业务部件。
+- `src/components/laptop` 与 `src/components/mobile`：会员列表、表单、确认层和系统失败提示
+  的两套机型 renderer；`src/components/MemberRow.tsx` 是真正共用的业务行组件。
+- `src/hooks`：按职责拆分的共享业务 hook；双端 renderer 消费同一 hook，不在 hook 中返回 JSX。
+- `src/types` 与 `src/foundations`：共享 props/type 与登记提示等纯业务语义。
 - `src/features`：本 feature 的 UI 意图命令与 actor；业务事实仍调用 kernel owner。
 - `src/parts/parts.ts`：本 feature 的 part、layer identity 与呈现声明。
 - `src/assembly/assembly.ts`：feature assembly 与运行期模块接线；`src/application/module.ts`：模块工厂。

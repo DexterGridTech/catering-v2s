@@ -6,12 +6,7 @@ import {
 } from '@catering-v2s/kernel-feature-sample-wallpaper'
 import {assetsById} from '../foundations/assets'
 
-const wallpaperLabels: Readonly<Record<WallpaperId, string>> = Object.freeze({
-  none: '无壁纸',
-  w1: '山景',
-  w2: '湖景',
-  w3: '海滩',
-})
+import {wallpaperLabels} from '../foundations/wallpaperCatalog'
 
 export const WallpaperBackground = () => {
   const wallpaperId = useUiStateSelector(selectWallpaperId)

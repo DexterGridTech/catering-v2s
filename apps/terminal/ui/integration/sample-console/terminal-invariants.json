@@ -24,6 +24,7 @@
     "dependencyModuleNames",
     "devDependencyModuleNames",
     "moduleKind", "moduleName",
+    "getSurfaceDeclarations", "readTerminalSurfaces", "surfaceFormForOrientation",
     "terminalSurfaces"
   ]
 }

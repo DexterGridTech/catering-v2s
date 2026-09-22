@@ -34,6 +34,22 @@ type DefinedPart<TProps extends RenderComponentProps> = Readonly<{
   readonly rendererBinding: RendererBinding<TProps>
 }>
 
+type DefinePartPairInput<TProps extends RenderComponentProps> = Readonly<
+  Omit<DefinePartCatalogFields, 'rendererKey' | 'surfaceForm'> & {
+    readonly components: Readonly<{
+      readonly laptop: ComponentType<TProps>
+      readonly mobile: ComponentType<TProps>
+    }>
+    readonly layerTier?: LayerTier
+    readonly layerGuard?: LayerGuard
+  }
+>
+
+type DefinedPartPair<TProps extends RenderComponentProps> = Readonly<{
+  readonly laptop: DefinedPart<TProps>
+  readonly mobile: DefinedPart<TProps>
+}>
+
 const hasOwn = (value: object, property: PropertyKey): boolean =>
   Object.prototype.hasOwnProperty.call(value, property)
 
@@ -86,4 +102,24 @@ export const definePart = <TProps extends RenderComponentProps>(
     layerGuard,
   })
   return Object.freeze({catalogEntry, rendererBinding})
+}
+
+export const definePartPair = <TProps extends RenderComponentProps>(
+  input: DefinePartPairInput<TProps>,
+): DefinedPartPair<TProps> => {
+  const {components, ...catalogInput} = input
+  const defineSurfacePart = (
+    surfaceForm: 'laptop' | 'mobile',
+    component: ComponentType<TProps>,
+  ): DefinedPart<TProps> => definePart({
+    ...catalogInput,
+    component,
+    rendererKey: `${input.partKey}.${surfaceForm}`,
+    surfaceForm: [surfaceForm] as const,
+  })
+
+  return Object.freeze({
+    laptop: defineSurfacePart('laptop', components.laptop),
+    mobile: defineSurfacePart('mobile', components.mobile),
+  })
 }

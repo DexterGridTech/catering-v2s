@@ -194,12 +194,17 @@ const surfaceInventory = () => {
     .filter(Boolean)
   const primaryDisplays = blocks
     .filter(block => /^Display \S+/.test(block))
-    .map(block => ({
-      id: block.match(/^Display (\S+)/)?.[1] ?? '',
-      name: block.match(/^\s*name="([^"]+)"/m)?.[1] ?? null,
-      width: Number(block.match(/activeMode=.*resolution=(\d+)x(\d+)/)?.[1] ?? 0),
-      height: Number(block.match(/activeMode=.*resolution=(\d+)x(\d+)/)?.[2] ?? 0),
-    }))
+    .map(block => {
+      const resolution = block.match(/(?:activeMode|displayModes)=[\s\S]*?resolution=(\d+)x(\d+)/)
+      return {
+        id: block.match(/^Display (\S+)/)?.[1] ?? '',
+        name: block.match(/^\s*name="([^"]+)"/m)?.[1]
+          ?? block.match(/^Display \S+ \([^,]+, primary, "([^"]+)"\)/)?.[1]
+          ?? null,
+        width: resolution === null ? 0 : Number(resolution[1]),
+        height: resolution === null ? 0 : Number(resolution[2]),
+      }
+    })
   const virtualDisplays = blocks
     .filter(block => /^Virtual Display \S+/.test(block))
     .map(block => {
@@ -296,9 +301,9 @@ const assertStablePairing = (pairing, label) => {
 
 const parseLogicalDisplays = commandText => commandText
   .split('\n')
-  .filter(line => /^Display id \d+:/.test(line))
+  .filter(line => /^\s*Display id \d+:/.test(line))
   .map(line => {
-    const normalized = line.replace(/\\"/g, '"')
+    const normalized = line.trim().replace(/\\"/g, '"')
     const id = Number(normalized.match(/^Display id (\d+):/)?.[1])
     const name = normalized.match(/DisplayInfo\{"([^"]+)"/)?.[1] ?? null
     const real = normalized.match(/real (\d+) x (\d+)/)

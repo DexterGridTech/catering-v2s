@@ -1,80 +1,30 @@
 import {describe, expect, it} from 'vitest'
-import {readTerminalSurfaces} from '../src/application/terminalSurfaces'
+import {
+  getSurfaceDeclarations,
+  readTerminalSurfaces,
+  surfaceFormForOrientation,
+  terminalSurfaces,
+} from '../src'
 
-const landscape = {
-  PRIMARY: {width: 1280, height: 800},
-  SECONDARY: {width: 1280, height: 800},
-} as const
-
-describe('terminal surface declaration parser', () => {
-  it('reads landscape and an optional PRIMARY-only portrait declaration', () => {
-    expect(readTerminalSurfaces({
+describe('sample-console terminal surface adapter', () => {
+  it('exposes the package defaults without duplicating the shared parser matrix', () => {
+    expect(terminalSurfaces).toEqual({
       orientations: {
-        landscape,
-        portrait: {
-          PRIMARY: {width: 360, height: 640},
+        landscape: {
+          PRIMARY: {width: 1280, height: 800},
+          SECONDARY: {width: 1280, height: 800},
         },
-      },
-    })).toEqual({
-      orientations: {
-        landscape,
-        portrait: {
-          PRIMARY: {width: 360, height: 640},
-        },
+        portrait: {PRIMARY: {width: 360, height: 640}},
       },
     })
+    expect(getSurfaceDeclarations(terminalSurfaces, 'laptop')).toBe(terminalSurfaces.orientations.landscape)
+    expect(getSurfaceDeclarations(terminalSurfaces, 'mobile')).toBe(terminalSurfaces.orientations.portrait)
+    expect(surfaceFormForOrientation('landscape')).toBe('laptop')
+    expect(surfaceFormForOrientation('portrait')).toBe('mobile')
   })
 
-  it('rejects a portrait SECONDARY declaration', () => {
-    expect(() => readTerminalSurfaces({
-      orientations: {
-        landscape,
-        portrait: {
-          PRIMARY: {width: 360, height: 640},
-          SECONDARY: {width: 360, height: 640},
-        },
-      },
-    })).toThrow(/portrait.*SECONDARY.*not allowed/)
-  })
-
-  it('rejects a missing landscape declaration or a missing surface member', () => {
-    expect(() => readTerminalSurfaces({orientations: {}})).toThrow(/landscape surfaces are required/)
-    expect(() => readTerminalSurfaces({
-      layout: 'column',
-      scaleToFit: true,
-      surfaces: landscape,
-    })).toThrow(/invalid shape/)
-    expect(() => readTerminalSurfaces({
-      orientations: {landscape: {PRIMARY: landscape.PRIMARY}},
-    })).toThrow(/landscape\.SECONDARY surface/)
-  })
-
-  it('rejects non-positive and non-finite canvas dimensions', () => {
-    expect(() => readTerminalSurfaces({
-      orientations: {
-        landscape: {
-          PRIMARY: {width: 0, height: 800},
-          SECONDARY: landscape.SECONDARY,
-        },
-      },
-    })).toThrow(/positive width and height/)
-    expect(() => readTerminalSurfaces({
-      orientations: {
-        landscape: {
-          PRIMARY: {width: Number.NaN, height: 800},
-          SECONDARY: landscape.SECONDARY,
-        },
-      },
-    })).toThrow(/positive width and height/)
-  })
-
-  it('maps declared orientation to the explicit surface form', async () => {
-    const module = await import('../src/application/terminalSurfaces')
-    expect(module.surfaceFormForOrientation('landscape')).toBe('laptop')
-    expect(module.surfaceFormForOrientation('portrait')).toBe('mobile')
-    expect(module.getSurfaceDeclarations(readTerminalSurfaces({orientations: {
-      landscape,
-      portrait: {PRIMARY: {width: 360, height: 640}},
-    }}), 'mobile')).toEqual({PRIMARY: {width: 360, height: 640}})
+  it('retains the sample-console error prefix at the package adapter boundary', () => {
+    expect(() => readTerminalSurfaces({orientations: {}}))
+      .toThrow(/\[sample-console\].*landscape surfaces are required/)
   })
 })

@@ -1611,7 +1611,6 @@ const stage2CaptureRuntime = async (record, target) => {
     'terminal.admin:runtime:surface-map:surface:PRIMARY:logic-height',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:0',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:1',
-    'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:2',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:outside:1',
     'terminal.admin:runtime:surface:legend',
   ], 0, 'admin.console.runtime:scroll')
@@ -2265,7 +2264,6 @@ const pairDevices = async (record, master, slave) => {
     'terminal.admin:runtime:surface-map:surface:PRIMARY:logic-height',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:0',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:1',
-    'terminal.admin:runtime:surface-map:surface:PRIMARY:inside:2',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:outside:1',
     'terminal.admin:runtime:surface:legend',
   ], 'admin.console.runtime:scroll')

@@ -123,14 +123,18 @@ runMutation('F_A2C', 'picker', [[
 ]])
 
 runMutation('F_A2A', 'integration', [
-  ['apps/terminal/ui/feature/sample-wallpaper-picker/src/components/WallpaperPicker.tsx', source => replaceExactly(source, '<PrimitiveContainer testID={wallpaperPickerTestIds.root} layout="transparent">', '<PrimitiveContainer testID={wallpaperPickerTestIds.root} layout="fill">', 'F-A2a picker container')],
-  ['apps/terminal/ui/integration/sample-wallpaper-console/src/components/Waiting.tsx', source => replaceExactly(source, 'layout="transparent"', 'layout="fill"', 'F-A2a waiting container')],
-  ['apps/terminal/ui/integration/sample-wallpaper-console/src/components/Welcome.tsx', source => replaceExactly(source, 'layout="transparent"', 'layout="fill"', 'F-A2a welcome container')],
+  ['apps/terminal/ui/feature/sample-wallpaper-picker/src/components/laptop/WallpaperPicker.tsx', source => replaceExactly(source, '<PrimitiveContainer testID={wallpaperPickerTestIds.root} layout="transparent">', '<PrimitiveContainer testID={wallpaperPickerTestIds.root} layout="fill">', 'F-A2a laptop picker container')],
+  ['apps/terminal/ui/feature/sample-wallpaper-picker/src/components/mobile/WallpaperPicker.tsx', source => replaceExactly(source, '<PrimitiveContainer testID={wallpaperPickerTestIds.root} layout="transparent">', '<PrimitiveContainer testID={wallpaperPickerTestIds.root} layout="fill">', 'F-A2a mobile picker container')],
+  ['apps/terminal/ui/integration/sample-wallpaper-console/src/components/laptop/Waiting.tsx', source => replaceExactly(source, 'layout="transparent"', 'layout="fill"', 'F-A2a waiting container')],
+  ['apps/terminal/ui/integration/sample-wallpaper-console/src/components/laptop/Welcome.tsx', source => replaceExactly(source, 'layout="transparent"', 'layout="fill"', 'F-A2a welcome container')],
 ])
 
 runMutation('F_A2_SCROLL', 'picker', [[
-  'apps/terminal/ui/feature/sample-wallpaper-picker/src/components/WallpaperPicker.tsx',
-  source => replaceExactly(source, '<PrimitiveScrollView testID={wallpaperPickerTestIds.optionsScroll} layout="transparent">', '<PrimitiveScrollView testID={wallpaperPickerTestIds.optionsScroll} layout="fill">', 'F-A2 scroll viewport transparency'),
+  'apps/terminal/ui/feature/sample-wallpaper-picker/src/components/laptop/WallpaperPicker.tsx',
+  source => replaceExactly(source, '<PrimitiveScrollView testID={wallpaperPickerTestIds.optionsScroll} layout="transparent">', '<PrimitiveScrollView testID={wallpaperPickerTestIds.optionsScroll} layout="fill">', 'F-A2 laptop scroll viewport transparency'),
+], [
+  'apps/terminal/ui/feature/sample-wallpaper-picker/src/components/mobile/WallpaperPicker.tsx',
+  source => replaceExactly(source, '<PrimitiveScrollView testID={wallpaperPickerTestIds.optionsScroll} layout="transparent">', '<PrimitiveScrollView testID={wallpaperPickerTestIds.optionsScroll} layout="fill">', 'F-A2 mobile scroll viewport transparency'),
 ]], 'component-contract')
 
 runMutation('F_A2_TOKEN', 'primitives', [[

@@ -21,7 +21,8 @@
 - `src/features/actors/actors.ts`：唯一 placement owner。登录或恢复认证时显示主屏 picker、
   副屏 welcome；匿名或登出时显示副屏 waiting。副屏资格读取 topology 的公开事实（本机双屏或
   MASTER 已配对副机），不把物理屏 helper 当作跨机资格。
-- `src/parts/parts.ts` 与 `src/components/`：副屏 waiting/welcome 两个透明 section part。
+- `src/parts/parts.ts` 与 `src/components/laptop/Waiting.tsx`、`src/components/laptop/Welcome.tsx`：
+  副屏 waiting/welcome 两个透明、laptop-only 的 section part；不创建 mobile 对应实现。
 - `theme/`：本应用的 19 个语义 token；action 使用红色，error 仍是错误语义。
 - `app.json` 与 `assets/favicon.png`：仅供本包 Expo Web 预览消费的浏览器标题图标配置；不声明
   App application icon，也不改变 App 内 UI 图标。
@@ -29,8 +30,10 @@
 
 公共导出包括 `createSampleWallpaperConsoleAssembly`、`createSurfaceForDisplayIndex`、
 `WallpaperConsoleAssembly`、`createSampleWallpaperConsoleModule`、`parts`、
-`waitingPart`、`welcomePart`、`terminalSurfaces` 及 module/dependency 元数据。具体导出集合
-由 `terminal-invariants.json` 与 `test/publicSurface.test.ts` 共同锁定。
+`waitingPart`、`welcomePart`、`terminalSurfaces` 及带 package error-prefix 的
+`readTerminalSurfaces`、`getSurfaceDeclarations`、`surfaceFormForOrientation` adapter，另有
+module/dependency 元数据。具体导出集合由 `terminal-invariants.json` 与
+`test/publicSurface.test.ts` 共同锁定。
 
 ## 用法
 
@@ -53,7 +56,7 @@ const secondary = createSurfaceForDisplayIndex(assembly, 1)
 topology tab 在 mobile 仍恒显；不支持的操作通过禁用控件和可读原因表达，不通过隐藏 tab 表达机型限制。
 
 admin console 的 laptop/mobile 版式与导航语义由 `ui.base.admin-shell` 的 form-specific renderer 负责：laptop
-使用 master-detail，mobile 使用可换行 tablist；内容标题通过 polite live region 宣布，焦点 scope 的关闭/恢复仍由既有 terminal layer 管线负责。
+使用 master-detail，mobile 使用单个受控下拉 selector；内容标题通过 polite live region 宣布，焦点 scope 的关闭/恢复仍由既有 terminal layer 管线负责。
 
 `displayIndex` 只选择物理 host source；`displayMode` 由 display-context 统一推导并决定画布
 与 catalog placement。mobile 只创建主屏，不调用副屏入口。Web 预览由 dev-host 通过 URL

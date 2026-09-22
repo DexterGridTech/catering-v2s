@@ -35,7 +35,7 @@ import {
 import {createSampleAssembly as createProductionSampleAssembly, createSurfaceForDisplayIndex} from '../src'
 import {createSampleDefinedParts} from '../src/assembly/assembly'
 import {adminTestIds} from '@catering-v2s/ui-base-admin-shell'
-import {createTestPlatformPorts, type TestPlatformPorts} from './support'
+import {createTestPlatformPorts, TestPeerChannel, type TestPlatformPorts} from './support'
 
 type TestSampleAssemblyInput = Omit<Parameters<typeof createProductionSampleAssembly>[0], 'platformPorts' | 'nativeLoadingCapability'> & Readonly<{
   readonly platformPorts: TestPlatformPorts
@@ -157,6 +157,43 @@ const mount = (
   return renderer!
 }
 
+const reportPrimaryReadyLayout = async (
+  renderer: ReactTestRenderer,
+  frame: Readonly<{readonly width: number; readonly height: number}>,
+): Promise<void> => {
+  const boundaries = renderer.root.findAllByProps({testID: 'ui-base-render:screen-ready-boundary'})
+  act(() => {
+    for (const boundary of boundaries) {
+      ;(boundary.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: frame}})
+    }
+  })
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)) })
+}
+
+const openTestPeerAsSlave = async (peer: TestPeerChannel): Promise<void> => {
+  peer.emit({type: 'open', connectionId: 'test-peer-connection'})
+  peer.emit({
+    type: 'message',
+    connectionId: 'test-peer-connection',
+    raw: JSON.stringify({
+      type: 'hello',
+      protocolVersion: 1,
+      moduleName: 'ui.integration.sample-console',
+      wireId: 'test-peer-hello',
+      nodeId: 'test-peer-slave',
+      displayName: '测试副机',
+      instanceMode: 'SLAVE',
+      displayRole: 'VICE',
+    }),
+  })
+  await new Promise(resolve => setTimeout(resolve, 0))
+}
+
+const stateFullSliceNames = (peer: TestPeerChannel): string[] => peer.sentFrames
+  .map(raw => JSON.parse(raw) as Readonly<{readonly type?: string; readonly sliceName?: string}>)
+  .filter(frame => frame.type === 'state-full-chunk' && frame.sliceName !== undefined)
+  .map(frame => frame.sliceName!)
+
 const press = (renderer: ReactTestRenderer, testID: string): (() => unknown) => {
   const instance = renderer.root.findByProps({testID}) as unknown as Readonly<{
     readonly props: Readonly<{readonly onPress: () => unknown}>
@@ -165,17 +202,12 @@ const press = (renderer: ReactTestRenderer, testID: string): (() => unknown) => 
 }
 
 const waitForAdminContent = async (renderer: ReactTestRenderer): Promise<void> => {
-  const pageTestIds = [
-    'admin.console.platform-ports',
-    'admin.console.runtime',
-    'admin.console.topology',
-    'sample.console.admin-test',
-  ]
   for (let attempt = 0; attempt < 50; attempt += 1) {
-    if (pageTestIds.some(testID => renderer.root.findAllByProps({testID}).length > 0)) return
+    if (renderer.root.findAllByProps({testID: adminTestIds.shell}).length > 0
+      && renderer.root.findAllByProps({testID: adminTestIds.panel.body}).length > 0) return
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)) })
   }
-  throw new Error('admin content did not become available')
+  throw new Error('authenticated admin shell did not become available')
 }
 
 const selectMobileAdminSection = async (renderer: ReactTestRenderer, partKey: string): Promise<void> => {
@@ -330,6 +362,90 @@ describe('sample-console real assembly', () => {
     }
   })
 
+  it('records a visible content failure in the shared startup completion facts', async () => {
+    const events: LogEvent[] = []
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts({events}),
+      persistenceKey: `sample-console-startup-content-failure-${Date.now()}`,
+      surfaceForm: 'mobile',
+      surfaceHostSourcesByDisplayIndex: {0: createHostSource(true, PORTRAIT_PRIMARY_FRAME)},
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      const selection = await assembly.runtime.dispatchCommand(showScreenCommand, {
+        displayMode: 'PRIMARY',
+        containerKey: 'main',
+        partKey: 'sample.console.missing-part',
+      }, {
+        requestId: createRequestId(),
+        routeContext: {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'},
+      })
+      expect(selection.status).toBe('completed')
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), PORTRAIT_PRIMARY_FRAME)
+      await reportPrimaryReadyLayout(renderer, PORTRAIT_PRIMARY_FRAME)
+      const complete = events.find(event => event.event === 'startup.complete')
+      expect(complete?.data).toMatchObject({
+        primaryReadyPartKey: 'sample.console.missing-part',
+        primaryContentFailure: 'missing-catalog-entry',
+      })
+      expect(events.some(event => event.event === 'startup.ready-failed')).toBe(false)
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('retries PRIMARY startup readiness after prerequisites reject completion', async () => {
+    const events: LogEvent[] = []
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts({events, failStartupReadyCount: 1}),
+      persistenceKey: `sample-console-startup-retry-${Date.now()}`,
+      surfaceForm: 'mobile',
+      surfaceHostSourcesByDisplayIndex: {0: createHostSource(true, PORTRAIT_PRIMARY_FRAME)},
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), PORTRAIT_PRIMARY_FRAME)
+      await reportPrimaryReadyLayout(renderer, PORTRAIT_PRIMARY_FRAME)
+      expect(events.filter(event => event.event === 'startup.complete')).toHaveLength(0)
+      expect(events.filter(event => event.event === 'startup.ready-dispatch-failed')).toHaveLength(1)
+      expect(events.find(event => event.event === 'startup.ready-dispatch-failed')?.data?.errorName)
+        .toBe('Error')
+
+      act(() => { renderer!.unmount() })
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), PORTRAIT_PRIMARY_FRAME)
+      await reportPrimaryReadyLayout(renderer, PORTRAIT_PRIMARY_FRAME)
+      expect(events.filter(event => event.event === 'startup.ready-dispatch-failed')).toHaveLength(1)
+      expect(events.filter(event => event.event === 'startup.complete')).toHaveLength(1)
+      expect(events.filter(event => event.event === 'startup.ready-dispatch-start')).toHaveLength(2)
+      expect(events.filter(event => event.event === 'startup.ready-dispatch-result').map(event => event.data?.status))
+        .toEqual(['error', 'completed'])
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('sends the member registry sync slice but never an isolated wallpaper slice', async () => {
+    const peer = new TestPeerChannel()
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts({displayCount: 1}),
+      persistenceKey: `sample-console-sync-slices-${Date.now()}`,
+      surfaceForm: 'laptop',
+      topologyPeerChannel: peer,
+    })
+    try {
+      await openTestPeerAsSlave(peer)
+      const sliceNames = stateFullSliceNames(peer)
+      expect(sliceNames).toContain('kernel.feature.sample-member-registry.members')
+      expect(sliceNames).not.toContain('kernel.feature.sample-staff-session.session')
+      expect(sliceNames).not.toContain('kernel.feature.sample-wallpaper.selection')
+    } finally {
+      await peer.dispose()
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
   it('opens admin console from the transformed mobile preview hit area', async () => {
     const assembly = await createSampleAssembly({
       platformPorts: createTestPlatformPorts(),
@@ -355,6 +471,37 @@ describe('sample-console real assembly', () => {
     } finally {
       if (renderer !== undefined) act(() => { renderer!.unmount() })
       releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('selects the form-specific login renderer at the real integration surface', async () => {
+    const assemblies = await Promise.all((['laptop', 'mobile'] as const).map(surfaceForm =>
+      createSampleAssembly({
+        platformPorts: createTestPlatformPorts({displayCount: surfaceForm === 'laptop' ? 2 : 1}),
+        persistenceKey: `sample-console-form-renderer-${surfaceForm}-${Date.now()}`,
+        surfaceForm,
+        surfaceHostSourcesByDisplayIndex: {0: createHostSource(true, surfaceForm === 'laptop' ? LANDSCAPE_PRIMARY_FRAME : PORTRAIT_PRIMARY_FRAME)},
+      })))
+    const renderers: ReactTestRenderer[] = []
+    try {
+      for (const assembly of assemblies) {
+        const frame = assembly.surfaceForm === 'laptop' ? LANDSCAPE_PRIMARY_FRAME : PORTRAIT_PRIMARY_FRAME
+        const renderer = mount(createSurfaceForDisplayIndex(assembly, 0), frame)
+        renderers.push(renderer)
+        const login = renderer.root.findByProps({testID: 'sample.auth.login'})
+        const actions = renderer.root.findByProps({testID: 'sample.auth.login:actions'})
+        const style = StyleSheet.flatten(login.props.style)
+        if (assembly.surfaceForm === 'laptop') {
+          expect(style).toMatchObject({maxWidth: 720, alignSelf: 'center'})
+          expect(actions.props.orientation).toBeUndefined()
+        } else {
+          expect(style).toMatchObject({paddingHorizontal: 8, gap: 3})
+          expect(actions.props.orientation).toBe('column')
+        }
+      }
+    } finally {
+      for (const renderer of renderers) act(() => { renderer.unmount() })
+      for (const assembly of assemblies) releaseRuntimeForTest(assembly.runtime)
     }
   })
 
@@ -453,21 +600,53 @@ describe('sample-console real assembly', () => {
       surfaceForm: 'laptop' as const,
     }
     const mobileContext = {...context, surfaceForm: 'mobile' as const}
-    const withSample = createUiCatalog(createSampleDefinedParts().map(({catalogEntry}) => catalogEntry))
-    const withoutSample = createUiCatalog(createSampleDefinedParts(false).map(({catalogEntry}) => catalogEntry))
-    expect(selectAvailableParts(withSample, 'admin.sections', context).map(entry => entry.partKey)).toContain('sample.console.admin-test')
-    expect(selectAvailableParts(withSample, 'admin.sections', mobileContext).map(entry => entry.partKey)).toContain('sample.console.admin-test')
-    expect(selectAvailableParts(withoutSample, 'admin.sections', context).map(entry => entry.partKey)).not.toContain('sample.console.admin-test')
-    expect(selectAvailableParts(withoutSample, 'admin.sections', mobileContext).map(entry => entry.partKey)).not.toContain('sample.console.admin-test')
+    const withSampleLaptop = createUiCatalog(createSampleDefinedParts()
+      .filter(({catalogEntry}) => catalogEntry.surfaceForm.includes('laptop'))
+      .map(({catalogEntry}) => catalogEntry))
+    const withSampleMobile = createUiCatalog(createSampleDefinedParts()
+      .filter(({catalogEntry}) => catalogEntry.surfaceForm.includes('mobile'))
+      .map(({catalogEntry}) => catalogEntry))
+    const withoutSampleLaptop = createUiCatalog(createSampleDefinedParts(false)
+      .filter(({catalogEntry}) => catalogEntry.surfaceForm.includes('laptop'))
+      .map(({catalogEntry}) => catalogEntry))
+    const withoutSampleMobile = createUiCatalog(createSampleDefinedParts(false)
+      .filter(({catalogEntry}) => catalogEntry.surfaceForm.includes('mobile'))
+      .map(({catalogEntry}) => catalogEntry))
+    expect(selectAvailableParts(withSampleLaptop, 'admin.sections', context).map(entry => entry.partKey)).toContain('sample.console.admin-test')
+    expect(selectAvailableParts(withSampleMobile, 'admin.sections', mobileContext).map(entry => entry.partKey)).toContain('sample.console.admin-test')
+    expect(selectAvailableParts(withoutSampleLaptop, 'admin.sections', context).map(entry => entry.partKey)).not.toContain('sample.console.admin-test')
+    expect(selectAvailableParts(withoutSampleMobile, 'admin.sections', mobileContext).map(entry => entry.partKey)).not.toContain('sample.console.admin-test')
+  })
+
+  it('registers separate laptop and mobile renderer siblings for every sample business part', () => {
+    const definedParts = createSampleDefinedParts(false)
+    const groups = new Map<string, typeof definedParts[number][]>()
+    for (const part of definedParts) {
+      const siblings = groups.get(part.catalogEntry.partKey) ?? []
+      siblings.push(part)
+      groups.set(part.catalogEntry.partKey, siblings)
+    }
+
+    for (const [partKey, siblings] of groups) {
+      expect(partKey.startsWith('sample.auth.') || partKey.startsWith('sample.desk.')).toBe(true)
+      expect(siblings).toHaveLength(2)
+      expect(siblings.map(part => part.catalogEntry.surfaceForm).sort()).toEqual([['laptop'], ['mobile']])
+      expect(new Set(siblings.map(part => part.rendererBinding.component)).size).toBe(2)
+      expect(new Set(siblings.map(part => part.rendererBinding.rendererKey)).size).toBe(2)
+      for (const sibling of siblings) {
+        const surfaceForm = sibling.catalogEntry.surfaceForm[0]
+        expect(sibling.rendererBinding.rendererKey).toBe(`${partKey}.${surfaceForm}`)
+      }
+    }
   })
 
   it('allows only the member desk customer surfaces on a topology secondary', () => {
-    const secondaryMemberParts = createSampleDefinedParts(false)
+    const secondaryMemberParts = [...new Set(createSampleDefinedParts(false)
       .filter(({catalogEntry}) =>
         catalogEntry.partKey.startsWith('sample.desk.')
         && catalogEntry.displayModes.includes('SECONDARY')
         && catalogEntry.instanceModes.includes('SLAVE'))
-      .map(({catalogEntry}) => catalogEntry.partKey)
+      .map(({catalogEntry}) => catalogEntry.partKey))]
     expect(secondaryMemberParts).toEqual([
       'sample.desk.customer-welcome',
       'sample.desk.customer-member',
@@ -536,7 +715,9 @@ describe('sample-console real assembly', () => {
         minHeight: 0,
         minWidth: 0,
       })
-      expect(StyleSheet.flatten(laptopRenderer.root.findByProps({testID: 'admin.console.platform-ports'}).props.style)).toMatchObject({
+      const laptopPortsSection = laptopRenderer.root.findAllByProps({testID: adminTestIds.ports.section})
+        .find(node => node.type === View)!
+      expect(StyleSheet.flatten(laptopPortsSection.props.style)).toMatchObject({
         flex: 1,
         minHeight: 0,
         minWidth: 0,
@@ -581,7 +762,9 @@ describe('sample-console real assembly', () => {
       })
       expect(mobileRenderer.root.findByProps({testID: 'terminal.admin:navigation:trigger'}).props.accessibilityState).toMatchObject({expanded: false})
       expect(mobileRenderer.root.findByProps({testID: adminTestIds.content})).toBeDefined()
-      expect(StyleSheet.flatten(mobileRenderer.root.findByProps({testID: 'admin.console.platform-ports'}).props.style)).toMatchObject({
+      const mobilePortsSection = mobileRenderer.root.findAllByProps({testID: adminTestIds.ports.section})
+        .find(node => node.type === View)!
+      expect(StyleSheet.flatten(mobilePortsSection.props.style)).toMatchObject({
         flex: 1,
         minHeight: 0,
         minWidth: 0,
@@ -708,7 +891,7 @@ describe('sample-console real assembly', () => {
       const loginCard = renderer.root.findByProps({testID: `${adminTestIds.login}:card`})
       expect(renderer.root.findAllByProps({testID: 'ui.base.input:surface-frame'})).toHaveLength(1)
       expect(renderer.root.findAll(node => node.type === View && node.props.testID === 'ui.base.input:virtual-keyboard')).toHaveLength(1)
-      expect(StyleSheet.flatten(loginCard.props.style)).toBeUndefined()
+      expect(StyleSheet.flatten(loginCard.props.style)).toMatchObject({width: '100%'})
       expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard:text-1'})).toBeDefined()
       expect(stopPropagation).toHaveBeenCalledTimes(1)
       for (const digit of ['1', '2', '3', '4', '5', '6']) {
@@ -725,7 +908,7 @@ describe('sample-console real assembly', () => {
       expect(renderer.root.findByProps({testID: adminTestIds.shell})).toBeDefined()
       expect(renderer.root.findByProps({testID: 'terminal.admin:navigation'})).toBeDefined()
       await selectMobileAdminSection(renderer!, 'admin.console.runtime')
-      expect(renderer.root.findByProps({testID: 'admin.console.runtime'})).toBeDefined()
+      expect(renderer.root.findByProps({testID: adminTestIds.runtime.section})).toBeDefined()
       expect(renderer.root.findAllByProps({testID: 'sample.console.admin-test'})).toHaveLength(0)
       await act(async () => {
         hostSource.emit({
@@ -735,7 +918,7 @@ describe('sample-console real assembly', () => {
         await new Promise(resolve => setTimeout(resolve, 0))
       })
       expect(renderer.root.findByProps({testID: adminTestIds.shell})).toBeDefined()
-      expect(renderer.root.findByProps({testID: 'admin.console.runtime'})).toBeDefined()
+      expect(renderer.root.findByProps({testID: adminTestIds.runtime.section})).toBeDefined()
       await act(async () => {
         press(renderer!, adminTestIds.close)()
         await new Promise(resolve => setTimeout(resolve, 0))
@@ -1011,7 +1194,7 @@ describe('sample-console real assembly', () => {
       await tapLauncher(renderer)
       await authenticateAdmin(renderer)
       await selectMobileAdminSection(renderer!, 'admin.console.runtime')
-      expect(renderer.root.findByProps({testID: 'admin.console.runtime'})).toBeDefined()
+      expect(renderer.root.findByProps({testID: adminTestIds.runtime.section})).toBeDefined()
       await new Promise(resolve => setTimeout(resolve, 350))
       const persistedValues = [...plainStorage.writes, ...protectedStorage.writes]
       expect(persistedValues.length).toBeGreaterThan(0)
@@ -1046,7 +1229,7 @@ describe('sample-console real assembly', () => {
       await tapLauncher(firstRenderer)
       await authenticateAdmin(firstRenderer)
       await selectMobileAdminSection(firstRenderer!, 'admin.console.runtime')
-      expect(firstRenderer.root.findByProps({testID: 'admin.console.runtime'})).toBeDefined()
+      expect(firstRenderer.root.findByProps({testID: adminTestIds.runtime.section})).toBeDefined()
       const businessBefore = selectScreen(firstAssembly.runtime.getState(), 'PRIMARY', 'main')
       expect(businessBefore).toBeDefined()
       const businessPartKey = businessBefore!.partKey

@@ -12,6 +12,12 @@ owner。它只写一次结构化 `startup.complete` 事实，不拥有 feature �
 - `src/dependencies.ts`：console assembly 的 workspace 依赖声明。
 - `src/foundations/consoleAssembly.tsx`：共享 console 壳、运行期模块装配、surface
   输入和 per-runtime primary-ready 生命周期门。
+- `src/foundations/terminalSurfaces.ts`：无业务知识的 surface declaration parser 与
+  orientation selector；package.json 仍由 integration adapter 读取。
+- `src/foundations/startupReady.ts`：startup-ready payload 与 actor 的机械共性；command
+  identity、消息和装配时机仍由 integration 持有。
+- `src/foundations/stateSyncSlices.ts`：只过滤显式提供的 isolated slice，不扫描、排序或
+  去重 integration 的 state source。
 - `src/foundations/startupDiagnosticsWriter.ts`：单一 writer 与 duplicate guard。
 - `src/index.ts`：唯一公开入口。
 - `terminal-invariants.json`：公开面与包边界不变量。
@@ -24,7 +30,9 @@ oracle 变成写入端。
 
 在 console assembly 完成 required startup groups 和 surface provenance 后，调用
 `createStartupDiagnosticsWriter` 的受控入口。writer 必须拒绝相同 run 的重复 complete，
-并保留结构化、脱敏、可关联的日志字段；读侧只消费单客户端 sink。
+并保留结构化、脱敏、可关联的日志字段；integration 通过 `createStartupReadyActor`、
+`createStartupReadyPayload`、`selectStateSyncSlices` 和 terminal-surface adapter 接入，
+不在包内复制这些机械实现。
 
 ## 迭代边界
 

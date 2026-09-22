@@ -1,55 +1,62 @@
-import {definePart, type RenderLayerDismissal} from '@catering-v2s/ui-base-render'
-import {AuthNotice} from '../components/AuthNotice'
-import {AuthSystemNotice} from '../components/AuthSystemNotice'
-import {StaffLogin} from '../components/StaffLogin'
+import {definePartPair, type RenderLayerDismissal} from '@catering-v2s/ui-base-render'
+import {AuthNotice as LaptopAuthNotice} from '../components/laptop/AuthNotice'
+import {AuthNotice as MobileAuthNotice} from '../components/mobile/AuthNotice'
+import {AuthSystemNotice as LaptopAuthSystemNotice} from '../components/laptop/AuthSystemNotice'
+import {AuthSystemNotice as MobileAuthSystemNotice} from '../components/mobile/AuthSystemNotice'
+import {StaffLogin as LaptopStaffLogin} from '../components/laptop/StaffLogin'
+import {StaffLogin as MobileStaffLogin} from '../components/mobile/StaffLogin'
 import {dispatchAuthSystemFailureDismissal} from '../foundations/systemFailureDismissal'
 
-const allForms = ['laptop', 'mobile'] as const
+const primary = ['PRIMARY'] as const
+const mainContainer = ['main'] as const
+const main = ['MAIN'] as const
+const master = ['MASTER'] as const
 
-export const loginPart = definePart({
+const loginPair = definePartPair({
   partKey: 'sample.auth.login',
-  rendererKey: 'sample.auth.login',
-  containerKeys: ['main'],
-  displayModes: ['PRIMARY'] as const,
-  workspaces: ['MAIN'] as const,
-  instanceModes: ['MASTER'] as const,
-  surfaceForm: allForms,
+  containerKeys: mainContainer,
+  displayModes: primary,
+  workspaces: main,
+  instanceModes: master,
   title: '店员登录',
   description: '店员使用工号和密码进入会员登记工作台',
-  component: StaffLogin,
+  components: {laptop: LaptopStaffLogin, mobile: MobileStaffLogin},
 })
 
-export const noticePart = definePart({
+const noticePair = definePartPair({
   partKey: 'sample.auth.notice',
-  rendererKey: 'sample.auth.notice',
-  containerKeys: [],
-  displayModes: ['PRIMARY'] as const,
-  workspaces: ['MAIN'] as const,
-  instanceModes: ['MASTER'] as const,
-  surfaceForm: allForms,
+  containerKeys: [] as const,
+  displayModes: primary,
+  workspaces: main,
+  instanceModes: master,
   title: '登录失败提示',
   description: '向店员说明登录失败原因并提供关闭动作',
-  component: AuthNotice,
   layerTier: 'alert',
+  components: {laptop: LaptopAuthNotice, mobile: MobileAuthNotice},
 })
 
-export const systemNoticePart = definePart({
+const systemNoticePair = definePartPair({
   partKey: 'sample.auth.system-notice',
-  rendererKey: 'sample.auth.system-notice',
-  containerKeys: [],
-  displayModes: ['PRIMARY'] as const,
-  workspaces: ['MAIN'] as const,
-  instanceModes: ['MASTER'] as const,
-  surfaceForm: allForms,
+  containerKeys: [] as const,
+  displayModes: primary,
+  workspaces: main,
+  instanceModes: master,
   title: '系统失败提示',
   description: '向店员说明登录或退出的基础设施失败，并允许继续操作',
-  component: AuthSystemNotice,
   layerTier: 'alert',
+  components: {laptop: LaptopAuthSystemNotice, mobile: MobileAuthSystemNotice},
 })
 
-export const parts = Object.freeze([loginPart, noticePart, systemNoticePart])
+export const parts = Object.freeze([
+  loginPair.laptop,
+  loginPair.mobile,
+  noticePair.laptop,
+  noticePair.mobile,
+  systemNoticePair.laptop,
+  systemNoticePair.mobile,
+])
 
 export const layerDismissals: Readonly<Record<string, RenderLayerDismissal>> = Object.freeze({
-  [systemNoticePart.catalogEntry.partKey]: ({dispatchCommand}) =>
+  [systemNoticePair.laptop.catalogEntry.partKey]: ({dispatchCommand}) =>
     dispatchAuthSystemFailureDismissal(dispatchCommand),
 })

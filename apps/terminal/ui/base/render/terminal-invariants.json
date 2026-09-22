@@ -55,7 +55,7 @@
     "bindSurfaceHostIdentity",
     "calculateSurfaceHostGeometry",
     "createRenderRuntimeFacts",
-    "definePart",
+    "definePart", "definePartPair",
     "dispatchWithRequestId",
     "dependencyModuleNames",
     "devDependencyModuleNames",
@@ -72,6 +72,7 @@
     "FailureStage",
     "StartupFailurePage", "StartupFailurePageProps", "StandaloneStartupFailurePage", "StandaloneStartupFailurePageProps",
     "SystemFailureNotice",
+    "SystemFailureNoticePresentation",
     "SystemFailureNoticeProps",
     "resolveDebugMode",
     "RenderContextValue",
@@ -82,6 +83,10 @@
     "useUiCatalogContext",
     "useUiVariable",
     "useRequestInFlight",
-    "useTrackedRequest"
+    "useTrackedRequest",
+    "useTrackedCommand",
+    "TrackedCommand",
+    "TrackedCommandRejectionPolicy",
+    "TrackedCommandRunInput"
   ]
 }

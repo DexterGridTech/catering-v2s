@@ -731,7 +731,7 @@ describe('ui primitives', () => {
     expect(baseTokens.adminSurfaceMapLogicWidth).toContain('left-0 right-0 top-2');
     expect(baseTokens.adminSurfaceMapLogicHeight).toContain('right-2 top-1/2');
     expect(baseTokens.adminSurfaceMapPhysicalWidth).toContain('top-0');
-    expect(baseTokens.adminSurfaceMapPhysicalHeight).toContain('-right-1 top-1/2');
+    expect(baseTokens.adminSurfaceMapPhysicalHeight).toContain('left-full top-1/2');
     expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:PRIMARY:card'}).props.style).toBeUndefined();
     expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:SECONDARY:inside:0'})).toBeDefined();
     expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:SECONDARY'}).props.className).toContain(baseTokens.adminSurfaceMapLimited);

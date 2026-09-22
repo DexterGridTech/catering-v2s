@@ -1,0 +1,18 @@
+import {PrimitiveActions, PrimitiveButton, PrimitiveCenter, PrimitiveContainer, PrimitiveStatus, PrimitiveText} from '@catering-v2s/ui-base-primitives'
+import {useWaitingConfirm} from '../../hooks/useWaitingConfirm'
+
+export const WaitingConfirm = () => {
+  const waiting = useWaitingConfirm()
+  return (
+    <PrimitiveCenter testID="sample.desk.waiting-confirm" style={{flex: 1, minHeight: 0, padding: 24}}>
+      <PrimitiveContainer testID="sample.desk.waiting-confirm:card" layout="card" bounded style={{width: '100%', maxWidth: 720}}>
+        <PrimitiveStatus testID="sample.desk.waiting-confirm:message">已提交，等待顾客确认</PrimitiveStatus>
+        <PrimitiveText testID="sample.desk.waiting-confirm:member-name" accessibilityLabel="姓名">{waiting.pending?.name ?? ''}</PrimitiveText>
+        <PrimitiveText testID="sample.desk.waiting-confirm:member-phone" accessibilityLabel="电话">{waiting.pending?.phone ?? ''}</PrimitiveText>
+        <PrimitiveActions testID="sample.desk.waiting-confirm:actions">
+          <PrimitiveButton testID="sample.desk.waiting-confirm:withdraw" accessibilityLabel="撤回" onPress={waiting.withdraw}>撤回</PrimitiveButton>
+        </PrimitiveActions>
+      </PrimitiveContainer>
+    </PrimitiveCenter>
+  )
+}

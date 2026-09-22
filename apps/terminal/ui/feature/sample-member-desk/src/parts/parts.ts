@@ -1,162 +1,162 @@
-import {definePart, type RenderLayerDismissal} from '@catering-v2s/ui-base-render'
-import {CustomerMember} from '../components/CustomerMember'
-import {CustomerWelcome} from '../components/CustomerWelcome'
-import {DiscardConfirm} from '../components/DiscardConfirm'
-import {MemberForm} from '../components/MemberForm'
-import {MemberList} from '../components/MemberList'
-import {RegistryNotice} from '../components/RegistryNotice'
-import {DeskSystemNotice} from '../components/DeskSystemNotice'
-import {WaitingConfirm} from '../components/WaitingConfirm'
-import {WithdrawConfirm} from '../components/WithdrawConfirm'
+import {definePartPair, type RenderLayerDismissal} from '@catering-v2s/ui-base-render'
+import {CustomerMember as LaptopCustomerMember} from '../components/laptop/CustomerMember'
+import {CustomerMember as MobileCustomerMember} from '../components/mobile/CustomerMember'
+import {CustomerWelcome as LaptopCustomerWelcome} from '../components/laptop/CustomerWelcome'
+import {CustomerWelcome as MobileCustomerWelcome} from '../components/mobile/CustomerWelcome'
+import {DiscardConfirm as LaptopDiscardConfirm} from '../components/laptop/DiscardConfirm'
+import {DiscardConfirm as MobileDiscardConfirm} from '../components/mobile/DiscardConfirm'
+import {MemberForm as LaptopMemberForm} from '../components/laptop/MemberForm'
+import {MemberForm as MobileMemberForm} from '../components/mobile/MemberForm'
+import {MemberList as LaptopMemberList} from '../components/laptop/MemberList'
+import {MemberList as MobileMemberList} from '../components/mobile/MemberList'
+import {RegistryNotice as LaptopRegistryNotice} from '../components/laptop/RegistryNotice'
+import {RegistryNotice as MobileRegistryNotice} from '../components/mobile/RegistryNotice'
+import {DeskSystemNotice as LaptopDeskSystemNotice} from '../components/laptop/DeskSystemNotice'
+import {DeskSystemNotice as MobileDeskSystemNotice} from '../components/mobile/DeskSystemNotice'
+import {WaitingConfirm as LaptopWaitingConfirm} from '../components/laptop/WaitingConfirm'
+import {WaitingConfirm as MobileWaitingConfirm} from '../components/mobile/WaitingConfirm'
+import {WithdrawConfirm as LaptopWithdrawConfirm} from '../components/laptop/WithdrawConfirm'
+import {WithdrawConfirm as MobileWithdrawConfirm} from '../components/mobile/WithdrawConfirm'
 import {dispatchDeskSystemFailureDismissal} from '../foundations/systemFailureDismissal'
 
-const main = ['main'] as const
 const primary = ['PRIMARY'] as const
 const secondary = ['SECONDARY'] as const
-const both = ['PRIMARY', 'SECONDARY'] as const
+const bothDisplayModes = ['PRIMARY', 'SECONDARY'] as const
+const main = ['main'] as const
+const layer = [] as const
 const mainWorkspace = ['MAIN'] as const
-const masterInstance = ['MASTER'] as const
-const masterAndSlaveInstances = ['MASTER', 'SLAVE'] as const
-const allForms = ['laptop', 'mobile'] as const
+const master = ['MASTER'] as const
+const masterAndSlave = ['MASTER', 'SLAVE'] as const
 
-export const memberListPart = definePart({
+const memberListPair = definePartPair({
   partKey: 'sample.desk.member-list',
-  rendererKey: 'sample.desk.member-list',
   containerKeys: main,
   displayModes: primary,
   workspaces: mainWorkspace,
-  instanceModes: masterInstance,
-  surfaceForm: allForms,
+  instanceModes: master,
   title: '已登记会员',
   description: '查看已登记会员并开始新增登记',
-  component: MemberList,
+  components: {laptop: LaptopMemberList, mobile: MobileMemberList},
 })
 
-export const memberFormPart = definePart({
+const memberFormPair = definePartPair({
   partKey: 'sample.desk.member-form',
-  rendererKey: 'sample.desk.member-form',
   containerKeys: main,
   displayModes: primary,
   workspaces: mainWorkspace,
-  instanceModes: masterInstance,
-  surfaceForm: allForms,
+  instanceModes: master,
   title: '新增会员',
   description: '录入姓名和电话并提交给顾客确认',
-  component: MemberForm,
+  components: {laptop: LaptopMemberForm, mobile: MobileMemberForm},
 })
 
-export const waitingConfirmPart = definePart({
+const waitingConfirmPair = definePartPair({
   partKey: 'sample.desk.waiting-confirm',
-  rendererKey: 'sample.desk.waiting-confirm',
-  containerKeys: [],
+  containerKeys: layer,
   displayModes: primary,
   workspaces: mainWorkspace,
-  instanceModes: masterInstance,
-  surfaceForm: allForms,
+  instanceModes: master,
   title: '等待顾客确认',
   description: '告知店员登记已提交并等待顾客确认',
-  component: WaitingConfirm,
   layerTier: 'standard',
+  components: {laptop: LaptopWaitingConfirm, mobile: MobileWaitingConfirm},
 })
 
-export const registryNoticePart = definePart({
+const registryNoticePair = definePartPair({
   partKey: 'sample.desk.registry-notice',
-  rendererKey: 'sample.desk.registry-notice',
-  containerKeys: [],
+  containerKeys: layer,
   displayModes: primary,
   workspaces: mainWorkspace,
-  instanceModes: masterInstance,
-  surfaceForm: allForms,
+  instanceModes: master,
   title: '登记结果提示',
   description: '向店员说明登记未完成的原因',
-  component: RegistryNotice,
   layerTier: 'alert',
   layerGuard: 'decisive',
+  components: {laptop: LaptopRegistryNotice, mobile: MobileRegistryNotice},
 })
 
-export const discardConfirmPart = definePart({
+const discardConfirmPair = definePartPair({
   partKey: 'sample.desk.discard-confirm',
-  rendererKey: 'sample.desk.discard-confirm',
-  containerKeys: [],
+  containerKeys: layer,
   displayModes: primary,
   workspaces: mainWorkspace,
-  instanceModes: masterInstance,
-  surfaceForm: allForms,
+  instanceModes: master,
   title: '放弃草稿确认',
   description: '在取消录入或退出前确认是否放弃当前草稿',
-  component: DiscardConfirm,
   layerTier: 'alert',
   layerGuard: 'decisive',
+  components: {laptop: LaptopDiscardConfirm, mobile: MobileDiscardConfirm},
 })
 
-export const withdrawConfirmPart = definePart({
+const withdrawConfirmPair = definePartPair({
   partKey: 'sample.desk.withdraw-confirm',
-  rendererKey: 'sample.desk.withdraw-confirm',
-  containerKeys: [],
+  containerKeys: layer,
   displayModes: primary,
   workspaces: mainWorkspace,
-  instanceModes: masterInstance,
-  surfaceForm: allForms,
+  instanceModes: master,
   title: '撤回登记确认',
   description: '在顾客确认前确认是否撤回本次登记',
-  component: WithdrawConfirm,
   layerTier: 'alert',
   layerGuard: 'decisive',
+  components: {laptop: LaptopWithdrawConfirm, mobile: MobileWithdrawConfirm},
 })
 
-export const systemNoticePart = definePart({
+const systemNoticePair = definePartPair({
   partKey: 'sample.desk.system-notice',
-  rendererKey: 'sample.desk.system-notice',
-  containerKeys: [],
+  containerKeys: layer,
   displayModes: primary,
   workspaces: mainWorkspace,
-  instanceModes: masterInstance,
-  surfaceForm: allForms,
+  instanceModes: master,
   title: '系统失败提示',
   description: '向店员说明登记链路的基础设施失败，并允许继续操作',
-  component: DeskSystemNotice,
   layerTier: 'alert',
+  components: {laptop: LaptopDeskSystemNotice, mobile: MobileDeskSystemNotice},
 })
 
-export const layerDismissals: Readonly<Record<string, RenderLayerDismissal>> = Object.freeze({
-  [systemNoticePart.catalogEntry.partKey]: ({dispatchCommand}) =>
-    dispatchDeskSystemFailureDismissal(dispatchCommand),
-})
-
-export const customerWelcomePart = definePart({
+const customerWelcomePair = definePartPair({
   partKey: 'sample.desk.customer-welcome',
-  rendererKey: 'sample.desk.customer-welcome',
   containerKeys: main,
   displayModes: secondary,
   workspaces: mainWorkspace,
-  instanceModes: masterAndSlaveInstances,
-  surfaceForm: allForms,
+  instanceModes: masterAndSlave,
   title: '顾客欢迎页',
   description: '副屏待机时提示顾客等待店员操作',
-  component: CustomerWelcome,
+  components: {laptop: LaptopCustomerWelcome, mobile: MobileCustomerWelcome},
 })
 
-export const customerMemberPart = definePart({
+const customerMemberPair = definePartPair({
   partKey: 'sample.desk.customer-member',
-  rendererKey: 'sample.desk.customer-member',
   containerKeys: main,
-  displayModes: both,
+  displayModes: bothDisplayModes,
   workspaces: mainWorkspace,
-  instanceModes: masterAndSlaveInstances,
-  surfaceForm: allForms,
+  instanceModes: masterAndSlave,
   title: '顾客会员确认',
   description: '向顾客展示待登记会员并提供确认或拒绝',
-  component: CustomerMember,
+  components: {laptop: LaptopCustomerMember, mobile: MobileCustomerMember},
 })
 
 export const parts = Object.freeze([
-  memberListPart,
-  memberFormPart,
-  waitingConfirmPart,
-  registryNoticePart,
-  discardConfirmPart,
-  withdrawConfirmPart,
-  systemNoticePart,
-  customerWelcomePart,
-  customerMemberPart,
+  memberListPair.laptop,
+  memberListPair.mobile,
+  memberFormPair.laptop,
+  memberFormPair.mobile,
+  waitingConfirmPair.laptop,
+  waitingConfirmPair.mobile,
+  registryNoticePair.laptop,
+  registryNoticePair.mobile,
+  discardConfirmPair.laptop,
+  discardConfirmPair.mobile,
+  withdrawConfirmPair.laptop,
+  withdrawConfirmPair.mobile,
+  systemNoticePair.laptop,
+  systemNoticePair.mobile,
+  customerWelcomePair.laptop,
+  customerWelcomePair.mobile,
+  customerMemberPair.laptop,
+  customerMemberPair.mobile,
 ])
+
+export const layerDismissals: Readonly<Record<string, RenderLayerDismissal>> = Object.freeze({
+  [systemNoticePair.laptop.catalogEntry.partKey]: ({dispatchCommand}) =>
+    dispatchDeskSystemFailureDismissal(dispatchCommand),
+})

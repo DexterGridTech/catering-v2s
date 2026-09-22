@@ -1,6 +1,7 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {describe, expect, it} from 'vitest'
 import {createRequestId} from '@catering-v2s/kernel-base-contracts'
+import {StyleSheet} from 'react-native'
 import {createProcessMemoryStateStoragePort, type LogEvent} from '@catering-v2s/kernel-base-platform-ports'
 import {
   loginCommand,
@@ -35,8 +36,9 @@ import {
   createSampleWallpaperConsoleAssembly as createProductionSampleWallpaperConsoleAssembly,
   parts as wallpaperConsoleParts,
 } from '../src'
-import {wallpaperPickerTestIds} from '@catering-v2s/ui-feature-sample-wallpaper-picker'
-import {createTestPlatformPorts, type TestPlatformPorts} from './support'
+import {sampleWallpaperPickerAssembly, wallpaperPickerTestIds} from '@catering-v2s/ui-feature-sample-wallpaper-picker'
+import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth'
+import {createTestPlatformPorts, TestPeerChannel, type TestPlatformPorts} from './support'
 
 type TestWallpaperConsoleAssemblyInput = Omit<Parameters<typeof createProductionSampleWallpaperConsoleAssembly>[0], 'platformPorts' | 'nativeLoadingCapability'> & Readonly<{
   readonly platformPorts: TestPlatformPorts
@@ -77,6 +79,43 @@ const measurePrimarySurface = (renderer: ReactTestRenderer): void => {
   })
 }
 
+const reportPrimaryReadyLayout = async (
+  renderer: ReactTestRenderer,
+  frame: Readonly<{readonly width: number; readonly height: number}>,
+): Promise<void> => {
+  const boundaries = renderer.root.findAllByProps({testID: 'ui-base-render:screen-ready-boundary'})
+  act(() => {
+    for (const boundary of boundaries) {
+      ;(boundary.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: frame}})
+    }
+  })
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)) })
+}
+
+const openTestPeerAsSlave = async (peer: TestPeerChannel): Promise<void> => {
+  peer.emit({type: 'open', connectionId: 'test-peer-connection'})
+  peer.emit({
+    type: 'message',
+    connectionId: 'test-peer-connection',
+    raw: JSON.stringify({
+      type: 'hello',
+      protocolVersion: 1,
+      moduleName: 'ui.integration.sample-wallpaper-console',
+      wireId: 'test-peer-hello',
+      nodeId: 'test-peer-slave',
+      displayName: '测试副机',
+      instanceMode: 'SLAVE',
+      displayRole: 'VICE',
+    }),
+  })
+  await new Promise(resolve => setTimeout(resolve, 0))
+}
+
+const stateFullSliceNames = (peer: TestPeerChannel): string[] => peer.sentFrames
+  .map(raw => JSON.parse(raw) as Readonly<{readonly type?: string; readonly sliceName?: string}>)
+  .filter(frame => frame.type === 'state-full-chunk' && frame.sliceName !== undefined)
+  .map(frame => frame.sliceName!)
+
 const press = (renderer: ReactTestRenderer, testID: string): (() => unknown) => {
   const instance = renderer.root.findByProps({testID}) as unknown as Readonly<{
     readonly props: Readonly<{readonly onPress: () => unknown}>
@@ -85,16 +124,12 @@ const press = (renderer: ReactTestRenderer, testID: string): (() => unknown) => 
 }
 
 const waitForAdminContent = async (renderer: ReactTestRenderer): Promise<void> => {
-  const pageTestIds = [
-    'admin.console.platform-ports',
-    'admin.console.runtime',
-    'admin.console.topology',
-  ]
   for (let attempt = 0; attempt < 50; attempt += 1) {
-    if (pageTestIds.some(testID => renderer.root.findAllByProps({testID}).length > 0)) return
+    if (renderer.root.findAllByProps({testID: adminTestIds.shell}).length > 0
+      && renderer.root.findAllByProps({testID: adminTestIds.panel.body}).length > 0) return
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)) })
   }
-  throw new Error('admin content did not become available')
+  throw new Error('authenticated admin shell did not become available')
 }
 
 const authenticateAdmin = async (renderer: ReactTestRenderer): Promise<void> => {
@@ -221,6 +256,126 @@ describe('sample2 wallpaper console assembly', () => {
     }
   })
 
+  it('records a visible content failure in the shared startup completion facts', async () => {
+    const events: LogEvent[] = []
+    const assembly = await createSampleWallpaperConsoleAssembly({
+      platformPorts: createTestPlatformPorts({events}),
+      persistenceKey: `sample2-startup-content-failure-${Date.now()}`,
+      surfaceForm: 'mobile',
+      surfaceHostSourcesByDisplayIndex: {0: createPrimaryHostSource()},
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      const selection = await assembly.runtime.dispatchCommand(showScreenCommand, {
+        displayMode: 'PRIMARY',
+        containerKey: 'main',
+        partKey: 'sample.wallpaper-console.missing-part',
+      }, {
+        requestId: createRequestId(),
+        routeContext: {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'},
+      })
+      expect(selection.status).toBe('completed')
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0))
+      measurePrimarySurface(renderer)
+      await reportPrimaryReadyLayout(renderer, PRIMARY_FRAME)
+      const complete = events.find(event => event.event === 'startup.complete')
+      expect(complete?.data).toMatchObject({
+        primaryReadyPartKey: 'sample.wallpaper-console.missing-part',
+        primaryContentFailure: 'missing-catalog-entry',
+      })
+      expect(events.some(event => event.event === 'startup.ready-failed')).toBe(false)
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('retries PRIMARY startup readiness after prerequisites reject completion', async () => {
+    const events: LogEvent[] = []
+    const assembly = await createSampleWallpaperConsoleAssembly({
+      platformPorts: createTestPlatformPorts({events, failStartupReadyCount: 1}),
+      persistenceKey: `sample2-startup-retry-${Date.now()}`,
+      surfaceForm: 'mobile',
+      surfaceHostSourcesByDisplayIndex: {0: createPrimaryHostSource()},
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0))
+      measurePrimarySurface(renderer)
+      await reportPrimaryReadyLayout(renderer, PRIMARY_FRAME)
+      expect(events.filter(event => event.event === 'startup.complete')).toHaveLength(0)
+      expect(events.filter(event => event.event === 'startup.ready-dispatch-failed')).toHaveLength(1)
+      expect(events.find(event => event.event === 'startup.ready-dispatch-failed')?.data?.errorName)
+        .toBe('Error')
+
+      act(() => { renderer!.unmount() })
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0))
+      measurePrimarySurface(renderer)
+      await reportPrimaryReadyLayout(renderer, PRIMARY_FRAME)
+      expect(events.filter(event => event.event === 'startup.ready-dispatch-failed')).toHaveLength(1)
+      expect(events.filter(event => event.event === 'startup.complete')).toHaveLength(1)
+      expect(events.filter(event => event.event === 'startup.ready-dispatch-start')).toHaveLength(2)
+      expect(events.filter(event => event.event === 'startup.ready-dispatch-result').map(event => event.data?.status))
+        .toEqual(['error', 'completed'])
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('excludes isolated wallpaper and session slices from topology state transfer', async () => {
+    const peer = new TestPeerChannel()
+    const assembly = await createSampleWallpaperConsoleAssembly({
+      platformPorts: createTestPlatformPorts({displayCount: 1}),
+      persistenceKey: `sample2-sync-slices-${Date.now()}`,
+      surfaceForm: 'laptop',
+      topologyPeerChannel: peer,
+    })
+    try {
+      await openTestPeerAsSlave(peer)
+      const sliceNames = stateFullSliceNames(peer)
+      expect(sliceNames).not.toContain('kernel.feature.sample-wallpaper.selection')
+      expect(sliceNames).not.toContain('kernel.feature.sample-staff-session.session')
+      expect(sliceNames).not.toContain('kernel.feature.sample-member-registry.members')
+    } finally {
+      await peer.dispose()
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('selects the form-specific wallpaper renderer at the real integration surface', async () => {
+    const assemblies = await Promise.all((['laptop', 'mobile'] as const).map(async surfaceForm => {
+      const assembly = await createSampleWallpaperConsoleAssembly({
+        platformPorts: createTestPlatformPorts({displayCount: surfaceForm === 'laptop' ? 2 : 1}),
+        persistenceKey: `sample2-form-renderer-${surfaceForm}-${Date.now()}`,
+        surfaceForm,
+      })
+      await assembly.runtime.dispatchCommand(loginSucceededCommand, {operatorName: 'Alice'}, dispatchOptions())
+      return assembly
+    }))
+    const renderers: ReactTestRenderer[] = []
+    try {
+      for (const assembly of assemblies) {
+        const renderer = mount(createSurfaceForDisplayIndex(assembly, 0))
+        renderers.push(renderer)
+        measurePrimarySurface(renderer)
+        const picker = renderer.root.findByProps({testID: wallpaperPickerTestIds.root})
+        const options = renderer.root.findByProps({testID: wallpaperPickerTestIds.options})
+        const style = StyleSheet.flatten(picker.props.style)
+        if (assembly.surfaceForm === 'laptop') {
+          expect(style).toMatchObject({maxWidth: 960, alignSelf: 'center'})
+          expect(StyleSheet.flatten(options.props.style)).toMatchObject({flexShrink: 0})
+        } else {
+          expect(style).toMatchObject({paddingHorizontal: 8, gap: 3})
+          expect(StyleSheet.flatten(options.props.style)).toMatchObject({flexDirection: 'column'})
+        }
+      }
+    } finally {
+      for (const renderer of renderers) act(() => { renderer.unmount() })
+      for (const assembly of assemblies) releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
   it('integrates the shared admin console on laptop and mobile primary surfaces', async () => {
     const assemblies = await Promise.all((['laptop', 'mobile'] as const).map(surfaceForm =>
       createSampleWallpaperConsoleAssembly({
@@ -277,6 +432,25 @@ describe('sample2 wallpaper console assembly', () => {
       for (const renderer of renderers) act(() => { renderer.unmount() })
       for (const assembly of assemblies) releaseRuntimeForTest(assembly.runtime)
     }
+  })
+
+  it('keeps primary business parts as distinct laptop/mobile siblings and secondary parts laptop-only', () => {
+    const primaryParts = [...sampleStaffAuthAssembly.parts, ...sampleWallpaperPickerAssembly.parts]
+    const groups = new Map<string, typeof primaryParts[number][]>()
+    for (const part of primaryParts) {
+      const siblings = groups.get(part.catalogEntry.partKey) ?? []
+      siblings.push(part)
+      groups.set(part.catalogEntry.partKey, siblings)
+    }
+    for (const siblings of groups.values()) {
+      expect(siblings).toHaveLength(2)
+      expect(siblings.map(part => part.catalogEntry.surfaceForm).sort()).toEqual([['laptop'], ['mobile']])
+      expect(new Set(siblings.map(part => part.rendererBinding.component)).size).toBe(2)
+      expect(new Set(siblings.map(part => part.rendererBinding.rendererKey)).size).toBe(2)
+    }
+
+    expect(wallpaperConsoleParts.map(part => part.catalogEntry.surfaceForm)).toEqual([['laptop'], ['laptop']])
+    expect(new Set(wallpaperConsoleParts.map(part => part.rendererBinding.component)).size).toBe(2)
   })
 
   it('allows only waiting and welcome parts on a topology secondary', () => {

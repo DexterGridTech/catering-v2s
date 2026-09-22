@@ -1,6 +1,6 @@
 import {definePart} from '@catering-v2s/ui-base-render'
-import {WallpaperConsoleWaiting} from '../components/Waiting'
-import {WallpaperConsoleWelcome} from '../components/Welcome'
+import {WallpaperConsoleWaiting} from '../components/laptop/Waiting'
+import {WallpaperConsoleWelcome} from '../components/laptop/Welcome'
 
 const main = ['main'] as const
 const secondary = ['SECONDARY'] as const

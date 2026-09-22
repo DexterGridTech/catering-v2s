@@ -33,8 +33,10 @@
   从该 assembly 的 runtime 读取 display role 与 instance mode，统一调用
   `display-context.resolveSurfaceDisplayMode` 后再委托给该 assembly 的 `createSurface`。
 - `terminalSurfaces`：由本包 `package.json` 读取并校验后的固定逻辑 surface 配置；
-  `PortraitSurfaceDeclarations`、`SurfaceCreationInput`、`SurfaceDeclarations`、`SurfaceForm`、
-  `SurfaceOrientation`、`SurfaceSize`、`TerminalSurfaces` 是其 typed 契约。
+  `readTerminalSurfaces`、`getSurfaceDeclarations` 与 `surfaceFormForOrientation` 是保留
+  package error-prefix 的薄 adapter，`PortraitSurfaceDeclarations`、`SurfaceCreationInput`、
+  `SurfaceDeclarations`、`SurfaceForm`、`SurfaceOrientation`、`SurfaceSize`、`TerminalSurfaces`
+  是其 typed 契约。
 
 ## 用法
 
@@ -56,7 +58,7 @@ surface 的闭包入口。
 不通过隐藏 tab 表达机型限制。
 
 admin console 的 laptop/mobile 版式与导航语义由 `ui.base.admin-shell` 的 form-specific renderer 负责：laptop
-使用 master-detail，mobile 使用可换行 tablist；内容标题通过 polite live region 宣布，焦点 scope 的关闭/恢复仍由既有 terminal layer 管线负责。
+使用 master-detail，mobile 使用单个受控下拉 selector；内容标题通过 polite live region 宣布，焦点 scope 的关闭/恢复仍由既有 terminal layer 管线负责。
 
 主题 token 由 `theme/global.css` 声明、由 `tailwind.config.cjs` 映射为语义 class；
 `ui/base/primitives` 只消费这些语义 class，不反向 import 应用主题。新增应用时复制自己的

@@ -18,7 +18,7 @@ import {
   selectWallpaperId,
 } from '@catering-v2s/kernel-feature-sample-wallpaper'
 import {createSampleWallpaperPickerModule} from '../src/application/module'
-import {WallpaperPicker} from '../src/components/WallpaperPicker'
+import {WallpaperPicker} from '../src/components/laptop/WallpaperPicker'
 import {
   confirmWallpaperRequestedCommand,
   wallpaperOptionSelectedCommand,
@@ -164,7 +164,7 @@ const mountPicker = (runtime: TestRuntime, catalog: ReturnType<typeof createUiCa
 
 describe('sample wallpaper picker production failure boundary', () => {
   it('propagates a real child write-after select failure through the production picker actor', async () => {
-    const catalog = createUiCatalog(sampleWallpaperPickerAssembly.parts.map(part => part.catalogEntry))
+    const catalog = createUiCatalog(sampleWallpaperPickerAssembly.parts.filter(part => part.catalogEntry.surfaceForm.includes('mobile')).map(part => part.catalogEntry))
     const uiState = createUiStateModule({catalog, variables: [], surfaceForm: 'mobile'})
     const injectedRuntime = createTestRuntime([
       createDisplayContextModule(),
@@ -205,7 +205,7 @@ describe('sample wallpaper picker production failure boundary', () => {
   })
 
   it('propagates a real child write-after confirm failure without rolling back confirmed state', async () => {
-    const catalog = createUiCatalog(sampleWallpaperPickerAssembly.parts.map(part => part.catalogEntry))
+    const catalog = createUiCatalog(sampleWallpaperPickerAssembly.parts.filter(part => part.catalogEntry.surfaceForm.includes('mobile')).map(part => part.catalogEntry))
     const uiState = createUiStateModule({catalog, variables: [], surfaceForm: 'mobile'})
     const runtime = createTestRuntime([
       createDisplayContextModule(),
@@ -231,7 +231,7 @@ describe('sample wallpaper picker production failure boundary', () => {
   })
 
   it('closes the real picker UI to child result readback and system notice without a manual notice dispatch', async () => {
-    const catalog = createUiCatalog(sampleWallpaperPickerAssembly.parts.map(part => part.catalogEntry))
+    const catalog = createUiCatalog(sampleWallpaperPickerAssembly.parts.filter(part => part.catalogEntry.surfaceForm.includes('mobile')).map(part => part.catalogEntry))
     const uiState = createUiStateModule({catalog, variables: [], surfaceForm: 'mobile'})
     const runtime = createTestRuntime([
       createDisplayContextModule(),
@@ -265,7 +265,7 @@ describe('sample wallpaper picker production failure boundary', () => {
   })
 
   it('closes the real picker UI to a truthful before-write notice from a runtime child failure', async () => {
-    const catalog = createUiCatalog(sampleWallpaperPickerAssembly.parts.map(part => part.catalogEntry))
+    const catalog = createUiCatalog(sampleWallpaperPickerAssembly.parts.filter(part => part.catalogEntry.surfaceForm.includes('mobile')).map(part => part.catalogEntry))
     const uiState = createUiStateModule({catalog, variables: [], surfaceForm: 'mobile'})
     const runtime = createTestRuntime([
       createDisplayContextModule(),

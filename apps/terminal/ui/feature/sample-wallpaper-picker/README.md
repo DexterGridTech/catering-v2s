@@ -15,9 +15,13 @@
 ## 结构
 
 - `src/foundations/assets.ts`：唯一的静态 `assetsById` 映射；`none` 是合法的无壁纸值。
-- `src/components/WallpaperPicker.tsx`：从 ui-state selector 读取 confirmed/pending，使用
-  `pending ?? confirmed` 计算选中项，在共享纵向滚动区中渲染四个 radio 和一个确认按钮；
-  选项过长时仍能通过真实滚动把确认按钮带入可见区域。
+- `src/components/laptop/WallpaperPicker.tsx` 与 `src/components/mobile/WallpaperPicker.tsx`：
+  两套布局分别从 ui-state selector 读取 confirmed/pending，使用 `pending ?? confirmed` 计算
+  选中项；业务行为共用 `src/hooks/useWallpaperPicker.ts`，机型差异只留在 renderer。
+- `src/foundations/wallpaperCatalogData.json` 与 `src/foundations/wallpaperCatalog.ts`：壁纸
+  ID、用户可见标签及其类型化入口的唯一业务字典；catalog 会启动时校验 ID、标签和资产
+  的集合一致，两套 picker 与 `WallpaperBackground` 均从 `wallpaperCatalog.ts` 读取，受管
+  frozen-journey runner 通过工具 adapter 读取同一数据源。
 - `src/components/WallpaperBackground.tsx`：只读取 confirmed `wallpaperId`，通过同一映射
   解析背景 source；`none` 或缺失 source 返回空节点。
 - `src/features/actors` 与 `src/features/commands`：交互命令及其 actor。相同 effective

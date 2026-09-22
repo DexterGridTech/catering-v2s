@@ -4,7 +4,9 @@ import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@cat
 import {definePart, type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render'
 import {
   createConsoleAssembly,
+  createStartupReadyPayload,
   createSurfaceForDisplayIndex as createSharedSurfaceForDisplayIndex,
+  selectStateSyncSlices,
   type ConsoleAssembly,
 } from '@catering-v2s/ui-base-console-assembly'
 import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk'
@@ -18,7 +20,6 @@ import {createSampleConsoleModule, startupReadyCommand, type SampleConsoleReadyP
 import {
   getSurfaceDeclarations,
   terminalSurfaces,
-  type SurfaceCreationInput,
   type SurfaceForm,
   type TerminalSurfaces,
 } from '../application/terminalSurfaces'
@@ -95,12 +96,7 @@ export async function createSampleAssembly(
     variables: [...sampleStaffAuthAssembly.variables],
     surfaceHostSourcesByDisplayIndex: input.surfaceHostSourcesByDisplayIndex,
     startupReadyCommand,
-    createStartupReadyPayload: ({surfaceKey, displayIndex, readyPartKey, contentFailure}) => ({
-      surfaceKey,
-      displayIndex,
-      readyPartKey,
-      contentFailure,
-    }),
+    createStartupReadyPayload,
     resolveCommandTarget: resolveTopologyCommandTarget,
     createTopologyAdminCapability,
     createApplicationModules: ({uiStateModule}) => {
@@ -113,13 +109,10 @@ export async function createSampleAssembly(
           surfaceForm,
           identityClient: createTopologyIdentityClient(),
           peerChannel: input.topologyPeerChannel,
-          stateSyncSlices: [...(uiStateModule.stateSlices ?? []), ...(memberRegistryModule.stateSlices ?? [])].reduce<Array<{
-            readonly name: string
-            readonly syncIntent: 'master-to-slave' | 'slave-to-master'
-          }>>((result, slice) => {
-            if (slice.syncIntent !== 'isolated') result.push({name: slice.name, syncIntent: slice.syncIntent})
-            return result
-          }, []),
+          stateSyncSlices: selectStateSyncSlices([
+            ...(uiStateModule.stateSlices ?? []),
+            ...(memberRegistryModule.stateSlices ?? []),
+          ]),
         }),
         createSampleConsoleModule(),
         createSampleStaffSessionModule(),

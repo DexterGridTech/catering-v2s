@@ -8,7 +8,7 @@
   },
   "ownerKind": "owner",
   "publicExports": [
-    "WallpaperBackground", "WallpaperPicker", "WallpaperPickerAssembly",
+    "WallpaperBackground", "WallpaperPickerAssembly",
     "WallpaperId", "WallpaperPickerCommandPayload", "assetsById",
     "confirmWallpaperRequestedCommand", "createSampleWallpaperPickerModule",
     "dependencyModuleNames", "devDependencyModuleNames", "moduleKind", "moduleName",

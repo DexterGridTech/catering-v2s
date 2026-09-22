@@ -15,11 +15,16 @@ import {
   type DisplayInfo,
   type DisplaySurfaceInfo,
   type LogEvent,
+  type LogContext,
+  type LogScopeBinding,
+  type LogWriteInput,
+  type LoggerPort,
   type PlatformPorts,
   type PortResult,
   type StateStoragePort,
   type NativeLoadingCapability,
 } from '@catering-v2s/kernel-base-platform-ports'
+import type {TopologyPeerChannel, TopologyPeerChannelEvent} from '@catering-v2s/kernel-base-transport'
 
 const PORT_DESCRIPTOR_KEY = Symbol.for('catering-v2s.platform-ports.descriptor')
 const testPortCapabilities = Object.freeze([
@@ -53,7 +58,57 @@ const nativeLoadingCapability: NativeLoadingCapability = Object.freeze({
   hideOnce: async reason => Object.freeze({hidden: true, alreadyHidden: false, reason}),
 })
 
+const wrapLoggerWithStartupReadyFailures = (
+  logger: LoggerPort,
+  remainingFailures: {value: number},
+): LoggerPort => Object.freeze({
+  debug: (input: LogWriteInput) => logger.debug(input),
+  info: (input: LogWriteInput) => {
+    if (input.event === 'startup.ready' && remainingFailures.value > 0) {
+      remainingFailures.value -= 1
+      throw new Error('fixture startup-ready logger failure')
+    }
+    return logger.info(input)
+  },
+  warn: (input: LogWriteInput) => logger.warn(input),
+  error: (input: LogWriteInput) => logger.error(input),
+  scope: (binding: LogScopeBinding) => wrapLoggerWithStartupReadyFailures(logger.scope(binding), remainingFailures),
+  withContext: (context: LogContext) => wrapLoggerWithStartupReadyFailures(logger.withContext(context), remainingFailures),
+})
+
 export type TestPlatformPorts = PlatformPorts & Readonly<{readonly nativeLoadingCapability: NativeLoadingCapability}>
+
+export class TestPeerChannel implements TopologyPeerChannel {
+  readonly sentFrames: string[] = []
+  private readonly listeners = new Set<(event: TopologyPeerChannelEvent) => void>()
+
+  subscribe(listener: (event: TopologyPeerChannelEvent) => void): () => void {
+    this.listeners.add(listener)
+    return () => { this.listeners.delete(listener) }
+  }
+
+  listen(): void {}
+
+  async connect(_url: string): Promise<void> {
+    this.emit({type: 'open', connectionId: 'test-peer-connection'})
+  }
+
+  async send(raw: string): Promise<void> {
+    this.sentFrames.push(raw)
+  }
+
+  async close(reason?: string): Promise<void> {
+    this.emit({type: 'close', reason, connectionId: 'test-peer-connection'})
+  }
+
+  async dispose(): Promise<void> {
+    this.listeners.clear()
+  }
+
+  emit(event: TopologyPeerChannelEvent): void {
+    for (const listener of this.listeners) listener(event)
+  }
+}
 
 export class FakeWebStorage implements Storage {
   private readonly values = new Map<string, string>()
@@ -96,6 +151,7 @@ export const createTestPlatformPorts = (input: Readonly<{
   readonly events?: LogEvent[]
   readonly startupRunId?: string
   readonly stripPortDescriptors?: boolean
+  readonly failStartupReadyCount?: number
 }> = {}): TestPlatformPorts => {
   const events = input.events ?? []
   let displayInfoCalls = 0
@@ -148,8 +204,10 @@ export const createTestPlatformPorts = (input: Readonly<{
       topologyHost: withTestPortDescriptor(unavailableTopologyHostPort, 'topologyHost'),
     },
   })
+  const failureState = {value: input.failStartupReadyCount ?? 0}
   const result = Object.freeze({
     ...ports,
+    ...(failureState.value > 0 ? {logger: wrapLoggerWithStartupReadyFailures(ports.logger, failureState)} : {}),
     ...(input.startupRunId === undefined ? {} : {startupRunId: input.startupRunId}),
     nativeLoadingCapability,
   })

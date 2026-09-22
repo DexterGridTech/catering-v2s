@@ -54,7 +54,7 @@ export type {SurfaceContextValue} from './contexts/SurfaceContext';
 export {useRenderContext} from './contexts/RenderContext';
 export type {RenderContextValue} from './contexts/RenderContext';
 export {createRendererCatalog} from './foundations/createRendererCatalog';
-export {definePart} from './foundations/definePart';
+export {definePart, definePartPair} from './foundations/definePart';
 export {createCatalogContext} from './foundations/createCatalogContext';
 export {classifyRequestResult, isBusinessErrorCategory} from './foundations/requestOutcome';
 export type {RequestOutcome} from './foundations/requestOutcome';
@@ -65,7 +65,7 @@ export {ScreenContainer} from './components/ScreenContainer';
 export {ScreenReadyBoundary, StandaloneStartupFailurePage, StartupFailurePage} from './components/ScreenReadyBoundary';
 export type {FailureStage, ScreenReadyBoundaryProps, StandaloneStartupFailurePageProps, StartupFailurePageProps} from './components/ScreenReadyBoundary';
 export {SystemFailureNotice} from './components/SystemFailureNotice';
-export type {SystemFailureNoticeProps} from './components/SystemFailureNotice';
+export type {SystemFailureNoticePresentation, SystemFailureNoticeProps} from './components/SystemFailureNotice';
 export {SurfaceRoot} from './components/SurfaceRoot';
 export {SurfaceHostController, useSurfaceHostAvailability, useSurfaceHostSnapshot} from './components/SurfaceHostController';
 export {useSurfaceDisplayMode} from './hooks/useSurfaceDisplayMode';
@@ -76,3 +76,9 @@ export {useUiStateSelector} from './hooks/useUiStateSelector';
 export {useUiCatalogContext} from './hooks/useUiCatalogContext';
 export {useUiVariable} from './hooks/useUiVariable';
 export {useRequestInFlight, useTrackedRequest} from './hooks/useRequest';
+export {useTrackedCommand} from './hooks/useTrackedCommand';
+export type {
+  TrackedCommand,
+  TrackedCommandRejectionPolicy,
+  TrackedCommandRunInput,
+} from './hooks/useTrackedCommand';

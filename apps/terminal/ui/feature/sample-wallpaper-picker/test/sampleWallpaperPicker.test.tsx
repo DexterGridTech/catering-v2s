@@ -21,14 +21,15 @@ import {PrimitiveImage, PrimitiveRadio, PrimitiveScrollView} from '@catering-v2s
 import {
   assetsById,
   WallpaperBackground,
-  WallpaperPicker,
   wallpaperOptionSelectedCommand,
   confirmWallpaperRequestedCommand,
   wallpaperOptionTestId,
   wallpaperPickerTestIds,
   sampleWallpaperPickerAssembly,
 } from '../src/index'
-import {WallpaperSystemNotice} from '../src/components/WallpaperSystemNotice'
+import {WallpaperPicker} from '../src/components/laptop/WallpaperPicker'
+import {WallpaperSystemNotice} from '../src/components/laptop/WallpaperSystemNotice'
+import {WallpaperSystemNotice as MobileWallpaperSystemNotice} from '../src/components/mobile/WallpaperSystemNotice'
 import expectedW1 from '../assets/w1.jpg'
 import expectedW2 from '../assets/w2.jpg'
 import expectedW3 from '../assets/w3.jpg'
@@ -137,10 +138,14 @@ const commandDispatch = (calls: Array<Readonly<{name: string; payload: unknown}>
 }) as RenderProviderProps['dispatchCommand']
 
 describe('sample wallpaper picker', () => {
-  it('exports one assembly, one part and one asset map', () => {
+  it('exports laptop/mobile renderer siblings and one asset map', () => {
     expect(sampleWallpaperPickerAssembly.parts.map(part => part.catalogEntry.partKey)).toEqual([
-      'sample.wallpaper.picker',
-      'sample.wallpaper.system-notice',
+      'sample.wallpaper.picker', 'sample.wallpaper.picker',
+      'sample.wallpaper.system-notice', 'sample.wallpaper.system-notice',
+    ])
+    expect(sampleWallpaperPickerAssembly.parts.map(part => part.catalogEntry.rendererKey)).toEqual([
+      'sample.wallpaper.picker.laptop', 'sample.wallpaper.picker.mobile',
+      'sample.wallpaper.system-notice.laptop', 'sample.wallpaper.system-notice.mobile',
     ])
     expect(Object.keys(assetsById)).toEqual(['none', 'w1', 'w2', 'w3'])
     expect(assetsById.none).toBeUndefined()
@@ -262,15 +267,25 @@ describe('sample wallpaper picker', () => {
     renderer.unmount()
   })
 
-  it('keeps the picker notice copy truthful for a confirm write-after failure', () => {
-    const renderer = mount(renderProvider(
-      rootFor('w2'),
-      commandDispatch([]),
-      createElement(WallpaperSystemNotice, {operation: 'confirm', phase: 'after-write'}),
-    ))
-    expect(renderer.root.findAllByProps({testID: 'sample.wallpaper.system-notice:message'})
-      .some(node => node.children?.includes('壁纸已更换，但系统未能确认，无需重复操作'))).toBe(true)
-    renderer.unmount()
+  it('keeps both picker notice profiles truthful for a confirm write-after failure', () => {
+    for (const [Component, isMobile] of [[WallpaperSystemNotice, false], [MobileWallpaperSystemNotice, true]] as const) {
+      const renderer = mount(renderProvider(
+        rootFor('w2'),
+        commandDispatch([]),
+        createElement(Component, {operation: 'confirm', phase: 'after-write'}),
+      ))
+      expect(renderer.root.findAllByProps({testID: 'sample.wallpaper.system-notice:message'})
+        .some(node => node.children?.includes('壁纸已更换，但系统未能确认，无需重复操作'))).toBe(true)
+      expect(renderer.root.findAllByProps({testID: 'sample.wallpaper.system-notice'}).map(node => node.props.style))
+        .toContainEqual(isMobile ? {flex: 1, minHeight: 0, padding: 16, alignItems: 'stretch'} : {flex: 1, minHeight: 0, padding: 24})
+      expect(renderer.root.findAllByProps({testID: 'sample.wallpaper.system-notice:card'}).map(node => node.props.style))
+        .toContainEqual(isMobile ? {width: '100%'} : {width: '100%', maxWidth: 720})
+      expect(renderer.root.findAllByProps({testID: 'sample.wallpaper.system-notice:actions'}).map(node => node.props.className))
+        .toContain(isMobile ? 'w-full items-center gap-3' : 'flex-row flex-wrap items-start gap-3')
+      expect(renderer.root.findAllByProps({testID: 'sample.wallpaper.system-notice:dismiss'}).map(node => node.props.style))
+        .toContainEqual(isMobile ? {width: '100%'} : undefined)
+      renderer.unmount()
+    }
   })
 
   it('uses the picker actor to dispatch only kernel commands for changed selection and confirmation', async () => {

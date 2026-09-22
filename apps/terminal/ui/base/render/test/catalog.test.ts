@@ -3,6 +3,7 @@ import {createElement, type ComponentType} from 'react'
 import {
   createRendererCatalog,
   definePart,
+  definePartPair,
   type RendererCatalog,
 } from '../src/index'
 import {createUiCatalog} from '@catering-v2s/kernel-base-ui-state'
@@ -145,6 +146,64 @@ describe('renderer catalog boundaries', () => {
 
     expectTypeOf(catalog).toMatchTypeOf<RendererCatalog>()
     expect(catalog.resolve('count-renderer')?.component).toBeTypeOf('function')
+  })
+
+  it('creates two frozen sibling renderers from one shared catalog declaration', () => {
+    const {component: _component, rendererKey: _rendererKey, surfaceForm: _surfaceForm, ...shared} = partInput()
+    const pair = definePartPair({
+      ...shared,
+      partKey: 'paired-part',
+      layerTier: 'alert',
+      layerGuard: 'decisive',
+      components: {laptop: Part, mobile: Part},
+    })
+
+    expect(pair.laptop.catalogEntry).toMatchObject({
+      partKey: 'paired-part',
+      rendererKey: 'paired-part.laptop',
+      containerKeys: ['surface-container'],
+      displayModes: ['PRIMARY'],
+      workspaces: ['MAIN'],
+      instanceModes: ['MASTER'],
+      surfaceForm: ['laptop'],
+      title: 'Catalog part',
+      description: 'Catalog part description',
+    })
+    expect(pair.mobile.catalogEntry).toMatchObject({
+      partKey: 'paired-part',
+      rendererKey: 'paired-part.mobile',
+      containerKeys: ['surface-container'],
+      displayModes: ['PRIMARY'],
+      workspaces: ['MAIN'],
+      instanceModes: ['MASTER'],
+      surfaceForm: ['mobile'],
+      title: 'Catalog part',
+      description: 'Catalog part description',
+    })
+    expect(pair.laptop.rendererBinding.layerTier).toBe('alert')
+    expect(pair.mobile.rendererBinding.layerTier).toBe('alert')
+    expect(pair.laptop.rendererBinding.layerGuard).toBe('decisive')
+    expect(pair.mobile.rendererBinding.layerGuard).toBe('decisive')
+    expect(pair.laptop.catalogEntry.containerKeys).toEqual(pair.mobile.catalogEntry.containerKeys)
+    expect(pair.laptop.catalogEntry.displayModes).toEqual(pair.mobile.catalogEntry.displayModes)
+    expect(pair.laptop.catalogEntry.workspaces).toEqual(pair.mobile.catalogEntry.workspaces)
+    expect(pair.laptop.catalogEntry.instanceModes).toEqual(pair.mobile.catalogEntry.instanceModes)
+    expect(pair.laptop.catalogEntry.title).toBe(pair.mobile.catalogEntry.title)
+    expect(pair.laptop.catalogEntry.description).toBe(pair.mobile.catalogEntry.description)
+    expect(pair.laptop.catalogEntry.title).toBe(pair.mobile.catalogEntry.title)
+    expect(pair.laptop.rendererBinding.component).toBe(Part)
+    expect(pair.mobile.rendererBinding.component).toBe(Part)
+    expect(Object.isFrozen(pair)).toBe(true)
+    expect(Object.isFrozen(pair.laptop.catalogEntry)).toBe(true)
+    expect(Object.isFrozen(pair.mobile.catalogEntry)).toBe(true)
+    expect(Reflect.set(pair.laptop.catalogEntry, 'title', 'mutated')).toBe(false)
+
+    definePartPair({
+      ...shared,
+      partKey: 'incompatible-pair',
+      // @ts-expect-error laptop/mobile renderers must share one props type.
+      components: {laptop: Part, mobile: CountPart},
+    })
   })
 
   it('rejects a non-component at the typed catalog boundary', () => {

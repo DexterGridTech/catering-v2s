@@ -2,7 +2,6 @@ export {dependencyModuleNames, devDependencyModuleNames} from './dependencies'
 export {moduleName, moduleKind} from './moduleName'
 export {assetsById} from './foundations/assets'
 export {WallpaperBackground} from './components/WallpaperBackground'
-export {WallpaperPicker} from './components/WallpaperPicker'
 export {
   confirmWallpaperRequestedCommand,
   wallpaperOptionSelectedCommand,

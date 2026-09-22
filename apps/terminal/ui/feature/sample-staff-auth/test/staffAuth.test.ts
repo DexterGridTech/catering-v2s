@@ -24,8 +24,9 @@ import {
 } from '../src/index'
 import {createSampleStaffAuthModule} from '../src/application/module'
 import {createAuthNavigationActor} from '../src/features/actors/actors'
-import {AuthSystemNotice} from '../src/components/AuthSystemNotice'
-import {StaffLogin} from '../src/components/StaffLogin'
+import {AuthSystemNotice} from '../src/components/laptop/AuthSystemNotice'
+import {AuthSystemNotice as MobileAuthSystemNotice} from '../src/components/mobile/AuthSystemNotice'
+import {StaffLogin} from '../src/components/laptop/StaffLogin'
 import {
   authNoticeDismissedCommand,
   authSystemFailureDismissedCommand,
@@ -171,9 +172,14 @@ const expectTextValue = (renderer: ReactTestRenderer, testID: string, value: str
 describe('sample staff auth UI feature', () => {
   it('exports one assembly description with the approved parts and variables', () => {
     expect(sampleStaffAuthAssembly.parts.map(part => part.catalogEntry.partKey)).toEqual([
-      'sample.auth.login',
-      'sample.auth.notice',
-      'sample.auth.system-notice',
+      'sample.auth.login', 'sample.auth.login',
+      'sample.auth.notice', 'sample.auth.notice',
+      'sample.auth.system-notice', 'sample.auth.system-notice',
+    ])
+    expect(sampleStaffAuthAssembly.parts.map(part => part.catalogEntry.rendererKey)).toEqual([
+      'sample.auth.login.laptop', 'sample.auth.login.mobile',
+      'sample.auth.notice.laptop', 'sample.auth.notice.mobile',
+      'sample.auth.system-notice.laptop', 'sample.auth.system-notice.mobile',
     ])
     expect(sampleStaffAuthAssembly.variables).toEqual([
       operatorNameVariable,
@@ -194,7 +200,9 @@ describe('sample staff auth UI feature', () => {
   })
 
   it('keeps the notice layer-only and the login screen on PRIMARY', () => {
-    const [login, notice, systemNotice] = sampleStaffAuthAssembly.parts
+    const login = sampleStaffAuthAssembly.parts.find(part => part.catalogEntry.rendererKey === 'sample.auth.login.laptop')
+    const notice = sampleStaffAuthAssembly.parts.find(part => part.catalogEntry.rendererKey === 'sample.auth.notice.laptop')
+    const systemNotice = sampleStaffAuthAssembly.parts.find(part => part.catalogEntry.rendererKey === 'sample.auth.system-notice.laptop')
     expect(login?.catalogEntry).toMatchObject({
       partKey: 'sample.auth.login',
       containerKeys: ['main'],
@@ -316,26 +324,38 @@ describe('sample staff auth UI feature', () => {
     act(() => { renderer.unmount() })
   })
 
-  it('renders system notice copy from the operation allowlist', () => {
-    const renderer = mount(createElement(
-      RenderProvider,
-      {
-        stateSource: createStateSource({} as RuntimeStateRoot),
-        uiCatalog: createUiCatalog([]),
-        rendererCatalog: createRendererCatalog([]),
-        logger: createLogger(),
-        dispatchCommand: (async () => completedResult()) as RenderProviderProps['dispatchCommand'],
-        selectUiVariable: (_root, declaration) => declaration.defaultValue,
-      },
-      createElement(AuthSystemNotice, {operation: 'login'}),
-    ))
+  it('renders both system-notice profiles with fixed copy and shared semantics', () => {
+    for (const [Component, isMobile] of [[AuthSystemNotice, false], [MobileAuthSystemNotice, true]] as const) {
+      const renderer = mount(createElement(
+        RenderProvider,
+        {
+          stateSource: createStateSource({} as RuntimeStateRoot),
+          uiCatalog: createUiCatalog([]),
+          rendererCatalog: createRendererCatalog([]),
+          logger: createLogger(),
+          dispatchCommand: (async () => completedResult()) as RenderProviderProps['dispatchCommand'],
+          selectUiVariable: (_root, declaration) => declaration.defaultValue,
+        },
+        createElement(Component, {operation: 'login'}),
+      ))
 
-    expectTextValue(renderer, 'sample.auth.system-notice:message', '操作没有完成，请重试')
-    act(() => { renderer.unmount() })
+      expectTextValue(renderer, 'sample.auth.system-notice:message', '操作没有完成，请重试')
+      expect(renderer.root.findAllByProps({testID: 'sample.auth.system-notice'}).map(node => node.props.style))
+        .toContainEqual(isMobile ? {flex: 1, minHeight: 0, padding: 16, alignItems: 'stretch'} : {flex: 1, minHeight: 0, padding: 24})
+      expect(renderer.root.findAllByProps({testID: 'sample.auth.system-notice:card'}).map(node => node.props.style))
+        .toContainEqual(isMobile ? {width: '100%'} : {width: '100%', maxWidth: 720})
+      expect(renderer.root.findAllByProps({testID: 'sample.auth.system-notice:actions'}).map(node => node.props.className))
+        .toContain(isMobile ? 'w-full items-center gap-3' : 'flex-row flex-wrap items-start gap-3')
+      expect(renderer.root.findAllByProps({testID: 'sample.auth.system-notice:dismiss'}).map(node => node.props.style))
+        .toContainEqual(isMobile ? {width: '100%'} : undefined)
+      act(() => { renderer.unmount() })
+    }
   })
 
   it('treats a repeated system failure observation as an idempotent existing notice', async () => {
-    const catalog = createUiCatalog(sampleStaffAuthAssembly.parts.map(part => part.catalogEntry))
+    const catalog = createUiCatalog(sampleStaffAuthAssembly.parts
+      .filter(part => part.catalogEntry.surfaceForm.includes('mobile'))
+      .map(part => part.catalogEntry))
     const loggerEvents: LogEvent[] = []
     const runtime = createTestRuntime([
       createDisplayContextModule(),
