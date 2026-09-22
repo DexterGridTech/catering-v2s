@@ -2,13 +2,14 @@ import {useMemo, useState} from 'react';
 import {RnrPressable, RnrText, RnrView, RnrVirtualizedList} from '../vendor/slots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
-import {toneForegroundClassName} from '../foundations/toneClassName';
+import {toneClassName, toneForegroundClassName} from '../foundations/toneClassName';
 import type {
   PrimitiveBadgeProps,
   PrimitiveKeyValueRowProps,
   PrimitiveListProps,
   PrimitiveSegmentedControlProps,
   PrimitiveStatusRowProps,
+  PrimitivePortItemProps,
   PrimitiveTableProps,
   PrimitiveTabsProps,
 } from '../types/types';
@@ -31,6 +32,19 @@ export const PrimitiveStatusRow = ({testID, label, value, appearance = 'default'
     <RnrText className={toneForegroundClassName(tone, appearance === 'admin' ? baseTokens.adminDataValue : baseTokens.dataValue)}>{value}</RnrText>
   </RnrView>
 );
+
+export const PrimitivePortItem = ({testID, name, status, reason, source, tone}: PrimitivePortItemProps) => {
+  const address = assertTestID(testID);
+  return (
+    <RnrView testID={address} className={baseTokens.adminPortItem}>
+      <RnrView testID={`${address}:indicator`} className={toneClassName(tone, baseTokens.adminPortItemDot)} />
+      <RnrText testID={`${address}:name`} className={baseTokens.adminPortItemName}>{name}</RnrText>
+      <RnrText testID={`${address}:status`} className={toneForegroundClassName(tone, baseTokens.adminPortItemStatus)}>{status}</RnrText>
+      <RnrText testID={`${address}:reason`} className={baseTokens.adminPortItemMeta}>原因：{reason}</RnrText>
+      <RnrText testID={`${address}:source`} className={baseTokens.adminPortItemMeta}>来源：{source}</RnrText>
+    </RnrView>
+  );
+};
 
 export const PrimitiveList = <ItemT,>({
   testID,

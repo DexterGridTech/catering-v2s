@@ -1,6 +1,10 @@
-import {AdminLayerFrame} from './AdminLayer'
+import {AdminLayerFrame} from './AdminLayerFrame'
+import {AdminLoginMobile} from './AdminLoginMobile'
 import {AdminShellMobile} from './AdminShellMobile'
 
 export const AdminLayerMobile = () => (
-  <AdminLayerFrame renderAuthenticated={({onClose}) => <AdminShellMobile onClose={onClose} />} />
+  <AdminLayerFrame
+    renderLogin={props => <AdminLoginMobile {...props} />}
+    renderAuthenticated={({onClose}) => <AdminShellMobile onClose={onClose} />}
+  />
 )

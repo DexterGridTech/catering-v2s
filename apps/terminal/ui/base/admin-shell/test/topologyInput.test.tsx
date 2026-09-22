@@ -4,7 +4,7 @@ import {TextInput} from 'react-native'
 import * as renderHooks from '@catering-v2s/ui-base-render'
 import {InputSurfaceFrame, useInputController} from '@catering-v2s/ui-base-input'
 import {afterEach, describe, expect, it, vi} from 'vitest'
-import {TopologySection} from '../src/components/sections/TopologySection'
+import {TopologySectionLaptop} from '../src/components/sections/TopologySectionLaptop'
 import {ADMIN_CONSOLE_FOCUS_SCOPE_ID} from '../src/foundations/adminIdentity'
 import {adminTestIds} from '../src/foundations/adminTestIds'
 import type {AdminSectionProps} from '../src/types/adminSection'
@@ -60,7 +60,7 @@ const mount = (
     renderer = create(
       <InputSurfaceFrame>
         <ActivateAdminFocusScope />
-        <TopologySection context={sectionContext} />
+        <TopologySectionLaptop context={sectionContext} />
       </InputSurfaceFrame>,
     )
   })

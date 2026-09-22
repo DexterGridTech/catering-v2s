@@ -19,7 +19,7 @@ export const baseTokens = Object.freeze({
   adminHeaderCloseText: 'text-sm leading-5 font-semibold text-admin-shell-muted',
   adminBrand: 'h-7 w-7 items-center justify-center rounded-lg border border-admin-shell-border bg-admin-action',
   adminGateIcon: 'h-12 w-12 items-center justify-center rounded-[16px]',
-  adminNav: 'w-full min-h-0 bg-admin-shell-surface',
+  adminNav: 'w-full min-h-0 rounded-2xl bg-admin-shell-surface',
   adminNavList: 'w-full flex-col gap-1.5 bg-admin-shell-surface',
   adminNavItem: 'relative w-full min-h-11 flex-row items-center gap-2 rounded-xl px-3 text-admin-shell-muted',
   adminNavItemSelected: 'relative w-full min-h-11 flex-row items-center gap-2 rounded-xl bg-admin-action px-3 text-admin-shell-foreground shadow-lg',
@@ -36,8 +36,15 @@ export const baseTokens = Object.freeze({
   adminDataRow: 'w-full min-h-11 flex-row items-center justify-between gap-3 border-b border-admin-content-border py-3',
   adminDataLabel: 'flex-1 text-sm leading-5 font-medium text-admin-content-muted',
   adminDataValue: 'flex-1 text-right text-sm leading-5 text-admin-content-foreground',
+  adminPortItem: 'w-full flex-row flex-wrap items-center gap-2 border-b border-admin-content-border py-2',
+  adminPortItemDot: 'h-2 w-2 rounded-full',
+  adminPortItemName: 'flex-1 min-w-[120px] text-sm leading-5 font-semibold text-admin-content-foreground',
+  adminPortItemStatus: 'text-sm leading-5 font-semibold',
+  adminPortItemMeta: 'text-xs leading-[18px] text-admin-content-muted',
   adminButton: 'self-start min-h-11 flex-row items-center justify-center gap-2 overflow-hidden rounded-xl border border-admin-action bg-admin-action px-4',
   adminButtonText: 'text-center text-sm leading-5 font-semibold text-admin-action-foreground',
+  adminButtonDisabled: 'self-start min-h-11 flex-row items-center justify-center gap-2 overflow-hidden rounded-xl border border-admin-content-border bg-admin-inset px-4',
+  adminButtonDisabledText: 'text-center text-sm leading-5 font-semibold text-admin-content-muted',
   adminButtonSecondary: 'self-start min-h-11 flex-row items-center justify-center gap-2 overflow-hidden rounded-xl border border-admin-content-border bg-admin-content-surface px-4',
   adminButtonSecondaryText: 'text-center text-sm leading-5 font-semibold text-admin-content-foreground',
   adminMobileSelector: 'w-full min-h-12 flex-row items-center justify-between rounded-xl border-2 border-admin-focus bg-admin-inset px-4',
@@ -67,12 +74,21 @@ export const baseTokens = Object.freeze({
   adminSurfaceMapCardCurrentColumn: 'w-full rounded-2xl border-2 border-admin-focus bg-surface-elevated p-4 gap-2 shadow-lg',
   adminSurfaceMapWrap: 'w-full relative px-4 py-4 pb-12',
   adminSurfaceMapLimited: 'w-full min-h-[74px] items-center justify-center rounded-[10px] border border-admin-content-border bg-admin-inset p-3 gap-1',
-  adminSurfaceMapRect: 'w-full min-w-0 min-h-44 items-center justify-center rounded-xl border border-admin-content-border bg-admin-inset p-3 gap-2',
-  adminSurfaceMapRectCurrent: 'w-full min-w-0 min-h-44 items-center justify-center rounded-xl border-2 border-admin-focus bg-admin-surface-current p-3 gap-2',
-  adminSurfaceMapLogicWidth: 'absolute top-4 self-center text-xs leading-[18px] text-admin-content-muted',
-  adminSurfaceMapLogicHeight: 'absolute -right-4 top-1/2 -translate-y-1/2 rotate-90 text-xs leading-[18px] text-admin-content-muted',
-  adminSurfaceMapPhysicalWidth: 'absolute top-0 self-center text-[10px] leading-4 text-admin-content-muted',
-  adminSurfaceMapPhysicalHeight: 'absolute -right-1 bottom-8 rotate-90 text-[10px] leading-4 text-admin-content-muted',
+  // The rectangle's aspectRatio is an executable surface fact. Do not add a
+  // fixed min-height here: it would override portrait/landscape geometry on
+  // narrow surfaces and turn the map into a false square. The geometry token
+  // supplies the minimum short edge instead.
+  adminSurfaceMapFrame: 'relative self-center',
+  adminSurfaceMapRect: 'relative w-full items-center justify-center rounded-xl border border-admin-content-border bg-admin-inset p-3 gap-2',
+  adminSurfaceMapRectCurrent: 'relative w-full items-center justify-center rounded-xl border-2 border-admin-focus bg-admin-surface-current p-3 gap-2',
+  adminSurfaceMapLogicWidth: 'absolute left-0 right-0 top-2 text-center text-xs leading-[18px] text-admin-content-muted whitespace-nowrap',
+  // Height labels stay in a readable horizontal writing direction on native
+  // and web.  Their edge anchor still communicates the height dimension;
+  // rotating CJK text made the runtime surface facts materially harder to
+  // read and did not match the high-fidelity IA.
+  adminSurfaceMapLogicHeight: 'absolute right-2 top-1/2 -translate-y-1/2 text-right text-xs leading-[18px] text-admin-content-muted whitespace-nowrap',
+  adminSurfaceMapPhysicalWidth: 'absolute top-0 self-center text-[10px] leading-4 text-admin-content-muted whitespace-nowrap',
+  adminSurfaceMapPhysicalHeight: 'absolute -right-1 top-1/2 -translate-y-1/2 text-[10px] leading-4 text-admin-content-muted whitespace-nowrap',
   adminSurfaceMapLabel: 'text-sm leading-5 font-bold text-admin-content-foreground',
   adminSurfaceMapRole: 'text-xs leading-[18px] font-medium text-admin-content-muted',
   adminSurfaceMapInside: 'text-sm leading-5 text-admin-content-foreground',
@@ -224,13 +240,18 @@ export const adminGeometry = Object.freeze({
   shellMobile: Object.freeze({flex: 1, width: '100%' as const, maxWidth: '100%' as const, minHeight: 0, minWidth: 0, alignSelf: 'stretch' as const}),
   headerLaptop: Object.freeze({height: 72, paddingHorizontal: 24, borderBottomWidth: 1, gap: 12, flexDirection: 'row' as const, alignItems: 'center' as const, flexWrap: 'nowrap' as const}),
   headerMobile: Object.freeze({height: 60, paddingHorizontal: 16, borderBottomWidth: 1, gap: 12, flexDirection: 'row' as const, alignItems: 'center' as const, flexWrap: 'nowrap' as const}),
-  navigation: Object.freeze({width: 248, minWidth: 248, minHeight: 0, padding: 12, borderRightWidth: 1, flexShrink: 0}),
+  navigation: Object.freeze({width: 248, minWidth: 248, minHeight: 0, padding: 12, borderRightWidth: 1, borderRadius: 16, flexShrink: 0}),
   navigationList: Object.freeze({flexDirection: 'column' as const, flexWrap: 'nowrap' as const, alignItems: 'stretch' as const, gap: 6}),
   contentLaptop: Object.freeze({flex: 1, minHeight: 0, minWidth: 0, padding: 24}),
   contentMobile: Object.freeze({flex: 1, minHeight: 0, minWidth: 0, padding: 16, gap: 12}),
   card: Object.freeze({borderRadius: 16, borderWidth: 1, padding: 20, minHeight: 96}),
   disclosure: Object.freeze({minHeight: 52, paddingHorizontal: 16}),
   ratioBar: Object.freeze({height: 12, borderRadius: 6}),
-  surfaceRectLaptop: Object.freeze({minHeight: 176}),
-  surfaceRectMobile: Object.freeze({minHeight: 120}),
+  // Native layout does not consistently derive a height from a percentage
+  // width plus aspectRatio.  The laptop diagram therefore owns a bounded
+  // logical width; PrimitiveSurfaceMap derives the matching height from the
+  // display-facts ratio so the rendered rectangle cannot become a content-
+  // driven portrait/square shape.
+  surfaceRectLaptop: Object.freeze({minWidth: 176, maxWidth: 320}),
+  surfaceRectMobile: Object.freeze({minWidth: 120}),
 } as const)

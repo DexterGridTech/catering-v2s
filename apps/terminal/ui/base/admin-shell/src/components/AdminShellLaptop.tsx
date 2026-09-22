@@ -1,5 +1,4 @@
 import {useCallback, useEffect, useMemo} from 'react'
-import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state'
 import {adminGeometry, PrimitiveContainer, PrimitiveGrid} from '@catering-v2s/ui-base-primitives'
 import {useRenderContext, useRenderStatus, useSurfaceContext, useUiCatalogContext} from '@catering-v2s/ui-base-render'
 import {AdminFrameReporterContext, panelFrameId, useAdminFrameController} from '../foundations/adminFrameRegistry'
@@ -7,25 +6,12 @@ import {createAdminSectionCommandBoundary} from '../foundations/adminSectionSele
 import {adminTestIds} from '../foundations/adminTestIds'
 import {useAdminSections} from '../hooks/useAdminSections'
 import type {AdminShellProps} from '../types/adminShell'
-import {AdminSectionContent} from './AdminSectionContent'
-import {AdminPanelStateCard, AdminShellFrame, adminPanelStatusFromRuntime} from './AdminShellFrame'
+import {AdminSectionContentLaptop} from './AdminSectionContentLaptop'
+import {AdminPanelStateCardLaptop} from './AdminPanelStateCardLaptop'
+import {adminPanelStatusFromRuntime} from './AdminShellFrame'
+import {AdminShellFrameLaptop} from './AdminShellFrameLaptop'
 import {AdminSectionNavigationLaptop} from './AdminSectionNavigationLaptop'
 import {PowerConfirmationBridge} from './PowerConfirmationBridge'
-
-const resolveLaptopSelection = ({sections, requestedPartKey}: Readonly<{
-  readonly sections: readonly UiCatalogEntry[]
-  readonly requestedPartKey: string | null
-}>): Readonly<{readonly selectedPartKey: string | null; readonly selectedSection: UiCatalogEntry | undefined}> => {
-  const selectedPartKey = requestedPartKey !== null && sections.some(section => section.partKey === requestedPartKey)
-    ? requestedPartKey
-    : sections[0]?.partKey ?? null
-  return {
-    selectedPartKey,
-    selectedSection: selectedPartKey === null
-      ? undefined
-      : sections.find(section => section.partKey === selectedPartKey),
-  }
-}
 
 export const AdminShellLaptop = (props: AdminShellProps) => (
   <AdminShellLaptopContent {...props} />
@@ -49,17 +35,13 @@ const AdminShellLaptopContent = ({onClose}: AdminShellProps) => {
   const catalogContext = useUiCatalogContext(surface.displayMode)
   const commandBoundary = useMemo(() => createAdminSectionCommandBoundary(), [])
   const selection = useAdminSections({catalog: uiCatalog, context: catalogContext})
-  const resolvedSelection = resolveLaptopSelection({
-    sections: selection.sections,
-    requestedPartKey: selection.selectedPartKey,
-  })
   const defaultFrameId = runtimeStatus !== 'started'
-    ? panelFrameId(surface.surfaceForm, runtimeStatus === 'failed' ? 'error' : 'loading')
+    ? panelFrameId('laptop', runtimeStatus === 'failed' ? 'error' : 'loading')
     : catalogContext === undefined
-      ? panelFrameId(surface.surfaceForm, 'error')
+      ? panelFrameId('laptop', 'error')
       : selection.sections.length === 0
-        ? panelFrameId(surface.surfaceForm, 'empty')
-        : panelFrameId(surface.surfaceForm, 'normal')
+        ? panelFrameId('laptop', 'empty')
+        : panelFrameId('laptop', 'normal')
   const frameController = useAdminFrameController(defaultFrameId)
   const selectSection = useCallback((partKey: string) => {
     logger.info({
@@ -84,38 +66,38 @@ const AdminShellLaptopContent = ({onClose}: AdminShellProps) => {
       message: 'Admin section selection rendered',
       data: {
         requestedPartKey: selection.selectedPartKey,
-        resolvedPartKey: resolvedSelection.selectedPartKey,
+        resolvedPartKey: selection.selectedPartKey,
         displayMode: surface.displayMode,
         surfaceForm: surface.surfaceForm,
         workspace: catalogContext?.workspace ?? null,
         instanceMode: catalogContext?.instanceMode ?? null,
       },
     })
-  }, [catalogContext?.instanceMode, catalogContext?.workspace, logger, resolvedSelection.selectedPartKey, selection.selectedPartKey, surface.displayMode, surface.surfaceForm])
+  }, [catalogContext?.instanceMode, catalogContext?.workspace, logger, selection.selectedPartKey, surface.displayMode, surface.surfaceForm])
 
   return (
     <AdminFrameReporterContext.Provider value={frameController.reportFrame}>
-      <AdminShellFrame frameId={frameController.frameId} onClose={onClose} status={adminPanelStatusFromRuntime(runtimeStatus)}>
+      <AdminShellFrameLaptop frameId={frameController.frameId} onClose={onClose} status={adminPanelStatusFromRuntime(runtimeStatus)}>
         {runtimeStatus === 'started' ? <PowerConfirmationBridge /> : null}
         <PrimitiveGrid testID="terminal.admin:workspace" style={workspaceStyle}>
           <PrimitiveContainer testID="terminal.admin:navigation-frame" layout="content" appearance="admin-nav" style={navigationFrameStyle}>
             <AdminSectionNavigationLaptop
               sections={selection.sections}
-              selectedPartKey={resolvedSelection.selectedPartKey}
+              selectedPartKey={selection.selectedPartKey}
               onSelect={selectSection}
             />
           </PrimitiveContainer>
           <PrimitiveContainer testID={adminTestIds.content} layout="content" appearance="admin-content" bounded style={detailFrameStyle}>
             {runtimeStatus !== 'started' ? (
-              <AdminPanelStateCard state={runtimeStatus === 'failed' ? 'error' : 'loading'} onRetry={onRuntimeRetry} />
+              <AdminPanelStateCardLaptop state={runtimeStatus === 'failed' ? 'error' : 'loading'} onRetry={onRuntimeRetry} />
             ) : catalogContext === undefined ? (
-              <AdminPanelStateCard state="error" onRetry={onRuntimeRetry} />
+              <AdminPanelStateCardLaptop state="error" onRetry={onRuntimeRetry} />
             ) : selection.sections.length === 0 ? (
-              <AdminPanelStateCard state="empty" />
+              <AdminPanelStateCardLaptop state="empty" />
             ) : (
-              <AdminSectionContent
-                key={resolvedSelection.selectedPartKey ?? 'empty'}
-                selectedSection={resolvedSelection.selectedSection}
+              <AdminSectionContentLaptop
+                key={selection.selectedPartKey ?? 'empty'}
+                selectedSection={selection.selectedSection}
                 rendererCatalog={rendererCatalog}
                 runtimeFacts={runtimeFacts}
                 surface={surface}
@@ -125,7 +107,7 @@ const AdminShellLaptopContent = ({onClose}: AdminShellProps) => {
             )}
           </PrimitiveContainer>
         </PrimitiveGrid>
-      </AdminShellFrame>
+      </AdminShellFrameLaptop>
     </AdminFrameReporterContext.Provider>
   )
 }

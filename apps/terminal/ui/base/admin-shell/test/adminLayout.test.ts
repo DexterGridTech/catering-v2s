@@ -47,32 +47,40 @@ const openingWithTestId = (source: ts.SourceFile, testId: string): ts.JsxOpening
 
 describe('admin layout structural contract', () => {
   it('binds the active IA frame marker to the outer panel root', () => {
-    const frame = readSource('src/components/AdminShellFrame.tsx')
-    const outerPanel = jsxOpenings(frame, 'PrimitiveContainer').find(node => attributeText(frame, node, 'testID')?.includes('adminFrameTestId'))
-    expect(outerPanel).toBeDefined()
-    expect(attributeText(frame, outerPanel!, 'layout')).toBe('layout="card"')
-    expect(attributeText(frame, outerPanel!, 'style')).toBe('style={panelStyle}')
-    expect(frame.text).toContain("maxHeight: '100%'")
-    expect(frame.text).toContain("overflow: 'hidden'")
-    const panelFrame = jsxOpenings(frame, 'PrimitiveContainer').find(node => attributeText(frame, node, 'testID')?.includes('adminTestIds.panel.frame'))
-    expect(panelFrame).toBeDefined()
+    for (const framePath of ['src/components/AdminShellFrameLaptop.tsx', 'src/components/AdminShellFrameMobile.tsx']) {
+      const frame = readSource(framePath)
+      const outerPanel = jsxOpenings(frame, 'PrimitiveContainer').find(node => attributeText(frame, node, 'testID')?.includes('adminFrameTestId'))
+      expect(outerPanel, framePath).toBeDefined()
+      expect(attributeText(frame, outerPanel!, 'layout')).toBe('layout="card"')
+      expect(attributeText(frame, outerPanel!, 'style')).toContain('adminGeometry.shell')
+      expect(frame.text).toContain("maxHeight: '100%'")
+      expect(frame.text).toContain("overflow: 'hidden'")
+      const panelFrame = jsxOpenings(frame, 'PrimitiveContainer').find(node => attributeText(frame, node, 'testID')?.includes('adminTestIds.panel.frame'))
+      expect(panelFrame, framePath).toBeDefined()
+      expect(frame.text.match(/adminFrameTestId\(/g)).toHaveLength(1)
+    }
     for (const sectionPath of [
-      'src/components/sections/PlatformPortsSection.tsx',
-      'src/components/sections/RuntimeSection.tsx',
-      'src/components/sections/TopologySection.tsx',
+      'src/components/sections/PlatformPortsSectionLaptop.tsx',
+      'src/components/sections/PlatformPortsSectionMobile.tsx',
+      'src/components/sections/RuntimeSectionLaptop.tsx',
+      'src/components/sections/RuntimeSectionMobile.tsx',
+      'src/components/sections/TopologySectionLaptop.tsx',
+      'src/components/sections/TopologySectionMobile.tsx',
     ]) {
       const section = readSource(sectionPath)
-      expect(section.text, sectionPath).toContain('useReportAdminFrame')
+      const frameReporterSource = sectionPath.includes('RuntimeSection')
+        ? readSource('src/hooks/useAdminRuntimeDisplay.ts').text
+        : section.text
+      expect(frameReporterSource, sectionPath).toContain('useReportAdminFrame')
       expect(section.text, sectionPath).not.toContain('adminFrameTestId(')
     }
-    expect(frame.text.match(/adminFrameTestId\(/g)).toHaveLength(1)
   })
 
   it('keeps the admin root as a full canvas and laptop as an explicit row', () => {
-    const frame = readSource('src/components/AdminShellFrame.tsx')
+    const frame = readSource('src/components/AdminShellFrameLaptop.tsx')
     const root = openingWithTestId(frame, 'adminTestIds.shell')
     expect(attributeText(frame, root, 'layout')).toBe('layout="fill"')
-    expect(attributeText(frame, root, 'style')).toContain('rootStyle')
+    expect(attributeText(frame, root, 'style')).toContain('adminGeometry.rootLaptop')
 
     const laptop = readSource('src/components/AdminShellLaptop.tsx')
     const workspace = jsxOpenings(laptop, 'PrimitiveGrid').find(node => attributeText(laptop, node, 'testID')?.includes('terminal.admin:workspace'))
@@ -83,7 +91,7 @@ describe('admin layout structural contract', () => {
   })
 
   it('keeps mobile navigation as one controlled dropdown and all floating cards individually bounded', () => {
-    const navigation = readSource('src/components/AdminSectionNavigation.tsx')
+    const navigation = readSource('src/components/AdminSectionNavigationMobile.tsx')
     const mobileNav = jsxOpenings(navigation, 'PrimitiveDropdownSelect')[0]
     expect(mobileNav).toBeDefined()
     expect(attributeText(navigation, mobileNav!, 'testID')).toBe('testID="terminal.admin:navigation"')
@@ -91,14 +99,16 @@ describe('admin layout structural contract', () => {
     expect(navigation.text).not.toContain('PrimitivePressOption')
 
     const cardPaths = [
-      'src/components/AdminLogin.tsx',
+      'src/components/AdminLoginLaptop.tsx',
+      'src/components/AdminLoginMobile.tsx',
       '../render/src/components/SystemFailureNotice.tsx',
       '../../feature/sample-staff-auth/src/components/AuthNotice.tsx',
       '../../feature/sample-member-desk/src/components/DiscardConfirm.tsx',
       '../../feature/sample-member-desk/src/components/RegistryNotice.tsx',
       '../../feature/sample-member-desk/src/components/WaitingConfirm.tsx',
       '../../feature/sample-member-desk/src/components/WithdrawConfirm.tsx',
-      'src/components/PowerRoleConfirmation.tsx',
+      'src/components/PowerRoleConfirmationLaptop.tsx',
+      'src/components/PowerRoleConfirmationMobile.tsx',
     ]
     for (const cardPath of cardPaths) {
       const card = readSource(cardPath)
@@ -124,39 +134,43 @@ describe('admin layout structural contract', () => {
         )
       expect(boundedCard, `${cardPath} must own its bounded card inside its center frame`).toBeDefined()
       const cardOpening = boundedCard!
-      expect(hasAttribute(card, cardOpening, 'elevated')).toBe(cardPath === 'src/components/AdminLogin.tsx')
+      expect(hasAttribute(card, cardOpening, 'elevated')).toBe(cardPath.includes('AdminLogin'))
     }
   })
 
   it('uses the shared surface keyboard without applying a second manual lift', () => {
-    const login = readSource('src/components/AdminLogin.tsx')
-    const loginCard = openingWithTestId(login, '`${adminTestIds.login}:card`')
-    const cardElement = loginCard.parent
-    expect(cardElement).toBeDefined()
-    const descendants = cardElement === undefined ? [] : descendantOpenings(cardElement)
-    expect(descendants.some(node => node.tagName.getText(login) === 'InputKeyboard')).toBe(false)
-    expect(jsxOpenings(login, 'InputKeyboard')).toHaveLength(0)
-    expect(login.text).toContain("keyboardPlacement: 'surface'")
-    expect(login.text).not.toContain('keyboardLift')
-    expect(attributeText(login, loginCard, 'style')).toBeUndefined()
+    for (const loginPath of ['src/components/AdminLoginLaptop.tsx', 'src/components/AdminLoginMobile.tsx']) {
+      const login = readSource(loginPath)
+      expect(jsxOpenings(login, 'PrimitivePinInput'), loginPath).toHaveLength(1)
+      expect(login.text, loginPath).toContain('useAdminLogin')
+      expect(login.text, loginPath).not.toContain('useInputField')
+      expect(login.text, loginPath).not.toContain('InputKeyboard')
+      expect(login.text, loginPath).not.toContain('keyboardLift')
+    }
+    const hook = readSource('src/hooks/useAdminLogin.ts')
+    expect(hook.text).toContain("keyboardPlacement: 'surface'")
+    expect(hook.text).toContain('field.focus()')
   })
 
   it('keeps the login owner responsible for both surface-dismiss event guards', () => {
-    const login = readSource('src/components/AdminLogin.tsx')
-    const pinInput = jsxOpenings(login, 'PrimitivePinInput')[0]
-    expect(pinInput).toBeDefined()
-    expect(attributeText(login, pinInput!, 'onTouchEnd')).toBe('onTouchEnd={stopSurfaceDismiss}')
-    expect(attributeText(login, pinInput!, 'onClick')).toBe('onClick={stopSurfaceDismiss}')
-    expect(login.text).toContain('const stopSurfaceDismiss = (event: PrimitivePinInputInteractionEvent) => event.stopPropagation()')
-    expect(login.text).not.toContain("useState('')")
+    const hook = readSource('src/hooks/useAdminLogin.ts')
+    expect(hook.text).toContain('const stopSurfaceDismiss = (event: PrimitivePinInputInteractionEvent) => event.stopPropagation()')
+    for (const loginPath of ['src/components/AdminLoginLaptop.tsx', 'src/components/AdminLoginMobile.tsx']) {
+      const login = readSource(loginPath)
+      expect(login.text, loginPath).toContain('<PrimitivePinInput {...login.passwordInput} />')
+      expect(login.text, loginPath).toContain('useAdminLogin')
+    }
   })
 
   it('keeps each content section as the bounded scroll owner', () => {
     for (const sectionPath of [
       'src/components/sections/SampleSection.tsx',
-      'src/components/sections/PlatformPortsSection.tsx',
-      'src/components/sections/RuntimeSection.tsx',
-      'src/components/sections/TopologySection.tsx',
+      'src/components/sections/PlatformPortsSectionLaptop.tsx',
+      'src/components/sections/PlatformPortsSectionMobile.tsx',
+      'src/components/sections/RuntimeSectionLaptop.tsx',
+      'src/components/sections/RuntimeSectionMobile.tsx',
+      'src/components/sections/TopologySectionLaptop.tsx',
+      'src/components/sections/TopologySectionMobile.tsx',
     ]) {
       const section = readSource(sectionPath)
       const root = jsxOpenings(section, 'PrimitiveContainer')[0]

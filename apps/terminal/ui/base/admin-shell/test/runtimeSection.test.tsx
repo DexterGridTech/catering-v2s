@@ -2,7 +2,8 @@ import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import type {DisplayFactsReadModel} from '@catering-v2s/kernel-base-display-context'
 import * as renderHooks from '@catering-v2s/ui-base-render'
-import {RuntimeSection} from '../src/components/sections/RuntimeSection'
+import {RuntimeSectionLaptop} from '../src/components/sections/RuntimeSectionLaptop'
+import {RuntimeSectionMobile} from '../src/components/sections/RuntimeSectionMobile'
 import {adminTestIds} from '../src/foundations/adminTestIds'
 import type {AdminSectionProps} from '../src/types/adminSection'
 
@@ -47,10 +48,10 @@ const contextFor = (
   commandBoundary: {},
 } as unknown as AdminSectionProps['context'])
 
-const renderSection = (context: AdminSectionProps['context']): ReactTestRenderer => {
+const renderSection = (context: AdminSectionProps['context'], surfaceForm: 'laptop' | 'mobile' = 'laptop'): ReactTestRenderer => {
   vi.spyOn(renderHooks, 'useRenderStatus').mockReturnValue('started')
   let renderer: ReactTestRenderer | undefined
-  act(() => { renderer = create(<RuntimeSection context={context} />) })
+  act(() => { renderer = create(surfaceForm === 'laptop' ? <RuntimeSectionLaptop context={context} /> : <RuntimeSectionMobile context={context} />) })
   return renderer!
 }
 
@@ -62,13 +63,11 @@ describe('RuntimeSection display-facts controls', () => {
     const surface = renderer.root.findByProps({testID: `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY`})
 
     expect(renderer.root.findByProps({testID: adminTestIds.runtime.physicalDisplayCount})).toBeDefined()
-    expect(surface.props.style).toEqual(expect.objectContaining({aspectRatio: 1.6, minHeight: 176}))
+    expect(surface.props.style).toEqual(expect.objectContaining({aspectRatio: 1.6, width: '100%', minWidth: 176, maxWidth: 320, height: 200}))
     expect(renderer.root.findByProps({testID: `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY:inside:0`}).props.children)
       .toBe('已就绪')
     expect(renderer.root.findByProps({testID: `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY:inside:1`}).props.children)
       .toBe('可用状态：正常')
-    expect(renderer.root.findByProps({testID: `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY:inside:2`}).props.children)
-      .toBe('比例：8:5')
     expect(renderer.root.findByProps({testID: `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY:outside:0`}).props.children)
       .toBe('物理长：未知')
     expect(renderer.root.findByProps({testID: `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY:outside:1`}).props.children)
@@ -101,7 +100,7 @@ describe('RuntimeSection display-facts controls', () => {
     const renderer = renderSection(contextFor(dualFacts))
 
     expect(renderer.root.findByProps({testID: `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY`}).props.style)
-      .toEqual(expect.objectContaining({aspectRatio: 1.6, minHeight: 176}))
+      .toEqual(expect.objectContaining({aspectRatio: 1.6, width: '100%', minWidth: 176, maxWidth: 320, height: 200}))
     expect(renderer.root.findByProps({testID: `${adminTestIds.runtime.surfaceMap}:surface:SECONDARY`}).props.style).toBeUndefined()
     expect(renderer.root.findByProps({testID: `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY:card`}).props.style).toBeUndefined()
     expect(renderer.root.findByProps({testID: `${adminTestIds.runtime.surfaceMap}:surface:SECONDARY:inside:0`}).props.children)
@@ -122,7 +121,7 @@ describe('RuntimeSection display-facts controls', () => {
         Object.freeze({...singleFacts.surfaces[0]!, surfaceKey: 'SECONDARY' as const, displayIndex: 1, role: 'secondary' as const}),
       ]),
     })
-    const renderer = renderSection(contextFor(dualFacts, 'mobile'))
+    const renderer = renderSection(contextFor(dualFacts, 'mobile'), 'mobile')
 
     expect(renderer.root.findByProps({testID: adminTestIds.runtime.displayFactsError})).toBeDefined()
     expect(renderer.root.findAllByProps({testID: adminTestIds.runtime.surfaceMap})).toHaveLength(0)

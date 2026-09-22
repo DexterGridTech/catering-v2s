@@ -134,6 +134,7 @@
     .empty-card h3, .loading-card h3, .error-card h3 { margin: 0 0 5px; font-size: 14px; }
     .empty-card p, .loading-card p, .error-card p { max-width: 370px; margin: 0; color: var(--content-muted); font-size: 11px; line-height: 1.5; }
     .summary-strip { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-bottom: 10px; }
+    .mobile-shell .summary-strip { grid-template-columns: 1fr; }
     .summary-cell { padding: 10px; border: 1px solid var(--content-border); border-radius: 13px; background: var(--content-elevated); }
     .summary-cell strong { display: block; margin-bottom: 2px; font-size: clamp(17px, 2.3vw, 28px); line-height: 1; }
     .summary-cell span { color: var(--content-muted); font-size: clamp(8px, .82vw, 11px); }
@@ -216,6 +217,7 @@
     .state-badge.bad { color: var(--danger); background: var(--danger-bg); }
     .state-badge i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
     .fact-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 7px; }
+    .mobile-shell .fact-grid { grid-template-columns: 1fr; }
     .fact { min-width: 0; padding: 8px; border: 1px solid var(--content-border); border-radius: 11px; background: var(--content-inset); }
     .fact span { display: block; overflow: hidden; color: var(--content-muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
     .fact strong { display: block; overflow: hidden; margin-top: 3px; color: var(--content-fg); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }

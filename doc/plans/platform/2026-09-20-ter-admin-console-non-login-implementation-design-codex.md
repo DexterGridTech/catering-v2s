@@ -12,6 +12,7 @@ AUTHORIZED=编写本批非登录区 implementation-facing 详设、实施计划�
 NOT_AUTHORIZED=构建、Web/Metro/Android/device/DEV/L2/UAT、reset/seed/deploy、release、Git；动态验证仍须按批次边界执行
 IMPLEMENTATION_AUTHORITY=true
 IMPLEMENTATION=AUTHORIZED_WITH_PARTIAL_DYNAMIC_PROOF
+ARCHITECTURE_HARD_REQUIREMENT=ADMIN_CONSOLE_LOGIN_AND_NON_LOGIN_USE_NAMED_LAPTOP_MOBILE_UI_WITH_SHARED_HOOKS;NO_COMMON_FORM_ADAPTATION
 INDEPENDENT_DESIGN_REVIEW=COMPLETED_FINDINGS_OPEN_REVIEWED_BY_FRESH_SUBAGENT
 ADMISSION_BLOCKERS=DISPLAY_FACTS_OWNER:OPEN_WITH_FOCUSED_OWNER_EVIDENCE;TOPOLOGY_PAGE_AVAILABILITY_AND_DIRECT_PAIR_OWNER:OPEN_WITH_FOCUSED_OWNER_EVIDENCE;MASTER_UNPAIR_GUARD:OPEN_WITH_FOCUSED_OWNER_EVIDENCE
 ```
@@ -49,6 +50,7 @@ ADMISSION_BLOCKERS=DISPLAY_FACTS_OWNER:OPEN_WITH_FOCUSED_OWNER_EVIDENCE;TOPOLOGY
 ### 0.3 不重新打开的 IA 裁定
 
 - laptop 与 mobile 都保留 panel/header/close；mobile 是竖屏单列，不是 laptop 的换行版。
+- 登录框与已认证 console 同样必须有命名明确的 `Laptop`/`Mobile` production UI；认证、输入焦点、keyboard、选择和命令行为由共享 hook/owner 提供，不能由一个 common UI 通过 `surfaceForm` 条件适配另一形态。
 - mobile 只有一个固定的下拉 selector；不出现第二个 selector，不出现横向 tab 集合。
 - panel 内用户页是平台端口、运行状态、双机拓扑三页；内部 `runtime` 与 `display-context` 不再各自成为用户入口。
 - topology tab 永远显示。mobile 只显示“当前功能不可用”和“mobile 形态不支持双机拓扑”，不显示角色、IP、配对、解绑或恢复动作。

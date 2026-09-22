@@ -2,7 +2,8 @@ import {useState} from 'react'
 import {PrimitiveDropdownSelect} from '@catering-v2s/ui-base-primitives'
 import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state'
 
-export const AdminSectionNavigation = ({
+/** Mobile-only page navigation: one controlled dropdown and no horizontal tab row. */
+export const AdminSectionNavigationMobile = ({
   sections,
   selectedPartKey,
   onSelect,

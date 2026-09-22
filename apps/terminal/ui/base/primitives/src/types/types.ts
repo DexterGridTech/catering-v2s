@@ -432,6 +432,15 @@ export type PrimitiveStatusRowProps = PrimitiveKeyValueRowProps &
     readonly tone?: PrimitiveTone;
   }>;
 
+export type PrimitivePortItemProps = PrimitiveAddressableProps &
+  Readonly<{
+    readonly name: string;
+    readonly reason: string;
+    readonly source: string;
+    readonly status: string;
+    readonly tone: Extract<PrimitiveTone, 'ok' | 'warn'>;
+  }>;
+
 export type PrimitiveListRenderItem<ItemT> = (item: ItemT, index: number) => ReactNode;
 
 export type PrimitiveListProps<ItemT> = PrimitiveAddressableProps &

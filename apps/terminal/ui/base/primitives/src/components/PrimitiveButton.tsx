@@ -75,7 +75,7 @@ export const PrimitiveButton = ({
           : appearance === 'login-secondary'
             ? baseTokens.buttonLoginSecondary
             : appearance === 'admin-primary'
-              ? baseTokens.adminButton
+              ? blocked ? baseTokens.adminButtonDisabled : baseTokens.adminButton
               : appearance === 'admin-secondary'
                 ? baseTokens.adminButtonSecondary
                 : appearance === 'admin-icon'
@@ -98,7 +98,7 @@ export const PrimitiveButton = ({
       onPressOut={() => setPressed(false)}
       style={style === undefined ? pressedStyleOf(variant, pressed) : [style, pressedStyleOf(variant, pressed)]}
     >
-      {appearance === 'login-primary' || appearance === 'admin-primary' ? (
+      {appearance === 'login-primary' || (appearance === 'admin-primary' && !blocked) ? (
         <PrimitiveActionGradient
           namespace={appearance === 'admin-primary' ? 'admin' : 'login'}
           testID={`${assertTestID(testID)}:gradient`}
@@ -122,7 +122,7 @@ export const PrimitiveButton = ({
               : appearance === 'login-secondary'
                 ? baseTokens.buttonLoginSecondaryText
                 : appearance === 'admin-primary'
-                  ? baseTokens.adminButtonText
+                  ? blocked ? baseTokens.adminButtonDisabledText : baseTokens.adminButtonText
                   : appearance === 'admin-secondary'
                     ? baseTokens.adminButtonSecondaryText
                 : variant === 'key-action'

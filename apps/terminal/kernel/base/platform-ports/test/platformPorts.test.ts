@@ -66,7 +66,7 @@ describe('A: platform port assembly', () => {
     expect('environmentMode' in ports).toBe(false);
   });
 
-  it('keeps method-level capability descriptors scoped to the development build', () => {
+  it('keeps method-level capability descriptors available in every supported build', () => {
     const ports = createPlatformPorts({
       environmentMode: 'PROD',
       bindings: {
@@ -86,22 +86,17 @@ describe('A: platform port assembly', () => {
     const descriptors = describePlatformPortCapabilities(ports);
     expect(descriptors).toHaveLength(10);
     expect(Object.isFrozen(descriptors)).toBe(true);
-    if (__DEV__) {
-      expect(descriptors.every(descriptor => descriptor.descriptorStatus === 'complete')).toBe(true);
-      expect(descriptors.find(descriptor => descriptor.port === 'device')).toMatchObject({
-        capabilities: expect.arrayContaining([
-          {capability: 'getDeviceInfo', state: 'unavailable', source: 'default'},
-          {capability: 'getDisplayInfo', state: 'unavailable', source: 'default'},
-        ]),
-      });
-      expect(descriptors.find(descriptor => descriptor.port === 'persistKv')).toMatchObject({
-        capabilities: expect.arrayContaining([
-          {capability: 'read', state: 'real', source: 'default'},
-        ]),
-      });
-    } else {
-      expect(descriptors.every(descriptor => descriptor.descriptorStatus === 'missing-descriptor')).toBe(true);
-      expect(descriptors.every(descriptor => descriptor.capabilities.length === 0)).toBe(true);
-    }
+    expect(descriptors.every(descriptor => descriptor.descriptorStatus === 'complete')).toBe(true);
+    expect(descriptors.find(descriptor => descriptor.port === 'device')).toMatchObject({
+      capabilities: expect.arrayContaining([
+        {capability: 'getDeviceInfo', state: 'unavailable', source: 'default'},
+        {capability: 'getDisplayInfo', state: 'unavailable', source: 'default'},
+      ]),
+    });
+    expect(descriptors.find(descriptor => descriptor.port === 'persistKv')).toMatchObject({
+      capabilities: expect.arrayContaining([
+        {capability: 'read', state: 'real', source: 'default'},
+      ]),
+    });
   });
 });

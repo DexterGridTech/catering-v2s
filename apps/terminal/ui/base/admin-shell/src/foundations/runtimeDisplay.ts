@@ -34,22 +34,6 @@ const reasonLabel = (reasonCode: string | null): string => {
   return reasonCode === null ? '显示事实当前不可用' : '显示事实读取失败'
 }
 
-const greatestCommonDivisor = (left: number, right: number): number => {
-  let a = Math.abs(Math.round(left))
-  let b = Math.abs(Math.round(right))
-  while (b !== 0) {
-    const next = a % b
-    a = b
-    b = next
-  }
-  return a || 1
-}
-
-const ratioLabelOf = (width: number, height: number): string => {
-  const divisor = greatestCommonDivisor(width, height)
-  return `${Math.round(width / divisor)}:${Math.round(height / divisor)}`
-}
-
 const currentSurfaceKeyOf = (
   facts: DisplayFactsReadModel,
   renderDisplayMode: 'PRIMARY' | 'SECONDARY',
@@ -80,7 +64,6 @@ export const projectRuntimeDisplay = (input: Readonly<{
     const logicalSize = current && surface.logicalSize === null ? input.currentLogicalSize : surface.logicalSize
     if (logicalSize === null || logicalSize.width <= 0 || logicalSize.height <= 0) return null
     const readiness = readinessLabel(surface.readiness)
-    const ratioLabel = ratioLabelOf(logicalSize.width, logicalSize.height)
     return Object.freeze({
       key: surface.surfaceKey,
       label: roleLabel(surface.role),
@@ -89,7 +72,7 @@ export const projectRuntimeDisplay = (input: Readonly<{
       present: surface.present,
       aspectRatio: logicalSize.width / logicalSize.height,
       insideLabels: current
-        ? Object.freeze([readiness.label, `可用状态：${surface.readiness === 'ready' ? '正常' : readiness.label}`, `比例：${ratioLabel}`])
+        ? Object.freeze([readiness.label, `可用状态：${surface.readiness === 'ready' ? '正常' : readiness.label}`])
         : Object.freeze(['该屏信息未提供', '仅保留存在性与角色']),
       outsideLabels: Object.freeze([]),
       ...(current ? {

@@ -22,7 +22,9 @@ export type AdminSectionsState = Readonly<{
 export const useAdminSections = ({catalog, context}: UseAdminSectionsInput): AdminSectionsState => {
   const sections = useMemo(() => context === undefined ? [] : selectAdminSections(catalog, context), [catalog, context])
   const [requestedPartKey, setRequestedPartKey] = useState<string | null>(null)
-  const selectedPartKey = requestedPartKey
+  const selectedPartKey = requestedPartKey !== null && sections.some(section => section.partKey === requestedPartKey)
+    ? requestedPartKey
+    : sections[0]?.partKey ?? null
   const selectedSection = requestedPartKey === null
     ? undefined
     : sections.find(section => section.partKey === requestedPartKey)

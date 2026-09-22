@@ -1,7 +1,7 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import * as renderHooks from '@catering-v2s/ui-base-render'
-import {DisplayContextSection} from '../src/components/sections/DisplayContextSection'
+import {DisplayContextSectionLaptop} from '../src/components/sections/DisplayContextSectionLaptop'
 import type {AdminSectionProps} from '../src/types/adminSection'
 import {adminTestIds} from '../src/foundations/adminTestIds'
 
@@ -23,7 +23,7 @@ const renderSection = (status: 'created' | 'started') => {
   vi.spyOn(renderHooks, 'useRenderStatus').mockReturnValue(status)
   vi.spyOn(renderHooks, 'useUiStateSelector').mockReturnValue(undefined)
   let renderer: ReactTestRenderer | undefined
-  act(() => { renderer = create(<DisplayContextSection context={context} />) })
+  act(() => { renderer = create(<DisplayContextSectionLaptop context={context} />) })
   return renderer!
 }
 

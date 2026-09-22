@@ -28,7 +28,7 @@ describe('runtime display projection', () => {
     expect(projection.status).toBe('ready')
     expect(projection.surfaces[0]).toMatchObject({
       current: true,
-      insideLabels: ['已就绪', '可用状态：正常', '比例：8:5'],
+      insideLabels: ['已就绪', '可用状态：正常'],
       outsideLabels: [],
       logicWidthLabel: '逻辑长：1280',
       logicHeightLabel: '逻辑高：800',

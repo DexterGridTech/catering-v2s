@@ -55,11 +55,16 @@ describe('admin IA frame registry', () => {
       'logUpload:uploadLogsForDate',
     ])
     expect(Object.keys(adminFrameRendererBindings)).toEqual(expect.arrayContaining([
-      'AdminShellFrame',
-      'AdminPanelStateCard',
-      'PlatformPortsSection',
-      'RuntimeSection',
-      'TopologySection',
+      'AdminShellFrameLaptop',
+      'AdminShellFrameMobile',
+      'AdminPanelStateCardLaptop',
+      'AdminPanelStateCardMobile',
+      'PlatformPortsSectionLaptop',
+      'PlatformPortsSectionMobile',
+      'RuntimeSectionLaptop',
+      'RuntimeSectionMobile',
+      'TopologySectionLaptop',
+      'TopologySectionMobile',
       'CrossTabAudit',
     ]))
     expect(adminFrameRendererBindings.CrossTabAudit.bindingKind).toBe('artifact-only')

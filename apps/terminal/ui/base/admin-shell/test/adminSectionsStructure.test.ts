@@ -85,4 +85,59 @@ describe('useAdminSections form-independence contract', () => {
     expect(sources.map(source => source.fileName)).toContain(hookPath)
     expect(sources.every(source => !hasSurfaceFormRead(source))).toBe(true)
   })
+
+  it('keeps every production admin surface as a named laptop/mobile UI with shared hooks only', () => {
+    const sourceRoot = dirname(hookPath)
+    const readComponent = (relativePath: string): string => readFileSync(resolve(sourceRoot, '..', 'components', relativePath), 'utf8')
+    const formFiles = [
+      'AdminLayerLaptop.tsx',
+      'AdminLayerMobile.tsx',
+      'AdminLoginLaptop.tsx',
+      'AdminLoginMobile.tsx',
+      'AdminShellFrameLaptop.tsx',
+      'AdminShellFrameMobile.tsx',
+      'AdminPanelStateCardLaptop.tsx',
+      'AdminPanelStateCardMobile.tsx',
+      'AdminSectionContentLaptop.tsx',
+      'AdminSectionContentMobile.tsx',
+      'AdminSectionNavigationLaptop.tsx',
+      'AdminSectionNavigationMobile.tsx',
+      'sections/DisplayContextSectionLaptop.tsx',
+      'sections/DisplayContextSectionMobile.tsx',
+      'sections/PlatformPortsSectionLaptop.tsx',
+      'sections/PlatformPortsSectionMobile.tsx',
+      'sections/RuntimeSectionLaptop.tsx',
+      'sections/RuntimeSectionMobile.tsx',
+      'sections/TopologySectionLaptop.tsx',
+      'sections/TopologySectionMobile.tsx',
+      'PowerRoleConfirmationLaptop.tsx',
+      'PowerRoleConfirmationMobile.tsx',
+    ]
+    for (const relativePath of formFiles) {
+      const source = readComponent(relativePath)
+      expect(source, relativePath).toMatch(/return \(|=> \(/)
+      expect(source, relativePath).not.toContain('surfaceForm ===')
+      expect(source, relativePath).not.toMatch(/from ['"](?:\.\/|\.\/sections\/)(?:AdminSectionContent|PlatformPortsSection|RuntimeSection|TopologySection|DisplayContextSection|PowerRoleConfirmation)['"]/)
+    }
+    expect(readComponent('AdminLoginLaptop.tsx')).toContain('useAdminLogin')
+    expect(readComponent('AdminLoginMobile.tsx')).toContain('useAdminLogin')
+    expect(readComponent('AdminLayerLaptop.tsx')).toContain('AdminLoginLaptop')
+    expect(readComponent('AdminLayerMobile.tsx')).toContain('AdminLoginMobile')
+    expect(readComponent('PowerRoleConfirmationLaptop.tsx')).toContain('usePowerRoleConfirmation')
+    expect(readComponent('PowerRoleConfirmationMobile.tsx')).toContain('usePowerRoleConfirmation')
+    expect(readFileSync(resolve(sourceRoot, '..', 'parts', 'parts.ts'), 'utf8')).toContain('rendererKey: `${spec.partKey}.${surfaceForm}`')
+    const publicIndex = readFileSync(resolve(sourceRoot, '..', 'index.ts'), 'utf8')
+    expect(publicIndex).not.toMatch(/export \{Admin(?:Layer|Login|SectionNavigation|Shell)\}/)
+    for (const compatibilityPath of [
+      resolve(sourceRoot, '..', 'components', 'AdminLayer.tsx'),
+      resolve(sourceRoot, '..', 'components', 'AdminLogin.tsx'),
+      resolve(sourceRoot, '..', 'components', 'AdminShell.tsx'),
+      resolve(sourceRoot, '..', 'components', 'AdminSectionNavigation.tsx'),
+    ]) {
+      expect(existsSync(compatibilityPath), compatibilityPath).toBe(false)
+    }
+    expect(existsSync(resolve(sourceRoot, '..', 'components', 'AdminSectionContent.tsx'))).toBe(false)
+    expect(existsSync(resolve(sourceRoot, '..', 'components', 'sections', 'RuntimeSection.tsx'))).toBe(false)
+    expect(existsSync(resolve(sourceRoot, '..', 'components', 'sections', 'TopologySection.tsx'))).toBe(false)
+  })
 })

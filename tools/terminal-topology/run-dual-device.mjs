@@ -645,6 +645,84 @@ const readStage2Ui = async (target, displayId, label) => {
   throw new RunnerFailure(`${target.tag} ${label} display ${displayId} UI`, 'windows UI dump/readback did not return a fresh hierarchy')
 }
 
+// Port capability rows are owner data, not a fixed synthetic release shape.
+// Discover the concrete logger/logUpload capability prefixes from the fresh
+// expanded hierarchy so the oracle verifies the controls the product actually
+// rendered. This intentionally requires both owner rows; silently reducing
+// the denominator would turn a missing capability into a false green.
+const portDetailPrefixesFromXml = xml => [...new Set(
+    [...xml.matchAll(/resource-id="(terminal\.admin:ports:item:(?:logger|logUpload):[^"]+):(name|status|reason|source)"/g)]
+      .map(match => match[1]),
+  )]
+
+const portDetailIdsFromPrefixes = (target, prefixes, label) => {
+  const loggerPrefixes = prefixes.filter(prefix => prefix.includes(':logger:'))
+  const logUploadPrefixes = prefixes.filter(prefix => prefix.includes(':logUpload:'))
+  if (loggerPrefixes.length === 0 || logUploadPrefixes.length === 0) {
+    throw new RunnerFailure(
+      `${target.tag} ${label}`,
+      `expanded logs category did not expose both owner capability rows (logger=${loggerPrefixes.length}, logUpload=${logUploadPrefixes.length})`,
+    )
+  }
+  return [...prefixes].flatMap(prefix => ['name', 'status', 'reason', 'source'].map(field => `${prefix}:${field}`))
+}
+
+const nudgePortDetailScroll = async (target, displayId, xml, label, scrollResourceId) => {
+  const scroll = nodeForId(xml, scrollResourceId)
+  if (scroll === null || scroll.right <= scroll.left || scroll.bottom <= scroll.top) {
+    throw new RunnerFailure(`${target.tag} ${label}`, `port ScrollView ${scrollResourceId} was not observable for capability discovery`)
+  }
+  const displayArgs = displayId === 0 ? [] : ['-d', String(displayId)]
+  const x = Math.floor((scroll.left + scroll.right) / 2)
+  const startY = Math.floor(scroll.bottom - 80)
+  const endY = Math.floor(scroll.top + 100)
+  if (endY >= startY) throw new RunnerFailure(`${target.tag} ${label}`, 'port ScrollView could not advance to the next capability row')
+  adb(target, ['shell', 'input', ...displayArgs, 'swipe', String(x), String(startY), String(x), String(endY), '350'], `discover ${label} next port capability row`)
+  target.lastUiActionAt = Date.now()
+  target.nextUiObservationAt = Math.max(target.nextUiObservationAt ?? 0, target.lastUiActionAt + (target.lastUiActionSettleDelayMs ?? uiActionSettleDelayMs))
+  await sleep(target.lastUiActionSettleDelayMs ?? uiActionSettleDelayMs)
+}
+
+const discoverPortDetailIds = async (target, label, displayId = 0, read = readUi) => {
+  const prefixes = new Set()
+  let lastXml = ''
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    lastXml = await read(target, label)
+    for (const prefix of portDetailPrefixesFromXml(lastXml)) prefixes.add(prefix)
+    try {
+      return portDetailIdsFromPrefixes(target, [...prefixes], label)
+    } catch (error) {
+      if (attempt === 5) throw error
+      await nudgePortDetailScroll(target, displayId, lastXml, label, 'admin.console.platform-ports:scroll')
+    }
+  }
+  throw new RunnerFailure(`${target.tag} ${label}`, 'port capability discovery ended without an observable result')
+}
+
+const discoverStage2PortDetailIds = async (target, displayId, label) =>
+  discoverPortDetailIds(target, label, displayId, (currentTarget, currentLabel) => readStage2Ui(currentTarget, displayId, currentLabel))
+
+const restoreStage2ScrollToSummary = async (target, displayId, scrollResourceId, summaryIds, label) => {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const xml = await readStage2Ui(target, displayId, `${label} readback`)
+    const scroll = nodeForId(xml, scrollResourceId)
+    if (summaryIds.every(resourceId => nodeForId(xml, resourceId) !== null)) return xml
+    if (scroll === null || scroll.right <= scroll.left || scroll.bottom <= scroll.top) {
+      throw new RunnerFailure(`${target.tag} ${label}`, `ScrollView ${scrollResourceId} was not observable while restoring the summary viewport`)
+    }
+    const displayArgs = displayId === 0 ? [] : ['-d', String(displayId)]
+    const x = Math.floor((scroll.left + scroll.right) / 2)
+    const startY = Math.floor(scroll.top + 100)
+    const endY = Math.floor(scroll.bottom - 80)
+    if (endY <= startY) throw new RunnerFailure(`${target.tag} ${label}`, 'ScrollView could not move toward the summary viewport')
+    adb(target, ['shell', 'input', ...displayArgs, 'swipe', String(x), String(startY), String(x), String(endY), '350'], `${label} toward summary viewport`)
+    target.lastUiActionAt = Date.now()
+    target.nextUiObservationAt = Math.max(target.nextUiObservationAt ?? 0, target.lastUiActionAt + (target.lastUiActionSettleDelayMs ?? uiActionSettleDelayMs))
+    await sleep(target.lastUiActionSettleDelayMs ?? uiActionSettleDelayMs)
+  }
+  throw new RunnerFailure(`${target.tag} ${label}`, `summary nodes did not return to the visible viewport: ${summaryIds.join(', ')}`)
+}
+
 const saveStage2Ui = (target, displayId, label, xml) => {
   const safeLabel = label.replace(/[^a-zA-Z0-9_-]/g, '-')
   writeText(`${target.tag}-display-${displayId}-${String(target.uiSequence++).padStart(3, '0')}-${safeLabel}.xml`, sanitizeDiagnostic(xml))
@@ -702,6 +780,31 @@ const scrollStage2NodeIntoView = async (target, displayId, resourceId, scrollRes
       const nodeHasVisibleBounds = node.right > node.left && node.bottom > node.top
       if (nodeHasVisibleBounds && node.top >= viewportTop && node.bottom <= viewportBottom) return {xml: lastXml, node}
       const x = Math.floor((scroll.left + scroll.right) / 2)
+      if (!nodeHasVisibleBounds) {
+        // UiAutomator represents a child clipped above the viewport with an
+        // inverted box such as [top=viewportTop,bottom=offscreenTop].  Treat
+        // that as an above-viewport target and reverse the finger direction;
+        // otherwise the generic missing/inverted path keeps swiping upward
+        // and can never recover a header that precedes the current scroll.
+        const nodeIsAboveViewport = node.bottom <= viewportTop
+        const nodeIsBelowViewport = node.top >= viewportBottom
+        if (nodeIsAboveViewport || nodeIsBelowViewport) {
+          const correctionDistance = Math.min(260, Math.floor((viewportBottom - viewportTop) / 2))
+          const startY = nodeIsAboveViewport
+            ? Math.floor(viewportTop + 100)
+            : Math.floor(viewportBottom - 100)
+          const endY = nodeIsAboveViewport
+            ? Math.min(Math.floor(viewportBottom - 80), startY + correctionDistance)
+            : Math.max(Math.floor(viewportTop + 80), startY - correctionDistance)
+          if (startY !== endY) {
+            const displayArgs = displayId === 0 ? [] : ['-d', String(displayId)]
+            adb(target, ['shell', 'input', ...displayArgs, 'swipe', String(x), String(startY), String(x), String(endY), '350'], `scroll clipped ${resourceId} into view`)
+            target.lastUiActionAt = Date.now()
+            await sleep(700)
+            continue
+          }
+        }
+      }
       // React Native can publish a clipped child with zero or inverted
       // accessibility bounds while its owning port card is already inside the
       // ScrollView.  The direction is determined by the clipped edge: a
@@ -1494,14 +1597,14 @@ const stage2CaptureRuntime = async (record, target) => {
     'terminal.admin:runtime:title',
     'terminal.admin:runtime:overall-status',
     'admin.console.runtime:facts',
+  ], [
+    'terminal.admin:frame:IA-14',
     'terminal.admin:runtime:surface-map',
     'admin.console.runtime:surface-card',
     'terminal.admin:runtime:mobile:single-surface-boundary',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:card',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:label',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:role',
-  ], [
-    'terminal.admin:frame:IA-14',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:outside:0',
     'terminal.admin:runtime:surface-map:surface:PRIMARY:logic-width',
     'terminal.admin:runtime:surface-map:surface:PRIMARY',
@@ -1549,23 +1652,15 @@ const stage2CapturePorts = async (record, target) => {
   await captureStage2Frame(record, target, frameId, 'ports-overview', baseIds)
   await tapStage2Node(target, 0, 'terminal.admin:ports:category:logs:expand', {scrollIntoView: true, scrollResourceId: 'admin.console.platform-ports:scroll'})
   await sleep(uiActionSettleDelayMs)
+  const portDetailIds = await discoverStage2PortDetailIds(target, 0, 'discover stage2 expanded logs capability rows')
+  await restoreStage2ScrollToSummary(target, 0, 'admin.console.platform-ports:scroll', baseIds, 'restore stage2 ports summary')
   await captureStage2ScrolledFrame(record, target, stage2Shape === 'dual' ? 'IA-11' : 'IA-12', 'ports-logs-expanded', [
     ...baseIds,
     'terminal.admin:ports:category:logs:row',
   ], [
     'terminal.admin:frame:' + (stage2Shape === 'dual' ? 'IA-11' : 'IA-12'),
     'terminal.admin:ports:category:logs:row',
-    'terminal.admin:ports:item:logger:undeclared:name',
-    'terminal.admin:ports:item:logger:undeclared:status',
-    'terminal.admin:ports:item:logger:undeclared:reason',
-    // logger:source is earlier in the logs list than the logUpload fields.
-    // Visit it first so the accessibility scroll union does not need to
-    // reverse-scroll from a later row whose clipped bounds cannot recover it.
-    'terminal.admin:ports:item:logger:undeclared:source',
-    'terminal.admin:ports:item:logUpload:undeclared:name',
-    'terminal.admin:ports:item:logUpload:undeclared:status',
-    'terminal.admin:ports:item:logUpload:undeclared:reason',
-    'terminal.admin:ports:item:logUpload:undeclared:source',
+    ...portDetailIds,
   ], 0, 'admin.console.platform-ports:scroll')
 }
 
@@ -2146,6 +2241,7 @@ const pairDevices = async (record, master, slave) => {
   await tapNode(master, 'terminal.admin:section:platform-ports')
   await captureAdminFrame(record, master, 'IA-09', 'ports-overview', ['terminal.admin:ports:summary:ratio-bar'], [], {required: true})
   await tapNode(master, 'terminal.admin:ports:category:logs:expand', {scrollIntoView: true, scrollResourceId: 'admin.console.platform-ports:scroll'})
+  const portDetailIds = await discoverPortDetailIds(master, 'discover stage1 expanded logs capability rows')
   await captureStage1ScrolledFrame(record, master, 'IA-11', 'ports-logs-expanded', [
     'terminal.admin:section:platform-ports',
     'terminal.admin:ports:title',
@@ -2153,16 +2249,7 @@ const pairDevices = async (record, master, slave) => {
     'admin.console.platform-ports:total',
     'terminal.admin:ports:summary:ratio-bar',
     'terminal.admin:ports:category:logs:row',
-  ], [
-    'terminal.admin:ports:item:logger:undeclared:name',
-    'terminal.admin:ports:item:logger:undeclared:status',
-    'terminal.admin:ports:item:logger:undeclared:reason',
-    'terminal.admin:ports:item:logger:undeclared:source',
-    'terminal.admin:ports:item:logUpload:undeclared:name',
-    'terminal.admin:ports:item:logUpload:undeclared:status',
-    'terminal.admin:ports:item:logUpload:undeclared:reason',
-    'terminal.admin:ports:item:logUpload:undeclared:source',
-  ], 'admin.console.platform-ports:scroll')
+  ], portDetailIds, 'admin.console.platform-ports:scroll')
   await tapNode(master, 'terminal.admin:section:runtime')
   await captureStage1ScrolledFrame(record, master, 'IA-13', 'runtime-single-surface', [
     'terminal.admin:section:runtime',

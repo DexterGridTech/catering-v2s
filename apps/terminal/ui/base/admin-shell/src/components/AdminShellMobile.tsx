@@ -1,5 +1,4 @@
 import {useMemo} from 'react'
-import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state'
 import {adminGeometry, PrimitiveContainer} from '@catering-v2s/ui-base-primitives'
 import {useRenderContext, useRenderStatus, useSurfaceContext, useUiCatalogContext} from '@catering-v2s/ui-base-render'
 import {AdminFrameReporterContext, panelFrameId, useAdminFrameController} from '../foundations/adminFrameRegistry'
@@ -7,25 +6,12 @@ import {createAdminSectionCommandBoundary} from '../foundations/adminSectionSele
 import {adminTestIds} from '../foundations/adminTestIds'
 import {useAdminSections} from '../hooks/useAdminSections'
 import type {AdminShellProps} from '../types/adminShell'
-import {AdminSectionContent} from './AdminSectionContent'
-import {AdminSectionNavigation} from './AdminSectionNavigation'
-import {AdminPanelStateCard, AdminShellFrame, adminPanelStatusFromRuntime} from './AdminShellFrame'
+import {AdminSectionContentMobile} from './AdminSectionContentMobile'
+import {AdminSectionNavigationMobile} from './AdminSectionNavigationMobile'
+import {AdminPanelStateCardMobile} from './AdminPanelStateCardMobile'
+import {adminPanelStatusFromRuntime} from './AdminShellFrame'
+import {AdminShellFrameMobile} from './AdminShellFrameMobile'
 import {PowerConfirmationBridge} from './PowerConfirmationBridge'
-
-const resolveMobileSelection = ({sections, requestedPartKey}: Readonly<{
-  readonly sections: readonly UiCatalogEntry[]
-  readonly requestedPartKey: string | null
-}>): Readonly<{readonly selectedPartKey: string | null; readonly selectedSection: UiCatalogEntry | undefined}> => {
-  const selectedPartKey = requestedPartKey !== null && sections.some(section => section.partKey === requestedPartKey)
-    ? requestedPartKey
-    : sections[0]?.partKey ?? null
-  return {
-    selectedPartKey,
-    selectedSection: selectedPartKey === null
-      ? undefined
-      : sections.find(section => section.partKey === selectedPartKey),
-  }
-}
 
 const contentStyle = adminGeometry.contentMobile
 
@@ -36,39 +22,35 @@ export const AdminShellMobile = ({onClose}: AdminShellProps) => {
   const catalogContext = useUiCatalogContext(surface.displayMode)
   const commandBoundary = useMemo(() => createAdminSectionCommandBoundary(), [])
   const selection = useAdminSections({catalog: uiCatalog, context: catalogContext})
-  const resolvedSelection = resolveMobileSelection({
-    sections: selection.sections,
-    requestedPartKey: selection.selectedPartKey,
-  })
   const defaultFrameId = runtimeStatus !== 'started'
-    ? panelFrameId(surface.surfaceForm, runtimeStatus === 'failed' ? 'error' : 'loading')
+    ? panelFrameId('mobile', runtimeStatus === 'failed' ? 'error' : 'loading')
     : catalogContext === undefined
-      ? panelFrameId(surface.surfaceForm, 'error')
+      ? panelFrameId('mobile', 'error')
       : selection.sections.length === 0
-        ? panelFrameId(surface.surfaceForm, 'empty')
-        : panelFrameId(surface.surfaceForm, 'normal')
+        ? panelFrameId('mobile', 'empty')
+        : panelFrameId('mobile', 'normal')
   const frameController = useAdminFrameController(defaultFrameId)
 
   return (
     <AdminFrameReporterContext.Provider value={frameController.reportFrame}>
-      <AdminShellFrame frameId={frameController.frameId} onClose={onClose} status={adminPanelStatusFromRuntime(runtimeStatus)}>
+      <AdminShellFrameMobile frameId={frameController.frameId} onClose={onClose} status={adminPanelStatusFromRuntime(runtimeStatus)}>
         {runtimeStatus === 'started' ? <PowerConfirmationBridge /> : null}
-        <AdminSectionNavigation
+        <AdminSectionNavigationMobile
           sections={selection.sections}
-          selectedPartKey={resolvedSelection.selectedPartKey}
+          selectedPartKey={selection.selectedPartKey}
           onSelect={selection.selectSection}
         />
         <PrimitiveContainer testID={adminTestIds.content} layout="content" appearance="admin-content" bounded style={contentStyle}>
           {runtimeStatus !== 'started' ? (
-            <AdminPanelStateCard state={runtimeStatus === 'failed' ? 'error' : 'loading'} onRetry={onRuntimeRetry} />
+            <AdminPanelStateCardMobile state={runtimeStatus === 'failed' ? 'error' : 'loading'} onRetry={onRuntimeRetry} />
           ) : catalogContext === undefined ? (
-            <AdminPanelStateCard state="error" onRetry={onRuntimeRetry} />
+            <AdminPanelStateCardMobile state="error" onRetry={onRuntimeRetry} />
           ) : selection.sections.length === 0 ? (
-            <AdminPanelStateCard state="empty" />
+            <AdminPanelStateCardMobile state="empty" />
           ) : (
-            <AdminSectionContent
-              key={resolvedSelection.selectedPartKey ?? 'empty'}
-              selectedSection={resolvedSelection.selectedSection}
+            <AdminSectionContentMobile
+              key={selection.selectedPartKey ?? 'empty'}
+              selectedSection={selection.selectedSection}
               rendererCatalog={rendererCatalog}
               runtimeFacts={runtimeFacts}
               surface={surface}
@@ -77,7 +59,7 @@ export const AdminShellMobile = ({onClose}: AdminShellProps) => {
             />
           )}
         </PrimitiveContainer>
-      </AdminShellFrame>
+      </AdminShellFrameMobile>
     </AdminFrameReporterContext.Provider>
   )
 }

@@ -382,17 +382,25 @@ function checkDescriptorAttachment(root, attachment) {
   if (keyDeclarationCount(source) !== 1) {
     findings.push(finding(root, 'RD-6', filePath, source, `descriptor key must be Symbol.for('${PORT_DESCRIPTOR_KEY_TEXT}') exactly once`));
   }
-  const calls = descriptorCalls(source).filter(call => {
+  const allCalls = descriptorCalls(source).filter(call => {
     const key = call.arguments[1];
     return ts.isIdentifier(key) && key.text === 'PORT_DESCRIPTOR_KEY';
   });
+  const calls = allCalls.filter(call => {
+    const descriptor = descriptorValue(call);
+    const portValue = descriptor === null ? null : propertyValue(descriptor, 'port');
+    return portValue !== null && (
+      (ts.isStringLiteralLike(portValue) && portValue.text === attachment.port)
+      || (ts.isIdentifier(portValue) && portValue.text === 'port')
+    );
+  });
   if (calls.length !== 1) {
-    findings.push(finding(root, 'RD-6', filePath, source, 'exactly one descriptor defineProperty call must use PORT_DESCRIPTOR_KEY'));
+    findings.push(finding(root, 'RD-6', filePath, source, `exactly one descriptor defineProperty call must describe '${attachment.port}'`));
     return findings;
   }
   const call = calls[0];
-  if (!isUnderDevBranch(call, source)) {
-    findings.push(finding(root, 'RD-6', filePath, call, 'descriptor attachment must be guarded by __DEV__'));
+  if (isUnderDevBranch(call, source)) {
+    findings.push(finding(root, 'RD-6', filePath, call, 'descriptor attachment must be available in all supported builds; do not guard it with __DEV__'));
   }
   const descriptor = descriptorValue(call);
   if (!descriptor) {

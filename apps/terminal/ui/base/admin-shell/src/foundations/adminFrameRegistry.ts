@@ -17,11 +17,16 @@ export type AdminFrameId =
   | 'IA-25' | 'IA-26' | 'IA-27' | 'IA-28' | 'IA-29' | 'IA-32'
 
 export type AdminFrameRendererKey =
-  | 'AdminShellFrame'
-  | 'AdminPanelStateCard'
-  | 'PlatformPortsSection'
-  | 'RuntimeSection'
-  | 'TopologySection'
+  | 'AdminShellFrameLaptop'
+  | 'AdminShellFrameMobile'
+  | 'AdminPanelStateCardLaptop'
+  | 'AdminPanelStateCardMobile'
+  | 'PlatformPortsSectionLaptop'
+  | 'PlatformPortsSectionMobile'
+  | 'RuntimeSectionLaptop'
+  | 'RuntimeSectionMobile'
+  | 'TopologySectionLaptop'
+  | 'TopologySectionMobile'
   | 'CrossTabAudit'
 
 export type AdminFrameBindingKind = 'production-renderer' | 'artifact-only'
@@ -366,38 +371,38 @@ const variant = (id: string, controlTestIDs: readonly string[], mustNotTestIDs: 
 })
 
 export const adminFrameDefinitions: readonly AdminFrameDefinition[] = Object.freeze([
-  definition('IA-01', 'PANEL-L-NORMAL', 'AdminShellFrame', 'panel.laptop.normal', laptopPanelControls),
-  definition('IA-02', 'PANEL-M-NORMAL', 'AdminShellFrame', 'panel.mobile.normal', mobilePanelControls),
-  definition('IA-03', 'PANEL-L-EMPTY', 'AdminPanelStateCard', 'panel.laptop.empty', [...laptopPanelControls, adminTestIds.panel.empty, `${adminTestIds.panel.empty}:reason`]),
-  definition('IA-04', 'PANEL-M-EMPTY', 'AdminPanelStateCard', 'panel.mobile.empty', [...mobilePanelControls, adminTestIds.panel.empty, `${adminTestIds.panel.empty}:reason`]),
-  definition('IA-05', 'PANEL-L-LOADING', 'AdminPanelStateCard', 'panel.laptop.loading', [...laptopPanelControls, adminTestIds.panel.loading, `${adminTestIds.panel.loading}:content`, `${adminTestIds.panel.loading}:spinner`, `${adminTestIds.panel.loading}:skeleton`, `${adminTestIds.panel.loading}:message`]),
-  definition('IA-06', 'PANEL-M-LOADING', 'AdminPanelStateCard', 'panel.mobile.loading', [...mobilePanelControls, adminTestIds.panel.loading, `${adminTestIds.panel.loading}:content`, `${adminTestIds.panel.loading}:spinner`, `${adminTestIds.panel.loading}:skeleton`, `${adminTestIds.panel.loading}:message`]),
-  definition('IA-07', 'PANEL-L-ERROR', 'AdminPanelStateCard', 'panel.laptop.error', [...laptopPanelControls, adminTestIds.panel.error, `${adminTestIds.panel.error}:content`, `${adminTestIds.panel.error}:reason`, adminTestIds.panel.retry]),
-  definition('IA-08', 'PANEL-M-ERROR', 'AdminPanelStateCard', 'panel.mobile.error', [...mobilePanelControls, adminTestIds.panel.error, `${adminTestIds.panel.error}:content`, `${adminTestIds.panel.error}:reason`, adminTestIds.panel.retry]),
-  definition('IA-09', 'PORTS-L-OVERVIEW', 'PlatformPortsSection', 'ports.laptop.overview', portsOverviewControls),
-  definition('IA-10', 'PORTS-M-OVERVIEW', 'PlatformPortsSection', 'ports.mobile.overview', portsMobileOverviewControls),
-  definition('IA-11', 'PORTS-L-CATEGORY-EXPANDED', 'PlatformPortsSection', 'ports.laptop.category-expanded', [...portsOverviewControls, `${adminTestIds.ports.category('logs', 'row')}:content`, ...portsExpandedItemControls]),
-  definition('IA-12', 'PORTS-M-CATEGORY-EXPANDED', 'PlatformPortsSection', 'ports.mobile.category-expanded', [...portsMobileOverviewControls, `${adminTestIds.ports.category('logs', 'row')}:content`, ...portsExpandedItemControls]),
-  definition('IA-13', 'RUNTIME-L-SINGLE-SURFACE', 'RuntimeSection', 'runtime.laptop.single-surface', runtimeLaptopControls),
-  definition('IA-14', 'RUNTIME-M-SINGLE-SURFACE', 'RuntimeSection', 'runtime.mobile.single-surface', runtimeMobileBaseControls, [
+  definition('IA-01', 'PANEL-L-NORMAL', 'AdminShellFrameLaptop', 'panel.laptop.normal', laptopPanelControls),
+  definition('IA-02', 'PANEL-M-NORMAL', 'AdminShellFrameMobile', 'panel.mobile.normal', mobilePanelControls),
+  definition('IA-03', 'PANEL-L-EMPTY', 'AdminPanelStateCardLaptop', 'panel.laptop.empty', [...laptopPanelControls, adminTestIds.panel.empty, `${adminTestIds.panel.empty}:reason`]),
+  definition('IA-04', 'PANEL-M-EMPTY', 'AdminPanelStateCardMobile', 'panel.mobile.empty', [...mobilePanelControls, adminTestIds.panel.empty, `${adminTestIds.panel.empty}:reason`]),
+  definition('IA-05', 'PANEL-L-LOADING', 'AdminPanelStateCardLaptop', 'panel.laptop.loading', [...laptopPanelControls, adminTestIds.panel.loading, `${adminTestIds.panel.loading}:content`, `${adminTestIds.panel.loading}:spinner`, `${adminTestIds.panel.loading}:skeleton`, `${adminTestIds.panel.loading}:message`]),
+  definition('IA-06', 'PANEL-M-LOADING', 'AdminPanelStateCardMobile', 'panel.mobile.loading', [...mobilePanelControls, adminTestIds.panel.loading, `${adminTestIds.panel.loading}:content`, `${adminTestIds.panel.loading}:spinner`, `${adminTestIds.panel.loading}:skeleton`, `${adminTestIds.panel.loading}:message`]),
+  definition('IA-07', 'PANEL-L-ERROR', 'AdminPanelStateCardLaptop', 'panel.laptop.error', [...laptopPanelControls, adminTestIds.panel.error, `${adminTestIds.panel.error}:content`, `${adminTestIds.panel.error}:reason`, adminTestIds.panel.retry]),
+  definition('IA-08', 'PANEL-M-ERROR', 'AdminPanelStateCardMobile', 'panel.mobile.error', [...mobilePanelControls, adminTestIds.panel.error, `${adminTestIds.panel.error}:content`, `${adminTestIds.panel.error}:reason`, adminTestIds.panel.retry]),
+  definition('IA-09', 'PORTS-L-OVERVIEW', 'PlatformPortsSectionLaptop', 'ports.laptop.overview', portsOverviewControls),
+  definition('IA-10', 'PORTS-M-OVERVIEW', 'PlatformPortsSectionMobile', 'ports.mobile.overview', portsMobileOverviewControls),
+  definition('IA-11', 'PORTS-L-CATEGORY-EXPANDED', 'PlatformPortsSectionLaptop', 'ports.laptop.category-expanded', [...portsOverviewControls, `${adminTestIds.ports.category('logs', 'row')}:content`, ...portsExpandedItemControls]),
+  definition('IA-12', 'PORTS-M-CATEGORY-EXPANDED', 'PlatformPortsSectionMobile', 'ports.mobile.category-expanded', [...portsMobileOverviewControls, `${adminTestIds.ports.category('logs', 'row')}:content`, ...portsExpandedItemControls]),
+  definition('IA-13', 'RUNTIME-L-SINGLE-SURFACE', 'RuntimeSectionLaptop', 'runtime.laptop.single-surface', runtimeLaptopControls),
+  definition('IA-14', 'RUNTIME-M-SINGLE-SURFACE', 'RuntimeSectionMobile', 'runtime.mobile.single-surface', runtimeMobileBaseControls, [
     variant('single-surface', runtimeMobileReadyControls, [adminTestIds.runtime.displayFactsError]),
     variant('display-facts-error', runtimeMobileErrorControls, [adminTestIds.runtime.surfaceMap, adminTestIds.runtime.mobileSingleSurfaceBoundary]),
   ]),
-  definition('IA-15', 'RUNTIME-L-DUAL-SURFACE', 'RuntimeSection', 'runtime.laptop.dual-surface', runtimeDualLaptopControls),
-  definition('IA-16', 'TOPOLOGY-L-UNAVAILABLE', 'TopologySection', 'topology.laptop.unavailable', topologyUnavailableLaptopControls),
-  definition('IA-17', 'TOPOLOGY-M-UNAVAILABLE', 'TopologySection', 'topology.mobile.unavailable', topologyMobileControls),
-  definition('IA-18', 'TOPOLOGY-L-ROLE-CHOICE', 'TopologySection', 'topology.laptop.role-choice', topologyRoleChoiceControls),
-  definition('IA-19', 'TOPOLOGY-L-HOST-STARTING', 'TopologySection', 'topology.laptop.host-starting', topologyHostStartingControls),
-  definition('IA-20', 'TOPOLOGY-L-HOST-READY', 'TopologySection', 'topology.laptop.host-ready', topologyHostReadyControls),
-  definition('IA-21', 'TOPOLOGY-L-HOST-ERROR', 'TopologySection', 'topology.laptop.host-error', topologyHostErrorControls),
-  definition('IA-22', 'TOPOLOGY-L-PAIRING', 'TopologySection', 'topology.laptop.pairing', topologyPairingControls),
-  definition('IA-23', 'TOPOLOGY-L-PAIR-ERROR', 'TopologySection', 'topology.laptop.pair-error', topologyPairErrorControls),
-  definition('IA-24', 'TOPOLOGY-L-MASTER-PAIRED-REACHABLE', 'TopologySection', 'topology.laptop.master-paired-reachable', topologyPairedControls(true)),
-  definition('IA-25', 'TOPOLOGY-L-MASTER-PAIRED-RECONNECTING', 'TopologySection', 'topology.laptop.master-paired-reconnecting', topologyPairedControls(true)),
-  definition('IA-26', 'TOPOLOGY-L-UNPAIRING-MASTER', 'TopologySection', 'topology.laptop.unpairing-master', topologyPairedControls(true)),
-  definition('IA-27', 'TOPOLOGY-L-SLAVE-PAIRED-REACHABLE', 'TopologySection', 'topology.laptop.slave-paired-reachable', topologyPairedControls(false)),
-  definition('IA-28', 'TOPOLOGY-L-SLAVE-PAIRED-RECONNECTING', 'TopologySection', 'topology.laptop.slave-paired-reconnecting', topologyPairedControls(false)),
-  definition('IA-29', 'TOPOLOGY-L-UNPAIRING-SLAVE', 'TopologySection', 'topology.laptop.unpairing-slave', topologyPairedControls(false)),
+  definition('IA-15', 'RUNTIME-L-DUAL-SURFACE', 'RuntimeSectionLaptop', 'runtime.laptop.dual-surface', runtimeDualLaptopControls),
+  definition('IA-16', 'TOPOLOGY-L-UNAVAILABLE', 'TopologySectionLaptop', 'topology.laptop.unavailable', topologyUnavailableLaptopControls),
+  definition('IA-17', 'TOPOLOGY-M-UNAVAILABLE', 'TopologySectionMobile', 'topology.mobile.unavailable', topologyMobileControls),
+  definition('IA-18', 'TOPOLOGY-L-ROLE-CHOICE', 'TopologySectionLaptop', 'topology.laptop.role-choice', topologyRoleChoiceControls),
+  definition('IA-19', 'TOPOLOGY-L-HOST-STARTING', 'TopologySectionLaptop', 'topology.laptop.host-starting', topologyHostStartingControls),
+  definition('IA-20', 'TOPOLOGY-L-HOST-READY', 'TopologySectionLaptop', 'topology.laptop.host-ready', topologyHostReadyControls),
+  definition('IA-21', 'TOPOLOGY-L-HOST-ERROR', 'TopologySectionLaptop', 'topology.laptop.host-error', topologyHostErrorControls),
+  definition('IA-22', 'TOPOLOGY-L-PAIRING', 'TopologySectionLaptop', 'topology.laptop.pairing', topologyPairingControls),
+  definition('IA-23', 'TOPOLOGY-L-PAIR-ERROR', 'TopologySectionLaptop', 'topology.laptop.pair-error', topologyPairErrorControls),
+  definition('IA-24', 'TOPOLOGY-L-MASTER-PAIRED-REACHABLE', 'TopologySectionLaptop', 'topology.laptop.master-paired-reachable', topologyPairedControls(true)),
+  definition('IA-25', 'TOPOLOGY-L-MASTER-PAIRED-RECONNECTING', 'TopologySectionLaptop', 'topology.laptop.master-paired-reconnecting', topologyPairedControls(true)),
+  definition('IA-26', 'TOPOLOGY-L-UNPAIRING-MASTER', 'TopologySectionLaptop', 'topology.laptop.unpairing-master', topologyPairedControls(true)),
+  definition('IA-27', 'TOPOLOGY-L-SLAVE-PAIRED-REACHABLE', 'TopologySectionLaptop', 'topology.laptop.slave-paired-reachable', topologyPairedControls(false)),
+  definition('IA-28', 'TOPOLOGY-L-SLAVE-PAIRED-RECONNECTING', 'TopologySectionLaptop', 'topology.laptop.slave-paired-reconnecting', topologyPairedControls(false)),
+  definition('IA-29', 'TOPOLOGY-L-UNPAIRING-SLAVE', 'TopologySectionLaptop', 'topology.laptop.unpairing-slave', topologyPairedControls(false)),
   definition('IA-32', 'CROSS-TAB-L-DUAL-PHYSICAL', 'CrossTabAudit', 'cross-tab.laptop.dual-physical', [...runtimeDualLaptopControls, adminTestIds.topology.pageGate, adminTestIds.topology.pageGateReason], [], 'artifact-only'),
 ])
 
@@ -408,11 +413,16 @@ export const adminFrameRendererBindings: Readonly<Record<AdminFrameRendererKey, 
   readonly stateSelector: string
   readonly bindingKind: AdminFrameBindingKind
 }>>> = Object.freeze({
-  AdminShellFrame: Object.freeze({source: 'src/components/AdminShellFrame.tsx', stateSelector: 'useAdminFrameController', bindingKind: 'production-renderer'}),
-  AdminPanelStateCard: Object.freeze({source: 'src/components/AdminShellFrame.tsx', stateSelector: 'panelFrameId', bindingKind: 'production-renderer'}),
-  PlatformPortsSection: Object.freeze({source: 'src/components/sections/PlatformPortsSection.tsx', stateSelector: 'portsFrameId', bindingKind: 'production-renderer'}),
-  RuntimeSection: Object.freeze({source: 'src/components/sections/RuntimeSection.tsx', stateSelector: 'runtimeFrameId', bindingKind: 'production-renderer'}),
-  TopologySection: Object.freeze({source: 'src/components/sections/TopologySection.tsx', stateSelector: 'topologyFrameId', bindingKind: 'production-renderer'}),
+  AdminShellFrameLaptop: Object.freeze({source: 'src/components/AdminShellFrameLaptop.tsx', stateSelector: 'useAdminFrameController', bindingKind: 'production-renderer'}),
+  AdminShellFrameMobile: Object.freeze({source: 'src/components/AdminShellFrameMobile.tsx', stateSelector: 'useAdminFrameController', bindingKind: 'production-renderer'}),
+  AdminPanelStateCardLaptop: Object.freeze({source: 'src/components/AdminPanelStateCardLaptop.tsx', stateSelector: 'panelFrameId', bindingKind: 'production-renderer'}),
+  AdminPanelStateCardMobile: Object.freeze({source: 'src/components/AdminPanelStateCardMobile.tsx', stateSelector: 'panelFrameId', bindingKind: 'production-renderer'}),
+  PlatformPortsSectionLaptop: Object.freeze({source: 'src/components/sections/PlatformPortsSectionLaptop.tsx', stateSelector: 'portsFrameId', bindingKind: 'production-renderer'}),
+  PlatformPortsSectionMobile: Object.freeze({source: 'src/components/sections/PlatformPortsSectionMobile.tsx', stateSelector: 'portsFrameId', bindingKind: 'production-renderer'}),
+  RuntimeSectionLaptop: Object.freeze({source: 'src/components/sections/RuntimeSectionLaptop.tsx', stateSelector: 'runtimeFrameId', bindingKind: 'production-renderer'}),
+  RuntimeSectionMobile: Object.freeze({source: 'src/components/sections/RuntimeSectionMobile.tsx', stateSelector: 'runtimeFrameId', bindingKind: 'production-renderer'}),
+  TopologySectionLaptop: Object.freeze({source: 'src/components/sections/TopologySectionLaptop.tsx', stateSelector: 'topologyFrameId', bindingKind: 'production-renderer'}),
+  TopologySectionMobile: Object.freeze({source: 'src/components/sections/TopologySectionMobile.tsx', stateSelector: 'topologyFrameId', bindingKind: 'production-renderer'}),
   CrossTabAudit: Object.freeze({source: 'cross-tab artifact', stateSelector: 'runtimeFrameId + topologyFrameId', bindingKind: 'artifact-only'}),
 })
 

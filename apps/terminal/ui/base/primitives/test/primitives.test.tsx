@@ -701,7 +701,7 @@ describe('ui primitives', () => {
             accessibilityLabel="显示屏"
             direction="row"
             surfaces={[
-              {key: 'PRIMARY', label: '当前屏', roleLabel: '主屏', current: true, present: true, aspectRatio: 2, insideLabels: ['1920×1080'], outsideLabels: ['2560×1440'], statusLabel: '已就绪', statusTone: 'ok'},
+              {key: 'PRIMARY', label: '当前屏', roleLabel: '主屏', current: true, present: true, aspectRatio: 2, insideLabels: ['已就绪'], outsideLabels: ['备用'], logicWidthLabel: '逻辑长：1920', logicHeightLabel: '逻辑高：960', physicalWidthLabel: '物理长：2560', physicalHeightLabel: '物理高：1440', statusLabel: '已就绪', statusTone: 'ok'},
               {key: 'SECONDARY', label: '副屏', roleLabel: '副屏', current: false, present: true, aspectRatio: 1.5, insideLabels: ['该屏信息未提供'], outsideLabels: []},
             ]}
           />
@@ -723,7 +723,15 @@ describe('ui primitives', () => {
     expect(onExpandedChange).toHaveBeenCalledWith(true);
     expect(renderer.root.findAllByType(View).filter(node => node.props.testID === 'sample:ratio:segment:available')).toHaveLength(1);
     expect(renderer.root.findByProps({testID: 'sample:ratio:segment:undeclared'}).props.className).toContain(baseTokens.adminRatioSegmentUndeclared);
-    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:PRIMARY'}).props.style).toEqual(expect.objectContaining({aspectRatio: 2, minHeight: 176}));
+    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:PRIMARY'}).props.style).toEqual(expect.objectContaining({aspectRatio: 2, width: '100%', minWidth: 176, maxWidth: 320, height: 160}));
+    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:PRIMARY:logic-width'}).props.className).toBe(baseTokens.adminSurfaceMapLogicWidth);
+    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:PRIMARY:logic-height'}).props.className).toBe(baseTokens.adminSurfaceMapLogicHeight);
+    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:PRIMARY:outside:0'}).props.className).toBe(baseTokens.adminSurfaceMapPhysicalWidth);
+    expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:PRIMARY:outside:1'}).props.className).toBe(baseTokens.adminSurfaceMapPhysicalHeight);
+    expect(baseTokens.adminSurfaceMapLogicWidth).toContain('left-0 right-0 top-2');
+    expect(baseTokens.adminSurfaceMapLogicHeight).toContain('right-2 top-1/2');
+    expect(baseTokens.adminSurfaceMapPhysicalWidth).toContain('top-0');
+    expect(baseTokens.adminSurfaceMapPhysicalHeight).toContain('-right-1 top-1/2');
     expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:PRIMARY:card'}).props.style).toBeUndefined();
     expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:SECONDARY:inside:0'})).toBeDefined();
     expect(renderer.root.findByProps({testID: 'sample:surface-map:surface:SECONDARY'}).props.className).toContain(baseTokens.adminSurfaceMapLimited);

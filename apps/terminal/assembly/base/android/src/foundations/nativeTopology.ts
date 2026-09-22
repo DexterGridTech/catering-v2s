@@ -320,8 +320,7 @@ export const createAndroidTopologyHostPort = (
       }
     },
   }
-  if (__DEV__) {
-    Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
+  Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
       value: Object.freeze({
         port: 'topologyHost',
         capabilities: Object.freeze([
@@ -335,12 +334,11 @@ export const createAndroidTopologyHostPort = (
       writable: false,
       configurable: false,
     })
-  }
   return Object.freeze(port)
 }
 
-export const createAndroidAppControlPort = (): AppControlPort =>
-  Object.freeze({
+export const createAndroidAppControlPort = (): AppControlPort => {
+  const port: AppControlPort = {
     ...defaultAppControlPort,
     resetRuntime: async ({requestId, timeoutMs}: Parameters<AppControlPort['resetRuntime']>[0]) => {
       try {
@@ -354,7 +352,24 @@ export const createAndroidAppControlPort = (): AppControlPort =>
         })
       }
     },
+  }
+  Object.defineProperty(port, PORT_DESCRIPTOR_KEY, {
+    value: Object.freeze({
+      port: 'appControl',
+      capabilities: Object.freeze([
+        Object.freeze({capability: 'resetRuntime', state: 'real' as const, source: 'adapter' as const}),
+        ...[
+          'exitApplication', 'clearHostDataCache', 'setFullscreen', 'getFullscreen',
+          'setKioskMode', 'getKioskMode', 'showNativeLoading', 'hideNativeLoading',
+        ].map(capability => Object.freeze({capability, state: 'unavailable' as const, source: 'default' as const})),
+      ]),
+    }),
+    enumerable: false,
+    writable: false,
+    configurable: false,
   })
+  return Object.freeze(port)
+}
 
 export const createAndroidTopologyPeerChannel = (): TopologyPeerChannel => {
   const listeners = new Set<(event: TopologyPeerChannelEvent) => void>()

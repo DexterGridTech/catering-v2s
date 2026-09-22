@@ -28,11 +28,7 @@ export {
 } from './foundations/adminSectionSelection';
 export type {AdminPageKey, AdminPageProjection, AdminPageSpec} from './foundations/adminSectionSelection';
 export {adminTestIds} from './foundations/adminTestIds';
-export {AdminLayer} from './components/AdminLayer';
 export {AdminLauncher} from './components/AdminLauncher';
-export {AdminLogin} from './components/AdminLogin';
-export {AdminSectionNavigation} from './components/AdminSectionNavigation';
-export {AdminShell} from './components/AdminShell';
 export {SampleSection} from './components/sections/SampleSection';
 export {adminShellAssembly} from './parts/parts';
 export type {AdminShellAssembly} from './parts/parts';

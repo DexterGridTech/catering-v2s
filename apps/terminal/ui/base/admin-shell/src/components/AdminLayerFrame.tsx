@@ -11,16 +11,18 @@ import {
   ADMIN_CONSOLE_FOCUS_SCOPE_ID,
   ADMIN_CONSOLE_LAYER_ID,
 } from '../foundations/adminIdentity'
-import {AdminLogin} from './AdminLogin'
-import {AdminShell} from './AdminShell'
+import type {AdminLoginProps} from '../hooks/useAdminLogin'
 
 type AuthenticatedRenderer = (input: Readonly<{readonly onClose: () => void}>) => ReactNode
+type LoginRenderer = (input: AdminLoginProps) => ReactNode
 
-type AdminLayerFrameProps = Readonly<{
+export type AdminLayerFrameProps = Readonly<{
   readonly renderAuthenticated: AuthenticatedRenderer
+  readonly renderLogin: LoginRenderer
 }>
 
-const renderAdminLayer = ({renderAuthenticated}: AdminLayerFrameProps) => {
+/** Shared layer lifecycle and authentication owner; production UI is supplied by the named form renderers. */
+export const AdminLayerFrame = ({renderAuthenticated, renderLogin}: AdminLayerFrameProps) => {
   const {logger, runtimeFacts} = useRenderContext()
   const surface = useSurfaceContext()
   const dispatchCommand = useDispatchCommand()
@@ -130,21 +132,13 @@ const renderAdminLayer = ({renderAuthenticated}: AdminLayerFrameProps) => {
   }, [displayIndex, dispatchCommand, logger, surface.displayMode, surfaceKey])
 
   if (!authenticated) {
-    return (
-      <AdminLogin
-        identity={runtimeFacts.deviceIdentity}
-        debugMode={runtimeFacts.debugMode}
-        showAdminPassword={runtimeFacts.showAdminPassword}
-        onAuthenticated={() => setAuthenticated(true)}
-        onClose={close}
-      />
-    )
+    return renderLogin({
+      identity: runtimeFacts.deviceIdentity,
+      debugMode: runtimeFacts.debugMode,
+      showAdminPassword: runtimeFacts.showAdminPassword,
+      onAuthenticated: () => setAuthenticated(true),
+      onClose: close,
+    })
   }
   return <>{renderAuthenticated({onClose: close})}</>
 }
-
-export const AdminLayerFrame = renderAdminLayer
-
-export const AdminLayer = () => (
-  <AdminLayerFrame renderAuthenticated={({onClose}) => <AdminShell onClose={onClose} />} />
-)

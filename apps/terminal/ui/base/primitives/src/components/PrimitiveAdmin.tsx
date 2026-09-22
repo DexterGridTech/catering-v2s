@@ -132,33 +132,54 @@ export const PrimitiveSurfaceMap = ({testID, accessibilityLabel, surfaces, direc
             {surface.current ? (
               <>
                 {surface.physicalWidthLabel === undefined ? null : <RnrText testID={`${address}:surface:${surface.key}:outside:0`} className={baseTokens.adminSurfaceMapPhysicalWidth}>{surface.physicalWidthLabel}</RnrText>}
-                {surface.logicWidthLabel === undefined ? null : <RnrText testID={`${address}:surface:${surface.key}:logic-width`} className={baseTokens.adminSurfaceMapLogicWidth}>{surface.logicWidthLabel}</RnrText>}
                 <RnrView
-                  testID={`${address}:surface:${surface.key}`}
-                  accessibilityRole="none"
-                  className={baseTokens.adminSurfaceMapRectCurrent}
+                  testID={`${address}:surface:${surface.key}:frame`}
+                  className={baseTokens.adminSurfaceMapFrame}
                   style={{
-                    ...(compact ? adminGeometry.surfaceRectMobile : adminGeometry.surfaceRectLaptop),
-                    ...(direction === 'row' ? {maxWidth: 320, alignSelf: 'center' as const} : {}),
-                    aspectRatio: surface.aspectRatio,
+                    width: '100%',
+                    ...(direction === 'row'
+                      ? {
+                          maxWidth: adminGeometry.surfaceRectLaptop.maxWidth,
+                          alignSelf: 'center' as const,
+                        }
+                      : {}),
                   }}
                 >
-                  {surface.logicHeightLabel === undefined ? null : <RnrText testID={`${address}:surface:${surface.key}:logic-height`} className={baseTokens.adminSurfaceMapLogicHeight}>{surface.logicHeightLabel}</RnrText>}
-                  {surface.present ? surface.insideLabels.map((label, index) => (
-                    <RnrText key={`${surface.key}:inside:${index}`} testID={`${address}:surface:${surface.key}:inside:${index}`} className={baseTokens.adminSurfaceMapInside}>
-                      {label}
-                    </RnrText>
-                  )) : <RnrText testID={`${address}:surface:${surface.key}:absent`} className={baseTokens.adminSurfaceMapInside}>未检测到</RnrText>}
-                  {surface.statusLabel === undefined ? null : (
-                    <RnrText
-                      testID={`${address}:surface:${surface.key}:status`}
-                      className={toneForegroundClassName(surface.statusTone ?? 'neutral', baseTokens.adminSurfaceMapStatus)}
-                    >
-                      {surface.statusLabel}
-                    </RnrText>
-                  )}
+                  <RnrView
+                    testID={`${address}:surface:${surface.key}`}
+                    accessibilityRole="none"
+                    className={baseTokens.adminSurfaceMapRectCurrent}
+                    style={{
+                      ...(compact ? adminGeometry.surfaceRectMobile : adminGeometry.surfaceRectLaptop),
+                      width: '100%',
+                      ...(direction === 'row'
+                        ? {
+                            maxWidth: adminGeometry.surfaceRectLaptop.maxWidth,
+                            height: adminGeometry.surfaceRectLaptop.maxWidth / surface.aspectRatio,
+                            alignSelf: 'center' as const,
+                          }
+                        : {}),
+                      aspectRatio: surface.aspectRatio,
+                    }}
+                  >
+                    {surface.logicWidthLabel === undefined ? null : <RnrText testID={`${address}:surface:${surface.key}:logic-width`} className={baseTokens.adminSurfaceMapLogicWidth}>{surface.logicWidthLabel}</RnrText>}
+                    {surface.logicHeightLabel === undefined ? null : <RnrText testID={`${address}:surface:${surface.key}:logic-height`} className={baseTokens.adminSurfaceMapLogicHeight}>{surface.logicHeightLabel}</RnrText>}
+                    {surface.present ? surface.insideLabels.map((label, index) => (
+                      <RnrText key={`${surface.key}:inside:${index}`} testID={`${address}:surface:${surface.key}:inside:${index}`} className={baseTokens.adminSurfaceMapInside}>
+                        {label}
+                      </RnrText>
+                    )) : <RnrText testID={`${address}:surface:${surface.key}:absent`} className={baseTokens.adminSurfaceMapInside}>未检测到</RnrText>}
+                    {surface.statusLabel === undefined ? null : (
+                      <RnrText
+                        testID={`${address}:surface:${surface.key}:status`}
+                        className={toneForegroundClassName(surface.statusTone ?? 'neutral', baseTokens.adminSurfaceMapStatus)}
+                      >
+                        {surface.statusLabel}
+                      </RnrText>
+                    )}
+                  </RnrView>
+                  {surface.physicalHeightLabel === undefined ? null : <RnrText testID={`${address}:surface:${surface.key}:outside:1`} className={baseTokens.adminSurfaceMapPhysicalHeight}>{surface.physicalHeightLabel}</RnrText>}
                 </RnrView>
-                {surface.physicalHeightLabel === undefined ? null : <RnrText testID={`${address}:surface:${surface.key}:outside:1`} className={baseTokens.adminSurfaceMapPhysicalHeight}>{surface.physicalHeightLabel}</RnrText>}
                 {surface.physicalWidthLabel !== undefined ? null : surface.outsideLabels.map((label, index) => (
                   <RnrText key={`${surface.key}:outside:${index}`} testID={`${address}:surface:${surface.key}:outside:${index}`} className={baseTokens.adminSurfaceMapOutside}>
                     {label}

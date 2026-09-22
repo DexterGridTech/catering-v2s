@@ -1,6 +1,10 @@
-import {AdminLayerFrame} from './AdminLayer'
+import {AdminLayerFrame} from './AdminLayerFrame'
+import {AdminLoginLaptop} from './AdminLoginLaptop'
 import {AdminShellLaptop} from './AdminShellLaptop'
 
 export const AdminLayerLaptop = () => (
-  <AdminLayerFrame renderAuthenticated={({onClose}) => <AdminShellLaptop onClose={onClose} />} />
+  <AdminLayerFrame
+    renderLogin={props => <AdminLoginLaptop {...props} />}
+    renderAuthenticated={({onClose}) => <AdminShellLaptop onClose={onClose} />}
+  />
 )

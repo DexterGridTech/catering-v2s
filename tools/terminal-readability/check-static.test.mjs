@@ -346,14 +346,12 @@ function writeDescriptorFixtures({wrongKeyPath = null, omitCapabilityPath = null
       : 'catering-v2s.platform-ports.descriptor';
     writeFile(attachment.path, `const PORT_DESCRIPTOR_KEY = Symbol.for('${key}')
 const target = {}
-if (__DEV__) {
-  Object.defineProperty(target, PORT_DESCRIPTOR_KEY, {
+Object.defineProperty(target, PORT_DESCRIPTOR_KEY, {
     value: Object.freeze({port: '${attachment.port}', capabilities: Object.freeze([${capabilities}])}),
     enumerable: false,
     writable: false,
     configurable: false,
   })
-}
 `);
   }
 }

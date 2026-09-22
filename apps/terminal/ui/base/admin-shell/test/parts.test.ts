@@ -37,6 +37,11 @@ describe('admin-shell R-10a part declarations', () => {
       ])
       expect(new Set(siblings.map(part => part.rendererBinding.rendererKey)).size).toBe(2)
       expect(new Set(siblings.map(part => part.rendererBinding.component)).size).toBe(2)
+      for (const sibling of siblings) {
+        const surfaceForm = sibling.catalogEntry.surfaceForm[0]
+        expect(sibling.rendererBinding.rendererKey).toBe(`${sibling.catalogEntry.partKey}.${surfaceForm}`)
+        expect(sibling.rendererBinding.component.name).toContain(surfaceForm === 'laptop' ? 'Laptop' : 'Mobile')
+      }
     }
     expect(new Set(parts.map(part => part.rendererBinding.rendererKey)).size).toBe(12)
   })

@@ -77,7 +77,7 @@ describe('useAdminSections', () => {
       'admin.console.runtime',
       'admin.console.topology',
     ])
-    expect(state?.selectedPartKey).toBeNull()
+    expect(state?.selectedPartKey).toBe('admin.console.runtime')
     expect(state?.selectedSection).toBeUndefined()
 
     act(() => { state?.selectSection('admin.console.topology') })

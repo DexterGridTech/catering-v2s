@@ -1,6 +1,7 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {afterEach, describe, expect, it, vi} from 'vitest'
-import {PlatformPortsSection} from '../src/components/sections/PlatformPortsSection'
+import {PlatformPortsSectionLaptop} from '../src/components/sections/PlatformPortsSectionLaptop'
+import {PlatformPortsSectionMobile} from '../src/components/sections/PlatformPortsSectionMobile'
 import {adminTestIds} from '../src/foundations/adminTestIds'
 import type {AdminSectionProps} from '../src/types/adminSection'
 
@@ -18,7 +19,7 @@ const context = {
 
 const renderSection = (): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined
-  act(() => { renderer = create(<PlatformPortsSection context={context} />) })
+  act(() => { renderer = create(<PlatformPortsSectionLaptop context={context} />) })
   return renderer!
 }
 
@@ -42,5 +43,34 @@ describe('PlatformPortsSection high-fidelity summary', () => {
     expect(renderer.root.findByProps({testID: adminTestIds.ports.summary.ratioBar})).toBeDefined()
     expect(renderer.root.findByProps({testID: 'terminal.admin:ports:summary-grid'})).toBeDefined()
     act(() => { renderer.unmount() })
+  })
+
+  it('keeps mobile summary facts single-column and names non-available category states', () => {
+    const mobileContext = {
+      ...context,
+      surface: {surfaceForm: 'mobile'},
+      runtimeFacts: {
+        platformPortCapabilities: [
+          {port: 'device', descriptorStatus: 'complete', capabilities: [{capability: 'display', state: 'unavailable', source: 'default'}]},
+          {port: 'script', descriptorStatus: 'missing-descriptor', capabilities: []},
+        ],
+      },
+    } as unknown as AdminSectionProps['context']
+    let renderer: ReactTestRenderer | undefined
+    act(() => { renderer = create(<PlatformPortsSectionMobile context={mobileContext} />) })
+
+    const summaryGrid = renderer!.root.findByProps({testID: 'terminal.admin:ports:summary-grid'})
+    const summaryItems = [
+      renderer!.root.findByProps({testID: adminTestIds.ports.summary.available}),
+      renderer!.root.findByProps({testID: adminTestIds.ports.summary.unavailable}),
+      renderer!.root.findByProps({testID: adminTestIds.ports.summary.undeclared}),
+    ]
+    expect(summaryGrid).toBeDefined()
+    expect(summaryItems.every(node => node.props.style.flexBasis === `${100 / 1 - 2}%`)).toBe(true)
+    expect(renderer!.root.findByProps({testID: adminTestIds.ports.category('device', 'status')}).props.children)
+      .toBe('有不可用能力')
+    expect(renderer!.root.findByProps({testID: adminTestIds.ports.category('release', 'status')}).props.children)
+      .toBe('未声明能力')
+    act(() => { renderer!.unmount() })
   })
 })

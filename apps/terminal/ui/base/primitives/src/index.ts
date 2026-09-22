@@ -12,7 +12,7 @@ export {PrimitiveCheckbox, PrimitiveCodeInput, PrimitiveDropdownSelect, Primitiv
 export type {PrimitivePressOptionProps} from './components/PrimitiveForms';
 export {PrimitiveDisclosure, PrimitiveFactGrid, PrimitiveRatioBar, PrimitiveStatusLine, PrimitiveSurfaceMap} from './components/PrimitiveAdmin';
 export {adminGeometry, baseTokens} from './theme/tokens';
-export {PrimitiveKeyValueRow, PrimitiveList, PrimitiveSegmentedControl, PrimitiveStatusRow, PrimitiveTable, PrimitiveTabs} from './components/PrimitiveData';
+export {PrimitiveKeyValueRow, PrimitiveList, PrimitivePortItem, PrimitiveSegmentedControl, PrimitiveStatusRow, PrimitiveTable, PrimitiveTabs} from './components/PrimitiveData';
 export {PrimitiveContainer} from './components/PrimitiveContainer';
 export {PrimitiveKeyboardBackdrop} from './components/PrimitiveKeyboardBackdrop';
 export {PrimitiveKeyboardSurface} from './components/PrimitiveKeyboardSurface';
@@ -37,6 +37,7 @@ export type {
   PrimitiveFactGridProps,
   PrimitiveFactItem,
   PrimitiveKeyValueRowProps,
+  PrimitivePortItemProps,
   PrimitiveGridProps,
   PrimitiveLayoutProps,
   PrimitiveListProps,
