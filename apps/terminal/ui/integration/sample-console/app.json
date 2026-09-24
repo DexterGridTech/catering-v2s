@@ -2,6 +2,7 @@
   "expo": {
     "name": "sample-console",
     "slug": "sample-console",
+    "userInterfaceStyle": "light",
     "web": {
       "favicon": "./assets/favicon.png"
     }

@@ -75,6 +75,16 @@ const salesMenuScenarioPath = path.join(root, 'contracts/policy/sales-menu-l2-sc
 const salesMenuBindingPath = path.join(root, 'contracts/policy/sales-menu-l2-locator-bindings.json');
 const salesMenuTimingPath = path.join(root, 'contracts/policy/sales-menu-l2-timing-budget.json');
 const salesMenuSpecPath = path.join(root, 'apps/frontend/operations-admin/src/tests/l2/sales-menu.spec.ts');
+const storeTerminalFixturePath = path.join(root, 'contracts/policy/store-terminal-l2-fixture.json');
+const storeTerminalActivationCandidatePath = path.join(
+  root,
+  'contracts/policy/store-terminal-l2-activation-candidate.json',
+);
+const storeTerminalExecutionPath = path.join(root, 'contracts/policy/store-terminal-l2-execution.json');
+const storeTerminalScenarioPath = path.join(root, 'contracts/policy/store-terminal-l2-scenarios.json');
+const storeTerminalBindingPath = path.join(root, 'contracts/policy/store-terminal-l2-locator-bindings.json');
+const storeTerminalTimingPath = path.join(root, 'contracts/policy/store-terminal-l2-timing-budget.json');
+const storeTerminalSpecPath = path.join(root, 'apps/frontend/operations-admin/src/tests/l2/store-terminal.spec.ts');
 const catalogRegistryPath = path.join(
   root,
   'apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json',
@@ -137,6 +147,29 @@ const L2_SUITE_CONFIGS = Object.freeze({
     bindingsEnv: 'R5_L2_SALES_MENU_BINDINGS',
     executionEnv: 'R5_L2_SALES_MENU_EXECUTION',
   }),
+  'store-terminal': Object.freeze({
+    suite: 'store-terminal',
+    fixturePath: storeTerminalFixturePath,
+    activationCandidatePath: storeTerminalActivationCandidatePath,
+    executionPath: storeTerminalExecutionPath,
+    scenarioPath: storeTerminalScenarioPath,
+    bindingPath: storeTerminalBindingPath,
+    timingPath: storeTerminalTimingPath,
+    readinessKind: 'store-terminal-l2-readiness-manifest',
+    executionManifestKind: 'store-terminal-l2-execution-manifest',
+    selectionKind: 'store-terminal-l2-selection-manifest',
+    joinKind: 'store-terminal-l2-join-artifact',
+    cleanupKind: 'store-terminal-l2-cleanup-manifest',
+    stateKind: 'store-terminal-l2-runtime-state',
+    discoveryKind: 'store-terminal-l2-discovery-manifest',
+    ownerFixtureKind: 'store-terminal-l2-owner-fixture',
+    activationCandidateKind: 'store-terminal-l2-activation-candidate',
+    executionProfileKind: 'store-terminal-l2-execution-profile',
+    ownerFixtureEnv: 'R5_L2_STORE_TERMINAL_OWNER_FIXTURE',
+    casesEnv: 'R5_L2_STORE_TERMINAL_CASES',
+    bindingsEnv: 'R5_L2_STORE_TERMINAL_BINDINGS',
+    executionEnv: 'R5_L2_STORE_TERMINAL_EXECUTION',
+  }),
 });
 
 function suiteConfig(suite = 'catalog-inventory') {
@@ -151,7 +184,7 @@ export function catalogBootstrapCaseIdsForSuite(suite, activeExecutionCaseIds) {
   // cases share the same store/brand scope, and their non-VOIDED items are
   // intentionally visible to the Catalog candidate read, so they must not be
   // materialized into this suite's owner fixture.
-  return suite === 'sales-menu' ? [] : [...activeExecutionCaseIds];
+  return suite === 'sales-menu' || suite === 'store-terminal' ? [] : [...activeExecutionCaseIds];
 }
 const REPOSITORY_BYTE_BINDING_EXCLUDED_DIRECTORIES = Object.freeze([
   '.git',
@@ -1150,6 +1183,67 @@ function validateSalesMenuContractDenominators({
     activeCases: cases.length,
     testDatasets: 3,
     newTestDatasets: 3,
+    locatorBindings: Object.keys(bindings.controls).length,
+    timingRows: timingRows.length,
+    activeCaseIds: Object.freeze(cases),
+  });
+}
+
+function validateStoreTerminalContractDenominators({
+  execution = readJson(storeTerminalExecutionPath),
+  scenarios = readJson(storeTerminalScenarioPath),
+  bindings = readJson(storeTerminalBindingPath),
+  fixture = readJson(storeTerminalFixturePath),
+  timing = readJson(storeTerminalTimingPath),
+} = {}) {
+  const cases = activeCaseIds(execution);
+  const scenarioRows = Array.isArray(scenarios.scenarios) ? scenarios.scenarios : [];
+  const scenarioCaseIds = scenarioRows.flatMap(scenario => (scenario.cases ?? []).map(entry => entry.caseId));
+  const expectedScenarioCount = Number(scenarios.scenarioCount);
+  const expectedCaseCount = Number(scenarios.caseCount);
+  if (
+    scenarios.kind !== 'store-terminal-l2-scenarios' ||
+    !Number.isInteger(expectedScenarioCount) ||
+    expectedScenarioCount <= 0 ||
+    scenarioRows.length !== expectedScenarioCount ||
+    !Number.isInteger(expectedCaseCount) ||
+    expectedCaseCount <= 0 ||
+    scenarioCaseIds.length !== expectedCaseCount ||
+    new Set(scenarioCaseIds).size !== expectedCaseCount
+  )
+    fail('STORE_TERMINAL_L2_POLICY_DENOMINATOR_INVALID');
+  if (
+    fixture.kind !== 'store-terminal-l2-fixture' ||
+    fixture.fixtureClass !== 'TEST' ||
+    fixture.setupChannel !== 'OWNER_HTTP_COMMANDS' ||
+    fixture.seedRuntimeInput !== false ||
+    !Array.isArray(fixture.caseFixtures) ||
+    fixture.caseFixtures.length !== expectedCaseCount
+  )
+    fail('STORE_TERMINAL_L2_FIXTURE_BOUNDARY_INVALID');
+  if (
+    bindings.kind !== 'store-terminal-l2-locator-bindings' ||
+    bindings.bindingMode !== 'CASE_PARAMETER_CONTROL_KEYS' ||
+    bindings.caseCount !== expectedCaseCount ||
+    bindings.noSeedRuntimeInput !== true ||
+    Object.keys(bindings.controls ?? {}).length === 0
+  )
+    fail('STORE_TERMINAL_L2_BINDINGS_INVALID');
+  const timingRows = Array.isArray(timing.cases) ? timing.cases : [];
+  if (
+    timing.kind !== 'store-terminal-l2-timing-budget' ||
+    timing.caseCount !== expectedCaseCount ||
+    timingRows.length !== expectedCaseCount
+  )
+    fail('STORE_TERMINAL_L2_TIMING_DENOMINATOR_INVALID');
+  if (cases.length > 0 && cases.some(id => !scenarioCaseIds.includes(id)))
+    fail('STORE_TERMINAL_L2_ACTIVE_CASE_NOT_IN_POLICY');
+  return Object.freeze({
+    scenarios: scenarioRows.length,
+    policyCases: scenarioCaseIds.length,
+    activeCases: cases.length,
+    testDatasets: Number(fixture.caseFixtures.length),
+    newTestDatasets: Number(fixture.caseFixtures.length),
     locatorBindings: Object.keys(bindings.controls).length,
     timingRows: timingRows.length,
     activeCaseIds: Object.freeze(cases),
@@ -2611,12 +2705,14 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
           'PG-CATALOG-STORE-ITEMS',
           'PG-BUSINESS-CHANNEL-STORE',
           'PG-SALES-MENU-STORE',
+          'PG-STORE-TERMINALS',
         ],
         capabilityKeys: [
           'BC-IAM-STORE-ROLE-REVOKE',
           'BC-IAM-STORE-INVITE',
           'EDIT_STORE_CATALOG',
           'EDIT_STORE_SALES_MENU',
+          'EDIT_STORE_TERMINAL',
           'BC-BUSINESS-CHANNEL-STORE-EDIT',
         ],
       },
@@ -2633,7 +2729,7 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
       body: {
         name: 'L2 销售菜单只读用户',
         serviceNodeType: 'STORE',
-        pageAccessKeys: ['PG-SALES-MENU-STORE'],
+        pageAccessKeys: ['PG-SALES-MENU-STORE', 'PG-STORE-TERMINALS'],
         capabilityKeys: [],
       },
     },
@@ -4596,6 +4692,76 @@ async function bootstrapOwnerFacts({identity, credentials, ports, runDirectory, 
   };
 }
 
+async function bootstrapStoreTerminalFacts({identity, base}) {
+  const request = base.client.request;
+  const storeRef = String(base.org.storeRef);
+  const workspaceKey = base.workspaceKey;
+  const terminalName = `L2终端${sha256(identity.runId).slice(0, 8)}`;
+  const created = await request(
+    'store-terminal-base-create',
+    'postOperationsStoreTerminal',
+    {groupWorkspaceKey: workspaceKey, storeRef},
+    {
+      cookie: base.operationsCookie,
+      expected: [201],
+      body: {
+        name: terminalName,
+        deviceType: 'laptop',
+        configuration: {
+          printers: [],
+          functions: [
+            {
+              clientKey: 'l2-terminal-ordering',
+              functionKey: 'ORDERING_CASHIER',
+              ranges: [],
+              scenes: [],
+            },
+          ],
+        },
+      },
+    },
+  );
+  const terminalRef = requiredObjectValue(created.json, ['terminalRef', 'ref', 'id'], 'L2_STORE_TERMINAL_REF_MISSING');
+  const detail = await request(
+    'store-terminal-base-readback',
+    'getOperationsStoreTerminal',
+    {groupWorkspaceKey: workspaceKey, storeRef, terminalRef},
+    {cookie: base.operationsCookie, idempotency: false},
+  );
+  if (String(detail.json?.terminalRef ?? detail.json?.ref ?? '') !== String(terminalRef))
+    fail('L2_STORE_TERMINAL_READBACK_INVALID');
+  const ownerFacts = {
+    ...base.ownerFacts,
+    terminalRef: String(terminalRef),
+    terminalName,
+    terminalStatus: String(detail.json?.status ?? 'ENABLED'),
+    terminalVersion: Number(detail.json?.version ?? 1),
+    storeRef,
+    workspaceKey,
+  };
+  const common = {
+    fixtureRef: 'FIXTURE-STORE-TERMINAL-BASE',
+    scope: ownerFacts.scope,
+    terminalRef: String(terminalRef),
+    terminalName,
+  };
+  const cases = Object.fromEntries(
+    [
+      'terminal-list-detail',
+      'terminal-create-basic',
+      'terminal-create-configuration',
+      'terminal-edit-configuration',
+      'terminal-status-actions',
+      'terminal-readonly-state',
+    ].map(caseId => [caseId, {...common, caseId}]),
+  );
+  return {
+    ...base,
+    cases,
+    ownerFacts,
+  };
+}
+
 function salesMenuPageItems(json) {
   const value = unwrapResponse(json);
   return Array.isArray(value?.items) ? value.items : [];
@@ -6424,6 +6590,10 @@ function createPlaywrightEnvironment({state, credentials, suite = state.suite ??
     R5_L2_SALES_MENU_BINDINGS: salesMenuBindingPath,
     R5_L2_SALES_MENU_EXECUTION: salesMenuExecutionPath,
     R5_L2_SALES_MENU_ACTIVATION_CANDIDATE: salesMenuActivationCandidatePath,
+    R5_L2_STORE_TERMINAL_CASES: storeTerminalScenarioPath,
+    R5_L2_STORE_TERMINAL_BINDINGS: storeTerminalBindingPath,
+    R5_L2_STORE_TERMINAL_EXECUTION: storeTerminalExecutionPath,
+    R5_L2_STORE_TERMINAL_ACTIVATION_CANDIDATE: storeTerminalActivationCandidatePath,
     R5_L2_TIMING_BUDGET_REPORT: state.timingReportPath,
     R5_L2_EXPECT_TIMEOUT_MS: String(expectTimeoutMs),
     R5_L2_PLAYWRIGHT_OUTPUT_DIR: playwrightArtifactDirectoryForRun(state.runDirectory),
@@ -6432,7 +6602,12 @@ function createPlaywrightEnvironment({state, credentials, suite = state.suite ??
           R5_L2_SALES_MENU_ACTIVATION_CANDIDATE: salesMenuActivationCandidatePath,
           R5_L2_SALES_MENU_ROUTE: `http://127.0.0.1:${state.ports.operations}/operations/${encodeURIComponent(state.workspaceKey)}/catalog/sales-menus`,
         }
-      : {}),
+      : suite === 'store-terminal'
+        ? {
+            R5_L2_STORE_TERMINAL_ACTIVATION_CANDIDATE: storeTerminalActivationCandidatePath,
+            R5_L2_STORE_TERMINAL_ROUTE: `http://127.0.0.1:${state.ports.operations}/operations/${encodeURIComponent(state.workspaceKey)}/organization/store-terminals`,
+          }
+        : {}),
   };
 }
 
@@ -7279,6 +7454,8 @@ async function readiness(suite = 'catalog-inventory') {
     });
     if (suite === 'sales-menu') {
       bootstrap = await bootstrapSalesMenuFacts({identity, base: bootstrap});
+    } else if (suite === 'store-terminal') {
+      bootstrap = await bootstrapStoreTerminalFacts({identity, base: bootstrap});
     }
     const ownerFixture = {
       schemaVersion: 1,
@@ -7301,7 +7478,9 @@ async function readiness(suite = 'catalog-inventory') {
     const baseDenominators =
       suite === 'sales-menu'
         ? validateSalesMenuContractDenominators({execution: {enabledCaseIds: activeExecutionCaseIds}})
-        : validateL2ContractDenominators({execution: {enabledCaseIds: activeExecutionCaseIds}});
+        : suite === 'store-terminal'
+          ? validateStoreTerminalContractDenominators({execution: {enabledCaseIds: activeExecutionCaseIds}})
+          : validateL2ContractDenominators({execution: {enabledCaseIds: activeExecutionCaseIds}});
     const denominators = {
       ...baseDenominators,
       activeCases: activeExecutionCaseIds.length,
@@ -8124,6 +8303,75 @@ function salesMenuSelfTest() {
   );
 }
 
+function storeTerminalSelfTest() {
+  const policy = readJson(storeTerminalScenarioPath);
+  const fixture = readJson(storeTerminalFixturePath);
+  const bindings = readJson(storeTerminalBindingPath);
+  const candidate = readJson(storeTerminalActivationCandidatePath);
+  const execution = readJson(storeTerminalExecutionPath);
+  const timing = readJson(storeTerminalTimingPath);
+  if (!existsSync(storeTerminalSpecPath)) fail('STORE_TERMINAL_L2_SPEC_MISSING');
+  const rows = policy.scenarios.flatMap(scenario => scenario.cases ?? []);
+  const caseCount = Number(policy.caseCount);
+  if (
+    policy.kind !== 'store-terminal-l2-scenarios' ||
+    !Number.isInteger(caseCount) ||
+    caseCount <= 0 ||
+    rows.length !== caseCount ||
+    new Set(rows.map(row => row.caseId)).size !== caseCount
+  )
+    fail('STORE_TERMINAL_L2_POLICY_INVALID');
+  if (
+    fixture.kind !== 'store-terminal-l2-fixture' ||
+    fixture.fixtureClass !== 'TEST' ||
+    fixture.setupChannel !== 'OWNER_HTTP_COMMANDS' ||
+    fixture.seedRuntimeInput !== false ||
+    fixture.caseFixtures?.length !== caseCount
+  )
+    fail('STORE_TERMINAL_L2_FIXTURE_INVALID');
+  if (
+    bindings.kind !== 'store-terminal-l2-locator-bindings' ||
+    bindings.bindingMode !== 'CASE_PARAMETER_CONTROL_KEYS' ||
+    bindings.caseCount !== caseCount ||
+    bindings.noSeedRuntimeInput !== true ||
+    Object.keys(bindings.controls ?? {}).length < 20
+  )
+    fail('STORE_TERMINAL_L2_BINDINGS_INVALID');
+  if (
+    candidate.kind !== 'store-terminal-l2-activation-candidate' ||
+    candidate.noSeedRuntimeInput !== true ||
+    candidate.approvedCaseIds?.length !== caseCount ||
+    candidate.candidateDigest !== candidateDigest(candidate)
+  )
+    fail('STORE_TERMINAL_L2_CANDIDATE_INVALID');
+  if (
+    execution.kind !== 'store-terminal-l2-execution-profile' ||
+    execution.noSeedRuntimeInput !== true ||
+    !['FRAMEWORK_ONLY', 'INCREMENTAL'].includes(execution.mode) ||
+    (execution.mode === 'FRAMEWORK_ONLY' && execution.enabledCaseIds?.length !== 0) ||
+    (execution.mode === 'INCREMENTAL' && execution.enabledCaseIds?.length !== caseCount)
+  )
+    fail('STORE_TERMINAL_L2_EXECUTION_INVALID');
+  if (execution.mode === 'INCREMENTAL') requireActivatedSuiteExecution(execution, candidate, 'store-terminal');
+  if (
+    timing.kind !== 'store-terminal-l2-timing-budget' ||
+    timing.caseCount !== caseCount ||
+    !Array.isArray(timing.cases) ||
+    timing.cases.length !== caseCount
+  )
+    fail('STORE_TERMINAL_L2_TIMING_INVALID');
+  const operations = new Set(combinedRegistry().map(entry => entry.operationId));
+  if (policy.operationCoverage.some(row => !operations.has(row.operationId)))
+    fail('STORE_TERMINAL_L2_OPERATION_ROUTE_MISSING');
+  const active = activeCaseIds(execution);
+  if (execution.mode === 'INCREMENTAL' && active.length !== caseCount)
+    fail('STORE_TERMINAL_L2_ACTIVE_CASE_SET_INVALID');
+  if (execution.mode === 'FRAMEWORK_ONLY' && active.length !== 0) fail('STORE_TERMINAL_L2_FRAMEWORK_HAS_ACTIVE_CASES');
+  process.stdout.write(
+    `BROWSER_L2_STORE_TERMINAL_RUNTIME_SELF_TEST=PASS; POLICY=${caseCount}; OPERATIONS=${policy.operationCoverage.length}; TARGET_CASES=${active.length}; MODE=${execution.mode}\n`,
+  );
+}
+
 function selfTest() {
   const denominators = validateL2ContractDenominators();
   if (denominators.scenarios !== 26 || denominators.policyCases !== 65 || denominators.testDatasets !== 47)
@@ -8505,7 +8753,7 @@ export async function main() {
   const suiteIndex = args.indexOf('--suite');
   const suite = suiteIndex >= 0 ? args[suiteIndex + 1] : 'catalog-inventory';
   if (suiteIndex >= 0 && !suite) {
-    process.stderr.write('Usage: browser-l2 --suite catalog-inventory|sales-menu <mode>\n');
+    process.stderr.write('Usage: browser-l2 --suite catalog-inventory|sales-menu|store-terminal <mode>\n');
     process.exitCode = 2;
     return;
   }
@@ -8519,11 +8767,16 @@ export async function main() {
   const mode = args.find(arg => ['--self-test', 'readiness', 'finalize', 'run', 'cleanup'].includes(arg));
   const hasFocusedCaseArgument = args.some(arg => arg === '--case' || arg.startsWith('--case='));
   if (hasFocusedCaseArgument && mode !== 'run') {
-    process.stderr.write('Usage: browser-l2 --suite sales-menu run --case <generated-case-id>\n');
+    process.stderr.write('Usage: browser-l2 --suite <suite> run --case <generated-case-id>\n');
     process.exitCode = 2;
     return;
   }
-  if (mode === '--self-test') return suite === 'sales-menu' ? salesMenuSelfTest() : selfTest();
+  if (mode === '--self-test')
+    return suite === 'sales-menu'
+      ? salesMenuSelfTest()
+      : suite === 'store-terminal'
+        ? storeTerminalSelfTest()
+        : selfTest();
   if (mode === 'readiness') return readiness(suite);
   if (mode === 'finalize') return finalizeRepositoryByteBinding(suite);
   if (mode === 'run') return runBrowserL2(suite, args);

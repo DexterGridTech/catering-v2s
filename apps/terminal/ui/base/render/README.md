@@ -65,6 +65,7 @@ catalog 缺失、renderer 缺失和非法 props 使用不同的 fallback 语义�
 ## 公共面
 
 公共面以 `terminal-invariants.json` 与 TypeScript 实际导出为准，其中包括 `SurfaceFocusBoundaryContext`、
+`SurfacePresentationOffsetProvider` 与 `useSurfacePresentationOffset`（presentation-only 位移桥；无 provider 时偏移为 `0`）、
 `SurfaceRootContentFrame`、
 `useSurfaceFocusBoundary`、`useDispatchCommand`、`useUiVariable`、`dispatchWithRequestId`、
 `useRenderStatus`、`useUiStateSelector`、`useUiCatalogContext`、`useRequestInFlight` 与 `useTrackedRequest`。

@@ -1,0 +1,195 @@
+{
+  "generated": true,
+  "sourceSha256": "a2fa58ab2df72f0ce21352295f4f58a6ab06905a636cd6b5b0eedf57b8bdd292",
+  "components": {
+    "schemas": {
+      "StoreTerminalDeviceTypeKey": {
+        "type": "string",
+        "enum": [
+          "laptop",
+          "mobile"
+        ],
+        "x-enum-labels": {
+          "laptop": "台式",
+          "mobile": "手持"
+        },
+        "x-enum-descriptions": {
+          "laptop": "台式可配置全部六类功能",
+          "mobile": "手持不支持 KDS 与出餐"
+        }
+      },
+      "StoreTerminalFunctionKey": {
+        "type": "string",
+        "enum": [
+          "ORDERING_CASHIER",
+          "ORDER_CONFIRMATION",
+          "KDS",
+          "KITCHEN_PRINT",
+          "DISPATCH",
+          "QUEUE_CALL"
+        ],
+        "x-enum-labels": {
+          "ORDERING_CASHIER": "点餐收银",
+          "ORDER_CONFIRMATION": "接单确认",
+          "KDS": "KDS",
+          "KITCHEN_PRINT": "厨打",
+          "DISPATCH": "出餐",
+          "QUEUE_CALL": "排队叫号"
+        }
+      },
+      "StoreTerminalRangeKey": {
+        "type": "string",
+        "enum": [
+          "TABLE_AREA",
+          "NO_TABLE",
+          "DELIVERY",
+          "PRODUCTION_TAG",
+          "NONE"
+        ],
+        "x-enum-labels": {
+          "TABLE_AREA": "桌台区",
+          "NO_TABLE": "无桌台",
+          "DELIVERY": "外卖",
+          "PRODUCTION_TAG": "生产标签",
+          "NONE": "无范围"
+        }
+      },
+      "StoreTerminalSceneKey": {
+        "type": "string",
+        "enum": [
+          "TABLE_ORDER_TICKET",
+          "PRECHECK_TICKET",
+          "CHECKOUT_TICKET",
+          "PICKUP_TICKET",
+          "REVERSE_CHECKOUT_TICKET",
+          "REFUND_RECEIPT",
+          "PREPARATION_TICKET",
+          "RETURN_TICKET",
+          "EXPEDITE_TICKET",
+          "START_PREPARATION_TICKET",
+          "LABEL_PREPARATION_TICKET",
+          "DISH_CHECK_SUMMARY",
+          "FOOD_DELIVERY_TICKET",
+          "DELIVERY_TICKET",
+          "DELIVERY_MERCHANT_COPY",
+          "DELIVERY_CUSTOMER_COPY",
+          "QUEUE_NUMBER_TICKET"
+        ],
+        "x-enum-labels": {
+          "TABLE_ORDER_TICKET": "客单（压桌单）",
+          "PRECHECK_TICKET": "预结单",
+          "CHECKOUT_TICKET": "结账单",
+          "PICKUP_TICKET": "取餐单",
+          "REVERSE_CHECKOUT_TICKET": "反结账单",
+          "REFUND_RECEIPT": "退款小票",
+          "PREPARATION_TICKET": "制作单",
+          "RETURN_TICKET": "退菜单",
+          "EXPEDITE_TICKET": "催菜单",
+          "START_PREPARATION_TICKET": "起菜单",
+          "LABEL_PREPARATION_TICKET": "标签制作联",
+          "DISH_CHECK_SUMMARY": "划菜总单",
+          "FOOD_DELIVERY_TICKET": "传菜单",
+          "DELIVERY_TICKET": "配送单",
+          "DELIVERY_MERCHANT_COPY": "外卖商家联",
+          "DELIVERY_CUSTOMER_COPY": "外卖顾客联",
+          "QUEUE_NUMBER_TICKET": "排队号票"
+        }
+      },
+      "StoreTerminalPaperSpecKey": {
+        "type": "string",
+        "enum": [
+          "THERMAL_58",
+          "THERMAL_80",
+          "LABEL_40_30",
+          "LABEL_40_60",
+          "LABEL_50_30",
+          "LABEL_60_40",
+          "LABEL_80_50"
+        ],
+        "x-enum-labels": {
+          "THERMAL_58": "热敏 58 毫米",
+          "THERMAL_80": "热敏 80 毫米",
+          "LABEL_40_30": "标签 40×30 毫米",
+          "LABEL_40_60": "标签 40×60 毫米",
+          "LABEL_50_30": "标签 50×30 毫米",
+          "LABEL_60_40": "标签 60×40 毫米",
+          "LABEL_80_50": "标签 80×50 毫米"
+        }
+      },
+      "StoreTerminalConnectionMethodKey": {
+        "type": "string",
+        "enum": [
+          "NETWORK",
+          "CLOUD",
+          "USB",
+          "BLUETOOTH",
+          "BUILT_IN"
+        ],
+        "x-enum-labels": {
+          "NETWORK": "网口",
+          "CLOUD": "云端",
+          "USB": "USB",
+          "BLUETOOTH": "蓝牙",
+          "BUILT_IN": "设备内置"
+        }
+      },
+      "StoreTerminalOrderTypeKey": {
+        "type": "string",
+        "enum": [
+          "DINE_IN",
+          "DELIVERY",
+          "TAKEAWAY"
+        ],
+        "x-enum-labels": {
+          "DINE_IN": "堂食",
+          "DELIVERY": "外卖",
+          "TAKEAWAY": "外带"
+        }
+      },
+      "StoreTerminalPrinterBrandKey": {
+        "type": "string",
+        "enum": [
+          "EPSON",
+          "ZEBRA",
+          "GENERIC"
+        ],
+        "x-enum-labels": {
+          "EPSON": "爱普生",
+          "ZEBRA": "斑马",
+          "GENERIC": "通用设备"
+        }
+      },
+      "StoreTerminalPrinterModelKey": {
+        "type": "string",
+        "enum": [
+          "EPSON_TM_T88VII",
+          "ZEBRA_ZD421D",
+          "ZEBRA_ZD411D",
+          "GENERIC_THERMAL_58",
+          "GENERIC_THERMAL_80",
+          "GENERIC_LABEL_40_30",
+          "GENERIC_LABEL_40_60",
+          "GENERIC_LABEL_50_30",
+          "GENERIC_LABEL_60_40",
+          "GENERIC_LABEL_80_50",
+          "BUILTIN_THERMAL_58",
+          "BUILTIN_THERMAL_80"
+        ],
+        "x-enum-labels": {
+          "EPSON_TM_T88VII": "TM-T88VII",
+          "ZEBRA_ZD421D": "ZD421 Direct Thermal",
+          "ZEBRA_ZD411D": "ZD411 Direct Thermal",
+          "GENERIC_THERMAL_58": "通用热敏 58 毫米",
+          "GENERIC_THERMAL_80": "通用热敏 80 毫米",
+          "GENERIC_LABEL_40_30": "通用标签 40×30 毫米",
+          "GENERIC_LABEL_40_60": "通用标签 40×60 毫米",
+          "GENERIC_LABEL_50_30": "通用标签 50×30 毫米",
+          "GENERIC_LABEL_60_40": "通用标签 60×40 毫米",
+          "GENERIC_LABEL_80_50": "通用标签 80×50 毫米",
+          "BUILTIN_THERMAL_58": "设备内置热敏 58 毫米",
+          "BUILTIN_THERMAL_80": "设备内置热敏 80 毫米"
+        }
+      }
+    }
+  }
+}

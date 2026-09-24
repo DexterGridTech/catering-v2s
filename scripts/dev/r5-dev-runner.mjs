@@ -724,7 +724,11 @@ function readListeningProcessIdentity(port, expectedName, commandPattern = /Cate
 }
 
 async function start() {
-  run(path.join(root, 'scripts/env/check-runtime-resource-budget'), [path.join(root, '.runtime')]);
+  run(path.join(root, 'scripts/env/check-runtime-resource-budget'), [
+    '--profile',
+    'admin-validation-with-ter',
+    path.join(root, '.runtime'),
+  ]);
   if (existsSync(manifestPath)) {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
     if ((manifest.processes ?? []).some((value) => pidAlive(value.pid))) fail('MANAGED_RUN_ALREADY_ACTIVE');

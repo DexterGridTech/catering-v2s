@@ -686,6 +686,38 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    getOperationsStoreTerminal: (pathParameters: FaceOperationContracts["getOperationsStoreTerminal"]["path"], options: FaceOperationOptions<"getOperationsStoreTerminal">): FaceOperationRequest<"getOperationsStoreTerminal"> => ({
+      operationId: "getOperationsStoreTerminal",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsStoreTerminalAreaCandidates: (pathParameters: FaceOperationContracts["getOperationsStoreTerminalAreaCandidates"]["path"], options: FaceOperationOptions<"getOperationsStoreTerminalAreaCandidates">): FaceOperationRequest<"getOperationsStoreTerminalAreaCandidates"> => ({
+      operationId: "getOperationsStoreTerminalAreaCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsStoreTerminals: (pathParameters: FaceOperationContracts["getOperationsStoreTerminals"]["path"], options: FaceOperationOptions<"getOperationsStoreTerminals">): FaceOperationRequest<"getOperationsStoreTerminals"> => ({
+      operationId: "getOperationsStoreTerminals",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsStoreTerminalTagCandidates: (pathParameters: FaceOperationContracts["getOperationsStoreTerminalTagCandidates"]["path"], options: FaceOperationOptions<"getOperationsStoreTerminalTagCandidates">): FaceOperationRequest<"getOperationsStoreTerminalTagCandidates"> => ({
+      operationId: "getOperationsStoreTerminalTagCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getOperationsWorkspaceGroupInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupInvitationCandidates">): FaceOperationRequest<"getOperationsWorkspaceGroupInvitationCandidates"> => ({
       operationId: "getOperationsWorkspaceGroupInvitationCandidates",
       method: "GET",
@@ -974,10 +1006,34 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    postOperationsStoreTerminal: (pathParameters: FaceOperationContracts["postOperationsStoreTerminal"]["path"], options: FaceOperationOptions<"postOperationsStoreTerminal">): FaceOperationRequest<"postOperationsStoreTerminal"> => ({
+      operationId: "postOperationsStoreTerminal",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    postOperationsStoreTerminalStatus: (pathParameters: FaceOperationContracts["postOperationsStoreTerminalStatus"]["path"], options: FaceOperationOptions<"postOperationsStoreTerminalStatus">): FaceOperationRequest<"postOperationsStoreTerminalStatus"> => ({
+      operationId: "postOperationsStoreTerminalStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     publishOperationsSalesMenu: (pathParameters: FaceOperationContracts["publishOperationsSalesMenu"]["path"], options: FaceOperationOptions<"publishOperationsSalesMenu">): FaceOperationRequest<"publishOperationsSalesMenu"> => ({
       operationId: "publishOperationsSalesMenu",
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    putOperationsStoreTerminal: (pathParameters: FaceOperationContracts["putOperationsStoreTerminal"]["path"], options: FaceOperationOptions<"putOperationsStoreTerminal">): FaceOperationRequest<"putOperationsStoreTerminal"> => ({
+      operationId: "putOperationsStoreTerminal",
+      method: "PUT",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -1633,6 +1689,22 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"requestPath","prefix":"store-service-point-area","path":"areaRef"},{"kind":"static","id":"store-service-point-points"}] as const, request),
     }),
+    getOperationsStoreTerminal: build.query<FaceOperationContracts["getOperationsStoreTerminal"]["response"], FaceOperationRequest<"getOperationsStoreTerminal">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsStoreTerminalAreaCandidates: build.query<FaceOperationContracts["getOperationsStoreTerminalAreaCandidates"]["response"], FaceOperationRequest<"getOperationsStoreTerminalAreaCandidates">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsStoreTerminals: build.query<FaceOperationContracts["getOperationsStoreTerminals"]["response"], FaceOperationRequest<"getOperationsStoreTerminals">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsStoreTerminalTagCandidates: build.query<FaceOperationContracts["getOperationsStoreTerminalTagCandidates"]["response"], FaceOperationRequest<"getOperationsStoreTerminalTagCandidates">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
     getOperationsWorkspaceGroupInvitationCandidates: build.query<FaceOperationContracts["getOperationsWorkspaceGroupInvitationCandidates"]["response"], FaceOperationRequest<"getOperationsWorkspaceGroupInvitationCandidates">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
@@ -1777,9 +1849,21 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => resolveStoreServicePointTags<TagTypes>([{"kind":"requestPath","prefix":"store-service-point-store","path":"storeRef"},{"kind":"requestPath","prefix":"store-service-point-point","path":"servicePointRef"},{"kind":"static","id":"store-service-point-points"},{"kind":"static","id":"store-service-point-detail"}] as const, request),
     }),
+    postOperationsStoreTerminal: build.mutation<FaceOperationContracts["postOperationsStoreTerminal"]["response"], FaceOperationRequest<"postOperationsStoreTerminal">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    postOperationsStoreTerminalStatus: build.mutation<FaceOperationContracts["postOperationsStoreTerminalStatus"]["response"], FaceOperationRequest<"postOperationsStoreTerminalStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
     publishOperationsSalesMenu: build.mutation<FaceOperationContracts["publishOperationsSalesMenu"]["response"], FaceOperationRequest<"publishOperationsSalesMenu">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-store","path":"storeRef"},{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"static","id":"sales-menu-list"},{"kind":"static","id":"sales-menu-published-sections"},{"kind":"static","id":"sales-menu-published-items"},{"kind":"static","id":"sales-menu-published-item"},{"kind":"static","id":"sales-menu-preview"},{"kind":"static","id":"sales-menu-operation-records"}] as const, request),
+    }),
+    putOperationsStoreTerminal: build.mutation<FaceOperationContracts["putOperationsStoreTerminal"]["response"], FaceOperationRequest<"putOperationsStoreTerminal">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     reissueOperationsWorkspaceGroupInvitation: build.mutation<FaceOperationContracts["reissueOperationsWorkspaceGroupInvitation"]["response"], FaceOperationRequest<"reissueOperationsWorkspaceGroupInvitation">>({
       query: (request) => toWireRequest(request),

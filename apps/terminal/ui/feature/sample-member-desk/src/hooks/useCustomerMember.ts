@@ -4,23 +4,15 @@ import type {CommandDefinition} from '@catering-v2s/kernel-base-runtime'
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state'
 import {deskSystemFailureObservedCommand, memberSubmissionWithdrawnCommand, type DeskSystemOperation} from '../features/commands/commands'
 import {dispatchWithRequestId, useDispatchCommand, useTrackedCommand, useUiStateSelector} from '@catering-v2s/ui-base-render'
-import {useInputField, useInputSnapshot} from '@catering-v2s/ui-base-input'
+import {useInputSnapshot} from '@catering-v2s/ui-base-input'
 import type {CustomerMemberMode} from '../types/customerMember'
 
-const ageFieldId = 'sample.desk.customer-member:age'
+export const ageFieldId = 'sample.desk.customer-member:age'
 
 export const useCustomerMember = ({mode}: Readonly<{readonly mode: CustomerMemberMode}>) => {
   const dispatchCommand = useDispatchCommand()
   const pending = useUiStateSelector(selectPendingMember)
   const captureInputSnapshot = useInputSnapshot()
-  const ageField = useInputField({
-    fieldId: ageFieldId,
-    testID: ageFieldId,
-    accessibilityLabel: '年龄',
-    keyboardKind: 'virtual',
-    layout: 'numeric',
-    maxLength: 3,
-  })
   const trackedCommand = useTrackedCommand()
   const requestInFlight = trackedCommand.requestInFlight
   const canDecide = pending !== null && pending !== undefined && !requestInFlight
@@ -64,7 +56,7 @@ export const useCustomerMember = ({mode}: Readonly<{readonly mode: CustomerMembe
 
   return {
     pending,
-    ageInput: ageField.inputProps,
+    ageFieldId,
     requestInFlight,
     canDecide,
     isHandheldConfirm: mode === 'handheld-confirm',

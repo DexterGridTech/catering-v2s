@@ -2,24 +2,27 @@ import {describe, expect, it} from 'vitest';
 import {getKeyboardLayout} from '../src/foundations/keyboardLayout';
 
 describe('virtual keyboard visual row alignment', () => {
-  it('integrates modifier and edit keys into the final content row', () => {
+  it('places full Shift and Space in the former lock and Shift positions', () => {
     expect(getKeyboardLayout('full').rows.map(row => row.align)).toEqual(['start', 'start', 'start', 'start']);
     expect(getKeyboardLayout('full').rows.map(row => row.keys.map(key => key.keyId))).toEqual([
       ['text-1', 'text-2', 'text-3', 'text-4', 'text-5', 'text-6', 'text-7', 'text-8', 'text-9', 'text-0'],
       ['text-q', 'text-w', 'text-e', 'text-r', 'text-t', 'text-y', 'text-u', 'text-i', 'text-o', 'text-p'],
-      ['caps', 'text-a', 'text-s', 'text-d', 'text-f', 'text-g', 'text-h', 'text-j', 'text-k', 'text-l'],
-      ['shift', 'text-z', 'text-x', 'text-c', 'text-v', 'text-b', 'text-n', 'text-m', 'backspace', 'complete'],
+      ['shift', 'text-a', 'text-s', 'text-d', 'text-f', 'text-g', 'text-h', 'text-j', 'text-k', 'text-l'],
+      ['space', 'text-z', 'text-x', 'text-c', 'text-v', 'text-b', 'text-n', 'text-m', 'backspace', 'complete'],
+    ]);
+    expect(getKeyboardLayout('full').rows[0]?.keys.map(key => key.kind === 'text' ? key.shiftedText : undefined)).toEqual([
+      ':', '/', '.', '?', '&', '=', '-', '_', '%', '+',
     ]);
     expect(getKeyboardLayout('alpha').rows.map(row => row.align)).toEqual(['start', 'start', 'start']);
     expect(getKeyboardLayout('alpha').rows.map(row => row.region)).toEqual(['letters', 'actions', 'actions']);
-    expect(getKeyboardLayout('alpha').rows[1]?.keys.map(key => key.keyId)).toEqual([
-      'caps', 'text-a', 'text-s', 'text-d', 'text-f', 'text-g', 'text-h', 'text-j', 'text-k', 'text-l',
-    ]);
+    expect(getKeyboardLayout('alpha').rows[1]?.keys.map(key => key.keyId)).toEqual(
+      ['shift', ...Array.from('asdfghjkl', character => `text-${character}`)],
+    );
     expect(
       getKeyboardLayout('alpha')
         .rows.at(-1)
         ?.keys.map(key => key.keyId),
-    ).toEqual(['shift', 'text-z', 'text-x', 'text-c', 'text-v', 'text-b', 'text-n', 'text-m', 'backspace', 'complete']);
+    ).toEqual(['space', 'text-z', 'text-x', 'text-c', 'text-v', 'text-b', 'text-n', 'text-m', 'backspace', 'complete']);
   });
 
   it('keeps numeric actions in the keypad row and fits the financial row', () => {

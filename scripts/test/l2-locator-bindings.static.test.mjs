@@ -14,11 +14,34 @@ const salesBlueprint = readJson('contracts/policy/sales-menu-l2-case-blueprint.j
 const salesBindings = readJson('contracts/policy/sales-menu-l2-locator-bindings.json');
 const salesCandidate = readJson('contracts/policy/sales-menu-l2-activation-candidate.json');
 const salesScenarios = readJson('contracts/policy/sales-menu-l2-scenarios.json');
+const storeTerminalBlueprint = readJson('contracts/policy/store-terminal-l2-case-blueprint.json');
+const storeTerminalBindings = readJson('contracts/policy/store-terminal-l2-locator-bindings.json');
+const storeTerminalCandidate = readJson('contracts/policy/store-terminal-l2-activation-candidate.json');
+const storeTerminalScenarios = readJson('contracts/policy/store-terminal-l2-scenarios.json');
 const operationsScopeSource = readSource('apps/frontend/operations-admin/src/tests/l2/operationsL2.ts');
 const catalogSpecSource = readSource('apps/frontend/operations-admin/src/tests/l2/catalog-inventory.spec.ts');
 const catalogNetworkSource = readSource('apps/frontend/operations-admin/src/tests/l2/catalog-inventory-network.ts');
 const salesSpecSource = readSource('apps/frontend/operations-admin/src/tests/l2/sales-menu.spec.ts');
 const salesNetworkSource = readSource('apps/frontend/operations-admin/src/tests/l2/sales-menu-network.ts');
+const storeTerminalSpecSource = readSource('apps/frontend/operations-admin/src/tests/l2/store-terminal.spec.ts');
+const storeTerminalPageSource = readSource(
+  'apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.tsx',
+);
+const storeTerminalDetailSource = readSource(
+  'apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.tsx',
+);
+const storeTerminalDrawerSource = readSource(
+  'apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalFormDrawer.tsx',
+);
+const storeTerminalFunctionSource = readSource(
+  'apps/frontend/operations-admin/src/features/store-terminal/ui/TerminalFunctionEditor.tsx',
+);
+const storeTerminalStaticSource = readSource(
+  'apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalPage.static.test.ts',
+);
+const storeTerminalDetailTestSource = readSource(
+  'apps/frontend/operations-admin/src/features/store-terminal/ui/StoreTerminalDetail.test.tsx',
+);
 const generatedOperationIds = new Set(
   [
     'apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json',
@@ -61,6 +84,33 @@ const expectedActionNodes = Object.freeze({
   SALES_MENU_ITEM_MIN_QUANTITY: 'INPUT_NUMBER',
   SALES_MENU_ITEM_QUANTITY_STEP: 'INPUT_NUMBER',
   SALES_MENU_ITEM_DETAIL_MEDIA_CHOICE: 'NATIVE_BUTTON',
+});
+
+const expectedStoreTerminalActionNodes = Object.freeze({
+  STORE_SCOPE: 'SCOPE_TRIGGER',
+  TERMINAL_PAGE: 'PAGE_ROOT',
+  TERMINAL_LIST: 'CARD_LIST',
+  TERMINAL_LIST_ITEM: 'LIST_ITEM_BUTTON',
+  TERMINAL_DETAIL: 'DETAIL_CARD',
+  TERMINAL_CREATE: 'BUTTON',
+  TERMINAL_EDIT: 'BUTTON',
+  TERMINAL_ACTION_MENU: 'BUTTON',
+  TERMINAL_FORM: 'DRAWER',
+  TERMINAL_NAME: 'INPUT',
+  TERMINAL_DEVICE_TYPE: 'RADIO_GROUP',
+  TERMINAL_FORM_NEXT: 'BUTTON',
+  TERMINAL_FORM_BACK: 'BUTTON',
+  TERMINAL_FORM_CANCEL: 'BUTTON',
+  TERMINAL_DIRTY_GUARD_CONFIRM: 'BUTTON',
+  TERMINAL_DIRTY_GUARD_CANCEL: 'BUTTON',
+  TERMINAL_PRINTER_ADD: 'BUTTON',
+  TERMINAL_FUNCTION_ADD: 'BUTTON',
+  TERMINAL_SCENE_PICKER: 'SCENE_PICKER',
+  TERMINAL_AREA_CANDIDATES: 'MULTI_SELECT',
+  TERMINAL_TAG_CANDIDATES: 'MULTI_SELECT',
+  TERMINAL_STATUS_ACTION: 'MENU_ITEM',
+  TERMINAL_STATUS_MODAL: 'MODAL',
+  TERMINAL_STATUS_CANCEL: 'BUTTON',
 });
 
 const salesStoreScopeControlKeys = Object.freeze(['STORE_SCOPE_TRIGGER']);
@@ -165,14 +215,77 @@ function assertInteractionBinding(controlKey, binding) {
   assertActionNodeSource(controlKey, binding, interactionSource(binding));
 }
 
+function assertStoreTerminalActionNodeSource(controlKey, binding) {
+  assert.equal(
+    binding.actualActionNode,
+    expectedStoreTerminalActionNodes[controlKey],
+    `L2_STORE_TERMINAL_ACTION_NODE_MISMATCH:${controlKey}`,
+  );
+  const source = interactionSource(binding);
+  if (controlKey === 'STORE_SCOPE') {
+    assert.match(source, /roleHomeTestIds\.dataScope/u);
+    return;
+  }
+  assert.match(source, /storeTerminalTestIds/u, `L2_STORE_TERMINAL_TEST_ID_SOURCE_MISSING:${controlKey}`);
+  const markers = {
+    TERMINAL_PAGE: 'storeTerminalTestIds.page',
+    TERMINAL_LIST: 'storeTerminalTestIds.list',
+    TERMINAL_LIST_ITEM: 'storeTerminalTestIds.listItem',
+    TERMINAL_DETAIL: 'storeTerminalTestIds.detail',
+    TERMINAL_CREATE: 'storeTerminalTestIds.create',
+    TERMINAL_EDIT: 'storeTerminalTestIds.edit',
+    TERMINAL_ACTION_MENU: 'storeTerminalTestIds.actionMenu',
+    TERMINAL_FORM: 'storeTerminalTestIds.formDrawer',
+    TERMINAL_NAME: 'storeTerminalTestIds.name',
+    TERMINAL_DEVICE_TYPE: 'storeTerminalTestIds.deviceType',
+    TERMINAL_FORM_NEXT: 'storeTerminalTestIds.formNext',
+    TERMINAL_FORM_BACK: 'storeTerminalTestIds.formBack',
+    TERMINAL_FORM_CANCEL: 'storeTerminalTestIds.formCancel',
+    TERMINAL_DIRTY_GUARD_CONFIRM: 'storeTerminalTestIds.dirtyGuardConfirm',
+    TERMINAL_DIRTY_GUARD_CANCEL: 'storeTerminalTestIds.dirtyGuardCancel',
+    TERMINAL_PRINTER_ADD: 'storeTerminalTestIds.printerAdd',
+    TERMINAL_FUNCTION_ADD: 'storeTerminalTestIds.functionAdd',
+    TERMINAL_SCENE_PICKER: 'storeTerminalTestIds.scenePicker',
+    TERMINAL_AREA_CANDIDATES: 'storeTerminalTestIds.areaCandidates',
+    TERMINAL_TAG_CANDIDATES: 'storeTerminalTestIds.tagCandidates',
+    TERMINAL_STATUS_ACTION: 'storeTerminalTestIds.statusAction',
+    TERMINAL_STATUS_MODAL: 'storeTerminalTestIds.statusModal',
+    TERMINAL_STATUS_CANCEL: 'storeTerminalTestIds.statusCancel',
+  };
+  const marker = markers[controlKey];
+  assert.equal(typeof marker, 'string', `L2_STORE_TERMINAL_ACTION_NODE_RULE_MISSING:${controlKey}`);
+  assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+}
+
+function assertStoreTerminalInteractionBinding(controlKey, binding) {
+  assert.equal(typeof binding.actualActionNode, 'string', `L2_STORE_TERMINAL_ACTION_NODE_MISSING:${controlKey}`);
+  assert.equal(
+    binding.actualActionNode,
+    expectedStoreTerminalActionNodes[controlKey],
+    `L2_STORE_TERMINAL_ACTION_NODE_MISMATCH:${controlKey}`,
+  );
+  assert.equal(typeof binding.focusedStaticProof, 'string', `L2_STORE_TERMINAL_STATIC_PROOF_MISSING:${controlKey}`);
+  assert.ok(
+    fs.existsSync(path.join(root, binding.focusedStaticProof)),
+    `L2_STORE_TERMINAL_STATIC_PROOF_NOT_FOUND:${controlKey}`,
+  );
+  assertStoreTerminalActionNodeSource(controlKey, binding);
+}
+
 test('catalog and sales L2 interaction bindings have one explicit action node and focused proof', () => {
   const catalogInteractions = Object.entries(catalogBindings.controls).filter(([, binding]) => binding.interaction);
   assert.deepEqual(salesBindings.controls, salesBlueprint.bindings.controls);
   const salesInteractions = Object.entries(salesBindings.controls).filter(([, binding]) => binding.interaction);
+  const storeTerminalInteractions = Object.entries(storeTerminalBindings.controls).filter(
+    ([, binding]) => binding.interaction,
+  );
   assert.equal(catalogInteractions.length, 18);
   assert.equal(salesInteractions.length, 16);
   for (const [controlKey, binding] of [...catalogInteractions, ...salesInteractions])
     assertInteractionBinding(controlKey, binding);
+  assert.equal(storeTerminalInteractions.length, 24);
+  for (const [controlKey, binding] of storeTerminalInteractions)
+    assertStoreTerminalInteractionBinding(controlKey, binding);
 });
 
 test('scope join keeps the phase and type, while cancellation stays outside the active L2 denominator', () => {
@@ -282,6 +395,27 @@ test('active L2 cases keep shared page reads and declared controls in one denomi
       `L2_SALES_SCOPE_CONTROL_DENOMINATOR_HAS_UNREACHABLE_TOUCH:${caseId}`,
     );
   }
+
+  const storeTerminalCases = new Map(
+    storeTerminalScenarios.scenarios.flatMap(scenario => scenario.cases).map(row => [row.caseId, row]),
+  );
+  assert.equal(storeTerminalCandidate.approvedCaseIds.length, storeTerminalScenarios.caseCount);
+  assert.equal(storeTerminalBlueprint.caseCount, storeTerminalScenarios.caseCount);
+  assert.equal(storeTerminalBlueprint.screens.length, storeTerminalScenarios.caseCount);
+  for (const caseId of storeTerminalCandidate.approvedCaseIds) {
+    const row = storeTerminalCases.get(caseId);
+    assert.ok(row, `L2_STORE_TERMINAL_ACTIVE_CASE_MISSING:${caseId}`);
+    for (const controlKey of row.parameter.controlKeys)
+      assert.ok(
+        storeTerminalBindings.controls[controlKey],
+        `L2_STORE_TERMINAL_ACTIVE_CONTROL_UNBOUND:${caseId}:${controlKey}`,
+      );
+    assert.ok(row.parameter.controlKeys.includes('STORE_SCOPE'), `L2_STORE_TERMINAL_SCOPE_TOUCH_UNDECLARED:${caseId}`);
+    assert.ok(row.parameter.controlKeys.includes('TERMINAL_PAGE'), `L2_STORE_TERMINAL_PAGE_TOUCH_UNDECLARED:${caseId}`);
+    assert.ok(row.parameter.network?.required?.length, `L2_STORE_TERMINAL_NETWORK_REQUIRED_EMPTY:${caseId}`);
+  }
+  assert.match(storeTerminalSpecSource, /assertControls\(runtime\)/u);
+  assert.match(storeTerminalSpecSource, /assertNetwork\(runtime\)/u);
 });
 
 test('catalog L2 rejects undeclared user touches and isolates fixture mutations', () => {
@@ -339,6 +473,17 @@ test('active L2 scripts close the declared control/action denominator and keep c
   assert.match(catalogSpecSource, /selectBoundCatalogOption\(/u);
   assert.match(catalogSpecSource, /createShapeKey/u);
 
+  for (const marker of [
+    'STORE_TERMINAL_L2_CONTROL_TOUCH_MISSING',
+    'STORE_TERMINAL_L2_ACTION_TOUCH_MISSING',
+    'STORE_TERMINAL_L2_FORBIDDEN_OPERATION',
+    'STORE_TERMINAL_L2_UNDECLARED_OPERATION',
+    'STORE_TERMINAL_L2_OPERATION_BUDGET_EXCEEDED',
+  ])
+    assert.match(storeTerminalSpecSource, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  const storeClosureMutation = storeTerminalSpecSource.replace('assertControls(runtime);', '');
+  assert.doesNotMatch(storeClosureMutation, /assertControls\(runtime\)/u);
+
   const closureMutation = catalogSpecSource.replace('assertControlTouchClosure(row);', '');
   assert.doesNotMatch(closureMutation, /assertControlTouchClosure\(row\);/u);
   const networkClosureMutation = catalogSpecSource.replace(
@@ -349,7 +494,7 @@ test('active L2 scripts close the declared control/action denominator and keep c
 });
 
 test('L2 network read declarations resolve to generated owner operation identities', () => {
-  for (const contract of [catalogScenarios, salesScenarios]) {
+  for (const contract of [catalogScenarios, salesScenarios, storeTerminalScenarios]) {
     for (const scenario of contract.scenarios) {
       for (const row of scenario.cases) {
         const network = row.parameter.network ?? {};

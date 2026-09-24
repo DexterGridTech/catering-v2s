@@ -1,10 +1,12 @@
 import {useLayoutEffect} from 'react'
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
-import {TextInput} from 'react-native'
+import {ScrollView, StyleSheet, TextInput, View} from 'react-native'
 import * as renderHooks from '@catering-v2s/ui-base-render'
 import {InputSurfaceFrame, useInputController} from '@catering-v2s/ui-base-input'
+import {advanceAnimatedTimingsForTests, setAnimatedTimingAutoFinishForTests} from '../../../../../../tools/terminal-shared/react-native-vitest-entry'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {TopologySectionLaptop} from '../src/components/sections/TopologySectionLaptop'
+import type {ReactTestInstance} from 'react-test-renderer'
 import {ADMIN_CONSOLE_FOCUS_SCOPE_ID} from '../src/foundations/adminIdentity'
 import {adminTestIds} from '../src/foundations/adminTestIds'
 import type {AdminSectionProps} from '../src/types/adminSection'
@@ -40,6 +42,11 @@ const context = {
   topologyCapability,
 } as unknown as AdminSectionProps['context']
 
+const createWithNodeMock = create as unknown as (
+  element: Parameters<typeof create>[0],
+  options: Readonly<{readonly createNodeMock: (element: ReactTestInstance) => unknown}>,
+) => ReactTestRenderer
+
 const ActivateAdminFocusScope = () => {
   const controller = useInputController()
   useLayoutEffect(() => {
@@ -56,20 +63,79 @@ const mount = (
     logger: {info: vi.fn(), error: vi.fn()},
   } as unknown as ReturnType<typeof renderHooks.useRenderContext>)
   let renderer: ReactTestRenderer | undefined
+  const surfaceRoot = {}
+  const scrollContent = {}
   act(() => {
-    renderer = create(
+    renderer = createWithNodeMock(
       <InputSurfaceFrame>
         <ActivateAdminFocusScope />
         <TopologySectionLaptop context={sectionContext} />
       </InputSurfaceFrame>,
+      {
+        createNodeMock: element => {
+          if (element.type === View && element.props.testID === 'ui.base.input:surface-frame') return surfaceRoot
+          if (element.type === ScrollView && element.props.testID === 'terminal.admin:topology:scroll') {
+            return {
+              measureLayout: (
+                relativeTo: unknown,
+                callback: (x: number, y: number, width: number, height: number) => void,
+              ) => {
+                expect(relativeTo).toBe(surfaceRoot)
+                callback(0, 0, 960, 540)
+              },
+              getInnerViewRef: () => scrollContent,
+              scrollTo: () => undefined,
+            }
+          }
+          if (element.props.testID === 'terminal.admin:topology:host') {
+            return {
+              measureLayout: (
+                relativeTo: unknown,
+                callback: (x: number, y: number, width: number, height: number) => void,
+              ) => {
+                expect(relativeTo).toBe(scrollContent)
+                callback(0, 500, 300, 40)
+              },
+              focus: () => undefined,
+              blur: () => undefined,
+            }
+          }
+          return {}
+        },
+      },
     )
   })
   act(() => {
     renderer!.root.findByProps({testID: 'ui.base.input:surface-frame'}).props.onLayout({
       nativeEvent: {layout: {width: 960, height: 540}},
     })
+    const scrollView = renderer!.root.findAllByType(ScrollView)
+      .find(node => node.props.testID === 'terminal.admin:topology:scroll')!
+    scrollView.props.onLayout({nativeEvent: {layout: {x: 0, y: 0, width: 960, height: 540}}})
+    scrollView.props.onContentSizeChange(960, 900)
+    scrollView.props.onScroll({nativeEvent: {contentOffset: {y: 0}}})
   })
   return renderer!
+}
+
+const measureKeyboardLayers = (renderer: ReactTestRenderer): void => {
+  const measurementLayers = renderer.root.findAllByProps({testID: 'ui.base.input:keyboard-layer-position:measure'})
+  for (const layer of measurementLayers) {
+    const backdrop = layer.findByProps({testID: 'ui.base.input:virtual-keyboard:backdrop'})
+    const layout = StyleSheet.flatten(backdrop.props.style) as Readonly<{readonly width: number; readonly height: number}>
+    act(() => {
+      layer.props.onLayout({nativeEvent: {layout}})
+    })
+  }
+}
+
+const finishKeyboardPresentation = (renderer: ReactTestRenderer): void => {
+  setAnimatedTimingAutoFinishForTests(true)
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    if (renderer.root.findAllByProps({testID: 'ui.base.input:keyboard-layer-position:measure'}).length === 0) break
+    measureKeyboardLayers(renderer)
+    act(() => { advanceAnimatedTimingsForTests(1) })
+  }
 }
 
 afterEach(() => vi.restoreAllMocks())
@@ -84,6 +150,7 @@ describe('TopologySection host input', () => {
       input!.props.onPressIn({stopPropagation: () => undefined})
       input!.props.onFocus({nativeEvent: {}})
     })
+    finishKeyboardPresentation(renderer)
 
     for (const character of '127.0.0.1') {
       act(() => {
@@ -161,6 +228,7 @@ describe('TopologySection host input', () => {
       input!.props.onPressIn({stopPropagation: () => undefined})
       input!.props.onFocus({nativeEvent: {}})
     })
+    finishKeyboardPresentation(renderer)
     for (const character of '127.0.0.1') {
       act(() => {
         renderer.root.findByProps({testID: `ui.base.input:virtual-keyboard:text-${character}`}).props.onPress()
@@ -265,6 +333,7 @@ describe('TopologySection host input', () => {
       input!.props.onPressIn({stopPropagation: () => undefined})
       input!.props.onFocus({nativeEvent: {}})
     })
+    finishKeyboardPresentation(renderer)
     for (const character of '127.0.0.1') {
       act(() => {
         renderer.root.findByProps({testID: `ui.base.input:virtual-keyboard:text-${character}`}).props.onPress()

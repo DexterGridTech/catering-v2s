@@ -6,5 +6,16 @@
     "lint": {"kind": "ABSENT"},
     "clean": {"kind": "ABSENT"}
   },
-  "ownerKind": "owner"
+  "ownerKind": "owner",
+  "publicExports": [
+    "MemberDeskAssembly",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleKind",
+    "moduleName",
+    "sampleMemberDeskAssembly"
+  ],
+  "publicExportMap": {
+    ".": "./src/index.ts"
+  }
 }

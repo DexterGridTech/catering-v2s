@@ -3,33 +3,20 @@ import {
   dispatchWithRequestId,
   useDispatchCommand,
   useTrackedCommand,
-  useUiVariable,
 } from '@catering-v2s/ui-base-render'
-import {useInputField, useInputSnapshot} from '@catering-v2s/ui-base-input'
+import {useInputSnapshot} from '@catering-v2s/ui-base-input'
 import {loginCommand} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {authSystemFailureObservedCommand} from '../features/commands/commands'
-import {operatorNameVariable} from '../features/variables/variables'
 
-const operatorNameFieldId = 'sample.auth.login:operator-name'
+export const operatorNameFieldId = 'sample.auth.login:operator-name'
 export const passcodeFieldId = 'sample.auth.login:passcode'
 
 export const useStaffLogin = () => {
   const dispatchCommand = useDispatchCommand()
-  const operatorName = useUiVariable(operatorNameVariable) ?? ''
   const captureInputSnapshot = useInputSnapshot()
   const [passcodeResetKey, setPasscodeResetKey] = useState(0)
   const trackedCommand = useTrackedCommand()
   const requestInFlight = trackedCommand.requestInFlight
-  const operatorNameField = useInputField({
-    fieldId: operatorNameFieldId,
-    testID: operatorNameFieldId,
-    accessibilityLabel: '工号',
-    editable: !requestInFlight,
-    initialValue: operatorName,
-    keyboardKind: 'virtual',
-    layout: 'full',
-  })
-
   const observeSystemFailure = useCallback(async (): Promise<void> => {
     try {
       await dispatchWithRequestId({
@@ -60,7 +47,6 @@ export const useStaffLogin = () => {
   }, [captureInputSnapshot, observeSystemFailure, requestInFlight, trackedCommand])
 
   return {
-    operatorNameInput: operatorNameField.inputProps,
     passcodeResetKey,
     requestInFlight,
     submit,

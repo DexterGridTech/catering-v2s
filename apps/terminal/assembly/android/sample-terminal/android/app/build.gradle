@@ -3,6 +3,11 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
+def nativeWindBuildInputs = [
+    file("${projectRoot}/metro.config.js"),
+    file("${projectRoot}/tailwind.config.cjs"),
+    file("${projectRoot}/../../../../ui/integration/sample-console/theme/global.css"),
+]
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -61,6 +66,15 @@ react {
 
     /* Autolinking */
     autolinkLibrariesWithApp()
+}
+
+// The React Native Gradle task does not infer NativeWind's generated CSS
+// runtime from the Metro/Tailwind inputs. Keep release bundles from reusing a
+// stale JS asset after those inputs change.
+tasks.configureEach { task ->
+    if (task.name == "createBundleReleaseJsAndAssets") {
+        task.inputs.files(nativeWindBuildInputs)
+    }
 }
 
 /**

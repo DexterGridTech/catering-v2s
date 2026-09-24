@@ -47,8 +47,10 @@ const nodeTestFiles = Object.freeze([
   'scripts/test/managed-run-summary.test.mjs',
   'scripts/test/r5-remote-testcontainers.test.mjs',
   'scripts/test/seed-report.test.mjs',
+  'scripts/test/store-terminal-rules-generator.test.mjs',
   'scripts/test/standards-enforcement-execution-catalog.test.mjs',
   'scripts/test/standards-enforcement-verify.test.mjs',
+  'scripts/test/ter-virtual-keyboard-android.test.mjs',
 ]);
 
 const sorted = values => [...values].sort((left, right) => left.localeCompare(right));

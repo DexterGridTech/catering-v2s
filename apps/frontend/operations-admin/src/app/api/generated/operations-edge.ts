@@ -534,6 +534,34 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "getOperationsStoreTerminal",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+    "owner": "store-terminal",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsStoreTerminalAreaCandidates",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates",
+    "owner": "store-terminal",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsStoreTerminals",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+    "owner": "store-terminal",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsStoreTerminalTagCandidates",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates",
+    "owner": "store-terminal",
+    "requiresSession": true
+  },
+  {
     "operationId": "getOperationsWorkspaceGroupInvitationCandidates",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/candidates",
@@ -786,10 +814,31 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "postOperationsStoreTerminal",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+    "owner": "store-terminal",
+    "requiresSession": true
+  },
+  {
+    "operationId": "postOperationsStoreTerminalStatus",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status",
+    "owner": "store-terminal",
+    "requiresSession": true
+  },
+  {
     "operationId": "publishOperationsSalesMenu",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications",
     "owner": "sales-menu",
+    "requiresSession": true
+  },
+  {
+    "operationId": "putOperationsStoreTerminal",
+    "method": "PUT",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+    "owner": "store-terminal",
     "requiresSession": true
   },
   {
@@ -1088,2211 +1137,7 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
   }
 ] as const;
 
-export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
-  "addOperationsOrganizationHeadCompanyBrandAuthorization": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "addOperationsSalesMenuItems": {
-    "kind": "FIXED",
-    "max": 32,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 32,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "archiveOperationsSalesMenu": {
-    "kind": "FIXED",
-    "max": 27,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 27,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceGroupInvitation": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceHeadCompanyInvitation": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceProjectInvitation": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceRegionInvitation": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceStoreInvitation": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "changeCurrentWorkspacePassword": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "copyOperationsSalesMenu": {
-    "kind": "FIXED",
-    "max": 39,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 39,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "createOperationsBusinessChannel": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsBusinessChannelTemplate": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsContract": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsOrganizationBrand": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsOrganizationHeadCompany": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsOrganizationProject": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsOrganizationRegion": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsOrganizationStore": {
-    "kind": "FIXED",
-    "max": 25,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 25,
-        "reason": "Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-09-18-STORE-CREATE-P3"
-      }
-    ]
-  },
-  "createOperationsOrganizationTenant": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsOwnerBinding": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsSalesMenu": {
-    "kind": "FIXED",
-    "max": 33,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 33,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "createOperationsSalesMenuSection": {
-    "kind": "FIXED",
-    "max": 30,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 30,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "createOperationsWorkspaceGroupInvitation": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsWorkspaceHeadCompanyInvitation": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsWorkspaceProjectInvitation": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsWorkspaceRegionInvitation": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "createOperationsWorkspaceStoreInvitation": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "deleteOperationsOwnerBinding": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "deleteOperationsSalesMenuItem": {
-    "kind": "FIXED",
-    "max": 34,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 34,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "deleteOperationsSalesMenuSection": {
-    "kind": "FIXED",
-    "max": 31,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 31,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "getOperationsBusinessChannelDetail": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsBusinessChannelTemplates": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsBusinessChannelTemplateVisibleStores": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsContract": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsContractCandidates": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsContractExtensionDefinition": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsContracts": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsEntityAuditHistory": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsExternalCapabilityDictionary": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsExternalProviderCandidates": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsFixedStoreContracts": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationBrand": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationBrands": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationBusinessEntityExtensionDefinition": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationCandidates": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationHeadCompanies": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationHeadCompany": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationHierarchy": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationHierarchyExtensionDefinition": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationStore": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationStoreExtensionDefinition": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationStoreOperatingRule": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationStores": {
-    "kind": "FIXED",
-    "max": 16,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 16,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationTenant": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOrganizationTenants": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsOwnerBindingDetail": {
-    "kind": "FIXED",
-    "max": 15,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 15,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsProjectBusinessChannels": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsSalesMenu": {
-    "kind": "FIXED",
-    "max": 14,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 14,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsSalesMenuDraftItem": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsSalesMenuDraftItems": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsSalesMenuDraftSections": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsSalesMenuItemCandidates": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsSalesMenuOperationRecords": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsSalesMenuPublicationPreview": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsSalesMenuPublishedItem": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsSalesMenuPublishedItems": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsSalesMenuPublishedSections": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsSalesMenus": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsStoreBusinessChannels": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsStoreBusinessChannelTemplateCandidates": {
-    "kind": "FIXED",
-    "max": 14,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 14,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsStoreProfile": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsStoreQrChannelCandidates": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsStoreQrConfiguration": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsStoreServicePoint": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsStoreServicePointAreas": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsStoreServicePoints": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupInvitations": {
-    "kind": "FIXED",
-    "max": 14,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 14,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupUser": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupUserAccount": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceHeadCompanyInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceHeadCompanyInvitations": {
-    "kind": "FIXED",
-    "max": 14,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 14,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceHeadCompanyUser": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceHeadCompanyUserAccount": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceLoginEntry": {
-    "kind": "FIXED",
-    "max": 4,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 4,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceProjectInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceProjectInvitations": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceProjectUser": {
-    "kind": "FIXED",
-    "max": 16,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 16,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceProjectUserAccount": {
-    "kind": "FIXED",
-    "max": 15,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 15,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceRegionInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceRegionInvitations": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceRegionUser": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceRegionUserAccount": {
-    "kind": "FIXED",
-    "max": 16,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 16,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceSessionEntry": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceStoreInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceStoreInvitations": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceStoreUser": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "getOperationsWorkspaceStoreUserAccount": {
-    "kind": "FIXED",
-    "max": 15,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 15,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "invalidateOperationsContract": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "moveOperationsSalesMenuItem": {
-    "kind": "FIXED",
-    "max": 34,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 34,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "moveOperationsSalesMenuSection": {
-    "kind": "FIXED",
-    "max": 34,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 34,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "operationsWorkspaceLogout": {
-    "kind": "FIXED",
-    "max": 4,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 4,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "operationsWorkspacePasswordLogin": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "patchOperationsStoreQrConfiguration": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "patchOperationsStoreServicePoint": {
-    "kind": "FIXED",
-    "max": 25,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 25,
-        "reason": "Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-PATCH-P3"
-      }
-    ]
-  },
-  "patchOperationsStoreServicePointArea": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "postOperationsStoreServicePoint": {
-    "kind": "FIXED",
-    "max": 27,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 27,
-        "reason": "Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-CREATE-P3"
-      }
-    ]
-  },
-  "postOperationsStoreServicePointArea": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "postOperationsStoreServicePointAreaOrder": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "postOperationsStoreServicePointAreaStatus": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "postOperationsStoreServicePointOrder": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "postOperationsStoreServicePointStatus": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "publishOperationsSalesMenu": {
-    "kind": "FIXED",
-    "max": 48,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 48,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceGroupInvitation": {
-    "kind": "FIXED",
-    "max": 29,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 29,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceHeadCompanyInvitation": {
-    "kind": "FIXED",
-    "max": 29,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 29,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceProjectInvitation": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 28,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceRegionInvitation": {
-    "kind": "FIXED",
-    "max": 29,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 29,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceStoreInvitation": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 28,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "releaseOperationsSalesMenuStagedAsset": {
-    "kind": "FIXED",
-    "max": 31,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 31,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "releaseStagedStoreServicePointImage": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "removeOperationsOrganizationHeadCompanyBrandAuthorization": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "renameOperationsSalesMenu": {
-    "kind": "FIXED",
-    "max": 27,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 27,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "renameOperationsSalesMenuSection": {
-    "kind": "FIXED",
-    "max": 30,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 30,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "restoreOperationsSalesMenuItemSale": {
-    "kind": "FIXED",
-    "max": 36,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 36,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceGroupUserAssignment": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 28,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceHeadCompanyUserAssignment": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 28,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceProjectUserAssignment": {
-    "kind": "FIXED",
-    "max": 26,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 26,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceRegionUserAssignment": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 28,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceStoreUserAssignment": {
-    "kind": "FIXED",
-    "max": 26,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 26,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "selectOperationsWorkspaceSessionContext": {
-    "kind": "FIXED",
-    "max": 16,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 16,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "selectOperationsWorkspaceSessionDataNode": {
-    "kind": "FIXED",
-    "max": 15,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 15,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "sendOperationsWorkspaceOtp": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "setOperationsSalesMenuActivation": {
-    "kind": "FIXED",
-    "max": 32,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 32,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "setOperationsSalesMenuItemSoldOut": {
-    "kind": "FIXED",
-    "max": 36,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 36,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "stageOperationsSalesMenuAsset": {
-    "kind": "FIXED",
-    "max": 36,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 36,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "stageStoreServicePointImage": {
-    "kind": "FIXED",
-    "max": 25,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 25,
-        "reason": "Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-ASSET-STAGE-P3"
-      }
-    ]
-  },
-  "transitionOperationsBusinessChannelStatus": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "transitionOperationsBusinessChannelTemplateStatus": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationBrandStatus": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationHeadCompanyStatus": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationNodeStatus": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationStoreStatus": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationTenantStatus": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsBusinessChannel": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsBusinessChannelTemplate": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsCommercialGroup": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsContract": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsOrganizationBrand": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsOrganizationHeadCompany": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsOrganizationNode": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsOrganizationStore": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsOrganizationTenant": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  },
-  "updateOperationsSalesMenuItem": {
-    "kind": "FIXED",
-    "max": 51,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 51,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "updateOperationsSalesMenuSchedule": {
-    "kind": "FIXED",
-    "max": 29,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 29,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "verifyOperationsWorkspaceOtp": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "current managed acceptance program maximum"
-      }
-    ]
-  }
-} as const;
+export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {} as const;
 
 export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "addOperationsOrganizationHeadCompanyBrandAuthorization": "addOperationsOrganizationHeadCompanyBrandAuthorization",
@@ -3371,6 +1216,10 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "getOperationsStoreServicePoint": "getOperationsStoreServicePoint",
   "getOperationsStoreServicePointAreas": "getOperationsStoreServicePointAreas",
   "getOperationsStoreServicePoints": "getOperationsStoreServicePoints",
+  "getOperationsStoreTerminal": "getOperationsStoreTerminal",
+  "getOperationsStoreTerminalAreaCandidates": "getOperationsStoreTerminalAreaCandidates",
+  "getOperationsStoreTerminals": "getOperationsStoreTerminals",
+  "getOperationsStoreTerminalTagCandidates": "getOperationsStoreTerminalTagCandidates",
   "getOperationsWorkspaceGroupInvitationCandidates": "getOperationsWorkspaceGroupInvitationCandidates",
   "getOperationsWorkspaceGroupInvitations": "getOperationsWorkspaceGroupInvitations",
   "getOperationsWorkspaceGroupUser": "getOperationsWorkspaceGroupUser",
@@ -3407,7 +1256,10 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "postOperationsStoreServicePointAreaStatus": "postOperationsStoreServicePointAreaStatus",
   "postOperationsStoreServicePointOrder": "postOperationsStoreServicePointOrder",
   "postOperationsStoreServicePointStatus": "postOperationsStoreServicePointStatus",
+  "postOperationsStoreTerminal": "postOperationsStoreTerminal",
+  "postOperationsStoreTerminalStatus": "postOperationsStoreTerminalStatus",
   "publishOperationsSalesMenu": "publishOperationsSalesMenu",
+  "putOperationsStoreTerminal": "putOperationsStoreTerminal",
   "reissueOperationsWorkspaceGroupInvitation": "reissueOperationsWorkspaceGroupInvitation",
   "reissueOperationsWorkspaceHeadCompanyInvitation": "reissueOperationsWorkspaceHeadCompanyInvitation",
   "reissueOperationsWorkspaceProjectInvitation": "reissueOperationsWorkspaceProjectInvitation",
@@ -3546,6 +1398,13 @@ export const EDGE_PROBLEM_CODES = [
   "SALES_MENU_STORE_DISABLED",
   "SALES_MENU_VERSION_CONFLICT",
   "SALES_SECTION_NOT_FOUND",
+  "STORE_TERMINAL_ACTIVATION_CODE_CONFLICT",
+  "STORE_TERMINAL_ACTIVATION_CODE_EXHAUSTED",
+  "STORE_TERMINAL_NAME_CONFLICT",
+  "STORE_TERMINAL_REFERENCE_INVALID",
+  "STORE_TERMINAL_RULE_INVALID",
+  "STORE_TERMINAL_STATUS_TRANSITION_INVALID",
+  "STORE_TERMINAL_VOIDED_IMMUTABLE",
   "VERSION_CONFLICT",
   "VOIDED_RECORD_IMMUTABLE",
   "WORKSPACE_IAM_ACCOUNT_DISABLED",
@@ -4878,6 +2737,182 @@ export type StoreServicePointUpdateRequest = {
   expectedVersion: number;
 };
 
+export type StoreTerminalAreaCandidate = {
+  areaRef: string & { readonly __uuid: "Uuid" };
+  name: string;
+  code: string;
+};
+
+export type StoreTerminalAreaCandidatePage = {
+  items: Array<StoreTerminalAreaCandidate>;
+  nextCursor: string | null;
+  total: number;
+};
+
+export type StoreTerminalAreaReference = {
+  areaRef: string & { readonly __uuid: "Uuid" };
+  name: string;
+  code: string;
+  areaType: string;
+  status: StoreTerminalStatus;
+};
+
+export type StoreTerminalConfiguration = {
+  printers: Array<StoreTerminalPrinter>;
+  functions: Array<StoreTerminalFunction>;
+};
+
+export type StoreTerminalConfigurationInput = {
+  printers: Array<StoreTerminalPrinterInput>;
+  functions: Array<StoreTerminalFunctionInput>;
+};
+
+export type StoreTerminalCreateRequest = {
+  name: string;
+  deviceType: string;
+  activationCode?: string;
+  configuration: StoreTerminalConfigurationInput;
+};
+
+export type StoreTerminalDetail = {
+  terminalRef: string & { readonly __uuid: "Uuid" };
+  storeRef: string & { readonly __uuid: "Uuid" };
+  name: string;
+  deviceType: string;
+  status: StoreTerminalStatus;
+  version: number;
+  createdAt: number;
+  updatedAt: number;
+  activationCode: string;
+  configuration: StoreTerminalConfiguration;
+  areaReferences: Array<StoreTerminalAreaReference>;
+  tagReferences: Array<StoreTerminalTagReference>;
+};
+
+export type StoreTerminalFunction = {
+  ref: string & { readonly __uuid: "Uuid" };
+  functionKey: string;
+  ranges: Array<StoreTerminalRange>;
+  scenes: Array<StoreTerminalScene>;
+};
+
+export type StoreTerminalFunctionInput = {
+  ref?: string & { readonly __uuid: "Uuid" };
+  clientKey?: string;
+  functionKey: string;
+  ranges: Array<StoreTerminalRangeSelection>;
+  scenes: Array<StoreTerminalSceneSelection>;
+};
+
+export type StoreTerminalMutation = {
+  terminalRef: string & { readonly __uuid: "Uuid" };
+  version: number;
+  status: StoreTerminalStatus;
+};
+
+export type StoreTerminalPage = {
+  items: Array<StoreTerminalSummary>;
+  nextCursor: string | null;
+  total: number;
+};
+
+export type StoreTerminalPrinter = {
+  ref: string & { readonly __uuid: "Uuid" };
+  name: string;
+  brandKey: string;
+  modelKey: string;
+  paperSpecKey: string;
+  connectionMethodKey: string;
+  connectionParameter?: string | null;
+};
+
+export type StoreTerminalPrinterBinding = {
+  printerRef?: string & { readonly __uuid: "Uuid" };
+  printerClientKey?: string;
+};
+
+export type StoreTerminalPrinterInput = {
+  ref?: string & { readonly __uuid: "Uuid" };
+  clientKey?: string;
+  name: string;
+  brandKey: string;
+  modelKey: string;
+  paperSpecKey: string;
+  connectionMethodKey: string;
+  connectionParameter?: string | null;
+};
+
+export type StoreTerminalPrinterRef = {
+  printerRef: string & { readonly __uuid: "Uuid" };
+};
+
+export type StoreTerminalRange = {
+  key: string;
+  all: boolean;
+  refs: Array<string & { readonly __uuid: "Uuid" }>;
+};
+
+export type StoreTerminalRangeSelection = {
+  key: string;
+  all: boolean;
+  refs: Array<string & { readonly __uuid: "Uuid" }>;
+};
+
+export type StoreTerminalReplaceRequest = {
+  name: string;
+  deviceType: string;
+  configuration: StoreTerminalConfigurationInput;
+  expectedVersion: number;
+};
+
+export type StoreTerminalScene = {
+  sceneKey: string;
+  orderTypes: Array<string>;
+  printers: Array<StoreTerminalPrinterRef>;
+};
+
+export type StoreTerminalSceneSelection = {
+  sceneKey: string;
+  orderTypes: Array<string>;
+  printers: Array<StoreTerminalPrinterBinding>;
+};
+
+export type StoreTerminalStatus = "ENABLED" | "DISABLED" | "VOIDED";
+
+export type StoreTerminalStatusRequest = {
+  status: StoreTerminalStatus;
+  expectedVersion: number;
+};
+
+export type StoreTerminalSummary = {
+  terminalRef: string & { readonly __uuid: "Uuid" };
+  name: string;
+  deviceType: string;
+  status: StoreTerminalStatus;
+  version: number;
+  updatedAt: number;
+};
+
+export type StoreTerminalTagCandidate = {
+  tagRef: string & { readonly __uuid: "Uuid" };
+  name: string;
+  code: string;
+  status: StoreTerminalStatus;
+};
+
+export type StoreTerminalTagCandidatePage = {
+  items: Array<StoreTerminalTagCandidate>;
+  nextCursor: string | null;
+  total: number;
+};
+
+export type StoreTerminalTagReference = {
+  tagRef: string & { readonly __uuid: "Uuid" };
+  name: string;
+  code: string;
+  status: StoreTerminalStatus;
+};
+
 export type Tenant = {
   id: string;
   groupWorkspaceKey: string;
@@ -5809,7 +3844,7 @@ export type FaceOperationContracts = {
     path: Record<string, never>;
     query: {
     groupWorkspaceKey: string;
-    entityType: "WORKSPACE_ACCOUNT" | "WORKSPACE_INVITATION" | "COMMERCIAL_GROUP" | "ORGANIZATION_NODE" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "STORE_CONTRACT";
+    entityType: "WORKSPACE_ACCOUNT" | "WORKSPACE_INVITATION" | "COMMERCIAL_GROUP" | "ORGANIZATION_NODE" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "STORE_SERVICE_POINT_AREA" | "STORE_SERVICE_POINT" | "STORE_QR_CONFIGURATION" | "STORE_TERMINAL" | "STORE_CONTRACT";
     entityId: string;
     page?: number;
     pageSize?: number;
@@ -6481,6 +4516,75 @@ export type FaceOperationContracts = {
     areaRef: string & { readonly __uuid: "Uuid" };
   };
     query: {
+    cursor?: string;
+    pageSize?: number;
+  };
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsStoreTerminal": {
+    request: NoBody;
+    response: StoreTerminalDetail;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    terminalRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsStoreTerminalAreaCandidates": {
+    request: NoBody;
+    response: StoreTerminalAreaCandidatePage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    query?: string;
+    cursor?: string;
+    pageSize?: number;
+  };
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsStoreTerminals": {
+    request: NoBody;
+    response: StoreTerminalPage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    query?: string;
+    cursor?: string;
+    pageSize?: number;
+  };
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsStoreTerminalTagCandidates": {
+    request: NoBody;
+    response: StoreTerminalTagCandidatePage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    query?: string;
     cursor?: string;
     pageSize?: number;
   };
@@ -7187,6 +5291,39 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "postOperationsStoreTerminal": {
+    request: StoreTerminalCreateRequest;
+    response: StoreTerminalMutation;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "postOperationsStoreTerminalStatus": {
+    request: StoreTerminalStatusRequest;
+    response: StoreTerminalMutation;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    terminalRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "publishOperationsSalesMenu": {
     request: SalesMenuPublishRequest;
     response: SalesMenuCommandReadback;
@@ -7196,6 +5333,23 @@ export type FaceOperationContracts = {
     groupWorkspaceKey: string;
     storeRef: string & { readonly __uuid: "Uuid" };
     salesMenuRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "putOperationsStoreTerminal": {
+    request: StoreTerminalReplaceRequest;
+    response: StoreTerminalMutation;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    storeRef: string & { readonly __uuid: "Uuid" };
+    terminalRef: string & { readonly __uuid: "Uuid" };
   };
     query: Record<string, never>;
     queryRequired: false;
@@ -8524,6 +6678,38 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    getOperationsStoreTerminal: (pathParameters: FaceOperationContracts["getOperationsStoreTerminal"]["path"], options: FaceOperationOptions<"getOperationsStoreTerminal">) => execute({
+      operationId: "getOperationsStoreTerminal",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsStoreTerminalAreaCandidates: (pathParameters: FaceOperationContracts["getOperationsStoreTerminalAreaCandidates"]["path"], options: FaceOperationOptions<"getOperationsStoreTerminalAreaCandidates">) => execute({
+      operationId: "getOperationsStoreTerminalAreaCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsStoreTerminals: (pathParameters: FaceOperationContracts["getOperationsStoreTerminals"]["path"], options: FaceOperationOptions<"getOperationsStoreTerminals">) => execute({
+      operationId: "getOperationsStoreTerminals",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsStoreTerminalTagCandidates: (pathParameters: FaceOperationContracts["getOperationsStoreTerminalTagCandidates"]["path"], options: FaceOperationOptions<"getOperationsStoreTerminalTagCandidates">) => execute({
+      operationId: "getOperationsStoreTerminalTagCandidates",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getOperationsWorkspaceGroupInvitationCandidates: (pathParameters: FaceOperationContracts["getOperationsWorkspaceGroupInvitationCandidates"]["path"], options: FaceOperationOptions<"getOperationsWorkspaceGroupInvitationCandidates">) => execute({
       operationId: "getOperationsWorkspaceGroupInvitationCandidates",
       method: "GET",
@@ -8812,10 +6998,34 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    postOperationsStoreTerminal: (pathParameters: FaceOperationContracts["postOperationsStoreTerminal"]["path"], options: FaceOperationOptions<"postOperationsStoreTerminal">) => execute({
+      operationId: "postOperationsStoreTerminal",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    postOperationsStoreTerminalStatus: (pathParameters: FaceOperationContracts["postOperationsStoreTerminalStatus"]["path"], options: FaceOperationOptions<"postOperationsStoreTerminalStatus">) => execute({
+      operationId: "postOperationsStoreTerminalStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     publishOperationsSalesMenu: (pathParameters: FaceOperationContracts["publishOperationsSalesMenu"]["path"], options: FaceOperationOptions<"publishOperationsSalesMenu">) => execute({
       operationId: "publishOperationsSalesMenu",
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    putOperationsStoreTerminal: (pathParameters: FaceOperationContracts["putOperationsStoreTerminal"]["path"], options: FaceOperationOptions<"putOperationsStoreTerminal">) => execute({
+      operationId: "putOperationsStoreTerminal",
+      method: "PUT",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
       pathParameters,
       requiresSession: true,
       ...options,

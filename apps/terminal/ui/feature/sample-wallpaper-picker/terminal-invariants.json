@@ -14,5 +14,8 @@
     "dependencyModuleNames", "devDependencyModuleNames", "moduleKind", "moduleName",
     "parts", "sampleWallpaperPickerAssembly", "wallpaperOptionTestId", "wallpaperPickerTestIds",
     "wallpaperOptionSelectedCommand"
-  ]
+  ],
+  "publicExportMap": {
+    ".": "./src/index.ts"
+  }
 }

@@ -8,11 +8,12 @@ export type KeyboardKeyDefinition =
       readonly zone: 'letters' | 'digits' | 'symbols';
       readonly kind: 'text';
       readonly text: string;
+      readonly shiftedText?: string;
     }>
   | Readonly<{
-      readonly keyId: 'shift' | 'caps' | 'backspace' | 'complete';
+      readonly keyId: 'shift' | 'space' | 'backspace' | 'complete';
       readonly zone: 'actions';
-      readonly kind: 'shift' | 'caps' | 'backspace' | 'complete';
+      readonly kind: 'shift' | 'space' | 'backspace' | 'complete';
     }>;
 
 export type KeyboardGridColumn = Readonly<{
@@ -45,14 +46,19 @@ export type KeyboardLayoutDefinition = Readonly<{
   readonly horizontalMode: 'dense' | 'standard';
 }>;
 
-const textKey = (text: string, zone: 'letters' | 'digits' | 'symbols'): KeyboardKeyDefinition => ({
+const textKey = (
+  text: string,
+  zone: 'letters' | 'digits' | 'symbols',
+  shiftedText?: string,
+): KeyboardKeyDefinition => ({
   keyId: `text-${text}`,
   zone,
   kind: 'text',
   text,
+  ...(shiftedText === undefined ? {} : {shiftedText}),
 });
 
-const actionKey = (kind: 'shift' | 'caps' | 'backspace' | 'complete'): KeyboardKeyDefinition => ({
+const actionKey = (kind: 'shift' | 'space' | 'backspace' | 'complete'): KeyboardKeyDefinition => ({
   keyId: kind,
   zone: 'actions',
   kind,
@@ -90,6 +96,20 @@ const compoundRow = (keys: readonly KeyboardKeyDefinition[], sizing: 'shared' | 
 const zeroKey = textKey('0', 'digits');
 const minusKey = textKey('-', 'symbols');
 const dotKey = textKey('.', 'symbols');
+const urlShiftCharacters: Readonly<Record<string, string>> = Object.freeze({
+  '1': ':',
+  '2': '/',
+  '3': '.',
+  '4': '?',
+  '5': '&',
+  '6': '=',
+  '7': '-',
+  '8': '_',
+  '9': '%',
+  '0': '+',
+});
+const fullDigitRow = Array.from('1234567890', digit => textKey(digit, 'digits', urlShiftCharacters[digit]));
+const spaceKey = actionKey('space');
 const backspaceKey = actionKey('backspace');
 const completeKey = actionKey('complete');
 
@@ -115,11 +135,11 @@ const definitions: Readonly<Record<KeyboardLayout, KeyboardLayoutDefinition>> = 
   full: Object.freeze({
     layout: 'full',
     rows: Object.freeze([
-      textRow({value: '1234567890', zone: 'digits'}),
+      row({keys: fullDigitRow, region: 'digits'}),
       textRow({value: 'qwertyuiop', zone: 'letters'}),
-      compoundRow([actionKey('caps'), ...Array.from('asdfghjkl', character => textKey(character, 'letters'))]),
+      compoundRow([actionKey('shift'), ...Array.from('asdfghjkl', character => textKey(character, 'letters'))]),
       compoundRow([
-        actionKey('shift'),
+        spaceKey,
         ...Array.from('zxcvbnm', character => textKey(character, 'letters')),
         backspaceKey,
         completeKey,
@@ -133,9 +153,12 @@ const definitions: Readonly<Record<KeyboardLayout, KeyboardLayoutDefinition>> = 
     layout: 'alpha',
     rows: Object.freeze([
       textRow({value: 'qwertyuiop', zone: 'letters'}),
-      compoundRow([actionKey('caps'), ...Array.from('asdfghjkl', character => textKey(character, 'letters'))]),
       compoundRow([
         actionKey('shift'),
+        ...Array.from('asdfghjkl', character => textKey(character, 'letters')),
+      ]),
+      compoundRow([
+        spaceKey,
         ...Array.from('zxcvbnm', character => textKey(character, 'letters')),
         backspaceKey,
         completeKey,

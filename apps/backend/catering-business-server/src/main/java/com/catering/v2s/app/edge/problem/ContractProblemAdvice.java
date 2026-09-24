@@ -32,6 +32,8 @@ import com.catering.v2s.platform.iam.application.PlatformCommandReceiptService.P
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
 import com.catering.v2s.platform.workspace.application.WorkspaceCommandReceiptService;
 import com.catering.v2s.salesmenu.api.SalesMenuOwnerApi;
+import com.catering.v2s.storeterminal.application.StoreTerminalAuditHistoryService;
+import com.catering.v2s.storeterminal.application.StoreTerminalOwnerService;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceAccountService;
 import com.catering.v2s.workspace.iam.application.WorkspaceAssignmentScopeService;
@@ -270,6 +272,8 @@ public final class ContractProblemAdvice {
 
     @ExceptionHandler({
         ContractCommandService.ContractNotFoundException.class,
+        StoreTerminalAuditHistoryService.TerminalNotFoundException.class,
+        StoreTerminalOwnerService.TerminalNotFoundException.class,
         ExtensionDefinitionService.DefinitionNotFoundException.class,
         BusinessEntityService.OrganizationNotFoundException.class,
         OrganizationHierarchyService.OrganizationNotFoundException.class,
@@ -451,6 +455,13 @@ public final class ContractProblemAdvice {
         PlatformAuthenticationService.AdministratorDeactivationForbiddenException.class
     })
     ResponseEntity<Problem> invalid(RuntimeException exception, HttpServletRequest request) {
+        if (request.getRequestURI() != null && request.getRequestURI().contains("/terminals")) {
+            log.atWarn()
+                    .addKeyValue("event", "STORE_TERMINAL_GENERIC_INVALID_REQUEST")
+                    .addKeyValue("exceptionType", safeType(exception))
+                    .addKeyValue("rootCauseType", safeType(rootCause(exception)))
+                    .log("store-terminal request reached generic invalid mapping");
+        }
         PlatformAssetService.AssetStorageUnavailableException storageFailure =
                 exception instanceof PlatformAssetService.AssetStorageUnavailableException failure ? failure : null;
         if (storageFailure != null) logAssetStorageFailure(storageFailure, request);
@@ -653,8 +664,10 @@ public final class ContractProblemAdvice {
         WorkspaceCommandAuthorizationService.AuthorizationDeniedException.class,
         WorkspaceUserService.TaskScopeDeniedException.class,
         ContractCommandService.ContractAuthorizationException.class,
+        StoreTerminalAuditHistoryService.TerminalAuthorizationException.class,
         BusinessEntityService.OrganizationAuthorizationException.class,
-        OrganizationHierarchyService.OrganizationAuthorizationException.class
+        OrganizationHierarchyService.OrganizationAuthorizationException.class,
+        StoreTerminalOwnerService.TerminalAuthorizationException.class
     })
     ResponseEntity<Problem> accessDenied(RuntimeException exception, HttpServletRequest request) {
         return problem(
@@ -662,6 +675,76 @@ public final class ContractProblemAdvice {
                 "PLATFORM_COMMON_ACCESS_DENIED",
                 "当前主体无权执行该操作",
                 /* format-wrap */
+                request);
+    }
+
+    @ExceptionHandler(StoreTerminalOwnerService.TerminalStoreUnavailableException.class)
+    ResponseEntity<Problem> storeTerminalUnavailable(
+            StoreTerminalOwnerService.TerminalStoreUnavailableException exception, HttpServletRequest request) {
+        return problem(
+                HttpStatus.FORBIDDEN,
+                "ORGANIZATION_STORE_STATUS_TRANSITION_INVALID",
+                "当前门店状态不支持此操作",
+                request);
+    }
+
+    @ExceptionHandler({
+        StoreTerminalOwnerService.TerminalNameConflictException.class,
+        StoreTerminalOwnerService.ActivationCodeConflictException.class,
+        StoreTerminalOwnerService.ActivationCodeExhaustedException.class,
+        StoreTerminalOwnerService.TerminalVersionConflictException.class,
+        StoreTerminalOwnerService.TerminalVoidedImmutableException.class,
+        StoreTerminalOwnerService.TerminalStatusTransitionInvalidException.class,
+        StoreTerminalOwnerService.IdempotencyConflictException.class
+    })
+    ResponseEntity<Problem> storeTerminalConflict(RuntimeException exception, HttpServletRequest request) {
+        String code = exception instanceof StoreTerminalOwnerService.TerminalNameConflictException
+                ? "STORE_TERMINAL_NAME_CONFLICT"
+                : exception instanceof StoreTerminalOwnerService.ActivationCodeConflictException
+                        ? "STORE_TERMINAL_ACTIVATION_CODE_CONFLICT"
+                        : exception instanceof StoreTerminalOwnerService.ActivationCodeExhaustedException
+                                ? "STORE_TERMINAL_ACTIVATION_CODE_EXHAUSTED"
+                                : exception instanceof StoreTerminalOwnerService.TerminalVoidedImmutableException
+                                        ? "STORE_TERMINAL_VOIDED_IMMUTABLE"
+                                        : exception instanceof StoreTerminalOwnerService.TerminalStatusTransitionInvalidException
+                                                ? "STORE_TERMINAL_STATUS_TRANSITION_INVALID"
+                                                : exception instanceof StoreTerminalOwnerService.IdempotencyConflictException
+                                                        ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
+                                                        : "PLATFORM_COMMON_VERSION_CONFLICT";
+        return problem(HttpStatus.CONFLICT, code, "终端操作与当前 owner 状态冲突，请重新读取后再操作", request);
+    }
+
+    @ExceptionHandler({
+        StoreTerminalOwnerService.TerminalReferenceInvalidException.class,
+        StoreTerminalOwnerService.InvalidTerminalRequestException.class
+    })
+    ResponseEntity<Problem> storeTerminalInvalid(RuntimeException exception, HttpServletRequest request) {
+        String code = exception instanceof StoreTerminalOwnerService.TerminalReferenceInvalidException
+                ? "STORE_TERMINAL_REFERENCE_INVALID"
+                : "STORE_TERMINAL_RULE_INVALID";
+        log.atWarn()
+                .addKeyValue("event", "STORE_TERMINAL_TYPED_INVALID_REQUEST")
+                .addKeyValue("exceptionType", safeType(exception))
+                .addKeyValue("rootCauseType", safeType(rootCause(exception)))
+                .addKeyValue("errorCode", code)
+                .log("store-terminal request rejected by typed owner validation");
+        return problem(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                code,
+                exception instanceof StoreTerminalOwnerService.TerminalReferenceInvalidException
+                        ? "终端关联资料不可用，请刷新后重试"
+                        : "终端配置不符合当前规则，请检查后重试",
+                request);
+    }
+
+    @ExceptionHandler({
+        StoreTerminalOwnerService.ReceiptCorruptException.class
+    })
+    ResponseEntity<Problem> storeTerminalResultUnknown(RuntimeException exception, HttpServletRequest request) {
+        return problem(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "PLATFORM_COMMON_RESULT_UNKNOWN",
+                "owner 命令结果暂时无法确认，请使用同一幂等键重试或查询",
                 request);
     }
 

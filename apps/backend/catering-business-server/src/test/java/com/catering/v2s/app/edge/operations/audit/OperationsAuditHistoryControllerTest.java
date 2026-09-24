@@ -37,6 +37,10 @@ class OperationsAuditHistoryControllerTest {
                 "TENANT",
                 "HEAD_COMPANY",
                 "STORE",
+                "STORE_SERVICE_POINT_AREA",
+                "STORE_SERVICE_POINT",
+                "STORE_QR_CONFIGURATION",
+                "STORE_TERMINAL",
                 "STORE_CONTRACT")) {
             assertEquals(
                     0L,
@@ -44,7 +48,7 @@ class OperationsAuditHistoryControllerTest {
                             .history(fixture.request, WORKSPACE_KEY, entityType, id.toString(), 1, 10)
                             .total());
         }
-        verify(fixture.reads, org.mockito.Mockito.times(9))
+        verify(fixture.reads, org.mockito.Mockito.times(13))
                 .read(org.mockito.ArgumentMatchers.same(fixture.readFacts), org.mockito.ArgumentMatchers.any());
     }
 

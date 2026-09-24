@@ -16,7 +16,9 @@ export {
   reconcileTopologyPeerCommand,
   refreshTopologyDisplayCommand,
   setTopologyHostEnabledCommand,
+  topologyDisplayChangedCommand,
   topologyHostEventCommand,
   unpairTopologyCommand,
 } from './features/commands/commands'
+export type {TopologyDisplayChangedPayload} from './features/commands/commands'
 export type {TopologyState} from './types/state'

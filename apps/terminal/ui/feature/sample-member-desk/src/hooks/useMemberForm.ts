@@ -2,42 +2,12 @@ import {useCallback} from 'react'
 import {selectPendingMember, submitMemberCommand} from '@catering-v2s/kernel-feature-sample-member-registry'
 import {deskSystemFailureObservedCommand, memberFormCancelledCommand} from '../features/commands/commands'
 import {dispatchWithRequestId, useDispatchCommand, useTrackedCommand, useUiStateSelector} from '@catering-v2s/ui-base-render'
-import {useInputField, useInputSnapshot} from '@catering-v2s/ui-base-input'
+import {useInputSnapshot} from '@catering-v2s/ui-base-input'
 
 export const useMemberForm = () => {
   const dispatchCommand = useDispatchCommand()
   const pending = useUiStateSelector(selectPendingMember)
   const captureInputSnapshot = useInputSnapshot()
-  const nameField = useInputField({
-    fieldId: 'sample.desk.member-form:name',
-    testID: 'sample.desk.member-form:name',
-    accessibilityLabel: '姓名',
-    initialValue: pending?.name ?? '',
-    keyboardKind: 'virtual',
-    layout: 'full',
-  })
-  const phoneField = useInputField({
-    fieldId: 'sample.desk.member-form:phone',
-    testID: 'sample.desk.member-form:phone',
-    accessibilityLabel: '电话',
-    initialValue: pending?.phone ?? '',
-    keyboardKind: 'virtual',
-    layout: 'numeric',
-  })
-  const alphaProbeField = useInputField({
-    fieldId: 'sample.desk.member-form:keyboard-alpha-probe',
-    testID: 'sample.desk.member-form:keyboard-alpha-probe',
-    accessibilityLabel: '英文字符测试（仅 sample）',
-    keyboardKind: 'virtual',
-    layout: 'alpha',
-  })
-  const financialProbeField = useInputField({
-    fieldId: 'sample.desk.member-form:keyboard-financial-probe',
-    testID: 'sample.desk.member-form:keyboard-financial-probe',
-    accessibilityLabel: '金额格式测试（仅 sample）',
-    keyboardKind: 'virtual',
-    layout: 'financial',
-  })
   const trackedCommand = useTrackedCommand()
   const requestInFlight = trackedCommand.requestInFlight
 
@@ -80,10 +50,8 @@ export const useMemberForm = () => {
   }, [captureInputSnapshot, dispatchCommand])
 
   return {
-    nameInput: nameField.inputProps,
-    phoneInput: phoneField.inputProps,
-    alphaProbeInput: alphaProbeField.inputProps,
-    financialProbeInput: financialProbeField.inputProps,
+    nameInitialValue: pending?.name ?? '',
+    phoneInitialValue: pending?.phone ?? '',
     requestInFlight,
     submit,
     cancel,

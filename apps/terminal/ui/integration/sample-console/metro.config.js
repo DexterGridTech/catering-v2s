@@ -9,9 +9,24 @@ const {getDefaultConfig} = require('expo/metro-config')
 const {withNativeWind} = require('nativewind/metro')
 
 const config = getDefaultConfig(__dirname)
+const workspaceNativeWindRuntime = path.resolve(
+  __dirname,
+  '../../../../../node_modules/react-native-css-interop',
+)
 
-module.exports = withNativeWind(config, {
+const nativeWindConfig = withNativeWind(config, {
   input: './theme/global.css',
   configPath: './tailwind.config.cjs',
   inlineRem: 16,
 })
+
+module.exports = {
+  ...nativeWindConfig,
+  resolver: {
+    ...nativeWindConfig.resolver,
+    extraNodeModules: {
+      ...nativeWindConfig.resolver?.extraNodeModules,
+      'react-native-css-interop': workspaceNativeWindRuntime,
+    },
+  },
+}

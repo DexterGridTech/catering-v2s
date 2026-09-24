@@ -56,6 +56,8 @@ public final class OperationsAuditHistoryController {
                     case AuditEntityTypes.STORE_QR_CONFIGURATION ->
                             new OperationsAuditQuery.StoreQrConfiguration(target, page, pageSize);
                     case "STORE_CONTRACT" -> new OperationsAuditQuery.StoreContract(target, page, pageSize);
+                    case AuditEntityTypes.STORE_TERMINAL ->
+                            new OperationsAuditQuery.StoreTerminal(target, page, pageSize);
                     default -> throw new InvalidEdgeRequestException("unsupported operations audit target");
                 });
         return AuditHistoryWireMapper.page(result);

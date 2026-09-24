@@ -111,6 +111,7 @@ class DatabaseBoundariesTest {
             statement.execute("DROP SCHEMA IF EXISTS platform_iam CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS organization CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS platform_workspace CASCADE");
+            statement.execute("DROP SCHEMA IF EXISTS store_terminal CASCADE");
         }
         try (Connection connection = adminConnection();
                 ResultSet tables =

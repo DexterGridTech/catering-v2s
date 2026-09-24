@@ -25,21 +25,27 @@ for (let index = 2; index < process.argv.length; index += 1) {
   else if (value === '--age') args.set('age', process.argv[++index])
   else if (value === '--output') args.set('output', process.argv[++index])
   else if (value === '--skip-install') args.set('skipInstall', true)
+  else if (value === '--no-screenshots') args.set('noScreenshots', true)
   else throw new Error(`unknown argument: ${value}`)
 }
 
 const serial = args.get('serial') ?? 'emulator-5556'
 const shape = args.get('shape') ?? 'mobile'
 const journeyCase = args.get('case') ?? 'normal'
-const ageValue = args.has('age') ? (args.get('age') ?? '') : '37'
+const ageValue = args.has('age')
+  ? (args.get('age') ?? '')
+  : ['render-smoke', 'keyboard-alpha-probe'].includes(journeyCase) ? '' : '37'
 if (!['mobile', 'dual'].includes(shape)) throw new Error(`invalid shape: ${shape}`)
-if (!['normal', 'reject-retry', 'abandon', 'withdraw', 'hand-back'].includes(journeyCase)) {
+if (!['normal', 'reject-retry', 'abandon', 'withdraw', 'hand-back', 'render-smoke', 'keyboard-alpha-probe'].includes(journeyCase)) {
   throw new Error(`invalid case: ${journeyCase}`)
 }
 if (shape === 'mobile' && journeyCase === 'withdraw') throw new Error('withdraw case requires dual shape')
 if (shape === 'dual' && journeyCase === 'hand-back') throw new Error('hand-back case requires mobile shape')
+if (shape !== 'dual' && journeyCase === 'render-smoke') throw new Error('render-smoke case requires dual shape')
+if (shape !== 'mobile' && journeyCase === 'keyboard-alpha-probe') throw new Error('keyboard-alpha-probe case requires mobile shape')
 if (!/^\d{0,3}$/.test(ageValue)) throw new Error(`invalid age: ${ageValue}`)
 if (ageValue !== '' && ageValue !== '37') throw new Error('this record-only runner currently supports age 37 or empty age')
+const screenshotsEnabled = !args.get('noScreenshots')
 const outputDirectory = path.resolve(args.get('output') ?? path.join(defaultOutput, `${shape}-${journeyCase}`))
 
 let commandLogSequence = 0
@@ -448,6 +454,7 @@ const currentSecondaryDisplay = () => {
 }
 
 const captureCurrentSecondarySurface = (name, label) => {
+  if (!screenshotsEnabled) return null
   const currentDisplay = displayInventory()
   const currentSurfaces = surfaceInventory()
   const currentPairing = assertDisplayPairing(currentDisplay, currentSurfaces, 'dual', `${label} display inventory`)
@@ -572,6 +579,7 @@ const execute = async () => {
     shape,
     journeyCase,
     age: ageValue,
+    screenshotsEnabled,
     startedAt: new Date().toISOString(),
     business: 'NOT_RUN',
     cleanup: 'NOT_RUN',
@@ -632,11 +640,13 @@ const execute = async () => {
     writeText(outputDirectory, `${name}-window.txt`, windowSnapshot())
     writeText(outputDirectory, `${name}-activity.txt`, activitySnapshot())
     writeText(outputDirectory, `${name}-logcat.txt`, logcat())
-    const primaryCapture = captureSurface(stateSurfaces.primaryIds[0], `${name}-primary`, outputDirectory)
-    assertScreenshotDimensions(primaryCapture, statePairing.primaryDisplay, `${name} primary`)
-    if (shape === 'dual') {
-      const secondaryCapture = captureSurface(statePairing.secondarySurface.id, `${name}-secondary`, outputDirectory)
-      assertScreenshotDimensions(secondaryCapture, statePairing.secondaryDisplay, `${name} secondary`)
+    if (screenshotsEnabled) {
+      const primaryCapture = captureSurface(stateSurfaces.primaryIds[0], `${name}-primary`, outputDirectory)
+      assertScreenshotDimensions(primaryCapture, statePairing.primaryDisplay, `${name} primary`)
+      if (shape === 'dual') {
+        const secondaryCapture = captureSurface(statePairing.secondarySurface.id, `${name}-secondary`, outputDirectory)
+        assertScreenshotDimensions(secondaryCapture, statePairing.secondaryDisplay, `${name} secondary`)
+      }
     }
     record.steps.push({
       name,
@@ -826,9 +836,36 @@ const execute = async () => {
 
     await loginAndOpenForm()
     appendProgress('stage-complete', {stage: 'login-and-open-form'})
-    await fillAndSubmitMember()
-    appendProgress('stage-complete', {stage: 'member-submit'})
 
+    if (journeyCase === 'render-smoke') {
+      appendProgress('stage-complete', {stage: 'dual-display-render-smoke'})
+    } else if (journeyCase === 'keyboard-alpha-probe') {
+      const fieldId = 'sample.desk.member-form:keyboard-alpha-probe'
+      const keyboardKeyId = 'ui.base.input:virtual-keyboard:text-a'
+      await waitForNode(fieldId)
+      await waitForNode('sample.desk.member-form:keyboard-alpha-probe-label', node => node.tag.includes('英文字符测试（仅 sample）'))
+      await tapResource(fieldId)
+      await waitForNode(keyboardKeyId)
+      await tapResource(keyboardKeyId)
+      await waitForNode(fieldId, node => node.tag.includes('text="a"'))
+      await tapResource('ui.base.input:virtual-keyboard:complete')
+      await waitForAbsent(keyboardKeyId)
+      const completedField = await waitForNode(fieldId, node => node.tag.includes('text="a"'))
+      record.steps.push({
+        name: 'mobile-alpha-keyboard-probe',
+        timestamp: new Date().toISOString(),
+        fieldId,
+        observedValue: completedField.node.tag.match(/text="([^"]*)"/)?.[1] ?? null,
+        keyboardKeyId,
+        keyboardClosedAfterComplete: true,
+      })
+      record.lastKnownGood = 'mobile-alpha-keyboard-probe-completed'
+      appendProgress('stage-complete', {stage: 'mobile-alpha-keyboard-probe'})
+    }
+    if (!['render-smoke', 'keyboard-alpha-probe'].includes(journeyCase)) {
+      await fillAndSubmitMember()
+      appendProgress('stage-complete', {stage: 'member-submit'})
+    }
     if (journeyCase === 'normal') {
       appendProgress('stage-started', {stage: 'age-and-confirm', age: ageValue})
       await fillAgeAndConfirm()
@@ -961,6 +998,7 @@ writeJson(outputDirectory, 'run-manifest.json', {
   shape,
   journeyCase,
   age: ageValue,
+  screenshotsEnabled,
   apk: path.relative(repositoryRoot, apk),
   apkBinding: localApkBinding(),
   startedAt: new Date().toISOString(),

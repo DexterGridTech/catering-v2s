@@ -45,6 +45,7 @@ Claude 在本仓承担独立 architecture、contract、boundary 与真实行为 
 - 逐项核验 owner、transaction、data、security、consumer、failure 与实际行为预期；
 - 使用 `GO` / `NO-GO`，并报告 `M`（major）、`S`（significant）、`N`（note）数量；
 - 明确结论的授权边界；静态 review 不授权下一 Roadmap step、DEV 或数据操作。
+- TER（`apps/terminal`）的设计、实施与复盘评审，须按 `doc/platform/terminal-coding-standard.md` 的 `TR-16` 核对验证顺序：被测行为不涉及 adapter 的功能先过 `ui/integration` 的 Expo Web，再上设备跑 `assembly`，并有同一场景清单的两端对照；缺任一项即 finding。
 
 每个 Roadmap 的 `R` 都是一次性完整交付单元：一次性完成该 R 的设计、一次性完成该 R 的实施，再对该 R 全范围一次性复核。不得把同一 R 按 Journey、模块、文件、App 或单项 gate 拆成独立 review；单项 gate 只能作为统一 R review 的内部证据。当前 R3 必须整体复核 R3-C01、R3-TECH、U01-U07、双 App、契约、数据库、测试与 evidence。
 

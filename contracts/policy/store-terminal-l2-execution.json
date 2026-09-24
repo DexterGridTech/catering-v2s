@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "kind": "store-terminal-l2-execution-profile",
+  "revision": "STORE_TERMINAL_L2_20260924",
+  "mode": "INCREMENTAL",
+  "enabledCaseIds": [
+    "terminal-list-detail",
+    "terminal-create-basic",
+    "terminal-create-configuration",
+    "terminal-edit-configuration",
+    "terminal-status-actions",
+    "terminal-readonly-state"
+  ],
+  "sourceOfTruth": "contracts/policy/store-terminal-l2-scenarios.json",
+  "noSeedRuntimeInput": true,
+  "activationCandidate": {
+    "path": "contracts/policy/store-terminal-l2-activation-candidate.json",
+    "digest": "3e94ffa7c192e539b380cba6f8b4de50da395a715fa41d56a22c481e454edfc6"
+  },
+  "readiness": {
+    "runBinding": {"runId": "PENDING", "namespace": "PENDING", "database": "PENDING", "assetPrefix": "PENDING"}
+  }
+}

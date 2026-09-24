@@ -51,7 +51,8 @@ class MasterDataLifecycleMigrationIntegrationTest {
         new StatusCheck("catalog", "catalog_item", "catalog_item_status_check"),
         new StatusCheck("catalog", "catalog_sku", "catalog_sku_status_check"),
         new StatusCheck("catalog", "catalog_attribute_definition", "ck_catalog_attribute_definition_status"),
-        new StatusCheck("catalog", "catalog_order_option_definition", "ck_catalog_order_option_definition_status")
+        new StatusCheck("catalog", "catalog_order_option_definition", "ck_catalog_order_option_definition_status"),
+        new StatusCheck("store_terminal", "terminal", "ck_store_terminal_status")
     };
 
     private static final StatusColumn[] NEW_STATUS_COLUMNS = {
@@ -75,7 +76,8 @@ class MasterDataLifecycleMigrationIntegrationTest {
         new StatusDefault("catalog", "catalog_sku", "status"),
         new StatusDefault("catalog", "catalog_attribute_definition", "status"),
         new StatusDefault("catalog", "catalog_order_option_definition", "status"),
-        new StatusDefault("catalog", "catalog_composite_component", "status")
+        new StatusDefault("catalog", "catalog_composite_component", "status"),
+        new StatusDefault("store_terminal", "terminal", "status")
     };
 
     private static final IndexPredicate[] FINAL_ACTIVE_INDEXES = {
@@ -104,7 +106,8 @@ class MasterDataLifecycleMigrationIntegrationTest {
         new IndexPredicate("catalog", "ux_catalog_category_active_code", "status <> 'VOIDED'"),
         new IndexPredicate("catalog", "ux_catalog_attribute_definition_active_code", "status <> 'VOIDED'"),
         new IndexPredicate("catalog", "ux_catalog_order_option_definition_active_code", "status <> 'VOIDED'"),
-        new IndexPredicate("catalog", "ux_catalog_unit_definition_active_code", "status <> 'VOIDED'")
+        new IndexPredicate("catalog", "ux_catalog_unit_definition_active_code", "status <> 'VOIDED'"),
+        new IndexPredicate("store_terminal", "ux_store_terminal_store_active_name", "status <> 'VOIDED'")
     };
 
     @Container
@@ -601,6 +604,7 @@ class MasterDataLifecycleMigrationIntegrationTest {
             statement.execute("DROP SCHEMA IF EXISTS sales_menu CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS platform_iam CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS platform_workspace CASCADE");
+            statement.execute("DROP SCHEMA IF EXISTS store_terminal CASCADE");
             statement.execute("DROP SCHEMA IF EXISTS workspace_iam CASCADE");
             statement.execute("DROP TABLE IF EXISTS public.flyway_schema_history");
         }

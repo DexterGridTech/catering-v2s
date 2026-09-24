@@ -287,6 +287,14 @@ public final class OperationBindingTypes {
     public record StoreServicePointPage() {}
     public record StoreServicePointStatusRequest() {}
     public record StoreServicePointUpdateRequest() {}
+    public record StoreTerminalAreaCandidatePage() {}
+    public record StoreTerminalCreateRequest() {}
+    public record StoreTerminalDetail() {}
+    public record StoreTerminalMutation() {}
+    public record StoreTerminalPage() {}
+    public record StoreTerminalReplaceRequest() {}
+    public record StoreTerminalStatusRequest() {}
+    public record StoreTerminalTagCandidatePage() {}
     public record TemporaryPromotionExecuteRequest() {}
     public record TemporaryPromotionPreflight() {}
     public record TemporaryPromotionPreflightRequest() {}

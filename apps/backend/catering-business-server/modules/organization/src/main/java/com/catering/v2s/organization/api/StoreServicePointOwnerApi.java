@@ -9,6 +9,11 @@ import java.util.UUID;
 public interface StoreServicePointOwnerApi {
     AreaPage listAreas(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, String cursor, int pageSize);
 
+    List<AreaReference> readAreasByRefs(UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, List<UUID> areaRefs);
+
+    AreaCandidatePage searchTerminalAreaCandidates(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, String query, String cursor, int pageSize);
+
     PointPage listPoints(
             UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, UUID areaRef, String cursor, int pageSize);
 
@@ -40,6 +45,12 @@ public interface StoreServicePointOwnerApi {
         }
     }
 
+    record AreaCandidatePage(List<AreaCandidate> items, String nextCursor, long total) {
+        public AreaCandidatePage {
+            items = List.copyOf(items == null ? List.of() : items);
+        }
+    }
+
     record PointPage(List<Point> items, String nextCursor, long total) {
         public PointPage {
             items = List.copyOf(items == null ? List.of() : items);
@@ -59,6 +70,10 @@ public interface StoreServicePointOwnerApi {
             long updatedAt,
             boolean canMoveUp,
             boolean canMoveDown) {}
+
+    record AreaReference(UUID areaRef, UUID storeRef, String name, String code, String areaType, String status) {}
+
+    record AreaCandidate(UUID areaRef, String name, String code) {}
 
     record Point(
             UUID pointRef,

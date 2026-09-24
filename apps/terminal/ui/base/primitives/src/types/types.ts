@@ -64,6 +64,8 @@ export type PrimitivePinInputProps = PrimitiveAddressableProps &
     readonly invalid?: boolean;
     readonly length: number;
     readonly maskCharacter?: string;
+    /** Presentation-only measureLayout handle forwarded from the interactive PIN root. */
+    readonly measureRef?: Ref<PrimitiveMeasureLayoutHandle>;
     readonly onClick?: (event: PrimitivePinInputInteractionEvent) => void;
     readonly onPress?: () => void;
     readonly onTouchEnd?: (event: PrimitivePinInputInteractionEvent) => void;
@@ -79,6 +81,7 @@ export type PrimitiveScrollViewProps = PrimitiveAddressableProps &
     readonly layout?: PrimitiveScrollViewLayout;
     /** Presentation-only trailing inset for content that must scroll fully above a bounded viewport. */
     readonly contentPaddingBottom?: number;
+    readonly onContentHeightChange?: (height: number) => void;
     readonly onLayout?: (event: LayoutChangeEvent) => void;
     readonly onScrollOffsetChange?: (offsetY: number) => void;
   }>;
@@ -159,9 +162,16 @@ export type PrimitiveInputHandle = Readonly<{
   readonly measureInWindow: (callback: PrimitiveMeasureInWindowCallback) => void;
 }>;
 
+export type PrimitiveMeasureLayoutHandle = Pick<PrimitiveInputHandle, 'measureLayout'>;
+
 export type PrimitiveScrollViewHandle = Readonly<{
   /** The native content node is the coordinate-system anchor for scroll measurements. */
   readonly getContentNativeNode: () => PrimitiveNativeNode | null;
+  readonly measureLayout: (
+    relativeToNativeNode: PrimitiveNativeNode,
+    callback: PrimitiveMeasureLayoutCallback,
+    onFail?: () => void,
+  ) => void;
   readonly measureInWindow: (callback: PrimitiveMeasureInWindowCallback) => void;
   readonly scrollTo: (options: Readonly<{readonly y: number; readonly animated?: boolean}>) => void;
 }>;

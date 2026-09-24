@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://catering-v2s.local/contracts/catalog/store-terminal-rules.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "revision", "deviceTypes", "functions", "ranges", "scenes", "paperSpecs", "connectionMethods", "orderTypes", "printerBrands", "printerModels"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "kind": {"type": "string", "const": "store-terminal-rules"},
+    "revision": {"type": "string", "minLength": 1},
+    "deviceTypes": {"$ref": "#/$defs/deviceTypes"},
+    "functions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "label", "supportedDeviceTypeKeys", "maxPerTerminal", "allowedRangeKeys"],
+        "properties": {
+          "key": {"$ref": "#/$defs/key"},
+          "label": {"$ref": "#/$defs/label"},
+          "supportedDeviceTypeKeys": {"$ref": "#/$defs/keyArray"},
+          "maxPerTerminal": {"type": ["integer", "null"], "minimum": 1},
+          "allowedRangeKeys": {"$ref": "#/$defs/keyArray"}
+        }
+      }
+    },
+    "ranges": {"$ref": "#/$defs/entries"},
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "label", "functionKey", "allowedPaperSpecKeys"],
+        "properties": {
+          "key": {"$ref": "#/$defs/key"},
+          "label": {"$ref": "#/$defs/label"},
+          "functionKey": {"$ref": "#/$defs/key"},
+          "allowedPaperSpecKeys": {"$ref": "#/$defs/keyArray"}
+        }
+      }
+    },
+    "paperSpecs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "label", "kind", "widthMm", "lengthMm"],
+        "properties": {
+          "key": {"$ref": "#/$defs/key"},
+          "label": {"$ref": "#/$defs/label"},
+          "kind": {"enum": ["THERMAL_ROLL", "LABEL"]},
+          "widthMm": {"type": "number", "exclusiveMinimum": 0},
+          "lengthMm": {"type": ["number", "null"], "exclusiveMinimum": 0}
+        }
+      }
+    },
+    "connectionMethods": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "label", "parameter"],
+        "properties": {
+          "key": {"$ref": "#/$defs/key"},
+          "label": {"$ref": "#/$defs/label"},
+          "parameter": {
+            "oneOf": [
+              {"type": "null"},
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["key", "label", "valueKind", "required"],
+                "properties": {
+                  "key": {"$ref": "#/$defs/key"},
+                  "label": {"$ref": "#/$defs/label"},
+                  "valueKind": {"enum": ["IPV4", "IDENTIFIER"]},
+                  "required": {"type": "boolean"},
+                  "pattern": {"type": "string", "minLength": 1},
+                  "minLength": {"type": "integer", "minimum": 1},
+                  "maxLength": {"type": "integer", "minimum": 1},
+                  "rejectUnicodeControlCharacters": {"type": "boolean"}
+                }
+              }
+            ]
+          }
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"key": {"const": "NETWORK"}}, "required": ["key"]},
+            "then": {
+              "properties": {
+                "parameter": {
+                  "type": "object",
+                  "required": ["key", "valueKind", "required", "pattern"],
+                  "properties": {
+                    "key": {"const": "ipAddress"},
+                    "valueKind": {"const": "IPV4"},
+                    "required": {"const": true},
+                    "pattern": {"type": "string", "minLength": 1}
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {"properties": {"key": {"const": "CLOUD"}}, "required": ["key"]},
+            "then": {"properties": {"parameter": {"type": "object", "$ref": "#/$defs/identifierConnectionParameter", "properties": {"key": {"const": "deviceId"}}}}}
+          },
+          {
+            "if": {"properties": {"key": {"enum": ["USB", "BLUETOOTH"]}}, "required": ["key"]},
+            "then": {"properties": {"parameter": {"type": "object", "$ref": "#/$defs/identifierConnectionParameter", "properties": {"key": {"const": "deviceIdentifier"}}}}}
+          },
+          {
+            "if": {"properties": {"key": {"const": "BUILT_IN"}}, "required": ["key"]},
+            "then": {"properties": {"parameter": {"const": null}}}
+          }
+        ]
+      }
+    },
+    "orderTypes": {"$ref": "#/$defs/entries"},
+    "printerBrands": {"$ref": "#/$defs/entries"},
+    "printerModels": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "brandKey", "label", "paperSpecKeys", "allowedConnectionMethodKeys", "evidenceUri"],
+        "properties": {
+          "key": {"$ref": "#/$defs/key"},
+          "brandKey": {"$ref": "#/$defs/key"},
+          "label": {"$ref": "#/$defs/label"},
+          "paperSpecKeys": {"$ref": "#/$defs/keyArray"},
+          "allowedConnectionMethodKeys": {"$ref": "#/$defs/keyArray"},
+          "evidenceUri": {"type": ["string", "null"], "format": "uri"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "identifierConnectionParameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "label", "valueKind", "required", "minLength", "maxLength", "rejectUnicodeControlCharacters"],
+      "properties": {
+        "key": {"$ref": "#/$defs/key"},
+        "label": {"$ref": "#/$defs/label"},
+        "valueKind": {"const": "IDENTIFIER"},
+        "required": {"const": true},
+        "minLength": {"const": 1},
+        "maxLength": {"const": 160},
+        "rejectUnicodeControlCharacters": {"const": true}
+      }
+    },
+    "key": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]{0,119}$"},
+    "label": {"type": "string", "minLength": 1, "maxLength": 120},
+    "keyArray": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/key"}},
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "label"],
+        "properties": {"key": {"$ref": "#/$defs/key"}, "label": {"$ref": "#/$defs/label"}}
+      }
+    },
+    "deviceTypes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "label", "description"],
+        "properties": {
+          "key": {"$ref": "#/$defs/key"},
+          "label": {"$ref": "#/$defs/label"},
+          "description": {"type": "string", "minLength": 1, "maxLength": 240}
+        }
+      }
+    }
+  }
+}

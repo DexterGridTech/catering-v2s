@@ -49,7 +49,9 @@ public final class AuditChangeJson {
                 String after = scalar(node, "afterValue", "after");
                 result.add(new AuditChange(
                         node.path("fieldKey").asText(),
-                        node.path("fieldLabelSnapshot").isTextual() ? node.path("fieldLabelSnapshot").asText() : null,
+                        node.path("fieldLabelSnapshot").isTextual()
+                                ? node.path("fieldLabelSnapshot").asText()
+                                : null,
                         beforeState,
                         before,
                         afterState,
@@ -70,9 +72,11 @@ public final class AuditChangeJson {
             var node = root.addObject();
             node.put("fieldKey", change.fieldKey());
             if (change.fieldLabelSnapshot() != null) node.put("fieldLabelSnapshot", change.fieldLabelSnapshot());
-            if (change.beforeState() != null) node.put("beforeState", change.beforeState().name());
+            if (change.beforeState() != null)
+                node.put("beforeState", change.beforeState().name());
             if (change.beforeValue() != null) node.put("beforeValue", change.beforeValue());
-            if (change.afterState() != null) node.put("afterState", change.afterState().name());
+            if (change.afterState() != null)
+                node.put("afterState", change.afterState().name());
             if (change.afterValue() != null) node.put("afterValue", change.afterValue());
         }
         try {

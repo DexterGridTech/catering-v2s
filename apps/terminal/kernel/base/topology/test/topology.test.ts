@@ -60,6 +60,7 @@ import {
   setTopologyHostEnabledCommand,
   topologySliceName,
   topologyActions,
+  topologyDisplayChangedCommand,
   topologyHostEventCommand,
   unpairTopologyCommand,
   topologyReasonMessages,
@@ -277,6 +278,26 @@ const createTestDevice = (): DevicePort & {displayCount: number} => {
       succeeded({displayCount: device.displayCount}),
   }
   return device
+}
+
+const createDisplayChangedObserverModule = (
+  observed: number[],
+): RuntimeModule => {
+  const actor = defineActor('test.topology.display-observer', 'observer', [
+    onCommand(topologyDisplayChangedCommand, context => {
+      observed.push(context.command.payload.displayCount ?? -1)
+      return null
+    }),
+  ])
+  return Object.freeze({
+    moduleName: 'test.topology.display-observer',
+    kind: 'owner' as const,
+    dependencies: [{moduleName: 'kernel.base.runtime'}],
+    commands: [],
+    commandDefinitions: [],
+    actors: [{name: actor.actorName}],
+    actorDefinitions: [actor],
+  })
 }
 
 const toolkit = (moduleName: string, dependencies: readonly string[] = []): RuntimeModule => Object.freeze({
@@ -1658,6 +1679,28 @@ describe('topology lifecycle integration', () => {
       hostActual: 'stopped',
       hostAddress: null,
     })
+  })
+
+  it('notifies display-scoped owners after the topology display fact is committed', async () => {
+    const host = new FakeTopologyHost()
+    const device = createTestDevice()
+    const observed: number[] = []
+    const {runtime} = createTopologyRuntime({
+      host,
+      device,
+      extraModules: [createDisplayChangedObserverModule(observed)],
+    })
+    await runtime.start()
+    try {
+      observed.length = 0
+      device.displayCount = 2
+      const refreshed = await runtime.dispatchCommand(refreshTopologyDisplayCommand, {})
+      expect(refreshed.status).toBe('completed')
+      expect(observed).toEqual([2])
+      expect(selectTopologyFacts(runtime.getState())?.displayCount).toBe(2)
+    } finally {
+      releaseRuntimeForTest(runtime)
+    }
   })
 
   it('hydrates hostDesired after a JS runtime restart without starting an already-running native host again', async () => {

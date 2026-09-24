@@ -3,6 +3,7 @@ import {RnrScrollView, type RnrScrollViewRef} from '../vendor/slots';
 import {baseLayout, baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
 import type {
+  PrimitiveMeasureLayoutCallback,
   PrimitiveMeasureInWindowCallback,
   PrimitiveNativeNode,
   PrimitiveScrollViewHandle,
@@ -11,10 +12,15 @@ import type {
 
 type ScrollViewWithNativeNodes = RnrScrollViewRef & Readonly<{
   readonly getInnerViewRef?: () => PrimitiveNativeNode | null | undefined;
+  readonly measureLayout?: (
+    relativeToNativeNode: PrimitiveNativeNode,
+    callback: PrimitiveMeasureLayoutCallback,
+    onFail?: () => void,
+  ) => void;
 }>;
 
 export const PrimitiveScrollView = forwardRef<PrimitiveScrollViewHandle, PrimitiveScrollViewProps>(
-  ({testID, children, layout = 'fill', contentPaddingBottom, onLayout, onScrollOffsetChange}, ref) => {
+  ({testID, children, layout = 'fill', contentPaddingBottom, onContentHeightChange, onLayout, onScrollOffsetChange}, ref) => {
     const nativeScrollViewRef = useRef<RnrScrollViewRef>(null);
     useImperativeHandle(
       ref,
@@ -22,6 +28,14 @@ export const PrimitiveScrollView = forwardRef<PrimitiveScrollViewHandle, Primiti
         getContentNativeNode: () => {
           const nativeScrollView = nativeScrollViewRef.current as ScrollViewWithNativeNodes | null;
           return nativeScrollView?.getInnerViewRef?.() ?? null;
+        },
+        measureLayout: (relativeToNativeNode, callback, onFail) => {
+          const nativeScrollView = nativeScrollViewRef.current as ScrollViewWithNativeNodes | null;
+          if (nativeScrollView === null || typeof nativeScrollView.measureLayout !== 'function') {
+            onFail?.();
+            return;
+          }
+          nativeScrollView.measureLayout(relativeToNativeNode, callback, onFail);
         },
         measureInWindow: (callback: PrimitiveMeasureInWindowCallback) => {
           const nativeScrollView = nativeScrollViewRef.current as
@@ -47,6 +61,11 @@ export const PrimitiveScrollView = forwardRef<PrimitiveScrollViewHandle, Primiti
           ? {gap: baseLayout.scrollContentGap}
           : {gap: baseLayout.scrollContentGap, paddingBottom: contentPaddingBottom}}
         onLayout={onLayout}
+        onContentSizeChange={
+          onContentHeightChange === undefined
+            ? undefined
+            : (_width, height) => onContentHeightChange(height)
+        }
         onScroll={
           onScrollOffsetChange === undefined
             ? undefined

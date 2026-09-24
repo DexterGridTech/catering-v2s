@@ -1,57 +1,79 @@
-import {useState} from 'react';
-import {View} from 'react-native';
 import {PrimitiveKeyboardBackdrop} from '@catering-v2s/ui-base-primitives';
+import {View, type LayoutChangeEvent} from 'react-native';
 import {
   calculateVirtualKeyboardCellWidth,
   calculateVirtualKeyboardDockWidth,
   INPUT_LAYOUT_CONSTANTS,
 } from '../foundations/keyboardHeight';
 import {useInputController, useInputKeyboardState} from '../contexts/context';
-import type {InputKeyboardProps} from '../types/types';
 import {VirtualKeyboard} from './VirtualKeyboard';
+import type {KeyboardLayout} from '../foundations/keyboardLayout';
+import type {KeyboardKey} from '../foundations/editText';
 
-export const InputKeyboard = ({placement}: InputKeyboardProps) => {
+export type InputKeyboardSnapshot = Readonly<{
+  readonly fieldId: string;
+  readonly layout: KeyboardLayout;
+  readonly height: number;
+  readonly frameWidth: number;
+  readonly shift: boolean;
+  readonly hasNextField: boolean;
+}>;
+
+export type InputKeyboardProps = Readonly<{
+  readonly snapshot?: InputKeyboardSnapshot;
+  readonly interactive?: boolean;
+  readonly onKey?: (key: KeyboardKey) => void;
+  readonly onLayout?: (event: LayoutChangeEvent) => void;
+  readonly testIDSuffix?: string;
+}>;
+
+export const InputKeyboard = ({snapshot, interactive, onKey, onLayout, testIDSuffix}: InputKeyboardProps = {}) => {
   const state = useInputKeyboardState();
   const controller = useInputController();
-  const [parentWidth, setParentWidth] = useState<number | null>(null);
 
-  if (!state.visible || state.keyboardPlacement !== placement) return null;
-  const isFieldPlacement = placement === 'field';
-  const hostFrameWidth = isFieldPlacement && parentWidth !== null ? parentWidth : state.frameWidth;
-  const compact = state.frameWidth <= INPUT_LAYOUT_CONSTANTS.MOBILE_SYMBOL_MAX_FRAME_WIDTH;
-  const frameWidth = calculateVirtualKeyboardDockWidth(hostFrameWidth, state.layout);
-  const cellWidth = calculateVirtualKeyboardCellWidth(frameWidth, state.layout, compact);
+  if (snapshot === undefined && !state.visible) return null;
+  const current: InputKeyboardSnapshot = snapshot ?? {
+    fieldId: state.activeFieldId ?? '',
+    layout: state.layout,
+    height: state.height,
+    frameWidth: state.frameWidth,
+    shift: state.shift,
+    hasNextField: state.hasNextField,
+  };
+  const compact = current.frameWidth <= INPUT_LAYOUT_CONSTANTS.MOBILE_SYMBOL_MAX_FRAME_WIDTH;
+  const frameWidth = calculateVirtualKeyboardDockWidth(current.frameWidth, current.layout);
+  const cellWidth = calculateVirtualKeyboardCellWidth(frameWidth, current.layout, compact);
+  const canInteract = interactive ?? state.visible;
   const keyboard = (
     <VirtualKeyboard
-      layout={state.layout}
-      height={state.height}
+      layout={current.layout}
+      height={current.height}
       frameWidth={frameWidth}
       cellWidth={cellWidth}
       compact={compact}
-      shift={state.shift}
-      capsLock={state.capsLock}
-      hasNextField={state.hasNextField}
-      onKey={controller.handleKeyboardKey}
+      shift={current.shift}
+      hasNextField={current.hasNextField}
+      testIDSuffix={testIDSuffix}
+      onKey={canInteract ? onKey ?? controller.handleKeyboardKey : () => undefined}
     />
   );
   const backdrop = (
     <PrimitiveKeyboardBackdrop
       testID="ui.base.input:virtual-keyboard:backdrop"
-      style={{height: state.height}}
+      style={{height: current.height, width: frameWidth}}
     >
       {keyboard}
     </PrimitiveKeyboardBackdrop>
   );
-  return isFieldPlacement ? (
+  return (
     <View
-      testID="ui.base.input:virtual-keyboard:host"
-      style={{width: '100%'}}
-      onLayout={event => {
-        const width = event.nativeEvent.layout.width;
-        if (Number.isFinite(width) && width > 0 && width !== parentWidth) setParentWidth(width);
-      }}
+      testID={`ui.base.input:keyboard-layer${testIDSuffix === undefined ? '' : `:${testIDSuffix}`}`}
+      onLayout={onLayout}
+      style={{width: frameWidth, pointerEvents: canInteract ? 'auto' : 'none'}}
+      accessibilityElementsHidden={!canInteract}
+      importantForAccessibility={canInteract ? 'auto' : 'no-hide-descendants'}
     >
       {backdrop}
     </View>
-  ) : backdrop;
+  );
 };

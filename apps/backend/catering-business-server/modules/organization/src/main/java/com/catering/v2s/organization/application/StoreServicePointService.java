@@ -23,7 +23,9 @@ import com.catering.v2s.platform.foundation.time.TimeProvider;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -107,6 +109,104 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         return new AreaPage(
                 indexedAreas(pageRows, position != null, hasNext),
                 hasNext ? OpaqueCollectionCursor.encode(identity, Long.toString(pageRows.getLast().displayOrder), pageRows.getLast().areaRef) : null,
+                total);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AreaReference> readAreasByRefs(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, List<UUID> areaRefs) {
+        requireStore(workspaceUuid, groupWorkspaceKey, storeRef);
+        List<UUID> requested = areaRefs == null
+                ? List.of()
+                : areaRefs.stream().filter(Objects::nonNull).distinct().toList();
+        if (requested.isEmpty()) return List.of();
+
+        String placeholders = String.join(",", java.util.Collections.nCopies(requested.size(), "?"));
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(workspaceUuid);
+        arguments.add(groupWorkspaceKey);
+        arguments.add(storeRef);
+        arguments.addAll(requested);
+        Map<UUID, AreaReference> found = new HashMap<>();
+        jdbc.query(
+                        "SELECT area_ref, store_ref, name, code, area_type, status FROM organization.store_service_point_area "
+                                + "WHERE workspace_uuid=? AND group_workspace_key=? AND store_ref=? AND area_ref IN ("
+                                + placeholders + ")",
+                        (result, ignored) -> new AreaReference(
+                                result.getObject("area_ref", UUID.class),
+                                result.getObject("store_ref", UUID.class),
+                                result.getString("name"),
+                                result.getString("code"),
+                                result.getString("area_type"),
+                                result.getString("status")),
+                        arguments.toArray())
+                .forEach(area -> found.put(area.areaRef(), area));
+        return requested.stream().map(found::get).filter(Objects::nonNull).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AreaCandidatePage searchTerminalAreaCandidates(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID storeRef, String query, String cursor, int pageSize) {
+        validatePageSize(pageSize);
+        requireStore(workspaceUuid, groupWorkspaceKey, storeRef);
+        String search = optionalSearchText(query);
+        String identity = CanonicalCursorIdentity.encode(
+                "store-terminal-area-candidates",
+                workspaceUuid.toString(),
+                groupWorkspaceKey,
+                storeRef.toString(),
+                search,
+                Integer.toString(pageSize),
+                "display_order,area_ref");
+        OpaqueCollectionCursor.Position position = decodeCursor(cursor, identity);
+
+        String filter = "workspace_uuid=? AND group_workspace_key=? AND store_ref=? "
+                + "AND area_type='TABLE_AREA' AND status='ENABLED'";
+        List<Object> arguments = new ArrayList<>();
+        arguments.add(workspaceUuid);
+        arguments.add(groupWorkspaceKey);
+        arguments.add(storeRef);
+        if (search != null) {
+            filter += " AND (name ILIKE ? ESCAPE '!' OR code ILIKE ? ESCAPE '!')";
+            String pattern = containsPattern(search);
+            arguments.add(pattern);
+            arguments.add(pattern);
+        }
+        long total = count(
+                "SELECT count(*) FROM organization.store_service_point_area WHERE " + filter,
+                arguments.toArray());
+
+        List<Object> pageArguments = new ArrayList<>(arguments);
+        String frontier = "";
+        if (position != null) {
+            long displayOrder = cursorOrder(position);
+            frontier = " AND (display_order > ? OR (display_order = ? AND area_ref > ?))";
+            pageArguments.add(displayOrder);
+            pageArguments.add(displayOrder);
+            pageArguments.add(position.tieBreaker());
+        }
+        pageArguments.add(pageSize + 1);
+        List<AreaCandidateRow> rows = jdbc.query(
+                "SELECT area_ref, name, code, display_order FROM organization.store_service_point_area WHERE "
+                        + filter + frontier + " ORDER BY display_order, area_ref LIMIT ?",
+                (result, ignored) -> new AreaCandidateRow(
+                        result.getObject("area_ref", UUID.class),
+                        result.getString("name"),
+                        result.getString("code"),
+                        result.getLong("display_order")),
+                pageArguments.toArray());
+        boolean hasNext = rows.size() > pageSize;
+        if (hasNext) rows = new ArrayList<>(rows.subList(0, pageSize));
+        List<AreaCandidateRow> pageRows = rows;
+        return new AreaCandidatePage(
+                pageRows.stream().map(row -> new AreaCandidate(row.areaRef, row.name, row.code)).toList(),
+                hasNext ? OpaqueCollectionCursor.encode(
+                        identity,
+                        Long.toString(pageRows.getLast().displayOrder),
+                        pageRows.getLast().areaRef)
+                        : null,
                 total);
     }
 
@@ -630,6 +730,14 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
         }
     }
 
+    private static String optionalSearchText(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static String containsPattern(String value) {
+        return "%" + value.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+    }
+
     private long count(String sql, Object... args) {
         Long result = jdbc.queryForObject(sql, Long.class, args);
         return result == null ? 0 : result;
@@ -822,6 +930,7 @@ public class StoreServicePointService implements StoreServicePointOwnerApi {
     }
 
     private record AreaRow(UUID areaRef, UUID storeRef, String name, String code, String areaType, String status, long displayOrder, long version, long createdAt, long updatedAt) {}
+    private record AreaCandidateRow(UUID areaRef, String name, String code, long displayOrder) {}
     private record PointRow(UUID pointRef, UUID storeRef, UUID areaRef, String name, String code, String pointType, String status, long displayOrder, Long seatCapacity, String tableShape, Boolean reservable, UUID imageAssetRef, String extensionValuesJson, Long extensionRuleRevision, long version, long createdAt, long updatedAt, String areaStatus) {}
     private record QrRow(UUID storeRef, boolean enabled, UUID channelRef, long version, long updatedAt) {}
     private record QrSnapshot(

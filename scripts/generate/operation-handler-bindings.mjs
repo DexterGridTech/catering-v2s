@@ -62,6 +62,7 @@ const OWNER_NAMESPACES = Object.freeze({
   collaboration: "collaboration",
   "business-channel": "business.channel",
   "sales-menu": "salesmenu",
+  "store-terminal": "storeterminal",
 });
 // Only the app-owned operation adapters physically moved during the split-package
 // repair use application.operations.  Owner reads/protocols in the same namespace
@@ -158,6 +159,9 @@ const OPERATIONS_ADAPTER_OPERATION_IDS = new Set([
   "publishOperationsSalesMenu",
   "setOperationsSalesMenuItemSoldOut",
   "restoreOperationsSalesMenuItemSale",
+  "postOperationsStoreTerminal",
+  "putOperationsStoreTerminal",
+  "postOperationsStoreTerminalStatus",
 ]);
 const COPY_ROLE_BY_OPERATION = Object.freeze({
   getOperationsLocalCatalogCopyCandidates: "COPY_SOURCE",
@@ -706,6 +710,10 @@ const ADDITIONAL_ROUTE_WIRE_TYPES = Object.freeze({
   getOperationsStoreServicePoint: ["NoBody", "StoreServicePointDetail"],
   getOperationsStoreServicePointAreas: ["NoBody", "StoreServicePointAreaPage"],
   getOperationsStoreServicePoints: ["NoBody", "StoreServicePointPage"],
+  getOperationsStoreTerminals: ["NoBody", "StoreTerminalPage"],
+  getOperationsStoreTerminal: ["NoBody", "StoreTerminalDetail"],
+  getOperationsStoreTerminalAreaCandidates: ["NoBody", "StoreTerminalAreaCandidatePage"],
+  getOperationsStoreTerminalTagCandidates: ["NoBody", "StoreTerminalTagCandidatePage"],
   patchOperationsStoreQrConfiguration: ["StoreQrConfigurationUpdateRequest", "StoreQrConfigurationView"],
   patchOperationsStoreServicePoint: ["StoreServicePointUpdateRequest", "StoreServicePoint"],
   patchOperationsStoreServicePointArea: ["StoreServicePointAreaUpdateRequest", "StoreServicePointArea"],
@@ -717,6 +725,9 @@ const ADDITIONAL_ROUTE_WIRE_TYPES = Object.freeze({
   postOperationsStoreServicePointStatus: ["StoreServicePointStatusRequest", "StoreServicePoint"],
   releaseStagedStoreServicePointImage: ["StoreServicePointAssetReleaseRequest", "StoreServicePointAssetReleaseReadback"],
   stageStoreServicePointImage: ["StoreServicePointAssetStageRequest", "StoreServicePointAssetStageReadback"],
+  postOperationsStoreTerminal: ["StoreTerminalCreateRequest", "StoreTerminalMutation"],
+  putOperationsStoreTerminal: ["StoreTerminalReplaceRequest", "StoreTerminalMutation"],
+  postOperationsStoreTerminalStatus: ["StoreTerminalStatusRequest", "StoreTerminalMutation"],
   createOperationsSalesMenu: ["SalesMenuCreateRequest", "SalesMenuCommandReadback"],
   copyOperationsSalesMenu: ["SalesMenuCopyRequest", "SalesMenuCommandReadback"],
   renameOperationsSalesMenu: ["SalesMenuRenameRequest", "SalesMenuCommandReadback"],

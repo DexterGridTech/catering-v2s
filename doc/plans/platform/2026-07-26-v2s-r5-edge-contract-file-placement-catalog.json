@@ -52,7 +52,8 @@
     "PLATFORM-EXTERNAL-COLLABORATION": "external-collaboration",
     "OPERATIONS-BUSINESS-CHANNEL": "business-channel",
     "OPERATIONS-SALES-MENU": "sales-menu",
-    "PG-STORE-SERVICE-POINT-QR": "store-service-point-qr"
+    "PG-STORE-SERVICE-POINT-QR": "store-service-point-qr",
+    "PG-STORE-TERMINALS": "store-terminals"
   },
   "operationOverrides": {
     "initializeCommercialGroup": {
@@ -90,13 +91,21 @@
     "patchOperationsStoreQrConfiguration": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
     "getOperationsStoreQrChannelCandidates": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
     "stageStoreServicePointImage": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
-    "releaseStagedStoreServicePointImage": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"}
+    "releaseStagedStoreServicePointImage": {"capability": "store-service-point-qr", "pathFile": "paths/operations-admin/store-service-point-qr.paths.json"},
+    "getOperationsStoreTerminals": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
+    "getOperationsStoreTerminal": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
+    "postOperationsStoreTerminal": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
+    "putOperationsStoreTerminal": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
+    "postOperationsStoreTerminalStatus": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
+    "getOperationsStoreTerminalAreaCandidates": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"},
+    "getOperationsStoreTerminalTagCandidates": {"capability": "store-terminals", "pathFile": "paths/operations-admin/store-terminals.paths.json"}
   },
   "componentFamilyRules": [
     {"match": "^(NoBody|NoContent|Problem|EpochMillis|AuditHistory.*|AuditChange.*|AuditValueState|AuditEntity.*|AuditActor.*|AuditTarget.*)$", "family": "common"},
     {"match": "^(ExternalCapability.*|ExternalSystem.*|ProviderProfile.*|ExternalCollaborationTree|OwnerBinding.*|CapabilityDictionary)$", "family": "collaboration"},
     {"match": "^(BusinessChannel.*|ExternalProviderCandidate.*)$", "family": "business-channel"},
     {"match": "^(SalesMenu.*|InventoryAvailabilityFact|ManualSaleStatusFact)$", "family": "sales-menu"},
+    {"match": "^(StoreTerminal.*)$", "family": "store-terminal"},
     {"match": "^(GroupWorkspace)", "family": "group-workspace"},
     {"match": "^(CommercialGroup)", "family": "commercial-group"},
     {"match": "^(PlatformAsset|BinaryAssetContent)", "family": "asset"},
@@ -115,6 +124,7 @@
     "collaboration": "collaboration",
     "business-channel": "business-channel",
     "sales-menu": "sales-menu",
+    "store-terminal": "store-terminal",
     "group-workspace": "platform-workspace",
     "commercial-group": "organization",
     "asset": "platform-asset",
@@ -204,17 +214,17 @@
   "closure": {
     "sourceOperationCount": 148,
     "plannedAdditionalOperationCount": 79,
-    "expectedResolvedOperationCount": 228,
+    "expectedResolvedOperationCount": 235,
     "expectedUnresolvedOperationCount": 0,
     "expectedAmbiguousOperationCount": 0,
-    "sourceComponentCount": 266,
-    "expectedResolvedComponentCount": 265,
+    "sourceComponentCount": 289,
+    "expectedResolvedComponentCount": 288,
     "expectedExplicitNotCarriedComponentCount": 1,
     "expectedUnresolvedComponentCount": 0,
     "expectedAmbiguousComponentCount": 0,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 155,
+      "operations-admin": 162,
       "public": 12
     }
   }

@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useMemo, useRef} from 'react'
-import {StyleSheet, View, type LayoutChangeEvent} from 'react-native'
+import {Animated, StyleSheet, View, type LayoutChangeEvent} from 'react-native'
 import {LayerStack} from './LayerStack'
 import {ScreenContainer} from './ScreenContainer'
 import {SurfaceContext} from '../contexts/SurfaceContext'
@@ -7,6 +7,7 @@ import {RenderContext, useRenderContext, type RenderContextValue} from '../conte
 import {SurfaceHostController} from './SurfaceHostController'
 import {useSurfaceHostAvailability, useSurfaceHostSnapshot} from './SurfaceHostController'
 import {useUiStateSelector} from '../hooks/useUiStateSelector'
+import {useSurfacePresentationOffset} from '../contexts/SurfacePresentationOffsetContext'
 import type {RenderStateRoot, SurfaceRootProps} from '../types/props'
 
 export const SurfaceRoot = ({
@@ -19,6 +20,7 @@ export const SurfaceRoot = ({
   surfaceHostSource,
 }: SurfaceRootProps) => {
   const renderContext = useRenderContext()
+  const presentationOffsetY = useSurfacePresentationOffset()
   const {logger, selectSurfaceForm, createRouteContext} = renderContext
   const selectedSurfaceForm = useUiStateSelector(selectSurfaceForm)
   const surfaceForm = selectedSurfaceForm ?? 'laptop'
@@ -99,8 +101,10 @@ export const SurfaceRoot = ({
   }, [containerKey, displayMode, logger, renderContentFrame])
   const content = (
     <View style={styles.content}>
-      {children}
-      <ScreenContainer />
+      <Animated.View style={[styles.presentedContent, {transform: [{translateY: presentationOffsetY}]}]}>
+        {children}
+        <ScreenContainer />
+      </Animated.View>
       <LayerStack />
     </View>
   )
@@ -127,6 +131,9 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   content: {
+    flex: 1,
+  },
+  presentedContent: {
     flex: 1,
   },
 })

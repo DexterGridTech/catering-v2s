@@ -35,6 +35,17 @@
 module/dependency 元数据。具体导出集合由 `terminal-invariants.json` 与
 `test/publicSurface.test.ts` 共同锁定。
 
+完整根导出集合（含类型）为：
+PortraitSurfaceDeclarations、SurfaceCreationInput、SurfaceDeclarations、SurfaceForm、
+SurfaceOrientation、SurfaceSize、TerminalSurfaces、WallpaperConsoleAssembly、
+createSampleWallpaperConsoleAssembly、createSampleWallpaperConsoleModule、
+createSurfaceForDisplayIndex、dependencyModuleNames、devDependencyModuleNames、
+getSurfaceDeclarations、moduleKind、moduleName、parts、readTerminalSurfaces、
+startupReadyCommand、surfaceFormForOrientation、terminalSurfaces、waitingPart、welcomePart。
+包主入口 . → ./src/index.ts；export map 另提供 @catering-v2s/ui-integration-sample-wallpaper-console/theme/global.css →
+./theme/global.css，供 Android 宿主与 Metro 读取本包主题。该集合与 terminal-invariants.json
+及 test/publicSurface.test.ts 对齐。
+
 ## 用法
 
 ```ts

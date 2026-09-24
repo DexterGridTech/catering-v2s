@@ -1,5 +1,6 @@
-import {PrimitiveActions, PrimitiveButton, PrimitiveContainer, PrimitiveHeading, PrimitiveInput, PrimitiveLabel, PrimitiveText} from '@catering-v2s/ui-base-primitives'
+import {PrimitiveActions, PrimitiveButton, PrimitiveContainer, PrimitiveHeading, PrimitiveText} from '@catering-v2s/ui-base-primitives'
 import {InputScrollArea} from '@catering-v2s/ui-base-input'
+import {CustomerMemberAgeField} from '../CustomerMemberAgeField'
 import type {CustomerMemberProps} from '../../types/customerMember'
 import {useCustomerMember} from '../../hooks/useCustomerMember'
 
@@ -14,8 +15,7 @@ export const CustomerMember = ({mode}: CustomerMemberProps) => {
         <PrimitiveHeading testID="sample.desk.customer-member:title">请确认登记</PrimitiveHeading>
         <PrimitiveText testID="sample.desk.customer-member:name" accessibilityLabel="姓名">{member.pending?.name ?? ''}</PrimitiveText>
         <PrimitiveText testID="sample.desk.customer-member:phone" accessibilityLabel="电话">{member.pending?.phone ?? ''}</PrimitiveText>
-        <PrimitiveLabel testID="sample.desk.customer-member:age-label" nativeID="sample.desk.customer-member:age">年龄（可选）</PrimitiveLabel>
-        <PrimitiveInput {...member.ageInput} editable={!member.requestInFlight} />
+        <CustomerMemberAgeField editable={!member.requestInFlight} />
       </InputScrollArea>
       {member.canDecide ? (
         <PrimitiveActions testID="sample.desk.customer-member:actions">

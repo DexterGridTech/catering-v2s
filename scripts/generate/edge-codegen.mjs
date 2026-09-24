@@ -1074,6 +1074,128 @@ ${missingChecks}
 }
 `;
 }
+function strictWireReadExpression(type, nullable = false) {
+  const read =
+    type === 'tools.jackson.databind.JsonNode'
+      ? 'context.readTree(parser)'
+      : type.includes('<')
+        ? `context.readValue(parser, new tools.jackson.core.type.TypeReference<${type}>() {})`
+        : `context.readValue(parser, ${type}.class)`;
+  return nullable
+    ? `(parser.currentToken() == tools.jackson.core.JsonToken.VALUE_NULL ? null : ${read})`
+    : read;
+}
+function strictEmptyObjectDeserializer(name) {
+  return `@tools.jackson.databind.annotation.JsonDeserialize(using = ${name}.Deserializer.class)
+public record ${name}(
+
+) {
+  public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<${name}> {
+    @Override
+    public ${name} deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)
+            throws tools.jackson.core.JacksonException {
+      if (!parser.isExpectedStartObjectToken())
+        return (${name}) context.handleUnexpectedToken(${name}.class, parser);
+      tools.jackson.core.JsonToken token = parser.nextToken();
+      if (token == null)
+        return context.reportInputMismatch(${name}.class, "object must end with END_OBJECT");
+      if (token != tools.jackson.core.JsonToken.END_OBJECT) {
+        if (token == tools.jackson.core.JsonToken.PROPERTY_NAME) {
+          String property = parser.currentName();
+          parser.nextToken();
+          parser.skipChildren();
+          return context.reportInputMismatch(${name}.class, "unknown property " + property);
+        }
+        return context.reportInputMismatch(${name}.class, "object property name is required");
+      }
+      return new ${name}();
+    }
+  }
+}
+`;
+}
+function strictWireDeserializer(name, properties, required, components, inlineTypes) {
+  if (properties.length === 0) return strictEmptyObjectDeserializer(name);
+  const javaTypes = new Map();
+  const nullableProperties = new Set(
+    properties
+      .filter(([, propertySchema]) => schemaAllowsNull(propertySchema, components))
+      .map(([property]) => property),
+  );
+  const fields = properties
+    .map(([property, propertySchema]) => {
+      const resolved = resolvedSchema(propertySchema, components, new Set([name]));
+      const inlineName = `${name}${pascal(property)}`;
+      const type = javaType(resolved, components, inlineName, inlineTypes, false);
+      javaTypes.set(property, type);
+      return `          case ${javaString(property)} -> ${javaIdentifier(property)} = ${strictWireReadExpression(type, nullableProperties.has(property))};`;
+    })
+    .join('\n');
+  const declarations = properties
+    .map(([property]) => `      ${javaTypes.get(property)} ${javaIdentifier(property)} = null;`)
+    .join('\n');
+  const missingChecks = properties
+    .filter(([property]) => required.has(property))
+    .map(
+      ([property]) =>
+        nullableProperties.has(property)
+          ? `      if (!seen.contains(${javaString(property)})) return context.reportInputMismatch(${name}.class, "missing required property ${property}");`
+          : `      if (${javaIdentifier(property)} == null) return context.reportInputMismatch(${name}.class, "missing required property ${property}");`,
+    )
+    .join('\n');
+  const constructorArgs = properties.map(([property]) => javaIdentifier(property)).join(', ');
+  const recordFields = properties
+    .map(([property]) => `    ${javaTypes.get(property)} ${javaIdentifier(property)}`)
+    .join(',\n');
+  const deserializationBody =
+    properties.length === 0
+      ? `      tools.jackson.core.JsonToken token = parser.nextToken();
+      if (token == null)
+        return context.reportInputMismatch(${name}.class, "object must end with END_OBJECT");
+      if (token != tools.jackson.core.JsonToken.END_OBJECT)
+        return context.reportInputMismatch(${name}.class, "object must not contain properties");
+      return new ${name}();`
+      : `      java.util.Set<String> seen = new java.util.HashSet<>();
+      tools.jackson.core.JsonToken token = parser.nextToken();
+      while (token != null && token != tools.jackson.core.JsonToken.END_OBJECT) {
+        if (token != tools.jackson.core.JsonToken.PROPERTY_NAME)
+          return context.reportInputMismatch(${name}.class, "object property name is required");
+        String property = parser.currentName();
+        if (!seen.add(property))
+          return context.reportInputMismatch(${name}.class, "duplicate property " + property);
+        token = parser.nextToken();
+        if (token == null)
+          return context.reportInputMismatch(${name}.class, "property value is required");
+        switch (property) {
+${fields}
+          default -> {
+            parser.skipChildren();
+            return context.reportInputMismatch(${name}.class, "unknown property " + property);
+          }
+        }
+        token = parser.nextToken();
+      }
+      if (token == null)
+        return context.reportInputMismatch(${name}.class, "object must end with END_OBJECT");
+${missingChecks}
+      return new ${name}(${constructorArgs});`;
+  return `@tools.jackson.databind.annotation.JsonDeserialize(using = ${name}.Deserializer.class)
+public record ${name}(
+${recordFields}
+) {
+  public static final class Deserializer extends tools.jackson.databind.ValueDeserializer<${name}> {
+    @Override
+    public ${name} deserialize(tools.jackson.core.JsonParser parser, tools.jackson.databind.DeserializationContext context)
+            throws tools.jackson.core.JacksonException {
+      if (!parser.isExpectedStartObjectToken())
+        return (${name}) context.handleUnexpectedToken(${name}.class, parser);
+${properties.length === 0 ? '' : declarations}
+${deserializationBody}
+    }
+  }
+}
+`;
+}
 function propertySchemaType(properties, property) {
   return properties.find(([name]) => name === property)?.[1]?.type;
 }
@@ -1170,7 +1292,23 @@ function resolvedSchema(schema, components, seen = new Set()) {
   merged.required = [...new Set(merged.required)];
   return merged;
 }
-function javaWireType(name, schema, components, inlineTypes = new Map()) {
+function schemaAllowsNull(schema, components, seen = new Set()) {
+  if (!schema || typeof schema !== 'object') return false;
+  if (schema.nullable === true) return true;
+  if (Array.isArray(schema.type) && schema.type.includes('null')) return true;
+  if (Array.isArray(schema.enum) && schema.enum.includes(null)) return true;
+  if (typeof schema.$ref === 'string') {
+    const name = referenceName(schema.$ref);
+    if (seen.has(name)) return false;
+    const target = components.get(name);
+    if (!target) fail('R5_EDGE_WIRE_NULLABILITY_REFERENCE_MISSING', name);
+    return schemaAllowsNull(target, components, new Set([...seen, name]));
+  }
+  return [...(schema.anyOf || []), ...(schema.oneOf || [])].some(candidate =>
+    schemaAllowsNull(candidate, components, seen),
+  );
+}
+function javaWireType(name, schema, components, inlineTypes = new Map(), strictNames = new Set(), strictInlineNames = new Set()) {
   schema = resolvedSchema(schema, components, new Set([name]));
   if (Array.isArray(schema.enum)) {
     const values = schema.enum.filter(value => value !== null);
@@ -1186,21 +1324,26 @@ function javaWireType(name, schema, components, inlineTypes = new Map()) {
     };
   }
   const properties = Object.entries(schema.properties || {});
-  const strictDeserializer = strictOperatingRuleDeserializer(name, properties);
-  if (strictDeserializer) {
-    return {
-      name,
-      source: `// Generated from accepted R5 OpenAPI components; do not edit.\npackage com.catering.v2s.app.edge.generated.wire;\n\n${strictDeserializer}`,
-    };
-  }
   const required = new Set(schema.required || []);
+  const strict = strictNames.has(name) || strictInlineNames.has(name);
   for (const [property, propertySchema] of properties) {
     const resolved = resolvedSchema(propertySchema, components, new Set([name]));
     const inlineName = `${name}${pascal(property)}`;
     const inlineSchema = resolved?.type === 'array' ? resolved.items : resolved;
     const targetName = resolved?.type === 'array' ? `${inlineName}Item` : inlineName;
-    if (inlineSchema?.type === 'object' && inlineSchema.properties && !inlineTypes.has(targetName))
+    if (inlineSchema?.type === 'object' && inlineSchema.properties && !inlineTypes.has(targetName)) {
       inlineTypes.set(targetName, inlineSchema);
+      if (strict && inlineSchema.additionalProperties === false) strictInlineNames.add(targetName);
+    }
+  }
+  const strictDeserializer = strict
+    ? strictWireDeserializer(name, properties, required, components, inlineTypes)
+    : strictOperatingRuleDeserializer(name, properties);
+  if (strictDeserializer) {
+    return {
+      name,
+      source: `// Generated from accepted R5 OpenAPI components; do not edit.\npackage com.catering.v2s.app.edge.generated.wire;\n\n${strictDeserializer}`,
+    };
   }
   const fields = properties.map(([property, propertySchema]) => {
     const field = javaIdentifier(property);
@@ -1219,23 +1362,58 @@ function javaWireType(name, schema, components, inlineTypes = new Map()) {
       ? `    ${type} ${field}`
       : `    @com.fasterxml.jackson.annotation.JsonProperty("${property}") ${type} ${field}`;
   });
-  const source = `// Generated from accepted R5 OpenAPI components; do not edit.\npackage com.catering.v2s.app.edge.generated.wire;\n\npublic record ${name}(\n${fields.join(',\n')}\n) {}\n`;
+  const strictUnknownRequest = new Set([
+    'StoreTerminalCreateRequest',
+    'StoreTerminalReplaceRequest',
+    'StoreTerminalStatusRequest',
+  ]).has(name);
+  const strictUnknownAnnotation = strictUnknownRequest
+    ? '@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = false)\n'
+    : '';
+  const source = `// Generated from accepted R5 OpenAPI components; do not edit.\npackage com.catering.v2s.app.edge.generated.wire;\n\n${strictUnknownAnnotation}public record ${name}(\n${fields.join(',\n')}\n) {}\n`;
   return {name, source};
 }
-function wireJavaOutputs(base = root) {
+function strictWireSchemaNames(operations, components) {
+  const strictNames = new Set();
+  const visited = new Set();
+  function visitSchema(schema) {
+    if (!schema || typeof schema !== 'object') return;
+    if (typeof schema.$ref === 'string') {
+      const name = referenceName(schema.$ref);
+      if (visited.has(name)) return;
+      visited.add(name);
+      const target = components.get(name);
+      if (!target) fail('R5_EDGE_WIRE_REFERENCE_TARGET_MISSING', name);
+      if (target.type === 'object' && target.additionalProperties === false) strictNames.add(name);
+      visitSchema(target);
+      return;
+    }
+    for (const property of Object.values(schema.properties || {})) visitSchema(property);
+    if (schema.items) visitSchema(schema.items);
+    for (const part of [...(schema.allOf || []), ...(schema.oneOf || []), ...(schema.anyOf || [])]) visitSchema(part);
+  }
+  for (const operation of operations) {
+    if (operation.requestSchema !== 'NoBody')
+      visitSchema({$ref: `#/components/schemas/${operation.requestSchema}`});
+  }
+  return strictNames;
+}
+function wireJavaOutputs(base = root, operations = load(base).operations) {
   const components = generatedWireComponents(base);
+  const strictNames = strictWireSchemaNames(operations, components);
+  const strictInlineNames = new Set();
   const inlineTypes = new Map();
   const named = [...components.entries()].filter(
     ([, schema]) =>
       Array.isArray(schema.enum) || schema.type === 'object' || schema.properties || Array.isArray(schema.allOf),
   );
   const output = named.map(([name, schema]) => {
-    const wire = javaWireType(name, schema, components, inlineTypes);
+    const wire = javaWireType(name, schema, components, inlineTypes, strictNames, strictInlineNames);
     return [`${targets.wireJavaRoot}/${wire.name}.java`, wire.source];
   });
   for (const [name, schema] of inlineTypes) {
     if (components.has(name)) fail('R5_EDGE_WIRE_INLINE_NAME_CONFLICT', name);
-    const wire = javaWireType(name, schema, components, inlineTypes);
+    const wire = javaWireType(name, schema, components, inlineTypes, strictNames, strictInlineNames);
     output.push([`${targets.wireJavaRoot}/${wire.name}.java`, wire.source]);
   }
   return output;
@@ -1709,7 +1887,7 @@ function expected(base = root) {
       enforceRoleHomeLookupCardinality(javaWorkspaceAuthorizationCatalog(base)),
     ],
     ...capabilityOutputs(base),
-    ...wireJavaOutputs(base),
+    ...wireJavaOutputs(base, operations),
   ]);
 }
 function writeOutputs(base = root) {
@@ -1823,6 +2001,33 @@ function selfTest() {
       filter: source => !source.includes('/build') && !source.includes('/dist') && !source.includes('/.git'),
     });
     writeOutputs(scratch);
+    for (const name of ['PlatformPasswordRecoveryOtpSendRequest', 'OperationsPasswordRecoveryOtpSendRequest']) {
+      const source = fs.readFileSync(path.join(scratch, targets.wireJavaRoot, `${name}.java`), 'utf8');
+      if (
+        !source.includes('if (token != tools.jackson.core.JsonToken.END_OBJECT)') ||
+        source.includes('switch (property)')
+      ) {
+        fail('R5_EDGE_EMPTY_OBJECT_DESERIALIZER_REGRESSION', name);
+      }
+    }
+    for (const [name, property] of [
+      ['BusinessChannelTemplateCreateRequest', 'storeVisibilityScope'],
+      ['SalesMenuItemUpdateRequest', 'displayNameOverride'],
+      ['SalesMenuItemUpdateRequestSaleContent', 'listedPriceCents'],
+    ]) {
+      const source = fs.readFileSync(path.join(scratch, targets.wireJavaRoot, `${name}.java`), 'utf8');
+      if (!source.includes(`if (!seen.contains("${property}"))`))
+        fail('R5_EDGE_NULLABLE_REQUIRED_DESERIALIZER_REGRESSION', `${name}.${property}`);
+    }
+    for (const [name, property] of [
+      ['BusinessChannelTemplateCreateRequest', 'dineInForm'],
+      ['SalesMenuItemUpdateRequest', 'displayNameOverride'],
+      ['SalesMenuDisplayMedia', 'primaryAssetRef'],
+    ]) {
+      const source = fs.readFileSync(path.join(scratch, targets.wireJavaRoot, `${name}.java`), 'utf8');
+      if (!source.includes('parser.currentToken() == tools.jackson.core.JsonToken.VALUE_NULL ? null :'))
+        fail('R5_EDGE_NULLABLE_VALUE_DESERIALIZER_REGRESSION', `${name}.${property}`);
+    }
     const staticCatalog = read(catalogPath, scratch);
     staticCatalog.operations[0].databaseOperationBudget = {kind: 'FIXED', max: 1};
     fs.writeFileSync(path.join(scratch, catalogPath), normalized(staticCatalog));

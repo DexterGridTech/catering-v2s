@@ -1,6 +1,6 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {createElement, cloneElement, type ReactElement} from 'react'
-import {TextInput, View} from 'react-native'
+import {ScrollView, StyleSheet, TextInput, View} from 'react-native'
 import {describe, expect, it} from 'vitest'
 import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort, NativeLoadingCapability} from '@catering-v2s/ui-base-test-support'
 import {createRequestId} from '@catering-v2s/kernel-base-contracts'
@@ -16,6 +16,7 @@ import {
   RenderProvider as ActualRenderProvider,
 } from '@catering-v2s/ui-base-render'
 import {InputSurfaceFrame} from '@catering-v2s/ui-base-input'
+import {advanceAnimatedTimingsForTests, setAnimatedTimingAutoFinishForTests} from '../../../../../../tools/terminal-shared/react-native-vitest-entry'
 import type {RenderProviderProps} from '@catering-v2s/ui-base-render'
 import {createUiCatalog, createUiStateModule, selectLayers} from '@catering-v2s/kernel-base-ui-state'
 import {loginCommand} from '@catering-v2s/kernel-feature-sample-staff-session'
@@ -61,6 +62,91 @@ type TextInputTestInstance = Readonly<{
 }>
 
 type FrameLayout = Readonly<{readonly width: number; readonly height: number}>
+type NativeTestElement = Readonly<{readonly type: unknown; readonly props: Readonly<Record<string, unknown>>}>
+
+const createWithNodeMock = create as unknown as (
+  element: Parameters<typeof create>[0],
+  options: Readonly<{readonly createNodeMock: (element: NativeTestElement) => unknown}>,
+) => ReactTestRenderer
+
+const defaultScrollContentByID = new Map<string, object>()
+const defaultScrollByFieldID = new Map([
+  ['sample.auth.login:operator-name', 'sample.auth.login:scroll'],
+  ['sample.auth.login:passcode', 'sample.auth.login:scroll'],
+])
+
+const createDefaultInputNodeMock = (frameLayout: FrameLayout) => (element: NativeTestElement): unknown => {
+  const testID = element.props.testID
+  if (testID === 'ui.base.input:surface-frame') return {}
+  if (typeof testID === 'string' && testID.endsWith(':scroll')) {
+    const contentNode = {}
+    defaultScrollContentByID.set(testID, contentNode)
+    return {
+      getInnerViewRef: () => contentNode,
+      measureLayout: (_relativeTo: unknown, callback: (x: number, y: number, width: number, height: number) => void) => {
+        callback(0, 0, frameLayout.width, Math.max(1, frameLayout.height - 20))
+      },
+      scrollTo: () => undefined,
+    }
+  }
+  if (typeof testID === 'string') {
+    const scrollID = defaultScrollByFieldID.get(testID)
+    if (scrollID === undefined) return {}
+    return {
+      measureLayout: (relativeTo: unknown, callback: (x: number, y: number, width: number, height: number) => void) => {
+        expect(relativeTo).toBe(defaultScrollContentByID.get(scrollID))
+        callback(0, 120, Math.min(320, frameLayout.width), 40)
+      },
+      focus: () => undefined,
+      blur: () => undefined,
+    }
+  }
+  return {}
+}
+
+const initializeMountedScrollAreas = (renderer: ReactTestRenderer, frameLayout: FrameLayout): void => {
+  const scrollAreas = renderer.root.findAllByProps({}).filter(node =>
+    typeof node.props.testID === 'string'
+      && (node.props.testID as string).endsWith(':scroll')
+      && typeof node.props.onLayout === 'function'
+      && typeof node.props.onContentSizeChange === 'function'
+      && typeof node.props.onScroll === 'function',
+  )
+  act(() => {
+    for (const scroll of scrollAreas) {
+      ;(scroll.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: {
+        x: 0,
+        y: 0,
+        width: frameLayout.width,
+        height: Math.max(1, frameLayout.height - 20),
+      }}})
+      ;(scroll.props.onContentSizeChange as (width: number, height: number) => void)(frameLayout.width, 1200)
+      ;(scroll.props.onScroll as (event: unknown) => void)({nativeEvent: {contentOffset: {y: 0}}})
+    }
+  })
+}
+
+const measureKeyboardLayers = (renderer: ReactTestRenderer): void => {
+  const measurementLayers = renderer.root.findAllByProps({testID: 'ui.base.input:keyboard-layer-position:measure'}) as unknown as readonly TestInstanceQuery[]
+  for (const layer of measurementLayers) {
+    const backdrop = layer.findByProps({testID: 'ui.base.input:virtual-keyboard:backdrop'})
+    const layout = StyleSheet.flatten(backdrop.props.style) as Readonly<{readonly width: number; readonly height: number}>
+    const onLayout = layer.props.onLayout
+    if (typeof onLayout !== 'function') throw new Error('Keyboard measurement layer is missing its onLayout callback')
+    act(() => {
+      ;(onLayout as (event: unknown) => void)({nativeEvent: {layout}})
+    })
+  }
+}
+
+const finishKeyboardPresentation = (renderer: ReactTestRenderer): void => {
+  setAnimatedTimingAutoFinishForTests(true)
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    if (renderer.root.findAllByProps({testID: 'ui.base.input:keyboard-layer-position:measure'}).length === 0) break
+    measureKeyboardLayers(renderer)
+    act(() => { advanceAnimatedTimingsForTests(1) })
+  }
+}
 
 const createLogger = (): LoggerPort => {
   const write = (_input: LogWriteInput): LogWriteResult => ({
@@ -88,18 +174,23 @@ const createStateSource = (root: RuntimeStateRoot) => ({
 const mount = (
   element: ReturnType<typeof createElement>,
   frameLayout: FrameLayout = {width: 1280, height: 800},
+  createNodeMock?: (element: NativeTestElement) => unknown,
 ): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined
+  const wrappedElement = cloneElement(element as ReactElement<RenderProviderProps>, {
+    runtimeFacts: createRenderRuntimeFacts({
+      environmentMode: 'DEV',
+      debugMode: {enabled: true, source: 'startup'},
+      deviceIdentity: {available: false, deviceId: null},
+      platformPortCapabilities: [],
+    }),
+    nativeLoadingCapability,
+  })
+  defaultScrollContentByID.clear()
   act(() => {
-    renderer = create(cloneElement(element as ReactElement<RenderProviderProps>, {
-      runtimeFacts: createRenderRuntimeFacts({
-        environmentMode: 'DEV',
-        debugMode: {enabled: true, source: 'startup'},
-        deviceIdentity: {available: false, deviceId: null},
-        platformPortCapabilities: [],
-      }),
-      nativeLoadingCapability,
-    }))
+    renderer = createWithNodeMock(wrappedElement, {
+      createNodeMock: createNodeMock ?? createDefaultInputNodeMock(frameLayout),
+    })
   })
   const frames = renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'})
   act(() => {
@@ -107,6 +198,7 @@ const mount = (
       ;(frame.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: frameLayout}})
     }
   })
+  if (createNodeMock === undefined) initializeMountedScrollAreas(renderer!, frameLayout)
   return renderer!
 }
 
@@ -171,15 +263,36 @@ const expectTextValue = (renderer: ReactTestRenderer, testID: string, value: str
 
 describe('sample staff auth UI feature', () => {
   it('exports one assembly description with the approved parts and variables', () => {
-    expect(sampleStaffAuthAssembly.parts.map(part => part.catalogEntry.partKey)).toEqual([
-      'sample.auth.login', 'sample.auth.login',
-      'sample.auth.notice', 'sample.auth.notice',
-      'sample.auth.system-notice', 'sample.auth.system-notice',
-    ])
-    expect(sampleStaffAuthAssembly.parts.map(part => part.catalogEntry.rendererKey)).toEqual([
-      'sample.auth.login.laptop', 'sample.auth.login.mobile',
-      'sample.auth.notice.laptop', 'sample.auth.notice.mobile',
-      'sample.auth.system-notice.laptop', 'sample.auth.system-notice.mobile',
+    const expectedPair = (part: Readonly<{
+      readonly partKey: string
+      readonly containerKeys: readonly string[]
+      readonly displayModes: readonly string[]
+      readonly workspaces: readonly string[]
+      readonly instanceModes: readonly string[]
+      readonly title: string
+      readonly layerTier: 'standard' | 'alert'
+      readonly layerGuard: 'dismissible' | 'decisive'
+    }>) => (['laptop', 'mobile'] as const).map(surfaceForm => ({
+      ...part,
+      rendererKey: `${part.partKey}.${surfaceForm}`,
+      surfaceForm: [surfaceForm],
+    }))
+    const metadata = sampleStaffAuthAssembly.parts.map(({catalogEntry, rendererBinding}) => ({
+      partKey: catalogEntry.partKey,
+      rendererKey: catalogEntry.rendererKey,
+      containerKeys: [...catalogEntry.containerKeys],
+      displayModes: [...catalogEntry.displayModes],
+      workspaces: [...catalogEntry.workspaces],
+      instanceModes: [...catalogEntry.instanceModes],
+      title: catalogEntry.title,
+      surfaceForm: [...catalogEntry.surfaceForm],
+      layerTier: rendererBinding.layerTier,
+      layerGuard: rendererBinding.layerGuard,
+    }))
+    expect(metadata).toEqual([
+      ...expectedPair({partKey: 'sample.auth.login', containerKeys: ['main'], displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'], title: '店员登录', layerTier: 'standard', layerGuard: 'dismissible'}),
+      ...expectedPair({partKey: 'sample.auth.notice', containerKeys: [], displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'], title: '登录失败提示', layerTier: 'alert', layerGuard: 'dismissible'}),
+      ...expectedPair({partKey: 'sample.auth.system-notice', containerKeys: [], displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'], title: '系统失败提示', layerTier: 'alert', layerGuard: 'dismissible'}),
     ])
     expect(sampleStaffAuthAssembly.variables).toEqual([
       operatorNameVariable,
@@ -248,6 +361,7 @@ describe('sample staff auth UI feature', () => {
     expect(passcode.props.secureTextEntry).toBe(true)
 
     act(() => { operatorName.props.onFocus({nativeEvent: {}}) })
+    finishKeyboardPresentation(renderer)
     expect(virtualKeyboardHosts(renderer)).toHaveLength(1)
     act(() => { press(renderer, 'ui.base.input:virtual-keyboard:shift') })
     act(() => { press(renderer, 'ui.base.input:virtual-keyboard:text-a') })
@@ -256,6 +370,7 @@ describe('sample staff auth UI feature', () => {
     }
 
     act(() => { passcode.props.onFocus({nativeEvent: {}}) })
+    finishKeyboardPresentation(renderer)
     expect(virtualKeyboardHosts(renderer)).toHaveLength(1)
     for (const _ of [1, 2, 3, 4]) {
       act(() => { press(renderer, 'ui.base.input:virtual-keyboard:text-1') })
@@ -267,6 +382,70 @@ describe('sample staff auth UI feature', () => {
       commandName: loginCommand.commandName,
       payload: {operatorName: 'A001', passcode: '1111'},
     })
+    act(() => { renderer.unmount() })
+  })
+
+  it('measures both credential fields relative to the actual scroll content node', () => {
+    const surfaceRoot = {}
+    const scrollContent = {}
+    const measuredFields: Array<Readonly<{readonly fieldId: string; readonly relativeTo: unknown}>> = []
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: createStateSource({} as RuntimeStateRoot),
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger: createLogger(),
+        dispatchCommand: (async () => completedResult()) as RenderProviderProps['dispatchCommand'],
+        selectUiVariable: (_root, declaration) => declaration.defaultValue,
+      },
+      withInputSurface(createElement(StaffLogin)),
+    ), {width: 1280, height: 800}, element => {
+      if (element.type === View && element.props.testID === 'ui.base.input:surface-frame') return surfaceRoot
+      if (element.type === ScrollView && element.props.testID === 'sample.auth.login:scroll') {
+        return {
+          getInnerViewRef: () => scrollContent,
+          measureLayout: (relativeTo: unknown, callback: (x: number, y: number, width: number, height: number) => void) => {
+            expect(relativeTo).toBe(surfaceRoot)
+            callback(0, 0, 1280, 780)
+          },
+          scrollTo: () => undefined,
+        }
+      }
+      const fieldId = element.props.testID
+      if (fieldId === 'sample.auth.login:operator-name' || fieldId === 'sample.auth.login:passcode') {
+        return {
+          measureLayout: (relativeTo: unknown, callback: (x: number, y: number, width: number, height: number) => void) => {
+            measuredFields.push({fieldId, relativeTo})
+            expect(relativeTo).toBe(scrollContent)
+            callback(0, 500, 320, 40)
+          },
+          focus: () => undefined,
+          blur: () => undefined,
+        }
+      }
+      return {}
+    })
+
+    const scrollProps = renderer.root.findAllByProps({testID: 'sample.auth.login:scroll'})
+      .find(node => typeof node.props.onLayout === 'function'
+        && typeof node.props.onContentSizeChange === 'function'
+        && typeof node.props.onScroll === 'function')?.props
+    if (scrollProps === undefined) throw new Error('Missing native scroll view callbacks')
+    act(() => {
+      ;(scrollProps.onLayout as (event: unknown) => void)({nativeEvent: {layout: {x: 0, y: 0, width: 1280, height: 780}}})
+      ;(scrollProps.onContentSizeChange as (width: number, height: number) => void)(1280, 1100)
+      ;(scrollProps.onScroll as (event: unknown) => void)({nativeEvent: {contentOffset: {y: 0}}})
+    })
+    for (const fieldId of ['sample.auth.login:operator-name', 'sample.auth.login:passcode']) {
+      act(() => { findTextInput(renderer, fieldId).props.onFocus({nativeEvent: {}}) })
+      finishKeyboardPresentation(renderer)
+    }
+    expect([...new Set(measuredFields.map(field => field.fieldId))]).toEqual([
+      'sample.auth.login:operator-name',
+      'sample.auth.login:passcode',
+    ])
+    expect(measuredFields.every(field => field.relativeTo === scrollContent)).toBe(true)
     act(() => { renderer.unmount() })
   })
 
@@ -289,6 +468,7 @@ describe('sample staff auth UI feature', () => {
 
     const operatorName = findTextInput(renderer, 'sample.auth.login:operator-name')
     act(() => { operatorName.props.onFocus({nativeEvent: {}}) })
+    finishKeyboardPresentation(renderer)
     expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard:text-1'})).toBeDefined()
     expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard:text-a'})).toBeDefined()
     act(() => { renderer.unmount() })
@@ -350,6 +530,30 @@ describe('sample staff auth UI feature', () => {
         .toContainEqual(isMobile ? {width: '100%'} : undefined)
       act(() => { renderer.unmount() })
     }
+  })
+
+  it('dispatches the staff-auth-owned command when dismissing a system failure', async () => {
+    const commandNames: string[] = []
+    const dispatchCommand = (async command => {
+      commandNames.push(command.definition.commandName)
+      return completedResult()
+    }) as RenderProviderProps['dispatchCommand']
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: createStateSource({} as RuntimeStateRoot),
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger: createLogger(),
+        dispatchCommand,
+        selectUiVariable: (_root, declaration) => declaration.defaultValue,
+      },
+      createElement(AuthSystemNotice, {operation: 'login'}),
+    ))
+
+    await act(async () => { await press(renderer, 'sample.auth.system-notice:dismiss') })
+    expect(commandNames).toEqual([authSystemFailureDismissedCommand.commandName])
+    act(() => { renderer.unmount() })
   })
 
   it('treats a repeated system failure observation as an idempotent existing notice', async () => {

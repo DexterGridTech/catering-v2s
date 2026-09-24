@@ -12,7 +12,7 @@ consumerFaces: ["all"]
 owners: ["platform","frontend-platform"]
 impacts: ["governance","architecture"]
 triggers: ["task-start","implementation","review"]
-assertions: ["TERMINAL_STANDARD_SINGLE_SOURCE","TERMINAL_STANDARD_POINTERS_ONLY","TERMINAL_HARD_RULES_NUMBERING_STABLE","TERMINAL_TRIPLE_NAMING_DERIVED","TERMINAL_PORT_REGISTRY_WITH_DEFAULTS","TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README"]
+assertions: ["TERMINAL_STANDARD_SINGLE_SOURCE","TERMINAL_STANDARD_POINTERS_ONLY","TERMINAL_HARD_RULES_NUMBERING_STABLE","TERMINAL_TRIPLE_NAMING_DERIVED","TERMINAL_PORT_REGISTRY_WITH_DEFAULTS","TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README","TERMINAL_WEB_FIRST_DEVICE_PARITY","TERMINAL_INPUT_VIRTUAL_KEYBOARD_USAGE"]
 sourceRefs: ["doc/platform/terminal-coding-standard.md"]
 ---
 
@@ -43,3 +43,10 @@ sourceRefs: ["doc/platform/terminal-coding-standard.md"]
   并有「在这个包上迭代时」一节。**这是所有 TER 包的长期要求，不是某一批的临时动作。**
   ⚠️ 判据不是"文件存在"：**README 与源码不一致按 finding 处理**，包 review 必须实际读它并对照公开面。
   细则与反例见正本 `TR-10`；已落地范例是 `apps/terminal/kernel/base/contracts/README.md`。
+- `TERMINAL_WEB_FIRST_DEVICE_PARITY`（`TR-16`，Dexter 2026-09-24）：被测行为不涉及 adapter 的功能，
+  **先在 integration 的 Expo Web 验证通过，再到虚拟机或真机跑 assembly，并用同一份场景清单证明两端表现一致**。
+  写实施计划、做动态验证、做实施评审时都要回读正本 `TR-16`；判定范围、证据要求与反例只以正本为准，本条不复述。
+- `TERMINAL_INPUT_VIRTUAL_KEYBOARD_USAGE`（`TR-17`，Dexter 2026-09-24）：TER 输入与程序虚拟键盘的
+  owner、承载、滚动祖先、一次测量、布局正本、Shift/URL 语义、覆盖动画、性能和验证顺序只按正本
+  `TR-17`；本记忆不复述规则，后续 agent 必须在处理任何 TER virtual field 前回读该节及
+  `apps/terminal/ui/base/input/README.md`。

@@ -88,3 +88,4 @@ Generated deterministically by `scripts/memory/build-index`. Do not edit.
 - [operations.terminal-android-display-screenshot-capture](../project-memory/operations/terminal-android-display-screenshot-capture.md)
 - [pitfalls.generated-output-and-static-gate-drift](../project-memory/pitfalls/generated-output-and-static-gate-drift.md)
 - [practices.detail-drawer-action-menu](../project-memory/practices/detail-drawer-action-menu.md)
+- [practices.ter-input-and-virtual-keyboard-usage](../project-memory/practices/ter-input-and-virtual-keyboard-usage.md)

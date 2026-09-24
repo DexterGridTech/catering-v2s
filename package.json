@@ -19,6 +19,7 @@
     "apps/terminal/assembly/android/*"
   ],
   "devDependencies": {
+    "ajv": "^8.20.0",
     "eslint": "9.39.5",
     "eslint-plugin-react-hooks": "7.0.1",
     "prettier": "3.9.6",

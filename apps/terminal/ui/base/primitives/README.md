@@ -52,7 +52,8 @@ shared primitive 的 elevated card recipe；默认 `card` recipe 不变，业务
 稳定的 cell testID 前缀和 `onPress`，控件不持有输入、键盘、认证或 store。它按长度渲染方形 cell，
 已有值显示调用方指定的遮罩字符，默认是 `*`。`onTouchEnd` 与 `onClick` 只作为结构化的
 `stopPropagation` 事件透传；surface dismiss 的 owner 仍由调用方持有，primitive 不依赖
-`ui.base.input`，也不解释这两个事件的业务语义。
+`ui.base.input`，也不解释这两个事件的业务语义。可选 `measureRef` 只透传到承载六格的同一个
+Pressable 根，供 owner 按自己的坐标契约测量可见 PIN 锚点；primitive 不计算避让或键盘几何。
 
 为保持同一应用在 Web 与 Android 上的字号和布局基线，primitives 内部的 `Text` 与 `TextInput`
 统一强制 `allowFontScaling={false}`；字号与行高仍由控件自身的展示 token 明确提供。该约束只
@@ -143,8 +144,10 @@ inset；React ref 暴露
 `getContentNativeNode()` 返回 ScrollView 的真实 inner content component ref，供
 `PrimitiveInputHandle.measureLayout()` 使用 content-local 坐标；这里必须使用 RN 的
 `getInnerViewRef()`，不能把 `getInnerViewNode()` 返回的数字 node handle 传给 Fabric 的 ref
-测量 API。`PrimitiveInputHandle` 也提供同形 `measureInWindow`，供 `ui/base/input` 在焦点切换后
-计算可见区；测量/滚动算法不在 primitives 内实现。`layout="fill"`（默认）保留不透明的
+测量 API。`PrimitiveInputHandle` 同时提供通用的 `measureLayout` 与 `measureInWindow`；输入几何
+必须由 `ui/base/input` 用 `measureLayout` 相对未平移的 surface root 测量普通字段，滚动区内字段则
+相对 scroll content 测量并由 input 合成视口与滚动偏移，不能用窗口坐标计算可见区。测量/滚动算法
+不在 primitives 内实现。`layout="fill"`（默认）保留不透明的
 `bg-canvas`，已有消费者无需改变；父级自己提供背景的复合件（例如壁纸 picker）可以选择
 `layout="transparent"`，该选择只改变 viewport 背景，不改变测量、滚动观察或内容间距。
 业务组件不得借此传入平台专属样式、另建 ScrollView 或另建输入路径。
@@ -165,4 +168,4 @@ NativeWind 与 React Native Reusables 只作为本包内部 copy-in 实现，不
 形态。先在 feature 中看见真实重复，再评估是否下沉，不能预先猜测业务控件并放进 base。
 因此会员姓名、电话等领域字段不属于本包，feature 应使用本包的通用容器与文本控件组合它们。
 
-虚拟键盘由 `PrimitiveKeyboardBackdrop`、`PrimitiveKeyboardSurface`、`PrimitiveButton` 与 `PrimitiveIcon` 共同呈现：backdrop 负责覆盖键盘占用的完整高度但保持透明，surface 负责有内边距的键盘卡片并持有不透明键盘面。键盘面、键面、动作键、文字、边框与 focus 消费 `keyboard-*` 语义 token，实际 RGB 由 integration theme 提供；backdrop 不消费应用身份色。CAPS/SHIFT 的 selected 锁定态与所有 key/key-action 的 pressed 瞬时态共用主题 focus 边框 recipe；pressed 仍由 primitive 持有局部状态，释放后恢复普通边框。primitive 不持有输入状态，也不实现 surface dismiss。
+虚拟键盘由 `PrimitiveKeyboardBackdrop`、`PrimitiveKeyboardSurface`、`PrimitiveButton` 与 `PrimitiveIcon` 共同呈现：backdrop 负责覆盖键盘占用的完整高度但保持透明，surface 负责有内边距的键盘卡片并持有不透明键盘面。键盘面、键面、动作键、文字、边框与 focus 消费 `keyboard-*` 语义 token，实际 RGB 由 integration theme 提供；backdrop 不消费应用身份色。Shift 的 selected 视觉只呈现 input 传入的一次性待生效状态，成功插入后由 input 消耗；primitive 不拥有 CAPS 或持久锁定语义。所有 key/key-action 的按下瞬态仍由 primitive 持有，并与 selected 状态共用主题 focus 边框 recipe；释放后恢复普通边框。primitive 不持有输入状态，也不实现 surface dismiss。

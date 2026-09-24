@@ -24,13 +24,15 @@ for (let index = 2; index < process.argv.length; index += 1) {
   else if (value === '--shape') args.set('shape', process.argv[++index])
   else if (value === '--output') args.set('output', process.argv[++index])
   else if (value === '--skip-install') args.set('skipInstall', true)
+  else if (value === '--no-screenshots') args.set('noScreenshots', true)
   else throw new Error(`unknown argument: ${value}`)
 }
 
 const serial = args.get('serial') ?? 'emulator-5556'
 const shape = args.get('shape') ?? 'mobile'
 if (!['mobile', 'dual'].includes(shape)) throw new Error(`invalid shape: ${shape}`)
-const outputDirectory = path.resolve(args.get('output') ?? defaultOutput)
+const screenshotsEnabled = !args.get('noScreenshots')
+const outputDirectory = path.resolve(args.get('output') ?? path.join(defaultOutput, shape))
 const wallpaperIdForLabel = Object.freeze(Object.fromEntries(
   Object.entries(wallpaperLabels).map(([id, label]) => [label, id]),
 ))
@@ -502,13 +504,15 @@ const readState = async (name, inventory, surfaces, directory, record) => {
   writeText(directory, `${name}-window.txt`, windowSnapshot())
   writeText(directory, `${name}-activity.txt`, activitySnapshot())
   writeText(directory, `${name}-logcat.txt`, logcat())
-  const primaryCapture = captureSurface(stateSurfaces.primaryIds[0], `${name}-primary`, directory)
-  assertScreenshotDimensions(primaryCapture, statePairing.primaryDisplay, `${name} primary`)
-  if (shape === 'dual') {
-    const selectedSecondarySurfaceId = statePairing.secondarySurface.id
-    if (selectedSecondarySurfaceId === null) throw new Error(`${name}: SurfaceFlinger secondary display id unavailable`)
-    const secondaryCapture = captureSurface(selectedSecondarySurfaceId, `${name}-secondary`, directory)
-    assertScreenshotDimensions(secondaryCapture, statePairing.secondaryDisplay, `${name} secondary`)
+  if (screenshotsEnabled) {
+    const primaryCapture = captureSurface(stateSurfaces.primaryIds[0], `${name}-primary`, directory)
+    assertScreenshotDimensions(primaryCapture, statePairing.primaryDisplay, `${name} primary`)
+    if (shape === 'dual') {
+      const selectedSecondarySurfaceId = statePairing.secondarySurface.id
+      if (selectedSecondarySurfaceId === null) throw new Error(`${name}: SurfaceFlinger secondary display id unavailable`)
+      const secondaryCapture = captureSurface(selectedSecondarySurfaceId, `${name}-secondary`, directory)
+      assertScreenshotDimensions(secondaryCapture, statePairing.secondaryDisplay, `${name} secondary`)
+    }
   }
   const observedSelectedWallpaperId = selectedOptions
   const observedEffectiveWallpaperId = observedSelectedWallpaperId.length === 1
@@ -641,6 +645,7 @@ const execute = async () => {
     activity,
     serial,
     shape,
+    screenshotsEnabled,
     startedAt: new Date().toISOString(),
     business: 'NOT_RUN',
     cleanup: 'NOT_RUN',
@@ -827,6 +832,7 @@ writeJson(outputDirectory, 'run-manifest.json', {
   packageName,
   serial,
   shape,
+  screenshotsEnabled,
   apk: path.relative(repositoryRoot, apk),
   apkBinding: localApkBinding(),
   startedAt: new Date().toISOString(),

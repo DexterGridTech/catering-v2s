@@ -1,8 +1,8 @@
 package com.catering.v2s.audit.contract;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -62,7 +62,8 @@ class AuditChangeJsonTest {
         String source = "x".repeat(2001);
         AuditChange change = AuditChange.forNullableScalar("long", null, source);
 
-        assertEquals(2000, change.afterValue().codePointCount(0, change.afterValue().length()));
+        assertEquals(
+                2000, change.afterValue().codePointCount(0, change.afterValue().length()));
         assertTrue(change.afterValue().endsWith("…（已截断）"));
     }
 

@@ -9,29 +9,36 @@ command、store 或中文 IME 引擎；本轮所有输入统一走虚拟键盘�
 字段使用 `keyboardKind="virtual"` 和既有 `KeyboardLayout`，input 包不读取屏数、不读取
 `Dimensions.get('window')`，也不感知业务字段名。无原生控件的字段可设置 `nativeLess`，仍通过
 同一个 field registry、`InputController` 和虚拟键盘取得 owner 与焦点，不另起输入管线。
+`InputFieldResult.visibleAnchorRef` 是 native-less 字段可见交互锚点的测量 seam：消费者须把它接到
+实际承载该字段交互的 native 节点；input 只通过该节点相对 `InputSurfaceFrame` 根的
+`measureLayout` 读取未平移 surface-local 几何，不读取窗口坐标或伪造输入控件。
 
 ## 公共面
 
 公共面由 `src/index.ts` 与 `terminal-invariants.json` 同步维护：
 
-- `InputSurfaceFrame` 在一个 Provider 内包裹 content，并把虚拟键盘作为 content 下方的 sibling；
-- `InputScrollArea` 是唯一的输入滚动祖先适配器，负责把 focus 后的字段滚入已收缩可见区；需要在有界内容区让末尾控件完整滚入视口时，只能通过 presentation-only 的 `contentPaddingBottom` 增加尾部内容 inset，不得另建滚动祖先；
+- `InputSurfaceFrame` 在一个 Provider 内包裹完整 surface 内容，并把虚拟键盘作为覆盖内容的底部 overlay；键盘不参与内容尺寸分配；
+- `InputScrollArea` 是唯一的输入滚动祖先适配器，负责在固定尺寸视口内按焦点框、键盘可见带与当前 scroll offset 计算最小滚动；需要在有界内容区让末尾控件完整滚入视口时，只能通过 presentation-only 的 `contentPaddingBottom` 增加尾部内容 inset，不得另建滚动祖先；处于滚动区内的 virtual 字段必须由**实际渲染在对应 `InputScrollArea` 下方的 React 组件调用 `useInputField` 并渲染输入框**，以保持 Android/Web 测量坐标一致。仅把父组件创建的 `field.inputProps` 对应 `PrimitiveInput` JSX 放入滚动区不够，因为 hook 会在父组件中读取不到滚动祖先 context；
 - `InputProvider` 与 `useInputField` 维护 tokenized field registry、focus owner 与同步快照；
 - `useInputSnapshot` 在提交动作边界同步读取不可变快照，不订阅编辑值；
-- `InputKeyboard` 是业务唯一应使用的键盘呈现入口；它只根据 placement 决定挂在 surface dock 还是调用方的局部布局，状态、owner、按键处理和 `VirtualKeyboard` renderer 始终共用；
+- `InputKeyboard` 是 `InputSurfaceFrame` 独占的 surface overlay presenter；字段不选择键盘位置，也不在业务卡片内挂载键盘；状态、owner、按键处理和 `VirtualKeyboard` renderer 始终共用；
 - `VirtualKeyboard` 只产生通用编辑 key，不派业务 command，业务不得直接用它拼第二套键盘；
 - `InputFieldOptions` 固定使用 `keyboardKind: 'virtual'`，`KeyboardLayout` 描述输入呈现/承载能力；
   frame 尺寸由 `InputSurfaceFrame` 自己的 `onLayout` 读取，不通过公共 `surfaceSize` prop 传入。
 - `full`、`alpha`、`numeric`、`financial` 的行列、稳定 keyId 与 region/key `testID` 由
   `src/foundations/keyboardLayout.ts` 唯一维护；键本身仍通过 primitives 的 `PrimitiveButton` 呈现，
   input/feature 不传 `className`。
-- 四种布局都把功能键放入连续的键区，不另起空的动作行：full 的 caps 在 home row 起始处，
-  shift 在末行起始处，backspace/complete 在末端；alpha 的 shift 在末行起始处。numeric
+- 四种布局都把功能键放入连续的键区，不另起空的动作行：full 的一次性 Shift 在 home row
+  起始处，空格在末行起始处，backspace/complete 在末端；alpha 的 home row 从 A 开始且
+  不留 CAPS 占位，第二行起始处为一次性 Shift 后接 `a…l`，第三行起始处为空格后接
+  `z…m`，backspace/complete 在末端。full 的数字行在 Shift 态把 `1–0` 显示并插入
+  `:/.?&=-_%+` 十个 URL 常用符号（顺序为 `: / . ? & = - _ % +`），成功插入后回普通态。
+  numeric
   与 financial 的前三行都是 `123`、`456`、`789` 三列；numeric 的末端复合区是一行三列，
   依次为 backspace、`0`、complete，且三者都是独立一列；financial 的末端复合区也是
   一行三列，第一列内部左右放 `-/.`，第二列为 `0`，第三列内部左右放 backspace/complete。
   这样每个末行按键保持一行高度，动作键始终在最右侧，且数字列与符号列按 `7/8/9` 对齐。该排列参考 V1 POC 的连续软键盘心智，
-  但只保留当前 input contract 已有的 key，不新增 space 或 enter。
+  financial 的负号和小数点仍显示 `−/·` 并插入 `-/.`；完成动作保持原有语义。
 
 值只在字段局部状态和同步 registry 中维护；提交时由消费者调用 `useInputSnapshot()` 或 field result 的 `captureInputSnapshot()`，形成
 冻结对象后再交给业务 owner。编辑期不写 kernel slice、uiVariables 或 runtime command。
@@ -43,10 +50,12 @@ command、store 或中文 IME 引擎；本轮所有输入统一走虚拟键盘�
 - 同一 surface 始终满足最多一个 virtual keyboard owner；native-less 字段在没有原生 ref 时仍能
   通过 controller 建立 virtual owner。
 - virtual 字段在 Android 上收到的 native blur 不单独终止 virtual owner；显式 `blur()`、字段注销、
-  layer suspend 或后续字段获焦才是清理 owner 的边界。
+  layer suspend 或后续字段获焦才是清理 owner 的边界。一次性 Shift 仅属于当前字段焦点会话；
+  真正离开字段、完成收起或 scope suspend 时清除，成功插入（包括空格或 Shift 符号）后消耗，
+  `maxLength` 拒绝的零字符插入和退格不消耗。
 - LayerStack 通过 render 提供的 `suspend`/`restore` 协议收起并恢复键盘，input 不反向 import render 以外的业务层；
 - surface content 的非输入点击会通过 input owner 主动清理当前 field 并收起键盘；虚拟键盘 dock 是 sibling，
-  不把业务按钮或文案变成 input 特例；需要把键盘放进字段/卡片局部布局时仍使用同一个 `InputKeyboard`，不新增 input owner、状态或事件管线；
+  不把业务按钮或文案变成 input 特例；
 - `PrimitiveButton` 在 primitives 内用自身的 `onPressIn`/`onPressOut` 保存局部 pressed 状态并
   提供反馈：普通键透明度变为 `0.78`、动作键变为 `0.72` 并轻微缩放到 `0.985`，同时显示
   integration 提供的主题 focus 边框；释放后恢复普通边框。它只影响当前按键，不触发表单
@@ -59,57 +68,45 @@ command、store 或中文 IME 引擎；本轮所有输入统一走虚拟键盘�
 - `PrimitiveInput` 的 focus/blur 与通用 `inputRef` 是真实控件接缝，不承载 `inputMode`、业务字段或屏数；
 - 焦点进入/键盘高度变化后只向最近的 `InputScrollArea` 请求一次测量与最小滚动；无祖先安全 no-op，
   已收缩 viewport 不重复扣键盘高度；逐字符输入不触发测量；
-- 虚拟键盘高度来自 surface root 自身 `onLayout` 的实际尺寸：上限 320、比例上限 0.5、内容下限 208；
+- 焦点测量缺失/无效，或滚动实际读回后焦点框仍被裁切时，不得把目标 offset 已到达当成可见成功：保留
+  字段草稿、清理当前失效的 virtual owner，并显示“焦点框无法完整显示，请调整窗口尺寸或退出输入”。
+  只有真实焦点框完整落在 surface 与内部视口的可见交集内才清除该恢复状态；修复尺寸后可重新聚焦；
+- 虚拟键盘高度来自 surface root 自身 `onLayout` 的实际尺寸：上限 320、surface 高度比例上限 0.5；
+  四种布局按自身行数计算所需高度，外框横向填满 surface 且四角直角；键帽宽度根据最终外框
+  的逻辑宽、真实 padding 与 gap 计算。旧内容下限 208 不再作为覆盖模式的容量判据；
   首帧未测量或按轴不可行时不挂不可操作的键盘，并提供可寻址的扩大窗口提示。
 
 ## 键盘呈现方式
 
-业务只在字段配置中选择位置，并始终复用 `InputKeyboard`。`keyboardPlacement` 与呈现组件的
-`placement` 必须相同；不匹配时组件不渲染，避免 surface dock 与局部键盘同时出现。
-
-- `surface`（独立 dock）：省略 `keyboardPlacement` 即使用默认值。`InputSurfaceFrame` 会自动挂载
-  `<InputKeyboard placement="surface" />`，业务不再手动放置键盘。
-- `field`（局部/非独立 dock）：字段设置 `keyboardPlacement: 'field'`，再在希望出现键盘的
-  卡片或字段布局中挂载一次 `<InputKeyboard placement="field" />`。组件自动测量父级宽度并复用
-  同一个 provider/controller/renderer；业务不需要传尺寸、重写按键、处理焦点或维护第二份字符串。
+每个 surface 只有 `InputSurfaceFrame` 呈现一个全宽底部覆盖层。业务字段只声明键盘布局，不持有
+keyboard placement，也不得在卡片、字段或弹窗内另挂键盘。所有焦点字段的键盘都覆盖在完整尺寸的
+非键盘 UI 上方；焦点避让通过 surface 内容整体平移和既有 `InputScrollArea` 内部滚动完成。
 
 不要把 `VirtualKeyboard` 直接用于 feature，也不要使用已移除的 `constrainToParent` 类布局开关。
 
-独立 dock：
+滚动输入的 hook 组件必须作为 `InputScrollArea` 后代调用 `useInputField`，例如：
 
 ```tsx
-const field = useInputField({
-  fieldId: 'generic-field',
-  testID: 'feature:field',
-  keyboardKind: 'virtual',
-  layout: 'numeric',
-  maxLength: 3,
-});
+const ScrollField = () => {
+  const field = useInputField({
+    fieldId: 'generic-field',
+    testID: 'feature:field',
+    keyboardKind: 'virtual',
+    layout: 'numeric',
+    maxLength: 3,
+  });
 
-return <PrimitiveInput {...field.inputProps} />;
-```
+  return <PrimitiveInput {...field.inputProps} />;
+};
 
-局部布局：
-
-```tsx
-const field = useInputField({
-  fieldId: 'generic-field',
-  testID: 'feature:field',
-  keyboardKind: 'virtual',
-  layout: 'numeric',
-  keyboardPlacement: 'field',
-});
-
-return (
-  <PrimitiveContainer>
-    <PrimitiveInput {...field.inputProps} />
-    <InputKeyboard placement="field" />
-  </PrimitiveContainer>
+const Form = () => (
+  <InputScrollArea testID="feature:scroll">
+    <ScrollField />
+  </InputScrollArea>
 );
 ```
 
-业务层只把 `field.inputProps` 交给既有 `PrimitiveInput`，并用 `InputScrollArea` 包住唯一的
-滚动内容；提交动作调用 `useInputSnapshot()` 或该 field result 的 `captureInputSnapshot()`，再由业务 actor 组装命令。input 不替业务判断 required/optional，不读取
+提交动作调用 `useInputSnapshot()` 或该 field result 的 `captureInputSnapshot()`，再由业务 actor 组装命令。input 不替业务判断 required/optional，不读取
 `PendingMember`，不生成年龄或其他用户事实。
 
 ## 依赖与实现边界
@@ -122,4 +119,4 @@ feature 生产源码也不得直接 import React Native。`ui-base-input` 只声
 `typecheck` 与 focused tests。模型红向量与真实树结果分开报告；测试通过不等于 Android/Web 行为
 已验证，动态证据必须按平台单独收集。
 
-虚拟键盘 renderer 统一复用 primitives 的 `PrimitiveKeyboardBackdrop`、`PrimitiveKeyboardSurface`、`PrimitiveButton` 与 `PrimitiveIcon`；backdrop 覆盖键盘完整高度但保持透明，surface 保持 IA 要求的内缩卡片几何与不透明键盘面。alpha 的 CAPS 是持久锁定键，普通字符输入不触发键盘整体刷新。surface 的 native touch 与 Web click 事件由 input 侧传入，primitive 只做结构化透传，不读取 input controller。
+虚拟键盘 renderer 统一复用 primitives 的 `PrimitiveKeyboardBackdrop`、`PrimitiveKeyboardSurface`、`PrimitiveButton` 与 `PrimitiveIcon`；backdrop 覆盖键盘完整高度但保持透明，surface 沿用 integration 提供的键盘语义色，外框无圆角。普通字符输入只更新当前字段与必要的键帽状态，不向表单广播所有字段值。surface 的 native touch 与 Web click 事件由 input 侧传入，primitive 只做结构化透传，不读取 input controller。

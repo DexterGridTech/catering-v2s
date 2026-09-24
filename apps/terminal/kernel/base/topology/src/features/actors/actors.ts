@@ -34,6 +34,7 @@ import {
   reconcileTopologyPeerCommand,
   refreshTopologyDisplayCommand,
   setTopologyHostEnabledCommand,
+  topologyDisplayChangedCommand,
   topologyHostEventCommand,
   unpairTopologyCommand,
 } from '../commands/commands'
@@ -584,7 +585,10 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
     const displayInfo = await readDisplayInfo(context.platformPorts.device)
     const displayCount = displayInfo.status === 'valid' ? displayInfo.displayCount : null
     const current = selectTopologyState(context.getState())
-    if (current.displayCount !== displayCount) context.dispatchAction(topologyActions.setDisplayCount(displayCount))
+    if (current.displayCount !== displayCount) {
+      context.dispatchAction(topologyActions.setDisplayCount(displayCount))
+      await context.dispatchCommand(topologyDisplayChangedCommand, {displayCount})
+    }
     return Object.freeze({status: displayInfo.status, displayCount})
   }),
   onCommand(reconcileTopologyHostCommand, async context => {

@@ -13,32 +13,6 @@ import type {InputRegistrationToken, InputSnapshot} from '../foundations/snapsho
 export type {KeyboardLayout} from '../foundations/keyboardLayout';
 export type {InputSnapshot, InputRegistrationToken} from '../foundations/snapshot';
 
-export type InputDiagnosticValue =
-  | string
-  | number
-  | boolean
-  | null
-  | readonly InputDiagnosticValue[]
-  | Readonly<{readonly [key: string]: InputDiagnosticValue}>;
-
-export type InputDiagnostic = Readonly<{
-  readonly event: string;
-  readonly data: Readonly<Record<string, InputDiagnosticValue>>;
-}>;
-
-export type InputDiagnosticReporter = (diagnostic: InputDiagnostic) => void;
-
-export type InputKeyboardPlacement = 'surface' | 'field';
-
-export type InputKeyboardProps = Readonly<{
-  /**
-   * The layout owner for the shared keyboard. `surface` is docked by
-   * InputSurfaceFrame; `field` is rendered by the consumer at its local
-   * field/card position. Both placements use the same InputProvider owner.
-   */
-  readonly placement: InputKeyboardPlacement;
-}>;
-
 type InputFieldOptionsBase = Readonly<{
   readonly fieldId: string;
   readonly testID: string;
@@ -50,7 +24,6 @@ type InputFieldOptionsBase = Readonly<{
   readonly secureTextEntry?: boolean;
   readonly nativeLess?: boolean;
   readonly focusScopeId?: string;
-  readonly keyboardPlacement?: InputKeyboardPlacement;
 }>;
 
 export type InputFieldOptions = InputFieldOptionsBase & Readonly<{
@@ -60,22 +33,24 @@ export type InputFieldOptions = InputFieldOptionsBase & Readonly<{
 
 export type InputFieldResult = Readonly<{
   readonly inputProps: PrimitiveInputProps;
+  readonly visibleAnchorRef: RefObject<InputVisibleAnchorHandle | null>;
   readonly captureInputSnapshot: () => InputSnapshot;
   readonly focus: () => void;
   readonly blur: () => void;
   readonly complete: () => void;
 }>;
 
+/** Native layout anchor for a native-less field; only measureLayout is exposed. */
+export type InputVisibleAnchorHandle = Pick<PrimitiveInputHandle, 'measureLayout'>;
+
 export type InputSurfaceFrameProps = Readonly<{
   readonly children?: ReactNode;
   readonly onMeasuredFrame?: (frame: LocalFrameMetrics) => void;
-  readonly onDiagnostic?: InputDiagnosticReporter;
 }>;
 
 export type InputProviderProps = Readonly<{
   readonly frameMetrics: LocalFrameMetrics | null;
   readonly children?: ReactNode;
-  readonly onDiagnostic?: InputDiagnosticReporter;
 }>;
 
 export type InputFieldController = Readonly<{
@@ -85,10 +60,11 @@ export type InputFieldController = Readonly<{
   readonly layout: KeyboardLayout;
   readonly maxLength?: number;
   readonly inputRef: RefObject<PrimitiveInputHandle | null> | null;
+  readonly visibleAnchorRef: RefObject<InputVisibleAnchorHandle | null>;
   readonly focusScopeId: string;
-  readonly keyboardPlacement: InputKeyboardPlacement;
   readonly applyKey: (key: KeyboardKey) => EditResult;
   readonly getEditState: () => EditState;
+  readonly clearShift: () => void;
 }>;
 
 export type InputFieldRegistration = Readonly<{
@@ -99,10 +75,11 @@ export type InputFieldRegistration = Readonly<{
   readonly layout: KeyboardLayout;
   readonly maxLength?: number;
   readonly inputRef: RefObject<PrimitiveInputHandle | null> | null;
+  readonly visibleAnchorRef: RefObject<InputVisibleAnchorHandle | null>;
   readonly focusScopeId: string;
-  readonly keyboardPlacement: InputKeyboardPlacement;
   readonly applyKey: (key: KeyboardKey) => EditResult;
   readonly getEditState: () => EditState;
+  readonly clearShift: () => void;
 }>;
 
 export type InputController = Readonly<{
@@ -117,7 +94,6 @@ export type InputController = Readonly<{
       readonly layout: KeyboardLayout;
       readonly maxLength?: number;
       readonly focusScopeId: string;
-      readonly keyboardPlacement: InputKeyboardPlacement;
     }>,
   ) => void;
   readonly handleFocus: (fieldId: string) => void;
@@ -135,7 +111,6 @@ export type InputController = Readonly<{
 export type InputKeyboardState = Readonly<{
   readonly activeFieldId: string | null;
   readonly owner: 'none' | 'virtual';
-  readonly keyboardPlacement: InputKeyboardPlacement;
   readonly layout: KeyboardLayout;
   readonly capacity: KeyboardCapacity;
   readonly blockedFieldId: string | null;
@@ -150,7 +125,6 @@ export type InputKeyboardState = Readonly<{
   readonly contentTooSmall: boolean;
   readonly revision: number;
   readonly shift: boolean;
-  readonly capsLock: boolean;
 }>;
 
 export type InputFieldKeyboardState = Readonly<{

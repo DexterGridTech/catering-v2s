@@ -37,6 +37,7 @@ import {
   reconcileTopologyPeerCommand,
   refreshTopologyDisplayCommand,
   setTopologyHostEnabledCommand,
+  topologyDisplayChangedCommand,
   topologyHostEventCommand,
   type TopologyHostEventPayload,
   unpairTopologyCommand,
@@ -173,6 +174,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     setTopologyHostEnabledCommand,
     topologyHostEventCommand,
     refreshTopologyDisplayCommand,
+    topologyDisplayChangedCommand,
     reconcileTopologyHostCommand,
     reconcileTopologyPeerCommand,
   ] as const

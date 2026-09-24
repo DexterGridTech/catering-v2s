@@ -61,6 +61,11 @@ promote a lower tier — a static check, a module test, and a real HTTP acceptan
 claims. When the original failing behaviour can no longer be reproduced from current sources, record
 `UNVERIFIED_REQUIRES_EVIDENCE` rather than guessing what the old implementation did.
 
+For a TER (`apps/terminal`) implementation or retrospective review, check `TR-16` in
+`doc/platform/terminal-coding-standard.md`: a non-adapter feature verified only on a VM or device, only on
+Web, or on the two ends with different scenario lists is a finding, and a parity claim needs the
+side-by-side scenario evidence and the Web-before-device ordering on the same bytes that `TR-16` requires.
+
 Findings are hypotheses until the owning source is reopened. Classify each as `CONFIRMED`,
 `PARTIALLY_CONFIRMED`, `REJECTED_WITH_EVIDENCE`, `UNVERIFIED_REQUIRES_EVIDENCE`, or
 `DEXTER_DECISION`, and withdraw your own finding when the source refutes it.

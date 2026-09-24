@@ -39,12 +39,23 @@ scripts/check/heritage-registry
 
 `scripts/verify` 聚合编译、类型、既有测试、契约生成与架构边界检查。它不启动 DEV、seed、reset 或浏览器；静态通过不能冒充动态业务验收。
 
+### 门店终端规则单源
+
+`contracts/catalog/store-terminal-rules.json` 是门店终端功能、场景、范围、纸规格、连接方式、打印机品牌与型号的唯一规则住址；JSON Schema 校验结构并按连接方式校验参数语义，生成器再校验闭集引用与跨表关系。修改正本后执行：
+
+```bash
+node scripts/generate/store-terminal-rules.mjs --write
+node scripts/generate/store-terminal-rules.mjs --self-test --check
+```
+
+该生成器输出后端 Java、运营后台 TypeScript 与 OpenAPI enum sidecar；`scripts/verify --validate-only` 的 `store-terminal-rules` 静态门执行红变异与生成物漂移检查。生成文件不得手改。
+
 ## R5 remote Testcontainers
 
 When the local host has no Docker daemon, execute focused R5 Testcontainers from the remote development host with the JVM and Docker daemon on the same network plane:
 
 ```bash
-scripts/test/r5-remote-testcontainers.mjs :apps:backend:catering-business-server:modules:asset:test
+node scripts/test/r5-remote-testcontainers.mjs :apps:backend:catering-business-server:modules:asset:test
 ```
 
 可用 `node scripts/test/managed-run-summary.mjs [managed-evidence-root]` 对受管 run manifest 做只读汇总。它报告有记录时长、墙钟跨度、run 总时长、中位数、最大值、run 间未归因间隙、business/cleanup/status/failureCategory 与阶段（无显式阶段时按 verification mode、operation 或 task）统计；无效 manifest 会使汇总为 `INCOMPLETE`，不会静默忽略。
@@ -53,7 +64,7 @@ The entry creates a per-run temporary source and Gradle snapshot on that host, r
 
 The root Gradle build has a fail-closed guard for every test source that imports or constructs Testcontainers. Such a task must receive `V2S_TESTCONTAINERS_EXECUTION_PLANE=remote`, which only the managed remote runner exports immediately before the remote JVM starts. Direct local Gradle execution therefore stops with `V2S_TESTCONTAINERS_REMOTE_REQUIRED` before Testcontainers can invoke `DockerClientProviderStrategy`; no local Colima or Docker socket fallback is permitted.
 
-All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-budget <runtime-root>` before starting processes. The checker only recognizes manifest PID plus OS start token, refuses prior live managed work or RSS above 2048 MiB, and never kills a process.
+All local managed DEV/L2 runners must call `scripts/env/check-runtime-resource-budget <runtime-root>` before starting processes. The default checker only recognizes manifest PID plus OS start token, refuses prior live managed work or RSS above 2048 MiB, and never kills a process. When the explicitly authorized TER run is intentionally kept alive during management-backend/frontend validation, the backend acceptance and DEV runners use the narrow `--profile admin-validation-with-ter` profile: it admits only the exact `.runtime/ter-virtual-keyboard-android/` manifest subtree and raises the aggregate RSS ceiling to 4096 MiB; any other live managed tree or an over-budget aggregate still fails closed.
 
 ### Backend acceptance（当前真实业务能力）
 

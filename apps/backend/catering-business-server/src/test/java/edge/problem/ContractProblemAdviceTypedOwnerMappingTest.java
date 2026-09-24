@@ -15,6 +15,8 @@ import com.catering.v2s.organization.api.StoreOperatingRuleGate;
 import com.catering.v2s.platform.asset.application.PlatformAssetService;
 import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
+import com.catering.v2s.storeterminal.application.StoreTerminalAuditHistoryService;
+import com.catering.v2s.storeterminal.application.StoreTerminalOwnerService;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceAssignmentScopeService;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
@@ -122,6 +124,55 @@ class ContractProblemAdviceTypedOwnerMappingTest {
                 advice.notFound(new OrganizationTaskPathService.TaskPathNotFoundException(), request),
                 HttpStatus.NOT_FOUND,
                 "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
+        assertProblem(
+                advice.notFound(new StoreTerminalAuditHistoryService.TerminalNotFoundException(), request),
+                HttpStatus.NOT_FOUND,
+                "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
+        assertProblem(
+                advice.accessDenied(new StoreTerminalAuditHistoryService.TerminalAuthorizationException(), request),
+                HttpStatus.FORBIDDEN,
+                "PLATFORM_COMMON_ACCESS_DENIED");
+        assertProblem(
+                advice.notFound(new StoreTerminalOwnerService.TerminalNotFoundException(), request),
+                HttpStatus.NOT_FOUND,
+                "PLATFORM_COMMON_RESOURCE_NOT_FOUND");
+        assertProblem(
+                advice.accessDenied(new StoreTerminalOwnerService.TerminalAuthorizationException(), request),
+                HttpStatus.FORBIDDEN,
+                "PLATFORM_COMMON_ACCESS_DENIED");
+        assertProblem(
+                advice.storeTerminalUnavailable(new StoreTerminalOwnerService.TerminalStoreUnavailableException(), request),
+                HttpStatus.FORBIDDEN,
+                "ORGANIZATION_STORE_STATUS_TRANSITION_INVALID");
+        assertProblem(
+                advice.storeTerminalConflict(new StoreTerminalOwnerService.TerminalVoidedImmutableException(), request),
+                HttpStatus.CONFLICT,
+                "STORE_TERMINAL_VOIDED_IMMUTABLE");
+        assertProblem(
+                advice.storeTerminalConflict(new StoreTerminalOwnerService.TerminalStatusTransitionInvalidException(), request),
+                HttpStatus.CONFLICT,
+                "STORE_TERMINAL_STATUS_TRANSITION_INVALID");
+        assertProblem(
+                advice.storeTerminalConflict(new StoreTerminalOwnerService.TerminalVersionConflictException(), request),
+                HttpStatus.CONFLICT,
+                "PLATFORM_COMMON_VERSION_CONFLICT");
+        assertProblem(
+                advice.storeTerminalConflict(new StoreTerminalOwnerService.IdempotencyConflictException(), request),
+                HttpStatus.CONFLICT,
+                "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT");
+        assertProblem(
+                advice.storeTerminalInvalid(new StoreTerminalOwnerService.TerminalReferenceInvalidException(), request),
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "STORE_TERMINAL_REFERENCE_INVALID");
+        assertProblem(
+                advice.storeTerminalInvalid(new StoreTerminalOwnerService.InvalidTerminalRequestException(), request),
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "STORE_TERMINAL_RULE_INVALID");
+        assertProblem(
+                advice.storeTerminalResultUnknown(
+                        new StoreTerminalOwnerService.ReceiptCorruptException(new IllegalStateException("corrupt")), request),
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "PLATFORM_COMMON_RESULT_UNKNOWN");
         assertProblem(
                 advice.catalogAssetOwnerScopeForbidden(
                         new PlatformAssetService.AssetOwnerScopeForbiddenException(), request),
@@ -282,6 +333,8 @@ class ContractProblemAdviceTypedOwnerMappingTest {
         assertTrue(declared.contains(PlatformAssetService.AssetInvariantViolationException.class));
         assertTrue(declared.contains(CommandExecutionContextResolver.CatalogScopeForbiddenException.class));
         assertTrue(declared.contains(ContractCommandReceiptService.ContractReceiptCorruptException.class));
+        assertTrue(declared.contains(StoreTerminalAuditHistoryService.TerminalNotFoundException.class));
+        assertTrue(declared.contains(StoreTerminalAuditHistoryService.TerminalAuthorizationException.class));
         assertTrue(declared.contains(ExtensionCommandReceiptService.ExtensionReceiptCorruptException.class));
         assertTrue(declared.contains(DuplicateKeyException.class));
         assertTrue(declared.contains(MaxUploadSizeExceededException.class));

@@ -1,7 +1,8 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {describe, expect, it} from 'vitest'
 import {createRequestId} from '@catering-v2s/kernel-base-contracts'
-import {StyleSheet} from 'react-native'
+import {ScrollView, StyleSheet} from 'react-native'
+import {advanceAnimatedTimingsForTests, setAnimatedTimingAutoFinishForTests} from '../../../../../../tools/terminal-shared/react-native-vitest-entry'
 import {createProcessMemoryStateStoragePort, type LogEvent} from '@catering-v2s/kernel-base-platform-ports'
 import {
   loginCommand,
@@ -44,6 +45,12 @@ type TestWallpaperConsoleAssemblyInput = Omit<Parameters<typeof createProduction
   readonly platformPorts: TestPlatformPorts
 }>
 
+type TestInstanceQuery = Readonly<{
+  readonly findByProps: (props: Readonly<Record<string, unknown>>) => TestInstanceQuery
+  readonly props: Readonly<Record<string, unknown>>
+}>
+type NativeTestElement = Readonly<{readonly type: unknown; readonly props: Readonly<Record<string, unknown>>}>
+
 const createSampleWallpaperConsoleAssembly = (input: TestWallpaperConsoleAssemblyInput) => createProductionSampleWallpaperConsoleAssembly({
   ...input,
   nativeLoadingCapability: input.platformPorts.nativeLoadingCapability,
@@ -64,7 +71,55 @@ const createPrimaryHostSource = () => {
 
 const mount = (element: Parameters<typeof create>[0]): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined
-  act(() => { renderer = create(element) })
+  const createInputNodeMock = (node: NativeTestElement): unknown => {
+    const testID = node.props.testID
+    if (testID === 'ui.base.input:surface-frame') return {}
+    if (typeof testID === 'string' && testID.endsWith(':scroll')) {
+      const contentNode = {}
+      return {
+        getInnerViewRef: () => contentNode,
+        measureLayout: (_relativeTo: unknown, callback: (x: number, y: number, width: number, height: number) => void) => {
+          callback(0, 0, PRIMARY_FRAME.width, Math.max(1, PRIMARY_FRAME.height - 20))
+        },
+        scrollTo: () => undefined,
+      }
+    }
+    if (typeof testID === 'string') {
+      return {
+        measureLayout: (_relativeTo: unknown, callback: (x: number, y: number, width: number, height: number) => void) => {
+          callback(0, 120, Math.min(320, PRIMARY_FRAME.width), 40)
+        },
+        focus: () => undefined,
+        blur: () => undefined,
+      }
+    }
+    return undefined
+  }
+  act(() => {
+    renderer = (create as unknown as (
+      element: Parameters<typeof create>[0],
+      options: Readonly<{readonly createNodeMock: (element: NativeTestElement) => unknown}>,
+    ) => ReactTestRenderer)(element, {createNodeMock: createInputNodeMock})
+  })
+  const scrollAreas = renderer!.root.findAllByType(ScrollView).filter(scroll =>
+    typeof scroll.props.testID === 'string'
+      && scroll.props.testID.endsWith(':scroll')
+      && typeof scroll.props.onLayout === 'function'
+      && typeof scroll.props.onContentSizeChange === 'function'
+      && typeof scroll.props.onScroll === 'function',
+  )
+  act(() => {
+    for (const scroll of scrollAreas) {
+      ;(scroll.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: {
+        x: 0,
+        y: 0,
+        width: PRIMARY_FRAME.width,
+        height: Math.max(1, PRIMARY_FRAME.height - 20),
+      }}})
+      ;(scroll.props.onContentSizeChange as (width: number, height: number) => void)(PRIMARY_FRAME.width, 1200)
+      ;(scroll.props.onScroll as (event: unknown) => void)({nativeEvent: {contentOffset: {y: 0}}})
+    }
+  })
   return renderer!
 }
 
@@ -133,6 +188,7 @@ const waitForAdminContent = async (renderer: ReactTestRenderer): Promise<void> =
 }
 
 const authenticateAdmin = async (renderer: ReactTestRenderer): Promise<void> => {
+  finishKeyboardPresentation(renderer)
   for (const digit of ['1', '2', '3', '4', '5', '6']) {
     await act(async () => {
       press(renderer, `ui.base.input:virtual-keyboard:text-${digit}`)()
@@ -146,12 +202,74 @@ const authenticateAdmin = async (renderer: ReactTestRenderer): Promise<void> => 
   await waitForAdminContent(renderer)
 }
 
+const measureKeyboardLayers = (renderer: ReactTestRenderer): void => {
+  const measurementLayers = renderer.root.findAllByProps({testID: 'ui.base.input:keyboard-layer-position:measure'}) as unknown as readonly TestInstanceQuery[]
+  for (const layer of measurementLayers) {
+    const backdrop = layer.findByProps({testID: 'ui.base.input:virtual-keyboard:backdrop'})
+    const layout = StyleSheet.flatten(backdrop.props.style) as Readonly<{readonly width: number; readonly height: number}>
+    const onLayout = layer.props.onLayout
+    if (typeof onLayout !== 'function') throw new Error('Keyboard measurement layer is missing its onLayout callback')
+    act(() => {
+      ;(onLayout as (event: unknown) => void)({nativeEvent: {layout}})
+    })
+  }
+}
+
+const finishKeyboardPresentation = (renderer: ReactTestRenderer): void => {
+  setAnimatedTimingAutoFinishForTests(true)
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    if (renderer.root.findAllByProps({testID: 'ui.base.input:keyboard-layer-position:measure'}).length === 0) break
+    measureKeyboardLayers(renderer)
+    act(() => { advanceAnimatedTimingsForTests(1) })
+  }
+}
+
 const dispatchOptions = (displayMode: 'PRIMARY' | 'SECONDARY' = 'PRIMARY') => ({
   requestId: createRequestId(),
   routeContext: {displayMode},
 })
 
 describe('sample2 wallpaper console assembly', () => {
+  it('keeps exact metadata for the laptop-only waiting and welcome parts', () => {
+    expect(wallpaperConsoleParts.map(({catalogEntry, rendererBinding}) => ({
+      partKey: catalogEntry.partKey,
+      rendererKey: catalogEntry.rendererKey,
+      containerKeys: [...catalogEntry.containerKeys],
+      displayModes: [...catalogEntry.displayModes],
+      workspaces: [...catalogEntry.workspaces],
+      instanceModes: [...catalogEntry.instanceModes],
+      title: catalogEntry.title,
+      surfaceForm: [...catalogEntry.surfaceForm],
+      layerTier: rendererBinding.layerTier,
+      layerGuard: rendererBinding.layerGuard,
+    }))).toEqual([
+      {
+        partKey: 'sample.wallpaper-console.waiting',
+        rendererKey: 'sample.wallpaper-console.waiting',
+        containerKeys: ['main'],
+        displayModes: ['SECONDARY'],
+        workspaces: ['MAIN'],
+        instanceModes: ['MASTER', 'SLAVE'],
+        title: '等待店员登录',
+        surfaceForm: ['laptop'],
+        layerTier: 'standard',
+        layerGuard: 'dismissible',
+      },
+      {
+        partKey: 'sample.wallpaper-console.welcome',
+        rendererKey: 'sample.wallpaper-console.welcome',
+        containerKeys: ['main'],
+        displayModes: ['SECONDARY'],
+        workspaces: ['MAIN'],
+        instanceModes: ['MASTER', 'SLAVE'],
+        title: '顾客欢迎页',
+        surfaceForm: ['laptop'],
+        layerTier: 'standard',
+        layerGuard: 'dismissible',
+      },
+    ])
+  })
+
   it('uses caller-provided surface declarations for the selected form', async () => {
     const override = {
       orientations: {

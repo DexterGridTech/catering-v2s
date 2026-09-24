@@ -35,7 +35,7 @@ const GROUP_SEED_CAPABILITIES = Object.freeze([
   'BC-ORG-BRAND-CREATE', 'BC-ORG-BRAND-STATUS', 'BC-ORG-HEAD-COMPANY-BRAND', 'BC-ORG-HEAD-COMPANY-CREATE',
   'BC-ORG-HEAD-COMPANY-STATUS', 'BC-ORG-PROJECT-CREATE', 'BC-ORG-PROJECT-STATUS', 'BC-ORG-REGION-CREATE',
   'BC-ORG-REGION-STATUS', 'BC-ORG-STORE-CREATE', 'BC-ORG-STORE-STATUS', 'BC-ORG-TENANT-CREATE',
-  'BC-ORG-TENANT-STATUS', 'EDIT_STORE_SERVICE_POINT_QR',
+  'BC-ORG-TENANT-STATUS', 'EDIT_STORE_SERVICE_POINT_QR', 'EDIT_STORE_TERMINAL',
 ]);
 const EXTENSION_HOST_TYPES = new Set([
   'BRAND', 'TENANT', 'HEAD_COMPANY', 'STORE', 'CONTRACT', 'COMMERCIAL_GROUP', 'REGION', 'PROJECT', 'SERVICE_POINT',
@@ -390,7 +390,7 @@ export function validateFormalSeedStaticInputs({fixture, registry}) {
   }
   const catalogInventoryPrerequisite = validateCatalogInventorySeedPrerequisite(fixture);
   const operations = Array.isArray(registry) ? registry : [];
-  for (const operationId of ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'transitionWorkspaceRoleStatus', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract', 'getOperationsStoreServicePointAreas', 'postOperationsStoreServicePointArea', 'postOperationsStoreServicePoint', 'postOperationsStoreServicePointStatus', 'postOperationsStoreServicePointAreaStatus', 'getOperationsStoreServicePoint', 'stageStoreServicePointImage', 'getOperationsStoreQrConfiguration']) {
+  for (const operationId of ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'transitionWorkspaceRoleStatus', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract', 'getOperationsStoreServicePointAreas', 'postOperationsStoreServicePointArea', 'postOperationsStoreServicePoint', 'postOperationsStoreServicePointStatus', 'postOperationsStoreServicePointAreaStatus', 'getOperationsStoreServicePoint', 'stageStoreServicePointImage', 'getOperationsStoreQrConfiguration', 'getOperationsStoreTerminals', 'getOperationsStoreTerminal', 'getOperationsStoreTerminalAreaCandidates', 'getOperationsStoreTerminalTagCandidates', 'postOperationsStoreTerminal', 'putOperationsStoreTerminal', 'postOperationsStoreTerminalStatus']) {
     if (operations.filter((entry) => entry.operationId === operationId).length !== 1) fail(`SEED_OPERATION_REGISTRY_MISSING:${operationId}`);
   }
   return Object.freeze({invitationPlan: resolveInvitationCreationPlan(fixture), catalogInventoryPrerequisite, servicePointSeed});
@@ -443,7 +443,7 @@ function readEnv(file) {
   if (!existsSync(file) || (statSync(file).mode & 0o777) !== 0o600) throw new FormalSeedFailure('SEED_MANAGED_CREDENTIALS_INVALID');
   return Object.fromEntries(readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => line.split('=', 2)));
 }
-function managedRuntime() {
+export function managedRuntime() {
   const manifestPath = path.join(runtimeRoot, 'run-manifest.json');
   if (!existsSync(manifestPath)) throw new FormalSeedFailure('SEED_MANAGED_RUN_MANIFEST_REQUIRED');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));

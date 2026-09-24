@@ -1751,6 +1751,8 @@ const execute = async () => {
     persist();
     beginBoundary('LOCAL_RESOURCE_PREFLIGHT');
     const localBudget = commandResult(path.join(root, 'scripts/env/check-runtime-resource-budget'), [
+      '--profile',
+      'admin-validation-with-ter',
       path.join(root, '.runtime'),
     ]);
     if (localBudget.status !== 0) throw new Error('LOCAL_MANAGED_RESOURCE_BUDGET_EXCEEDED');

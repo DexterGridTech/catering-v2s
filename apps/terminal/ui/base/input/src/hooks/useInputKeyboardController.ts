@@ -24,8 +24,7 @@ export const useInputKeyboardController = ({
       if (field === undefined) return;
       const before = field.getEditState();
       const result = field.applyKey(key);
-      const keyboardPresentationChanged =
-        before.shift !== result.state.shift || before.capsLock !== result.state.capsLock;
+      const keyboardPresentationChanged = before.shift !== result.state.shift;
       if (result.effect === 'mode' || keyboardPresentationChanged) {
         forceKeyboardUpdate(value => value + 1);
       }

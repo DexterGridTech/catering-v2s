@@ -1,5 +1,6 @@
 import {useCallback, useState} from 'react'
 import type {
+  TopologyAdminCapability,
   TopologyAdminCommandResult,
   TopologyFacts,
   TopologyOperation,
@@ -41,6 +42,7 @@ const topologyScrollContentPaddingBottom = 192
 // result/feedback semantics.
 const topologyOperationMinimumBusyMs = 2_000
 const topologyOperationPreDispatchBusyMs = 800
+type TopologyPageAvailability = ReturnType<TopologyAdminCapability['getPageAvailability']>
 
 const waitForTopologyBusyWindow = async (startedAt: number): Promise<void> => {
   const remaining = topologyOperationMinimumBusyMs - (Date.now() - startedAt)
@@ -71,6 +73,26 @@ const hostStateLabel = (facts: TopologyFacts | undefined, busy: TopologyOperatio
 }
 
 export const TopologySectionLaptop = ({context}: AdminSectionProps) => {
+  const pageAvailability = context.topologyCapability?.getPageAvailability() ?? Object.freeze({
+    available: false,
+    reasonCode: 'TOPOLOGY_UNAVAILABLE' as const,
+  })
+  return (
+    <PrimitiveContainer testID={topologyIds.section} layout="content" appearance="admin-content" bounded style={sectionStyle}>
+      <InputScrollArea
+        testID={topologyIds.scroll}
+        contentPaddingBottom={pageAvailability.available ? topologyScrollContentPaddingBottom : undefined}
+      >
+        <TopologySectionLaptopContent context={context} pageAvailability={pageAvailability} />
+      </InputScrollArea>
+    </PrimitiveContainer>
+  )
+}
+
+const TopologySectionLaptopContent = ({
+  context,
+  pageAvailability,
+}: AdminSectionProps & Readonly<{readonly pageAvailability: TopologyPageAvailability}>) => {
   const {logger} = useRenderContext()
   const capability = context.topologyCapability
   const facts = useUiStateSelector<TopologyFacts | undefined>(() => capability?.getSnapshot(), areTopologyFactsEqual)
@@ -84,7 +106,6 @@ export const TopologySectionLaptop = ({context}: AdminSectionProps) => {
     editable: busy === null,
     keyboardKind: 'virtual',
     layout: 'financial',
-    keyboardPlacement: 'surface',
     focusScopeId: ADMIN_CONSOLE_FOCUS_SCOPE_ID,
   })
   const host = hostField.inputProps.value ?? ''
@@ -137,10 +158,6 @@ export const TopologySectionLaptop = ({context}: AdminSectionProps) => {
     }
   }, [busy, eligibility, logger])
 
-  const pageAvailability = capability?.getPageAvailability() ?? Object.freeze({
-    available: false,
-    reasonCode: 'TOPOLOGY_UNAVAILABLE' as const,
-  })
   const pairEligibility = pageAvailability.available ? eligibility('pair') : unavailableEligibility('pair')
   const unpairEligibility = pageAvailability.available ? eligibility('unpair') : unavailableEligibility('unpair')
   const hostEligibility = pageAvailability.available ? eligibility('enable-host') : unavailableEligibility('enable-host')
@@ -178,26 +195,24 @@ export const TopologySectionLaptop = ({context}: AdminSectionProps) => {
 
   if (!pageAvailability.available) {
     return (
-      <PrimitiveContainer testID={topologyIds.section} layout="content" appearance="admin-content" bounded style={sectionStyle}>
-        <InputScrollArea testID={topologyIds.scroll}>
-          <PrimitiveHeading appearance="admin-page" testID={topologyIds.title}>{context.catalogEntry.title}</PrimitiveHeading>
-          <PrimitiveCard
-            appearance="admin"
-            testID={`${topologyIds.pageGate}:card`}
-            style={{minHeight: 230, alignItems: 'center', justifyContent: 'center', padding: 18}}
-          >
-            <PrimitiveIconBadge testID={`${topologyIds.pageGate}:icon`} accessibilityLabel="功能不可用" icon="blocked" size={28} tone="warn" />
-            <PrimitiveStatusLine testID={topologyIds.pageGate} tone="warn" style={{justifyContent: 'center', marginTop: 11}}>
-              当前功能不可用
-            </PrimitiveStatusLine>
-            <PrimitiveText appearance="admin-muted" testID={topologyIds.pageGateReason} style={{maxWidth: 360, marginTop: 6, textAlign: 'center'}}>
-              {pageAvailability.reasonCode === 'TOPOLOGY_REQUIRES_SINGLE_SCREEN'
-                ? '双机拓扑要求本机只有一个物理屏'
-                : topologyReasonMessages[pageAvailability.reasonCode] || '拓扑能力当前不可用'}
-            </PrimitiveText>
-          </PrimitiveCard>
-        </InputScrollArea>
-      </PrimitiveContainer>
+      <>
+        <PrimitiveHeading appearance="admin-page" testID={topologyIds.title}>{context.catalogEntry.title}</PrimitiveHeading>
+        <PrimitiveCard
+          appearance="admin"
+          testID={`${topologyIds.pageGate}:card`}
+          style={{minHeight: 230, alignItems: 'center', justifyContent: 'center', padding: 18}}
+        >
+          <PrimitiveIconBadge testID={`${topologyIds.pageGate}:icon`} accessibilityLabel="功能不可用" icon="blocked" size={28} tone="warn" />
+          <PrimitiveStatusLine testID={topologyIds.pageGate} tone="warn" style={{justifyContent: 'center', marginTop: 11}}>
+            当前功能不可用
+          </PrimitiveStatusLine>
+          <PrimitiveText appearance="admin-muted" testID={topologyIds.pageGateReason} style={{maxWidth: 360, marginTop: 6, textAlign: 'center'}}>
+            {pageAvailability.reasonCode === 'TOPOLOGY_REQUIRES_SINGLE_SCREEN'
+              ? '双机拓扑要求本机只有一个物理屏'
+              : topologyReasonMessages[pageAvailability.reasonCode] || '拓扑能力当前不可用'}
+          </PrimitiveText>
+        </PrimitiveCard>
+      </>
     )
   }
 
@@ -466,17 +481,15 @@ export const TopologySectionLaptop = ({context}: AdminSectionProps) => {
   }
 
   return (
-    <PrimitiveContainer testID={topologyIds.section} layout="content" appearance="admin-content" bounded style={sectionStyle}>
-      <InputScrollArea testID={topologyIds.scroll} contentPaddingBottom={topologyScrollContentPaddingBottom}>
-        <PrimitiveHeading appearance="admin-page" testID={topologyIds.title}>{context.catalogEntry.title}</PrimitiveHeading>
-        {showHostStarting ? renderHostStarting() : null}
-        {showHostReady ? renderHostReady() : null}
-        {isHostError ? renderHostError() : null}
-        {showPairing ? renderPairing() : null}
-        {isPairError ? renderPairError() : null}
-        {showPaired ? renderPaired() : null}
-        {showGoalChoice ? renderTargetChoice() : null}
-      </InputScrollArea>
-    </PrimitiveContainer>
+    <>
+      <PrimitiveHeading appearance="admin-page" testID={topologyIds.title}>{context.catalogEntry.title}</PrimitiveHeading>
+      {showHostStarting ? renderHostStarting() : null}
+      {showHostReady ? renderHostReady() : null}
+      {isHostError ? renderHostError() : null}
+      {showPairing ? renderPairing() : null}
+      {isPairError ? renderPairError() : null}
+      {showPaired ? renderPaired() : null}
+      {showGoalChoice ? renderTargetChoice() : null}
+    </>
   )
 }

@@ -4822,7 +4822,9 @@
         "TERMINAL_HARD_RULES_NUMBERING_STABLE",
         "TERMINAL_TRIPLE_NAMING_DERIVED",
         "TERMINAL_PORT_REGISTRY_WITH_DEFAULTS",
-        "TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README"
+        "TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README",
+        "TERMINAL_WEB_FIRST_DEVICE_PARITY",
+        "TERMINAL_INPUT_VIRTUAL_KEYBOARD_USAGE"
       ],
       "assertionSources": [
         {
@@ -4854,6 +4856,16 @@
           "assertionKey": "TERMINAL_EVERY_PACKAGE_HAS_CHINESE_README",
           "path": "doc/platform/terminal-coding-standard.md",
           "anchor": "### `TR-10` · 每个包必须有中文 `README.md`，说清定位、作用、结构、用法"
+        },
+        {
+          "assertionKey": "TERMINAL_WEB_FIRST_DEVICE_PARITY",
+          "path": "doc/platform/terminal-coding-standard.md",
+          "anchor": "### `TR-16` · 不涉及 adapter 的功能，先过 integration 的 Expo Web，再上设备跑 assembly，两端表现必须一致"
+        },
+        {
+          "assertionKey": "TERMINAL_INPUT_VIRTUAL_KEYBOARD_USAGE",
+          "path": "doc/platform/terminal-coding-standard.md",
+          "anchor": "### `TR-17` · TER 输入与虚拟键盘只能通过 input owner 使用"
         }
       ],
       "sourceRefs": [
@@ -5207,6 +5219,61 @@
         "doc/platform/frontend-coding-standard.md",
         "libraries/frontend/admin-ui-foundation/src/overlay/detailActionMenu.tsx",
         "project-memory/practices/detail-drawer-action-menu.md"
+      ]
+    },
+    {
+      "id": "practices.ter-input-and-virtual-keyboard-usage",
+      "path": "project-memory/practices/ter-input-and-virtual-keyboard-usage.md",
+      "layer": "routed",
+      "route": {
+        "taskKinds": [
+          "design",
+          "implementation",
+          "review",
+          "testing"
+        ],
+        "domains": [
+          "platform"
+        ],
+        "consumerFaces": [
+          "all"
+        ],
+        "owners": [
+          "platform",
+          "frontend-platform"
+        ],
+        "impacts": [
+          "architecture",
+          "runtime",
+          "governance",
+          "evidence"
+        ],
+        "triggers": [
+          "task-start",
+          "implementation",
+          "review",
+          "failure"
+        ]
+      },
+      "requiredAssertions": [
+        "TER_INPUT_VIRTUAL_KEYBOARD_USAGE_MUST_READ_TR17",
+        "TER_INPUT_VIRTUAL_KEYBOARD_MEMORY_IS_POINTER"
+      ],
+      "assertionSources": [
+        {
+          "assertionKey": "TER_INPUT_VIRTUAL_KEYBOARD_USAGE_MUST_READ_TR17",
+          "path": "doc/platform/terminal-coding-standard.md",
+          "anchor": "### `TR-17` · TER 输入与虚拟键盘只能通过 input owner 使用"
+        },
+        {
+          "assertionKey": "TER_INPUT_VIRTUAL_KEYBOARD_MEMORY_IS_POINTER",
+          "path": "project-memory/practices/ter-input-and-virtual-keyboard-usage.md",
+          "anchor": "## 后续 agent 的触发与回读"
+        }
+      ],
+      "sourceRefs": [
+        "doc/platform/terminal-coding-standard.md",
+        "project-memory/practices/ter-input-and-virtual-keyboard-usage.md"
       ]
     }
   ]

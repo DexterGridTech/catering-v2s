@@ -7,6 +7,7 @@ import com.catering.v2s.app.bootstrap.CateringV2sApplication;
 import com.catering.v2s.app.edge.diagnostic.EdgeRouteFaceRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -29,6 +30,28 @@ import org.testcontainers.containers.PostgreSQLContainer;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EdgeRouteRegistryCoverageTest {
     private static final Set<String> RUNTIME_ROUTE_PREFIX_ALLOWLIST = Set.of("/error", "/actuator");
+    private static final Map<String, String> STORE_TERMINAL_ROUTES = Map.ofEntries(
+            Map.entry(
+                    "GET /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+                    "getOperationsStoreTerminals"),
+            Map.entry(
+                    "GET /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+                    "getOperationsStoreTerminal"),
+            Map.entry(
+                    "POST /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+                    "postOperationsStoreTerminal"),
+            Map.entry(
+                    "PUT /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+                    "putOperationsStoreTerminal"),
+            Map.entry(
+                    "POST /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status",
+                    "postOperationsStoreTerminalStatus"),
+            Map.entry(
+                    "GET /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates",
+                    "getOperationsStoreTerminalAreaCandidates"),
+            Map.entry(
+                    "GET /api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates",
+                    "getOperationsStoreTerminalTagCandidates"));
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
     static {
@@ -75,6 +98,15 @@ class EdgeRouteRegistryCoverageTest {
 
         Set<String> expected = new HashSet<>(
                 EdgeRouteFaceRegistry.loadExtended(new ObjectMapper()).keySet());
+        Map<String, EdgeRouteFaceRegistry.Definition> generated =
+                EdgeRouteFaceRegistry.loadExtended(new ObjectMapper());
+        STORE_TERMINAL_ROUTES.forEach((route, operationId) -> {
+            EdgeRouteFaceRegistry.Definition definition = generated.get(route);
+            assertTrue(definition != null, () -> "store-terminal operation missing from generated registry: " + route);
+            assertEquals(operationId, definition.operationId(), "generated operation identity drift: " + route);
+            assertEquals("store-terminal", definition.owner(), "generated owner drift: " + route);
+            assertEquals("operations-admin", definition.consumerFace(), "generated face drift: " + route);
+        });
         Set<String> r24 = expected.stream()
                 .filter(route -> route.contains("/head-companies/{headCompanyId}/brand-authorizations"))
                 .collect(Collectors.toSet());

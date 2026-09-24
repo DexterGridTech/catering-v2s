@@ -772,6 +772,34 @@
       }
     },
     {
+      "key": "PG-STORE-TERMINALS",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "门店终端管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-STORE-OPERATIONS",
+        "order": 310
+      },
+      "experience": {
+        "pageDescription": "按所选门店维护终端规则、打印机与打印场景。",
+        "dataNodeCascaderLabel": "可视数据节点",
+        "noDataNodePrompt": "请选择可视数据节点",
+        "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+        "cascadeLevelLabels": ["大区", "项目", "门店"],
+        "forbiddenAlternatives": ["门店设备管理", "终端激活管理"]
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT", "STORE"],
+        "requiredDataNodeType": "STORE"
+      }
+    },
+    {
       "key": "PG-BUSINESS-CHANNEL-PROJECT",
       "kind": "PAGE",
       "consumerFace": "operations-admin",
@@ -1540,6 +1568,20 @@
       "action": {
         "groupKey": "CATALOG_MANAGEMENT",
         "targetPageKey": "PG-STORE-SERVICE-POINT-QR",
+        "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT", "STORE"],
+        "scopeApplicability": "SELECTED_STORE_SCOPE"
+      }
+    },
+    {
+      "key": "EDIT_STORE_TERMINAL",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "编辑门店终端"
+      },
+      "action": {
+        "groupKey": "STORE_MANAGEMENT",
+        "targetPageKey": "PG-STORE-TERMINALS",
         "grantableRoleNodeTypes": ["GROUP", "REGION", "PROJECT", "STORE"],
         "scopeApplicability": "SELECTED_STORE_SCOPE"
       }

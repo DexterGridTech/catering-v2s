@@ -202,7 +202,14 @@
     {"code": "SALES_MENU_MANUAL_REASON_REQUIRED", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "CONFIRMATION_REQUIRED", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
     {"code": "SALES_MENU_PUBLICATION_REQUIRED", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_RESULT_UNKNOWN", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"}
+    {"code": "SALES_MENU_RESULT_UNKNOWN", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "STORE_TERMINAL_NAME_CONFLICT", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "STORE_TERMINAL_ACTIVATION_CODE_CONFLICT", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "STORE_TERMINAL_ACTIVATION_CODE_EXHAUSTED", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "STORE_TERMINAL_RULE_INVALID", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "STORE_TERMINAL_REFERENCE_INVALID", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "STORE_TERMINAL_STATUS_TRANSITION_INVALID", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
+    {"code": "STORE_TERMINAL_VOIDED_IMMUTABLE", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"}
   ],
   "closure": {
     "heritageSourceCodeCount": 83,
@@ -210,11 +217,11 @@
     "heritageSourceCodesOwnedByR3Compatibility": 1,
     "r3SourceCodeCount": 6,
     "r3DispositionCount": 6,
-    "v2sNativeCodeCount": 79,
+    "v2sNativeCodeCount": 86,
     "crossRegistryDuplicateCodeCount": 0,
     "heritageR3ActiveTargetCount": 78,
-    "v2sNativeActiveTargetCount": 79,
-    "totalActiveTargetCount": 157,
+    "v2sNativeActiveTargetCount": 86,
+    "totalActiveTargetCount": 164,
     "allowedDispositions": [
       "RETAIN",
       "RETAIN_R3_WIRE_COMPATIBILITY",

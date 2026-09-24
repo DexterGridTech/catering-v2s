@@ -113,7 +113,7 @@ export const baseTokens = Object.freeze({
   buttonLoginPrimaryText: 'text-center text-lg leading-7 font-semibold text-login-action-foreground',
   buttonLoginSecondary: 'self-center min-h-12 rounded-md bg-transparent px-4 py-2',
   buttonLoginSecondaryText: 'text-center text-lg leading-7 font-medium text-login-foreground',
-  keyboardDock: 'w-full self-center rounded-[20px] border border-keyboard-border bg-keyboard-surface',
+  keyboardDock: 'w-full self-center border border-keyboard-border bg-keyboard-surface',
   keyboardKey: 'flex-1 self-stretch min-h-[48px] rounded-[9px] border border-keyboard-border bg-keyboard-key px-2 py-2 items-center justify-center',
   keyboardKeyCompact: 'flex-1 self-stretch min-h-[38px] rounded-[7px] border border-keyboard-border bg-keyboard-key px-1 py-1 items-center justify-center',
   keyboardKeySelected: 'flex-1 self-stretch min-h-[48px] rounded-[9px] border-2 border-keyboard-focus bg-keyboard-key px-2 py-2 items-center justify-center',

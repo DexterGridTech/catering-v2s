@@ -40,7 +40,8 @@ const valid = () => [{
 }];
 
 test("complete r5 seed accepts exactly the ordered owner then catalog receipts", () => {
-  assert.deepEqual(validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: valid()}), {managedDevRunId: devRunId, sourceItems: 73, eligibleItems: 72, excludedItems: 1, availabilityItemCount: 6, stageIds: [...COMPLETE_SEED_STAGE_IDS]});
+  const postSteps = [{id: "store-terminal", exitStatus: 0, reportPath: "/runtime/r5/store-terminal/post-step.json", report: {managedDevRunId: devRunId, business: "PASS", cleanup: "PASS_NO_PERSISTENT_SEED_PROCESS", created: 8, readback: 8}}];
+  assert.deepEqual(validateCompleteSeedEvidence({managedDevRunId: devRunId, stages: valid(), postSteps}), {managedDevRunId: devRunId, sourceItems: 73, eligibleItems: 72, excludedItems: 1, availabilityItemCount: 6, stageIds: [...COMPLETE_SEED_STAGE_IDS], postStepIds: ["store-terminal"]});
 });
 
 test("complete r5 seed exposes the paired human report beside the machine report", () => {

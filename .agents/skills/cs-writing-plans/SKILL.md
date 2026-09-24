@@ -57,6 +57,11 @@ be written as performable observations, never as property descriptions. Any fact
 the IA and this design must match word for word; a mismatch is a defect to resolve now, never a gap
 left for implementation to bridge.
 
+A TER (`apps/terminal`) design's verification units must follow `TR-16` in
+`doc/platform/terminal-coding-standard.md`: name the `ui/integration` package and its Expo Web entry, the
+`assembly` package and target VM or device, the shared scenario list run on both ends, and which scenarios
+depend on an `adapter/*` capability and may go straight to the device. Do not restate the rule here.
+
 The resulting design starts with:
 
 ```text

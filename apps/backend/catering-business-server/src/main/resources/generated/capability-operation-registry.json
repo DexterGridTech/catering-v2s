@@ -3,7 +3,7 @@
   "kind": "generated-operation-authorization-catalog",
   "generatedFrom": "contracts/registry/iam-org-governance-manifest.json",
   "closure": {
-    "mutatingOperations": 166
+    "mutatingOperations": 169
   },
   "requirements": [
     {
@@ -1982,6 +1982,48 @@
     },
     {
       "operationIdentity": {
+        "operationId": "postOperationsStoreTerminal",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+        "consumerFace": "operations-admin",
+        "ownerModule": "store-terminal"
+      },
+      "requirementId": "REQ_POST_OPERATIONS_STORE_TERMINAL",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {
+        "STORE": "EDIT_STORE_TERMINAL"
+      },
+      "unsupportedResourceTypeDecision": "DENY",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "store-terminal",
+      "ownerRecheckId": "OWNER_RECHECK_STORE_TERMINAL",
+      "typedProblemMappingId": "PROBLEM_STORE_TERMINAL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_POST_OPERATIONS_STORE_TERMINAL"
+    },
+    {
+      "operationIdentity": {
+        "operationId": "postOperationsStoreTerminalStatus",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status",
+        "consumerFace": "operations-admin",
+        "ownerModule": "store-terminal"
+      },
+      "requirementId": "REQ_POST_OPERATIONS_STORE_TERMINAL_STATUS",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {
+        "STORE": "EDIT_STORE_TERMINAL"
+      },
+      "unsupportedResourceTypeDecision": "DENY",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "store-terminal",
+      "ownerRecheckId": "OWNER_RECHECK_STORE_TERMINAL",
+      "typedProblemMappingId": "PROBLEM_STORE_TERMINAL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_POST_OPERATIONS_STORE_TERMINAL_STATUS"
+    },
+    {
+      "operationIdentity": {
         "operationId": "publishOperationsSalesMenu",
         "method": "POST",
         "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/publications",
@@ -2000,6 +2042,27 @@
       "ownerRecheckId": "OWNER_RECHECK_SALES_MENU",
       "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_PUBLISH_OPERATIONS_SALES_MENU"
+    },
+    {
+      "operationIdentity": {
+        "operationId": "putOperationsStoreTerminal",
+        "method": "PUT",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+        "consumerFace": "operations-admin",
+        "ownerModule": "store-terminal"
+      },
+      "requirementId": "REQ_PUT_OPERATIONS_STORE_TERMINAL",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {
+        "STORE": "EDIT_STORE_TERMINAL"
+      },
+      "unsupportedResourceTypeDecision": "DENY",
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "store-terminal",
+      "ownerRecheckId": "OWNER_RECHECK_STORE_TERMINAL",
+      "typedProblemMappingId": "PROBLEM_STORE_TERMINAL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_PUT_OPERATIONS_STORE_TERMINAL"
     },
     {
       "operationIdentity": {

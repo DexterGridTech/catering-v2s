@@ -25,6 +25,17 @@
 
 ## 公共面
 
+包根 @catering-v2s/ui-integration-sample-console 当前公开以下符号（含类型）；主入口 . →
+./src/index.ts：
+PortraitSurfaceDeclarations、SampleAssembly、SurfaceCreationInput、SurfaceDeclarations、
+SurfaceForm、SurfaceOrientation、SurfaceSize、TerminalSurfaces、createSampleAssembly、
+createSampleConsoleModule、createSampleDefinedParts、createSurfaceForDisplayIndex、
+dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、
+getSurfaceDeclarations、readTerminalSurfaces、surfaceFormForOrientation、terminalSurfaces。
+export map 另提供 @catering-v2s/ui-integration-sample-console/theme/global.css →
+./theme/global.css，供 Android 宿主与 Metro 读取本包主题。清单与 terminal-invariants.json
+及 test/publicSurface.test.ts 对齐。
+
 - `moduleName`、`moduleKind`、`dependencyModuleNames`、`devDependencyModuleNames`：包图元数据；
   `createSampleConsoleModule` 是该 integration 的运行期模块工厂。
 - `createSampleAssembly`、`SampleAssembly`：唯一的真实组装入口及其返回契约；

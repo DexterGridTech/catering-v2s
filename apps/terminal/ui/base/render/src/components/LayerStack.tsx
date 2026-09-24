@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useMemo, useRef} from 'react'
-import {BackHandler, Platform, Pressable, StyleSheet, TextInput, View} from 'react-native'
+import {Animated, BackHandler, Platform, Pressable, StyleSheet, TextInput, View} from 'react-native'
 import {closeLayerCommand, selectLayers} from '@catering-v2s/kernel-base-ui-state'
 import {useRenderContext} from '../contexts/RenderContext'
 import {useSurfaceContext} from '../contexts/SurfaceContext'
@@ -11,6 +11,7 @@ import {useRenderStatus} from '../hooks/useRenderStatus'
 import {useUiCatalogContext} from '../hooks/useUiCatalogContext'
 import {useUiStateSelector} from '../hooks/useUiStateSelector'
 import {isUiCatalogEntryAvailable} from '@catering-v2s/kernel-base-ui-state'
+import {useSurfacePresentationOffset} from '../contexts/SurfacePresentationOffsetContext'
 
 const LAYER_STACK_TEST_ID = 'ui-base-render:layer-stack'
 const LAYER_BACKDROP_TEST_ID = 'ui-base-render:layer-backdrop'
@@ -54,6 +55,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
   },
+  layerContent: {
+    flex: 1,
+  },
 })
 
 const tierRank = (
@@ -94,6 +98,7 @@ const layerGuardOf = (
 
 export const LayerStack = () => {
   const {displayMode} = useSurfaceContext()
+  const presentationOffsetY = useSurfacePresentationOffset()
   const notifyFocusBoundary = useSurfaceFocusBoundary()
   const {
     logger,
@@ -215,7 +220,7 @@ export const LayerStack = () => {
   }
 
   return (
-    <View testID={LAYER_STACK_TEST_ID} style={styles.stack} pointerEvents="box-none">
+    <View testID={LAYER_STACK_TEST_ID} style={[styles.stack, {pointerEvents: Platform?.OS === 'web' ? 'none' : 'box-none'}]}>
       {orderedLayers.length > 0 ? (
         <Pressable
           testID={LAYER_BACKDROP_TEST_ID}
@@ -228,8 +233,7 @@ export const LayerStack = () => {
         <View
           key={layer.layerId}
           testID={`ui-base-render:layer:${layer.layerId}`}
-          style={styles.layer}
-          pointerEvents="box-none"
+          style={[styles.layer, {pointerEvents: Platform?.OS === 'web' ? 'none' : 'box-none'}]}
           focusable={layer.layerId === topLayerId}
           tabIndex={layer.layerId === topLayerId ? -1 : undefined}
           accessibilityViewIsModal={layer.layerId === topLayerId}
@@ -239,17 +243,19 @@ export const LayerStack = () => {
             }
           }}
         >
-          {resolvePart({
-            placement: layer,
-            displayMode,
-            containerKey: null,
-            catalogContext: catalogContext!,
-            uiCatalog,
-            rendererCatalog,
-            reportPartDiagnostic,
-            clearPartDiagnostic,
-            elementKey: layer.layerId,
-          })}
+          <Animated.View style={[styles.layerContent, {transform: [{translateY: presentationOffsetY}]}]}>
+            {resolvePart({
+              placement: layer,
+              displayMode,
+              containerKey: null,
+              catalogContext: catalogContext!,
+              uiCatalog,
+              rendererCatalog,
+              reportPartDiagnostic,
+              clearPartDiagnostic,
+              elementKey: layer.layerId,
+            })}
+          </Animated.View>
         </View>
       ))}
     </View>

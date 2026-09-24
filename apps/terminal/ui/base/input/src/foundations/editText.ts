@@ -7,14 +7,13 @@ export type EditState = Readonly<{
   readonly value: string
   readonly selection: InputSelection
   readonly shift: boolean
-  readonly capsLock: boolean
 }>
 
 export type KeyboardKey =
   | Readonly<{readonly kind: 'text'; readonly text: string}>
   | Readonly<{readonly kind: 'backspace'}>
   | Readonly<{readonly kind: 'shift'}>
-  | Readonly<{readonly kind: 'caps'}>
+  | Readonly<{readonly kind: 'space'}>
   | Readonly<{readonly kind: 'complete'; readonly hasNextField: boolean}>
 
 export type EditEffect = 'edit' | 'mode' | 'focus-next' | 'close-only'
@@ -23,12 +22,6 @@ export type EditResult = Readonly<{
   readonly state: EditState
   readonly effect: EditEffect
 }>
-
-/**
- * CAPS and SHIFT are independent toggles. When both are active, SHIFT
- * reverses the CAPS state, matching the behavior of a physical keyboard.
- */
-export const isUppercaseMode = (capsLock: boolean, shift: boolean): boolean => capsLock !== shift
 
 const clamp = (value: number, lower: number, upper: number): number =>
   Math.min(upper, Math.max(lower, Number.isFinite(value) ? Math.trunc(value) : lower))
@@ -55,14 +48,14 @@ const insertText = (state: EditState, text: string, maxLength?: number): EditSta
   // Layout definitions provide lowercase alphabetic payloads. Preserve the
   // payload when uppercase mode is off so callers can still supply semantic
   // text without the edit model rewriting it unexpectedly.
-  const transformed = isUppercaseMode(state.capsLock, state.shift) ? text.toUpperCase() : text
+  const transformed = state.shift ? text.toUpperCase() : text
   const available = maxLength === undefined
     ? transformed.length
     : Math.max(0, Math.trunc(maxLength) - before.length - after.length)
   const inserted = transformed.slice(0, available)
   const value = before + inserted + after
   return withSelection(
-    {...state, shift: false},
+    inserted.length > 0 ? {...state, shift: false} : state,
     value,
     {start: before.length + inserted.length, end: before.length + inserted.length},
   )
@@ -92,13 +85,10 @@ export const applyKeyboardKey = (
   maxLength?: number,
 ): EditResult => {
   if (key.kind === 'text') return {state: insertText(state, key.text, maxLength), effect: 'edit'}
+  if (key.kind === 'space') return {state: insertText(state, ' ', maxLength), effect: 'edit'}
   if (key.kind === 'backspace') return {state: backspace(state), effect: 'edit'}
   if (key.kind === 'shift') return {
     state: {...state, shift: !state.shift},
-    effect: 'mode',
-  }
-  if (key.kind === 'caps') return {
-    state: {...state, capsLock: !state.capsLock, shift: false},
     effect: 'mode',
   }
   return {

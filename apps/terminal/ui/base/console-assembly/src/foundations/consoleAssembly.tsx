@@ -731,50 +731,50 @@ export const createConsoleAssembly = async <TReadyPayload extends StateJsonValue
       })
     }
     return (
-      <RenderProvider
-        stateSource={stateSource}
-        uiCatalog={uiCatalog}
-        rendererCatalog={rendererCatalog}
+      <ConsoleSurfaceInputFrame
+        appName={input.appName}
+        surface={surface}
+        declaredSize={declaredSize}
         logger={input.platformPorts.logger}
-        nativeLoadingCapability={input.nativeLoadingCapability}
-        onPrimarySurfaceReady={onPrimarySurfaceReady}
-        getPrimarySurfaceReady={() => primarySurfaceReady}
-        runtimeFacts={runtimeFacts}
-        onRuntimeRetry={onRuntimeRetry}
-        topologyCapability={topologyCapability}
-        dispatchCommand={dispatchCommand}
-        createRouteContext={createRouteContext}
-        layerDismissals={input.layerDismissals}
-        selectUiVariable={selectUiVariable}
-        selectSurfaceForm={selectSurfaceForm}
+        hostSourceAttached={input.surfaceHostSourcesByDisplayIndex?.[surface.displayIndex] !== undefined}
+        onSurfaceDeclared={() => {
+          if (surface.displayIndex === 0) startupReadiness.primaryDeclared = true
+        }}
+        onSurfaceMeasured={() => {
+          if (surface.displayIndex === 0) markPrimarySurfaceMeasured()
+        }}
       >
-        <SurfaceRoot
-          displayMode={surface.displayMode}
-          containerKey="main"
-          defaultContainerPartKeys={input.defaultContainerPartKeys}
-          canvas={declaredSize}
-          surfaceHostSource={getSurfaceHostSource(surface)}
-          renderContentFrame={({content}) => (
-            <ConsoleSurfaceInputFrame
-              appName={input.appName}
-              surface={surface}
-              declaredSize={declaredSize}
-              logger={input.platformPorts.logger}
-              hostSourceAttached={input.surfaceHostSourcesByDisplayIndex?.[surface.displayIndex] !== undefined}
-              onSurfaceDeclared={() => {
-                if (surface.displayIndex === 0) startupReadiness.primaryDeclared = true
-              }}
-              onSurfaceMeasured={() => {
-                if (surface.displayIndex === 0) markPrimarySurfaceMeasured()
-              }}
-            >
-              <AdminLauncher canvas={declaredSize}>{content}</AdminLauncher>
-            </ConsoleSurfaceInputFrame>
-          )}
+        <RenderProvider
+          stateSource={stateSource}
+          uiCatalog={uiCatalog}
+          rendererCatalog={rendererCatalog}
+          logger={input.platformPorts.logger}
+          nativeLoadingCapability={input.nativeLoadingCapability}
+          onPrimarySurfaceReady={onPrimarySurfaceReady}
+          getPrimarySurfaceReady={() => primarySurfaceReady}
+          runtimeFacts={runtimeFacts}
+          onRuntimeRetry={onRuntimeRetry}
+          topologyCapability={topologyCapability}
+          dispatchCommand={dispatchCommand}
+          createRouteContext={createRouteContext}
+          layerDismissals={input.layerDismissals}
+          selectUiVariable={selectUiVariable}
+          selectSurfaceForm={selectSurfaceForm}
         >
-          {input.renderChildren?.()}
-        </SurfaceRoot>
-      </RenderProvider>
+          <SurfaceRoot
+            displayMode={surface.displayMode}
+            containerKey="main"
+            defaultContainerPartKeys={input.defaultContainerPartKeys}
+            canvas={declaredSize}
+            surfaceHostSource={getSurfaceHostSource(surface)}
+            renderContentFrame={({content}) => (
+              <AdminLauncher canvas={declaredSize}>{content}</AdminLauncher>
+            )}
+          >
+            {input.renderChildren?.()}
+          </SurfaceRoot>
+        </RenderProvider>
+      </ConsoleSurfaceInputFrame>
     )
   }
 

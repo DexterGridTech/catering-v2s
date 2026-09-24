@@ -2,7 +2,6 @@ import {createContext, useContext, type RefObject} from 'react'
 import type {PrimitiveInputHandle} from '@catering-v2s/ui-base-primitives'
 import type {
   InputController,
-  InputDiagnosticReporter,
   InputFieldKeyboardState,
   InputKeyboardState,
 } from '../types/types'
@@ -10,8 +9,9 @@ import type {
 export const InputControllerContext = createContext<InputController | null>(null)
 export const InputKeyboardStateContext = createContext<InputKeyboardState | null>(null)
 export const InputFieldKeyboardStateContext = createContext<InputFieldKeyboardState | null>(null)
-export const InputDiagnosticContext = createContext<InputDiagnosticReporter | null>(null)
+export const InputPendingFocusCommitContext = createContext<((fieldId: string) => boolean) | null>(null)
 export type InputScrollAncestor = (
+  fieldId: string,
   inputRef: RefObject<PrimitiveInputHandle | null> | null,
   keyboardHeight: number,
 ) => void
@@ -21,6 +21,12 @@ export const useInputController = (): InputController => {
   const controller = useContext(InputControllerContext)
   if (controller === null) throw new Error('[ui-base-input] InputProvider is required')
   return controller
+}
+
+export const useInputPendingFocusCommit = (): ((fieldId: string) => boolean) => {
+  const commit = useContext(InputPendingFocusCommitContext)
+  if (commit === null) throw new Error('[ui-base-input] InputProvider is required')
+  return commit
 }
 
 export const useInputKeyboardState = (): InputKeyboardState => {
@@ -34,7 +40,5 @@ export const useInputFieldKeyboardState = (): InputFieldKeyboardState => {
   if (state === null) throw new Error('[ui-base-input] InputProvider is required')
   return state
 }
-
-export const useInputDiagnostic = (): InputDiagnosticReporter | null => useContext(InputDiagnosticContext)
 
 export const useInputScrollAncestor = (): InputScrollAncestor | null => useContext(InputScrollAncestorContext)

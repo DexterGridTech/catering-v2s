@@ -571,6 +571,21 @@
     },
     "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release": {
       "$ref": "./paths/operations-admin/store-service-point-qr.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-point-assets~1stage~1{assetRef}~1release"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals": {
+      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}": {
+      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1{terminalRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status": {
+      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1{terminalRef}~1status"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates": {
+      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1area-candidates"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates": {
+      "$ref": "./paths/operations-admin/store-terminals.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1terminals~1tag-candidates"
     }
   },
   "components": {
@@ -811,6 +826,84 @@
       },
       "StoreServicePointAssetReleaseReadback": {
         "$ref": "./components/organization/store-service-point-qr.schemas.json#/components/schemas/StoreServicePointAssetReleaseReadback"
+      },
+      "StoreTerminalStatus": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalStatus"
+      },
+      "StoreTerminalPrinterBinding": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalPrinterBinding"
+      },
+      "StoreTerminalPrinterInput": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalPrinterInput"
+      },
+      "StoreTerminalRangeSelection": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalRangeSelection"
+      },
+      "StoreTerminalSceneSelection": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalSceneSelection"
+      },
+      "StoreTerminalFunctionInput": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalFunctionInput"
+      },
+      "StoreTerminalConfigurationInput": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalConfigurationInput"
+      },
+      "StoreTerminalPrinter": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalPrinter"
+      },
+      "StoreTerminalRange": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalRange"
+      },
+      "StoreTerminalPrinterRef": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalPrinterRef"
+      },
+      "StoreTerminalScene": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalScene"
+      },
+      "StoreTerminalFunction": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalFunction"
+      },
+      "StoreTerminalConfiguration": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalConfiguration"
+      },
+      "StoreTerminalSummary": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalSummary"
+      },
+      "StoreTerminalPage": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalPage"
+      },
+      "StoreTerminalDetail": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalDetail"
+      },
+      "StoreTerminalAreaReference": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalAreaReference"
+      },
+      "StoreTerminalTagReference": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalTagReference"
+      },
+      "StoreTerminalAreaCandidate": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalAreaCandidate"
+      },
+      "StoreTerminalTagCandidate": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalTagCandidate"
+      },
+      "StoreTerminalAreaCandidatePage": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalAreaCandidatePage"
+      },
+      "StoreTerminalTagCandidatePage": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalTagCandidatePage"
+      },
+      "StoreTerminalCreateRequest": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalCreateRequest"
+      },
+      "StoreTerminalReplaceRequest": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalReplaceRequest"
+      },
+      "StoreTerminalStatusRequest": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalStatusRequest"
+      },
+      "StoreTerminalMutation": {
+        "$ref": "./components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalMutation"
       },
       "GroupWorkspaceCreateRequest": {
         "$ref": "./components/platform-workspace/group-workspace.schemas.json#/components/schemas/GroupWorkspaceCreateRequest"

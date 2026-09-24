@@ -1,6 +1,6 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {createElement, cloneElement, type ReactElement} from 'react'
-import {TextInput} from 'react-native'
+import {ScrollView, StyleSheet, TextInput, View} from 'react-native'
 import {describe, expect, it} from 'vitest'
 import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort, NativeLoadingCapability} from '@catering-v2s/ui-base-test-support'
 import {createRequestId, type TopologyLocator} from '@catering-v2s/kernel-base-contracts'
@@ -19,6 +19,7 @@ import {
   RenderProvider as ActualRenderProvider,
 } from '@catering-v2s/ui-base-render'
 import {InputSurfaceFrame} from '@catering-v2s/ui-base-input'
+import {advanceAnimatedTimingsForTests, setAnimatedTimingAutoFinishForTests} from '../../../../../../tools/terminal-shared/react-native-vitest-entry'
 import type {RenderProviderProps} from '@catering-v2s/ui-base-render'
 import {createUiCatalog, createUiStateModule, selectLayers, selectScreen} from '@catering-v2s/kernel-base-ui-state'
 import {sampleMemberDeskAssembly} from '../src/index'
@@ -35,7 +36,10 @@ import {
   submitMemberCommand,
 } from '@catering-v2s/kernel-feature-sample-member-registry'
 import {memberActions as memberStateActions} from '../../../../kernel/feature/sample-member-registry/src/features/slices/slice'
-import {deskSystemFailureObservedCommand} from '../src/features/commands/commands'
+import {
+  deskSystemFailureDismissedCommand,
+  deskSystemFailureObservedCommand,
+} from '../src/features/commands/commands'
 import {createTestRuntime} from '../../../../kernel/feature/sample-member-registry/test/support'
 import {releaseRuntimeForTest} from '../../../../kernel/base/runtime/src/testing'
 import {setDisplayRoleAction} from '../../../../kernel/base/display-context/src/features/slices/displayRole'
@@ -52,6 +56,7 @@ const RenderProvider = ActualRenderProvider as unknown as (props: Omit<RenderPro
 type TestInstanceQuery = Readonly<{
   readonly findByProps: (props: Readonly<Record<string, unknown>>) => TestInstanceQuery
   readonly findAllByProps: (props: Readonly<Record<string, unknown>>) => readonly TestInstanceQuery[]
+  readonly props: Readonly<Record<string, unknown>>
 }>
 
 type TextInputTestInstance = Readonly<{
@@ -65,6 +70,51 @@ type TextInputTestInstance = Readonly<{
 }>
 
 type FrameLayout = Readonly<{readonly width: number; readonly height: number}>
+type NativeTestElement = Readonly<{readonly type: unknown; readonly props: Readonly<Record<string, unknown>>}>
+type ScrollFieldProof = Readonly<{readonly scrollTestID: string; readonly fieldIds: readonly string[]}>
+
+const createWithNodeMock = create as unknown as (
+  element: Parameters<typeof create>[0],
+  options: Readonly<{readonly createNodeMock: (element: NativeTestElement) => unknown}>,
+) => ReactTestRenderer
+
+const defaultScrollContentByID = new Map<string, object>()
+const defaultScrollByFieldID = new Map([
+  ['sample.desk.member-form:name', 'sample.desk.member-form:scroll'],
+  ['sample.desk.member-form:phone', 'sample.desk.member-form:scroll'],
+  ['sample.desk.member-form:keyboard-alpha-probe', 'sample.desk.member-form:scroll'],
+  ['sample.desk.member-form:keyboard-financial-probe', 'sample.desk.member-form:scroll'],
+  ['sample.desk.customer-member:age', 'sample.desk.customer-member:scroll'],
+])
+
+const createDefaultInputNodeMock = (frameLayout: FrameLayout) => (element: NativeTestElement): unknown => {
+  const testID = element.props.testID
+  if (testID === 'ui.base.input:surface-frame') return {}
+  if (typeof testID === 'string' && testID.endsWith(':scroll')) {
+    const contentNode = {}
+    defaultScrollContentByID.set(testID, contentNode)
+    return {
+      getInnerViewRef: () => contentNode,
+      measureLayout: (_relativeTo: unknown, callback: (x: number, y: number, width: number, height: number) => void) => {
+        callback(0, 0, frameLayout.width, Math.max(1, frameLayout.height - 20))
+      },
+      scrollTo: () => undefined,
+    }
+  }
+  if (typeof testID === 'string') {
+    const scrollID = defaultScrollByFieldID.get(testID)
+    if (scrollID === undefined) return {}
+    return {
+      measureLayout: (relativeTo: unknown, callback: (x: number, y: number, width: number, height: number) => void) => {
+        expect(relativeTo).toBe(defaultScrollContentByID.get(scrollID))
+        callback(0, 120, Math.min(320, frameLayout.width), 40)
+      },
+      focus: () => undefined,
+      blur: () => undefined,
+    }
+  }
+  return {}
+}
 
 const findTextInput = (renderer: ReactTestRenderer, testID: string): TextInputTestInstance => {
   const root = renderer.root as unknown as Readonly<{
@@ -108,18 +158,23 @@ const createStateSource = (root: RuntimeStateRoot) => ({
 const mount = (
   element: ReturnType<typeof createElement>,
   frameLayout: FrameLayout = {width: 1280, height: 800},
+  createNodeMock?: (element: NativeTestElement) => unknown,
 ): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined
+  const wrappedElement = cloneElement(element as ReactElement<RenderProviderProps>, {
+    runtimeFacts: createRenderRuntimeFacts({
+      environmentMode: 'DEV',
+      debugMode: {enabled: true, source: 'startup'},
+      deviceIdentity: {available: false, deviceId: null},
+      platformPortCapabilities: [],
+    }),
+    nativeLoadingCapability,
+  })
+  defaultScrollContentByID.clear()
   act(() => {
-    renderer = create(cloneElement(element as ReactElement<RenderProviderProps>, {
-      runtimeFacts: createRenderRuntimeFacts({
-        environmentMode: 'DEV',
-        debugMode: {enabled: true, source: 'startup'},
-        deviceIdentity: {available: false, deviceId: null},
-        platformPortCapabilities: [],
-      }),
-      nativeLoadingCapability,
-    }))
+    renderer = createWithNodeMock(wrappedElement, {
+      createNodeMock: createNodeMock ?? createDefaultInputNodeMock(frameLayout),
+    })
   })
   const frames = renderer!.root.findAllByProps({testID: 'ui.base.input:surface-frame'})
   act(() => {
@@ -127,7 +182,116 @@ const mount = (
       ;(frame.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: frameLayout}})
     }
   })
+  if (createNodeMock === undefined) {
+    const scrollAreas = renderer!.root.findAllByProps({}).filter(node =>
+      typeof node.props.testID === 'string'
+        && (node.props.testID as string).endsWith(':scroll')
+        && typeof node.props.onLayout === 'function'
+        && typeof node.props.onContentSizeChange === 'function'
+        && typeof node.props.onScroll === 'function',
+    )
+    act(() => {
+      for (const scroll of scrollAreas) {
+        ;(scroll.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: {
+          x: 0,
+          y: 0,
+          width: frameLayout.width,
+          height: Math.max(1, frameLayout.height - 20),
+        }}})
+        ;(scroll.props.onContentSizeChange as (width: number, height: number) => void)(frameLayout.width, 1200)
+        ;(scroll.props.onScroll as (event: unknown) => void)({nativeEvent: {contentOffset: {y: 0}}})
+      }
+    })
+  }
   return renderer!
+}
+
+const createScrollFieldNodeMock = (
+  surfaceRoot: object,
+  proofs: readonly ScrollFieldProof[],
+  measuredFields: Array<Readonly<{readonly fieldId: string; readonly relativeTo: unknown}>>,
+): ((element: NativeTestElement) => unknown) => {
+  const contentByScrollID = new Map<string, object>()
+  const scrollIDByFieldID = new Map<string, string>()
+  for (const proof of proofs) {
+    for (const fieldId of proof.fieldIds) scrollIDByFieldID.set(fieldId, proof.scrollTestID)
+  }
+  return element => {
+    const testID = element.props.testID
+    if (element.type === View && testID === 'ui.base.input:surface-frame') return surfaceRoot
+    if (element.type === ScrollView && typeof testID === 'string' && proofs.some(proof => proof.scrollTestID === testID)) {
+      const contentNode = {}
+      contentByScrollID.set(testID, contentNode)
+      return {
+        getInnerViewRef: () => contentNode,
+        measureLayout: (
+          relativeTo: unknown,
+          callback: (x: number, y: number, width: number, height: number) => void,
+        ) => {
+          expect(relativeTo).toBe(surfaceRoot)
+          callback(0, 0, 1280, 780)
+        },
+        scrollTo: () => undefined,
+      }
+    }
+    if (typeof testID === 'string' && scrollIDByFieldID.has(testID)) {
+      const fieldId = testID
+      const scrollID = scrollIDByFieldID.get(fieldId)!
+      return {
+        measureLayout: (
+          relativeTo: unknown,
+          callback: (x: number, y: number, width: number, height: number) => void,
+        ) => {
+          measuredFields.push({fieldId, relativeTo})
+          expect(relativeTo).toBe(contentByScrollID.get(scrollID))
+          callback(0, 500, 320, 40)
+        },
+        focus: () => undefined,
+        blur: () => undefined,
+      }
+    }
+    return {}
+  }
+}
+
+const initializeScrollArea = (
+  renderer: ReactTestRenderer,
+  testID: string,
+  width = 1280,
+  height = 780,
+): void => {
+  const props = renderer.root.findAllByProps({testID})
+    .find(node => typeof node.props.onLayout === 'function'
+      && typeof node.props.onContentSizeChange === 'function'
+      && typeof node.props.onScroll === 'function')?.props
+  if (props === undefined) throw new Error(`Missing native scroll view callbacks for ${testID}`)
+  act(() => {
+    ;(props.onLayout as (event: unknown) => void)({nativeEvent: {layout: {x: 0, y: 0, width, height}}})
+    ;(props.onContentSizeChange as (contentWidth: number, contentHeight: number) => void)(width, 1200)
+    ;(props.onScroll as (event: unknown) => void)({nativeEvent: {contentOffset: {y: 0}}})
+  })
+}
+
+const measureKeyboardLayers = (renderer: ReactTestRenderer): void => {
+  const measurementLayers = renderer.root.findAllByProps({testID: 'ui.base.input:keyboard-layer-position:measure'}) as unknown as readonly TestInstanceQuery[]
+  for (const layer of measurementLayers) {
+    const backdrop = layer.findByProps({testID: 'ui.base.input:virtual-keyboard:backdrop'})
+    const layout = StyleSheet.flatten(backdrop.props.style) as Readonly<{readonly width: number; readonly height: number}>
+    const onLayout = layer.props.onLayout
+    if (typeof onLayout !== 'function') throw new Error('Keyboard measurement layer is missing its onLayout callback')
+    act(() => {
+      ;(onLayout as (event: unknown) => void)({nativeEvent: {layout}})
+    })
+  }
+}
+
+const finishKeyboardPresentation = (renderer: ReactTestRenderer): void => {
+  setAnimatedTimingAutoFinishForTests(true)
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    if (renderer.root.findAllByProps({testID: 'ui.base.input:keyboard-layer-position:measure'}).length === 0) break
+    measureKeyboardLayers(renderer)
+    act(() => { advanceAnimatedTimingsForTests(1) })
+  }
 }
 
 const withInputSurface = (element: ReturnType<typeof createElement>) => createElement(
@@ -202,25 +366,44 @@ const runningActor = (): object => ({
 })
 
 describe('sample member desk UI feature', () => {
-  it('exports laptop/mobile renderer siblings for nine exact parts and no transient variables', () => {
-    const partKeys = sampleMemberDeskAssembly.parts.map(part => part.catalogEntry.partKey)
-    expect(new Set(partKeys)).toEqual(new Set([
-      'sample.desk.member-list',
-      'sample.desk.member-form',
-      'sample.desk.waiting-confirm',
-      'sample.desk.registry-notice',
-      'sample.desk.discard-confirm',
-      'sample.desk.withdraw-confirm',
-      'sample.desk.system-notice',
-      'sample.desk.customer-welcome',
-      'sample.desk.customer-member',
-    ]))
-    expect(partKeys).toHaveLength(18)
-    for (const partKey of new Set(partKeys)) {
-      expect(sampleMemberDeskAssembly.parts.filter(part => part.catalogEntry.partKey === partKey).map(part => part.catalogEntry.surfaceForm)).toEqual([
-        ['laptop'], ['mobile'],
-      ])
-    }
+  it('exports laptop/mobile renderer siblings with exact metadata and no transient variables', () => {
+    const expectedPair = (part: Readonly<{
+      readonly partKey: string
+      readonly containerKeys: readonly string[]
+      readonly displayModes: readonly string[]
+      readonly workspaces: readonly string[]
+      readonly instanceModes: readonly string[]
+      readonly title: string
+      readonly layerTier: 'standard' | 'alert'
+      readonly layerGuard: 'dismissible' | 'decisive'
+    }>) => (['laptop', 'mobile'] as const).map(surfaceForm => ({
+      ...part,
+      rendererKey: `${part.partKey}.${surfaceForm}`,
+      surfaceForm: [surfaceForm],
+    }))
+    const metadata = sampleMemberDeskAssembly.parts.map(({catalogEntry, rendererBinding}) => ({
+      partKey: catalogEntry.partKey,
+      rendererKey: catalogEntry.rendererKey,
+      containerKeys: [...catalogEntry.containerKeys],
+      displayModes: [...catalogEntry.displayModes],
+      workspaces: [...catalogEntry.workspaces],
+      instanceModes: [...catalogEntry.instanceModes],
+      title: catalogEntry.title,
+      surfaceForm: [...catalogEntry.surfaceForm],
+      layerTier: rendererBinding.layerTier,
+      layerGuard: rendererBinding.layerGuard,
+    }))
+    expect(metadata).toEqual([
+      ...expectedPair({partKey: 'sample.desk.member-list', containerKeys: ['main'], displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'], title: '已登记会员', layerTier: 'standard', layerGuard: 'dismissible'}),
+      ...expectedPair({partKey: 'sample.desk.member-form', containerKeys: ['main'], displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'], title: '新增会员', layerTier: 'standard', layerGuard: 'dismissible'}),
+      ...expectedPair({partKey: 'sample.desk.waiting-confirm', containerKeys: [], displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'], title: '等待顾客确认', layerTier: 'standard', layerGuard: 'dismissible'}),
+      ...expectedPair({partKey: 'sample.desk.registry-notice', containerKeys: [], displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'], title: '登记结果提示', layerTier: 'alert', layerGuard: 'decisive'}),
+      ...expectedPair({partKey: 'sample.desk.discard-confirm', containerKeys: [], displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'], title: '放弃草稿确认', layerTier: 'alert', layerGuard: 'decisive'}),
+      ...expectedPair({partKey: 'sample.desk.withdraw-confirm', containerKeys: [], displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'], title: '撤回登记确认', layerTier: 'alert', layerGuard: 'decisive'}),
+      ...expectedPair({partKey: 'sample.desk.system-notice', containerKeys: [], displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'], title: '系统失败提示', layerTier: 'alert', layerGuard: 'dismissible'}),
+      ...expectedPair({partKey: 'sample.desk.customer-welcome', containerKeys: ['main'], displayModes: ['SECONDARY'], workspaces: ['MAIN'], instanceModes: ['MASTER', 'SLAVE'], title: '顾客欢迎页', layerTier: 'standard', layerGuard: 'dismissible'}),
+      ...expectedPair({partKey: 'sample.desk.customer-member', containerKeys: ['main'], displayModes: ['PRIMARY', 'SECONDARY'], workspaces: ['MAIN'], instanceModes: ['MASTER', 'SLAVE'], title: '顾客会员确认', layerTier: 'standard', layerGuard: 'dismissible'}),
+    ])
     expect(sampleMemberDeskAssembly).not.toHaveProperty('variables')
   })
 
@@ -423,6 +606,7 @@ describe('sample member desk UI feature', () => {
 
     const ageInput = findTextInput(renderer, 'sample.desk.customer-member:age')
     act(() => { ageInput.props.onFocus({nativeEvent: {}}) })
+    finishKeyboardPresentation(renderer)
     expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard:text-1'})).toBeDefined()
     expect(renderer.root.findByProps({testID: 'sample.desk.customer-member:confirm'})).toBeDefined()
     expect(renderer.root.findByProps({testID: 'sample.desk.customer-member:reject'})).toBeDefined()
@@ -455,6 +639,7 @@ describe('sample member desk UI feature', () => {
 
     const ageInput = findTextInput(renderer, 'sample.desk.customer-member:age')
     act(() => { ageInput.props.onFocus({nativeEvent: {}}) })
+    finishKeyboardPresentation(renderer)
     expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'})).toBeDefined()
     expect(renderer.root.findByProps({testID: 'sample.desk.customer-member:confirm'})).toBeDefined()
     expect(ageInput.props.maxLength).toBe(3)
@@ -679,6 +864,31 @@ describe('sample member desk UI feature', () => {
     }
   })
 
+  it('dispatches the member-desk-owned command when dismissing a system failure', async () => {
+    const {logger} = createLogger()
+    const commandNames: string[] = []
+    const dispatchCommand = (async command => {
+      commandNames.push(command.definition.commandName)
+      return completedResult()
+    }) as RenderProviderProps['dispatchCommand']
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: createStateSource(memberRoot({name: '', phone: ''})),
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        dispatchCommand,
+        selectUiVariable: (_root, declaration) => declaration.defaultValue,
+      },
+      createElement(DeskSystemNotice, {operation: 'submit-member'}),
+    ))
+
+    await act(async () => { await press(renderer, 'sample.desk.system-notice:dismiss')() })
+    expect(commandNames).toEqual([deskSystemFailureDismissedCommand.commandName])
+    act(() => { renderer.unmount() })
+  })
+
   it('passes the approved member-list row testID into the feature-owned MemberRow', () => {
     const {logger} = createLogger()
     const renderer = mount(createElement(
@@ -743,6 +953,69 @@ describe('sample member desk UI feature', () => {
     act(() => { renderer.unmount() })
   })
 
+  it('measures every member-form virtual field relative to its actual scroll content node', () => {
+    const {logger} = createLogger()
+    const memberFieldIds = [
+      'sample.desk.member-form:name',
+      'sample.desk.member-form:phone',
+      'sample.desk.member-form:keyboard-alpha-probe',
+      'sample.desk.member-form:keyboard-financial-probe',
+    ] as const
+    const measuredFields: Array<Readonly<{readonly fieldId: string; readonly relativeTo: unknown}>> = []
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: createStateSource(memberRoot({name: '', phone: ''})),
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        dispatchCommand: (async () => completedResult()) as RenderProviderProps['dispatchCommand'],
+        selectUiVariable: (_root, declaration) => declaration.defaultValue,
+      },
+      withInputSurface(createElement(MemberForm)),
+    ), {width: 1280, height: 800}, createScrollFieldNodeMock(
+      {},
+      [{scrollTestID: 'sample.desk.member-form:scroll', fieldIds: memberFieldIds}],
+      measuredFields,
+    ))
+
+    initializeScrollArea(renderer, 'sample.desk.member-form:scroll')
+    for (const fieldId of memberFieldIds) {
+      act(() => { findTextInput(renderer, fieldId).props.onFocus({nativeEvent: {}}) })
+      finishKeyboardPresentation(renderer)
+    }
+    expect([...new Set(measuredFields.map(field => field.fieldId))]).toEqual(memberFieldIds)
+    act(() => { renderer.unmount() })
+  })
+
+  it('measures the customer age field relative to its actual scroll content node', () => {
+    const {logger} = createLogger()
+    const fieldId = 'sample.desk.customer-member:age'
+    const measuredFields: Array<Readonly<{readonly fieldId: string; readonly relativeTo: unknown}>> = []
+    const renderer = mount(createElement(
+      RenderProvider,
+      {
+        stateSource: createStateSource(memberRoot({name: 'Alice', phone: '010-1234-5678'})),
+        uiCatalog: createUiCatalog([]),
+        rendererCatalog: createRendererCatalog([]),
+        logger,
+        dispatchCommand: (async () => completedResult()) as RenderProviderProps['dispatchCommand'],
+        selectUiVariable: (_root, declaration) => declaration.defaultValue,
+      },
+      withInputSurface(createElement(CustomerMember, {mode: 'confirm'})),
+    ), {width: 1280, height: 800}, createScrollFieldNodeMock(
+      {},
+      [{scrollTestID: 'sample.desk.customer-member:scroll', fieldIds: [fieldId]}],
+      measuredFields,
+    ))
+
+    initializeScrollArea(renderer, 'sample.desk.customer-member:scroll')
+    act(() => { findTextInput(renderer, fieldId).props.onFocus({nativeEvent: {}}) })
+    finishKeyboardPresentation(renderer)
+    expect([...new Set(measuredFields.map(field => field.fieldId))]).toEqual([fieldId])
+    act(() => { renderer.unmount() })
+  })
+
   it('exercises alpha and financial layouts without adding them to the member payload', async () => {
     const {logger} = createLogger()
     const dispatched: Array<Readonly<{name: string; payload: unknown}>> = []
@@ -766,15 +1039,20 @@ describe('sample member desk UI feature', () => {
     const financialInput = findTextInput(renderer, 'sample.desk.member-form:keyboard-financial-probe')
     const phoneInput = findTextInput(renderer, 'sample.desk.member-form:phone')
     act(() => { phoneInput.props.onFocus({nativeEvent: {}}) })
+    finishKeyboardPresentation(renderer)
     expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard:text-1'})).toBeDefined()
     act(() => { press(renderer, 'ui.base.input:virtual-keyboard:text-1')() })
     act(() => { press(renderer, 'ui.base.input:virtual-keyboard:complete')() })
+    finishKeyboardPresentation(renderer)
     act(() => { findTextInput(renderer, 'sample.desk.member-form:keyboard-alpha-probe').props.onFocus({nativeEvent: {}}) })
+    finishKeyboardPresentation(renderer)
     expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard:text-a'})).toBeDefined()
     expect(renderer.root.findAllByProps({testID: 'ui.base.input:virtual-keyboard:text--'})).toHaveLength(0)
     act(() => { press(renderer, 'ui.base.input:virtual-keyboard:text-a')() })
     act(() => { press(renderer, 'ui.base.input:virtual-keyboard:complete')() })
+    finishKeyboardPresentation(renderer)
     act(() => { financialInput.props.onFocus({nativeEvent: {}}) })
+    finishKeyboardPresentation(renderer)
     expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard:text--'})).toBeDefined()
     expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard:text-.'})).toBeDefined()
     expect(financialInput.props.value).toBe('')
@@ -785,6 +1063,7 @@ describe('sample member desk UI feature', () => {
     })
     expect(financialInput.props.value).toBe('1.2')
     act(() => { phoneInput.props.onFocus({nativeEvent: {}}) })
+    finishKeyboardPresentation(renderer)
     expect(renderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard:text-1'})).toBeDefined()
     await act(async () => { await press(renderer, 'sample.desk.member-form:submit')() })
     expect(dispatched).toContainEqual({
@@ -820,6 +1099,7 @@ describe('sample member desk UI feature', () => {
     for (const [fieldID, keyID] of fields) {
       const field = findTextInput(renderer, fieldID)
       act(() => { field.props.onFocus({nativeEvent: {}}) })
+      finishKeyboardPresentation(renderer)
       expect(renderer.root.findByProps({testID: keyID})).toBeDefined()
     }
     act(() => { renderer.unmount() })

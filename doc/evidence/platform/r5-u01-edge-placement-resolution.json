@@ -8,14 +8,14 @@
     "authorizationManifest": "contracts/registry/iam-org-governance-manifest.json"
   },
   "closure": {
-    "operations": 228,
+    "operations": 235,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 155,
+      "operations-admin": 162,
       "public": 12
     },
-    "componentBaseline": 278,
-    "componentFiles": 21,
+    "componentBaseline": 304,
+    "componentFiles": 22,
     "unreachable": [
       {
         "component": "BusinessEntitySource",
@@ -2759,6 +2759,90 @@
       "requestComponentFile": "components/organization/store-service-point-qr.schemas.json",
       "responseComponentFile": "components/organization/store-service-point-qr.schemas.json",
       "errorSetRef": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "getOperationsStoreTerminals",
+      "face": "operations-admin",
+      "owner": "store-terminal",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/store-terminal/store-terminal.schemas.json",
+      "errorSetRef": "AUTHZ_READ"
+    },
+    {
+      "operationId": "getOperationsStoreTerminal",
+      "face": "operations-admin",
+      "owner": "store-terminal",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/store-terminal/store-terminal.schemas.json",
+      "errorSetRef": "AUTHZ_READ"
+    },
+    {
+      "operationId": "postOperationsStoreTerminal",
+      "face": "operations-admin",
+      "owner": "store-terminal",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json",
+      "requestComponentFile": "components/store-terminal/store-terminal.schemas.json",
+      "responseComponentFile": "components/store-terminal/store-terminal.schemas.json",
+      "errorSetRef": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "putOperationsStoreTerminal",
+      "face": "operations-admin",
+      "owner": "store-terminal",
+      "method": "PUT",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json",
+      "requestComponentFile": "components/store-terminal/store-terminal.schemas.json",
+      "responseComponentFile": "components/store-terminal/store-terminal.schemas.json",
+      "errorSetRef": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "postOperationsStoreTerminalStatus",
+      "face": "operations-admin",
+      "owner": "store-terminal",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status",
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json",
+      "requestComponentFile": "components/store-terminal/store-terminal.schemas.json",
+      "responseComponentFile": "components/store-terminal/store-terminal.schemas.json",
+      "errorSetRef": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "getOperationsStoreTerminalAreaCandidates",
+      "face": "operations-admin",
+      "owner": "store-terminal",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates",
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/store-terminal/store-terminal.schemas.json",
+      "errorSetRef": "AUTHZ_READ"
+    },
+    {
+      "operationId": "getOperationsStoreTerminalTagCandidates",
+      "face": "operations-admin",
+      "owner": "store-terminal",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates",
+      "capability": "store-terminals",
+      "pathFile": "paths/operations-admin/store-terminals.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/store-terminal/store-terminal.schemas.json",
+      "errorSetRef": "AUTHZ_READ"
     }
   ],
   "requiredNestedReferenceChecks": [

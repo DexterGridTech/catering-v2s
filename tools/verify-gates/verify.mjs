@@ -33,6 +33,12 @@ const staticCommands = Object.freeze([
   ['sales-menu-schema', 'scripts/check/sales-menu-schema', [], ['SALES_MENU_SCHEMA=PASS']],
   ['sales-menu-l2-p1', 'node', ['scripts/generate/sales-menu-p1.mjs', '--check'], ['SALES_MENU_P1=PASS']],
   [
+    'store-terminal-rules',
+    'node',
+    ['scripts/generate/store-terminal-rules.mjs', '--self-test', '--check'],
+    ['STORE_TERMINAL_RULES_SELF_TEST=PASS', 'STORE_TERMINAL_RULES_CHECK=PASS'],
+  ],
+  [
     'sales-menu-l2-fixture',
     'node',
     ['scripts/test/sales-menu-l2-fixture.mjs', '--self-test'],

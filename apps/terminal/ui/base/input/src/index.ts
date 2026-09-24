@@ -13,12 +13,7 @@ export type {InputScrollAreaProps} from './components/InputScrollArea';
 export type {
   InputFieldOptions,
   InputFieldResult,
-  InputDiagnostic,
-  InputDiagnosticReporter,
-  InputDiagnosticValue,
   InputSurfaceFrameProps,
-  InputKeyboardProps,
-  InputKeyboardPlacement,
 } from './types/types';
 export type {KeyboardLayout} from './types/types';
 export type {InputRegistrationToken, InputSnapshot} from './foundations/snapshot';

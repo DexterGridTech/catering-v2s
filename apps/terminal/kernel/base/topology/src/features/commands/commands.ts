@@ -44,6 +44,21 @@ export const refreshTopologyDisplayCommand = defineCommand<EmptyTopologyPayload>
   allowNoActor: true,
 })
 
+export type TopologyDisplayChangedPayload = Readonly<{
+  readonly displayCount: number | null
+}>
+
+/**
+ * Emitted after the topology owner has committed a refreshed display count.
+ * Consumers use this notification to recompute display-scoped placement; it
+ * deliberately carries no business action of its own.
+ */
+export const topologyDisplayChangedCommand = defineCommand<TopologyDisplayChangedPayload>(moduleName, {
+  name: 'display-changed',
+  visibility: 'internal',
+  allowNoActor: true,
+})
+
 export const reconcileTopologyHostCommand = defineCommand<EmptyTopologyPayload>(moduleName, {
   name: 'reconcile-host',
   visibility: 'internal',

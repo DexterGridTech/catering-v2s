@@ -27,6 +27,7 @@
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/platform-admin-iam" />
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/sales-menu" />
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/store-contract" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/store-terminal" />
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/workspace" />
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/workspace-iam" />
             <option value="$PROJECT_DIR$/apps/backend/terminal-data-server" />

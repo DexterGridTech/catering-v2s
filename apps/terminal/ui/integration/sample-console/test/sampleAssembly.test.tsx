@@ -1,7 +1,8 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import type {ReactElement} from 'react'
 import {describe, expect, it, vi} from 'vitest'
-import {Pressable, StyleSheet, Text, TextInput, View} from 'react-native'
+import {Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native'
+import {advanceAnimatedTimingsForTests, setAnimatedTimingAutoFinishForTests} from '../../../../../../tools/terminal-shared/react-native-vitest-entry'
 import {createRequestId} from '@catering-v2s/kernel-base-contracts'
 import {
   createProcessMemoryStateStoragePort,
@@ -18,7 +19,7 @@ import {
   selectScreen,
   showScreenCommand,
 } from '@catering-v2s/kernel-base-ui-state'
-import {topologyActions} from '@catering-v2s/kernel-base-topology'
+import {refreshTopologyDisplayCommand, topologyActions} from '@catering-v2s/kernel-base-topology'
 import {createUiCatalog, selectAvailableParts} from '@catering-v2s/kernel-base-ui-state'
 import {
   confirmMemberCommand,
@@ -27,6 +28,7 @@ import {
   selectPendingMember,
   submitMemberCommand,
 } from '@catering-v2s/kernel-feature-sample-member-registry'
+import {sessionRestoredAnonymousCommand} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {
   memberRegistrationAbandonedCommand,
   memberRegistrationRetryRequestedCommand,
@@ -35,11 +37,19 @@ import {
 import {createSampleAssembly as createProductionSampleAssembly, createSurfaceForDisplayIndex} from '../src'
 import {createSampleDefinedParts} from '../src/assembly/assembly'
 import {adminTestIds} from '@catering-v2s/ui-base-admin-shell'
+import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk'
+import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth'
 import {createTestPlatformPorts, TestPeerChannel, type TestPlatformPorts} from './support'
 
 type TestSampleAssemblyInput = Omit<Parameters<typeof createProductionSampleAssembly>[0], 'platformPorts' | 'nativeLoadingCapability'> & Readonly<{
   readonly platformPorts: TestPlatformPorts
 }>
+
+type TestInstanceQuery = Readonly<{
+  readonly findByProps: (props: Readonly<Record<string, unknown>>) => TestInstanceQuery
+  readonly props: Readonly<Record<string, unknown>>
+}>
+type NativeTestElement = Readonly<{readonly type: unknown; readonly props: Readonly<Record<string, unknown>>}>
 
 const createSampleAssembly = (input: TestSampleAssemblyInput) => createProductionSampleAssembly({
   ...input,
@@ -115,8 +125,33 @@ const mount = (
   frameLayout: Readonly<{readonly width: number; readonly height: number}> = LANDSCAPE_SECONDARY_FRAME,
   measureSurface = true,
   launcherMeasuredSize: Readonly<{readonly width: number; readonly height: number}> = {width: 0, height: 0},
+  inputMeasuredY = 120,
 ): ReactTestRenderer => {
   let renderer: ReactTestRenderer | undefined
+  const createInputNodeMock = (node: NativeTestElement): unknown => {
+    const testID = node.props.testID
+    if (testID === 'ui.base.input:surface-frame') return {}
+    if (typeof testID === 'string' && testID.endsWith(':scroll')) {
+      const contentNode = {}
+      return {
+        getInnerViewRef: () => contentNode,
+        measureLayout: (_relativeTo: unknown, callback: (x: number, y: number, width: number, height: number) => void) => {
+          callback(0, 0, frameLayout.width, Math.max(1, frameLayout.height - 20))
+        },
+        scrollTo: () => undefined,
+      }
+    }
+    if (typeof testID === 'string') {
+      return {
+        measureLayout: (_relativeTo: unknown, callback: (x: number, y: number, width: number, height: number) => void) => {
+          callback(0, inputMeasuredY, Math.min(320, frameLayout.width), 40)
+        },
+        focus: () => undefined,
+        blur: () => undefined,
+      }
+    }
+    return undefined
+  }
   act(() => {
     renderer = (create as unknown as (
       element: Parameters<typeof create>[0],
@@ -124,17 +159,19 @@ const mount = (
     ) => ReactTestRenderer)(element, {
       createNodeMock: (node: ReactElement) => {
         const testID = (node.props as Readonly<{readonly testID?: unknown}>).testID
-        if (testID !== adminTestIds.launcher) return undefined
-        return {
-          measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) => {
-            callback(
-              LAUNCHER_WINDOW_ORIGIN.x,
-              LAUNCHER_WINDOW_ORIGIN.y,
-              launcherMeasuredSize.width,
-              launcherMeasuredSize.height,
-            )
-          },
+        if (testID === adminTestIds.launcher) {
+          return {
+            measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) => {
+              callback(
+                LAUNCHER_WINDOW_ORIGIN.x,
+                LAUNCHER_WINDOW_ORIGIN.y,
+                launcherMeasuredSize.width,
+                launcherMeasuredSize.height,
+              )
+            },
+          }
         }
+        return createInputNodeMock(node as unknown as NativeTestElement)
       },
     })
   })
@@ -152,6 +189,24 @@ const mount = (
       ;(launcher.props.onLayout as (event: unknown) => void)({
         nativeEvent: {layout: {x: 0, y: 0, width: frameLayout.width, height: frameLayout.height}},
       })
+    }
+  })
+  const scrollAreas = renderer!.root.findAll(scroll => scroll.type === ScrollView
+    && typeof scroll.props.testID === 'string'
+    && scroll.props.testID.endsWith(':scroll')
+    && typeof scroll.props.onLayout === 'function'
+    && typeof scroll.props.onContentSizeChange === 'function'
+    && typeof scroll.props.onScroll === 'function')
+  act(() => {
+    for (const scroll of scrollAreas) {
+      ;(scroll.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: {
+        x: 0,
+        y: 0,
+        width: frameLayout.width,
+        height: Math.max(1, frameLayout.height - 20),
+      }}})
+      ;(scroll.props.onContentSizeChange as (width: number, height: number) => void)(frameLayout.width, 1200)
+      ;(scroll.props.onScroll as (event: unknown) => void)({nativeEvent: {contentOffset: {y: 0}}})
     }
   })
   return renderer!
@@ -292,6 +347,7 @@ const tapWebLauncher = async (renderer: ReactTestRenderer, count = 5): Promise<v
 }
 
 const authenticateAdmin = async (renderer: ReactTestRenderer): Promise<void> => {
+  finishKeyboardPresentation(renderer)
   for (const digit of ['1', '2', '3', '4', '5', '6']) {
     await act(async () => {
       press(renderer, `ui.base.input:virtual-keyboard:text-${digit}`)()
@@ -303,6 +359,28 @@ const authenticateAdmin = async (renderer: ReactTestRenderer): Promise<void> => 
     await new Promise(resolve => setTimeout(resolve, 0))
   })
   await waitForAdminContent(renderer)
+}
+
+const measureKeyboardLayers = (renderer: ReactTestRenderer): void => {
+  const measurementLayers = renderer.root.findAllByProps({testID: 'ui.base.input:keyboard-layer-position:measure'}) as unknown as readonly TestInstanceQuery[]
+  for (const layer of measurementLayers) {
+    const backdrop = layer.findByProps({testID: 'ui.base.input:virtual-keyboard:backdrop'})
+    const layout = StyleSheet.flatten(backdrop.props.style) as Readonly<{readonly width: number; readonly height: number}>
+    const onLayout = layer.props.onLayout
+    if (typeof onLayout !== 'function') throw new Error('Keyboard measurement layer is missing its onLayout callback')
+    act(() => {
+      ;(onLayout as (event: unknown) => void)({nativeEvent: {layout}})
+    })
+  }
+}
+
+const finishKeyboardPresentation = (renderer: ReactTestRenderer): void => {
+  setAnimatedTimingAutoFinishForTests(true)
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    if (renderer.root.findAllByProps({testID: 'ui.base.input:keyboard-layer-position:measure'}).length === 0) break
+    measureKeyboardLayers(renderer)
+    act(() => { advanceAnimatedTimingsForTests(1) })
+  }
 }
 
 type TextInputTestInstance = Readonly<{
@@ -381,7 +459,7 @@ describe('sample-console real assembly', () => {
         routeContext: {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'},
       })
       expect(selection.status).toBe('completed')
-      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), PORTRAIT_PRIMARY_FRAME)
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), PORTRAIT_PRIMARY_FRAME, true)
       await reportPrimaryReadyLayout(renderer, PORTRAIT_PRIMARY_FRAME)
       const complete = events.find(event => event.event === 'startup.complete')
       expect(complete?.data).toMatchObject({
@@ -405,7 +483,7 @@ describe('sample-console real assembly', () => {
     })
     let renderer: ReactTestRenderer | undefined
     try {
-      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), PORTRAIT_PRIMARY_FRAME)
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), PORTRAIT_PRIMARY_FRAME, true)
       await reportPrimaryReadyLayout(renderer, PORTRAIT_PRIMARY_FRAME)
       expect(events.filter(event => event.event === 'startup.complete')).toHaveLength(0)
       expect(events.filter(event => event.event === 'startup.ready-dispatch-failed')).toHaveLength(1)
@@ -638,6 +716,41 @@ describe('sample-console real assembly', () => {
         expect(sibling.rendererBinding.rendererKey).toBe(`${partKey}.${surfaceForm}`)
       }
     }
+  })
+
+  it('keeps exact metadata for the integration-owned part and composes feature parts unchanged', () => {
+    const definedParts = createSampleDefinedParts()
+    const featureParts = [
+      ...sampleStaffAuthAssembly.parts,
+      ...sampleMemberDeskAssembly.parts,
+    ]
+
+    expect(createSampleDefinedParts(false)).toEqual(featureParts)
+    expect(definedParts.slice(0, featureParts.length)).toEqual(featureParts)
+    expect(definedParts).toHaveLength(featureParts.length + 1)
+    expect(definedParts.slice(featureParts.length).map(({catalogEntry, rendererBinding}) => ({
+      partKey: catalogEntry.partKey,
+      rendererKey: catalogEntry.rendererKey,
+      containerKeys: [...catalogEntry.containerKeys],
+      displayModes: [...catalogEntry.displayModes],
+      workspaces: [...catalogEntry.workspaces],
+      instanceModes: [...catalogEntry.instanceModes],
+      title: catalogEntry.title,
+      surfaceForm: [...catalogEntry.surfaceForm],
+      layerTier: rendererBinding.layerTier,
+      layerGuard: rendererBinding.layerGuard,
+    }))).toEqual([{
+      partKey: 'sample.console.admin-test',
+      rendererKey: 'sample.console.admin-test',
+      containerKeys: ['admin.sections'],
+      displayModes: ['PRIMARY', 'SECONDARY'],
+      workspaces: ['MAIN', 'BRANCH'],
+      instanceModes: ['MASTER', 'SLAVE'],
+      title: '示例诊断',
+      surfaceForm: ['laptop', 'mobile'],
+      layerTier: 'standard',
+      layerGuard: 'dismissible',
+    }])
   })
 
   it('allows only the member desk customer surfaces on a topology secondary', () => {
@@ -887,6 +1000,7 @@ describe('sample-console real assembly', () => {
           await new Promise(resolve => setTimeout(resolve, 0))
         })
       }
+      finishKeyboardPresentation(renderer)
       expect(renderer.root.findByProps({testID: adminTestIds.login})).toBeDefined()
       const loginCard = renderer.root.findByProps({testID: `${adminTestIds.login}:card`})
       expect(renderer.root.findAllByProps({testID: 'ui.base.input:surface-frame'})).toHaveLength(1)
@@ -988,6 +1102,7 @@ describe('sample-console real assembly', () => {
 
       const businessInput = findTextInput(renderer, 'sample.desk.member-form:phone')
       act(() => { businessInput.props.onFocus({nativeEvent: {}}) })
+      finishKeyboardPresentation(renderer)
       await act(async () => {
         press(renderer!, 'ui.base.input:virtual-keyboard:text-3')()
         await new Promise(resolve => setTimeout(resolve, 0))
@@ -1004,6 +1119,7 @@ describe('sample-console real assembly', () => {
 
       const businessInputUnderAdmin = findTextInput(renderer, 'sample.desk.member-form:phone')
       act(() => { businessInputUnderAdmin.props.onFocus({nativeEvent: {}}) })
+      finishKeyboardPresentation(renderer)
       await act(async () => {
         press(renderer!, 'ui.base.input:virtual-keyboard:text-1')()
         await new Promise(resolve => setTimeout(resolve, 0))
@@ -1018,6 +1134,7 @@ describe('sample-console real assembly', () => {
       expect(renderer.root.findAllByProps({testID: adminTestIds.login})).toHaveLength(0)
       const restoredBusinessInput = findTextInput(renderer, 'sample.desk.member-form:phone')
       act(() => { restoredBusinessInput.props.onFocus({nativeEvent: {}}) })
+      finishKeyboardPresentation(renderer)
       await act(async () => {
         press(renderer!, 'ui.base.input:virtual-keyboard:text-4')()
         await new Promise(resolve => setTimeout(resolve, 0))
@@ -1282,6 +1399,7 @@ describe('sample-console real assembly', () => {
           await new Promise(resolve => setTimeout(resolve, 0))
         })
       }
+      finishKeyboardPresentation(renderer)
       for (const digit of ['1', '2', '3', '4', '5', '6']) {
         await act(async () => {
           press(renderer!, `ui.base.input:virtual-keyboard:text-${digit}`)()
@@ -1395,6 +1513,42 @@ describe('sample-console real assembly', () => {
     }
   })
 
+  it('keeps the production SurfaceRoot on the input presentation bridge', async () => {
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts(),
+      persistenceKey: `sample-console-presentation-bridge-${Date.now()}`,
+      surfaceForm: 'mobile',
+      surfaceHostSourcesByDisplayIndex: {0: createHostSource(true, PORTRAIT_PRIMARY_FRAME)},
+    })
+    let renderer: ReactTestRenderer | undefined
+    try {
+      await assembly.runtime.dispatchCommand(showScreenCommand, {
+        displayMode: 'PRIMARY',
+        containerKey: 'main',
+        partKey: 'sample.desk.member-form',
+      }, {
+        requestId: createRequestId(),
+        routeContext: {workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'},
+      })
+      renderer = mount(createSurfaceForDisplayIndex(assembly, 0), PORTRAIT_PRIMARY_FRAME, true, {width: 0, height: 0}, 500)
+
+      const financialProbe = findTextInput(renderer, 'sample.desk.member-form:keyboard-financial-probe')
+      act(() => { financialProbe.props.onFocus({nativeEvent: {}}) })
+      finishKeyboardPresentation(renderer)
+
+      const translatedNodes = renderer.root.findAll(node => {
+        const style = StyleSheet.flatten(node.props.style) as Readonly<{
+          readonly transform?: readonly Readonly<{readonly translateY?: unknown}>[]
+        }> | undefined
+        return style?.transform?.some(transform => typeof transform.translateY === 'number' && transform.translateY < -0.5) ?? false
+      })
+      expect(translatedNodes.length).toBeGreaterThan(0)
+    } finally {
+      if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
   it('maps the secondary display index through display-context ownership', async () => {
     const assembly = await createSampleAssembly({
       platformPorts: createTestPlatformPorts(),
@@ -1416,6 +1570,30 @@ describe('sample-console real assembly', () => {
       expect(renderer.root.findByProps({testID: 'sample.desk.customer-welcome'})).toBeDefined()
     } finally {
       if (renderer !== undefined) act(() => { renderer!.unmount() })
+      releaseRuntimeForTest(assembly.runtime)
+    }
+  })
+
+  it('recomputes anonymous secondary placement after a display refresh', async () => {
+    let displayCount = 1
+    const assembly = await createSampleAssembly({
+      platformPorts: createTestPlatformPorts({getDisplayCount: () => displayCount}),
+      persistenceKey: `sample-console-display-refresh-placement-${Date.now()}`,
+      surfaceForm: 'laptop',
+    })
+    try {
+      await assembly.runtime.dispatchCommand(sessionRestoredAnonymousCommand, {}, {requestId: createRequestId()})
+      displayCount = 2
+      const refreshed = await assembly.runtime.dispatchCommand(
+        refreshTopologyDisplayCommand,
+        {},
+        {requestId: createRequestId()},
+      )
+      if (refreshed.status !== 'completed') throw new Error(JSON.stringify(refreshed, null, 2))
+      expect(selectScreen(assembly.runtime.getState(), 'SECONDARY', 'main')).toMatchObject({
+        partKey: 'sample.desk.customer-welcome',
+      })
+    } finally {
       releaseRuntimeForTest(assembly.runtime)
     }
   })
@@ -1493,6 +1671,7 @@ describe('sample-console real assembly', () => {
 
       const ageInput = findTextInput(secondaryRenderer, 'sample.desk.customer-member:age')
       act(() => { ageInput.props.onFocus({nativeEvent: {}}) })
+      finishKeyboardPresentation(secondaryRenderer)
       expect(secondaryRenderer.root.findByProps({testID: 'ui.base.input:virtual-keyboard'})).toBeDefined()
       act(() => {
         press(secondaryRenderer!, 'ui.base.input:virtual-keyboard:text-3')()
@@ -1537,6 +1716,7 @@ describe('sample-console real assembly', () => {
       secondaryRenderer = mount(createSurfaceForDisplayIndex(assembly, 1))
       const ageInput = findTextInput(secondaryRenderer, 'sample.desk.customer-member:age')
       act(() => { ageInput.props.onFocus({nativeEvent: {}}) })
+      finishKeyboardPresentation(secondaryRenderer)
       await act(async () => { await press(secondaryRenderer!, 'ui.base.input:virtual-keyboard:text-3')() })
       await act(async () => { await press(secondaryRenderer!, 'sample.desk.customer-member:confirm')() })
       expect(selectMembers(assembly.runtime.getState())).toContainEqual(expect.objectContaining({
@@ -1566,6 +1746,7 @@ describe('sample-console real assembly', () => {
       secondaryRenderer = mount(createSurfaceForDisplayIndex(assembly, 1))
       const ageInput = findTextInput(secondaryRenderer, 'sample.desk.customer-member:age')
       act(() => { ageInput.props.onFocus({nativeEvent: {}}) })
+      finishKeyboardPresentation(secondaryRenderer)
       await act(async () => { await press(secondaryRenderer!, 'ui.base.input:virtual-keyboard:text-4')() })
       await act(async () => { await press(secondaryRenderer!, 'sample.desk.customer-member:reject')() })
       expect(selectMembers(assembly.runtime.getState())).toEqual([])

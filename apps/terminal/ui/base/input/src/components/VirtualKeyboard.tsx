@@ -2,7 +2,7 @@ import {memo, useMemo} from 'react';
 import {View} from 'react-native';
 import {PrimitiveButton, PrimitiveKeyboardSurface} from '@catering-v2s/ui-base-primitives';
 import type {PrimitiveIconName} from '@catering-v2s/ui-base-primitives';
-import {isUppercaseMode, type KeyboardKey} from '../foundations/editText';
+import type {KeyboardKey} from '../foundations/editText';
 import {
   getKeyboardLayout,
   type KeyboardRow,
@@ -21,8 +21,8 @@ export type VirtualKeyboardProps = Readonly<{
   /** Compact mobile presentation; direct callers derive it from the rendered dock width when omitted. */
   readonly compact?: boolean;
   readonly shift: boolean;
-  readonly capsLock: boolean;
   readonly hasNextField: boolean;
+  readonly testIDSuffix?: string;
   readonly onKey: (key: KeyboardKey) => void;
 }>;
 
@@ -34,30 +34,33 @@ const stopSurfaceDismiss = (event: SurfaceInteractionEvent): void => {
 
 const keyIdOf = (definition: KeyboardKeyDefinition): string => definition.keyId;
 
-const keyboardKeyOf = (definition: KeyboardKeyDefinition, hasNextField: boolean): KeyboardKey =>
+const keyboardKeyOf = (definition: KeyboardKeyDefinition, hasNextField: boolean, shift: boolean): KeyboardKey =>
   definition.kind === 'text'
-    ? {kind: 'text', text: definition.text}
+    ? {kind: 'text', text: shift ? definition.shiftedText ?? definition.text : definition.text}
     : definition.kind === 'complete'
       ? {kind: 'complete', hasNextField}
+      : definition.kind === 'space'
+        ? {kind: 'space'}
       : {kind: definition.kind};
 
-const labelOf = (definition: KeyboardKeyDefinition, compact: boolean, uppercase: boolean): string => {
+const labelOf = (definition: KeyboardKeyDefinition, compact: boolean, shift: boolean): string => {
   if (definition.kind === 'text') {
+    if (shift && definition.shiftedText !== undefined) return definition.shiftedText;
     if (definition.text === '-') return '−';
     if (definition.text === '.') return '·';
-    return uppercase ? definition.text.toUpperCase() : definition.text.toLowerCase();
+    return shift ? definition.text.toUpperCase() : definition.text.toLowerCase();
   }
   if (definition.kind === 'backspace') return 'BACKSPACE';
   if (definition.kind === 'shift') return compact ? '⇧' : 'SHIFT';
-  if (definition.kind === 'caps') return compact ? '⇪' : 'CAPS';
+  if (definition.kind === 'space') return compact ? '␣' : 'SPACE';
   return 'COMPLETE';
 };
 
 const accessibilityLabelOf = (definition: KeyboardKeyDefinition, label: string): string => {
   if (definition.kind === 'backspace') return '删除';
   if (definition.kind === 'complete') return '回车';
-  if (definition.kind === 'caps') return '大写锁定';
   if (definition.kind === 'shift') return '大写';
+  if (definition.kind === 'space') return '空格';
   return label;
 };
 
@@ -68,8 +71,8 @@ const iconOf = (definition: KeyboardKeyDefinition): PrimitiveIconName | undefine
       ? 'keyboard-enter'
       : undefined;
 
-const selectedOf = (definition: KeyboardKeyDefinition, shift: boolean, capsLock: boolean): boolean | undefined =>
-  definition.kind === 'caps' ? capsLock : definition.kind === 'shift' ? shift : undefined;
+const selectedOf = (definition: KeyboardKeyDefinition, shift: boolean): boolean | undefined =>
+  definition.kind === 'shift' ? shift : undefined;
 
 const keyGroups = (definitions: readonly KeyboardKeyDefinition[]): readonly (readonly KeyboardKeyDefinition[])[] => {
   const groups: KeyboardKeyDefinition[][] = [];
@@ -136,10 +139,9 @@ const groupRowsByRegion = (rows: readonly KeyboardRow[]): KeyboardRegionRows[] =
 };
 
 export const VirtualKeyboard = memo(
-  ({layout, height, frameWidth, cellWidth, compact: compactOverride, shift, capsLock, hasNextField, onKey}: VirtualKeyboardProps) => {
+  ({layout, height, frameWidth, cellWidth, compact: compactOverride, shift, hasNextField, testIDSuffix, onKey}: VirtualKeyboardProps) => {
     const definition = getKeyboardLayout(layout);
     const compact = compactOverride ?? frameWidth <= INPUT_LAYOUT_CONSTANTS.MOBILE_SYMBOL_MAX_FRAME_WIDTH;
-    const uppercase = isUppercaseMode(capsLock, shift);
     const columnGap = compact ? INPUT_LAYOUT_CONSTANTS.COMPACT_COLUMN_GAP : INPUT_LAYOUT_CONSTANTS.STANDARD_COLUMN_GAP;
     const rowGap = compact ? INPUT_LAYOUT_CONSTANTS.COMPACT_ROW_GAP : INPUT_LAYOUT_CONSTANTS.ROW_GAP;
     const horizontalPadding = compact
@@ -149,25 +151,26 @@ export const VirtualKeyboard = memo(
       ? INPUT_LAYOUT_CONSTANTS.COMPACT_DOCK_PADDING_VERTICAL
       : INPUT_LAYOUT_CONSTANTS.DOCK_PADDING_VERTICAL;
     const regions = useMemo(() => groupRowsByRegion(definition.rows), [definition]);
+    const testIDOf = (testID: string): string => testIDSuffix === undefined ? testID : `${testID}:${testIDSuffix}`;
     const handlers = useMemo(
       () =>
         new Map(
           definition.rows
             .flatMap(row => row.keys)
-            .map(key => [keyIdOf(key), () => onKey(keyboardKeyOf(key, hasNextField))] as const),
+            .map(key => [keyIdOf(key), () => onKey(keyboardKeyOf(key, hasNextField, shift))] as const),
         ),
-      [definition, hasNextField, onKey],
+      [definition, hasNextField, onKey, shift],
     );
 
     return (
       <PrimitiveKeyboardSurface
-        testID="ui.base.input:virtual-keyboard"
-        style={[{height, width: frameWidth, borderRadius: compact ? 17 : 20}]}
+        testID={testIDOf('ui.base.input:virtual-keyboard')}
+        style={[{height, width: frameWidth, borderRadius: 0}]}
         onTouchEnd={stopSurfaceDismiss}
         onClick={stopSurfaceDismiss}
       >
         <View
-          testID="ui.base.input:virtual-keyboard:content"
+          testID={testIDOf('ui.base.input:virtual-keyboard:content')}
           style={[
             styles.content,
             {paddingTop: verticalPadding, paddingHorizontal: horizontalPadding, paddingBottom: verticalPadding, gap: rowGap},
@@ -176,7 +179,7 @@ export const VirtualKeyboard = memo(
           {regions.map(region => (
             <View
               key={`region-${region.region}`}
-              testID={`ui.base.input:virtual-keyboard:region:${region.region}`}
+              testID={testIDOf(`ui.base.input:virtual-keyboard:region:${region.region}`)}
               style={[styles.region, {gap: rowGap}]}
             >
               {region.rows.map((row, rowIndex) => (
@@ -204,7 +207,7 @@ export const VirtualKeyboard = memo(
                         return (
                           <View
                             key={`${rowIndex}-${zone}-${groupIndex}`}
-                            testID={`ui.base.input:virtual-keyboard:segment:${zone}:${groupIndex}`}
+                            testID={testIDOf(`ui.base.input:virtual-keyboard:segment:${zone}:${groupIndex}`)}
                             style={[
                               styles.keyGroup,
                               {width: groupWidth(group.length, rowCellWidth, columnGap), gap: columnGap},
@@ -212,16 +215,16 @@ export const VirtualKeyboard = memo(
                           >
                             {group.map(key => {
                               const keyId = keyIdOf(key);
-                              const label = labelOf(key, compact, uppercase);
+                              const label = labelOf(key, compact, shift);
                               return (
                                 <PrimitiveButton
                                   key={keyId}
-                                  testID={`ui.base.input:virtual-keyboard:${keyId}`}
+                                  testID={testIDOf(`ui.base.input:virtual-keyboard:${keyId}`)}
                                   accessibilityLabel={accessibilityLabelOf(key, label)}
                                   icon={iconOf(key)}
                                   variant={key.zone === 'actions' ? 'key-action' : 'key'}
                                   compact={compact}
-                                  selected={selectedOf(key, shift, capsLock)}
+                                  selected={selectedOf(key, shift)}
                                   onPress={handlers.get(keyId)}
                                 >
                                   {label}
@@ -234,7 +237,7 @@ export const VirtualKeyboard = memo(
                     : row.grid.columns.map((column, columnIndex) => (
                         <View
                           key={`${rowIndex}-grid-column-${columnIndex}`}
-                          testID={`ui.base.input:virtual-keyboard:segment:grid:${columnIndex}`}
+                          testID={testIDOf(`ui.base.input:virtual-keyboard:segment:grid:${columnIndex}`)}
                           style={[
                             styles.gridColumn,
                             {
@@ -246,16 +249,16 @@ export const VirtualKeyboard = memo(
                         >
                           {column.keys.map(key => {
                             const keyId = keyIdOf(key);
-                            const label = labelOf(key, compact, uppercase);
+                            const label = labelOf(key, compact, shift);
                             return (
                               <PrimitiveButton
                                 key={keyId}
-                                testID={`ui.base.input:virtual-keyboard:${keyId}`}
+                                testID={testIDOf(`ui.base.input:virtual-keyboard:${keyId}`)}
                                 accessibilityLabel={accessibilityLabelOf(key, label)}
                                 icon={iconOf(key)}
                                 variant={key.zone === 'actions' ? 'key-action' : 'key'}
                                 compact={compact}
-                                selected={selectedOf(key, shift, capsLock)}
+                                selected={selectedOf(key, shift)}
                                 onPress={handlers.get(keyId)}
                               >
                                 {label}

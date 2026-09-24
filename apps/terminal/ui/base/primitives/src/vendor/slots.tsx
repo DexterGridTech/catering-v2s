@@ -5,12 +5,14 @@ import {
   type ComponentProps,
   type ComponentPropsWithoutRef,
   type ComponentRef,
+  type Ref,
   type ReactNode,
 } from 'react'
-import {ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, VirtualizedList, type StyleProp, type ViewStyle, type VirtualizedListProps} from 'react-native'
+import {ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, VirtualizedList, type StyleProp, type ViewStyle, type VirtualizedListProps} from 'react-native'
 import Svg, {LinearGradient, Path, Rect, Stop, type SvgProps} from 'react-native-svg'
 import {cn} from './cn'
 import {cssInterop} from './cssInterop'
+import type {PrimitiveMeasureLayoutHandle} from '../types/types'
 
 type NativeWindClassName = Readonly<{readonly className?: string}>
 type RnrTextInputClickEvent = Readonly<{readonly stopPropagation: () => void}>
@@ -21,7 +23,8 @@ export type RnrTextInputProps = Omit<ComponentPropsWithoutRef<typeof TextInput>,
   readonly onClick?: (event: RnrTextInputClickEvent) => void
 }>
 export type RnrTextInputRef = ComponentRef<typeof TextInput>
-export type RnrPressableProps = ComponentProps<typeof Pressable> & NativeWindClassName
+export type RnrPressableProps = ComponentPropsWithoutRef<typeof Pressable> & NativeWindClassName
+export type RnrPressableRef = PrimitiveMeasureLayoutHandle
 export type RnrScrollViewProps = ComponentPropsWithoutRef<typeof ScrollView> & NativeWindClassName
 export type RnrScrollViewRef = ComponentRef<typeof ScrollView>
 export type RnrActivityIndicatorProps = ComponentProps<typeof ActivityIndicator> & NativeWindClassName
@@ -72,15 +75,17 @@ export const RnrScrollView = forwardRef<RnrScrollViewRef, RnrScrollViewProps>(
 )
 RnrScrollView.displayName = 'RnrScrollView'
 
-export const RnrPressable = ({className, children, ...props}: RnrPressableProps & Readonly<{
+export const RnrPressable = forwardRef<RnrPressableRef, RnrPressableProps & Readonly<{
   readonly children?: ReactNode
-}>) => (
-  <RnrTextClassContext.Provider value={undefined}>
-    <Pressable {...props} {...({className} as {readonly className?: string})}>
-      {children}
-    </Pressable>
-  </RnrTextClassContext.Provider>
+}>>(({className, children, ...props}, ref) => (
+    <RnrTextClassContext.Provider value={undefined}>
+      <Pressable {...props} ref={ref as unknown as Ref<ComponentRef<typeof Pressable>>} {...({className} as {readonly className?: string})}>
+        {children}
+      </Pressable>
+    </RnrTextClassContext.Provider>
+  ),
 )
+RnrPressable.displayName = 'RnrPressable'
 
 const ActivityIndicatorSlot = ActivityIndicator ?? View
 
@@ -128,7 +133,7 @@ const RnrSvg = cssInterop(Svg, {className: 'style'})
 export const RnrSvgIcon = ({accessibilityLabel, className, path, size = 20, style, testID}: RnrSvgIconProps) => (
   <RnrSvg
     testID={testID}
-    accessible
+    {...(Platform?.OS === 'web' ? {} : {accessible: true})}
     accessibilityLabel={accessibilityLabel}
     width={size}
     height={size}
@@ -150,16 +155,14 @@ export type RnrGradientBackgroundProps = Readonly<{
 export const RnrGradientBackground = ({endColor, gradientId = 'primitive-action-gradient', startColor, testID}: RnrGradientBackgroundProps) => (
   <RnrView
     testID={testID}
-    pointerEvents="none"
     className="absolute inset-0 w-full h-full"
-    style={StyleSheet.absoluteFill}
+    style={[StyleSheet.absoluteFill, {pointerEvents: 'none'}]}
   >
     <Svg
-      pointerEvents="none"
       width="100%"
       height="100%"
       preserveAspectRatio="none"
-      style={StyleSheet.absoluteFill}
+      style={[StyleSheet.absoluteFill, {pointerEvents: 'none'}]}
     >
       <LinearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
         <Stop offset="0" stopColor={startColor} />

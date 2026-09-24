@@ -1,0 +1,805 @@
+{
+  "paths": {
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals": {
+      "get": {
+        "operationId": "getOperationsStoreTerminals",
+        "tags": [
+          "store-terminal"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "store-terminal",
+        "x-scenario-ids": [
+          "R5-STORE-TERMINAL"
+        ],
+        "x-page-key": "PG-STORE-TERMINALS",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_VALIDATION_FAILED"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 160
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postOperationsStoreTerminal",
+        "tags": [
+          "store-terminal"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "store-terminal",
+        "x-scenario-ids": [
+          "R5-STORE-TERMINAL"
+        ],
+        "x-page-key": "PG-STORE-TERMINALS",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "STORE_TERMINAL_ACTIVATION_CODE_CONFLICT",
+          "STORE_TERMINAL_ACTIVATION_CODE_EXHAUSTED",
+          "STORE_TERMINAL_NAME_CONFLICT",
+          "STORE_TERMINAL_REFERENCE_INVALID",
+          "STORE_TERMINAL_RULE_INVALID"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalMutation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-capability": "REQ_POST_OPERATIONS_STORE_TERMINAL",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalCreateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}": {
+      "get": {
+        "operationId": "getOperationsStoreTerminal",
+        "tags": [
+          "store-terminal"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "store-terminal",
+        "x-scenario-ids": [
+          "R5-STORE-TERMINAL"
+        ],
+        "x-page-key": "PG-STORE-TERMINALS",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "terminalRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putOperationsStoreTerminal",
+        "tags": [
+          "store-terminal"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "store-terminal",
+        "x-scenario-ids": [
+          "R5-STORE-TERMINAL"
+        ],
+        "x-page-key": "PG-STORE-TERMINALS",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "STORE_TERMINAL_NAME_CONFLICT",
+          "STORE_TERMINAL_REFERENCE_INVALID",
+          "STORE_TERMINAL_RULE_INVALID",
+          "STORE_TERMINAL_VOIDED_IMMUTABLE"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "terminalRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalMutation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_PUT_OPERATIONS_STORE_TERMINAL",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalReplaceRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status": {
+      "post": {
+        "operationId": "postOperationsStoreTerminalStatus",
+        "tags": [
+          "store-terminal"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "store-terminal",
+        "x-scenario-ids": [
+          "R5-STORE-TERMINAL"
+        ],
+        "x-page-key": "PG-STORE-TERMINALS",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "STORE_TERMINAL_STATUS_TRANSITION_INVALID"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "terminalRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalMutation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-expected-version-policy": "REQUIRED",
+        "x-required-capability": "REQ_POST_OPERATIONS_STORE_TERMINAL_STATUS",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalStatusRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates": {
+      "get": {
+        "operationId": "getOperationsStoreTerminalAreaCandidates",
+        "tags": [
+          "store-terminal"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "store-terminal",
+        "x-scenario-ids": [
+          "R5-STORE-TERMINAL"
+        ],
+        "x-page-key": "PG-STORE-TERMINALS",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_VALIDATION_FAILED"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 160
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalAreaCandidatePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates": {
+      "get": {
+        "operationId": "getOperationsStoreTerminalTagCandidates",
+        "tags": [
+          "store-terminal"
+        ],
+        "x-consumer-faces": [
+          "operations-admin"
+        ],
+        "x-owner-module": "store-terminal",
+        "x-scenario-ids": [
+          "R5-STORE-TERMINAL"
+        ],
+        "x-page-key": "PG-STORE-TERMINALS",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_VALIDATION_FAILED"
+        ],
+        "security": [
+          {
+            "operationsSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "storeRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 160
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../components/store-terminal/store-terminal.schemas.json#/components/schemas/StoreTerminalTagCandidatePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    }
+  }
+}

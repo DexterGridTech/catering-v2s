@@ -22,7 +22,7 @@
         "doc/evidence/platform/r5-u01-edge-placement-resolution.json"
       ],
       "contractDigest": null,
-      "contentSha256": "5227d10b05edadfb4b35ed05b4a42c4c46784228a1d0896e0b30a3b1dc938444"
+      "contentSha256": "73286947a999ea4dd6e8186085c222da8647ef4b550a449bc5741bff7ce02667"
     }
   },
   "runtimeIntegration": {
@@ -30,14 +30,14 @@
     "legacyDispatcher": "NO_LEGACY_DISPATCH",
     "reason": "BP-U06 completed the 51-route direct typed cutover and exact old-signature absence; bindings remain the generated owner-local source of truth."
   },
-  "operationCount": 286,
-  "readCount": 120,
-  "commandCount": 166,
+  "operationCount": 293,
+  "readCount": 124,
+  "commandCount": 169,
   "contextCounts": {
     "PLATFORM_COMMAND_CONTEXT": 34,
     "PUBLIC_PROTOCOL_CONTEXT": 9,
-    "READ_CONTEXT": 120,
-    "WORKSPACE_EXECUTION_CONTEXT": 116,
+    "READ_CONTEXT": 124,
+    "WORKSPACE_EXECUTION_CONTEXT": 119,
     "WORKSPACE_PROTOCOL_CONTEXT": 7
   },
   "operations": [
@@ -4616,11 +4616,123 @@
       "transactionMode": "REQUIRED",
       "copyRole": "NONE",
       "commandBoundary": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "getOperationsStoreTerminal",
+      "owner": "store-terminal",
+      "routeRegistry": "edge-face",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+      "face": "operations-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.storeterminal.application.GetOperationsStoreTerminalOperation",
+      "wireRequest": "NoBody",
+      "wireResponse": "StoreTerminalDetail",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE"
+    },
+    {
+      "operationId": "getOperationsStoreTerminalAreaCandidates",
+      "owner": "store-terminal",
+      "routeRegistry": "edge-face",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates",
+      "face": "operations-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.storeterminal.application.GetOperationsStoreTerminalAreaCandidatesOperation",
+      "wireRequest": "NoBody",
+      "wireResponse": "StoreTerminalAreaCandidatePage",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE"
+    },
+    {
+      "operationId": "getOperationsStoreTerminals",
+      "owner": "store-terminal",
+      "routeRegistry": "edge-face",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+      "face": "operations-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.storeterminal.application.GetOperationsStoreTerminalsOperation",
+      "wireRequest": "NoBody",
+      "wireResponse": "StoreTerminalPage",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE"
+    },
+    {
+      "operationId": "getOperationsStoreTerminalTagCandidates",
+      "owner": "store-terminal",
+      "routeRegistry": "edge-face",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates",
+      "face": "operations-admin",
+      "mode": "READ",
+      "adapter": "com.catering.v2s.storeterminal.application.GetOperationsStoreTerminalTagCandidatesOperation",
+      "wireRequest": "NoBody",
+      "wireResponse": "StoreTerminalTagCandidatePage",
+      "contextKind": "READ_CONTEXT",
+      "transactionMode": "OUTSIDE_TRANSACTION",
+      "copyRole": "NONE",
+      "commandBoundary": "NOT_APPLICABLE"
+    },
+    {
+      "operationId": "postOperationsStoreTerminal",
+      "owner": "store-terminal",
+      "routeRegistry": "edge-face",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals",
+      "face": "operations-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.storeterminal.application.operations.PostOperationsStoreTerminalOperation",
+      "wireRequest": "StoreTerminalCreateRequest",
+      "wireResponse": "StoreTerminalMutation",
+      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "postOperationsStoreTerminalStatus",
+      "owner": "store-terminal",
+      "routeRegistry": "edge-face",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status",
+      "face": "operations-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.storeterminal.application.operations.PostOperationsStoreTerminalStatusOperation",
+      "wireRequest": "StoreTerminalStatusRequest",
+      "wireResponse": "StoreTerminalMutation",
+      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "putOperationsStoreTerminal",
+      "owner": "store-terminal",
+      "routeRegistry": "edge-face",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+      "normalizedPath": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}",
+      "face": "operations-admin",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.storeterminal.application.operations.PutOperationsStoreTerminalOperation",
+      "wireRequest": "StoreTerminalReplaceRequest",
+      "wireResponse": "StoreTerminalMutation",
+      "contextKind": "WORKSPACE_EXECUTION_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND"
     }
   ],
   "commandBoundaryCounts": {
-    "NOT_APPLICABLE": 120,
-    "OWNER_COMMAND": 141,
+    "NOT_APPLICABLE": 124,
+    "OWNER_COMMAND": 144,
     "PROTOCOL": 25
   }
 }

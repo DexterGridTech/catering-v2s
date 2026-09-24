@@ -227,6 +227,13 @@
       "requiredInOwnerCommand": true,
       "transactionRequirement": "REQUIRED",
       "crossOwnerWritesUsePublicCommandApi": true
+    },
+    {
+      "ownerRecheckId": "OWNER_RECHECK_STORE_TERMINAL",
+      "ownerModule": "store-terminal",
+      "requiredInOwnerCommand": true,
+      "transactionRequirement": "REQUIRED",
+      "crossOwnerWritesUsePublicCommandApi": true
     }
   ],
   "typedProblemMappings": [
@@ -317,6 +324,13 @@
     {
       "typedProblemMappingId": "PROBLEM_SALES_MENU_TYPED_OWNER_EXCEPTION",
       "ownerModule": "sales-menu",
+      "typedProblemOnly": true,
+      "noTestCodeInResponse": true,
+      "unmappedExceptionFails": true
+    },
+    {
+      "typedProblemMappingId": "PROBLEM_STORE_TERMINAL_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "store-terminal",
       "typedProblemOnly": true,
       "noTestCodeInResponse": true,
       "unmappedExceptionFails": true
@@ -3574,6 +3588,42 @@
       "ownerRecheckId": "OWNER_RECHECK_PLATFORM_ASSET",
       "typedProblemMappingId": "PROBLEM_PLATFORM_ASSET_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_RELEASE_STAGED_STORE_SERVICE_POINT_IMAGE",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_POST_OPERATIONS_STORE_TERMINAL",
+      "operationIdentity": {"operationId": "postOperationsStoreTerminal", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals", "consumerFace": "operations-admin", "ownerModule": "store-terminal"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_TERMINAL"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "store-terminal",
+      "ownerRecheckId": "OWNER_RECHECK_STORE_TERMINAL",
+      "typedProblemMappingId": "PROBLEM_STORE_TERMINAL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_POST_OPERATIONS_STORE_TERMINAL",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_PUT_OPERATIONS_STORE_TERMINAL",
+      "operationIdentity": {"operationId": "putOperationsStoreTerminal", "method": "PUT", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}", "consumerFace": "operations-admin", "ownerModule": "store-terminal"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_TERMINAL"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "store-terminal",
+      "ownerRecheckId": "OWNER_RECHECK_STORE_TERMINAL",
+      "typedProblemMappingId": "PROBLEM_STORE_TERMINAL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_PUT_OPERATIONS_STORE_TERMINAL",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_POST_OPERATIONS_STORE_TERMINAL_STATUS",
+      "operationIdentity": {"operationId": "postOperationsStoreTerminalStatus", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status", "consumerFace": "operations-admin", "ownerModule": "store-terminal"},
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {"kind": "SERVER_RESOLVED_RESOURCE_TYPE", "resourceTypeCapabilities": {"STORE": "EDIT_STORE_TERMINAL"}, "unsupportedResourceTypeDecision": "DENY"},
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "store-terminal",
+      "ownerRecheckId": "OWNER_RECHECK_STORE_TERMINAL",
+      "typedProblemMappingId": "PROBLEM_STORE_TERMINAL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_POST_OPERATIONS_STORE_TERMINAL_STATUS",
       "noClientDerivedAuthorization": true
     }
   ]

@@ -7,17 +7,17 @@ const SECONDARY_FRAME = frame(960, 540);
 const GENERIC_FRAME = frame(960, 540);
 
 describe('virtual keyboard geometry', () => {
-  it('insets wide keyboard cards without making the 360-unit mobile layout unsupported', () => {
-    expect(calculateVirtualKeyboardDockWidth(1280, 'full')).toBe(820);
-    expect(calculateVirtualKeyboardDockWidth(1280, 'numeric')).toBe(560);
-    expect(calculateVirtualKeyboardDockWidth(640, 'alpha')).toBe(608);
-    expect(calculateVirtualKeyboardDockWidth(392, 'full')).toBe(360);
+  it('uses the full measured surface width for every layout', () => {
+    expect(calculateVirtualKeyboardDockWidth(1280, 'full')).toBe(1280);
+    expect(calculateVirtualKeyboardDockWidth(1280, 'numeric')).toBe(1280);
+    expect(calculateVirtualKeyboardDockWidth(640, 'alpha')).toBe(640);
+    expect(calculateVirtualKeyboardDockWidth(392, 'full')).toBe(392);
     expect(calculateVirtualKeyboardDockWidth(360, 'full')).toBe(360);
-    expect(calculateVirtualKeyboardDockWidth(360, 'numeric')).toBe(330);
-    expect(calculateVirtualKeyboardDockWidth(360, 'financial')).toBe(330);
+    expect(calculateVirtualKeyboardDockWidth(360, 'numeric')).toBe(360);
+    expect(calculateVirtualKeyboardDockWidth(360, 'financial')).toBe(360);
   });
 
-  it('uses the local frame height with the capped ratio and content floor', () => {
+  it('uses the local frame height with the capped ratio and no content-height floor', () => {
     expect(calculateVirtualKeyboardMetrics(PRIMARY_FRAME, 'full')).toMatchObject({
       capacity: 'supported',
       height: 246,
@@ -26,6 +26,7 @@ describe('virtual keyboard geometry', () => {
       rowCount: 4,
       cellWidth: 118,
     });
+    expect(calculateVirtualKeyboardMetrics(PRIMARY_FRAME, 'numeric').cellWidth).toBe(412);
     expect(calculateVirtualKeyboardMetrics(SECONDARY_FRAME, 'numeric')).toMatchObject({
       capacity: 'supported',
       height: 246,
@@ -96,19 +97,26 @@ describe('virtual keyboard geometry', () => {
     });
   });
 
-  it('classifies insufficient width and height separately', () => {
+  it('classifies insufficient width and keyboard height separately', () => {
     expect(calculateVirtualKeyboardMetrics(frame(320, 540), 'numeric').capacity).toBe('unsupported-width');
     expect(calculateVirtualKeyboardMetrics(frame(360, 300), 'numeric')).toMatchObject({
       capacity: 'unsupported-height',
-      height: 92,
-      contentHeight: 208,
+      height: 150,
+      contentHeight: 150,
       visible: false,
       contentTooSmall: true,
     });
     expect(calculateVirtualKeyboardMetrics(frame(360, 340), 'alpha')).toMatchObject({
+      capacity: 'supported',
+      height: 146,
+      contentHeight: 194,
+      visible: true,
+      contentTooSmall: false,
+    });
+    expect(calculateVirtualKeyboardMetrics(frame(360, 360), 'full')).toMatchObject({
       capacity: 'unsupported-height',
-      height: 132,
-      contentHeight: 208,
+      height: 180,
+      contentHeight: 180,
       visible: false,
       contentTooSmall: true,
     });
@@ -120,6 +128,7 @@ describe('virtual keyboard geometry', () => {
       capacity: 'supported',
       cellWidth: INPUT_LAYOUT_CONSTANTS.DENSE_KEY_MIN_WIDTH,
     });
+    expect(calculateVirtualKeyboardMetrics(frame(360, 720), 'full').cellWidth).toBe(30);
     expect(calculateVirtualKeyboardMetrics(frame(360, 720), 'numeric')).toMatchObject({
       capacity: 'supported',
       cellWidth: 110,

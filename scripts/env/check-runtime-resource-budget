@@ -1,26 +1,59 @@
 #!/usr/bin/env bash
 set -euo pipefail
-root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
-runtime="${1:-$root/.runtime}"
 canonical_start_token() { sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]\{1,\}/ /g' -e 's/[[:space:]]*$//'; }
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+profile="default"
+if [[ "${1:-}" == "--profile" ]]; then
+  profile="${2:-}"
+  shift 2
+fi
+runtime="${1:-$root/.runtime}"
+max_rss_mb=2048
+allowed_live_prefix=''
+case "$profile" in
+  default)
+    ;;
+  admin-validation-with-ter)
+    # TER is an explicitly allowed independent workload while the management
+    # backend/frontend is validated. The allowance is path-bound and keeps a
+    # finite aggregate RSS budget; unrelated live trees still fail closed.
+    max_rss_mb=4096
+    allowed_live_prefix="$runtime/ter-virtual-keyboard-android/"
+    ;;
+  *)
+    echo 'STATUS=FAIL'
+    echo 'FAILURE=UNKNOWN_RESOURCE_PROFILE'
+    exit 2
+    ;;
+esac
 if [[ "${1:-}" == "--self-test" ]]; then
   temp="$(mktemp -d)"; trap 'rm -rf "$temp"' EXIT
-  mkdir -p "$temp/r"; token="$(ps -o lstart= -p "$$" | canonical_start_token)"
+  mkdir -p "$temp/r" "$temp/ter-virtual-keyboard-android/r"; token="$(ps -o lstart= -p "$$" | canonical_start_token)"
   SELF_PID="$$" SELF_TOKEN="$token" node - "$temp/r/run-manifest.json" <<'NODE'
 const fs=require('fs');fs.writeFileSync(process.argv[2],JSON.stringify({runId:'red',processes:[{pid:+process.env.SELF_PID,startToken:process.env.SELF_TOKEN}]}));
 NODE
+  SELF_PID="$$" SELF_TOKEN="$token" node - "$temp/ter-virtual-keyboard-android/r/run-manifest.json" <<'NODE'
+const fs=require('fs');fs.writeFileSync(process.argv[2],JSON.stringify({runId:'ter-red',processes:[{pid:+process.env.SELF_PID,startToken:process.env.SELF_TOKEN}]}));
+NODE
   if "$0" "$temp" >/dev/null; then echo 'STATUS=FAIL'; exit 1; fi
+  rm -rf "$temp/r"
+  if ! "$0" --profile admin-validation-with-ter "$temp" >/dev/null; then echo 'STATUS=FAIL'; exit 1; fi
   [[ "$(printf 'Sun Aug  9 11:09:26 2026   ' | canonical_start_token)" == 'Sun Aug 9 11:09:26 2026' ]] || { echo 'STATUS=FAIL'; exit 1; }
-  echo 'STATUS=PASS'; echo 'RED_LIVE_MANAGED_PROCESS=PASS'; echo 'RED_START_TOKEN_INTERNAL_SPACE_PRESERVED=PASS'; exit 0
+  echo 'STATUS=PASS'; echo 'RED_LIVE_MANAGED_PROCESS=PASS'; echo 'RED_TER_PARALLEL_PROFILE=PASS'; echo 'RED_START_TOKEN_INTERNAL_SPACE_PRESERVED=PASS'; exit 0
 fi
 [[ -d "$runtime" ]] || { echo 'STATUS=PASS'; echo 'LIVE_MANAGED_PROCESSES=0'; exit 0; }
 live=0; rss=0
 while IFS=$'\t' read -r pid token file; do
   [[ -n "$pid" ]] || continue
   if kill -0 "$pid" 2>/dev/null && [[ "$(ps -o lstart= -p "$pid" | canonical_start_token)" == "$(printf '%s' "$token" | canonical_start_token)" ]]; then
-    value="$(ps -o rss= -p "$pid" | xargs)"; live=$((live+1)); rss=$((rss+${value:-0})); echo "LIVE_PROCESS=pid=$pid rssKiB=${value:-0} manifest=$file"
+    value="$(ps -o rss= -p "$pid" | xargs)"; rss=$((rss+${value:-0}))
+    if [[ -n "$allowed_live_prefix" && "$file" == "$allowed_live_prefix"* ]]; then
+      echo "ALLOWED_LIVE_PROCESS=pid=$pid rssKiB=${value:-0} manifest=$file profile=$profile"
+    else
+      live=$((live+1)); echo "LIVE_PROCESS=pid=$pid rssKiB=${value:-0} manifest=$file"
+    fi
   fi
 done < <(RUNTIME="$runtime" node -e 'const fs=require("fs"),path=require("path");const walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):(e.name==="run-manifest.json"||e.name==="manifest.json")?[path.join(d,e.name)]:[]);const seen=new Set();for(const f of walk(process.env.RUNTIME)){try{const m=JSON.parse(fs.readFileSync(f));for(const p of m.processes||[])if(Number.isInteger(p.pid)&&typeof p.startToken==="string"){const key=`${p.pid}\u0000${p.startToken.trim().replace(/\\s+/g," ")}`;if(!seen.has(key)){seen.add(key);console.log([p.pid,p.startToken,f].join("\t"));}}}catch{}}')
-mb=$(((rss+1023)/1024)); echo "LIVE_MANAGED_PROCESSES=$live"; echo "MANAGED_RSS_MB=$mb"
-if ((live>0 || mb>2048)); then echo 'STATUS=FAIL'; echo 'FAILURE=MANAGED_RESOURCE_BUDGET_EXCEEDED'; exit 1; fi
+mb=$(((rss+1023)/1024)); echo "LIVE_MANAGED_PROCESSES=$live"; echo "MANAGED_RSS_MB=$mb"; echo "RESOURCE_PROFILE=$profile"; echo "RESOURCE_RSS_BUDGET_MB=$max_rss_mb"
+if ((live>0 || mb>max_rss_mb)); then echo 'STATUS=FAIL'; echo 'FAILURE=MANAGED_RESOURCE_BUDGET_EXCEEDED'; exit 1; fi
 echo 'STATUS=PASS'

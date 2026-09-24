@@ -19,6 +19,7 @@ import {ProjectBusinessChannelPage} from '../../features/business-channel/ui/Pro
 import {StoreBusinessChannelPage} from '../../features/business-channel/ui/StoreBusinessChannelPage';
 import {SalesMenuPage} from '../../features/sales-menu/ui/SalesMenuPage';
 import {StoreServicePointPage} from '../../features/store-service-point/ui/StoreServicePointPage';
+import {StoreTerminalPage} from '../../features/store-terminal/ui/StoreTerminalPage';
 
 type Registration = {
   pageDesignKey: OperationsPageDesignKey;
@@ -182,6 +183,11 @@ export const operationsPageRegistry: Record<OperationsPageDesignKey, Registratio
     pageDesignKey: operationsPageDesignKeys.PgStoreServicePointQr,
     routeSegment: 'organization/store-service-points',
     Component: StoreServicePointPage,
+  },
+  [operationsPageDesignKeys.PgStoreTerminals]: {
+    pageDesignKey: operationsPageDesignKeys.PgStoreTerminals,
+    routeSegment: 'organization/store-terminals',
+    Component: StoreTerminalPage,
   },
 } satisfies Record<OperationsPageDesignKey, Registration>;
 

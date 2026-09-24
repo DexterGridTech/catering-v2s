@@ -210,6 +210,18 @@ const RESOURCE_TYPE_CAPABILITY_OPERATIONS = new Map([
     {STORE: "EDIT_STORE_SERVICE_POINT_QR"},
   ],
   [
+    "postOperationsStoreTerminal|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals|operations-admin",
+    {STORE: "EDIT_STORE_TERMINAL"},
+  ],
+  [
+    "putOperationsStoreTerminal|PUT|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}|operations-admin",
+    {STORE: "EDIT_STORE_TERMINAL"},
+  ],
+  [
+    "postOperationsStoreTerminalStatus|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status|operations-admin",
+    {STORE: "EDIT_STORE_TERMINAL"},
+  ],
+  [
     "stageStoreServicePointImage|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage|operations-admin",
     {STORE: "EDIT_STORE_SERVICE_POINT_QR"},
   ],

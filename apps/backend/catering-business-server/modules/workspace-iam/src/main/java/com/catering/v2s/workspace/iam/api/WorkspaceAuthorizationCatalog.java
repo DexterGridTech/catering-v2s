@@ -25,6 +25,7 @@ public final class WorkspaceAuthorizationCatalog {
         public static final String PG_IAM_HEAD_COMPANY_USERS = "PG-IAM-HEAD-COMPANY-USERS";
         public static final String PG_IAM_STORE_USERS = "PG-IAM-STORE-USERS";
         public static final String PG_STORE_PROFILE = "PG-STORE-PROFILE";
+        public static final String PG_STORE_TERMINALS = "PG-STORE-TERMINALS";
         public static final String PG_BUSINESS_CHANNEL_PROJECT = "PG-BUSINESS-CHANNEL-PROJECT";
         public static final String PG_BUSINESS_CHANNEL_STORE = "PG-BUSINESS-CHANNEL-STORE";
         public static final String PG_CATALOG_STORE_ITEMS = "PG-CATALOG-STORE-ITEMS";
@@ -76,6 +77,7 @@ public final class WorkspaceAuthorizationCatalog {
         public static final String EDIT_STORE_INVENTORY = "EDIT_STORE_INVENTORY";
         public static final String EDIT_STORE_SALES_MENU = "EDIT_STORE_SALES_MENU";
         public static final String EDIT_STORE_SERVICE_POINT_QR = "EDIT_STORE_SERVICE_POINT_QR";
+        public static final String EDIT_STORE_TERMINAL = "EDIT_STORE_TERMINAL";
     }
     public static List<CapabilityCatalogEntry> capabilityCatalog() { return List.of(
             capability("BC-ORG-GROUP-EDIT", "编辑集团资料", "ORGANIZATION_MANAGEMENT", "组织管理", 100, List.of("GROUP"), "PG-ORG-STRUCTURE", "GROUP_VISIBLE"),
@@ -118,7 +120,8 @@ public final class WorkspaceAuthorizationCatalog {
             capability("EDIT_STORE_CATALOG", "编辑门店商品", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-CATALOG-STORE-ITEMS", "SELECTED_STORE_SCOPE"),
             capability("EDIT_STORE_INVENTORY", "编辑门店库存", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-INVENTORY-STORE-STATUS", "SELECTED_STORE_SCOPE"),
             capability("EDIT_STORE_SALES_MENU", "编辑门店销售菜单", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-SALES-MENU-STORE", "SELECTED_STORE_SCOPE"),
-            capability("EDIT_STORE_SERVICE_POINT_QR", "编辑门店桌台与二维码", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-STORE-SERVICE-POINT-QR", "SELECTED_STORE_SCOPE")); }
+            capability("EDIT_STORE_SERVICE_POINT_QR", "编辑门店桌台与二维码", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-STORE-SERVICE-POINT-QR", "SELECTED_STORE_SCOPE"),
+            capability("EDIT_STORE_TERMINAL", "编辑门店终端", "STORE_MANAGEMENT", "门店管理", 200, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-STORE-TERMINALS", "SELECTED_STORE_SCOPE")); }
     public static List<PageAccessCatalogEntry> pageCatalog() { return List.of(
             page("HOME-GROUP", "集团首页", "工作台", 10, "NONE", List.of("GROUP"), null, false),
             page("HOME-REGION", "大区首页", "工作台", 20, "NONE", List.of("REGION"), null, false),
@@ -137,6 +140,7 @@ public final class WorkspaceAuthorizationCatalog {
             page("PG-IAM-HEAD-COMPANY-USERS", "总公司用户管理", "用户与权限", 230, "HEAD_COMPANY", List.of("GROUP", "HEAD_COMPANY"), "HEAD_COMPANY", true),
             page("PG-IAM-STORE-USERS", "门店用户管理", "用户与权限", 240, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), "STORE", true),
             page("PG-STORE-PROFILE", "门店资料", "门店经营", 300, "STORE", List.of("STORE"), null, true),
+            page("PG-STORE-TERMINALS", "门店终端管理", "门店经营", 310, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
             page("PG-BUSINESS-CHANNEL-PROJECT", "项目经营渠道管理", "经营渠道", 320, "PROJECT", List.of("GROUP", "REGION", "PROJECT"), null, true),
             page("PG-BUSINESS-CHANNEL-STORE", "门店经营渠道管理", "经营渠道", 340, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
             page("PG-CATALOG-STORE-ITEMS", "门店商品管理", "商品与服务", 510, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),

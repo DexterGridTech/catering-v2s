@@ -1,6 +1,6 @@
 import {act, create, type ReactTestRenderer} from 'react-test-renderer'
 import {createElement, type ComponentType, type ReactElement} from 'react'
-import {BackHandler, StyleSheet, TextInput, View} from 'react-native'
+import {Animated, BackHandler, StyleSheet, TextInput, View} from 'react-native'
 import {describe, expect, it, vi} from 'vitest'
 import type {
   LogEvent,
@@ -17,6 +17,7 @@ import {
   LayerStack,
   RenderProvider,
   ScreenContainer,
+  SurfacePresentationOffsetProvider,
   SurfaceFocusBoundaryContext,
   SurfaceRoot,
   calculateSurfaceHostGeometry,
@@ -584,10 +585,14 @@ describe('render surface hosts', () => {
     expect(frameCalls).toBe(1)
     expect(content.type).toBe(View)
     expect(StyleSheet.flatten(contentProps.style)).toMatchObject({flex: 1})
-    expect(contentProps.children).toEqual(expect.arrayContaining([
+    const presentedContent = contentProps.children[0] as ReactElement
+    const layerStack = contentProps.children[1] as ReactElement
+    expect(presentedContent.type).toBe(Animated.View)
+    const presentedChildren = (presentedContent.props as Readonly<{readonly children?: unknown}>).children
+    expect(presentedChildren).toEqual(expect.arrayContaining([
       expect.objectContaining({type: ScreenContainer}),
-      expect.objectContaining({type: LayerStack}),
     ]))
+    expect(layerStack.type).toBe(LayerStack)
     expect(renderer.root.findByType('render-screen').props.marker).toBeUndefined()
     renderer.unmount()
   })
@@ -811,6 +816,7 @@ describe('render surface hosts', () => {
   it('resolves screen and layer through both catalogs and orders layers by tier/time/id', () => {
     const source = createSource()
     const {logger} = createLogger()
+    const presentationOffset = new Animated.Value(-24)
     const screenPart = part({partKey: 'surface-screen-part', rendererKey: 'surface-screen-renderer', component: Screen})
     const standard = part({partKey: 'standard-part', rendererKey: 'standard-renderer', component: StandardLayer, layerTier: 'standard', containerKeys: []})
     const alert = part({partKey: 'alert-part', rendererKey: 'alert-renderer', component: AlertLayer, layerTier: 'alert', containerKeys: []})
@@ -832,9 +838,13 @@ describe('render surface hosts', () => {
     }))
     source.setStatus('started')
     const renderer = mount(createElement(
-      RenderProvider,
-      {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, ...unusedRenderProviderBindings},
-      createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
+      SurfacePresentationOffsetProvider,
+      {offset: presentationOffset},
+      createElement(
+        RenderProvider,
+        {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, ...unusedRenderProviderBindings},
+        createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
+      ),
     ))
     expect(renderer.root.findByType('render-screen').props.marker).toBe('screen')
     expect(renderer.root.findAllByType('render-layer').map(layer => layer.props.marker)).toEqual([
@@ -844,7 +854,8 @@ describe('render surface hosts', () => {
       'alert',
     ])
     const layerStack = findByTestID(renderer, 'ui-base-render:layer-stack')
-    expect(findByTestID(renderer, 'ui-base-render:layer-backdrop')).toBeDefined()
+    const backdrop = findByTestID(renderer, 'ui-base-render:layer-backdrop')
+    expect(backdrop).toBeDefined()
     const layerStackStyle = StyleSheet.flatten(layerStack.props.style)
     expect(layerStackStyle).toMatchObject({
       position: 'absolute',
@@ -858,7 +869,9 @@ describe('render surface hosts', () => {
     expect(layerStackStyle).not.toHaveProperty('alignItems')
     expect(layerStackStyle).not.toHaveProperty('justifyContent')
     expect(layerStackStyle).not.toHaveProperty('padding')
-    expect(layerStack.props.pointerEvents).toBe('box-none')
+    expect(layerStackStyle).not.toHaveProperty('transform')
+    expect(StyleSheet.flatten(backdrop.props.style)).not.toHaveProperty('transform')
+    expect(layerStack.props.style).toEqual(expect.arrayContaining([expect.objectContaining({pointerEvents: 'box-none'})]))
     const layerSurfaces = renderer.root.findAll(node =>
       node.type === View
       && typeof node.props.testID === 'string'
@@ -876,6 +889,16 @@ describe('render surface hosts', () => {
     expect(layerStyle).not.toHaveProperty('alignItems')
     expect(layerStyle).not.toHaveProperty('justifyContent')
     expect(layerStyle).not.toHaveProperty('padding')
+    expect(layerStyle).not.toHaveProperty('transform')
+    const alertLayer = findByTestID(renderer, 'ui-base-render:layer:alert')
+    expect(alertLayer.props.focusable).toBe(true)
+    expect(StyleSheet.flatten(alertLayer.props.style)).not.toHaveProperty('transform')
+
+    const movingNodes = renderer.root.findAll(node => {
+      const style = StyleSheet.flatten(node.props.style) as {readonly transform?: readonly {readonly translateY?: unknown}[]} | undefined
+      return style?.transform?.some(transform => transform.translateY === presentationOffset) ?? false
+    })
+    expect(movingNodes).toHaveLength(5)
     renderer.unmount()
   })
 

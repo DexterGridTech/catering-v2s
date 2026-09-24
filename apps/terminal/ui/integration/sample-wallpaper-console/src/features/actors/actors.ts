@@ -6,8 +6,9 @@ import {
   sessionRestoredAnonymousCommand,
   sessionRestoredAuthenticatedCommand,
 } from '@catering-v2s/kernel-feature-sample-staff-session'
+import {selectSessionState} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {isCurrentWorkspaceOwnedByInstance, showScreenCommand} from '@catering-v2s/kernel-base-ui-state'
-import {selectTopologyFacts} from '@catering-v2s/kernel-base-topology'
+import {selectTopologyFacts, topologyDisplayChangedCommand} from '@catering-v2s/kernel-base-topology'
 import {moduleName} from '../../moduleName'
 
 const showPrimary = async (context: ActorExecutionContext, partKey: string): Promise<void> => {
@@ -47,7 +48,22 @@ const showSecondaryIfAvailable = async (
   })
 }
 
+const selectSessionStatus = (context: ActorExecutionContext): 'anonymous' | 'authenticated' | 'other' => {
+  const status = selectSessionState(context.getState()).status
+  if (status === 'anonymous' || status === 'authenticated') return status
+  return 'other'
+}
+
 export const createWallpaperConsolePlacementActor = (): ActorDefinition => defineActor(moduleName, 'placement', [
+  onCommand(topologyDisplayChangedCommand, async context => {
+    const sessionStatus = selectSessionStatus(context)
+    if (sessionStatus === 'authenticated') {
+      await showSecondaryIfAvailable(context, 'sample.wallpaper-console.welcome')
+    } else if (sessionStatus === 'anonymous') {
+      await showSecondaryIfAvailable(context, 'sample.wallpaper-console.waiting')
+    }
+    return null
+  }),
   onCommand(loginSucceededCommand, async context => {
     if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await showPrimary(context, 'sample.wallpaper.picker')

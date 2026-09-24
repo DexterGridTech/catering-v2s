@@ -31,5 +31,9 @@
     "terminalSurfaces",
     "waitingPart",
     "welcomePart"
-  ]
+  ],
+  "publicExportMap": {
+    ".": "./src/index.ts",
+    "./theme/global.css": "./theme/global.css"
+  }
 }

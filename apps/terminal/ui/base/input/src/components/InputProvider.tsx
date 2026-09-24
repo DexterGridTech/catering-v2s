@@ -2,9 +2,9 @@ import {useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode}
 import {calculateVirtualKeyboardMetrics, type KeyboardCapacity, type LocalFrameMetrics} from '../foundations/keyboardHeight';
 import {
   InputControllerContext,
-  InputDiagnosticContext,
   InputFieldKeyboardStateContext,
   InputKeyboardStateContext,
+  InputPendingFocusCommitContext,
 } from '../contexts/context';
 import {FocusBoundaryBridge} from './FocusBoundaryBridge';
 import {useInputFieldRegistry} from '../hooks/useInputFieldRegistry';
@@ -12,7 +12,6 @@ import {useInputFocusController} from '../hooks/useInputFocusController';
 import {useInputKeyboardController} from '../hooks/useInputKeyboardController';
 import type {
   InputController,
-  InputDiagnosticReporter,
   InputFieldKeyboardState,
   InputFieldController,
   InputKeyboardState,
@@ -21,17 +20,15 @@ import type {KeyboardStateBase} from '../hooks/inputProviderTypes';
 
 export type InputProviderProps = Readonly<{
   readonly frameMetrics: LocalFrameMetrics | null;
-  readonly onDiagnostic?: InputDiagnosticReporter;
   readonly children?: ReactNode;
 }>;
 
-export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProviderProps) => {
+export const InputProvider = ({frameMetrics, children}: InputProviderProps) => {
   const frameMetricsRef = useRef<LocalFrameMetrics | null>(frameMetrics);
   frameMetricsRef.current = frameMetrics;
   const keyboardStateRef = useRef<KeyboardStateBase>({
     activeFieldId: null,
     owner: 'none',
-    keyboardPlacement: 'surface',
     layout: 'numeric',
     revision: 0,
   });
@@ -44,14 +41,13 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
       next: Readonly<{
         readonly activeFieldId: string | null;
         readonly owner: 'none' | 'virtual';
-        readonly keyboardPlacement?: KeyboardStateBase['keyboardPlacement'];
         readonly layout: InputFieldController['layout'];
       }>,
     ) => {
+      const previous = keyboardStateRef.current;
       keyboardStateRef.current = {
         ...next,
-        keyboardPlacement: next.keyboardPlacement ?? keyboardStateRef.current.keyboardPlacement,
-        revision: keyboardStateRef.current.revision + 1,
+        revision: previous.revision + 1,
       };
       forceKeyboardUpdate(value => value + 1);
     },
@@ -63,7 +59,6 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
     commitKeyboardState({
       activeFieldId: current.activeFieldId,
       owner: current.owner,
-      keyboardPlacement: current.keyboardPlacement,
       layout: current.layout,
     });
   }, [commitKeyboardState]);
@@ -75,7 +70,7 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
     forceKeyboardUpdate(value => value + 1);
   }, []);
 
-  const markBlockedField = useCallback((fieldId: string, capacity: KeyboardCapacity) => {
+  const markBlockedField = useCallback((fieldId: string, capacity: KeyboardCapacity | null) => {
     blockedFieldIdRef.current = fieldId;
     blockedCapacityRef.current = capacity;
     forceKeyboardUpdate(value => value + 1);
@@ -102,6 +97,8 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
     fieldsRef,
     frameMetricsRef,
     keyboardStateRef,
+    blockedFieldIdRef,
+    blockedCapacityRef,
     commitKeyboardState,
     clearBlockedField,
     markBlockedField,
@@ -114,6 +111,7 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
     dismissActiveField,
     focusField,
     completeField,
+    completePendingFocus,
     activateFocusScope,
     notifyFocusBoundary,
   } = focusController;
@@ -124,16 +122,19 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
     completeField,
   });
 
-  const surfaceMetrics = calculateVirtualKeyboardMetrics(frameMetrics, keyboardStateRef.current.layout);
-
   const activeFieldId = keyboardStateRef.current.activeFieldId;
+  const pendingFieldId = blockedCapacityRef.current === null ? blockedFieldIdRef.current : null;
+  const presentationFieldId = activeFieldId ?? pendingFieldId;
+  const presentationField = presentationFieldId === null ? undefined : fieldsRef.current.get(presentationFieldId);
+  const presentationLayout = presentationField?.layout ?? keyboardStateRef.current.layout;
+  const surfaceMetrics = calculateVirtualKeyboardMetrics(frameMetrics, presentationLayout);
   useLayoutEffect(() => {
     if (keyboardStateRef.current.owner !== 'virtual' || activeFieldId === null) return;
     if (surfaceMetrics.capacity === 'supported') return;
     markBlockedField(activeFieldId, surfaceMetrics.capacity);
     fieldsRef.current.get(activeFieldId)?.inputRef?.current?.blur();
     commitKeyboardState({activeFieldId: null, owner: 'none', layout: keyboardStateRef.current.layout});
-  }, [activeFieldId, commitKeyboardState, fieldsRef, markBlockedField, surfaceMetrics.capacity]);
+  }, [activeFieldId, commitKeyboardState, fieldsRef, markBlockedField, presentationLayout, surfaceMetrics.capacity]);
 
   const controllerValue = useMemo<InputController>(
     () => ({
@@ -175,8 +176,7 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
   const keyboardState: InputKeyboardState = {
     activeFieldId,
     owner: keyboardStateRef.current.owner,
-    keyboardPlacement: keyboardStateRef.current.keyboardPlacement,
-    layout: keyboardStateRef.current.layout,
+    layout: presentationLayout,
     capacity: surfaceMetrics.capacity,
     blockedFieldId: blockedFieldIdRef.current,
     blockedCapacity: blockedCapacityRef.current,
@@ -187,7 +187,7 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
     rowCount: surfaceMetrics.rowCount,
     hasNextField: (() => {
       const fieldIds = Array.from(fieldsRef.current.keys());
-      const activeIndex = fieldIds.indexOf(activeFieldId ?? '');
+      const activeIndex = fieldIds.indexOf(presentationFieldId ?? '');
       return activeIndex >= 0 && activeIndex < fieldIds.length - 1;
     })(),
     visible:
@@ -200,10 +200,6 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
       keyboardStateRef.current.activeFieldId === null
         ? false
         : (fieldsRef.current.get(keyboardStateRef.current.activeFieldId)?.getEditState().shift ?? false),
-    capsLock:
-      keyboardStateRef.current.activeFieldId === null
-        ? false
-        : (fieldsRef.current.get(keyboardStateRef.current.activeFieldId)?.getEditState().capsLock ?? false),
   };
   const fieldKeyboardState: InputFieldKeyboardState = {
     activeFieldId: keyboardStateRef.current.activeFieldId,
@@ -213,14 +209,14 @@ export const InputProvider = ({frameMetrics, onDiagnostic, children}: InputProvi
     contentTooSmall: surfaceMetrics.contentTooSmall,
   };
   return (
-    <InputDiagnosticContext.Provider value={onDiagnostic ?? null}>
       <InputControllerContext.Provider value={controllerValue}>
         <InputFieldKeyboardStateContext.Provider value={fieldKeyboardState}>
-          <InputKeyboardStateContext.Provider value={keyboardState}>
-            <FocusBoundaryBridge notify={notifyFocusBoundary}>{children}</FocusBoundaryBridge>
+      <InputKeyboardStateContext.Provider value={keyboardState}>
+            <InputPendingFocusCommitContext.Provider value={completePendingFocus}>
+              <FocusBoundaryBridge notify={notifyFocusBoundary}>{children}</FocusBoundaryBridge>
+            </InputPendingFocusCommitContext.Provider>
           </InputKeyboardStateContext.Provider>
         </InputFieldKeyboardStateContext.Provider>
       </InputControllerContext.Provider>
-    </InputDiagnosticContext.Provider>
   );
 };

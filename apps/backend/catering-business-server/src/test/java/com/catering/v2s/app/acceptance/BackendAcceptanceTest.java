@@ -21,7 +21,10 @@ import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceRoleService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
+import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
@@ -362,6 +365,27 @@ class BackendAcceptanceTest {
     static final RouteIdentity OPERATIONS_STORE_SERVICE_POINT_ASSET_RELEASE = new RouteIdentity(
             "releaseStagedStoreServicePointImage",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release");
+    static final RouteIdentity OPERATIONS_STORE_TERMINALS = new RouteIdentity(
+            "getOperationsStoreTerminals",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals");
+    static final RouteIdentity OPERATIONS_STORE_TERMINAL = new RouteIdentity(
+            "getOperationsStoreTerminal",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}");
+    static final RouteIdentity OPERATIONS_STORE_TERMINAL_CREATE = new RouteIdentity(
+            "postOperationsStoreTerminal",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals");
+    static final RouteIdentity OPERATIONS_STORE_TERMINAL_UPDATE = new RouteIdentity(
+            "putOperationsStoreTerminal",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}");
+    static final RouteIdentity OPERATIONS_STORE_TERMINAL_STATUS = new RouteIdentity(
+            "postOperationsStoreTerminalStatus",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status");
+    static final RouteIdentity OPERATIONS_STORE_TERMINAL_AREA_CANDIDATES = new RouteIdentity(
+            "getOperationsStoreTerminalAreaCandidates",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates");
+    static final RouteIdentity OPERATIONS_STORE_TERMINAL_TAG_CANDIDATES = new RouteIdentity(
+            "getOperationsStoreTerminalTagCandidates",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates");
     static final RouteIdentity OPERATIONS_ORGANIZATION_CANDIDATES = new RouteIdentity(
             "getOperationsOrganizationCandidates",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/organization/candidates");
@@ -1424,6 +1448,11 @@ class BackendAcceptanceTest {
         return jdbc.queryForObject(sql, Long.class, args);
     }
 
+    long organizationStoreVersion(UUID storeId) {
+        return jdbc.queryForObject(
+                "SELECT version FROM organization.store WHERE id=?", Long.class, storeId);
+    }
+
     String text(String sql, Object... args) {
         return jdbc.queryForObject(sql, String.class, args);
     }
@@ -1633,7 +1662,7 @@ class BackendAcceptanceTest {
 
         Response post(RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected)
                 throws Exception {
-            return send(route, "POST", path, cookie, mapper.writeValueAsString(body), null, expected);
+            return send(route, "POST", path, cookie, requestJson(body), null, expected);
         }
 
         Response postCoverageOnly(
@@ -1644,7 +1673,7 @@ class BackendAcceptanceTest {
                     "POST",
                     path,
                     cookie,
-                    mapper.writeValueAsBytes(body),
+                    requestJson(body).getBytes(StandardCharsets.UTF_8),
                     null,
                     Map.of(),
                     expected,
@@ -1659,12 +1688,12 @@ class BackendAcceptanceTest {
                 Map<String, String> headers,
                 Set<Integer> expected)
                 throws Exception {
-            return send(route, "POST", path, cookie, mapper.writeValueAsString(body), null, headers, expected);
+            return send(route, "POST", path, cookie, requestJson(body), null, headers, expected);
         }
 
         Response patch(RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected)
                 throws Exception {
-            return send(route, "PATCH", path, cookie, mapper.writeValueAsString(body), null, expected);
+            return send(route, "PATCH", path, cookie, requestJson(body), null, expected);
         }
 
         Response patch(
@@ -1675,12 +1704,12 @@ class BackendAcceptanceTest {
                 Map<String, String> headers,
                 Set<Integer> expected)
                 throws Exception {
-            return send(route, "PATCH", path, cookie, mapper.writeValueAsString(body), null, headers, expected);
+            return send(route, "PATCH", path, cookie, requestJson(body), null, headers, expected);
         }
 
         Response put(RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected)
                 throws Exception {
-            return send(route, "PUT", path, cookie, mapper.writeValueAsString(body), null, expected);
+            return send(route, "PUT", path, cookie, requestJson(body), null, expected);
         }
 
         Response put(
@@ -1691,7 +1720,7 @@ class BackendAcceptanceTest {
                 Map<String, String> headers,
                 Set<Integer> expected)
                 throws Exception {
-            return send(route, "PUT", path, cookie, mapper.writeValueAsString(body), null, headers, expected);
+            return send(route, "PUT", path, cookie, requestJson(body), null, headers, expected);
         }
 
         Response delete(RouteIdentity route, String path, String cookie, Set<Integer> expected) throws Exception {
@@ -1701,7 +1730,38 @@ class BackendAcceptanceTest {
         Response delete(
                 RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected)
                 throws Exception {
-            return send(route, "DELETE", path, cookie, mapper.writeValueAsString(body), null, expected);
+            return send(route, "DELETE", path, cookie, requestJson(body), null, expected);
+        }
+
+        /**
+         * Preserve nulls that a scenario explicitly puts in its request map. Some R5 contracts deliberately make a
+         * property required-but-nullable; serializing the map through an application-configured mapper can omit that
+         * key and turn a valid HTTP request into a transport-level 400 before the owner is reached.
+         */
+        private String requestJson(Map<String, Object> body) throws Exception {
+            if (body == null) return null;
+            return mapper.writeValueAsString(requestJsonValue(body));
+        }
+
+        private JsonNode requestJsonValue(Object value) {
+            if (value == null) return NullNode.getInstance();
+            if (value instanceof JsonNode node) return node;
+            if (value instanceof Map<?, ?> map) {
+                ObjectNode object = mapper.createObjectNode();
+                for (Map.Entry<?, ?> entry : map.entrySet()) {
+                    if (!(entry.getKey() instanceof String key) || key.isBlank()) {
+                        throw new IllegalArgumentException("request JSON object key must be a non-blank string");
+                    }
+                    object.set(key, requestJsonValue(entry.getValue()));
+                }
+                return object;
+            }
+            if (value instanceof Iterable<?> iterable) {
+                ArrayNode array = mapper.createArrayNode();
+                for (Object item : iterable) array.add(requestJsonValue(item));
+                return array;
+            }
+            return mapper.valueToTree(value);
         }
 
         Response multipartAsset(

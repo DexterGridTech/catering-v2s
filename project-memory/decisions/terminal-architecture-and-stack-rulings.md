@@ -25,6 +25,8 @@ TER = `apps/terminal`，v2s 仓内的终端产品工程。设计输入是对 POC
   `ui-state` 留在 `kernel/base`（它是 React-free 的状态协议），渲染在 `ui/base`。
   **integration 是真实的 UI 与业务整合层，不是测试包**；"必须能在 Expo Web 上跑"是加在它身上的约束。
   它**不得依赖 adapter**（反向依赖）——web 上的能力由端口默认实例覆盖，**不建 `adapter/web`**。
+  由此导出的验证顺序（不涉及 adapter 的功能先过 integration 的 Expo Web，再上设备跑 assembly 并证明两端一致）
+  见 `doc/platform/terminal-coding-standard.md` 的 `TR-16`，本条不复述。
 - `TER_EVENT_TO_COMMAND_ACTOR_PATTERN`：🔴 **Dexter 2026-09-02 定为「本 TER 工程最重要的设计模式」** ——
   **事件 → command → 关心它的业务方自己的 actor → `dispatchAction`**；内部外部一律照此，
   **不得**以回调注册、effect 列表或事件总线交给业务方。

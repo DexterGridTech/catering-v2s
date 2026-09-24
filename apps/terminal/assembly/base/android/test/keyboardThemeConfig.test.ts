@@ -44,6 +44,7 @@ describe('Android keyboard theme contract', () => {
       requireFromTest(new URL('../../../android/sample-terminal/tailwind.config.cjs', import.meta.url).pathname),
       requireFromTest(new URL('../../../android/sample-wallpaper-terminal/tailwind.config.cjs', import.meta.url).pathname),
     ] as const;
+    for (const appConfig of appConfigs) expect(appConfig.darkMode).toBe('class');
     for (const name of keyboardColors) {
       const mapping = `rgb(var(--color-${name}) / <alpha-value>)`;
       expect(sharedConfig).toContain(`'${name}': '${mapping}'`);

@@ -7,6 +7,7 @@ import {
 import {StandaloneStartupFailurePage} from '@catering-v2s/ui-base-render'
 import {AndroidTerminalApp} from '@catering-v2s/assembly-base-android'
 import {createSampleTerminalAssembly, nativeLoadingCapability, nativeLoadingLogger} from './src/assembly/platformPorts'
+import {ControlledKeyboardHarness, useControlledKeyboardHarness} from './src/controlledKeyboardHarness'
 
 type AppProps = Readonly<{
   readonly displayIndex?: 0 | 1
@@ -14,6 +15,9 @@ type AppProps = Readonly<{
 }>
 
 export default function App({displayIndex, surfaceForm}: AppProps) {
+  const controlledKeyboardHarness = useControlledKeyboardHarness(displayIndex !== 1)
+  if (controlledKeyboardHarness) return <ControlledKeyboardHarness />
+
   return <AndroidTerminalApp<SampleAssembly>
     displayIndex={displayIndex}
     surfaceForm={surfaceForm}

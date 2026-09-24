@@ -45,6 +45,10 @@ export {
   SurfaceFocusBoundaryContext,
   useSurfaceFocusBoundary,
 } from './contexts/SurfaceFocusBoundaryContext';
+export {
+  SurfacePresentationOffsetProvider,
+  useSurfacePresentationOffset,
+} from './contexts/SurfacePresentationOffsetContext';
 export type {
   SurfaceFocusBoundaryListener,
   SurfaceFocusBoundaryPhase,

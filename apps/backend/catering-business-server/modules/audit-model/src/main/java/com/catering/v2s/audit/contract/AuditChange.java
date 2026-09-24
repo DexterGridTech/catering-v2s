@@ -20,8 +20,8 @@ public record AuditChange(
     }
 
     /**
-     * Creates a change for a nullable scalar whose lifecycle intentionally maps null before to MISSING and null
-     * after to CLEARED. Use the canonical constructor when explicit NULL must be distinguished from MISSING.
+     * Creates a change for a nullable scalar whose lifecycle intentionally maps null before to MISSING and null after
+     * to CLEARED. Use the canonical constructor when explicit NULL must be distinguished from MISSING.
      */
     public static AuditChange forNullableScalar(String fieldKey, String beforeValue, String afterValue) {
         return new AuditChange(

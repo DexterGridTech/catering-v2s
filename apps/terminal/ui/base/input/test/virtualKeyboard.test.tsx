@@ -18,7 +18,6 @@ const KeyboardHarness = () => {
       frameWidth={TEST_FRAME_WIDTH}
       cellWidth={310}
       shift={false}
-      capsLock={false}
       hasNextField={false}
       onKey={onKey}
     />
@@ -36,7 +35,6 @@ describe('VirtualKeyboard render boundary', () => {
           frameWidth={TEST_FRAME_WIDTH}
           cellWidth={310}
           shift={false}
-          capsLock={false}
           hasNextField={false}
           onKey={() => undefined}
         />,
@@ -45,7 +43,8 @@ describe('VirtualKeyboard render boundary', () => {
 
     const keyboard = renderer!.root.findAllByType(View).find(node => node.props.testID === 'ui.base.input:virtual-keyboard')!;
     expect(keyboard.props.className).toContain('bg-keyboard-surface');
-    expect(StyleSheet.flatten(keyboard.props.style)).toMatchObject({height: 250, width: TEST_FRAME_WIDTH});
+    expect(keyboard.props.className).not.toContain('rounded-');
+    expect(StyleSheet.flatten(keyboard.props.style)).toMatchObject({height: 250, width: TEST_FRAME_WIDTH, borderRadius: 0});
     act(() => {
       renderer!.unmount();
     });
@@ -63,7 +62,6 @@ describe('VirtualKeyboard render boundary', () => {
             frameWidth={TEST_FRAME_WIDTH}
             cellWidth={310}
             shift={false}
-            capsLock={false}
             hasNextField={false}
             onKey={() => undefined}
           />,
@@ -84,7 +82,6 @@ describe('VirtualKeyboard render boundary', () => {
             frameWidth={TEST_FRAME_WIDTH}
             cellWidth={310}
             shift={false}
-            capsLock={false}
             hasNextField={false}
             onKey={() => undefined}
           />,
@@ -126,14 +123,14 @@ describe('VirtualKeyboard render boundary', () => {
       {
         digits: ['text-1'],
         letters: ['text-q'],
-        actions: ['caps', 'shift', 'text-a', 'text-z', 'backspace', 'complete'],
+        actions: ['shift', 'text-a', 'text-z', 'backspace', 'complete', 'space'],
       },
     ],
     [
       'alpha',
       {
         letters: ['text-q'],
-        actions: ['caps', 'text-a', 'shift', 'text-z', 'backspace', 'complete'],
+        actions: ['shift', 'text-a', 'space', 'text-z', 'backspace', 'complete'],
       },
     ],
     [
@@ -160,7 +157,6 @@ describe('VirtualKeyboard render boundary', () => {
           frameWidth={TEST_FRAME_WIDTH}
           cellWidth={100}
           shift={false}
-          capsLock={false}
           hasNextField={false}
           onKey={() => undefined}
         />,
@@ -194,7 +190,6 @@ describe('VirtualKeyboard render boundary', () => {
           frameWidth={TEST_FRAME_WIDTH}
           cellWidth={310}
           shift={false}
-          capsLock={false}
           hasNextField={false}
           onKey={onKey}
         />,
@@ -215,29 +210,28 @@ describe('VirtualKeyboard render boundary', () => {
     });
   });
 
-  it('updates letter keycaps when CAPS or SHIFT changes the case mode', () => {
+  it('updates letter keycaps and the full space label from the one-shot Shift state', () => {
     let renderer: ReturnType<typeof create> | undefined;
     act(() => {
       renderer = create(
         <VirtualKeyboard
-          layout="alpha"
+          layout="full"
           height={168}
           frameWidth={960}
           cellWidth={92}
           shift={false}
-          capsLock={false}
           hasNextField={false}
           onKey={() => undefined}
         />,
       );
     });
     expect(renderer!.root.findByProps({testID: 'ui.base.input:virtual-keyboard:text-q'}).props.children).toBe('q');
-    expect(renderer!.root.findByProps({testID: 'ui.base.input:virtual-keyboard:caps'}).props.children).toBe('CAPS');
     expect(renderer!.root.findByProps({testID: 'ui.base.input:virtual-keyboard:shift'}).props.children).toBe('SHIFT');
+    expect(renderer!.root.findByProps({testID: 'ui.base.input:virtual-keyboard:space'}).props.children).toBe('SPACE');
     expect(renderer!.root.findByProps({testID: 'ui.base.input:virtual-keyboard:complete'}).props.children).toBe('COMPLETE');
     act(() => { renderer!.unmount(); });
 
-    const renderCase = (capsLock: boolean, shift: boolean) => {
+    const renderCase = (shift: boolean) => {
       let nextRenderer: ReturnType<typeof create> | undefined;
       act(() => {
         nextRenderer = create(
@@ -247,7 +241,6 @@ describe('VirtualKeyboard render boundary', () => {
             frameWidth={TEST_FRAME_WIDTH}
             cellWidth={92}
             shift={shift}
-            capsLock={capsLock}
             hasNextField={false}
             onKey={() => undefined}
           />,
@@ -258,9 +251,8 @@ describe('VirtualKeyboard render boundary', () => {
       return label;
     };
 
-    expect(renderCase(true, false)).toBe('Q');
-    expect(renderCase(false, true)).toBe('Q');
-    expect(renderCase(true, true)).toBe('q');
+    expect(renderCase(true)).toBe('Q');
+    expect(renderCase(false)).toBe('q');
   });
 
   it('uses symbol modifiers on compact mobile-width surfaces', () => {
@@ -273,13 +265,11 @@ describe('VirtualKeyboard render boundary', () => {
           frameWidth={360}
           cellWidth={32}
           shift={false}
-          capsLock={false}
           hasNextField={false}
           onKey={() => undefined}
         />,
       );
     });
-    expect(renderer!.root.findByProps({testID: 'ui.base.input:virtual-keyboard:caps'}).props.children).toBe('⇪');
     expect(renderer!.root.findByProps({testID: 'ui.base.input:virtual-keyboard:shift'}).props.children).toBe('⇧');
     act(() => { renderer!.unmount(); });
   });
@@ -295,7 +285,6 @@ describe('VirtualKeyboard render boundary', () => {
           frameWidth={360}
           cellWidth={100}
           shift={false}
-          capsLock={false}
           hasNextField={false}
           onKey={onKey}
         />,
@@ -312,7 +301,40 @@ describe('VirtualKeyboard render boundary', () => {
     act(() => { renderer!.unmount(); });
   });
 
-  it('renders persistent modifier selection through the primitive recipe', () => {
+  it('uses the same visible full Shift symbol as the inserted key payload', () => {
+    const symbols = [':', '/', '.', '?', '&', '=', '-', '_', '%', '+'];
+    const digits = '1234567890';
+    const onKey = vi.fn();
+    let renderer: ReturnType<typeof create> | undefined;
+    act(() => {
+      renderer = create(
+        <VirtualKeyboard
+          layout="full"
+          height={246}
+          frameWidth={1280}
+          cellWidth={118}
+          shift={true}
+          hasNextField={false}
+          onKey={onKey}
+        />,
+      );
+    });
+
+    for (const [index, symbol] of symbols.entries()) {
+      const key = renderer!.root.findByProps({testID: `ui.base.input:virtual-keyboard:text-${digits[index]}`});
+      expect(key.props.children).toBe(symbol);
+      key.props.onPress();
+      expect(onKey).toHaveBeenNthCalledWith(index + 1, {kind: 'text', text: symbol});
+    }
+    const space = renderer!.root.findByProps({testID: 'ui.base.input:virtual-keyboard:space'});
+    expect(space.props.children).toBe('SPACE');
+    expect(space.props.accessibilityLabel).toBe('空格');
+    space.props.onPress();
+    expect(onKey).toHaveBeenLastCalledWith({kind: 'space'});
+    act(() => { renderer!.unmount(); });
+  });
+
+  it('renders one-shot Shift selection through the primitive recipe', () => {
     let renderer: ReturnType<typeof create> | undefined;
     act(() => {
       renderer = create(
@@ -322,18 +344,13 @@ describe('VirtualKeyboard render boundary', () => {
           frameWidth={TEST_FRAME_WIDTH}
           cellWidth={92}
           shift={true}
-          capsLock={true}
           hasNextField={false}
           onKey={() => undefined}
         />,
       );
     });
-    const caps = renderer!.root.findByProps({testID: 'ui.base.input:virtual-keyboard:caps'});
     const shift = renderer!.root.findByProps({testID: 'ui.base.input:virtual-keyboard:shift'});
-    const capsButton = renderer!.root.findAllByType(Pressable).find(node => node.props.testID === 'ui.base.input:virtual-keyboard:caps')!;
     const shiftButton = renderer!.root.findAllByType(Pressable).find(node => node.props.testID === 'ui.base.input:virtual-keyboard:shift')!;
-    expect(caps.props.selected).toBe(true);
-    expect(capsButton.props.className).toContain('border-keyboard-focus');
     expect(shift.props.selected).toBe(true);
     expect(shiftButton.props.className).toContain('border-keyboard-focus');
     act(() => { renderer!.unmount(); });
@@ -350,7 +367,6 @@ describe('VirtualKeyboard render boundary', () => {
             frameWidth={TEST_FRAME_WIDTH}
             cellWidth={310}
             shift={false}
-            capsLock={false}
             hasNextField={false}
             onKey={() => undefined}
           />,

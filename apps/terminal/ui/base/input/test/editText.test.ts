@@ -9,7 +9,6 @@ const state = (value: string, start: number, end = start, overrides: Partial<Edi
   value,
   selection: {start, end},
   shift: false,
-  capsLock: false,
   ...overrides,
 })
 
@@ -41,25 +40,17 @@ describe('input edit model', () => {
     })
   })
 
-  it('applies shift and caps as independent toggles with standard XOR case semantics', () => {
+  it('applies one-shot Shift to letters and consumes it only after an insertion', () => {
     const shifted = applyKeyboardKey(state('', 0), {kind: 'shift'}, 10)
     expect(shifted).toEqual({state: state('', 0, 0, {shift: true}), effect: 'mode'})
     const inserted = applyKeyboardKey(shifted.state, {kind: 'text', text: 'a'}, 10)
     expect(inserted).toEqual({state: state('A', 1), effect: 'edit'})
 
-    const capped = applyKeyboardKey(state('', 0, 0, {capsLock: true}), {kind: 'text', text: 'ab'}, 10)
-    expect(capped.state.value).toBe('AB')
-    expect(capped.state.selection).toEqual({start: 2, end: 2})
+    const rejected = applyKeyboardKey(state('123', 3, 3, {shift: true}), {kind: 'text', text: ':'}, 3)
+    expect(rejected).toEqual({state: state('123', 3, 3, {shift: true}), effect: 'edit'})
 
-    const capsAndShift = applyKeyboardKey(
-      state('', 0, 0, {capsLock: true, shift: true}),
-      {kind: 'text', text: 'ab'},
-      10,
-    )
-    expect(capsAndShift.state.value).toBe('ab')
-
-    const capsToggledOff = applyKeyboardKey(state('', 0, 0, {capsLock: true}), {kind: 'caps'}, 10)
-    expect(applyKeyboardKey(capsToggledOff.state, {kind: 'text', text: 'a'}, 10).state.value).toBe('a')
+    const insertedSpace = applyKeyboardKey(state('ab', 1, 1, {shift: true}), {kind: 'space'}, 10)
+    expect(insertedSpace).toEqual({state: state('a b', 2), effect: 'edit'})
   })
 
   it('enforces maxLength in the edit model', () => {

@@ -299,15 +299,89 @@
           {"key": "point-scan-history", "area": "area-scan-history", "code": "QR-OLD", "name": "历史扫码点", "pointType": "SCAN", "status": "VOIDED", "extensionValues": {"servicePointLabel": "历史"}}
         ],
         "qr": {"enabled": true, "channelCode": "CHANNEL-STORE-INTERNAL-DINE-IN-QR"}
-      }
+      },
+      "storeTerminals": [
+        {
+          "key": "term-front",
+          "store": "store-operating",
+          "name": "前台收银终端",
+          "deviceType": "laptop",
+          "status": "ENABLED",
+          "activationCode": "62000001",
+          "configuration": {"printers": [{"clientKey": "front-builtin", "name": "前台内置打印机", "brandKey": "GENERIC", "modelKey": "BUILTIN_THERMAL_58", "paperSpecKey": "THERMAL_58", "connectionMethodKey": "BUILT_IN"}], "functions": [{"clientKey": "front-cashier", "functionKey": "ORDERING_CASHIER", "ranges": [], "scenes": [{"sceneKey": "TABLE_ORDER_TICKET", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "front-builtin"}]}]}]}
+        },
+        {
+          "key": "term-kitchen-multi",
+          "store": "store-operating",
+          "name": "后厨多打印终端",
+          "deviceType": "laptop",
+          "status": "ENABLED",
+          "activationCode": "62000002",
+          "configuration": {"printers": [{"clientKey": "kitchen-network", "name": "后厨网口热敏", "brandKey": "EPSON", "modelKey": "EPSON_TM_T88VII", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "NETWORK", "connectionParameter": "192.168.10.21"}, {"clientKey": "kitchen-usb", "name": "后厨USB热敏", "brandKey": "GENERIC", "modelKey": "GENERIC_THERMAL_80", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "USB", "connectionParameter": "USB-KITCHEN-01"}, {"clientKey": "kitchen-label", "name": "后厨USB标签", "brandKey": "GENERIC", "modelKey": "GENERIC_LABEL_40_30", "paperSpecKey": "LABEL_40_30", "connectionMethodKey": "USB", "connectionParameter": "USB-KITCHEN-LABEL-01"}], "functions": [{"clientKey": "kitchen-print-main", "functionKey": "KITCHEN_PRINT", "ranges": [{"key": "PRODUCTION_TAG", "all": true, "refs": []}], "scenes": [{"sceneKey": "PREPARATION_TICKET", "orderTypes": ["DINE_IN", "TAKEAWAY"], "printers": [{"printerClientKey": "kitchen-network"}, {"printerClientKey": "kitchen-usb"}]}]}, {"clientKey": "kitchen-print-label", "functionKey": "KITCHEN_PRINT", "ranges": [{"key": "PRODUCTION_TAG", "all": true, "refs": []}], "scenes": [{"sceneKey": "LABEL_PREPARATION_TICKET", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "kitchen-label"}]}]}]}
+        },
+        {
+          "key": "term-kds",
+          "store": "store-operating",
+          "name": "后厨显示终端",
+          "deviceType": "laptop",
+          "status": "ENABLED",
+          "activationCode": "62000003",
+          "configuration": {"printers": [], "functions": [{"clientKey": "kds-main", "functionKey": "KDS", "ranges": [{"key": "PRODUCTION_TAG", "all": true, "refs": []}], "scenes": []}]}
+        },
+        {
+          "key": "term-handheld",
+          "store": "store-operating",
+          "name": "移动点餐终端",
+          "deviceType": "mobile",
+          "status": "ENABLED",
+          "activationCode": "62000004",
+          "configuration": {"printers": [{"clientKey": "handheld-bt", "name": "移动蓝牙热敏", "brandKey": "GENERIC", "modelKey": "GENERIC_THERMAL_58", "paperSpecKey": "THERMAL_58", "connectionMethodKey": "BLUETOOTH", "connectionParameter": "BT-HANDHELD-01"}], "functions": [{"clientKey": "handheld-ordering", "functionKey": "ORDERING_CASHIER", "ranges": [], "scenes": [{"sceneKey": "TABLE_ORDER_TICKET", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "handheld-bt"}]}]}]}
+        },
+        {
+          "key": "term-label",
+          "store": "store-operating",
+          "name": "标签制作终端",
+          "deviceType": "laptop",
+          "status": "ENABLED",
+          "activationCode": "62000005",
+          "configuration": {"printers": [{"clientKey": "label-cloud", "name": "云端标签打印机", "brandKey": "GENERIC", "modelKey": "GENERIC_LABEL_40_60", "paperSpecKey": "LABEL_40_60", "connectionMethodKey": "CLOUD", "connectionParameter": "cloud-label-01"}], "functions": [{"clientKey": "label-kitchen", "functionKey": "KITCHEN_PRINT", "ranges": [{"key": "PRODUCTION_TAG", "all": true, "refs": []}], "scenes": [{"sceneKey": "LABEL_PREPARATION_TICKET", "orderTypes": ["DINE_IN", "TAKEAWAY"], "printers": [{"printerClientKey": "label-cloud"}]}]}]}
+        },
+        {
+          "key": "term-preparing",
+          "store": "store-operating",
+          "name": "备餐调度终端",
+          "deviceType": "laptop",
+          "status": "ENABLED",
+          "activationCode": "62000006",
+          "configuration": {"printers": [], "functions": [{"clientKey": "preparing-dispatch", "functionKey": "DISPATCH", "ranges": [], "scenes": []}]}
+        },
+        {
+          "key": "term-disabled",
+          "store": "store-operating",
+          "name": "停用备用终端",
+          "deviceType": "laptop",
+          "status": "DISABLED",
+          "activationCode": "62000007",
+          "configuration": {"printers": [{"clientKey": "disabled-thermal", "name": "备用网口热敏", "brandKey": "GENERIC", "modelKey": "GENERIC_THERMAL_80", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "NETWORK", "connectionParameter": "192.168.10.27"}], "functions": [{"clientKey": "disabled-ordering", "functionKey": "ORDERING_CASHIER", "ranges": [], "scenes": []}]}
+        },
+        {
+          "key": "term-history",
+          "store": "store-operating",
+          "name": "历史内置终端",
+          "deviceType": "laptop",
+          "status": "VOIDED",
+          "activationCode": "62000008",
+          "configuration": {"printers": [{"clientKey": "history-builtin", "name": "历史内置打印机", "brandKey": "GENERIC", "modelKey": "BUILTIN_THERMAL_80", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "BUILT_IN"}], "functions": [{"clientKey": "history-ordering", "functionKey": "ORDERING_CASHIER", "ranges": [], "scenes": []}]}
+        }
+      ]
     },
     "workspaceIam": {
       "roles": [
-        {"key": "role-group", "name": "集团运营管理员", "status": "ENABLED", "serviceNodeType": "GROUP", "pageAccessKeys": ["PG-IAM-GROUP-USERS", "PG-STORE-SERVICE-POINT-QR"], "actionCapabilityKeys": ["BC-CONTRACT-CREATE", "BC-CONTRACT-INVALIDATE", "BC-IAM-GROUP-ROLE-REVOKE", "BC-IAM-GROUP-INVITE", "BC-ORG-BRAND-CREATE", "BC-ORG-BRAND-STATUS", "BC-ORG-HEAD-COMPANY-BRAND", "BC-ORG-HEAD-COMPANY-CREATE", "BC-ORG-HEAD-COMPANY-STATUS", "BC-ORG-PROJECT-CREATE", "BC-ORG-PROJECT-STATUS", "BC-ORG-REGION-CREATE", "BC-ORG-REGION-STATUS", "BC-ORG-STORE-CREATE", "BC-ORG-STORE-STATUS", "BC-ORG-TENANT-CREATE", "BC-ORG-TENANT-STATUS", "EDIT_STORE_SERVICE_POINT_QR"], "visibleDataNodePolicy": "GROUP_SUBTREE"},
+        {"key": "role-group", "name": "集团运营管理员", "status": "ENABLED", "serviceNodeType": "GROUP", "pageAccessKeys": ["PG-IAM-GROUP-USERS", "PG-STORE-SERVICE-POINT-QR", "PG-STORE-TERMINALS"], "actionCapabilityKeys": ["BC-CONTRACT-CREATE", "BC-CONTRACT-INVALIDATE", "BC-IAM-GROUP-ROLE-REVOKE", "BC-IAM-GROUP-INVITE", "BC-ORG-BRAND-CREATE", "BC-ORG-BRAND-STATUS", "BC-ORG-HEAD-COMPANY-BRAND", "BC-ORG-HEAD-COMPANY-CREATE", "BC-ORG-HEAD-COMPANY-STATUS", "BC-ORG-PROJECT-CREATE", "BC-ORG-PROJECT-STATUS", "BC-ORG-REGION-CREATE", "BC-ORG-REGION-STATUS", "BC-ORG-STORE-CREATE", "BC-ORG-STORE-STATUS", "BC-ORG-TENANT-CREATE", "BC-ORG-TENANT-STATUS", "EDIT_STORE_SERVICE_POINT_QR", "EDIT_STORE_TERMINAL"], "visibleDataNodePolicy": "GROUP_SUBTREE"},
         {"key": "role-region", "name": "大区运营负责人", "status": "DISABLED", "serviceNodeType": "REGION", "pageAccessKeys": ["PG-IAM-REGION-USERS", "PG-STORE-SERVICE-POINT-QR"], "actionCapabilityKeys": ["BC-IAM-REGION-ROLE-REVOKE", "BC-IAM-REGION-INVITE", "EDIT_STORE_SERVICE_POINT_QR"], "visibleDataNodePolicy": "REGION_SUBTREE"},
-        {"key": "role-project", "name": "项目运营负责人", "status": "ENABLED", "serviceNodeType": "PROJECT", "pageAccessKeys": ["PG-IAM-PROJECT-USERS", "PG-BUSINESS-CHANNEL-PROJECT", "PG-STORE-SERVICE-POINT-QR"], "actionCapabilityKeys": ["BC-IAM-PROJECT-ROLE-REVOKE", "BC-IAM-PROJECT-INVITE", "BC-BUSINESS-CHANNEL-PROJECT-EDIT", "EDIT_STORE_SERVICE_POINT_QR"], "visibleDataNodePolicy": "PROJECT"},
+        {"key": "role-project", "name": "项目运营负责人", "status": "ENABLED", "serviceNodeType": "PROJECT", "pageAccessKeys": ["PG-IAM-PROJECT-USERS", "PG-BUSINESS-CHANNEL-PROJECT", "PG-STORE-SERVICE-POINT-QR", "PG-STORE-TERMINALS"], "actionCapabilityKeys": ["BC-IAM-PROJECT-ROLE-REVOKE", "BC-IAM-PROJECT-INVITE", "BC-BUSINESS-CHANNEL-PROJECT-EDIT", "EDIT_STORE_SERVICE_POINT_QR", "EDIT_STORE_TERMINAL"], "visibleDataNodePolicy": "PROJECT"},
         {"key": "role-head-company", "name": "总公司商品管理员", "status": "ENABLED", "serviceNodeType": "HEAD_COMPANY", "pageAccessKeys": ["PG-IAM-HEAD-COMPANY-USERS", "PG-CATALOG-BRAND-ITEMS"], "actionCapabilityKeys": ["BC-IAM-HEAD-COMPANY-ROLE-REVOKE", "BC-IAM-HEAD-COMPANY-INVITE", "EDIT_HEAD_COMPANY_CATALOG"], "visibleDataNodePolicy": "HEAD_COMPANY"},
-        {"key": "role-store", "name": "门店商品管理员", "status": "ENABLED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-IAM-STORE-USERS", "PG-CATALOG-STORE-ITEMS", "PG-BUSINESS-CHANNEL-STORE", "PG-SALES-MENU-STORE", "PG-STORE-SERVICE-POINT-QR"], "actionCapabilityKeys": ["BC-IAM-STORE-ROLE-REVOKE", "BC-IAM-STORE-INVITE", "EDIT_STORE_CATALOG", "BC-BUSINESS-CHANNEL-STORE-EDIT", "EDIT_STORE_SALES_MENU", "EDIT_STORE_SERVICE_POINT_QR"], "visibleDataNodePolicy": "STORE"},
+        {"key": "role-store", "name": "门店商品管理员", "status": "ENABLED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-IAM-STORE-USERS", "PG-CATALOG-STORE-ITEMS", "PG-BUSINESS-CHANNEL-STORE", "PG-SALES-MENU-STORE", "PG-STORE-SERVICE-POINT-QR", "PG-STORE-TERMINALS"], "actionCapabilityKeys": ["BC-IAM-STORE-ROLE-REVOKE", "BC-IAM-STORE-INVITE", "EDIT_STORE_CATALOG", "BC-BUSINESS-CHANNEL-STORE-EDIT", "EDIT_STORE_SALES_MENU", "EDIT_STORE_SERVICE_POINT_QR"], "visibleDataNodePolicy": "STORE"},
         {"key": "role-store-inventory", "name": "门店库存管理员", "status": "ENABLED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"},
         {"key": "role-store-manager", "name": "门店经营主管", "status": "ENABLED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-IAM-STORE-USERS", "PG-CATALOG-STORE-ITEMS", "PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["BC-IAM-STORE-ROLE-REVOKE", "BC-IAM-STORE-INVITE", "EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"},
         {"key": "role-voided", "name": "作废门店库存管理员", "status": "VOIDED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"}
@@ -384,6 +458,7 @@
     "stores": 6,
     "storeServicePointAreas": 4,
     "storeServicePoints": 5,
+    "storeTerminals": 8,
     "roles": 8,
     "accounts": 7,
     "assignments": 10,

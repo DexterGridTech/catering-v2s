@@ -30,6 +30,8 @@
   "showAdminPassword": true,
   "dependencies": {
     "@catering-v2s/assembly-base-android": "workspace:*",
+    "@catering-v2s/ui-base-input": "workspace:*",
+    "@catering-v2s/ui-base-primitives": "workspace:*",
     "@catering-v2s/ui-base-render": "workspace:*",
     "@catering-v2s/ui-integration-sample-console": "workspace:*",
     "expo": "~57.0.18",

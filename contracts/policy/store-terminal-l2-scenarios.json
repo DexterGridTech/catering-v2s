@@ -1,0 +1,248 @@
+{
+  "schemaVersion": 1,
+  "kind": "store-terminal-l2-scenarios",
+  "revision": "STORE_TERMINAL_L2_20260924",
+  "sourceOfTruth": "doc/plans/platform/2026-09-24-v2s-store-terminal-management-implementation-design-codex.md#3a",
+  "executionBoundary": {
+    "fixtureClass": "TEST",
+    "setupChannel": "OWNER_HTTP_COMMANDS",
+    "seedRuntimeInput": false,
+    "reportInputs": []
+  },
+  "scenarioCount": 6,
+  "caseCount": 6,
+  "operationCoverage": [
+    {"operationId": "getOperationsStoreTerminals", "owner": "store-terminal"},
+    {"operationId": "getOperationsStoreTerminal", "owner": "store-terminal"},
+    {"operationId": "getOperationsStoreTerminalAreaCandidates", "owner": "store-terminal"},
+    {"operationId": "getOperationsStoreTerminalTagCandidates", "owner": "store-terminal"},
+    {"operationId": "getOperationsWorkspaceSessionEntry", "owner": "workspace"}
+  ],
+  "scenarios": [
+    {
+      "scenarioId": "TER-L2-P01",
+      "cases": [
+        {
+          "caseId": "terminal-list-detail",
+          "fixtureRef": "FIXTURE-STORE-TERMINAL-BASE",
+          "parameterization": "terminal-page-and-detail",
+          "parameter": {
+            "declaredActions": [{"actionId": "terminal-list-and-detail", "kind": "USER_JOURNEY"}],
+            "controlKeys": ["STORE_SCOPE", "TERMINAL_PAGE", "TERMINAL_LIST", "TERMINAL_LIST_ITEM", "TERMINAL_DETAIL"],
+            "operationIds": ["getOperationsStoreTerminals", "getOperationsStoreTerminal"],
+            "network": {
+              "required": ["getOperationsStoreTerminals", "getOperationsStoreTerminal"],
+              "forbidden": [],
+              "backgroundAllowed": ["getOperationsWorkspaceSessionEntry"],
+              "requests": [
+                {"operationId": "getOperationsStoreTerminals", "maxRequestCount": 4},
+                {"operationId": "getOperationsStoreTerminal", "maxRequestCount": 4},
+                {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "TER-L2-C01",
+      "cases": [
+        {
+          "caseId": "terminal-create-basic",
+          "fixtureRef": "FIXTURE-STORE-TERMINAL-BASE",
+          "parameterization": "terminal-create-basic-and-cancel",
+          "parameter": {
+            "declaredActions": [{"actionId": "terminal-create-basic", "kind": "USER_JOURNEY"}],
+            "controlKeys": [
+              "STORE_SCOPE",
+              "TERMINAL_PAGE",
+              "TERMINAL_CREATE",
+              "TERMINAL_FORM",
+              "TERMINAL_NAME",
+              "TERMINAL_DEVICE_TYPE",
+              "TERMINAL_FORM_NEXT",
+              "TERMINAL_FORM_BACK",
+              "TERMINAL_FORM_CANCEL",
+              "TERMINAL_DIRTY_GUARD_CONFIRM"
+            ],
+            "operationIds": [
+              "getOperationsStoreTerminals",
+              "getOperationsStoreTerminalAreaCandidates",
+              "getOperationsStoreTerminalTagCandidates"
+            ],
+            "network": {
+              "required": [
+                "getOperationsStoreTerminals",
+                "getOperationsStoreTerminalAreaCandidates",
+                "getOperationsStoreTerminalTagCandidates"
+              ],
+              "forbidden": ["postOperationsStoreTerminal"],
+              "backgroundAllowed": ["getOperationsWorkspaceSessionEntry", "getOperationsStoreTerminal"],
+              "requests": [
+                {"operationId": "getOperationsStoreTerminals", "maxRequestCount": 4},
+                {"operationId": "getOperationsStoreTerminalAreaCandidates", "maxRequestCount": 4},
+                {"operationId": "getOperationsStoreTerminalTagCandidates", "maxRequestCount": 4},
+                {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "TER-L2-C02",
+      "cases": [
+        {
+          "caseId": "terminal-create-configuration",
+          "fixtureRef": "FIXTURE-STORE-TERMINAL-BASE",
+          "parameterization": "terminal-printer-function-range-scene",
+          "parameter": {
+            "declaredActions": [{"actionId": "terminal-create-configuration", "kind": "USER_JOURNEY"}],
+            "controlKeys": [
+              "STORE_SCOPE",
+              "TERMINAL_PAGE",
+              "TERMINAL_CREATE",
+              "TERMINAL_FORM",
+              "TERMINAL_FORM_NEXT",
+              "TERMINAL_PRINTER_ADD",
+              "TERMINAL_FUNCTION_ADD",
+              "TERMINAL_SCENE_PICKER",
+              "TERMINAL_AREA_CANDIDATES",
+              "TERMINAL_TAG_CANDIDATES",
+              "TERMINAL_FORM_CANCEL",
+              "TERMINAL_DIRTY_GUARD_CONFIRM"
+            ],
+            "operationIds": [
+              "getOperationsStoreTerminals",
+              "getOperationsStoreTerminalAreaCandidates",
+              "getOperationsStoreTerminalTagCandidates"
+            ],
+            "network": {
+              "required": [
+                "getOperationsStoreTerminals",
+                "getOperationsStoreTerminalAreaCandidates",
+                "getOperationsStoreTerminalTagCandidates"
+              ],
+              "forbidden": ["postOperationsStoreTerminal"],
+              "backgroundAllowed": ["getOperationsWorkspaceSessionEntry", "getOperationsStoreTerminal"],
+              "requests": [
+                {"operationId": "getOperationsStoreTerminals", "maxRequestCount": 4},
+                {"operationId": "getOperationsStoreTerminalAreaCandidates", "maxRequestCount": 6},
+                {"operationId": "getOperationsStoreTerminalTagCandidates", "maxRequestCount": 6},
+                {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "TER-L2-E01",
+      "cases": [
+        {
+          "caseId": "terminal-edit-configuration",
+          "fixtureRef": "FIXTURE-STORE-TERMINAL-BASE",
+          "parameterization": "terminal-edit-drawer",
+          "parameter": {
+            "declaredActions": [{"actionId": "terminal-edit-configuration", "kind": "USER_JOURNEY"}],
+            "controlKeys": [
+              "STORE_SCOPE",
+              "TERMINAL_PAGE",
+              "TERMINAL_LIST_ITEM",
+              "TERMINAL_DETAIL",
+              "TERMINAL_EDIT",
+              "TERMINAL_FORM",
+              "TERMINAL_FORM_CANCEL"
+            ],
+            "operationIds": [
+              "getOperationsStoreTerminals",
+              "getOperationsStoreTerminal",
+              "getOperationsStoreTerminalAreaCandidates",
+              "getOperationsStoreTerminalTagCandidates"
+            ],
+            "network": {
+              "required": [
+                "getOperationsStoreTerminals",
+                "getOperationsStoreTerminal",
+                "getOperationsStoreTerminalAreaCandidates",
+                "getOperationsStoreTerminalTagCandidates"
+              ],
+              "forbidden": ["putOperationsStoreTerminal"],
+              "backgroundAllowed": ["getOperationsWorkspaceSessionEntry"],
+              "requests": [
+                {"operationId": "getOperationsStoreTerminals", "maxRequestCount": 4},
+                {"operationId": "getOperationsStoreTerminal", "maxRequestCount": 6},
+                {"operationId": "getOperationsStoreTerminalAreaCandidates", "maxRequestCount": 4},
+                {"operationId": "getOperationsStoreTerminalTagCandidates", "maxRequestCount": 4},
+                {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "TER-L2-A01",
+      "cases": [
+        {
+          "caseId": "terminal-status-actions",
+          "fixtureRef": "FIXTURE-STORE-TERMINAL-BASE",
+          "parameterization": "terminal-status-confirmation",
+          "parameter": {
+            "declaredActions": [{"actionId": "terminal-status-actions", "kind": "USER_JOURNEY"}],
+            "controlKeys": [
+              "STORE_SCOPE",
+              "TERMINAL_PAGE",
+              "TERMINAL_LIST_ITEM",
+              "TERMINAL_DETAIL",
+              "TERMINAL_ACTION_MENU",
+              "TERMINAL_STATUS_ACTION",
+              "TERMINAL_STATUS_MODAL",
+              "TERMINAL_STATUS_CANCEL"
+            ],
+            "operationIds": ["getOperationsStoreTerminals", "getOperationsStoreTerminal"],
+            "network": {
+              "required": ["getOperationsStoreTerminals", "getOperationsStoreTerminal"],
+              "forbidden": ["postOperationsStoreTerminalStatus"],
+              "backgroundAllowed": ["getOperationsWorkspaceSessionEntry"],
+              "requests": [
+                {"operationId": "getOperationsStoreTerminals", "maxRequestCount": 4},
+                {"operationId": "getOperationsStoreTerminal", "maxRequestCount": 6},
+                {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenarioId": "TER-L2-M01",
+      "cases": [
+        {
+          "caseId": "terminal-readonly-state",
+          "fixtureRef": "FIXTURE-STORE-TERMINAL-BASE",
+          "parameterization": "terminal-readonly-page",
+          "parameter": {
+            "declaredActions": [{"actionId": "terminal-readonly-state", "kind": "USER_JOURNEY"}],
+            "controlKeys": ["STORE_SCOPE", "TERMINAL_PAGE", "TERMINAL_LIST", "TERMINAL_LIST_ITEM", "TERMINAL_DETAIL"],
+            "operationIds": ["getOperationsStoreTerminals", "getOperationsStoreTerminal"],
+            "network": {
+              "required": ["getOperationsStoreTerminals", "getOperationsStoreTerminal"],
+              "forbidden": [
+                "postOperationsStoreTerminal",
+                "putOperationsStoreTerminal",
+                "postOperationsStoreTerminalStatus"
+              ],
+              "backgroundAllowed": ["getOperationsWorkspaceSessionEntry"],
+              "requests": [
+                {"operationId": "getOperationsStoreTerminals", "maxRequestCount": 4},
+                {"operationId": "getOperationsStoreTerminal", "maxRequestCount": 4},
+                {"operationId": "getOperationsWorkspaceSessionEntry", "maxRequestCount": 4}
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

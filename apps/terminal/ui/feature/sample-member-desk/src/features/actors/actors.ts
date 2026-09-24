@@ -27,7 +27,11 @@ import {
   selectPendingMember,
   withdrawMemberCommand as registryWithdrawMemberCommand,
 } from '@catering-v2s/kernel-feature-sample-member-registry'
-import {selectTopologyFacts, topologyHostEventCommand} from '@catering-v2s/kernel-base-topology'
+import {
+  selectTopologyFacts,
+  topologyDisplayChangedCommand,
+  topologyHostEventCommand,
+} from '@catering-v2s/kernel-base-topology'
 import {selectSessionState} from '@catering-v2s/kernel-feature-sample-staff-session'
 import {
   deskSystemFailureDismissedCommand,
@@ -53,7 +57,9 @@ const navigationLog = (
   context.platformPorts.logger.info({
     category: 'sample.member-desk.navigation',
     event,
-    message: 'Member desk navigation decision observed',
+    message: event === 'show-screen-failed'
+      ? `Member desk navigation failed: ${data.errorCode ?? data.errorType ?? 'unknown'}`
+      : 'Member desk navigation decision observed',
     data,
   })
 }
@@ -137,7 +143,26 @@ const returnToForm = async (
   await show({context, displayMode: primary, partKey: 'sample.desk.member-form'})
 }
 
+const refreshSecondaryPlacement = async (context: ActorExecutionContext): Promise<void> => {
+  if (!hasSecondarySurface(context)) return
+  const sessionStatus = selectSessionState(context.getState()).status
+  if (sessionStatus === 'anonymous' || sessionStatus === 'authenticated') {
+    const pendingMember = selectPendingMember(context.getState())
+    await show({
+      context,
+      displayMode: secondary,
+      partKey: pendingMember === null ? 'sample.desk.customer-welcome' : 'sample.desk.customer-member',
+      ...(pendingMember === null ? {} : {props: {mode: 'confirm'}}),
+    })
+  }
+}
+
 export const createDeskNavigationActor = (): ActorDefinition => defineActor(moduleName, 'desk-navigation', [
+  onCommand(topologyDisplayChangedCommand, async context => {
+    if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
+    await refreshSecondaryPlacement(context)
+    return null
+  }),
   onCommand(staffLoginSucceededCommand, async context => {
     if (!isCurrentWorkspaceOwnedByInstance(context.getState())) return null
     await show({context, displayMode: primary, partKey: 'sample.desk.member-list'})

@@ -65,6 +65,7 @@ describe('sample-console app theme wiring', () => {
     expect(primitiveTokens).toContain('bg-keyboard-key')
     expect(primitiveTokens).toContain('bg-keyboard-action')
     expect(primitiveTokens).toContain('border-keyboard-focus')
+    expect(tailwind).toContain("darkMode: 'class'")
   })
 
   it('keeps focus treatment owned by each integration theme', () => {

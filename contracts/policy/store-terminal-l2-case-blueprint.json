@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "kind": "store-terminal-l2-case-blueprint",
+  "revision": "STORE_TERMINAL_L2_20260924",
+  "sourceBindings": {
+    "scenarios": "contracts/policy/store-terminal-l2-scenarios.json",
+    "locatorBindings": "contracts/policy/store-terminal-l2-locator-bindings.json",
+    "execution": "contracts/policy/store-terminal-l2-execution.json",
+    "informationArchitecture": "doc/plans/platform/2026-09-23-v2s-store-terminal-management-ia-codex.md",
+    "interactionDesign": "doc/plans/platform/2026-09-23-v2s-store-terminal-management-ui-interaction-design-codex.md",
+    "implementationDesign": "doc/plans/platform/2026-09-24-v2s-store-terminal-management-implementation-design-codex.md"
+  },
+  "executionBoundary": {
+    "fixtureClass": "TEST",
+    "setupChannel": "OWNER_HTTP_COMMANDS",
+    "seedRuntimeInput": false,
+    "reportInputs": [],
+    "forbiddenRuntimeInputs": ["DEV seed report", "API report", "seed-created terminal"]
+  },
+  "caseCount": 6,
+  "screens": [
+    {
+      "screenId": "TER-P01",
+      "caseId": "terminal-list-detail",
+      "surface": "list-detail",
+      "controlKeys": ["STORE_SCOPE", "TERMINAL_PAGE", "TERMINAL_LIST", "TERMINAL_LIST_ITEM", "TERMINAL_DETAIL"]
+    },
+    {
+      "screenId": "TER-C01",
+      "caseId": "terminal-create-basic",
+      "surface": "create-drawer-basic",
+      "controlKeys": [
+        "TERMINAL_CREATE",
+        "TERMINAL_FORM",
+        "TERMINAL_NAME",
+        "TERMINAL_DEVICE_TYPE",
+        "TERMINAL_FORM_NEXT",
+        "TERMINAL_FORM_BACK",
+        "TERMINAL_FORM_CANCEL",
+        "TERMINAL_DIRTY_GUARD_CONFIRM"
+      ]
+    },
+    {
+      "screenId": "TER-C02",
+      "caseId": "terminal-create-configuration",
+      "surface": "create-drawer-configuration",
+      "controlKeys": [
+        "TERMINAL_PRINTER_ADD",
+        "TERMINAL_FUNCTION_ADD",
+        "TERMINAL_SCENE_PICKER",
+        "TERMINAL_AREA_CANDIDATES",
+        "TERMINAL_TAG_CANDIDATES"
+      ]
+    },
+    {
+      "screenId": "TER-E01",
+      "caseId": "terminal-edit-configuration",
+      "surface": "edit-drawer",
+      "controlKeys": ["TERMINAL_LIST_ITEM", "TERMINAL_DETAIL", "TERMINAL_EDIT", "TERMINAL_FORM", "TERMINAL_FORM_CANCEL"]
+    },
+    {
+      "screenId": "TER-A01",
+      "caseId": "terminal-status-actions",
+      "surface": "status-confirmation",
+      "controlKeys": [
+        "TERMINAL_ACTION_MENU",
+        "TERMINAL_STATUS_ACTION",
+        "TERMINAL_STATUS_MODAL",
+        "TERMINAL_STATUS_CANCEL"
+      ]
+    },
+    {
+      "screenId": "TER-M01",
+      "caseId": "terminal-readonly-state",
+      "surface": "readonly-detail",
+      "controlKeys": ["STORE_SCOPE", "TERMINAL_PAGE", "TERMINAL_LIST", "TERMINAL_LIST_ITEM", "TERMINAL_DETAIL"]
+    }
+  ]
+}

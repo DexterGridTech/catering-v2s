@@ -51,6 +51,10 @@
                 "TENANT",
                 "HEAD_COMPANY",
                 "STORE",
+                "STORE_SERVICE_POINT_AREA",
+                "STORE_SERVICE_POINT",
+                "STORE_QR_CONFIGURATION",
+                "STORE_TERMINAL",
                 "STORE_CONTRACT"
               ]
             }

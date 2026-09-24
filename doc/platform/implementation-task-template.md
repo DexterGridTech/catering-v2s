@@ -169,6 +169,9 @@ problem、审计和权威 readback 不变,共享机制已复用且不存在安�
   **运行只占 13%,86% 的时间在两次运行之间**。因此**凡能静态确定的,必须在第一次动态运行前确定完**;
   即使静态复核花两小时,也比再来 20 次"跑—失败—改—再跑"便宜。
   ⛔ 提速方向不是缩短单次运行时长,是**减少运行次数**。
+- **TER 先 Web 后设备**:`apps/terminal` 中被测行为不涉及 adapter 的功能,必须先在 `ui/integration` 的
+  Expo Web 验证通过,再到虚拟机或真机跑 `assembly`,并用同一份场景清单证明两端表现一致。
+  正本见 `doc/platform/terminal-coding-standard.md` 的 `TR-16`。
 
 ━━ L2 脚本开发前 UI/testId 前置门(强制)━━
 

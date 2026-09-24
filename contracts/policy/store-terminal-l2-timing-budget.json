@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "kind": "store-terminal-l2-timing-budget",
+  "revision": "STORE_TERMINAL_L2_20260924",
+  "timeoutHeadroomFactor": 1.5,
+  "namespaceAndFixtureBudgetMs": 120000,
+  "cleanupBudgetMs": 120000,
+  "caseCount": 6,
+  "cases": [
+    {
+      "caseId": "terminal-list-detail",
+      "scenarioId": "TER-L2-P01",
+      "caseExpectedDbMs": 800,
+      "caseLocalActionMs": 1500,
+      "caseTimeoutMs": 30000
+    },
+    {
+      "caseId": "terminal-create-basic",
+      "scenarioId": "TER-L2-C01",
+      "caseExpectedDbMs": 1000,
+      "caseLocalActionMs": 1800,
+      "caseTimeoutMs": 30000
+    },
+    {
+      "caseId": "terminal-create-configuration",
+      "scenarioId": "TER-L2-C02",
+      "caseExpectedDbMs": 1200,
+      "caseLocalActionMs": 2500,
+      "caseTimeoutMs": 35000
+    },
+    {
+      "caseId": "terminal-edit-configuration",
+      "scenarioId": "TER-L2-E01",
+      "caseExpectedDbMs": 1000,
+      "caseLocalActionMs": 2000,
+      "caseTimeoutMs": 30000
+    },
+    {
+      "caseId": "terminal-status-actions",
+      "scenarioId": "TER-L2-A01",
+      "caseExpectedDbMs": 900,
+      "caseLocalActionMs": 1500,
+      "caseTimeoutMs": 30000
+    },
+    {
+      "caseId": "terminal-readonly-state",
+      "scenarioId": "TER-L2-M01",
+      "caseExpectedDbMs": 900,
+      "caseLocalActionMs": 1500,
+      "caseTimeoutMs": 30000
+    }
+  ]
+}

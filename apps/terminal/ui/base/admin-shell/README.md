@@ -35,8 +35,6 @@ display-context 的 request/confirm/cancel owner 驱动，确认层是 PRIMARY-o
 tablist/tab；详情标题通过 polite live region 通知选择变化，关闭与返回继续由既有 AdminLayer/LayerStack
 focus scope 负责恢复，不新增第二套焦点或返回管线。
 
-登录口令使用 `@catering-v2s/ui-base-input` 的同一 `InputKeyboard` 公共呈现入口，并选择
-`keyboardPlacement: 'field'` 将键盘放在登录卡片内。其他业务 UI 如需独立 surface dock，使用
-`keyboardPlacement: 'surface'` 并让 `InputSurfaceFrame` 自动挂载同一个 presenter；两种方式的
-接入示例、provider 边界和禁止事项以 `apps/terminal/ui/base/input/README.md` 为准，不要在本包或业务包
-直接拼接 `VirtualKeyboard`。
+登录口令使用 `@catering-v2s/ui-base-input` 的共享 `InputSurfaceFrame` 键盘覆盖层；键盘不嵌入登录卡片，
+卡片与页面保持完整布局尺寸，由 surface presentation 与焦点避让机制统一处理。接入示例、provider 边界和
+禁止事项以 `apps/terminal/ui/base/input/README.md` 为准，不要在本包或业务包直接拼接 `VirtualKeyboard`。

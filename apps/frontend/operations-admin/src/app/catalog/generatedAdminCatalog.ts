@@ -484,6 +484,39 @@ export const adminCatalog = {
       "userManagementTargetOrganizationType": null
     },
     {
+      "pageDesignKey": "PG-STORE-TERMINALS",
+      "kind": "BUSINESS",
+      "pageAccessManaged": true,
+      "menuOrder": 310,
+      "menuGroupKey": "NAV-STORE-OPERATIONS",
+      "menuGroupIconKey": "STORE_OPERATIONS",
+      "menuGroupLabel": "门店经营",
+      "menuLabel": "门店终端管理",
+      "pageTitle": "门店终端管理",
+      "contentTabLabel": "门店终端管理",
+      "pageDescription": "按所选门店维护终端规则、打印机与打印场景。",
+      "dataNodeCascaderLabel": "可视数据节点",
+      "noDataNodePrompt": "请选择可视数据节点",
+      "noCandidatePrompt": "当前运营角色没有可选择的数据节点",
+      "cascadeLevelLabels": [
+        "大区",
+        "项目",
+        "门店"
+      ],
+      "forbiddenAlternatives": [
+        "门店设备管理",
+        "终端激活管理"
+      ],
+      "requiredDataNodeType": "STORE",
+      "supportedRoleNodeTypes": [
+        "GROUP",
+        "REGION",
+        "PROJECT",
+        "STORE"
+      ],
+      "userManagementTargetOrganizationType": null
+    },
+    {
       "pageDesignKey": "PG-BUSINESS-CHANNEL-PROJECT",
       "kind": "BUSINESS",
       "pageAccessManaged": true,
@@ -1713,6 +1746,32 @@ export const adminCatalog = {
         "PROJECT",
         "STORE"
       ]
+    },
+    {
+      "actionKey": "EDIT_STORE_TERMINAL",
+      "actionLabel": "编辑门店终端",
+      "actionDescription": "编辑门店终端",
+      "actionGroupKey": "STORE_MANAGEMENT",
+      "actionGroupLabel": "门店管理",
+      "actionGroupOrder": 200,
+      "pageBindings": [
+        {
+          "pageDesignKey": "PG-STORE-TERMINALS",
+          "selectedIdentityTypes": [
+            "GROUP",
+            "REGION",
+            "PROJECT",
+            "STORE"
+          ],
+          "scopeApplicability": "SELECTED_STORE_SCOPE"
+        }
+      ],
+      "grantableRoleNodeTypes": [
+        "GROUP",
+        "REGION",
+        "PROJECT",
+        "STORE"
+      ]
     }
   ],
   "userManagementActionBindings": [
@@ -1823,6 +1882,7 @@ export const operationsPageDesignKeys = {
   "PgIamHeadCompanyUsers": "PG-IAM-HEAD-COMPANY-USERS",
   "PgIamStoreUsers": "PG-IAM-STORE-USERS",
   "PgStoreProfile": "PG-STORE-PROFILE",
+  "PgStoreTerminals": "PG-STORE-TERMINALS",
   "PgBusinessChannelProject": "PG-BUSINESS-CHANNEL-PROJECT",
   "PgBusinessChannelStore": "PG-BUSINESS-CHANNEL-STORE",
   "PgCatalogStoreItems": "PG-CATALOG-STORE-ITEMS",
@@ -1874,7 +1934,8 @@ export const ACTION_CAPABILITIES = {
   "EDIT_STORE_CATALOG": "EDIT_STORE_CATALOG",
   "EDIT_STORE_INVENTORY": "EDIT_STORE_INVENTORY",
   "EDIT_STORE_SALES_MENU": "EDIT_STORE_SALES_MENU",
-  "EDIT_STORE_SERVICE_POINT_QR": "EDIT_STORE_SERVICE_POINT_QR"
+  "EDIT_STORE_SERVICE_POINT_QR": "EDIT_STORE_SERVICE_POINT_QR",
+  "EDIT_STORE_TERMINAL": "EDIT_STORE_TERMINAL"
 } as const;
 export type AdminActionCapabilityKey = typeof ACTION_CAPABILITIES[keyof typeof ACTION_CAPABILITIES];
 export const USER_MANAGEMENT_PAGE_DESIGN_KEYS = [

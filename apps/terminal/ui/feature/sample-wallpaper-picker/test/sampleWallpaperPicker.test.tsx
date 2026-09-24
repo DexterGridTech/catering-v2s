@@ -34,6 +34,7 @@ import expectedW1 from '../assets/w1.jpg'
 import expectedW2 from '../assets/w2.jpg'
 import expectedW3 from '../assets/w3.jpg'
 import {createWallpaperPickerActor} from '../src/features/actors/actors'
+import {wallpaperSystemFailureDismissedCommand} from '../src/features/commands/commands'
 
 ;(globalThis as {IS_REACT_ACT_ENVIRONMENT?: boolean}).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -139,13 +140,35 @@ const commandDispatch = (calls: Array<Readonly<{name: string; payload: unknown}>
 
 describe('sample wallpaper picker', () => {
   it('exports laptop/mobile renderer siblings and one asset map', () => {
-    expect(sampleWallpaperPickerAssembly.parts.map(part => part.catalogEntry.partKey)).toEqual([
-      'sample.wallpaper.picker', 'sample.wallpaper.picker',
-      'sample.wallpaper.system-notice', 'sample.wallpaper.system-notice',
-    ])
-    expect(sampleWallpaperPickerAssembly.parts.map(part => part.catalogEntry.rendererKey)).toEqual([
-      'sample.wallpaper.picker.laptop', 'sample.wallpaper.picker.mobile',
-      'sample.wallpaper.system-notice.laptop', 'sample.wallpaper.system-notice.mobile',
+    const expectedPair = (part: Readonly<{
+      readonly partKey: string
+      readonly containerKeys: readonly string[]
+      readonly displayModes: readonly string[]
+      readonly workspaces: readonly string[]
+      readonly instanceModes: readonly string[]
+      readonly title: string
+      readonly layerTier: 'standard' | 'alert'
+      readonly layerGuard: 'dismissible' | 'decisive'
+    }>) => (['laptop', 'mobile'] as const).map(surfaceForm => ({
+      ...part,
+      rendererKey: `${part.partKey}.${surfaceForm}`,
+      surfaceForm: [surfaceForm],
+    }))
+    const metadata = sampleWallpaperPickerAssembly.parts.map(({catalogEntry, rendererBinding}) => ({
+      partKey: catalogEntry.partKey,
+      rendererKey: catalogEntry.rendererKey,
+      containerKeys: [...catalogEntry.containerKeys],
+      displayModes: [...catalogEntry.displayModes],
+      workspaces: [...catalogEntry.workspaces],
+      instanceModes: [...catalogEntry.instanceModes],
+      title: catalogEntry.title,
+      surfaceForm: [...catalogEntry.surfaceForm],
+      layerTier: rendererBinding.layerTier,
+      layerGuard: rendererBinding.layerGuard,
+    }))
+    expect(metadata).toEqual([
+      ...expectedPair({partKey: 'sample.wallpaper.picker', containerKeys: ['main'], displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'], title: '屏幕壁纸', layerTier: 'standard', layerGuard: 'dismissible'}),
+      ...expectedPair({partKey: 'sample.wallpaper.system-notice', containerKeys: [], displayModes: ['PRIMARY'], workspaces: ['MAIN'], instanceModes: ['MASTER'], title: '壁纸系统失败提示', layerTier: 'alert', layerGuard: 'dismissible'}),
     ])
     expect(Object.keys(assetsById)).toEqual(['none', 'w1', 'w2', 'w3'])
     expect(assetsById.none).toBeUndefined()
@@ -286,6 +309,24 @@ describe('sample wallpaper picker', () => {
         .toContainEqual(isMobile ? {width: '100%'} : undefined)
       renderer.unmount()
     }
+  })
+
+  it('dispatches the wallpaper-picker-owned command when dismissing a system failure', async () => {
+    const calls: Array<Readonly<{name: string; payload: unknown}>> = []
+    const renderer = mount(renderProvider(
+      rootFor('w1'),
+      commandDispatch(calls),
+      createElement(WallpaperSystemNotice, {operation: 'confirm', phase: 'after-write'}),
+    ))
+
+    await act(async () => {
+      await renderer.root.findByProps({testID: 'sample.wallpaper.system-notice:dismiss'}).props.onPress()
+    })
+    expect(calls).toEqual([{
+      name: wallpaperSystemFailureDismissedCommand.commandName,
+      payload: {},
+    }])
+    renderer.unmount()
   })
 
   it('uses the picker actor to dispatch only kernel commands for changed selection and confirmation', async () => {

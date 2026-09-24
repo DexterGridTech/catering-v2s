@@ -1,9 +1,15 @@
 import * as ts from 'typescript'
+import {existsSync} from 'node:fs'
+import {resolve} from 'node:path'
+import {fileURLToPath} from 'node:url'
 import {describe, expect, it} from 'vitest'
+import packageJson from '../package.json'
 import invariant from '../terminal-invariants.json'
 
+const packageRoot = fileURLToPath(new URL('../', import.meta.url))
+
 const readPublicExports = (): readonly string[] => {
-  const indexPath = decodeURIComponent(new URL('../src/index.ts', import.meta.url).pathname)
+  const indexPath = fileURLToPath(new URL('../src/index.ts', import.meta.url))
   const program = ts.createProgram({
     rootNames: [indexPath],
     options: {
@@ -26,5 +32,12 @@ const readPublicExports = (): readonly string[] => {
 describe('sample wallpaper picker public surface', () => {
   it('matches terminal-invariants publicExports exactly, including type exports', () => {
     expect(readPublicExports()).toEqual([...invariant.publicExports].sort())
+  })
+
+  it('matches package exports to the exact invariant map and existing targets', () => {
+    expect(packageJson.exports).toEqual(invariant.publicExportMap)
+    for (const target of Object.values(invariant.publicExportMap)) {
+      expect(existsSync(resolve(packageRoot, target))).toBe(true)
+    }
   })
 })

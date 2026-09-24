@@ -47,6 +47,48 @@ const resolveFromApp = (name, appDir) => {
   return require.resolve(name, {paths: [appDir, workspaceRoot]})
 }
 
+const resolveSingleNativeWindRuntime = workspaceRoot => {
+  const runtimePath = path.join(workspaceRoot, 'node_modules', 'react-native-css-interop')
+  if (!fs.existsSync(path.join(runtimePath, 'package.json'))) {
+    throw new Error(`[assembly-base-android] react-native-css-interop runtime not found at ${runtimePath}`)
+  }
+  return runtimePath
+}
+
+const resolveNativeWindRuntimeModule = (workspaceRoot, moduleName) => {
+  const runtimePath = path.resolve(resolveSingleNativeWindRuntime(workspaceRoot))
+  const resolvedPath = path.resolve(require.resolve(moduleName, {paths: [workspaceRoot]}))
+  if (resolvedPath !== runtimePath && !resolvedPath.startsWith(`${runtimePath}${path.sep}`)) {
+    throw new Error(`[assembly-base-android] react-native-css-interop module escaped runtime root: ${moduleName}`)
+  }
+  return resolvedPath
+}
+
+const pinNativeWindRuntime = (config, workspaceRoot) => ({
+  ...config,
+  resolver: (() => {
+    const runtimePath = resolveSingleNativeWindRuntime(workspaceRoot)
+    const currentResolveRequest = config.resolver?.resolveRequest
+    return {
+      ...config.resolver,
+      extraNodeModules: {
+        ...config.resolver?.extraNodeModules,
+        'react-native-css-interop': runtimePath,
+      },
+      resolveRequest: (context, moduleName, platform) => {
+        if (moduleName === 'react-native-css-interop' || moduleName.startsWith('react-native-css-interop/')) {
+          return {
+            type: 'sourceFile',
+            filePath: resolveNativeWindRuntimeModule(workspaceRoot, moduleName),
+          }
+        }
+        const resolver = currentResolveRequest ?? context.resolveRequest
+        return resolver(context, moduleName, platform)
+      },
+    }
+  })(),
+})
+
 const createBabelConfig = ({appDir}) => function configureBabel(api) {
   api.cache(true)
   return {
@@ -68,11 +110,12 @@ const createMetroConfig = ({appDir, globalCssPath}) => {
   const {getDefaultConfig} = require(resolveFromApp('expo/metro-config', appDir))
   const {withNativeWind} = require(resolveFromApp('nativewind/metro', appDir))
   const config = getDefaultConfig(appDir)
-  return withNativeWind(config, {
+  const nativeWindConfig = withNativeWind(config, {
     input: resolveFromApp(globalCssPath, appDir),
     configPath: path.join(appDir, 'tailwind.config.cjs'),
     inlineRem: 16,
   })
+  return pinNativeWindRuntime(nativeWindConfig, workspaceRoot)
 }
 
 const sharedColors = {
@@ -144,4 +187,7 @@ module.exports = {
   createBabelConfig,
   createMetroConfig,
   createTailwindConfig,
+  pinNativeWindRuntime,
+  resolveNativeWindRuntimeModule,
+  resolveSingleNativeWindRuntime,
 }

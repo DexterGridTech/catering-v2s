@@ -32,7 +32,6 @@ export type VirtualKeyboardMetrics = Readonly<{
 }>;
 
 const MIN_SUPPORTED_FRAME_WIDTH = 360;
-const MIN_CONTENT_HEIGHT = 208;
 const MAX_DOCK_HEIGHT = 320;
 const MAX_DOCK_RATIO = 0.5;
 const KEY_CELL_HEIGHT = 48;
@@ -47,14 +46,6 @@ const COMPACT_ROW_GAP = 5;
 const DENSE_KEY_MIN_WIDTH = 30;
 const COMPACT_COLUMN_GAP = 4;
 const STANDARD_COLUMN_GAP = 8;
-const DOCK_OUTER_HORIZONTAL_MARGIN = 16;
-const COMPACT_NUMERIC_DOCK_WIDTH = 330;
-const DOCK_MAX_WIDTH: Readonly<Record<KeyboardLayout, number>> = Object.freeze({
-  full: 820,
-  alpha: 820,
-  numeric: 560,
-  financial: 560,
-});
 const MOBILE_SYMBOL_MAX_FRAME_WIDTH = 480;
 
 const isReady = (frame: FrameMetricsInput | null): frame is FrameMetricsInput =>
@@ -69,7 +60,6 @@ const calculateAvailableDockHeight = (frameHeight: number): number => {
   const candidate = Math.min(
     MAX_DOCK_HEIGHT,
     Math.floor(frameHeight * MAX_DOCK_RATIO),
-    frameHeight - MIN_CONTENT_HEIGHT,
   );
   return Math.max(0, candidate);
 };
@@ -94,17 +84,11 @@ const calculateCellWidth = (
 };
 
 /**
- * Keeps the keyboard as a floating card on wide surfaces while preserving the
- * minimum dense-key width on the 360 logical-unit mobile surface.
+ * The dock spans the measured surface; key columns are sized from this same
+ * final rendered width so capacity and rendering use one geometry.
  */
-export const calculateVirtualKeyboardDockWidth = (frameWidth: number, layout: KeyboardLayout = 'full'): number => {
-  if (frameWidth <= MIN_SUPPORTED_FRAME_WIDTH && (layout === 'numeric' || layout === 'financial')) {
-    return Math.min(frameWidth - 30, COMPACT_NUMERIC_DOCK_WIDTH);
-  }
-  const insetWidth = frameWidth - DOCK_OUTER_HORIZONTAL_MARGIN * 2;
-  const availableWidth = insetWidth >= MIN_SUPPORTED_FRAME_WIDTH ? insetWidth : frameWidth;
-  return Math.min(availableWidth, DOCK_MAX_WIDTH[layout]);
-};
+export const calculateVirtualKeyboardDockWidth = (frameWidth: number, _layout: KeyboardLayout = 'full'): number =>
+  Math.max(0, frameWidth);
 
 export const calculateVirtualKeyboardCellWidth = (
   frameWidth: number,
@@ -177,7 +161,6 @@ export const calculateVirtualKeyboardMetrics = (
 
 export const INPUT_LAYOUT_CONSTANTS = Object.freeze({
   MIN_SUPPORTED_FRAME_WIDTH,
-  MIN_CONTENT_HEIGHT,
   MAX_DOCK_HEIGHT,
   MAX_DOCK_RATIO,
   KEY_CELL_HEIGHT,
@@ -192,8 +175,5 @@ export const INPUT_LAYOUT_CONSTANTS = Object.freeze({
   DENSE_KEY_MIN_WIDTH,
   COMPACT_COLUMN_GAP,
   STANDARD_COLUMN_GAP,
-  DOCK_OUTER_HORIZONTAL_MARGIN,
-  COMPACT_NUMERIC_DOCK_WIDTH,
-  DOCK_MAX_WIDTH,
   MOBILE_SYMBOL_MAX_FRAME_WIDTH,
 });

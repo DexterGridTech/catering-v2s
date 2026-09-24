@@ -652,6 +652,124 @@ focused tests 与 implementation review 判定。门不能以字符串命中或�
 
 ---
 
+### `TR-16` · 不涉及 adapter 的功能，先过 integration 的 Expo Web，再上设备跑 assembly，两端表现必须一致
+
+**规则**（Dexter 2026-09-24）：被测行为不依赖 `adapter/*` 真实平台能力的功能，**未在 integration 的 Expo Web
+上验证通过之前，不得到虚拟机或真机上运行 assembly 包**。动态验证必须按以下顺序进行：
+
+1. **先 Web**：在承载该功能的 `apps/terminal/ui/integration/*` 包的 Expo Web 环境（包内 `web` 脚本）中，
+   以当前源码字节，按批准的场景清单实际操作，观察并记录业务结果与可见形态；
+2. **后设备**：Web 验证通过后，才允许构建 `apps/terminal/assembly/*` 的包，并在虚拟机或真机上运行；
+3. **证明两端一致**：在设备上用**同一份场景清单**重跑，逐场景并列记录两端结果。两端出现差异时只有两种处置：
+   说明它来自平台固有差异（如像素取整、字体渲染、系统栏）且不影响该场景的行为判据；或按缺陷修复后两端重跑。
+   只有一端的结果，不能声称两端一致。
+
+"是否涉及 adapter"以**被测行为**为准。当前 adapter 提供的是设备信息读取（`adapter/android/device`）、
+双屏承载（`adapter/android/dual-screen`）与本地持久化（`adapter/android/persist-kv`）等真实平台能力；
+Web 上这些能力只有端口默认实例（见 §3-A）。依赖这类能力的被测行为可以直接在设备上验证；同一批次中不涉及
+adapter 的部分仍须遵守本条，**不得因为批次里有一处涉及 adapter 就整批跳过 Web**。
+
+**仓内实例**：2026-09-24 虚拟键盘优化。键盘外框、键位、Shift、覆盖避让与交接动画全部位于 `ui/base/input` 与
+`ui/base/render`，不依赖任何 adapter，却直接跳到 Android 虚拟机验证；新写的 Android runner 先后出现三类假失败，
+5 次受管 run、约 3.5 小时后，19 个 IA 帧仍然一帧都没有被观察到
+（`doc/review/platform/2026-09-24-ter-virtual-keyboard-optimization-execution-retrospective-review-claude.md`）。
+按本条，这些帧应先在 sample-console 的 Expo Web 上看到并核对；设备阶段只需证明一致，只有"双屏各自独立"
+这类依赖双屏承载的部分才直接在设备上验证。
+
+**验证边界**：本条不新增机器门。实施计划必须写出两个阶段与共享场景清单；实施证据必须能看出 Web 验证与设备
+运行针对同一份源码字节、每个功能的 Web 通过记录早于它自己的第一次设备运行，并附逐场景的两端对照；
+implementation review 逐项核对。
+vitest/jsdom 等 focused 测试是另一档证据，不算 Expo Web 验证。
+
+**为什么**：Web 上改动即时生效、可以直接观察和调试；设备上每一轮都要构建、安装、启动并依赖 runner，
+成本高得多，失败时也很难分清是功能问题、平台问题还是工具问题。先在 Web 把功能行为做对，设备阶段就只剩一个问题：
+两端是否一致。出现差异时，Web 的结果就是对照基准，能直接把问题定位到平台层。
+
+**反例栏**：
+
+- 功能不涉及 adapter，却不经 Web 直接上虚拟机或真机；
+- 把 vitest/jsdom 的 focused 测试当作 Expo Web 验证；
+- Web 与设备跑的场景清单不同，或只在一端运行，就声称两端一致；
+- 先跑设备、事后补 Web 记录，或 Web 验证用的是旧字节；
+- 以"本批有一处涉及 adapter"为由整批跳过 Web；
+- 把两端差异一律写成"平台差异"，不说明来源及其对行为判据的影响。
+
+本条抓不到的：场景清单本身选得太弱，或两端都"通过"但判据不对。这两点由场景清单的独立复核与
+implementation review 判定，不能因两端结果一致而默认成立。
+
+---
+
+### `TR-17` · TER 输入与虚拟键盘只能通过 input owner 使用
+
+**规则**（Dexter 2026-09-24）：TER 的输入与程序虚拟键盘是 `ui/base/input` 的共享能力。业务
+`feature`、`integration` 和 assembly 只声明字段与业务提交，不得各自实现键盘、避让、测量或焦点
+所有权。凡新增或修改 virtual field，必须遵守下面的使用边界；不能因为某个页面暂时只有一个字段
+就绕过这些边界。
+
+1. **唯一接入与承载**：字段由实际渲染该字段的组件调用 `useInputField`，使用
+   `keyboardKind: 'virtual'` 和 `KeyboardLayout`；完整 surface 由 `InputSurfaceFrame` 提供，输入
+   状态由同一 `InputProvider`/field registry 管理；业务组件不得直接渲染 `VirtualKeyboard`、维护
+   keyboard owner、复制 `shift`/键值状态或在卡片、字段、弹窗里另挂键盘。一个 surface 同时只能有
+   一个 virtual keyboard owner。
+2. **滚动与 native-less 锚点**：字段如果位于可滚动内容中，调用 hook 的组件本身必须是对应
+   `InputScrollArea` 的 React 后代；不得由父组件在滚动区外创建 hook 后再把 `inputProps` 传进去。
+   `nativeLess` 字段的 `visibleAnchorRef` 必须接到实际承载可见交互的 Pressable/native 节点，不能
+   用卡片、固定坐标或历史 POC 坐标冒充焦点框。
+3. **覆盖模型，不改业务布局盒**：键盘是完整 surface 上方的全宽、四角直角 bottom overlay，不
+   进入普通 flex 流，不得使用 `KeyboardAvoidingView`、缩短内容高度、把“提交”等业务控件挤到键盘
+   上方，或在 feature 内自行改变键盘位置。非键盘内容的避让只由 input 的 presentation offset 与
+   `InputScrollArea` 内部滚动共同完成；固定的遮罩、弹窗和不可移动层不能随业务内容一起平移。
+4. **几何测量一次且在正确边界内**：普通字段与视口使用 `measureLayout` 相对未平移的
+   `InputSurfaceFrame` root；滚动区字段相对 scroll content 测量，再与 viewport 的 root-local
+   矩形和真实 `onScroll` offset 合成。presentation offset 只在求当前可见矩形时加一次；禁止
+   `measureInWindow`、`Dimensions.get('window')`、物理像素或另一块屏推断 surface 几何。测量代数不能
+   跨越 ScrollView 边界。
+5. **布局和编辑语义只有一个目录正本**：四种布局 `full`、`alpha`、`numeric`、`financial` 的
+   键位、行列、稳定 keyId 和 label/value 映射只维护在
+   `apps/terminal/ui/base/input/src/foundations/keyboardLayout.ts`。业务包不得另写键位数组或
+   “相似键盘”。`full` 与 `alpha` 的动作位置保持一致：Shift 在 `a` 左侧、Space 在 `z` 左侧；
+   不提供 CAPS、caps lock 或长按状态。Shift 是当前字段当前焦点会话的一次性 modifier，只在字符或
+   空格真正成功插入后消费；被 `maxLength` 拒绝的零字符输入不消费。`full` 的 Shift 数字层只提供
+   `: / . ? & = - _ % +` 十项，并且可见 label 必须等于实际插入值。`numeric`/`financial` 的
+   业务语义不因 full 的 URL 层而改变。
+6. **焦点、交接与生命周期**：业务只调用 field result/controller 的 focus、blur、complete 等
+   既有入口；不得直接改 `activeFieldId`、owner、blocked focus 或通过 native blur 猜测虚拟 owner。
+   keyboard 的“可编辑 owner”与“呈现生命周期”是两件事：首开、测量、进入、显示、交接、退出期间
+   覆盖层不得因 owner 暂时为 `none` 而提前卸载，键盘区域必须继续拦截点按；动画完成、目标重新预检
+   且焦点仍有效后，才提交新的可编辑目标或卸载呈现层。
+7. **动画与性能**：每个 surface 只允许一个 presentation progress 驱动键盘与内容位移；不在
+   每个字段、每个键或业务 feature 内另建动画时钟、全局键盘状态副本或逐字符测量。焦点进入、键盘
+   高度变化和字段切换只触发必要的一次测量/最小滚动；既有 registry、快照、selection、owner
+   和失败恢复语义必须保持。
+8. **验证顺序与证据**：先在承载行为的 `ui/integration/*` Expo Web 入口按同一场景清单验证，
+   再运行 `assembly/*` 设备入口；遵守 `TR-16`，不得用 typecheck、jsdom 或键盘 testID 存在冒充
+   Web/Android 画面通过。视觉或交互结论必须检查实际键帽形态、label/value、命中、焦点框、遮罩、
+   滚动和布局盒，而不是只检查节点存在。
+9. **公共面同步**：触及 input 的 public type、hook、context、layout 或 renderer 时，必须按同一
+   变更同步包 README、`src/index.ts`、`terminal-invariants.json` 与对应 focused/组件测试；不以
+   业务包的临时 re-export 或新增依赖绕过 input owner。
+
+**反例栏**：
+
+- 在 feature 中直接 `<VirtualKeyboard />`，或为 laptop/mobile、sample-console/sample-wallpaper-console
+  各自复制一份键位、宽度、避让和焦点状态；
+- 用 `KeyboardAvoidingView`、flex 高度收缩、`Dimensions.get('window')` 或全局 window 位置让“提交”
+  等业务控件让位；
+- 父组件在 `InputScrollArea` 外调用 `useInputField`，再把 `inputProps` 传给滚动区内的输入节点；
+- 用 `measureInWindow`、卡片 ref、固定坐标或扣两次 presentation offset 测量普通字段/PIN；
+- 给 alpha/full 保留 CAPS、caps lock、长按大写，或把 URL 符号显示成字符却实际插入数字；
+- 只因 `owner` 变为 `none` 就卸载 handoff/exit 键盘，或让键盘区域点按穿透到下面的业务 UI；
+- 只跑 focused/typecheck 或只看 testID 就跳过 integration Web，直接把设备结果写成虚拟键盘通过。
+
+**本条依赖的当前正本**：使用示例、field/scroll ancestor 和公共面边界见
+`apps/terminal/ui/base/input/README.md`；键位目录见
+`apps/terminal/ui/base/input/src/foundations/keyboardLayout.ts`；测量、覆盖与呈现 owner 的实现
+见 `apps/terminal/ui/base/input/src/components/InputSurfaceFrame.tsx`、`InputProvider.tsx`、
+`InputScrollArea.tsx` 与 `InputKeyboard.tsx`。本条只规定 TER 的长期使用边界，具体批次的字段分母、
+IA、交互设计和授权仍以对应需求与详设为准。
+
+---
+
 ## 2 · 三重命名与依赖方向
 
 ### 2-A · 三重标识由目录路径唯一派生

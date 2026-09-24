@@ -75,6 +75,14 @@ export type TestExpoAppOptions<TAssembly extends TestExpoAssembly> = Readonly<{
     }>,
   ) => Promise<TAssembly>;
   readonly getRuntimeStatus: (assembly: TAssembly) => TestExpoRuntimeStatus;
+  /**
+   * Lets the integration owner commit a display-topology refresh before the
+   * host reads the same display facts for surface mounting.
+   */
+  readonly onSurfaceModeChanged?: (input: Readonly<{
+    readonly assembly: TAssembly;
+    readonly surfaceMode: SurfaceMode;
+  }>) => Promise<void>;
 }>; 
 
 const createWebNativeLoadingCapability = (): NativeLoadingCapability => {
@@ -444,9 +452,8 @@ const SurfaceCanvas = ({
               >
                 {assembly.createSurface({displayIndex: 0, displayMode: 'PRIMARY', surfaceForm})}
                 <View
-                  pointerEvents="none"
                   testID={`${testIdPrefix}:surface:PRIMARY:decoration`}
-                  style={[styles.surfaceDecoration, styles.primarySurfaceDecoration]}
+                  style={[styles.surfaceDecoration, styles.primarySurfaceDecoration, {pointerEvents: 'none'}]}
                 />
               </View>
               {showSecondary ? (
@@ -460,9 +467,8 @@ const SurfaceCanvas = ({
                 >
                   {assembly.createSurface({displayIndex: 1, displayMode: 'SECONDARY', surfaceForm})}
                   <View
-                    pointerEvents="none"
                     testID={`${testIdPrefix}:surface:SECONDARY:decoration`}
-                    style={[styles.surfaceDecoration, styles.secondarySurfaceDecoration]}
+                    style={[styles.surfaceDecoration, styles.secondarySurfaceDecoration, {pointerEvents: 'none'}]}
                   />
                 </View>
               ) : null}
@@ -841,19 +847,31 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
     useEffect(() => {
       if (assembly === undefined) return;
       let active = true;
-      void readDisplayInfo(platformPorts.device).then(displayInfo => {
-        if (!active) return;
-        setShowSecondary(surfaceForm === 'laptop' && resolveSecondarySurfaceAvailable(displayInfo));
-        platformPorts.logger.info({
-          category: `${options.appName}.test-expo`,
-          event: 'surface-decision-ready',
-          data: {displayInfoStatus: displayInfo.status},
-        });
-      });
+      void (async () => {
+        try {
+          await options.onSurfaceModeChanged?.({assembly, surfaceMode});
+          const displayInfo = await readDisplayInfo(platformPorts.device);
+          if (!active) return;
+          setShowSecondary(surfaceForm === 'laptop' && resolveSecondarySurfaceAvailable(displayInfo));
+          platformPorts.logger.info({
+            category: `${options.appName}.test-expo`,
+            event: 'surface-decision-ready',
+            data: {displayInfoStatus: displayInfo.status},
+          });
+        } catch (error) {
+          if (!active) return;
+          setShowSecondary(false);
+          platformPorts.logger.error({
+            category: `${options.appName}.test-expo`,
+            event: 'surface-decision-failed',
+            message: error instanceof Error ? error.message.slice(0, 160) : 'Surface topology refresh failed',
+          });
+        }
+      })();
       return () => {
         active = false;
       };
-    }, [assembly, platformPorts, surfaceForm, surfaceMode]);
+    }, [assembly, options, platformPorts, surfaceForm, surfaceMode]);
 
     const runtimeStatus = startupError
       ? 'failed'

@@ -21,7 +21,8 @@
     {"table": "catalog.catalog_order_option_definition", "reason": "加料选项定义主数据"},
     {"table": "business_channel.business_channel_template", "reason": "经营渠道模板主数据"},
     {"table": "organization.store_service_point_area", "reason": "门店服务点区域主数据"},
-    {"table": "organization.store_service_point", "reason": "门店服务点主数据"}
+    {"table": "organization.store_service_point", "reason": "门店服务点主数据"},
+    {"table": "store_terminal.terminal", "reason": "门店终端主数据"}
   ],
   "exemptTables": [
     {"table": "platform_iam.platform_session", "reason": "登录会话过程状态"},

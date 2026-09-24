@@ -36,7 +36,6 @@ export const useAdminLogin = ({
     layout: 'numeric',
     maxLength: 6,
     nativeLess: true,
-    keyboardPlacement: 'surface',
     focusScopeId: ADMIN_CONSOLE_FOCUS_SCOPE_ID,
   })
   const password = field.inputProps.value ?? ''
@@ -92,6 +91,7 @@ export const useAdminLogin = ({
       accessibilityLabel: '输入六位动态口令',
       appearance: 'login' as const,
       cellTestIDPrefix: adminTestIds.password,
+      measureRef: field.visibleAnchorRef,
       value: password,
       length: 6,
       maskCharacter: '*',

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "store-terminal-l2-activation-candidate",
+  "revision": "STORE_TERMINAL_L2_20260924",
+  "sourceRevision": "STORE_TERMINAL_L2_20260924",
+  "executionSuite": "store-terminal",
+  "approvedCaseIds": [
+    "terminal-list-detail",
+    "terminal-create-basic",
+    "terminal-create-configuration",
+    "terminal-edit-configuration",
+    "terminal-status-actions",
+    "terminal-readonly-state"
+  ],
+  "fixtureRefs": ["FIXTURE-STORE-TERMINAL-BASE"],
+  "testIdSource": "apps/frontend/operations-admin/src/features/store-terminal/storeTerminalTestIds.ts",
+  "locatorBinding": "contracts/policy/store-terminal-l2-locator-bindings.json",
+  "noSeedRuntimeInput": true,
+  "candidateDigest": "3e94ffa7c192e539b380cba6f8b4de50da395a715fa41d56a22c481e454edfc6"
+}

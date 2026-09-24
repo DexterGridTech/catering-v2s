@@ -24,6 +24,7 @@ import {
   type PrimitiveInputHandle,
   PrimitiveLabel,
   PrimitivePinInput,
+  type PrimitiveNativeNode,
   PrimitivePressOption,
   PrimitiveRatioBar,
   PrimitiveScrollView,
@@ -212,6 +213,33 @@ describe('ui primitives', () => {
     vi.unstubAllGlobals();
   });
 
+  it('forwards the PIN measurement ref to the actual interactive root', () => {
+    const measureRef = createRef<Pick<PrimitiveInputHandle, 'measureLayout'>>();
+    const pinHost = {measureLayout: vi.fn()};
+    const pinProps = {
+      testID: 'sample:measured-pin',
+      cellTestIDPrefix: 'sample:measured-pin',
+      value: '',
+      length: 6,
+      measureRef,
+    };
+    let renderer: ReactTestRenderer | undefined;
+    act(() => {
+      renderer = createWithNodeMock(
+        <PrimitivePinInput {...pinProps} />,
+        {createNodeMock: element => element.props.testID === 'sample:measured-pin' ? pinHost : null},
+      );
+    });
+    const pressable = renderer!.root.findAllByType(Pressable).find(node => node.props.testID === 'sample:measured-pin')!;
+    expect(pressable).toBeDefined();
+    expect(measureRef.current).toBe(pinHost);
+    const relativeTo = {} as PrimitiveNativeNode;
+    const measured = vi.fn();
+    measureRef.current?.measureLayout(relativeTo, measured);
+    expect(pinHost.measureLayout.mock.calls).toEqual([[relativeTo, measured]]);
+    act(() => { renderer!.unmount(); });
+  });
+
   it('keeps the scroll viewport opaque by default and supports an explicit transparent variant', () => {
     const renderer = mount(
       <>
@@ -371,8 +399,8 @@ describe('ui primitives', () => {
     const stopNative = vi.fn();
     const renderer = mount(
       <PrimitiveKeyboardSurface testID="sample:keyboard-surface" onTouchEnd={stopNative} onClick={() => undefined}>
-        <PrimitiveButton testID="sample:selected-key" accessibilityLabel="大写锁定" variant="key-action" selected>
-          ⇪
+        <PrimitiveButton testID="sample:selected-key" accessibilityLabel="Shift" variant="key-action" selected>
+          ⇧
         </PrimitiveButton>
       </PrimitiveKeyboardSurface>,
     );
@@ -383,7 +411,14 @@ describe('ui primitives', () => {
     expect(surface.props.onClick).toBeUndefined();
     expect(baseTokens.keyboardAction).toContain('bg-keyboard-action');
     expect(baseTokens.keyboardActionSelected).toContain('bg-keyboard-action');
-    expect(baseTokens.keyboardDock).toContain('rounded-[20px]');
+    expect(baseTokens.keyboardDock).not.toMatch(/(?:^|\s)rounded/);
+    const surfaceStyle = StyleSheet.flatten(surface.props.style);
+    expect(surfaceStyle).not.toHaveProperty('borderRadius');
+    expect(surfaceStyle).toMatchObject({boxShadow: '0px 8px 9px rgba(0, 0, 0, 0.28)', elevation: 8});
+    expect(surfaceStyle).not.toHaveProperty('shadowColor');
+    expect(surfaceStyle).not.toHaveProperty('shadowOffset');
+    expect(surfaceStyle).not.toHaveProperty('shadowOpacity');
+    expect(surfaceStyle).not.toHaveProperty('shadowRadius');
     expect(selected.props.className).toBe(baseTokens.keyboardActionSelected);
     expect(selected.props.accessibilityState).toMatchObject({selected: true});
     act(() => {
@@ -522,28 +557,54 @@ describe('ui primitives', () => {
   it('forwards generic scroll measurement and offset observation without business props', () => {
     const scrollRef = createRef<PrimitiveScrollViewHandle>();
     const onScrollOffsetChange = vi.fn();
-    const renderer = mount(
-      <PrimitiveScrollView ref={scrollRef} testID="sample:scroll-contract" onScrollOffsetChange={onScrollOffsetChange}>
-        内容
-      </PrimitiveScrollView>,
-    );
-    const scrollView = renderer.root
+    const onContentHeightChange = vi.fn();
+    const nativeMeasureLayout = vi.fn();
+    const measureInWindow = vi.fn();
+    let renderer: ReactTestRenderer | undefined;
+    act(() => {
+      renderer = createWithNodeMock(
+        <PrimitiveScrollView
+          ref={scrollRef}
+          testID="sample:scroll-contract"
+          onContentHeightChange={onContentHeightChange}
+          onScrollOffsetChange={onScrollOffsetChange}
+        >
+          内容
+        </PrimitiveScrollView>,
+        {
+          createNodeMock: element => element.type === ScrollView
+            ? {measureLayout: nativeMeasureLayout, measureInWindow}
+            : {},
+        },
+      );
+    });
+    const scrollView = renderer!.root
       .findAllByType(ScrollView)
       .find(node => node.props.testID === 'sample:scroll-contract')!;
     expect(scrollRef.current).toEqual(
       expect.objectContaining({
         getContentNativeNode: expect.any(Function),
+        measureLayout: expect.any(Function),
         measureInWindow: expect.any(Function),
         scrollTo: expect.any(Function),
       }),
     );
+    const relativeToNativeNode = {} as never;
+    const onLayout = vi.fn();
+    const onFail = vi.fn();
+    scrollRef.current!.measureLayout(relativeToNativeNode, onLayout, onFail);
+    expect(nativeMeasureLayout).toHaveBeenCalledWith(relativeToNativeNode, onLayout, onFail);
     const onScroll = scrollView.props.onScroll as (event: {
       readonly nativeEvent: {readonly contentOffset: {readonly y: number}};
     }) => void;
     onScroll({nativeEvent: {contentOffset: {y: 42}}});
     expect(onScrollOffsetChange).toHaveBeenCalledWith(42);
+    expect(scrollView.props.onContentSizeChange).toEqual(expect.any(Function));
+    const onContentSizeChange = scrollView.props.onContentSizeChange as (width: number, height: number) => void;
+    act(() => { onContentSizeChange(280, 960) });
+    expect(onContentHeightChange).toHaveBeenCalledWith(960);
     act(() => {
-      renderer.unmount();
+      renderer!.unmount();
     });
   });
 

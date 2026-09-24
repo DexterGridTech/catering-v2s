@@ -26,5 +26,9 @@
     "moduleKind", "moduleName",
     "getSurfaceDeclarations", "readTerminalSurfaces", "surfaceFormForOrientation",
     "terminalSurfaces"
-  ]
+  ],
+  "publicExportMap": {
+    ".": "./src/index.ts",
+    "./theme/global.css": "./theme/global.css"
+  }
 }

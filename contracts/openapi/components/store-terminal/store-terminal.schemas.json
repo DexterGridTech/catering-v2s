@@ -1,0 +1,809 @@
+{
+  "components": {
+    "schemas": {
+      "StoreTerminalStatus": {
+        "type": "string",
+        "enum": [
+          "ENABLED",
+          "DISABLED",
+          "VOIDED"
+        ]
+      },
+      "StoreTerminalPrinterBinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "printerRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "printerClientKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "printerRef"
+            ]
+          },
+          {
+            "required": [
+              "printerClientKey"
+            ]
+          }
+        ]
+      },
+      "StoreTerminalPrinterInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "brandKey",
+          "modelKey",
+          "paperSpecKey",
+          "connectionMethodKey"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "brandKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "modelKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "paperSpecKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "connectionMethodKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "connectionParameter": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 160
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "ref"
+            ],
+            "not": {
+              "required": [
+                "clientKey"
+              ]
+            }
+          },
+          {
+            "required": [
+              "clientKey"
+            ],
+            "not": {
+              "required": [
+                "ref"
+              ]
+            }
+          }
+        ]
+      },
+      "StoreTerminalRangeSelection": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "all",
+          "refs"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "all": {
+            "type": "boolean"
+          },
+          "refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      "StoreTerminalSceneSelection": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sceneKey",
+          "orderTypes",
+          "printers"
+        ],
+        "properties": {
+          "sceneKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "orderTypes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "uniqueItems": true
+          },
+          "printers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalPrinterBinding"
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      "StoreTerminalFunctionInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "functionKey",
+          "ranges",
+          "scenes"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "functionKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "ranges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalRangeSelection"
+            },
+            "uniqueItems": true
+          },
+          "scenes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalSceneSelection"
+            },
+            "uniqueItems": true
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "ref"
+            ],
+            "not": {
+              "required": [
+                "clientKey"
+              ]
+            }
+          },
+          {
+            "required": [
+              "clientKey"
+            ],
+            "not": {
+              "required": [
+                "ref"
+              ]
+            }
+          }
+        ]
+      },
+      "StoreTerminalConfigurationInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "printers",
+          "functions"
+        ],
+        "properties": {
+          "printers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalPrinterInput"
+            },
+            "uniqueItems": true
+          },
+          "functions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalFunctionInput"
+            }
+          }
+        }
+      },
+      "StoreTerminalPrinter": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ref",
+          "name",
+          "brandKey",
+          "modelKey",
+          "paperSpecKey",
+          "connectionMethodKey"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "brandKey": {
+            "type": "string"
+          },
+          "modelKey": {
+            "type": "string"
+          },
+          "paperSpecKey": {
+            "type": "string"
+          },
+          "connectionMethodKey": {
+            "type": "string"
+          },
+          "connectionParameter": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "StoreTerminalRange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "all",
+          "refs"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "all": {
+            "type": "boolean"
+          },
+          "refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "StoreTerminalPrinterRef": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "printerRef"
+        ],
+        "properties": {
+          "printerRef": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "StoreTerminalScene": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sceneKey",
+          "orderTypes",
+          "printers"
+        ],
+        "properties": {
+          "sceneKey": {
+            "type": "string"
+          },
+          "orderTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "printers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalPrinterRef"
+            }
+          }
+        }
+      },
+      "StoreTerminalFunction": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ref",
+          "functionKey",
+          "ranges",
+          "scenes"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "functionKey": {
+            "type": "string"
+          },
+          "ranges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalRange"
+            }
+          },
+          "scenes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalScene"
+            }
+          }
+        }
+      },
+      "StoreTerminalConfiguration": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "printers",
+          "functions"
+        ],
+        "properties": {
+          "printers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalPrinter"
+            }
+          },
+          "functions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalFunction"
+            }
+          }
+        }
+      },
+      "StoreTerminalSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "terminalRef",
+          "name",
+          "deviceType",
+          "status",
+          "version",
+          "updatedAt"
+        ],
+        "properties": {
+          "terminalRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "deviceType": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StoreTerminalStatus"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "updatedAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "StoreTerminalPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalSummary"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 512
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "StoreTerminalDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "terminalRef",
+          "storeRef",
+          "name",
+          "deviceType",
+          "status",
+          "version",
+          "createdAt",
+          "updatedAt",
+          "activationCode",
+          "configuration",
+          "areaReferences",
+          "tagReferences"
+        ],
+        "properties": {
+          "terminalRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "storeRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "deviceType": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StoreTerminalStatus"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "createdAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "updatedAt": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "activationCode": {
+            "type": "string",
+            "pattern": "^[0-9]{8}$"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/StoreTerminalConfiguration"
+          },
+          "areaReferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalAreaReference"
+            }
+          },
+          "tagReferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalTagReference"
+            }
+          }
+        }
+      },
+      "StoreTerminalAreaReference": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "areaRef",
+          "name",
+          "code",
+          "areaType",
+          "status"
+        ],
+        "properties": {
+          "areaRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "areaType": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StoreTerminalStatus"
+          }
+        }
+      },
+      "StoreTerminalTagReference": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tagRef",
+          "name",
+          "code",
+          "status"
+        ],
+        "properties": {
+          "tagRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StoreTerminalStatus"
+          }
+        }
+      },
+      "StoreTerminalAreaCandidate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "areaRef",
+          "name",
+          "code"
+        ],
+        "properties": {
+          "areaRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        }
+      },
+      "StoreTerminalTagCandidate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tagRef",
+          "name",
+          "code",
+          "status"
+        ],
+        "properties": {
+          "tagRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StoreTerminalStatus"
+          }
+        }
+      },
+      "StoreTerminalAreaCandidatePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalAreaCandidate"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 512
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "StoreTerminalTagCandidatePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoreTerminalTagCandidate"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 512
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "StoreTerminalCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "deviceType",
+          "configuration"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "deviceType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "activationCode": {
+            "type": "string",
+            "pattern": "^$|^[0-9]{8}$"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/StoreTerminalConfigurationInput"
+          }
+        }
+      },
+      "StoreTerminalReplaceRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "deviceType",
+          "configuration",
+          "expectedVersion"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "deviceType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/StoreTerminalConfigurationInput"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "StoreTerminalStatusRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "expectedVersion"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/StoreTerminalStatus"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "StoreTerminalMutation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "terminalRef",
+          "version",
+          "status"
+        ],
+        "properties": {
+          "terminalRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "status": {
+            "$ref": "#/components/schemas/StoreTerminalStatus"
+          }
+        }
+      }
+    }
+  }
+}

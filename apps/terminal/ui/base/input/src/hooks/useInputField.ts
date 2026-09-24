@@ -7,8 +7,9 @@ import {
   type KeyboardKey,
 } from '../foundations/editText'
 import type {InputRegistrationToken} from '../foundations/snapshot'
-import {useInputController, useInputFieldKeyboardState, useInputScrollAncestor} from '../contexts/context'
-import type {InputFieldOptions, InputFieldResult} from '../types/types'
+import {useInputController, useInputKeyboardState, useInputScrollAncestor} from '../contexts/context'
+import {useInputSurfaceGeometry} from '../contexts/InputSurfaceGeometryContext'
+import type {InputFieldOptions, InputFieldResult, InputVisibleAnchorHandle} from '../types/types'
 import type {PrimitiveInputHandle} from '@catering-v2s/ui-base-primitives'
 import {BUSINESS_FOCUS_SCOPE_ID} from '../foundations/focusScope'
 
@@ -18,8 +19,9 @@ type InputPressEvent = Readonly<{
 
 export const useInputField = (options: InputFieldOptions): InputFieldResult => {
   const controller = useInputController()
-  const keyboardState = useInputFieldKeyboardState()
+  const keyboardState = useInputKeyboardState()
   const scrollAncestor = useInputScrollAncestor()
+  const geometry = useInputSurfaceGeometry()
   const initialValue = options.initialValue ?? ''
   const initialSelection = normalizeSelection(initialValue, options.initialSelection ?? {
     start: initialValue.length,
@@ -29,11 +31,11 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
     value: initialValue,
     selection: initialSelection,
     shift: false,
-    capsLock: false,
   }))
   const editStateRef = useRef(editState)
   editStateRef.current = editState
   const nativeInputRef = useRef<PrimitiveInputHandle | null>(null)
+  const visibleAnchorRef = useRef<InputVisibleAnchorHandle | null>(null)
   const inputRef = options.nativeLess ? null : nativeInputRef
   const tokenRef = useRef<InputRegistrationToken | null>(null)
 
@@ -52,6 +54,12 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
   applyKeyRef.current = applyKey
   const applyKeyProxy = useCallback((key: KeyboardKey): EditResult => applyKeyRef.current(key), [])
   const getEditState = useCallback((): EditState => editStateRef.current, [])
+  const clearShift = useCallback((): void => {
+    if (!editStateRef.current.shift) return
+    const next = {...editStateRef.current, shift: false}
+    editStateRef.current = next
+    setEditState(next)
+  }, [])
 
   useLayoutEffect(() => {
     const token = controller.registerField({
@@ -62,17 +70,18 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
       layout: options.layout ?? 'full',
       maxLength: options.maxLength,
       focusScopeId: options.focusScopeId ?? BUSINESS_FOCUS_SCOPE_ID,
-      keyboardPlacement: options.keyboardPlacement ?? 'surface',
       inputRef,
+      visibleAnchorRef,
       applyKey: applyKeyProxy,
       getEditState,
+      clearShift,
     })
     tokenRef.current = token
     return () => {
       controller.unregisterField(token)
       if (tokenRef.current === token) tokenRef.current = null
     }
-  }, [applyKeyProxy, controller, getEditState, inputRef, options.fieldId, options.focusScopeId, options.keyboardKind, options.keyboardPlacement, options.layout, options.maxLength])
+  }, [applyKeyProxy, clearShift, controller, getEditState, inputRef, options.fieldId, options.focusScopeId, options.keyboardKind, options.layout, options.maxLength])
 
   useLayoutEffect(() => {
     const token = tokenRef.current
@@ -82,22 +91,68 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
       layout: options.layout ?? 'full',
       maxLength: options.maxLength,
       focusScopeId: options.focusScopeId ?? BUSINESS_FOCUS_SCOPE_ID,
-      keyboardPlacement: options.keyboardPlacement ?? 'surface',
     })
-  }, [controller, options.focusScopeId, options.keyboardKind, options.keyboardPlacement, options.layout, options.maxLength])
+  }, [controller, options.focusScopeId, options.keyboardKind, options.layout, options.maxLength])
 
   useLayoutEffect(() => {
-    const keyboardVisible = keyboardState.owner === 'virtual' && keyboardState.visible
-    if (keyboardState.activeFieldId !== options.fieldId || !keyboardVisible) return
+    const activeVirtualField = keyboardState.owner === 'virtual'
+      && keyboardState.visible
+      && keyboardState.activeFieldId === options.fieldId
+    const pendingVirtualField = keyboardState.owner === 'none'
+      && keyboardState.activeFieldId === null
+      && keyboardState.blockedFieldId === options.fieldId
+      && keyboardState.blockedCapacity === null
+    if (!activeVirtualField && !pendingVirtualField) return
     const keyboardHeight = keyboardState.height
     if (keyboardHeight <= 0) return
-    scrollAncestor?.(inputRef, keyboardHeight)
+    if (scrollAncestor !== null) {
+      scrollAncestor(options.fieldId, inputRef, keyboardHeight)
+      return
+    }
+    const input = options.nativeLess ? visibleAnchorRef.current : inputRef?.current ?? null
+    const surfaceRoot = geometry?.surfaceRoot ?? null
+    if (geometry === null) return
+    if (surfaceRoot === null) {
+      geometry.reportFocusVisibilityFailure(options.fieldId, 'surface-root-unavailable')
+      return
+    }
+    if (input === null) {
+      geometry.reportFocusVisibilityFailure(options.fieldId, options.nativeLess ? 'visible-anchor-unavailable' : 'input-ref-unavailable')
+      return
+    }
+    input.measureLayout(
+      surfaceRoot,
+      (x, y, width, height) => {
+        if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) {
+          geometry.reportFocusVisibilityFailure(options.fieldId, 'invalid-focus-rectangle')
+          return
+        }
+        const offsetY = geometry.presentFocusRect(options.fieldId, {x, y, width, height})
+        const visibleBottom = geometry.surfaceHeight - geometry.keyboardHeight
+        const fullyVisible = y + offsetY >= 0 && y + height + offsetY <= visibleBottom
+        if (fullyVisible) geometry.reportFocusVisibilitySuccess(options.fieldId)
+        else geometry.reportFocusVisibilityFailure(options.fieldId, 'focus-rectangle-outside-visible-band')
+      },
+      () => {
+        geometry.reportFocusVisibilityFailure(options.fieldId, 'surface-root-measurement-failed')
+      },
+    )
   }, [
     keyboardState.activeFieldId,
+    keyboardState.blockedCapacity,
+    keyboardState.blockedFieldId,
     keyboardState.height,
     keyboardState.owner,
     keyboardState.visible,
     options.fieldId,
+    options.nativeLess,
+    geometry?.keyboardHeight,
+    geometry?.presentFocusRect,
+    geometry?.reportFocusVisibilityFailure,
+    geometry?.reportFocusVisibilitySuccess,
+    geometry?.surfaceRoot,
+    geometry?.surfaceHeight,
+    geometry?.surfaceWidth,
     scrollAncestor,
   ])
 
@@ -177,9 +232,10 @@ export const useInputField = (options: InputFieldOptions): InputFieldResult => {
 
   return useMemo(() => ({
     inputProps,
+    visibleAnchorRef,
     captureInputSnapshot: controller.captureInputSnapshot,
     focus,
     blur,
     complete,
-  }), [blur, complete, controller.captureInputSnapshot, focus, inputProps])
+  }), [blur, complete, controller.captureInputSnapshot, focus, inputProps, visibleAnchorRef])
 }

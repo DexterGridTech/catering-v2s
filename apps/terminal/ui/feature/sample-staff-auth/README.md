@@ -23,7 +23,8 @@ resolved 的 `SYSTEM`/timeout/partial failure 与 Promise rejection 统一观察
 ## 结构
 
 - `src/components/laptop` 与 `src/components/mobile`：登录 screen、业务失败层和系统失败层
-  的两套机型 renderer；`src/components/StaffLoginPasscodeInput.tsx` 是真正共用的输入部件。
+  的两套机型 renderer；`StaffLoginOperatorNameInput.tsx` 与 `StaffLoginPasscodeInput.tsx`
+  是真正共用的输入部件。
 - `src/hooks`：按职责拆分的共享认证行为；`src/types` 与 `src/foundations` 保存纯类型和提示映射。
 - `src/features/commands`：feature-owned UI 意图命令；`src/features/actors`：登录与失败观察 actor。
 - `src/features/variables`：记住工号等 UI variable 声明。
@@ -34,8 +35,9 @@ resolved 的 `SYSTEM`/timeout/partial failure 与 Promise rejection 统一观察
 ## 用法
 
 部件只通过 `ui/base/primitives` 的 typed React Native 控件和 `ui/base/input` 的输入接缝以 JSX
-构建；本包不使用字符串 host tag 或 `createElement` 构造控件。登录表单使用
-`InputScrollArea` 作为唯一滚动祖先，保证虚拟键盘收缩内容区时输入仍可滚入可见区域。
+构建；本包不使用字符串 host tag 或 `createElement` 构造控件。登录表单的每个虚拟字段都由
+实际渲染在 `InputScrollArea` 内的 hook-bearing 输入组件注册，使字段测量使用该滚动区的
+content 坐标；虚拟键盘是叠加层，不收缩登录表单布局。
 
 通过公开 assembly 取得 parts，并在 integration 装配时取得真实运行期模块：
 
@@ -47,6 +49,14 @@ const authParts = sampleStaffAuthAssembly.parts
 void module
 void authParts
 ```
+
+## 公共包入口
+
+包根 @catering-v2s/ui-feature-sample-staff-auth 当前公开以下符号（含类型）：
+StaffAuthAssembly、dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、
+sampleStaffAuthAssembly。唯一 export-map 路径是 . → ./src/index.ts；包内实现深路径不是包级导入入口。
+该清单与 terminal-invariants.json 的 publicExports / publicExportMap 及
+test/publicSurface.test.ts 对齐。
 
 ## 在这个包上迭代时
 

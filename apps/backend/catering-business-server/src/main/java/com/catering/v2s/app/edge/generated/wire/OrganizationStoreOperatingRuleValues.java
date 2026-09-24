@@ -46,54 +46,18 @@ public record OrganizationStoreOperatingRuleValues(
         if (token == null)
           return context.reportInputMismatch(OrganizationStoreOperatingRuleValues.class, "property value is required");
         switch (property) {
-          case "catalogManagementEnabled" -> {
-            if (parser.currentToken() != tools.jackson.core.JsonToken.VALUE_TRUE && parser.currentToken() != tools.jackson.core.JsonToken.VALUE_FALSE) return context.reportInputMismatch(OrganizationStoreOperatingRuleValues.class, "property catalogManagementEnabled must be boolean");
-            catalogManagementEnabled = parser.getBooleanValue();
-          }
-          case "externalCatalogSyncEnabled" -> {
-            if (parser.currentToken() != tools.jackson.core.JsonToken.VALUE_TRUE && parser.currentToken() != tools.jackson.core.JsonToken.VALUE_FALSE) return context.reportInputMismatch(OrganizationStoreOperatingRuleValues.class, "property externalCatalogSyncEnabled must be boolean");
-            externalCatalogSyncEnabled = parser.getBooleanValue();
-          }
-          case "openPlatformDeveloperCode" -> {
-            if (parser.currentToken() != tools.jackson.core.JsonToken.VALUE_STRING) return context.reportInputMismatch(OrganizationStoreOperatingRuleValues.class, "property openPlatformDeveloperCode must be string");
-            openPlatformDeveloperCode = parser.getString();
-          }
-          case "reservationEnabled" -> {
-            if (parser.currentToken() != tools.jackson.core.JsonToken.VALUE_TRUE && parser.currentToken() != tools.jackson.core.JsonToken.VALUE_FALSE) return context.reportInputMismatch(OrganizationStoreOperatingRuleValues.class, "property reservationEnabled must be boolean");
-            reservationEnabled = parser.getBooleanValue();
-          }
-          case "reservationDepositEnabled" -> {
-            if (parser.currentToken() != tools.jackson.core.JsonToken.VALUE_TRUE && parser.currentToken() != tools.jackson.core.JsonToken.VALUE_FALSE) return context.reportInputMismatch(OrganizationStoreOperatingRuleValues.class, "property reservationDepositEnabled must be boolean");
-            reservationDepositEnabled = parser.getBooleanValue();
-          }
-          case "queueCallEnabled" -> {
-            if (parser.currentToken() != tools.jackson.core.JsonToken.VALUE_TRUE && parser.currentToken() != tools.jackson.core.JsonToken.VALUE_FALSE) return context.reportInputMismatch(OrganizationStoreOperatingRuleValues.class, "property queueCallEnabled must be boolean");
-            queueCallEnabled = parser.getBooleanValue();
-          }
-          case "tableManagementEnabled" -> {
-            if (parser.currentToken() != tools.jackson.core.JsonToken.VALUE_TRUE && parser.currentToken() != tools.jackson.core.JsonToken.VALUE_FALSE) return context.reportInputMismatch(OrganizationStoreOperatingRuleValues.class, "property tableManagementEnabled must be boolean");
-            tableManagementEnabled = parser.getBooleanValue();
-          }
-          case "tableStatusEnabled" -> {
-            if (parser.currentToken() != tools.jackson.core.JsonToken.VALUE_TRUE && parser.currentToken() != tools.jackson.core.JsonToken.VALUE_FALSE) return context.reportInputMismatch(OrganizationStoreOperatingRuleValues.class, "property tableStatusEnabled must be boolean");
-            tableStatusEnabled = parser.getBooleanValue();
-          }
-          case "tableWaitCallEnabled" -> {
-            if (parser.currentToken() != tools.jackson.core.JsonToken.VALUE_TRUE && parser.currentToken() != tools.jackson.core.JsonToken.VALUE_FALSE) return context.reportInputMismatch(OrganizationStoreOperatingRuleValues.class, "property tableWaitCallEnabled must be boolean");
-            tableWaitCallEnabled = parser.getBooleanValue();
-          }
-          case "banquetOrderEnabled" -> {
-            if (parser.currentToken() != tools.jackson.core.JsonToken.VALUE_TRUE && parser.currentToken() != tools.jackson.core.JsonToken.VALUE_FALSE) return context.reportInputMismatch(OrganizationStoreOperatingRuleValues.class, "property banquetOrderEnabled must be boolean");
-            banquetOrderEnabled = parser.getBooleanValue();
-          }
-          case "pickupCallEnabled" -> {
-            if (parser.currentToken() != tools.jackson.core.JsonToken.VALUE_TRUE && parser.currentToken() != tools.jackson.core.JsonToken.VALUE_FALSE) return context.reportInputMismatch(OrganizationStoreOperatingRuleValues.class, "property pickupCallEnabled must be boolean");
-            pickupCallEnabled = parser.getBooleanValue();
-          }
-          case "receivableEnabled" -> {
-            if (parser.currentToken() != tools.jackson.core.JsonToken.VALUE_TRUE && parser.currentToken() != tools.jackson.core.JsonToken.VALUE_FALSE) return context.reportInputMismatch(OrganizationStoreOperatingRuleValues.class, "property receivableEnabled must be boolean");
-            receivableEnabled = parser.getBooleanValue();
-          }
+          case "catalogManagementEnabled" -> catalogManagementEnabled = context.readValue(parser, Boolean.class);
+          case "externalCatalogSyncEnabled" -> externalCatalogSyncEnabled = context.readValue(parser, Boolean.class);
+          case "openPlatformDeveloperCode" -> openPlatformDeveloperCode = context.readValue(parser, String.class);
+          case "reservationEnabled" -> reservationEnabled = context.readValue(parser, Boolean.class);
+          case "reservationDepositEnabled" -> reservationDepositEnabled = context.readValue(parser, Boolean.class);
+          case "queueCallEnabled" -> queueCallEnabled = context.readValue(parser, Boolean.class);
+          case "tableManagementEnabled" -> tableManagementEnabled = context.readValue(parser, Boolean.class);
+          case "tableStatusEnabled" -> tableStatusEnabled = context.readValue(parser, Boolean.class);
+          case "tableWaitCallEnabled" -> tableWaitCallEnabled = context.readValue(parser, Boolean.class);
+          case "banquetOrderEnabled" -> banquetOrderEnabled = context.readValue(parser, Boolean.class);
+          case "pickupCallEnabled" -> pickupCallEnabled = context.readValue(parser, Boolean.class);
+          case "receivableEnabled" -> receivableEnabled = context.readValue(parser, Boolean.class);
           default -> {
             parser.skipChildren();
             return context.reportInputMismatch(OrganizationStoreOperatingRuleValues.class, "unknown property " + property);

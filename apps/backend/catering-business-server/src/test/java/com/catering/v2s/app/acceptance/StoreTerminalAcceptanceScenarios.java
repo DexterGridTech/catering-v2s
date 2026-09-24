@@ -1,0 +1,1495 @@
+package com.catering.v2s.app.acceptance;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+/** Real HTTP business oracles for the store-terminal aggregate. */
+final class StoreTerminalAcceptanceScenarios {
+    private static final Set<Integer> OK = Set.of(200);
+    private static final Set<Integer> CREATED = Set.of(201);
+    private static final Set<Integer> CLIENT_FAILURE = Set.of(400, 403, 404, 409, 422);
+    private static final String EDIT = "EDIT_STORE_TERMINAL";
+
+    private final BackendAcceptanceTest host;
+
+    StoreTerminalAcceptanceScenarios(BackendAcceptanceTest host) {
+        this.host = host;
+    }
+
+    @AcceptanceScenario(
+            id = "storeTerminalActivationInputs",
+            module = "ORG",
+            operation = "storeTerminalActivationInputs")
+    void storeTerminalActivationInputs(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        BackendAcceptanceTest.Response created = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE,
+                terminalsPath(store.fixture()),
+                store.session().cookie(),
+                createBody("Manual terminal", "01234567"),
+                idempotency(),
+                CREATED);
+        UUID terminalRef = UUID.fromString(created.json().path("terminalRef").asText());
+        JsonNode detail = readDetail(context, store, terminalRef);
+        assertEquals("01234567", detail.path("activationCode").asText(),
+                "BUSINESS: manually supplied activation code is preserved exactly");
+        assertEquals("Manual terminal", detail.path("name").asText());
+
+        BackendAcceptanceTest.Response automatic = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE,
+                terminalsPath(store.fixture()),
+                store.session().cookie(),
+                createBody("Automatic terminal", null),
+                idempotency(),
+                CREATED);
+        UUID automaticRef = UUID.fromString(automatic.json().path("terminalRef").asText());
+        String automaticCode = readDetail(context, store, automaticRef).path("activationCode").asText();
+        assertTrue(automaticCode.matches("[0-9]{8}"), "BUSINESS: omitted code is generated as eight digits");
+
+        JsonNode page = context.get(
+                        BackendAcceptanceTest.OPERATIONS_STORE_TERMINALS,
+                        terminalsPath(store.fixture()) + "?pageSize=20",
+                        store.session().cookie(),
+                        OK)
+                .json();
+        assertFalse(page.toString().contains("01234567"), "BUSINESS: list response never exposes activation codes");
+        assertFalse(page.toString().contains(automaticCode), "BUSINESS: list response never exposes generated codes");
+
+        for (Object explicit : new Object[] {null, ""}) {
+            BackendAcceptanceTest.Response generated = context.post(
+                    BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE,
+                    terminalsPath(store.fixture()), store.session().cookie(),
+                    createBodyWithActivationField(
+                            "显式自动生成 " + (explicit == null ? "null" : "empty"), explicit, configuration()),
+                    idempotency(), CREATED);
+            UUID generatedRef = UUID.fromString(generated.json().path("terminalRef").asText());
+            assertTrue(readDetail(context, store, generatedRef).path("activationCode").asText().matches("[0-9]{8}"));
+        }
+        for (String invalidCode : List.of("1234567", "123456789", "12A45678")) {
+            BackendAcceptanceTest.Response invalid = context.post(
+                    BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE,
+                    terminalsPath(store.fixture()), store.session().cookie(),
+                    createBody("非法激活码 " + invalidCode, invalidCode, configuration()), idempotency(), CLIENT_FAILURE);
+            assertProblem(invalid, "PLATFORM_COMMON_VALIDATION_FAILED");
+            assertFalse(context.get(BackendAcceptanceTest.OPERATIONS_STORE_TERMINALS,
+                    terminalsPath(store.fixture()), store.session().cookie(), OK).json().toString().contains("非法激活码"));
+        }
+    }
+
+    @AcceptanceScenario(
+            id = "storeTerminalLifecycleAndNames",
+            module = "ORG",
+            operation = "storeTerminalLifecycleAndNames")
+    void storeTerminalLifecycleAndNames(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminalRef = create(context, store, "Lifecycle terminal", "11223344");
+        JsonNode before = readDetail(context, store, terminalRef);
+        long version = before.path("version").asLong();
+
+        BackendAcceptanceTest.Response replaced = context.put(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                terminalPath(store.fixture(), terminalRef),
+                store.session().cookie(),
+                replaceBody("Lifecycle terminal renamed", version),
+                idempotency(),
+                OK);
+        assertEquals(terminalRef.toString(), replaced.json().path("terminalRef").asText());
+        JsonNode renamed = readDetail(context, store, terminalRef);
+        assertEquals("Lifecycle terminal renamed", renamed.path("name").asText());
+        assertEquals("11223344", renamed.path("activationCode").asText(),
+                "BUSINESS: replacement cannot change activation code");
+
+        BackendAcceptanceTest.Response disabled = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_STATUS,
+                terminalPath(store.fixture(), terminalRef) + "/status",
+                store.session().cookie(),
+                Map.of("status", "DISABLED", "expectedVersion", renamed.path("version").asLong()),
+                idempotency(),
+                OK);
+        assertEquals("DISABLED", disabled.json().path("status").asText());
+
+        JsonNode disabledDetail = readDetail(context, store, terminalRef);
+        BackendAcceptanceTest.Response voided = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_STATUS,
+                terminalPath(store.fixture(), terminalRef) + "/status",
+                store.session().cookie(),
+                Map.of("status", "VOIDED", "expectedVersion", disabledDetail.path("version").asLong()),
+                idempotency(),
+                OK);
+        assertEquals("VOIDED", voided.json().path("status").asText());
+
+        BackendAcceptanceTest.Response rejectedEdit = context.put(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                terminalPath(store.fixture(), terminalRef),
+                store.session().cookie(),
+                replaceBody("Should not write", voided.json().path("version").asLong()),
+                idempotency(),
+                CLIENT_FAILURE);
+        assertProblem(rejectedEdit, "STORE_TERMINAL_VOIDED_IMMUTABLE");
+        JsonNode afterRejectedEdit = readDetail(context, store, terminalRef);
+        assertEquals("Lifecycle terminal renamed", afterRejectedEdit.path("name").asText());
+        assertEquals(voided.json().path("version").asLong(), afterRejectedEdit.path("version").asLong());
+    }
+
+    @AcceptanceScenario(
+            id = "storeTerminalAuditHistory",
+            module = "AUDIT",
+            operation = "storeTerminalAuditHistory")
+    void storeTerminalAuditHistory(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminalRef = create(context, store, "审计终端", "22334455");
+        BackendAcceptanceTest.Response history = context.get(
+                BackendAcceptanceTest.OPERATIONS_AUDIT_HISTORY,
+                "/api/operations/audit-history?groupWorkspaceKey=" + store.fixture().groupWorkspaceKey()
+                        + "&entityType=STORE_TERMINAL&entityId=" + terminalRef + "&page=1&pageSize=20",
+                store.session().cookie(),
+                OK);
+        assertTrue(history.json().path("total").asLong() >= 1, "BUSINESS: terminal creation is available in operations audit history");
+        assertTrue(history.json().path("items").isArray(), "BUSINESS: terminal audit readback returns history items");
+        assertFalse(history.json().toString().contains("22334455"), "BUSINESS: audit history never exposes activation code");
+        JsonNode beforeRename = readDetail(context, store, terminalRef);
+        context.put(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                terminalPath(store.fixture(), terminalRef),
+                store.session().cookie(),
+                replaceBody("审计终端改名", beforeRename.path("version").asLong()),
+                idempotency(),
+                OK);
+        JsonNode renamed = readDetail(context, store, terminalRef);
+        context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_STATUS,
+                terminalPath(store.fixture(), terminalRef) + "/status",
+                store.session().cookie(),
+                Map.of("status", "DISABLED", "expectedVersion", renamed.path("version").asLong()),
+                idempotency(),
+                OK);
+        JsonNode disabled = readDetail(context, store, terminalRef);
+        context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_STATUS,
+                terminalPath(store.fixture(), terminalRef) + "/status",
+                store.session().cookie(),
+                Map.of("status", "VOIDED", "expectedVersion", disabled.path("version").asLong()),
+                idempotency(),
+                OK);
+        BackendAcceptanceTest.Response historyAfterVoid = context.get(
+                BackendAcceptanceTest.OPERATIONS_AUDIT_HISTORY,
+                "/api/operations/audit-history?groupWorkspaceKey=" + store.fixture().groupWorkspaceKey()
+                        + "&entityType=STORE_TERMINAL&entityId=" + terminalRef + "&page=1&pageSize=20",
+                store.session().cookie(),
+                OK);
+        String historyText = historyAfterVoid.json().toString();
+        assertTrue(historyText.contains("TERMINAL_CREATED"), "BUSINESS: create audit action is readable");
+        assertTrue(historyText.contains("TERMINAL_REPLACED"), "BUSINESS: replace audit action is readable");
+        assertTrue(historyText.contains("TERMINAL_STATUS_CHANGED"), "BUSINESS: lifecycle audit action is readable");
+        assertTrue(historyText.contains("审计终端改名"), "BUSINESS: audit contains the new name summary");
+        assertTrue(historyText.contains("审计终端"), "BUSINESS: audit contains the old name summary");
+        assertFalse(historyText.contains("22334455"), "BUSINESS: voided terminal history remains activation-code safe");
+
+        BackendAcceptanceTest.Response missing = context.get(
+                BackendAcceptanceTest.OPERATIONS_AUDIT_HISTORY,
+                "/api/operations/audit-history?groupWorkspaceKey=" + store.fixture().groupWorkspaceKey()
+                        + "&entityType=STORE_TERMINAL&entityId=" + UUID.randomUUID() + "&page=1&pageSize=20",
+                store.session().cookie(),
+                CLIENT_FAILURE);
+        assertEquals(404, missing.status(), "BUSINESS: missing terminal audit history is not confused with an empty page");
+
+        BackendAcceptanceTest.Fixture otherFixture = host.siblingStoreFixture(store.fixture(), Set.of(EDIT));
+        host.completeInvitation(context, otherFixture);
+        BackendAcceptanceTest.Session otherSession = selectStore(context, otherFixture, host.login(context, otherFixture));
+        BackendAcceptanceTest.Response crossStore = context.get(
+                BackendAcceptanceTest.OPERATIONS_AUDIT_HISTORY,
+                "/api/operations/audit-history?groupWorkspaceKey=" + otherFixture.groupWorkspaceKey()
+                        + "&entityType=STORE_TERMINAL&entityId=" + terminalRef + "&page=1&pageSize=20",
+                otherSession.cookie(),
+                CLIENT_FAILURE);
+        assertEquals(403, crossStore.status(),
+                "BUSINESS: audit history never crosses store authorization boundary; status="
+                        + crossStore.status() + ", problem=" + crossStore.problemCode() + ", raw=" + crossStore.raw()
+                        + ", body=" + crossStore.json() + ", workspace=" + otherFixture.workspaceUuid()
+                        + ", group=" + otherFixture.groupWorkspaceKey() + ", store=" + otherFixture.storeId());
+    }
+
+    @AcceptanceScenario(
+            id = "storeTerminalPageAndWriteGrants",
+            module = "ORG",
+            operation = "storeTerminalPageAndWriteGrants")
+    void storeTerminalPageAndWriteGrants(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        BackendAcceptanceTest.Response areas = context.get(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_AREA_CANDIDATES,
+                terminalsPath(store.fixture()) + "/area-candidates?pageSize=20",
+                store.session().cookie(),
+                OK);
+        assertNotNull(areas.json().path("items"), "BUSINESS: terminal page exposes area candidates as a list");
+        BackendAcceptanceTest.Response tags = context.get(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_TAG_CANDIDATES,
+                terminalsPath(store.fixture()) + "/tag-candidates?pageSize=20",
+                store.session().cookie(),
+                OK);
+        assertNotNull(tags.json().path("items"), "BUSINESS: terminal page exposes production-tag candidates as a list");
+
+        UUID existingTerminal = create(context, store, "只读详情终端", "40000001", configuration());
+        BackendAcceptanceTest.Fixture readOnlyFixture = host.storeUserFixture(store.fixture(), Set.of());
+        host.completeInvitation(context, readOnlyFixture);
+        BackendAcceptanceTest.Session readOnlySession = selectStore(context, readOnlyFixture, host.login(context, readOnlyFixture));
+        JsonNode readOnlyPage = context.get(BackendAcceptanceTest.OPERATIONS_STORE_TERMINALS,
+                terminalsPath(readOnlyFixture), readOnlySession.cookie(), OK).json();
+        assertFalse(readOnlyPage.toString().contains("activationCode"), "BUSINESS: read-only list has no activation code field");
+        JsonNode readOnlyDetail = context.get(BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL,
+                terminalPath(readOnlyFixture, existingTerminal), readOnlySession.cookie(), OK).json();
+        assertTrue(readOnlyDetail.path("activationCode").asText().matches("[0-9]{8}"));
+        BackendAcceptanceTest.Response rejected = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE,
+                terminalsPath(readOnlyFixture),
+                readOnlySession.cookie(),
+                createBody("Read only terminal", null),
+                idempotency(),
+                CLIENT_FAILURE);
+        assertTrue(rejected.status() >= 400, "BUSINESS: missing write capability rejects direct terminal creation");
+    }
+
+    @AcceptanceScenario(id = "storeTerminalDeviceFunctionMatrix", module = "ORG", operation = "storeTerminalDeviceFunctionMatrix")
+    void storeTerminalDeviceFunctionMatrix(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        List<String> functions = List.of(
+                "ORDERING_CASHIER", "ORDER_CONFIRMATION", "KDS", "KITCHEN_PRINT", "DISPATCH", "QUEUE_CALL");
+        int index = 0;
+        for (String deviceType : List.of("laptop", "mobile")) {
+            for (String functionKey : functions) {
+                boolean valid = !(deviceType.equals("mobile") && Set.of("KDS", "DISPATCH").contains(functionKey));
+                String name = "设备功能矩阵 " + deviceType + " " + functionKey;
+                String code = String.format("31%06d", ++index);
+                BackendAcceptanceTest.Response response = context.post(
+                        BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE,
+                        terminalsPath(store.fixture()), store.session().cookie(),
+                        createBody(name, code, configurationFor(deviceType, functionKey), deviceType),
+                        idempotency(), valid ? CREATED : CLIENT_FAILURE);
+                if (valid) {
+                    UUID terminal = UUID.fromString(response.json().path("terminalRef").asText());
+                    assertEquals(deviceType, readDetail(context, store, terminal).path("deviceType").asText());
+                    assertEquals(functionKey,
+                            readDetail(context, store, terminal).at("/configuration/functions/0/functionKey").asText());
+                } else {
+                    assertProblem(response, "STORE_TERMINAL_RULE_INVALID");
+                }
+            }
+        }
+
+        UUID laptopKds = create(context, store, "KDS 设备转换", "31000020", configurationFor("laptop", "KDS"));
+        JsonNode before = readDetail(context, store, laptopKds);
+        BackendAcceptanceTest.Response rejectedDeviceChange = context.put(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                terminalPath(store.fixture(), laptopKds), store.session().cookie(),
+                replaceBody("KDS 设备转换", before.path("version").asLong(), configurationFor("mobile", "KDS"), "mobile"),
+                idempotency(), CLIENT_FAILURE);
+        assertProblem(rejectedDeviceChange, "STORE_TERMINAL_RULE_INVALID");
+        assertEquals("laptop", readDetail(context, store, laptopKds).path("deviceType").asText());
+
+        BackendAcceptanceTest.Response removedUnsupportedFunction = context.put(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                terminalPath(store.fixture(), laptopKds), store.session().cookie(),
+                replaceBody("KDS 设备转换", before.path("version").asLong(), configurationFor("mobile", "ORDERING_CASHIER"), "mobile"),
+                idempotency(), OK);
+        assertEquals(laptopKds.toString(), removedUnsupportedFunction.json().path("terminalRef").asText());
+        assertEquals("mobile", readDetail(context, store, laptopKds).path("deviceType").asText());
+    }
+
+    @AcceptanceScenario(id = "storeTerminalFunctionCardinality", module = "ORG", operation = "storeTerminalFunctionCardinality")
+    void storeTerminalFunctionCardinality(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        int singletonIndex = 0;
+        for (String singleton : List.of("ORDERING_CASHIER", "ORDER_CONFIRMATION", "KDS", "DISPATCH", "QUEUE_CALL")) {
+            BackendAcceptanceTest.Response duplicateResponse = context.post(
+                    BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                    createBody("重复单例功能 " + singleton, String.format("32%06d", ++singletonIndex),
+                            configurationWithFunctions("laptop", List.of(singleton, singleton))), idempotency(), CLIENT_FAILURE);
+            assertProblem(duplicateResponse, "STORE_TERMINAL_RULE_INVALID");
+        }
+        UUID kitchen = create(context, store, "多厨打功能", "32000001", configurationWithFunctions(
+                "laptop", List.of("KITCHEN_PRINT", "KITCHEN_PRINT", "KITCHEN_PRINT")));
+        assertEquals(3, readDetail(context, store, kitchen).path("configuration").path("functions").size());
+    }
+
+    @AcceptanceScenario(id = "storeTerminalRequiresFunction", module = "ORG", operation = "storeTerminalRequiresFunction")
+    void storeTerminalRequiresFunction(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        BackendAcceptanceTest.Response empty = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                createBody("无功能终端", "31000005", emptyConfiguration()), idempotency(), CLIENT_FAILURE);
+        assertProblem(empty, "STORE_TERMINAL_RULE_INVALID");
+
+        UUID terminal = create(context, store, "移除最后功能", "32000002", configuration());
+        JsonNode before = readDetail(context, store, terminal);
+        BackendAcceptanceTest.Response removed = context.put(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                terminalPath(store.fixture(), terminal), store.session().cookie(),
+                replaceBody("移除最后功能", before.path("version").asLong(), emptyConfiguration()),
+                idempotency(), CLIENT_FAILURE);
+        assertProblem(removed, "STORE_TERMINAL_RULE_INVALID");
+        JsonNode after = readDetail(context, store, terminal);
+        assertEquals(before.path("version").asLong(), after.path("version").asLong());
+        assertEquals(before.path("configuration"), after.path("configuration"));
+    }
+
+    @AcceptanceScenario(id = "storeTerminalFunctionRangeMatrix", module = "ORG", operation = "storeTerminalFunctionRangeMatrix")
+    void storeTerminalFunctionRangeMatrix(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        Map<String, Set<String>> allowed = Map.of(
+                "ORDERING_CASHIER", Set.of("TABLE_AREA", "NO_TABLE"),
+                "ORDER_CONFIRMATION", Set.of("TABLE_AREA", "NO_TABLE", "DELIVERY"),
+                "KDS", Set.of("PRODUCTION_TAG"),
+                "KITCHEN_PRINT", Set.of("PRODUCTION_TAG"),
+                "DISPATCH", Set.of("TABLE_AREA", "NO_TABLE", "DELIVERY"),
+                "QUEUE_CALL", Set.of("NONE"));
+        int index = 0;
+        for (Map.Entry<String, Set<String>> function : allowed.entrySet()) {
+            for (String range : List.of("TABLE_AREA", "NO_TABLE", "DELIVERY", "PRODUCTION_TAG")) {
+                boolean valid = function.getValue().contains(range);
+                String name = "功能范围矩阵 " + function.getKey() + " " + range;
+                Map<String, Object> configuration = configurationWithRange(function.getKey(), range,
+                        range.equals("TABLE_AREA") || range.equals("PRODUCTION_TAG"));
+                BackendAcceptanceTest.Response response = context.post(
+                        BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                        createBody(name, String.format("33%06d", ++index), configuration), idempotency(),
+                        valid ? CREATED : CLIENT_FAILURE);
+                if (valid) {
+                    UUID terminal = UUID.fromString(response.json().path("terminalRef").asText());
+                    assertEquals(range, readDetail(context, store, terminal).at("/configuration/functions/0/ranges/0/key").asText());
+                } else {
+                    assertProblem(response, "STORE_TERMINAL_RULE_INVALID");
+                }
+            }
+        }
+    }
+
+    @AcceptanceScenario(id = "storeTerminalRangeSelectionIdentity", module = "ORG", operation = "storeTerminalRangeSelectionIdentity")
+    void storeTerminalRangeSelectionIdentity(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        StoreContext setup = referenceSetupStore(context, store);
+        AreaRef first = createArea(context, setup, "TABLE_AREA", "终端桌台区一", "TERMINAL-TABLE-1");
+        AreaRef second = createArea(context, setup, "TABLE_AREA", "终端桌台区二", "TERMINAL-TABLE-2");
+        AreaRef scan = createArea(context, setup, "SCAN_AREA", "终端扫码区", "TERMINAL-SCAN-1");
+        TagRef tag = createTag(context, setup, "TERMINAL-TAG-1", "终端生产标签");
+
+        BackendAcceptanceTest.Response candidates = context.get(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_AREA_CANDIDATES,
+                terminalsPath(store.fixture()) + "/area-candidates?pageSize=20", store.session().cookie(), OK);
+        assertTrue(candidates.json().path("items").toString().contains(first.ref().toString()));
+        assertTrue(candidates.json().path("items").toString().contains(second.ref().toString()));
+        assertFalse(candidates.json().path("items").toString().contains(scan.ref().toString()),
+                "BUSINESS: scan area is not a table-area candidate");
+
+        UUID selected = create(context, store, "指定桌台区", "34000001",
+                configurationWithRangeRefs("ORDERING_CASHIER", "TABLE_AREA", false,
+                        List.of(first.ref().toString(), second.ref().toString())));
+        JsonNode selectedDetail = readDetail(context, store, selected);
+        assertEquals(List.of(first.ref().toString(), second.ref().toString()),
+                textArray(selectedDetail.at("/configuration/functions/0/ranges/0/refs")));
+
+        UUID all = create(context, store, "全部桌台区", "34000002",
+                configurationWithRangeRefs("ORDERING_CASHIER", "TABLE_AREA", true, List.of()));
+        assertTrue(readDetail(context, store, all).at("/configuration/functions/0/ranges/0/all").asBoolean(false));
+
+        UUID tagged = create(context, store, "指定生产标签", "34000003",
+                configurationWithRangeRefs("KITCHEN_PRINT", "PRODUCTION_TAG", false, List.of(tag.ref().toString())));
+        assertEquals(tag.ref().toString(), readDetail(context, store, tagged)
+                .at("/configuration/functions/0/ranges/0/refs/0").asText());
+
+        BackendAcceptanceTest.Response scanAsTable = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                createBody("扫码区伪装桌台区", "34000004",
+                        configurationWithRangeRefs("ORDERING_CASHIER", "TABLE_AREA", false, List.of(scan.ref().toString()))),
+                idempotency(), CLIENT_FAILURE);
+        assertProblem(scanAsTable, "STORE_TERMINAL_REFERENCE_INVALID");
+    }
+
+    @AcceptanceScenario(id = "storeTerminalNewReferenceEligibility", module = "ORG", operation = "storeTerminalNewReferenceEligibility")
+    void storeTerminalNewReferenceEligibility(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        StoreContext setup = referenceSetupStore(context, store);
+        AreaRef area = createArea(context, setup, "TABLE_AREA", "新引用桌台区", "TERMINAL-NEW-AREA");
+        TagRef tag = createTag(context, setup, "TERMINAL-NEW-TAG", "新引用标签");
+        BackendAcceptanceTest.Response areas = context.get(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_AREA_CANDIDATES,
+                terminalsPath(store.fixture()) + "/area-candidates?pageSize=20", store.session().cookie(), OK);
+        assertTrue(areas.json().path("items").toString().contains(area.ref().toString()),
+                "BUSINESS: newly enabled area is a typed candidate");
+        BackendAcceptanceTest.Response tags = context.get(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_TAG_CANDIDATES,
+                terminalsPath(store.fixture()) + "/tag-candidates?pageSize=20", store.session().cookie(), OK);
+        assertTrue(tags.json().path("items").toString().contains(tag.ref().toString()),
+                "BUSINESS: newly enabled production tag is a typed candidate");
+        UUID terminal = create(context, store, "新引用终端", "34000005",
+                configurationWithRangeRefs("ORDERING_CASHIER", "TABLE_AREA", false, List.of(area.ref().toString())));
+        assertEquals(area.ref().toString(), readDetail(context, store, terminal)
+                .at("/configuration/functions/0/ranges/0/refs/0").asText());
+    }
+
+    @AcceptanceScenario(id = "storeTerminalHistoricalReferences", module = "ORG", operation = "storeTerminalHistoricalReferences")
+    void storeTerminalHistoricalReferences(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        StoreContext setup = referenceSetupStore(context, store);
+        AreaRef area = createArea(context, setup, "TABLE_AREA", "历史引用桌台区", "TERMINAL-HISTORY-AREA");
+        TagRef tag = createTag(context, setup, "TERMINAL-HISTORY-TAG", "历史引用标签");
+        UUID terminal = create(context, store, "历史引用终端", "34000006",
+                configurationWithRangeRefs("ORDERING_CASHIER", "TABLE_AREA", false, List.of(area.ref().toString())));
+        JsonNode before = readDetail(context, store, terminal);
+        AreaRef renamed = updateArea(context, setup, area, "历史引用桌台区改名", area.code(), "TABLE_AREA", "ENABLED");
+        transitionArea(context, setup, renamed, "DISABLED");
+        transitionTag(context, setup, tag, "DISABLED");
+        JsonNode retained = readDetail(context, store, terminal);
+        assertEquals(before.at("/configuration/functions/0/ranges/0/refs"),
+                retained.at("/configuration/functions/0/ranges/0/refs"),
+                "BUSINESS: existing references remain writable after the referenced object is disabled");
+
+        AreaRef replacement = createArea(context, setup, "TABLE_AREA", "历史引用新桌台区", "TERMINAL-HISTORY-NEW");
+        BackendAcceptanceTest.Response added = context.put(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                terminalPath(store.fixture(), terminal), store.session().cookie(),
+                replaceBody("历史引用终端", retained.path("version").asLong(),
+                        configurationWithExistingFunctionRangeRefs(retained, "TABLE_AREA", false,
+                                List.of(area.ref().toString(), replacement.ref().toString()))),
+                idempotency(), OK);
+        assertEquals(terminal.toString(), added.json().path("terminalRef").asText());
+        JsonNode addedRead = readDetail(context, store, terminal);
+        assertTrue(addedRead.at("/configuration/functions/0/ranges/0/refs").toString().contains(area.ref().toString()));
+        assertTrue(addedRead.at("/configuration/functions/0/ranges/0/refs").toString().contains(replacement.ref().toString()));
+    }
+
+    @AcceptanceScenario(id = "storeTerminalReferencesUseRef", module = "ORG", operation = "storeTerminalReferencesUseRef")
+    void storeTerminalReferencesUseRef(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        StoreContext setup = referenceSetupStore(context, store);
+        AreaRef area = createArea(context, setup, "TABLE_AREA", "可作废引用", "TERMINAL-VOID-AREA");
+        TagRef tag = createTag(context, setup, "TERMINAL-VOID-TAG", "可作废标签");
+        UUID terminal = create(context, store, "引用稳定性终端", "34000007",
+                configurationWithRangeRefs("ORDERING_CASHIER", "TABLE_AREA", false, List.of(area.ref().toString())));
+        JsonNode first = readDetail(context, store, terminal);
+        transitionArea(context, setup, area, "VOIDED");
+        transitionTag(context, setup, tag, "VOIDED");
+        createArea(context, setup, "TABLE_AREA", "同编码新桌台区", area.code());
+        createTag(context, setup, tag.code(), "同编码新标签");
+        JsonNode retained = readDetail(context, store, terminal);
+        UUID same = UUID.fromString(first.path("terminalRef").asText());
+        assertEquals(terminal, same, "BUSINESS: detail readback preserves terminal identity");
+        assertEquals(first.at("/configuration/functions/0/ranges/0/refs"),
+                retained.at("/configuration/functions/0/ranges/0/refs"),
+                "BUSINESS: re-created same-code candidates never replace historical refs");
+    }
+
+    @AcceptanceScenario(id = "storeTerminalSceneOwnershipMatrix", module = "ORG", operation = "storeTerminalSceneOwnershipMatrix")
+    void storeTerminalSceneOwnershipMatrix(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        List<SceneCase> scenes = List.of(
+                new SceneCase("ORDERING_CASHIER", "TABLE_ORDER_TICKET"),
+                new SceneCase("ORDERING_CASHIER", "PRECHECK_TICKET"),
+                new SceneCase("ORDERING_CASHIER", "CHECKOUT_TICKET"),
+                new SceneCase("ORDERING_CASHIER", "PICKUP_TICKET"),
+                new SceneCase("ORDERING_CASHIER", "REVERSE_CHECKOUT_TICKET"),
+                new SceneCase("ORDERING_CASHIER", "REFUND_RECEIPT"),
+                new SceneCase("KITCHEN_PRINT", "PREPARATION_TICKET"),
+                new SceneCase("KITCHEN_PRINT", "RETURN_TICKET"),
+                new SceneCase("KITCHEN_PRINT", "EXPEDITE_TICKET"),
+                new SceneCase("KITCHEN_PRINT", "START_PREPARATION_TICKET"),
+                new SceneCase("KITCHEN_PRINT", "LABEL_PREPARATION_TICKET"),
+                new SceneCase("DISPATCH", "DISH_CHECK_SUMMARY"),
+                new SceneCase("DISPATCH", "FOOD_DELIVERY_TICKET"),
+                new SceneCase("DISPATCH", "DELIVERY_TICKET"),
+                new SceneCase("DISPATCH", "DELIVERY_MERCHANT_COPY"),
+                new SceneCase("DISPATCH", "DELIVERY_CUSTOMER_COPY"),
+                new SceneCase("QUEUE_CALL", "QUEUE_NUMBER_TICKET"));
+        int index = 0;
+        for (SceneCase scene : scenes) {
+            UUID terminal = create(context, store, "场景归属 " + scene.sceneKey(), String.format("35%06d", ++index),
+                    configurationWithScene(scene.functionKey(), scene.sceneKey()));
+            assertEquals(scene.sceneKey(), readDetail(context, store, terminal)
+                    .at("/configuration/functions/0/scenes/0/sceneKey").asText());
+            BackendAcceptanceTest.Response wrongFunction = context.post(
+                    BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                    createBody("错误功能场景 " + scene.sceneKey(), String.format("36%06d", index),
+                            configurationWithScene("ORDER_CONFIRMATION", scene.sceneKey())),
+                    idempotency(), CLIENT_FAILURE);
+            assertProblem(wrongFunction, "STORE_TERMINAL_RULE_INVALID");
+        }
+    }
+
+    @AcceptanceScenario(id = "storeTerminalScenePaperMatrix", module = "ORG", operation = "storeTerminalScenePaperMatrix")
+    void storeTerminalScenePaperMatrix(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        List<String> papers = List.of(
+                "THERMAL_58", "THERMAL_80", "LABEL_40_30", "LABEL_40_60", "LABEL_50_30", "LABEL_60_40", "LABEL_80_50");
+        List<SceneCase> scenes = List.of(
+                new SceneCase("ORDERING_CASHIER", "TABLE_ORDER_TICKET"),
+                new SceneCase("ORDERING_CASHIER", "PRECHECK_TICKET"),
+                new SceneCase("ORDERING_CASHIER", "CHECKOUT_TICKET"),
+                new SceneCase("ORDERING_CASHIER", "PICKUP_TICKET"),
+                new SceneCase("ORDERING_CASHIER", "REVERSE_CHECKOUT_TICKET"),
+                new SceneCase("ORDERING_CASHIER", "REFUND_RECEIPT"),
+                new SceneCase("KITCHEN_PRINT", "PREPARATION_TICKET"),
+                new SceneCase("KITCHEN_PRINT", "RETURN_TICKET"),
+                new SceneCase("KITCHEN_PRINT", "EXPEDITE_TICKET"),
+                new SceneCase("KITCHEN_PRINT", "START_PREPARATION_TICKET"),
+                new SceneCase("KITCHEN_PRINT", "LABEL_PREPARATION_TICKET"),
+                new SceneCase("DISPATCH", "DISH_CHECK_SUMMARY"),
+                new SceneCase("DISPATCH", "FOOD_DELIVERY_TICKET"),
+                new SceneCase("DISPATCH", "DELIVERY_TICKET"),
+                new SceneCase("DISPATCH", "DELIVERY_MERCHANT_COPY"),
+                new SceneCase("DISPATCH", "DELIVERY_CUSTOMER_COPY"),
+                new SceneCase("QUEUE_CALL", "QUEUE_NUMBER_TICKET"));
+        int index = 0;
+        for (SceneCase scene : scenes) {
+            for (String paper : papers) {
+                boolean allowed = scene.sceneKey().equals("LABEL_PREPARATION_TICKET")
+                        ? paper.startsWith("LABEL") : paper.startsWith("THERMAL");
+                String name = "场景纸型矩阵 " + scene.sceneKey() + " " + paper;
+                BackendAcceptanceTest.Response response = context.post(
+                        BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE,
+                        terminalsPath(store.fixture()), store.session().cookie(),
+                        createBody(name, String.format("37%06d", ++index), configurationWithPrinterScene(
+                                scene.functionKey(), scene.sceneKey(), "GENERIC", genericModelForPaper(paper),
+                                paper, "NETWORK", "192.0.2." + (10 + index % 200))),
+                        idempotency(), allowed ? CREATED : CLIENT_FAILURE);
+                assertEquals(allowed, response.status() == 201,
+                        "BUSINESS: paper matrix status; scene=" + scene.sceneKey() + ", paper=" + paper
+                                + ", model=" + genericModelForPaper(paper) + ", status=" + response.status()
+                                + ", problem=" + response.problemCode() + ", body=" + response.json());
+                if (allowed) {
+                    UUID terminal = UUID.fromString(response.json().path("terminalRef").asText());
+                    assertEquals(paper, readDetail(context, store, terminal)
+                            .at("/configuration/printers/0/paperSpecKey").asText());
+                } else {
+                    assertProblem(response, "STORE_TERMINAL_RULE_INVALID");
+                }
+            }
+        }
+        UUID thermal = create(context, store, "热敏改标签", "37999991", configurationWithPrinterScene(
+                "KITCHEN_PRINT", "PREPARATION_TICKET", "GENERIC", "GENERIC_THERMAL_58", "THERMAL_58",
+                "NETWORK", "192.0.2.211"));
+        JsonNode before = readDetail(context, store, thermal);
+        BackendAcceptanceTest.Response rejected = context.put(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                terminalPath(store.fixture(), thermal), store.session().cookie(),
+                replaceBody("热敏改标签", before.path("version").asLong(), configurationWithPrinterAndFunctionRefs(
+                        before.at("/configuration/printers/0/ref").asText(),
+                        before.at("/configuration/functions/0/ref").asText(), "GENERIC", "GENERIC_LABEL_40_30",
+                        "LABEL_40_30", "NETWORK", "192.0.2.212", "PREPARATION_TICKET")),
+                idempotency(), CLIENT_FAILURE);
+        assertProblem(rejected, "STORE_TERMINAL_RULE_INVALID");
+        assertEquals(before.path("configuration"), readDetail(context, store, thermal).path("configuration"));
+    }
+
+    @AcceptanceScenario(id = "storeTerminalConnectionParameterMatrix", module = "ORG", operation = "storeTerminalConnectionParameterMatrix")
+    void storeTerminalConnectionParameterMatrix(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        List<ConnectionCase> connections = List.of(
+                new ConnectionCase("NETWORK", "GENERIC_THERMAL_58", "192.0.2.16"),
+                new ConnectionCase("CLOUD", "GENERIC_THERMAL_58", "cloud-terminal-01"),
+                new ConnectionCase("USB", "GENERIC_THERMAL_58", "usb-terminal-01"),
+                new ConnectionCase("BLUETOOTH", "GENERIC_THERMAL_58", "bt-terminal-01"),
+                new ConnectionCase("BUILT_IN", "BUILTIN_THERMAL_58", null));
+        int index = 0;
+        for (ConnectionCase connection : connections) {
+            UUID terminal = create(context, store, "连接方式 " + connection.method(), String.format("38%06d", ++index),
+                    configurationWithPrinter("GENERIC", connection.model(), "THERMAL_58", connection.method(), connection.parameter()));
+            JsonNode printer = readDetail(context, store, terminal).at("/configuration/printers/0");
+            assertEquals(connection.method(), printer.path("connectionMethodKey").asText());
+            if (connection.parameter() != null) assertEquals(connection.parameter(), printer.path("connectionParameter").asText());
+        }
+        for (String method : List.of("NETWORK", "CLOUD", "USB", "BLUETOOTH")) {
+            BackendAcceptanceTest.Response missing = context.post(
+                    BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                    createBody("缺少连接参数 " + method, String.format("39%06d", ++index),
+                            configurationWithPrinter("GENERIC", "GENERIC_THERMAL_58", "THERMAL_58", method, null)),
+                    idempotency(), CLIENT_FAILURE);
+            assertProblem(missing, "STORE_TERMINAL_RULE_INVALID");
+        }
+        BackendAcceptanceTest.Response builtinParameter = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                createBody("内置打印机多余参数", String.format("39%06d", ++index),
+                        configurationWithPrinter("GENERIC", "BUILTIN_THERMAL_58", "THERMAL_58", "BUILT_IN", "unexpected")),
+                idempotency(), CLIENT_FAILURE);
+        assertProblem(builtinParameter, "STORE_TERMINAL_RULE_INVALID");
+        for (String method : List.of("USB", "BLUETOOTH")) {
+            BackendAcceptanceTest.Response control = context.post(
+                    BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                    createBody("控制字符 " + method, String.format("39%06d", ++index),
+                            configurationWithPrinter("GENERIC", "GENERIC_THERMAL_58", "THERMAL_58", method, "device-\u0001")),
+                    idempotency(), CLIENT_FAILURE);
+            assertProblem(control, "STORE_TERMINAL_RULE_INVALID");
+        }
+    }
+
+    @AcceptanceScenario(id = "storeTerminalScenePrinterSet", module = "ORG", operation = "storeTerminalScenePrinterSet")
+    void storeTerminalScenePrinterSet(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminal = create(context, store, "多打印机场景", "31000019", configurationWithThreePrinterScene());
+        JsonNode detail = readDetail(context, store, terminal);
+        assertEquals(3, detail.at("/configuration/printers").size(), "BUSINESS: all printers are persisted");
+        assertEquals(3, detail.at("/configuration/functions/0/scenes/0/printers").size(),
+                "BUSINESS: scene owns an unordered printer set");
+        List<String> refs = textFieldArray(detail.at("/configuration/functions/0/scenes/0/printers"), "printerRef");
+        assertEquals(3, refs.size());
+
+        Map<String, Object> duplicateBinding = configurationWithPrinterRefs(detail, List.of(
+                detail.at("/configuration/printers/0/ref").asText(),
+                detail.at("/configuration/printers/0/ref").asText()));
+        BackendAcceptanceTest.Response duplicate = context.put(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                terminalPath(store.fixture(), terminal), store.session().cookie(),
+                replaceBody("多打印机场景", detail.path("version").asLong(), duplicateBinding), idempotency(), CLIENT_FAILURE);
+        assertProblem(duplicate, "STORE_TERMINAL_RULE_INVALID");
+
+        Map<String, Object> renamed = configurationWithPrinterRefs(detail, refs);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> renamedPrinters = (List<Map<String, Object>>) renamed.get("printers");
+        renamedPrinters.get(0).put("name", "打印机一改名");
+        BackendAcceptanceTest.Response renamedResponse = context.put(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                terminalPath(store.fixture(), terminal), store.session().cookie(),
+                replaceBody("多打印机场景", readDetail(context, store, terminal).path("version").asLong(), renamed),
+                idempotency(), OK);
+        assertEquals(terminal.toString(), renamedResponse.json().path("terminalRef").asText());
+        JsonNode renamedRead = readDetail(context, store, terminal);
+        assertEquals(detail.at("/configuration/printers/0/ref"), renamedRead.at("/configuration/printers/0/ref"));
+        assertEquals("打印机一改名", renamedRead.at("/configuration/printers/0/name").asText());
+
+        Map<String, Object> withNewPrinter = configurationWithPrinterRefsAndNewPrinter(renamedRead);
+        BackendAcceptanceTest.Response added = context.put(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                terminalPath(store.fixture(), terminal), store.session().cookie(),
+                replaceBody("多打印机场景", renamedRead.path("version").asLong(), withNewPrinter), idempotency(), OK);
+        assertEquals(terminal.toString(), added.json().path("terminalRef").asText());
+        assertEquals(4, readDetail(context, store, terminal).at("/configuration/printers").size());
+
+        Map<String, Object> foreignReference = configurationWithPrinterRefs(
+                readDetail(context, store, terminal), List.of(UUID.randomUUID().toString()));
+        BackendAcceptanceTest.Response foreign = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                createBody("跨终端打印机引用", "34000008", foreignReference), idempotency(), CLIENT_FAILURE);
+        assertProblem(foreign, "STORE_TERMINAL_RULE_INVALID");
+    }
+
+    @AcceptanceScenario(id = "storeTerminalSceneOrderTypes", module = "ORG", operation = "storeTerminalSceneOrderTypes")
+    void storeTerminalSceneOrderTypes(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminal = create(context, store, "订单类型场景", "31000020", configurationWithSceneOrderTypes(
+                "ORDERING_CASHIER", "PRECHECK_TICKET", List.of("DINE_IN", "TAKEAWAY")));
+        assertEquals(2, readDetail(context, store, terminal).at("/configuration/functions/0/scenes/0/orderTypes").size());
+        UUID empty = create(context, store, "空订单类型场景", "34000009", configurationWithSceneOrderTypes(
+                "ORDERING_CASHIER", "CHECKOUT_TICKET", List.of()));
+        assertEquals(0, readDetail(context, store, empty).at("/configuration/functions/0/scenes/0/orderTypes").size());
+        BackendAcceptanceTest.Response unknown = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                createBody("未知订单类型", "34000010", configurationWithSceneOrderTypes(
+                        "ORDERING_CASHIER", "PRECHECK_TICKET", List.of("UNKNOWN_ORDER_TYPE"))),
+                idempotency(), CLIENT_FAILURE);
+        assertProblem(unknown, "STORE_TERMINAL_RULE_INVALID");
+    }
+
+    @AcceptanceScenario(id = "storeTerminalActivationUniqueness", module = "ORG", operation = "storeTerminalActivationUniqueness")
+    void storeTerminalActivationUniqueness(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID occupied = create(context, store, "激活码占用", "31000021", configuration());
+        BackendAcceptanceTest.Response duplicate = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                createBody("重复激活码", "31000021", configuration()), idempotency(), CLIENT_FAILURE);
+        assertProblem(duplicate, "STORE_TERMINAL_ACTIVATION_CODE_CONFLICT");
+
+        JsonNode occupiedDetail = readDetail(context, store, occupied);
+        context.post(BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_STATUS,
+                terminalPath(store.fixture(), occupied) + "/status", store.session().cookie(),
+                Map.of("status", "VOIDED", "expectedVersion", occupiedDetail.path("version").asLong()), idempotency(), OK);
+        BackendAcceptanceTest.Response voidedDuplicate = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                createBody("作废码不可复用", "31000021", configuration()), idempotency(), CLIENT_FAILURE);
+        assertProblem(voidedDuplicate, "STORE_TERMINAL_ACTIVATION_CODE_CONFLICT");
+
+        BackendAcceptanceTest.Fixture sibling = host.siblingStoreFixture(store.fixture(), Set.of(EDIT));
+        host.completeInvitation(context, sibling);
+        BackendAcceptanceTest.Session siblingSession = selectStore(context, sibling, host.login(context, sibling));
+        BackendAcceptanceTest.Response sameGroupOtherStore = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(sibling), siblingSession.cookie(),
+                createBody("同集团另一门店", "31000021", configuration()), idempotency(), CLIENT_FAILURE);
+        assertProblem(sameGroupOtherStore, "STORE_TERMINAL_ACTIVATION_CODE_CONFLICT");
+
+        BackendAcceptanceTest.Fixture otherGroup = host.siblingStoreFixture(host.fixture("PROJECT", Set.of(EDIT)), Set.of(EDIT));
+        host.completeInvitation(context, otherGroup);
+        BackendAcceptanceTest.Session otherGroupSession = selectStore(context, otherGroup, host.login(context, otherGroup));
+        BackendAcceptanceTest.Response otherGroupCreated = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(otherGroup), otherGroupSession.cookie(),
+                createBody("另一集团同码", "31000021", configuration()), idempotency(), CREATED);
+        assertFalse(otherGroupCreated.json().path("terminalRef").asText().isBlank());
+
+        String fixedKey = "acceptance-store-terminal-idempotency-fixed";
+        context.post(BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                createBody("幂等原请求", "31000031", configuration()), idempotency(fixedKey), CREATED);
+        BackendAcceptanceTest.Response changedRequest = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                createBody("幂等改码请求", "31000032", configuration()), idempotency(fixedKey), CLIENT_FAILURE);
+        assertProblem(changedRequest, "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT");
+    }
+
+    @AcceptanceScenario(id = "storeTerminalActivationImmutable", module = "ORG", operation = "storeTerminalActivationImmutable")
+    void storeTerminalActivationImmutable(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminal = create(context, store, "状态转换终端", "31000022", configuration());
+        JsonNode before = readDetail(context, store, terminal);
+        BackendAcceptanceTest.Response invalid = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_STATUS,
+                terminalPath(store.fixture(), terminal) + "/status", store.session().cookie(),
+                Map.of("status", "ENABLED", "expectedVersion", before.path("version").asLong()), idempotency(), CLIENT_FAILURE);
+        assertProblem(invalid, "STORE_TERMINAL_STATUS_TRANSITION_INVALID");
+        assertEquals(before.path("version").asLong(), readDetail(context, store, terminal).path("version").asLong());
+
+        Map<String, Object> replaceWithCode = new LinkedHashMap<>(replaceBody("不允许改码", before.path("version").asLong()));
+        replaceWithCode.put("activationCode", "99887766");
+        BackendAcceptanceTest.Response replaceCode = context.put(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                terminalPath(store.fixture(), terminal), store.session().cookie(), replaceWithCode, idempotency(), CLIENT_FAILURE);
+        assertTrue(replaceCode.status() >= 400, "BUSINESS: replacement cannot carry an activation code");
+
+        Map<String, Object> statusWithCode = new LinkedHashMap<>();
+        statusWithCode.put("status", "DISABLED");
+        statusWithCode.put("expectedVersion", before.path("version").asLong());
+        statusWithCode.put("activationCode", "99887766");
+        BackendAcceptanceTest.Response statusCode = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_STATUS,
+                terminalPath(store.fixture(), terminal) + "/status", store.session().cookie(), statusWithCode,
+                idempotency(), CLIENT_FAILURE);
+        assertTrue(statusCode.status() >= 400, "BUSINESS: status command cannot carry an activation code");
+
+        JsonNode disabled = context.post(BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_STATUS,
+                terminalPath(store.fixture(), terminal) + "/status", store.session().cookie(),
+                Map.of("status", "DISABLED", "expectedVersion", before.path("version").asLong()), idempotency(), OK).json();
+        JsonNode enabled = context.post(BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_STATUS,
+                terminalPath(store.fixture(), terminal) + "/status", store.session().cookie(),
+                Map.of("status", "ENABLED", "expectedVersion", disabled.path("version").asLong()), idempotency(), OK).json();
+        assertEquals(before.path("activationCode"), readDetail(context, store, terminal).path("activationCode"));
+        assertTrue(enabled.path("version").asLong() > before.path("version").asLong());
+    }
+
+    @AcceptanceScenario(id = "storeTerminalActivationReadFace", module = "ORG", operation = "storeTerminalActivationReadFace")
+    void storeTerminalActivationReadFace(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminal = create(context, store, "激活码展示", "31000023", configuration());
+        assertEquals("31000023", readDetail(context, store, terminal).path("activationCode").asText());
+        assertFalse(context.get(BackendAcceptanceTest.OPERATIONS_STORE_TERMINALS, terminalsPath(store.fixture()), store.session().cookie(), OK)
+                .json().toString().contains("31000023"));
+    }
+
+    @AcceptanceScenario(id = "storeTerminalDisabledStoreParity", module = "ORG", operation = "storeTerminalDisabledStoreParity")
+    void storeTerminalDisabledStoreParity(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        BackendAcceptanceTest.Fixture statusActor = host.projectUserFixture(
+                store.fixture(), Set.of("BC-ORG-STORE-EDIT", "BC-ORG-STORE-STATUS"));
+        host.completeInvitation(context, statusActor);
+        BackendAcceptanceTest.Session statusSession = selectStore(context, statusActor, host.login(context, statusActor));
+        long organizationStoreVersionBeforeTerminalCreate = host.organizationStoreVersion(store.fixture().storeId());
+        UUID terminal = create(context, store, "停用门店终端", "41000001", configuration());
+        long organizationStoreVersion = host.organizationStoreVersion(store.fixture().storeId());
+        assertEquals(organizationStoreVersionBeforeTerminalCreate, organizationStoreVersion,
+                "BUSINESS: creating a terminal must not change the organization store revision");
+        BackendAcceptanceTest.Fixture readActor = host.storeUserFixture(store.fixture(), Set.of(EDIT));
+        host.completeInvitation(context, readActor);
+        BackendAcceptanceTest.Session readSession = selectStore(context, readActor, host.login(context, readActor));
+        JsonNode disabledStore = context.post(BackendAcceptanceTest.OPERATIONS_ORGANIZATION_STORE_STATUS,
+                        "/api/operations/group-workspaces/" + store.fixture().groupWorkspaceKey()
+                                + "/organization/stores/" + store.fixture().storeId() + "/status",
+                        statusSession.cookie(), Map.of("targetStatus", "DISABLED",
+                                "expectedVersion", organizationStoreVersion), idempotency(), OK)
+                .json();
+        assertEquals("DISABLED", disabledStore.path("status").asText(),
+                "BUSINESS: organization store status command is read back");
+        assertEquals(organizationStoreVersion + 1, host.organizationStoreVersion(store.fixture().storeId()),
+                "BUSINESS: organization store status command increments the persisted version");
+        BackendAcceptanceTest.Response page = context.get(BackendAcceptanceTest.OPERATIONS_STORE_TERMINALS,
+                terminalsPath(readActor), readSession.cookie(), CLIENT_FAILURE);
+        assertTrue(Set.of(403, 404).contains(page.status()),
+                "BUSINESS: disabled store does not expose terminal page; status=" + page.status());
+        BackendAcceptanceTest.Response detail = context.get(BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL,
+                terminalPath(readActor, terminal), readSession.cookie(), CLIENT_FAILURE);
+        assertTrue(Set.of(403, 404).contains(detail.status()),
+                "BUSINESS: disabled store does not expose terminal detail; status=" + detail.status());
+        BackendAcceptanceTest.Response candidates = context.get(BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_AREA_CANDIDATES,
+                terminalsPath(readActor) + "/area-candidates?pageSize=20", readSession.cookie(), CLIENT_FAILURE);
+        assertTrue(Set.of(403, 404).contains(candidates.status()),
+                "BUSINESS: disabled store blocks terminal candidate reads; status=" + candidates.status());
+    }
+
+    @AcceptanceScenario(id = "storeTerminalIgnoresOperatingSwitch", module = "ORG", operation = "storeTerminalIgnoresOperatingSwitch")
+    void storeTerminalIgnoresOperatingSwitch(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        BackendAcceptanceTest.Fixture base = host.fixture("PROJECT", Set.of());
+        BackendAcceptanceTest.Fixture closed = host.closedStoreFixture(base, Set.of(EDIT));
+        host.completeInvitation(context, closed);
+        StoreContext store = new StoreContext(closed, selectStore(context, closed, host.login(context, closed)));
+        UUID terminal = create(context, store, "经营开关无关", "31000024", configuration());
+        assertEquals(terminal.toString(), readDetail(context, store, terminal).path("terminalRef").asText());
+        assertTrue(context.get(BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_AREA_CANDIDATES,
+                terminalsPath(store.fixture()) + "/area-candidates?pageSize=20", store.session().cookie(), OK).json().path("items").isArray());
+    }
+
+    @AcceptanceScenario(id = "storeTerminalFunctionRemovalIdentity", module = "ORG", operation = "storeTerminalFunctionRemovalIdentity")
+    void storeTerminalFunctionRemovalIdentity(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminal = create(context, store, "功能身份", "31000025", configurationWithFunctions("laptop", List.of("ORDERING_CASHIER", "KITCHEN_PRINT")));
+        JsonNode before = readDetail(context, store, terminal);
+        JsonNode functions = before.path("configuration").path("functions");
+        Map<String, Object> replacement = configurationFromExistingFunction(functions.get(0));
+        BackendAcceptanceTest.Response updated = context.put(BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                terminalPath(store.fixture(), terminal), store.session().cookie(), replaceBody("功能身份", before.path("version").asLong(), replacement), idempotency(), OK);
+        assertEquals(terminal.toString(), updated.json().path("terminalRef").asText());
+        assertEquals(1, readDetail(context, store, terminal).at("/configuration/functions").size());
+    }
+
+    @AcceptanceScenario(id = "storeTerminalSoftConstraintsAllowed", module = "ORG", operation = "storeTerminalSoftConstraintsAllowed")
+    void storeTerminalSoftConstraintsAllowed(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminal = create(context, store, "软约束样本", "31000026", configurationWithScene("ORDERING_CASHIER", "PRECHECK_TICKET"));
+        assertEquals("软约束样本", readDetail(context, store, terminal).path("name").asText());
+    }
+
+    @AcceptanceScenario(id = "storeTerminalAtomicReplaceAndCas", module = "ORG", operation = "storeTerminalAtomicReplaceAndCas")
+    void storeTerminalAtomicReplaceAndCas(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminal = create(context, store, "版本条件", "31000027", configuration());
+        JsonNode before = readDetail(context, store, terminal);
+        context.put(BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE, terminalPath(store.fixture(), terminal), store.session().cookie(),
+                replaceBody("版本条件一", before.path("version").asLong(), configuration()), idempotency(), OK);
+        BackendAcceptanceTest.Response stale = context.put(BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                terminalPath(store.fixture(), terminal), store.session().cookie(), replaceBody("版本条件二", before.path("version").asLong(), configuration()), idempotency(), CLIENT_FAILURE);
+        assertTrue(Set.of("PLATFORM_COMMON_VERSION_CONFLICT", "STORE_TERMINAL_VERSION_CONFLICT").contains(stale.problemCode()));
+        assertEquals("版本条件一", readDetail(context, store, terminal).path("name").asText());
+    }
+
+    @AcceptanceScenario(id = "storeTerminalCrossStoreIsolation", module = "ORG", operation = "storeTerminalCrossStoreIsolation")
+    void storeTerminalCrossStoreIsolation(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        UUID terminal = create(context, store, "跨店隔离", "31000028", configuration());
+        BackendAcceptanceTest.Fixture otherFixture = host.siblingStoreFixture(store.fixture(), Set.of(EDIT));
+        host.completeInvitation(context, otherFixture);
+        BackendAcceptanceTest.Session otherSession = selectStore(context, otherFixture, host.login(context, otherFixture));
+        BackendAcceptanceTest.Response crossStore = context.get(BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL,
+                terminalPath(otherFixture, terminal), otherSession.cookie(), CLIENT_FAILURE);
+        assertTrue(crossStore.status() >= 400, "BUSINESS: terminal detail cannot cross store boundary");
+    }
+
+    @AcceptanceScenario(id = "storeTerminalPrinterModelPaperMatrix", module = "ORG", operation = "storeTerminalPrinterModelPaperMatrix")
+    void storeTerminalPrinterModelPaperMatrix(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreContext store = enabledStore(context);
+        List<String> papers = List.of(
+                "THERMAL_58", "THERMAL_80", "LABEL_40_30", "LABEL_40_60", "LABEL_50_30", "LABEL_60_40", "LABEL_80_50");
+        List<ModelPaperMatrixRow> rows = List.of(
+                row("EPSON", "EPSON_TM_T88VII", "THERMAL_58", "THERMAL_80"),
+                row("ZEBRA", "ZEBRA_ZD421D", "LABEL_40_30", "LABEL_40_60", "LABEL_50_30", "LABEL_60_40", "LABEL_80_50"),
+                row("ZEBRA", "ZEBRA_ZD411D", "LABEL_40_30", "LABEL_40_60", "LABEL_50_30", "LABEL_60_40"),
+                row("GENERIC", "GENERIC_THERMAL_58", "THERMAL_58"),
+                row("GENERIC", "GENERIC_THERMAL_80", "THERMAL_80"),
+                row("GENERIC", "GENERIC_LABEL_40_30", "LABEL_40_30"),
+                row("GENERIC", "GENERIC_LABEL_40_60", "LABEL_40_60"),
+                row("GENERIC", "GENERIC_LABEL_50_30", "LABEL_50_30"),
+                row("GENERIC", "GENERIC_LABEL_60_40", "LABEL_60_40"),
+                row("GENERIC", "GENERIC_LABEL_80_50", "LABEL_80_50"),
+                row("GENERIC", "BUILTIN_THERMAL_58", "THERMAL_58"),
+                row("GENERIC", "BUILTIN_THERMAL_80", "THERMAL_80"));
+        int index = 0;
+        for (ModelPaperMatrixRow row : rows) {
+            String initialPaper = row.allowedPapers().iterator().next();
+            String connection = row.model().startsWith("BUILTIN") ? "BUILT_IN" : "NETWORK";
+            String parameter = row.model().startsWith("BUILTIN") ? null : "192.0.2." + (10 + index);
+            UUID terminal = create(context, store, "型号纸型矩阵 " + index,
+                    "3100" + String.format("%04d", 300 + index++),
+                    configurationWithPrinterScene("KITCHEN_PRINT", sceneForPaper(initialPaper),
+                            row.brand(), row.model(), initialPaper, connection, parameter));
+            JsonNode initial = readDetail(context, store, terminal);
+            String printerRef = initial.at("/configuration/printers/0/ref").asText();
+            String functionRef = initial.at("/configuration/functions/0/ref").asText();
+            for (String paper : papers) {
+                boolean allowed = row.allowedPapers().contains(paper);
+                JsonNode before = readDetail(context, store, terminal);
+                Map<String, Object> replacement = configurationWithPrinterAndFunctionRefs(
+                        printerRef, functionRef, row.brand(), row.model(), paper, connection, parameter);
+                BackendAcceptanceTest.Response response = context.put(
+                        BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_UPDATE,
+                        terminalPath(store.fixture(), terminal), store.session().cookie(),
+                        replaceBody("型号纸型矩阵 " + (index - 1), before.path("version").asLong(), replacement),
+                        idempotency(), allowed ? OK : CLIENT_FAILURE);
+                JsonNode after = readDetail(context, store, terminal);
+                if (allowed) {
+                    assertEquals(paper, after.at("/configuration/printers/0/paperSpecKey").asText());
+                } else {
+                    assertProblem(response, "STORE_TERMINAL_RULE_INVALID");
+                    assertEquals(before.path("version").asLong(), after.path("version").asLong());
+                    assertEquals(before.at("/configuration/printers/0/paperSpecKey").asText(),
+                            after.at("/configuration/printers/0/paperSpecKey").asText());
+                }
+            }
+        }
+
+        BackendAcceptanceTest.Response brandMismatch = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                createBody("品牌型号不匹配", "31999991", configurationWithPrinterScene(
+                        "KITCHEN_PRINT", "PREPARATION_TICKET", "EPSON", "ZEBRA_ZD421D", "THERMAL_58", "NETWORK", "192.0.2.201")),
+                idempotency(), CLIENT_FAILURE);
+        assertProblem(brandMismatch, "STORE_TERMINAL_RULE_INVALID");
+        BackendAcceptanceTest.Response unknownModel = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                createBody("未登记型号", "31999992", configurationWithPrinterScene(
+                        "KITCHEN_PRINT", "PREPARATION_TICKET", "GENERIC", "UNKNOWN_MODEL", "THERMAL_58", "NETWORK", "192.0.2.202")),
+                idempotency(), CLIENT_FAILURE);
+        assertProblem(unknownModel, "STORE_TERMINAL_RULE_INVALID");
+        BackendAcceptanceTest.Response builtInNetwork = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                createBody("内置型号配网口", "31999993", configurationWithPrinterScene(
+                        "KITCHEN_PRINT", "PREPARATION_TICKET", "GENERIC", "BUILTIN_THERMAL_58", "THERMAL_58", "NETWORK", "192.0.2.203")),
+                idempotency(), CLIENT_FAILURE);
+        assertProblem(builtInNetwork, "STORE_TERMINAL_RULE_INVALID");
+        BackendAcceptanceTest.Response genericBuiltIn = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE, terminalsPath(store.fixture()), store.session().cookie(),
+                createBody("通用型号配设备内置", "31999994", configurationWithPrinterScene(
+                        "KITCHEN_PRINT", "PREPARATION_TICKET", "GENERIC", "GENERIC_THERMAL_58", "THERMAL_58", "BUILT_IN", null)),
+                idempotency(), CLIENT_FAILURE);
+        assertProblem(genericBuiltIn, "STORE_TERMINAL_RULE_INVALID");
+    }
+
+    private UUID create(
+            BackendAcceptanceTest.ScenarioContext context,
+            StoreContext store,
+            String name,
+            String activationCode)
+            throws Exception {
+        return create(context, store, name, activationCode, configuration());
+    }
+
+    private UUID create(
+            BackendAcceptanceTest.ScenarioContext context,
+            StoreContext store,
+            String name,
+            String activationCode,
+            Map<String, Object> configuration)
+            throws Exception {
+        BackendAcceptanceTest.Response response = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE,
+                terminalsPath(store.fixture()),
+                store.session().cookie(),
+                createBody(name, activationCode, configuration),
+                idempotency(),
+                CREATED);
+        return UUID.fromString(response.json().path("terminalRef").asText());
+    }
+
+    private JsonNode readDetail(
+            BackendAcceptanceTest.ScenarioContext context,
+            StoreContext store,
+            UUID terminalRef)
+            throws Exception {
+        return context.get(
+                        BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL,
+                        terminalPath(store.fixture(), terminalRef),
+                        store.session().cookie(),
+                        OK)
+                .json();
+    }
+
+    private StoreContext enabledStore(BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        BackendAcceptanceTest.Fixture base = host.fixture("PROJECT", Set.of());
+        BackendAcceptanceTest.Fixture fixture = host.storeServicePointFixture(
+                base, Set.of(EDIT, "EDIT_STORE_SERVICE_POINT_QR", "EDIT_STORE_CATALOG"));
+        host.completeInvitation(context, fixture);
+        return new StoreContext(fixture, selectStore(context, fixture, host.login(context, fixture)));
+    }
+
+    private StoreContext referenceSetupStore(
+            BackendAcceptanceTest.ScenarioContext context, StoreContext terminalStore) throws Exception {
+        BackendAcceptanceTest.Fixture fixture = host.storeUserFixture(
+                terminalStore.fixture(), Set.of("EDIT_STORE_SERVICE_POINT_QR", "EDIT_STORE_CATALOG"));
+        host.completeInvitation(context, fixture);
+        return new StoreContext(fixture, selectStore(context, fixture, host.login(context, fixture)));
+    }
+
+    private static Map<String, Object> createBody(String name, String activationCode) {
+        return createBody(name, activationCode, configuration());
+    }
+
+    private static Map<String, Object> createBody(String name, String activationCode, Map<String, Object> configuration) {
+        return createBody(name, activationCode, configuration, "laptop");
+    }
+
+    private static Map<String, Object> createBody(
+            String name, String activationCode, Map<String, Object> configuration, String deviceType) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("name", name);
+        body.put("deviceType", deviceType);
+        if (activationCode != null) body.put("activationCode", activationCode);
+        body.put("configuration", configuration);
+        return body;
+    }
+
+    private static Map<String, Object> createBodyWithActivationField(
+            String name, Object activationCode, Map<String, Object> configuration) {
+        Map<String, Object> body = new LinkedHashMap<>(createBody(name, null, configuration));
+        body.put("activationCode", activationCode);
+        return body;
+    }
+
+    private static Map<String, Object> replaceBody(String name, long expectedVersion) {
+        return replaceBody(name, expectedVersion, configuration());
+    }
+
+    private static Map<String, Object> replaceBody(String name, long expectedVersion, Map<String, Object> configuration) {
+        return replaceBody(name, expectedVersion, configuration, "laptop");
+    }
+
+    private static Map<String, Object> replaceBody(
+            String name, long expectedVersion, Map<String, Object> configuration, String deviceType) {
+        Map<String, Object> body = new LinkedHashMap<>(createBody(name, null, configuration, deviceType));
+        body.put("expectedVersion", expectedVersion);
+        body.remove("activationCode");
+        return body;
+    }
+
+    private static Map<String, Object> configuration() {
+        return Map.of(
+                "printers", java.util.List.of(),
+                "functions", java.util.List.of(Map.of(
+                        "clientKey", "function-ordering-cashier",
+                        "functionKey", "ORDERING_CASHIER",
+                        "ranges", java.util.List.of(),
+                        "scenes", java.util.List.of())));
+    }
+
+    private static Map<String, Object> emptyConfiguration() {
+        return Map.of("printers", List.of(), "functions", List.of());
+    }
+
+    private static Map<String, Object> configurationFor(String deviceType, String functionKey) {
+        Map<String, Object> configuration = configurationWithFunctions(deviceType, List.of(functionKey));
+        return configuration;
+    }
+
+    private static Map<String, Object> configurationWithFunctions(String deviceType, List<String> functionKeys) {
+        List<Map<String, Object>> functions = new ArrayList<>();
+        int index = 0;
+        for (String functionKey : functionKeys) {
+            functions.add(Map.of(
+                    "clientKey", "function-" + index++,
+                    "functionKey", functionKey,
+                    "ranges", List.of(),
+                    "scenes", List.of()));
+        }
+        return Map.of("printers", List.of(), "functions", functions);
+    }
+
+    private static Map<String, Object> configurationWithRange(String functionKey, String rangeKey, boolean all) {
+        return configurationWithRangeRefs(functionKey, rangeKey, all, List.of());
+    }
+
+    private static Map<String, Object> configurationWithRangeRefs(
+            String functionKey, String rangeKey, boolean all, List<String> refs) {
+        return Map.of(
+                "printers", List.of(),
+                "functions", List.of(Map.of(
+                        "clientKey", "range-function",
+                        "functionKey", functionKey,
+                        "ranges", List.of(Map.of("key", rangeKey, "all", all, "refs", refs)),
+                        "scenes", List.of())));
+    }
+
+    private static Map<String, Object> configurationWithExistingFunctionRangeRefs(
+            JsonNode detail, String rangeKey, boolean all, List<String> refs) {
+        JsonNode function = detail.at("/configuration/functions/0");
+        return Map.of(
+                "printers", List.of(),
+                "functions", List.of(Map.of(
+                        "ref", function.path("ref").asText(),
+                        "functionKey", function.path("functionKey").asText(),
+                        "ranges", List.of(Map.of("key", rangeKey, "all", all, "refs", refs)),
+                        "scenes", List.of())));
+    }
+
+    private static Map<String, Object> configurationWithScene(String functionKey, String sceneKey) {
+        return configurationWithSceneOrderTypes(functionKey, sceneKey, List.of());
+    }
+
+    private static Map<String, Object> configurationWithSceneOrderTypes(
+            String functionKey, String sceneKey, List<String> orderTypes) {
+        return Map.of(
+                "printers", List.of(),
+                "functions", List.of(Map.of(
+                        "clientKey", "scene-function",
+                        "functionKey", functionKey,
+                        "ranges", List.of(),
+                        "scenes", List.of(Map.of(
+                                "sceneKey", sceneKey,
+                                "orderTypes", orderTypes,
+                                "printers", List.of())))));
+    }
+
+    private static Map<String, Object> configurationWithPrinter(
+            String brand, String model, String paper, String connection, String parameter) {
+        return Map.of(
+                "printers", List.of(printer("printer-1", "打印机一", brand, model, paper, connection, parameter)),
+                "functions", List.of(Map.of(
+                        "clientKey", "printer-function",
+                        "functionKey", "KITCHEN_PRINT",
+                        "ranges", List.of(),
+                        "scenes", List.of())));
+    }
+
+    private static Map<String, Object> configurationWithPrinterScene(
+            String functionKey,
+            String sceneKey,
+            String brand,
+            String model,
+            String paper,
+            String connection,
+            String parameter) {
+        return Map.of(
+                "printers", List.of(printer("printer-1", "打印机一", brand, model, paper, connection, parameter)),
+                "functions", List.of(Map.of(
+                        "clientKey", "printer-function",
+                        "functionKey", functionKey,
+                        "ranges", List.of(),
+                        "scenes", List.of(Map.of(
+                                "sceneKey", sceneKey,
+                                "orderTypes", List.of(),
+                                "printers", List.of(Map.of("printerClientKey", "printer-1")))))));
+    }
+
+    private static Map<String, Object> configurationWithPrinterAndFunctionRefs(
+            String printerRef,
+            String functionRef,
+            String brand,
+            String model,
+            String paper,
+            String connection,
+            String parameter) {
+        return configurationWithPrinterAndFunctionRefs(
+                printerRef, functionRef, brand, model, paper, connection, parameter, sceneForPaper(paper));
+    }
+
+    private static Map<String, Object> configurationWithPrinterAndFunctionRefs(
+            String printerRef,
+            String functionRef,
+            String brand,
+            String model,
+            String paper,
+            String connection,
+            String parameter,
+            String sceneKey) {
+        Map<String, Object> value = new LinkedHashMap<>();
+        value.put("printers", List.of(printerWithRef(printerRef, "打印机一", brand, model, paper, connection, parameter)));
+        value.put("functions", List.of(Map.of(
+                "ref", functionRef,
+                "functionKey", "KITCHEN_PRINT",
+                "ranges", List.of(),
+                "scenes", List.of(Map.of(
+                        "sceneKey", sceneKey,
+                        "orderTypes", List.of(),
+                        "printers", List.of(Map.of("printerRef", printerRef)))))));
+        return value;
+    }
+
+    private static Map<String, Object> configurationWithThreePrinterScene() {
+        List<Map<String, Object>> printers = List.of(
+                printer("printer-1", "打印机一", "EPSON", "EPSON_TM_T88VII", "THERMAL_58", "NETWORK", "192.0.2.41"),
+                printer("printer-2", "打印机二", "EPSON", "EPSON_TM_T88VII", "THERMAL_58", "NETWORK", "192.0.2.42"),
+                printer("printer-3", "打印机三", "EPSON", "EPSON_TM_T88VII", "THERMAL_58", "NETWORK", "192.0.2.43"));
+        return configurationWithPrinterNodes(printers, null,
+                List.of(Map.of("printerClientKey", "printer-2"),
+                        Map.of("printerClientKey", "printer-1"),
+                        Map.of("printerClientKey", "printer-3")));
+    }
+
+    private static Map<String, Object> configurationWithPrinterRefs(JsonNode detail, List<String> printerRefs) {
+        List<Map<String, Object>> printers = new ArrayList<>();
+        for (JsonNode value : detail.at("/configuration/printers")) {
+            String ref = value.path("ref").asText();
+            String parameter = value.path("connectionParameter").isMissingNode()
+                    || value.path("connectionParameter").isNull() ? null : value.path("connectionParameter").asText();
+            printers.add(printerWithRef(ref, value.path("name").asText(), value.path("brandKey").asText(),
+                    value.path("modelKey").asText(), value.path("paperSpecKey").asText(),
+                    value.path("connectionMethodKey").asText(), parameter));
+        }
+        return configurationWithPrinterNodes(printers, detail.at("/configuration/functions/0/ref").asText(),
+                printerRefs.stream().map(ref -> Map.<String, Object>of("printerRef", ref)).toList());
+    }
+
+    private static Map<String, Object> configurationWithPrinterRefsAndNewPrinter(JsonNode detail) {
+        List<Map<String, Object>> printers = new ArrayList<>();
+        for (JsonNode value : detail.at("/configuration/printers")) {
+            String parameter = value.path("connectionParameter").isMissingNode()
+                    || value.path("connectionParameter").isNull() ? null : value.path("connectionParameter").asText();
+            printers.add(printerWithRef(value.path("ref").asText(), value.path("name").asText(),
+                    value.path("brandKey").asText(), value.path("modelKey").asText(),
+                    value.path("paperSpecKey").asText(), value.path("connectionMethodKey").asText(), parameter));
+        }
+        printers.add(printer("printer-new", "新增打印机", "GENERIC", "GENERIC_THERMAL_58", "THERMAL_58", "NETWORK", "192.0.2.99"));
+        List<Map<String, Object>> bindings = new ArrayList<>();
+        detail.at("/configuration/functions/0/scenes/0/printers").forEach(value -> {
+            if (value.has("printerRef")) bindings.add(Map.of("printerRef", value.path("printerRef").asText()));
+            else bindings.add(Map.of("printerClientKey", value.path("printerClientKey").asText()));
+        });
+        bindings.add(Map.of("printerClientKey", "printer-new"));
+        return configurationWithPrinterNodes(printers, detail.at("/configuration/functions/0/ref").asText(), bindings);
+    }
+
+    private static Map<String, Object> configurationWithPrinterNodes(
+            List<Map<String, Object>> printers, String functionRef, List<Map<String, Object>> bindings) {
+        Map<String, Object> function = new LinkedHashMap<>();
+        if (functionRef != null) function.put("ref", functionRef);
+        else function.put("clientKey", "printer-function");
+        function.put("functionKey", "KITCHEN_PRINT");
+        function.put("ranges", List.of());
+        Map<String, Object> scene = new LinkedHashMap<>();
+        scene.put("sceneKey", "PREPARATION_TICKET");
+        scene.put("orderTypes", List.of());
+        scene.put("printers", bindings == null ? List.of() : bindings);
+        function.put("scenes", List.of(scene));
+        return Map.of("printers", printers, "functions", List.of(function));
+    }
+
+    private static Map<String, Object> printerWithRef(
+            String ref,
+            String name,
+            String brand,
+            String model,
+            String paper,
+            String connection,
+            String parameter) {
+        Map<String, Object> value = new LinkedHashMap<>();
+        value.put("ref", ref);
+        value.put("name", name);
+        value.put("brandKey", brand);
+        value.put("modelKey", model);
+        value.put("paperSpecKey", paper);
+        value.put("connectionMethodKey", connection);
+        if (parameter != null) value.put("connectionParameter", parameter);
+        return value;
+    }
+
+    private static String sceneForPaper(String paper) {
+        return paper.startsWith("LABEL") ? "LABEL_PREPARATION_TICKET" : "PREPARATION_TICKET";
+    }
+
+    private static String genericModelForPaper(String paper) {
+        return switch (paper) {
+            case "THERMAL_58" -> "GENERIC_THERMAL_58";
+            case "THERMAL_80" -> "GENERIC_THERMAL_80";
+            case "LABEL_40_30" -> "GENERIC_LABEL_40_30";
+            case "LABEL_40_60" -> "GENERIC_LABEL_40_60";
+            case "LABEL_50_30" -> "GENERIC_LABEL_50_30";
+            case "LABEL_60_40" -> "GENERIC_LABEL_60_40";
+            case "LABEL_80_50" -> "GENERIC_LABEL_80_50";
+            default -> throw new IllegalArgumentException("unsupported paper " + paper);
+        };
+    }
+
+    private static Map<String, Object> configurationWithTwoPrinterScene() {
+        return Map.of(
+                "printers", List.of(
+                        printer("printer-1", "打印机一", "EPSON", "EPSON_TM_T88VII", "THERMAL_58", "NETWORK", "192.0.2.41"),
+                        printer("printer-2", "打印机二", "EPSON", "EPSON_TM_T88VII", "THERMAL_58", "NETWORK", "192.0.2.42")),
+                "functions", List.of(Map.of(
+                        "clientKey", "printer-function",
+                        "functionKey", "KITCHEN_PRINT",
+                        "ranges", List.of(),
+                        "scenes", List.of(Map.of(
+                                "sceneKey", "PREPARATION_TICKET",
+                                "orderTypes", List.of(),
+                                "printers", List.of(
+                                        Map.of("printerClientKey", "printer-1"),
+                                        Map.of("printerClientKey", "printer-2")))))));
+    }
+
+    private static Map<String, Object> printer(
+            String clientKey,
+            String name,
+            String brand,
+            String model,
+            String paper,
+            String connection,
+            String parameter) {
+        Map<String, Object> value = new LinkedHashMap<>();
+        value.put("clientKey", clientKey);
+        value.put("name", name);
+        value.put("brandKey", brand);
+        value.put("modelKey", model);
+        value.put("paperSpecKey", paper);
+        value.put("connectionMethodKey", connection);
+        if (parameter != null) value.put("connectionParameter", parameter);
+        return value;
+    }
+
+    private static Map<String, Object> configurationFromExistingFunction(JsonNode function) {
+        return Map.of(
+                "printers", List.of(),
+                "functions", List.of(Map.of(
+                        "ref", function.path("ref").asText(),
+                        "functionKey", function.path("functionKey").asText(),
+                        "ranges", List.of(),
+                        "scenes", List.of())));
+    }
+
+    private AreaRef createArea(
+            BackendAcceptanceTest.ScenarioContext context,
+            StoreContext store,
+            String areaType,
+            String name,
+            String code)
+            throws Exception {
+        BackendAcceptanceTest.Response response = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_SERVICE_POINT_AREA_CREATE,
+                "/api/operations/group-workspaces/" + store.fixture().groupWorkspaceKey()
+                        + "/stores/" + store.fixture().storeId() + "/service-point-areas",
+                store.session().cookie(),
+                Map.of("name", name, "code", code, "areaType", areaType),
+                idempotency(), CREATED);
+        JsonNode json = response.json();
+        return new AreaRef(UUID.fromString(json.path("areaRef").asText()), json.path("version").asLong(), code);
+    }
+
+    private AreaRef updateArea(
+            BackendAcceptanceTest.ScenarioContext context,
+            StoreContext store,
+            AreaRef area,
+            String name,
+            String code,
+            String areaType,
+            String status)
+            throws Exception {
+        BackendAcceptanceTest.Response response = context.patch(
+                BackendAcceptanceTest.OPERATIONS_STORE_SERVICE_POINT_AREA_UPDATE,
+                "/api/operations/group-workspaces/" + store.fixture().groupWorkspaceKey()
+                        + "/stores/" + store.fixture().storeId() + "/service-point-areas/" + area.ref(),
+                store.session().cookie(),
+                Map.of("name", name, "code", code, "areaType", areaType, "status", status,
+                        "expectedVersion", area.version()),
+                idempotency(), OK);
+        JsonNode json = response.json();
+        return new AreaRef(UUID.fromString(json.path("areaRef").asText()), json.path("version").asLong(), code);
+    }
+
+    private AreaRef transitionArea(
+            BackendAcceptanceTest.ScenarioContext context, StoreContext store, AreaRef area, String status)
+            throws Exception {
+        BackendAcceptanceTest.Response response = context.post(
+                BackendAcceptanceTest.OPERATIONS_STORE_SERVICE_POINT_AREA_STATUS,
+                "/api/operations/group-workspaces/" + store.fixture().groupWorkspaceKey()
+                        + "/stores/" + store.fixture().storeId() + "/service-point-areas/" + area.ref() + "/status",
+                store.session().cookie(),
+                Map.of("status", status, "expectedVersion", area.version()), idempotency(), OK);
+        JsonNode json = response.json();
+        return new AreaRef(UUID.fromString(json.path("areaRef").asText()), json.path("version").asLong(), area.code());
+    }
+
+    private TagRef createTag(
+            BackendAcceptanceTest.ScenarioContext context, StoreContext store, String code, String name)
+            throws Exception {
+        BackendAcceptanceTest.Response response = context.post(
+                BackendAcceptanceTest.OPERATIONS_PRODUCTION_TAG_CREATE,
+                "/api/operations/catalog-inventory/production-tags",
+                store.session().cookie(),
+                Map.of("dataNodeRef", store.fixture().storeId().toString(), "code", code, "name", name),
+                idempotency(), OK);
+        JsonNode result = response.json().path("result");
+        return new TagRef(UUID.fromString(result.path("tagRef").asText()), code, result.path("version").asLong(1));
+    }
+
+    private TagRef transitionTag(
+            BackendAcceptanceTest.ScenarioContext context, StoreContext store, TagRef tag, String status)
+            throws Exception {
+        BackendAcceptanceTest.Response response = context.post(
+                BackendAcceptanceTest.OPERATIONS_PRODUCTION_TAG_STATUS,
+                "/api/operations/catalog-inventory/production-tags/" + tag.code() + "/status",
+                store.session().cookie(),
+                Map.of("dataNodeRef", store.fixture().storeId().toString(), "tagCode", tag.code(),
+                        "expectedVersion", tag.version(), "targetStatus", status),
+                idempotency(), OK);
+        return new TagRef(tag.ref(), tag.code(), response.json().path("result").path("version").asLong(tag.version() + 1));
+    }
+
+    private static List<String> textArray(JsonNode values) {
+        List<String> result = new ArrayList<>();
+        values.forEach(value -> result.add(value.asText()));
+        return result;
+    }
+
+    private static List<String> textFieldArray(JsonNode values, String field) {
+        List<String> result = new ArrayList<>();
+        values.forEach(value -> result.add(value.path(field).asText()));
+        return result;
+    }
+
+    private static void assertProblem(BackendAcceptanceTest.Response response, String expected) {
+        assertEquals(expected, response.problemCode(),
+                "BUSINESS: typed store-terminal problem code; status=" + response.status() + ", body=" + response.json());
+    }
+
+    private static void assertProblemOneOf(BackendAcceptanceTest.Response response, String... expected) {
+        assertTrue(Set.of(expected).contains(response.problemCode()),
+                "BUSINESS: expected one of " + Set.of(expected) + ", actual=" + response.problemCode()
+                        + "; status=" + response.status() + ", body=" + response.json());
+    }
+
+    private static Map<String, String> idempotency() {
+        return idempotency("acceptance-store-terminal-" + UUID.randomUUID());
+    }
+
+    private static Map<String, String> idempotency(String key) {
+        return Map.of("Idempotency-Key", key);
+    }
+
+    private static BackendAcceptanceTest.Session selectStore(
+            BackendAcceptanceTest.ScenarioContext context,
+            BackendAcceptanceTest.Fixture fixture,
+            BackendAcceptanceTest.Session session)
+            throws Exception {
+        BackendAcceptanceTest.Response selected = context.post(
+                BackendAcceptanceTest.OPERATIONS_WORKSPACE_SESSION_DATA_NODE,
+                "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/session/data-node",
+                session.cookie(),
+                Map.of(
+                        "dataNodeRef", fixture.storeId(),
+                        "dataNodeType", "STORE",
+                        "requiredContextVersion", session.contextVersion()),
+                OK);
+        assertEquals(fixture.storeId().toString(), selected.json().path("scopeContext").path("store").path("dataNodeRef").asText());
+        return new BackendAcceptanceTest.Session(
+                session.cookie(), selected.json(), selected.json().path("contextVersion").asLong());
+    }
+
+    private static String terminalsPath(BackendAcceptanceTest.Fixture fixture) {
+        return "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/stores/" + fixture.storeId()
+                + "/terminals";
+    }
+
+    private static String terminalPath(BackendAcceptanceTest.Fixture fixture, UUID terminalRef) {
+        return terminalsPath(fixture) + "/" + terminalRef;
+    }
+
+    private record StoreContext(BackendAcceptanceTest.Fixture fixture, BackendAcceptanceTest.Session session) {}
+
+    private static ModelPaperMatrixRow row(String brand, String model, String... allowedPapers) {
+        return new ModelPaperMatrixRow(brand, model, Set.of(allowedPapers));
+    }
+
+    private record ModelPaperMatrixRow(String brand, String model, Set<String> allowedPapers) {}
+
+    private record AreaRef(UUID ref, long version, String code) {}
+
+    private record TagRef(UUID ref, String code, long version) {}
+
+    private record SceneCase(String functionKey, String sceneKey) {}
+
+    private record ConnectionCase(String method, String model, String parameter) {}
+}

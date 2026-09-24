@@ -13,6 +13,7 @@ export const PrimitivePinInput = ({
   invalid = false,
   length,
   maskCharacter = '*',
+  measureRef,
   onClick,
   onPress,
   onTouchEnd,
@@ -35,6 +36,7 @@ export const PrimitivePinInput = ({
       accessibilityState={{disabled}}
       disabled={disabled}
       onPress={disabled ? undefined : onPress}
+      ref={measureRef}
       {...interactionProps}
     >
       <RnrView testID={`${testID}:cells`} className={appearance === 'login' ? baseTokens.pinInputLogin : baseTokens.pinInput}>

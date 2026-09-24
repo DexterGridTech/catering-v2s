@@ -27,7 +27,8 @@ display-context 物理屏 helper 仍保持原语义。runtime 组装与平台启
 ## 结构
 
 - `src/components/laptop` 与 `src/components/mobile`：会员列表、表单、确认层和系统失败提示
-  的两套机型 renderer；`src/components/MemberRow.tsx` 是真正共用的业务行组件。
+  的两套机型 renderer；`MemberRow.tsx`、`MemberFormScrollContent.tsx` 与
+  `CustomerMemberAgeField.tsx` 是真正共用的业务/输入内容组件。
 - `src/hooks`：按职责拆分的共享业务 hook；双端 renderer 消费同一 hook，不在 hook 中返回 JSX。
 - `src/types` 与 `src/foundations`：共享 props/type 与登记提示等纯业务语义。
 - `src/features`：本 feature 的 UI 意图命令与 actor；业务事实仍调用 kernel owner。
@@ -39,9 +40,11 @@ display-context 物理屏 helper 仍保持原语义。runtime 组装与平台启
 承载姓名、电话等业务词汇留在本包的 `components` 目录，由 `MemberList` 传入并透传
 `sample.desk.member-list:row` 根 testID；它不进入 primitives 公共面。
 
-`MemberForm` 的姓名字段使用系统键盘，电话字段使用虚拟纯数字键盘；`CustomerMember` 的
-年龄字段使用虚拟纯数字键盘并在确认边界读取本地快照。双屏年龄输入位于 SECONDARY，
-单屏 `handheld-confirm` 位于 PRIMARY，但这些差异由 actor 的 placement/mode 提供，部件
+`MemberForm` 的姓名字段使用虚拟全键盘，电话字段使用虚拟纯数字键盘；alpha 与 financial
+字段仅供 sample 键盘能力验证且不进入会员 payload。`CustomerMember` 的年龄字段使用虚拟纯数字
+键盘并在确认边界读取本地快照。滚动区中的虚拟字段由实际渲染在 `InputScrollArea` 后代中的
+hook-bearing 内容组件注册，测量相对 scroll content；键盘覆盖显示，不收缩表单或确认页布局。
+双屏年龄输入位于 SECONDARY，单屏 `handheld-confirm` 位于 PRIMARY；这些差异由 actor 的 placement/mode 提供，部件
 不读取屏数，也不把编辑值写入 runtime/store。
 
 双机副机不因配对事件在本地重放 customer placement；其 SECONDARY 画面只由主机写入的 MAIN
@@ -66,6 +69,14 @@ void memberDeskParts
 
 系统失败观察命令与撤回 UI 意图由本包拥有，system-notice 的关闭仍经本包 actor 调用
 ui-state 的通用 closeLayer；业务 partKey、容器准入与呈现文案只在本包声明，不能下沉到 kernel。
+
+## 公共包入口
+
+包根 @catering-v2s/ui-feature-sample-member-desk 当前公开以下符号（含类型）：
+MemberDeskAssembly、dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、
+sampleMemberDeskAssembly。唯一 export-map 路径是 . → ./src/index.ts；包内实现深路径不是包级导入入口。
+该清单与 terminal-invariants.json 的 publicExports / publicExportMap 及
+test/publicSurface.test.ts 对齐。
 
 ## 在这个包上迭代时
 

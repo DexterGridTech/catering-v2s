@@ -96,6 +96,10 @@
       "sha256": "31057869ce330847d4a0e0f479e818802d839a00356f97166656febdefb74d16"
     },
     {
+      "path": "contracts/openapi-source/store-terminal.schemas.json",
+      "sha256": "da8a18deaea1b4fb00fd44b9998e75450b81001d28cc277bf490a0fbf1e999fa"
+    },
+    {
       "path": "contracts/openapi-source/sales-menu.schemas.json",
       "sha256": "2769fd4b29de76452b9617b7b8d75eaf6e54cbd762a04517cbfca685d297591e"
     },
@@ -106,10 +110,10 @@
   ],
   "denominator": {
     "scenarios": 34,
-    "operations": 228,
+    "operations": 235,
     "faces": {
       "platform-admin": 61,
-      "operations-admin": 155,
+      "operations-admin": 162,
       "public": 12
     },
     "owners": [
@@ -711,7 +715,13 @@
     "releaseOperationsSalesMenuStagedAsset": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_CAPABILITY_REQUIRED", "SALES_MENU_ASSET_INVALID", "SALES_MENU_ASSET_TARGET_MISMATCH", "SALES_MENU_ASSET_LIFECYCLE_CONFLICT", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
     "publishOperationsSalesMenu": ["SALES_MENU_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_STORE_DISABLED", "SALES_MENU_CHANNEL_DISABLED", "SALES_MENU_CHANNEL_INELIGIBLE", "SALES_MENU_DRAFT_INVALID", "SALES_MENU_ITEM_REFERENCE_INVALID", "SALES_MENU_SKU_REFERENCE_INVALID", "SALES_MENU_ORDER_OPTION_REFERENCE_INVALID", "SALES_MENU_ORDER_OPTION_SELECTION_INVALID", "SALES_MENU_ORDER_OPTION_SHAPE_UNSUPPORTED", "SALES_MENU_PRICE_REQUIRED", "SALES_MENU_SCHEDULE_INVALID", "SALES_MENU_CONSTRAINT_INVALID", "SALES_MENU_ASSET_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
     "setOperationsSalesMenuItemSoldOut": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED", "SALES_MENU_MANUAL_REASON_REQUIRED", "SALES_MENU_MANUAL_TARGET_INVALID", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
-    "restoreOperationsSalesMenuItemSale": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED", "SALES_MENU_MANUAL_TARGET_INVALID", "CONFIRMATION_REQUIRED", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"]
+    "restoreOperationsSalesMenuItemSale": ["SALES_MENU_NOT_FOUND", "SALES_ITEM_NOT_FOUND", "SALES_MENU_ARCHIVED", "SALES_MENU_SCOPE_MISMATCH", "SALES_MENU_PUBLICATION_REQUIRED", "SALES_MENU_MANUAL_TARGET_INVALID", "CONFIRMATION_REQUIRED", "SALES_MENU_VERSION_CONFLICT", "SALES_MENU_IDEMPOTENCY_CONFLICT", "SALES_MENU_RESULT_UNKNOWN", "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED"],
+    "getOperationsStoreTerminals": ["PLATFORM_COMMON_VALIDATION_FAILED"],
+    "postOperationsStoreTerminal": ["STORE_TERMINAL_NAME_CONFLICT", "STORE_TERMINAL_ACTIVATION_CODE_CONFLICT", "STORE_TERMINAL_ACTIVATION_CODE_EXHAUSTED", "STORE_TERMINAL_RULE_INVALID", "STORE_TERMINAL_REFERENCE_INVALID"],
+    "putOperationsStoreTerminal": ["STORE_TERMINAL_NAME_CONFLICT", "STORE_TERMINAL_RULE_INVALID", "STORE_TERMINAL_REFERENCE_INVALID", "STORE_TERMINAL_VOIDED_IMMUTABLE"],
+    "postOperationsStoreTerminalStatus": ["STORE_TERMINAL_STATUS_TRANSITION_INVALID"],
+    "getOperationsStoreTerminalAreaCandidates": ["PLATFORM_COMMON_VALIDATION_FAILED"],
+    "getOperationsStoreTerminalTagCandidates": ["PLATFORM_COMMON_VALIDATION_FAILED"]
   },
   "operationErrorSelectionRules": {
     "default": "operation errorSetRef plus operationErrorAugmentations[operationId]",
@@ -7916,6 +7926,10 @@
               "TENANT",
               "HEAD_COMPANY",
               "STORE",
+              "STORE_SERVICE_POINT_AREA",
+              "STORE_SERVICE_POINT",
+              "STORE_QR_CONFIGURATION",
+              "STORE_TERMINAL",
               "STORE_CONTRACT"
             ]
           }
@@ -9412,7 +9426,14 @@
     {"operationId": "patchOperationsStoreQrConfiguration", "method": "PATCH", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-configuration", "face": "operations-admin", "owner": "organization", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "StoreQrConfigurationUpdateRequest", "responseSchema": "StoreQrConfigurationView", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.patchOperationsStoreQrConfiguration"},
     {"operationId": "getOperationsStoreQrChannelCandidates", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/qr-channel-candidates", "face": "operations-admin", "owner": "business-channel", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "StoreQrChannelCandidatePage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreQrChannelCandidates"},
     {"operationId": "stageStoreServicePointImage", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage", "face": "operations-admin", "owner": "platform-asset", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "StoreServicePointAssetStageRequest", "responseSchema": "StoreServicePointAssetStageReadback", "successStatus": "201", "requestContentType": "multipart/form-data", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.stageStoreServicePointImage"},
-    {"operationId": "releaseStagedStoreServicePointImage", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release", "face": "operations-admin", "owner": "platform-asset", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "assetRef"], "queryParameters": [], "requestSchema": "StoreServicePointAssetReleaseRequest", "responseSchema": "StoreServicePointAssetReleaseReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.releaseStagedStoreServicePointImage"}
+    {"operationId": "releaseStagedStoreServicePointImage", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage/{assetRef}/release", "face": "operations-admin", "owner": "platform-asset", "scenarioIds": ["R5-STORE-SERVICE-POINT-QR"], "pageKey": "PG-STORE-SERVICE-POINT-QR", "disposition": "STORE_SERVICE_POINT_QR_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "assetRef"], "queryParameters": [], "requestSchema": "StoreServicePointAssetReleaseRequest", "responseSchema": "StoreServicePointAssetReleaseReadback", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.releaseStagedStoreServicePointImage"},
+    {"operationId": "getOperationsStoreTerminals", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals", "face": "operations-admin", "owner": "store-terminal", "scenarioIds": ["R5-STORE-TERMINAL"], "pageKey": "PG-STORE-TERMINALS", "disposition": "STORE_TERMINAL_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [{"name": "query", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 160}}, {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}], "requestSchema": "NoBody", "responseSchema": "StoreTerminalPage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreTerminals"},
+    {"operationId": "getOperationsStoreTerminal", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}", "face": "operations-admin", "owner": "store-terminal", "scenarioIds": ["R5-STORE-TERMINAL"], "pageKey": "PG-STORE-TERMINALS", "disposition": "STORE_TERMINAL_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "terminalRef"], "queryParameters": [], "requestSchema": "NoBody", "responseSchema": "StoreTerminalDetail", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreTerminal"},
+    {"operationId": "postOperationsStoreTerminal", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals", "face": "operations-admin", "owner": "store-terminal", "scenarioIds": ["R5-STORE-TERMINAL"], "pageKey": "PG-STORE-TERMINALS", "disposition": "STORE_TERMINAL_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [], "requestSchema": "StoreTerminalCreateRequest", "responseSchema": "StoreTerminalMutation", "successStatus": "201", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreTerminal"},
+    {"operationId": "putOperationsStoreTerminal", "method": "PUT", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}", "face": "operations-admin", "owner": "store-terminal", "scenarioIds": ["R5-STORE-TERMINAL"], "pageKey": "PG-STORE-TERMINALS", "disposition": "STORE_TERMINAL_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "terminalRef"], "queryParameters": [], "requestSchema": "StoreTerminalReplaceRequest", "responseSchema": "StoreTerminalMutation", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.putOperationsStoreTerminal"},
+    {"operationId": "postOperationsStoreTerminalStatus", "method": "POST", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/{terminalRef}/status", "face": "operations-admin", "owner": "store-terminal", "scenarioIds": ["R5-STORE-TERMINAL"], "pageKey": "PG-STORE-TERMINALS", "disposition": "STORE_TERMINAL_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef", "terminalRef"], "queryParameters": [], "requestSchema": "StoreTerminalStatusRequest", "responseSchema": "StoreTerminalMutation", "successStatus": "200", "idempotency": {"header": "REQUIRED_16_128", "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"}, "expectedVersion": "REQUIRED", "errorSetRef": "OWNER_COMMAND", "focusedTestId": "edge.postOperationsStoreTerminalStatus"},
+    {"operationId": "getOperationsStoreTerminalAreaCandidates", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/area-candidates", "face": "operations-admin", "owner": "store-terminal", "scenarioIds": ["R5-STORE-TERMINAL"], "pageKey": "PG-STORE-TERMINALS", "disposition": "STORE_TERMINAL_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [{"name": "query", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 160}}, {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}], "requestSchema": "NoBody", "responseSchema": "StoreTerminalAreaCandidatePage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreTerminalAreaCandidates"},
+    {"operationId": "getOperationsStoreTerminalTagCandidates", "method": "GET", "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates", "face": "operations-admin", "owner": "store-terminal", "scenarioIds": ["R5-STORE-TERMINAL"], "pageKey": "PG-STORE-TERMINALS", "disposition": "STORE_TERMINAL_IMPLEMENTATION", "security": "OPERATIONS_SESSION_COOKIE", "pathParameters": ["groupWorkspaceKey", "storeRef"], "queryParameters": [{"name": "query", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 160}}, {"name": "cursor", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 512}}, {"name": "pageSize", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 20, "maximum": 20}}], "requestSchema": "NoBody", "responseSchema": "StoreTerminalTagCandidatePage", "successStatus": "200", "idempotency": {"header": "FORBIDDEN", "replay": "NOT_APPLICABLE"}, "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT", "errorSetRef": "AUTHZ_READ", "focusedTestId": "edge.getOperationsStoreTerminalTagCandidates"}
   ],
   "scenarioOperationCrosswalk": [
     {
@@ -11726,6 +11747,41 @@
     "StoreServicePointAssetStageReadback": { "ref": "StoreServicePointAssetStageReadback" },
     "StoreServicePointAssetReleaseRequest": { "ref": "StoreServicePointAssetReleaseRequest" },
     "StoreServicePointAssetReleaseReadback": { "ref": "StoreServicePointAssetReleaseReadback" },
+    "StoreTerminalStatus": { "ref": "StoreTerminalStatus" },
+    "StoreTerminalPrinterBinding": { "ref": "StoreTerminalPrinterBinding" },
+    "StoreTerminalPrinterInput": { "ref": "StoreTerminalPrinterInput" },
+    "StoreTerminalRangeSelection": { "ref": "StoreTerminalRangeSelection" },
+    "StoreTerminalSceneSelection": { "ref": "StoreTerminalSceneSelection" },
+    "StoreTerminalFunctionInput": { "ref": "StoreTerminalFunctionInput" },
+    "StoreTerminalConfigurationInput": { "ref": "StoreTerminalConfigurationInput" },
+    "StoreTerminalPrinter": { "ref": "StoreTerminalPrinter" },
+    "StoreTerminalRange": { "ref": "StoreTerminalRange" },
+    "StoreTerminalPrinterRef": { "ref": "StoreTerminalPrinterRef" },
+    "StoreTerminalScene": { "ref": "StoreTerminalScene" },
+    "StoreTerminalFunction": { "ref": "StoreTerminalFunction" },
+    "StoreTerminalConfiguration": { "ref": "StoreTerminalConfiguration" },
+    "StoreTerminalSummary": { "ref": "StoreTerminalSummary" },
+    "StoreTerminalPage": { "ref": "StoreTerminalPage" },
+    "StoreTerminalDetail": { "ref": "StoreTerminalDetail" },
+    "StoreTerminalAreaReference": { "ref": "StoreTerminalAreaReference" },
+    "StoreTerminalTagReference": { "ref": "StoreTerminalTagReference" },
+    "StoreTerminalAreaCandidate": { "ref": "StoreTerminalAreaCandidate" },
+    "StoreTerminalTagCandidate": { "ref": "StoreTerminalTagCandidate" },
+    "StoreTerminalAreaCandidatePage": { "ref": "StoreTerminalAreaCandidatePage" },
+    "StoreTerminalTagCandidatePage": { "ref": "StoreTerminalTagCandidatePage" },
+    "StoreTerminalCreateRequest": { "ref": "StoreTerminalCreateRequest" },
+    "StoreTerminalReplaceRequest": { "ref": "StoreTerminalReplaceRequest" },
+    "StoreTerminalStatusRequest": { "ref": "StoreTerminalStatusRequest" },
+    "StoreTerminalMutation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["terminalRef", "version", "status"],
+      "properties": {
+        "terminalRef": { "type": "string", "format": "uuid" },
+        "version": { "type": "integer", "format": "int64", "minimum": 0 },
+        "status": { "ref": "StoreTerminalStatus" }
+      }
+    },
     "GroupWorkspaceCreateRequest": {
       "ref": "GroupWorkspaceCreateRequest"
     },
@@ -14452,6 +14508,13 @@
       ],
       "decisionRef": "doc/decisions/2026-07-26-v2s-r5-whole-scope-design-final-acceptance.md#2. Organization overview source 的独立语义"
     },
+    "OrganizationOverviewStatus": {
+      "enum": [
+        "ENABLED",
+        "DISABLED",
+        "VOIDED"
+      ]
+    },
     "WorkspaceSelectContextRequest": {
       "removeProperties": [
         "expectedContextVersion"
@@ -15320,10 +15383,10 @@
     "status": "MATERIALIZED",
     "pipeline": "R24_P3C",
     "sourceOperationCount": 148,
-    "operationCount": 228,
+    "operationCount": 235,
     "faceCounts": {
       "platform-admin": 61,
-      "operations-admin": 155,
+      "operations-admin": 162,
       "public": 12
     }
   }

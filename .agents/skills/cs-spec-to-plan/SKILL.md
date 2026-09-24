@@ -32,6 +32,13 @@ The historical backend-acceptance migration catalog and its performance/baseline
 superseded. Do not reopen them for a new business scenario unless Dexter explicitly changes the
 current decision and the active standard is replaced.
 
+Any TER (`apps/terminal`) plan is incomplete unless its dynamic verification follows `TR-16` in
+`doc/platform/terminal-coding-standard.md`: for every feature whose behavior under test does not depend on
+an `adapter/*` capability, schedule the `ui/integration` Expo Web verification of the current bytes before
+any `assembly` run on a VM or device, and name the shared scenario list whose side-by-side Web/device
+results prove both ends behave the same. A batch that touches an adapter somewhere still applies this
+order to its non-adapter parts. The rule, evidence form and counterexamples live only in `TR-16`.
+
 ## Journey-to-design pipeline
 
 Before any implementation-facing design, use the sequence defined by

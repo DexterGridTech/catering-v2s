@@ -148,8 +148,9 @@ describe('admin layout structural contract', () => {
       expect(login.text, loginPath).not.toContain('keyboardLift')
     }
     const hook = readSource('src/hooks/useAdminLogin.ts')
-    expect(hook.text).toContain("keyboardPlacement: 'surface'")
+    expect(hook.text).not.toContain('keyboardPlacement')
     expect(hook.text).toContain('field.focus()')
+    expect(hook.text).toContain('measureRef: field.visibleAnchorRef')
   })
 
   it('keeps the login owner responsible for both surface-dismiss event guards', () => {

@@ -141,6 +141,7 @@ const defaultDisplaySurfaces = (displayCount: number): readonly DisplaySurfaceIn
 
 export const createTestPlatformPorts = (input: Readonly<{
   readonly displayCount?: number
+  readonly getDisplayCount?: () => number
   readonly displaySurfaces?: readonly DisplaySurfaceInfo[]
   readonly deviceInfo?: DeviceInfo
   readonly onGetDeviceInfo?: () => void
@@ -169,7 +170,7 @@ export const createTestPlatformPorts = (input: Readonly<{
         && displayInfoCalls > (input.displayInfoGateAfterCalls ?? 0)) {
         await input.displayInfoGate
       }
-      const displayCount = input.displayCount ?? 1
+      const displayCount = input.getDisplayCount?.() ?? input.displayCount ?? 1
       return success({
         displayCount,
         surfaces: input.displaySurfaces ?? defaultDisplaySurfaces(displayCount),

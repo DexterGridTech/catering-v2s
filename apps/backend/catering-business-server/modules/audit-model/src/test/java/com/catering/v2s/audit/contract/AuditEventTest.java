@@ -10,8 +10,7 @@ import org.junit.jupiter.api.Test;
 class AuditEventTest {
     @Test
     void keepsStructuredTargetActorAndChangesBounded() {
-        AuditChange change = new AuditChange(
-                "name", "名称", AuditValueState.VALUE, "旧名称", AuditValueState.VALUE, "新名称");
+        AuditChange change = new AuditChange("name", "名称", AuditValueState.VALUE, "旧名称", AuditValueState.VALUE, "新名称");
         AuditEvent event = new AuditEvent(
                 UUID.randomUUID(),
                 UUID.randomUUID(),

@@ -57,6 +57,17 @@ integration 或 assembly。
 | w2 | https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1280&q=80 | Unsplash License (https://unsplash.com/license) | 1280×853 | 231276 | d0886dae3c12648e2b1ab24367884126ed4c6f4cfe8661b419a132817a6fe734 |
 | w3 | https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1280&q=80 | Unsplash License (https://unsplash.com/license) | 1280×851 | 147656 | d851c09ecb633c4ba2c1714e41a22f55f2d2af82fcb75ce3fc4081e23bd19d9b |
 
+## 公共包入口
+
+包根 @catering-v2s/ui-feature-sample-wallpaper-picker 当前公开以下符号（含类型）：
+WallpaperBackground、WallpaperPickerAssembly、WallpaperId、WallpaperPickerCommandPayload、
+assetsById、confirmWallpaperRequestedCommand、createSampleWallpaperPickerModule、
+dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、parts、
+sampleWallpaperPickerAssembly、wallpaperOptionTestId、wallpaperPickerTestIds、
+wallpaperOptionSelectedCommand。唯一 export-map 路径是 . → ./src/index.ts；
+parts 与 module factory 本批保持原样，任何后续收窄须先经 Dexter 逐项裁定。该清单与
+terminal-invariants.json 和 test/publicSurface.test.ts 对齐。
+
 ## 在这个包上迭代时
 
 新增壁纸必须先更新 `WallpaperId` 的 kernel 契约、该映射和真实来源记录，再补 UI 行为与
